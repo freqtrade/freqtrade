@@ -11,7 +11,7 @@ ENV FT_APP_ENV="docker"
 # Prepare environment
 RUN mkdir /freqtrade \
   && apt-get update \
-  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-dev \
+  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-dev libutf8proc-dev libsnappy-dev \
   && apt-get clean \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
@@ -37,6 +37,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
+  && pip install --user /tmp/pyarrow-*.whl \
   && pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image

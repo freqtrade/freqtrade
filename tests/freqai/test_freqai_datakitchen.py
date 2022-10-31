@@ -125,7 +125,8 @@ def test_normalize_data(mocker, freqai_conf):
     freqai = make_data_dictionary(mocker, freqai_conf)
     data_dict = freqai.dk.data_dictionary
     freqai.dk.normalize_data(data_dict)
-    assert len(freqai.dk.data) == 32
+    assert any('_max' in entry for entry in freqai.dk.data.keys())
+    assert any('_min' in entry for entry in freqai.dk.data.keys())
 
 
 def test_filter_features(mocker, freqai_conf):

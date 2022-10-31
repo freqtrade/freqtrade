@@ -26,9 +26,8 @@ class XGBoostRFClassifier(BaseClassifierModel):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+            all the training and test data/labels.
         """
 
         X = data_dictionary["train_features"].to_numpy()
@@ -65,7 +64,7 @@ class XGBoostRFClassifier(BaseClassifierModel):
     ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param: unfiltered_df: Full dataframe for the current backtest period.
+        :param  unfiltered_df: Full dataframe for the current backtest period.
         :return:
         :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove

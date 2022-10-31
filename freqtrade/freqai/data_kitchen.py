@@ -210,7 +210,10 @@ class FreqaiDataKitchen:
             const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
             if const_cols:
                 filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
+                self.data['constant_features_list'] = const_cols
                 logger.warning(f"Removed features {const_cols} with constant values.")
+            else:
+                self.data['constant_features_list'] = []
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
@@ -241,7 +244,8 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
-            filtered_df = self.check_pred_labels(filtered_df)
+            if len(self.data['constant_features_list']):
+                filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
             drop_index = pd.isnull(filtered_df).any(axis=1)
@@ -350,13 +354,19 @@ class FreqaiDataKitchen:
         :param df: Dataframe to be standardized
         """
 
-        for item in df.keys():
-            df[item] = (
-                2
-                * (df[item] - self.data[f"{item}_min"])
-                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
-                - 1
-            )
+        train_max = [None] * len(df.keys())
+        train_min = [None] * len(df.keys())
+
+        for i, item in enumerate(df.keys()):
+            train_max[i] = self.data[f"{item}_max"]
+            train_min[i] = self.data[f"{item}_min"]
+
+        train_max_series = pd.Series(train_max, index=df.keys())
+        train_min_series = pd.Series(train_min, index=df.keys())
+
+        df = (
+            2 * (df - train_min_series) / (train_max_series - train_min_series) - 1
+        )
 
         return df
 
@@ -464,18 +474,16 @@ class FreqaiDataKitchen:
     def check_pred_labels(self, df_predictions: DataFrame) -> DataFrame:
         """
         Check that prediction feature labels match training feature labels.
-        :params:
-        :df_predictions: incoming predictions
+        :param df_predictions: incoming predictions
         """
-        train_labels = self.data_dictionary["train_features"].columns
-        pred_labels = df_predictions.columns
-        num_diffs = len(pred_labels.difference(train_labels))
-        if num_diffs != 0:
-            df_predictions = df_predictions[train_labels]
-            logger.warning(
-                f"Removed {num_diffs} features from prediction features, "
-                f"these were likely considered constant values during most recent training."
-            )
+        constant_labels = self.data['constant_features_list']
+        df_predictions = df_predictions.filter(
+            df_predictions.columns.difference(constant_labels)
+        )
+        logger.warning(
+            f"Removed {len(constant_labels)} features from prediction features, "
+            f"these were considered constant values during most recent training."
+        )
 
         return df_predictions
 
@@ -956,6 +964,9 @@ class FreqaiDataKitchen:
                 continue
             append_df[f"{label}_mean"] = self.data["labels_mean"][label]
             append_df[f"{label}_std"] = self.data["labels_std"][label]
+
+        for extra_col in self.data["extra_returns_per_train"]:
+            append_df[f"{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
 
         append_df["do_predict"] = do_predict
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
