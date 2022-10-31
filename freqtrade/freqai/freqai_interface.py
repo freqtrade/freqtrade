@@ -90,6 +90,8 @@ class IFreqaiModel(ABC):
         self.continual_learning = self.freqai_info.get('continual_learning', False)
         self.plot_features = self.ft_params.get("plot_feature_importances", 0)
         self.corr_dataframes: Dict[str, DataFrame] = {}
+        # get_corr_dataframes is controlling the caching of corr_dataframes
+        # for improved performance. Careful with this boolean.
         self.get_corr_dataframes: bool = True
 
         self._threads: List[threading.Thread] = []
