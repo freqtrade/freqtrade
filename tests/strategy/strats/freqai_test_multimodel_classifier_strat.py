@@ -94,7 +94,7 @@ class freqai_test_multimodel_classifier_strat(IStrategy):
                                            df["close"], 'up', 'down')
 
             df['&s-up_or_down2'] = np.where(df["close"].shift(-50) >
-                                           df["close"], 'up2', 'down2')
+                                            df["close"], 'up2', 'down2')
 
         return df
 
