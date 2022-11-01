@@ -156,8 +156,24 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'filled': 0.0,
         'remaining': 91.07468123
     })
-
     assert results[0] == response_unfilled
+
+    # Open order without remaining
+    trade = Trade.get_open_trades()[0]
+    # kucoin case (no remaining set).
+    trade.orders[0].remaining = None
+    Trade.commit()
+
+    results = rpc._rpc_trade_status()
+    # Reuse above object, only remaining changed.
+    response_unfilled['orders'][0].update({
+        'remaining': None
+    })
+    assert results[0] == response_unfilled
+
+    trade = Trade.get_open_trades()[0]
+    trade.orders[0].remaining = trade.amount
+    Trade.commit()
 
     # Fill open order ...
     freqtradebot.manage_open_orders()
