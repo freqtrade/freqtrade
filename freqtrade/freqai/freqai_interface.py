@@ -684,8 +684,6 @@ class IFreqaiModel(ABC):
                                    " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
-                # if self.corr_pairlist:
-                #     self.get_corr_dataframes = True
         return
 
     def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
