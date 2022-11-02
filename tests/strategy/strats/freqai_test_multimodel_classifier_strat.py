@@ -1,10 +1,10 @@
 import logging
 from functools import reduce
 
+import numpy as np
 import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
-import numpy as np
 
 from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_informative_pair
 
