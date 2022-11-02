@@ -759,7 +759,7 @@ class IFreqaiModel(ABC):
                                "is included in the column names when you are creating features "
                                "in `populate_any_indicators()`.")
             self.get_corr_dataframes = not bool(self.corr_dataframes)
-        else:
+        elif self.corr_dataframes:
             dataframe = dk.attach_corr_pair_columns(
                 dataframe, self.corr_dataframes, dk.pair)
 

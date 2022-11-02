@@ -1156,7 +1156,8 @@ class FreqaiDataKitchen:
             valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
             pair_cols = [col for col in dataframe.columns if
                          any(substr in col for substr in valid_strs)]
-            pair_cols.insert(0, 'date')
+            if pair_cols:
+                pair_cols.insert(0, 'date')
             corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
 
         return corr_dataframes
