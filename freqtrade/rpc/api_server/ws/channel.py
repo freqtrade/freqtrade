@@ -79,7 +79,9 @@ class WebSocketChannel:
                 timeout=self.drain_timeout
             )
             return True
-        except asyncio.TimeoutError:
+        except Exception:
+            # We must catch any exception here to prevent an exception bubbling
+            # up and stalling the broadcast thread
             return False
 
     async def recv(self):
@@ -135,11 +137,14 @@ class WebSocketChannel:
         as a task.
         """
         while not self._closed.is_set():
+            logger.info(f"{self} Relay - queue.get")
             message = await self.queue.get()
             try:
+                logger.info(f"{self} Relay - sending message")
                 await self._send(message)
                 self.queue.task_done()
 
+                logger.info(f"{self} Relay - QSize: {self.queue.qsize()}")
                 # Limit messages per sec.
                 # Could cause problems with queue size if too low, and
                 # problems with network traffik if too high.
