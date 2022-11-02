@@ -46,7 +46,7 @@ class WebSocketChannel:
         self._relay_task = asyncio.create_task(self.relay())
 
         # Internal event to signify a closed websocket
-        self._closed = False
+        self._closed = asyncio.Event()
 
         # Wrap the WebSocket in the Serializing class
         self._wrapped_ws = self._serializer_cls(self._websocket)
@@ -99,14 +99,19 @@ class WebSocketChannel:
         Close the WebSocketChannel
         """
 
-        self._closed = True
+        try:
+            await self.raw_websocket.close()
+        except Exception:
+            pass
+
+        self._closed.set()
         self._relay_task.cancel()
 
     def is_closed(self) -> bool:
         """
         Closed flag
         """
-        return self._closed
+        return self._closed.is_set()
 
     def set_subscriptions(self, subscriptions: List[str] = []) -> None:
         """
@@ -129,7 +134,7 @@ class WebSocketChannel:
         Relay messages from the channel's queue and send them out. This is started
         as a task.
         """
-        while True:
+        while not self._closed.is_set():
             message = await self.queue.get()
             try:
                 await self._send(message)
