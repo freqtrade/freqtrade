@@ -78,11 +78,12 @@ class WebSocketChannel:
                 self.queue.put(data),
                 timeout=self.drain_timeout
             )
-            return True
-        except Exception:
-            # We must catch any exception here to prevent an exception bubbling
-            # up and stalling the broadcast thread
+        except asyncio.TimeoutError:
             return False
+        except RuntimeError:
+            pass
+
+        return True
 
     async def recv(self):
         """
