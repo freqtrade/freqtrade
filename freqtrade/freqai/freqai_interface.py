@@ -75,7 +75,7 @@ class IFreqaiModel(ABC):
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
-        self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
+        self.CONV_WIDTH = self.freqai_info.get("conv_width", 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
         self.pair_it = 0
@@ -93,7 +93,7 @@ class IFreqaiModel(ABC):
         # get_corr_dataframes is controlling the caching of corr_dataframes
         # for improved performance. Careful with this boolean.
         self.get_corr_dataframes: bool = True
-
+        self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=timezone.utc)
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
 
@@ -339,6 +339,7 @@ class IFreqaiModel(ABC):
         if self.dd.historic_data:
             self.dd.update_historic_data(strategy, dk)
             logger.debug(f'Updating historic data on pair {metadata["pair"]}')
+            self.track_current_candle()
 
         if not self.follow_mode:
 
@@ -683,8 +684,8 @@ class IFreqaiModel(ABC):
                                    " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
-                if self.corr_pairlist:
-                    self.get_corr_dataframes = True
+                # if self.corr_pairlist:
+                #     self.get_corr_dataframes = True
         return
 
     def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
@@ -765,6 +766,18 @@ class IFreqaiModel(ABC):
                 dataframe, self.corr_dataframes, dk.pair)
 
         return dataframe
+
+    def track_current_candle(self):
+        """
+        Checks if the latest candle appended by the datadrawer is
+        equivalent to the latest candle seen by FreqAI. If not, it
+        asks to refresh the cached corr_dfs, and resets the pair
+        counter.
+        """
+        if self.dd.current_candle > self.current_candle:
+            self.get_corr_dataframes = True
+            self.pair_it = 0
+            self.current_candle = self.dd.current_candle
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
