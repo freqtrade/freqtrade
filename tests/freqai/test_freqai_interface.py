@@ -338,6 +338,7 @@ def test_follow_mode(mocker, freqai_conf):
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
 
+    freqai.dk.pair = "ADA/BTC"
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702
