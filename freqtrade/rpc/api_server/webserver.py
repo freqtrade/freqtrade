@@ -197,6 +197,7 @@ class ApiServer(RPCHandler):
                 # Get data from queue
                 message: WSMessageSchemaType = await async_queue.get()
                 logger.debug(f"Found message of type: {message.get('type')}")
+                async_queue.task_done()
                 # Broadcast it
                 await self._ws_channel_manager.broadcast(message)
         except asyncio.CancelledError:
