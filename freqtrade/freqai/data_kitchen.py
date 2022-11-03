@@ -1318,7 +1318,7 @@ class FreqaiDataKitchen:
     ) -> bool:
         """
         Check if a backtesting prediction already exists and if the predictions
-        to append has the same sime of backtesting dataframe slice
+        to append has the same size of backtesting dataframe slice
         :param length_backtesting_dataframe: Length of backtesting dataframe slice
         :return:
         :boolean: whether the prediction file is valid.
@@ -1337,7 +1337,7 @@ class FreqaiDataKitchen:
                 return True
             else:
                 logger.info("A new backtesting prediction file is required. "
-                            "(Number of predictions is different of dataframe length).")
+                            "(Number of predictions is different from dataframe length).")
                 return False
         else:
             logger.info(
