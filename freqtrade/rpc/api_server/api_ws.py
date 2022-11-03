@@ -127,13 +127,6 @@ async def message_endpoint(
             except Exception as e:
                 logger.info(f"Consumer connection failed - {channel}: {e}")
                 logger.debug(e, exc_info=e)
-            finally:
-                await channel_manager.on_disconnect(ws)
-
-        else:
-            if channel:
-                await channel_manager.on_disconnect(ws)
-            await ws.close()
 
     except RuntimeError:
         # WebSocket was closed
@@ -144,4 +137,5 @@ async def message_endpoint(
         # Log tracebacks to keep track of what errors are happening
         logger.exception(e)
     finally:
-        await channel_manager.on_disconnect(ws)
+        if channel:
+            await channel_manager.on_disconnect(ws)
