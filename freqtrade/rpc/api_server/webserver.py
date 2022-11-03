@@ -211,6 +211,9 @@ class ApiServer(RPCHandler):
             # Disconnect channels and stop the loop on cancel
             await self._ws_channel_manager.disconnect_all()
             self._ws_loop.stop()
+            # Avoid adding more items to the queue if they aren't
+            # going to get broadcasted.
+            self._ws_queue = None
 
     def start_api(self):
         """
