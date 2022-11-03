@@ -1153,12 +1153,13 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt like colons
             valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
             pair_cols = [col for col in dataframe.columns if
                          any(substr in col for substr in valid_strs)]
             if pair_cols:
                 pair_cols.insert(0, 'date')
-            corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
+                corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
 
         return corr_dataframes
 
