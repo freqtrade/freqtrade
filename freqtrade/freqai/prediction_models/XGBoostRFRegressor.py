@@ -29,6 +29,7 @@ class XGBoostRFRegressor(BaseRegressionModel):
 
         if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) == 0:
             eval_set = None
+            eval_weights = None
         else:
             eval_set = [(data_dictionary["test_features"], data_dictionary["test_labels"])]
             eval_weights = [data_dictionary['test_weights']]

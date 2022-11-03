@@ -27,13 +27,13 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model', [
-    'LightGBMRegressor',
-    'XGBoostRegressor',
-    'XGBoostRFRegressor',
-    'CatboostRegressor',
+@pytest.mark.parametrize('model, pca, dbscan', [
+    ('LightGBMRegressor', True, False),
+    ('XGBoostRegressor', False, True),
+    ('XGBoostRFRegressor', False, False),
+    ('CatboostRegressor', False, False),
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -41,6 +41,8 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
+    freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
+    freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -234,6 +236,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
+
     assert len(model_folders) == 9
 
     shutil.rmtree(Path(freqai.dk.full_path))

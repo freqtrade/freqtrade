@@ -16,6 +16,10 @@ class WebSocketProxy:
         self._websocket: Union[FastAPIWebSocket, WebSocket] = websocket
 
     @property
+    def raw_websocket(self):
+        return self._websocket
+
+    @property
     def remote_addr(self) -> Tuple[Any, ...]:
         if isinstance(self._websocket, WebSocket):
             return self._websocket.remote_address

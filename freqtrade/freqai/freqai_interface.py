@@ -1,12 +1,10 @@
 import logging
-import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
 from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
@@ -21,7 +19,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance
+from freqtrade.freqai.utils import plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -61,6 +59,7 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
+        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -69,9 +68,9 @@ class IFreqaiModel(ABC):
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
-        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
+        self.corr_pairlist: List[str] = self.ft_params.get("include_corr_pairlist", [])
         self.keras: bool = self.freqai_info.get("keras", False)
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
@@ -83,9 +82,6 @@ class IFreqaiModel(ABC):
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.train_queue = self._set_train_queue()
-        self.last_trade_database_summary: DataFrame = {}
-        self.current_trade_database_summary: DataFrame = {}
-        self.analysis_lock = Lock()
         self.inference_time: float = 0
         self.train_time: float = 0
         self.begin_time: float = 0
@@ -93,9 +89,15 @@ class IFreqaiModel(ABC):
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
         self.continual_learning = self.freqai_info.get('continual_learning', False)
         self.plot_features = self.ft_params.get("plot_feature_importances", 0)
+        self.corr_dataframes: Dict[str, DataFrame] = {}
+        # get_corr_dataframes is controlling the caching of corr_dataframes
+        # for improved performance. Careful with this boolean.
+        self.get_corr_dataframes: bool = True
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+
+        record_params(config, self.full_path)
 
     def __getstate__(self):
         """
@@ -385,10 +387,10 @@ class IFreqaiModel(ABC):
         # load the model and associated data into the data kitchen
         self.model = self.dd.load_data(metadata["pair"], dk)
 
-        with self.analysis_lock:
-            dataframe = self.dk.use_strategy_to_populate_indicators(
-                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-            )
+        dataframe = dk.use_strategy_to_populate_indicators(
+            strategy, prediction_dataframe=dataframe, pair=metadata["pair"],
+            do_corr_pairs=self.get_corr_dataframes
+        )
 
         if not self.model:
             logger.warning(
@@ -396,6 +398,9 @@ class IFreqaiModel(ABC):
             )
             self.dd.return_null_values_to_strategy(dataframe, dk)
             return dk
+
+        if self.corr_pairlist:
+            dataframe = self.cache_corr_pairlist_dfs(dataframe, dk)
 
         dk.find_labels(dataframe)
 
@@ -548,14 +553,13 @@ class IFreqaiModel(ABC):
         return file_exists
 
     def set_full_path(self) -> None:
+        """
+        Creates and sets the full path for the identifier
+        """
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
+            self.config["user_data_dir"] / "models" / f"{self.identifier}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
-        shutil.copy(
-            self.config["config_files"][0],
-            Path(self.full_path, Path(self.config["config_files"][0]).name),
-        )
 
     def extract_data_and_train_model(
         self,
@@ -581,10 +585,9 @@ class IFreqaiModel(ABC):
             data_load_timerange, pair, dk
         )
 
-        with self.analysis_lock:
-            unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
-                strategy, corr_dataframes, base_dataframes, pair
-            )
+        unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
+            strategy, corr_dataframes, base_dataframes, pair
+        )
 
         unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
@@ -702,6 +705,8 @@ class IFreqaiModel(ABC):
                                    " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
+                if self.corr_pairlist:
+                    self.get_corr_dataframes = True
         return
 
     def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
@@ -759,6 +764,29 @@ class IFreqaiModel(ABC):
         logger.info('Set existing queue from trained timestamps. '
                     f'Best approximation queue: {best_queue}')
         return best_queue
+
+    def cache_corr_pairlist_dfs(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+        """
+        Cache the corr_pairlist dfs to speed up performance for subsequent pairs during the
+        current candle.
+        :param dataframe: strategy fed dataframe
+        :param dk: datakitchen object for current asset
+        :return: dataframe to attach/extract cached corr_pair dfs to/from.
+        """
+
+        if self.get_corr_dataframes:
+            self.corr_dataframes = dk.extract_corr_pair_columns_from_populated_indicators(dataframe)
+            if not self.corr_dataframes:
+                logger.warning("Couldn't cache corr_pair dataframes for improved performance. "
+                               "Consider ensuring that the full coin/stake, e.g. XYZ/USD, "
+                               "is included in the column names when you are creating features "
+                               "in `populate_any_indicators()`.")
+            self.get_corr_dataframes = not bool(self.corr_dataframes)
+        else:
+            dataframe = dk.attach_corr_pair_columns(
+                dataframe, self.corr_dataframes, dk.pair)
+
+        return dataframe
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

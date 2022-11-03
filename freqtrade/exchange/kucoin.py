@@ -2,6 +2,7 @@
 import logging
 from typing import Dict
 
+from freqtrade.constants import BuySell
 from freqtrade.exchange import Exchange
 
 
@@ -27,17 +28,7 @@ class Kucoin(Exchange):
         "ohlcv_candle_limit": 1500,
     }
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
-        """
-        Verify stop_loss against stoploss-order value (limit or price)
-        Returns True if adjustment is necessary.
-        """
-        return (
-            order.get('stopPrice', None) is None
-            or stop_loss > float(order['stopPrice'])
-        )
-
-    def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
+    def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
 
         params = self._params.copy()
         params.update({
