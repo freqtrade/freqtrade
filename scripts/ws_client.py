@@ -18,7 +18,6 @@ import orjson
 import pandas
 import rapidjson
 import websockets
-from dateutil.relativedelta import relativedelta
 
 
 logger = logging.getLogger("WebSocketClient")
@@ -28,7 +27,7 @@ logger = logging.getLogger("WebSocketClient")
 
 def setup_logging(filename: str):
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler(filename),
@@ -75,16 +74,15 @@ def load_config(configfile):
 
 def readable_timedelta(delta):
     """
-    Convert a dateutil.relativedelta to a readable format
+    Convert a millisecond delta to a readable format
 
-    :param delta: A dateutil.relativedelta
+    :param delta: A delta between two timestamps in milliseconds
     :returns: The readable time difference string
     """
-    attrs = ['years', 'months', 'days', 'hours', 'minutes', 'seconds', 'microseconds']
-    return ", ".join([
-        '%d %s' % (getattr(delta, attr), attr if getattr(delta, attr) > 0 else attr[:-1])
-        for attr in attrs if getattr(delta, attr)
-    ])
+    seconds, milliseconds = divmod(delta, 1000)
+    minutes, seconds = divmod(seconds, 60)
+
+    return f"{int(minutes)}:{int(seconds)}.{int(milliseconds)}"
 
 # ----------------------------------------------------------------------------
 
@@ -170,8 +168,8 @@ class ClientProtocol:
 
     def _calculate_time_difference(self):
         old_last_received_at = self._LAST_RECEIVED_AT
-        self._LAST_RECEIVED_AT = time.time() * 1e6
-        time_delta = relativedelta(microseconds=(self._LAST_RECEIVED_AT - old_last_received_at))
+        self._LAST_RECEIVED_AT = time.time() * 1e3
+        time_delta = self._LAST_RECEIVED_AT - old_last_received_at
 
         return readable_timedelta(time_delta)
 
@@ -242,12 +240,10 @@ async def create_client(
                     ):
                         # Try pinging
                         try:
-                            pong = ws.ping()
-                            await asyncio.wait_for(
-                                pong,
-                                timeout=ping_timeout
-                            )
-                            logger.info("Connection still alive...")
+                            pong = await ws.ping()
+                            latency = (await asyncio.wait_for(pong, timeout=ping_timeout) * 1000)
+
+                            logger.info(f"Connection still alive, latency: {latency}ms")
 
                             continue
 
@@ -272,6 +268,7 @@ async def create_client(
             websockets.exceptions.ConnectionClosedError,
             websockets.exceptions.ConnectionClosedOK
         ):
+            logger.info("Connection was closed")
             # Just keep trying to connect again indefinitely
             await asyncio.sleep(sleep_time)
 

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from threading import RLock
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
@@ -46,7 +47,7 @@ class WebSocketChannel:
         self._relay_task = asyncio.create_task(self.relay())
 
         # Internal event to signify a closed websocket
-        self._closed = False
+        self._closed = asyncio.Event()
 
         # Wrap the WebSocket in the Serializing class
         self._wrapped_ws = self._serializer_cls(self._websocket)
@@ -73,14 +74,25 @@ class WebSocketChannel:
         Add the data to the queue to be sent.
         :returns: True if data added to queue, False otherwise
         """
+
+        # This block only runs if the queue is full, it will wait
+        # until self.drain_timeout for the relay to drain the outgoing queue
+        # We can't use asyncio.wait_for here because the queue may have been created with a
+        # different eventloop
+        start = time.time()
+        while self.queue.full():
+            await asyncio.sleep(1)
+            if (time.time() - start) > self.drain_timeout:
+                return False
+
+        # If for some reason the queue is still full, just return False
         try:
-            await asyncio.wait_for(
-                self.queue.put(data),
-                timeout=self.drain_timeout
-            )
-            return True
-        except asyncio.TimeoutError:
+            self.queue.put_nowait(data)
+        except asyncio.QueueFull:
             return False
+
+        # If we got here everything is ok
+        return True
 
     async def recv(self):
         """
@@ -99,14 +111,19 @@ class WebSocketChannel:
         Close the WebSocketChannel
         """
 
-        self._closed = True
+        try:
+            await self.raw_websocket.close()
+        except Exception:
+            pass
+
+        self._closed.set()
         self._relay_task.cancel()
 
     def is_closed(self) -> bool:
         """
         Closed flag
         """
-        return self._closed
+        return self._closed.is_set()
 
     def set_subscriptions(self, subscriptions: List[str] = []) -> None:
         """
@@ -129,7 +146,7 @@ class WebSocketChannel:
         Relay messages from the channel's queue and send them out. This is started
         as a task.
         """
-        while True:
+        while not self._closed.is_set():
             message = await self.queue.get()
             try:
                 await self._send(message)
