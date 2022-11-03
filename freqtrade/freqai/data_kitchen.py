@@ -1312,14 +1312,16 @@ class FreqaiDataKitchen:
         append_df = pd.read_hdf(self.backtesting_results_path)
         return append_df
 
-    def check_if_backtest_prediction_exists(
-        self
+    def check_if_backtest_prediction_is_valid(
+        self,
+        length_backtesting_dataframe: int
     ) -> bool:
         """
-        Check if a backtesting prediction already exists
-        :param dk: FreqaiDataKitchen
+        Check if a backtesting prediction already exists and if the predictions
+        to append has the same size of backtesting dataframe slice
+        :param length_backtesting_dataframe: Length of backtesting dataframe slice
         :return:
-        :boolean: whether the prediction file exists or not.
+        :boolean: whether the prediction file is valid.
         """
         path_to_predictionfile = Path(self.full_path /
                                       self.backtest_predictions_folder /
@@ -1327,10 +1329,18 @@ class FreqaiDataKitchen:
         self.backtesting_results_path = path_to_predictionfile
 
         file_exists = path_to_predictionfile.is_file()
+
         if file_exists:
-            logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+            append_df = self.get_backtesting_prediction()
+            if len(append_df) == length_backtesting_dataframe:
+                logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+                return True
+            else:
+                logger.info("A new backtesting prediction file is required. "
+                            "(Number of predictions is different from dataframe length).")
+                return False
         else:
             logger.info(
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
-        return file_exists
+            return False
