@@ -240,12 +240,10 @@ async def create_client(
                     ):
                         # Try pinging
                         try:
-                            pong = ws.ping()
-                            await asyncio.wait_for(
-                                pong,
-                                timeout=ping_timeout
-                            )
-                            logger.info("Connection still alive...")
+                            pong = await ws.ping()
+                            latency = (await asyncio.wait_for(pong, timeout=ping_timeout) * 1000)
+
+                            logger.info(f"Connection still alive, latency: {latency}ms")
 
                             continue
 
