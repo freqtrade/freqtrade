@@ -1179,6 +1179,7 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt work with colons
             if current_pair != pair:
                 dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
 
