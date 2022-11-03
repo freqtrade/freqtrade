@@ -68,6 +68,9 @@ class IFreqaiModel(ABC):
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
+        # set current candle to arbitrary historical date
+        self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=timezone.utc)
+        self.dd.current_candle = self.current_candle
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
         self.corr_pairlist: List[str] = self.ft_params.get("include_corr_pairlist", [])
@@ -93,7 +96,6 @@ class IFreqaiModel(ABC):
         # get_corr_dataframes is controlling the caching of corr_dataframes
         # for improved performance. Careful with this boolean.
         self.get_corr_dataframes: bool = True
-        self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=timezone.utc)
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
 

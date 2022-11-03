@@ -1247,6 +1247,8 @@ class FreqaiDataKitchen:
 
         self.get_unique_classes_from_labels(dataframe)
 
+        dataframe = self.remove_special_chars_from_feature_names(dataframe)
+
         return dataframe
 
     def fit_labels(self) -> None:
@@ -1335,3 +1337,16 @@ class FreqaiDataKitchen:
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
         return file_exists
+
+    def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """
+        Remove all special characters from feature strings (:)
+        :param dataframe: the dataframe that just finished indicator population. (unfiltered)
+        :return: dataframe with cleaned featrue names
+        """
+
+        spec_chars = [':']
+        for c in spec_chars:
+            dataframe.columns = dataframe.columns.str.replace(c, "")
+
+        return dataframe

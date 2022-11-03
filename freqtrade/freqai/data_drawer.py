@@ -98,7 +98,6 @@ class FreqaiDataDrawer:
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
         self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
-        self.current_candle: datetime = datetime.fromtimestamp(637887600)
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
