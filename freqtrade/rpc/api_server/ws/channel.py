@@ -76,8 +76,9 @@ class WebSocketChannel:
         """
 
         # This block only runs if the queue is full, it will wait
-        # until self.drain_timeout for the relay to drain the outgoing
-        # queue
+        # until self.drain_timeout for the relay to drain the outgoing queue
+        # We can't use asyncio.wait_for here because the queue may have been created with a
+        # different eventloop
         start = time.time()
         while self.queue.full():
             await asyncio.sleep(1)
