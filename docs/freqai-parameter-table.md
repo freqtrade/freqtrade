@@ -18,6 +18,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `fit_live_predictions_candles` | Number of historical candles to use for computing target (label) statistics from prediction data, instead of from the training dataset (more information can be found [here](freqai-configuration.md#creating-a-dynamic-target-threshold)). <br> **Datatype:** Positive integer.
 | `follow_mode` | Use a `follower` that will look for models associated with a specific `identifier` and load those for inferencing. A `follower` will **not** train new models. <br> **Datatype:** Boolean. <br> Default: `False`.
 | `continual_learning` | Use the final state of the most recently trained model as starting point for the new model, allowing for incremental learning (more information can be found [here](freqai-running.md#continual-learning)). <br> **Datatype:** Boolean. <br> Default: `False`.
+| `convert_df_to_float32` | Recast all numeric columns to float32, with the objective of reducing ram/disk usage and decreasing train/inference timing. <br> **Datatype:** Boolean. <br> Default: `False`.
 |  |  **Feature parameters**
 | `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples are shown [here](freqai-feature-engineering.md). <br> **Datatype:** Dictionary.
 | `include_timeframes` | A list of timeframes that all indicators in `populate_any_indicators` will be created for. The list is added as features to the base indicators dataset. <br> **Datatype:** List of timeframes (strings).
