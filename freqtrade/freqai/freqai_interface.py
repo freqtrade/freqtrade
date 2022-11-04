@@ -297,7 +297,7 @@ class IFreqaiModel(ABC):
 
             dk.set_new_model_names(pair, timestamp_model_id)
 
-            if dk.check_if_backtest_prediction_exists():
+            if dk.check_if_backtest_prediction_is_valid(len(dataframe_backtest)):
                 self.dd.load_metadata(dk)
                 dk.find_features(dataframe_train)
                 self.check_if_feature_list_matches_strategy(dk)
