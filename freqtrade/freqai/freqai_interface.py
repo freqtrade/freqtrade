@@ -784,8 +784,8 @@ class IFreqaiModel(ABC):
             logger.info(f"No data found for pair {pair} from {tr_backtest_startts_str} "
                         f" from {tr_backtest_startts_str} to {tr_backtest_stopts_str}. "
                         "Probably more than one training within the same candle period.")
-            return True
-        return False
+            return False
+        return True
 
     def log_backtesting_progress(self, tr_train: TimeRange, pair: str,
                                  train_it: int, total_trains: int):
