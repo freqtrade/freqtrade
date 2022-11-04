@@ -1179,9 +1179,11 @@ class Backtesting:
                     detail_data.loc[:, 'enter_tag'] = row[ENTER_TAG_IDX]
                     detail_data.loc[:, 'exit_tag'] = row[EXIT_TAG_IDX]
                     is_first = True
+                    current_time_det = current_time
                     for det_row in detail_data[HEADERS].values.tolist():
+                        current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         open_trade_count_start = self.backtest_loop(
-                            det_row, pair, current_time, end_date, max_open_trades,
+                            det_row, pair, current_time_det, end_date, max_open_trades,
                             open_trade_count_start, is_first)
                         is_first = False
                 else:
