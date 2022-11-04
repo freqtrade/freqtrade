@@ -261,35 +261,12 @@ class IFreqaiModel(ABC):
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
-            if dk.backtest_live_models and len(dataframe_backtest) == 0:
-                tr_backtest_startts_str = datetime.fromtimestamp(
-                                                tr_backtest.startts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-                tr_backtest_stopts_str = datetime.fromtimestamp(
-                                                tr_backtest.stopts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-                logger.info(f"No data found for pair {pair} from {tr_backtest_startts_str} "
-                            f" from {tr_backtest_startts_str} to {tr_backtest_stopts_str}. "
-                            "Probably more than one training within the same candle period.")
+            if not self.ensure_data_exists(dataframe_backtest, tr_backtest, pair):
                 continue
 
-            trained_timestamp = tr_train
-            tr_train_startts_str = datetime.fromtimestamp(
-                                                tr_train.startts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            tr_train_stopts_str = datetime.fromtimestamp(
-                                                tr_train.stopts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+            self.log_backtesting_progress(tr_train, pair, train_it, total_trains)
 
-            if not dk.backtest_live_models:
-                logger.info(
-                    f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
-                    f" from {tr_train_startts_str} "
-                    f"to {tr_train_stopts_str}, {train_it}/{total_trains} "
-                    "trains"
-                )
-
-            timestamp_model_id = int(trained_timestamp.stopts)
+            timestamp_model_id = int(tr_train.stopts)
             if dk.backtest_live_models:
                 timestamp_model_id = int(tr_backtest.startts)
 
@@ -309,7 +286,7 @@ class IFreqaiModel(ABC):
                     dk.find_labels(dataframe_train)
                     self.model = self.train(dataframe_train, pair, dk)
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(
-                        trained_timestamp.stopts)
+                        tr_train.stopts)
                     if self.plot_features:
                         plot_feature_importance(self.model, pair, dk, self.plot_features)
                     if self.save_backtest_models:
@@ -788,6 +765,52 @@ class IFreqaiModel(ABC):
 
         return dataframe
 
+    def ensure_data_exists(self, dataframe_backtest: DataFrame,
+                           tr_backtest: TimeRange, pair: str) -> bool:
+        """
+        Check if the dataframe is empty, if not, report useful information to user.
+        :param dataframe_backtest: the backtesting dataframe, maybe empty.
+        :param tr_backtest: current backtesting timerange.
+        :param pair: current pair
+        :return: if the data exists or not
+        """
+        if self.config.get("freqai_backtest_live_models", False) and len(dataframe_backtest) == 0:
+            tr_backtest_startts_str = datetime.fromtimestamp(
+                                            tr_backtest.startts,
+                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+            tr_backtest_stopts_str = datetime.fromtimestamp(
+                                            tr_backtest.stopts,
+                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+            logger.info(f"No data found for pair {pair} from {tr_backtest_startts_str} "
+                        f" from {tr_backtest_startts_str} to {tr_backtest_stopts_str}. "
+                        "Probably more than one training within the same candle period.")
+            return True
+        return False
+
+    def log_backtesting_progress(self, tr_train: TimeRange, pair: str,
+                                 train_it: int, total_trains: int):
+        """
+        Log the backtesting progress so user knows how many pairs have been trained and
+        hoe many more pairs/trains remain.
+        :param tr_train: the training timerange
+        :param train_it: the train iteration for the current pair (the sliding window progress)
+        :param pair: the current pair
+        :param total_trains: total trains (total number of slides for the sliding window)
+        """
+        tr_train_startts_str = datetime.fromtimestamp(
+                                            tr_train.startts,
+                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+        tr_train_stopts_str = datetime.fromtimestamp(
+                                            tr_train.stopts,
+                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+
+        if not self.config.get("freqai_backtest_live_models", False):
+            logger.info(
+                f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
+                f" from {tr_train_startts_str} "
+                f"to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                "trains"
+            )
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 

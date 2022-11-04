@@ -1338,11 +1338,11 @@ class FreqaiDataKitchen:
 
     def check_if_backtest_prediction_is_valid(
         self,
-        length_backtesting_dataframe: int
+        len_backtest_df: int
     ) -> bool:
         """
         Check if a backtesting prediction already exists and if the predictions
-        to append has the same size of backtesting dataframe slice
+        to append have the same size as the backtesting dataframe slice
         :param length_backtesting_dataframe: Length of backtesting dataframe slice
         :return:
         :boolean: whether the prediction file is valid.
@@ -1356,7 +1356,7 @@ class FreqaiDataKitchen:
 
         if file_exists:
             append_df = self.get_backtesting_prediction()
-            if len(append_df) == length_backtesting_dataframe:
+            if len(append_df) == len_backtest_df:
                 logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
                 return True
             else:
