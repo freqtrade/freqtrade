@@ -273,11 +273,15 @@ class FreqaiDataKitchen:
         test_labels: DataFrame,
         train_weights: Any,
         test_weights: Any,
+        train_df_no_transf: DataFrame = DataFrame(),
+        test_df_no_transf: DataFrame = DataFrame()
     ) -> Dict:
 
         self.data_dictionary = {
             "train_features": train_df,
+            "train_features_no_transf": train_df_no_transf,
             "test_features": test_df,
+            "test_features_no_transf": test_df_no_transf,
             "train_labels": train_labels,
             "test_labels": test_labels,
             "train_weights": train_weights,
@@ -289,7 +293,7 @@ class FreqaiDataKitchen:
 
     def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
         """
-        Normalize all data in the data_dictionary according to the training dataset
+        Normalize all data in the data_dictionary according to the training dataset.
         :param data_dictionary: dictionary containing the cleaned and
                                 split training/test data/labels
         :returns:
@@ -495,6 +499,9 @@ class FreqaiDataKitchen:
         """
 
         from sklearn.decomposition import PCA  # avoid importing if we dont need it
+        self.data_dictionary["train_features_no_transf"] = self.data_dictionary["train_features"]
+        self.data["training_features_list_no_transf"] = \
+            self.data_dictionary["train_features"].columns
 
         pca = PCA(0.999)
         pca = pca.fit(self.data_dictionary["train_features"])
@@ -520,6 +527,7 @@ class FreqaiDataKitchen:
         self.training_features_list = self.data_dictionary["train_features"].columns
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            self.data_dictionary["test_features_no_transf"] = self.data_dictionary["test_features"]
             test_components = pca.transform(self.data_dictionary["test_features"])
             self.data_dictionary["test_features"] = pd.DataFrame(
                 data=test_components,
@@ -545,6 +553,8 @@ class FreqaiDataKitchen:
         Use an existing pca transform to transform data into components
         :param filtered_dataframe: DataFrame = the cleaned dataframe
         """
+        self.data_dictionary["prediction_features_no_transf"] = \
+            self.data_dictionary["prediction_features"]
         pca_components = self.pca.transform(filtered_dataframe)
         self.data_dictionary["prediction_features"] = pd.DataFrame(
             data=pca_components,
@@ -559,7 +569,8 @@ class FreqaiDataKitchen:
         """
         Compute distances between each training point and every other training
         point. This metric defines the neighborhood of trained data and is used
-        for prediction confidence in the Dissimilarity Index
+        for prediction confidence in the Dissimilarity Index.
+        Calculations are done on non-transformed (e.g., PCA) data.
         """
         # logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(
@@ -586,7 +597,7 @@ class FreqaiDataKitchen:
     def use_SVM_to_remove_outliers(self, predict: bool) -> None:
         """
         Build/inference a Support Vector Machine to detect outliers
-        in training data and prediction
+        in training data and prediction, before any transformation (e.g., PCA).
         :param predict: bool = If true, inference an existing SVM model, else construct one
         """
 
@@ -669,7 +680,7 @@ class FreqaiDataKitchen:
 
     def use_DBSCAN_to_remove_outliers(self, predict: bool, eps=None) -> None:
         """
-        Use DBSCAN to cluster training data and remove "noisy" data (read outliers).
+        Use DBSCAN to cluster training data and remove outliers before transformation (e.g., PCA).
         User controls this via the config param `DBSCAN_outlier_pct` which indicates the
         pct of training data that they want to be considered outliers.
         :param predict: bool = If False (training), iterate to find the best hyper parameters
@@ -682,7 +693,10 @@ class FreqaiDataKitchen:
         if predict:
             if not self.data['DBSCAN_eps']:
                 return
-            train_ft_df = self.data_dictionary['train_features']
+            if self.data_dictionary["train_features_no_transf"].empty:
+                train_ft_df = self.data_dictionary['train_features']
+            else:
+                train_ft_df = self.data_dictionary["train_features_no_transf"]
             pred_ft_df = self.data_dictionary['prediction_features']
             num_preds = len(pred_ft_df)
             df = pd.concat([train_ft_df, pred_ft_df], axis=0, ignore_index=True)
@@ -773,7 +787,8 @@ class FreqaiDataKitchen:
 
     def compute_inlier_metric(self, set_='train') -> None:
         """
-        Compute inlier metric from backwards distance distributions.
+        Compute inlier metric from backwards distance distributions before any transformation
+        (e.g., PCA).
         This metric defines how well features from a timepoint fit
         into previous timepoints.
         """
@@ -918,9 +933,13 @@ class FreqaiDataKitchen:
         and avoid making predictions on any points that are too far away
         from the training data set.
         """
+        if self.data_dictionary["train_features_no_transf"].empty:
+            train_features = self.data_dictionary["train_features"]
+        else:
+            train_features = self.data_dictionary["train_features_no_transf"]
 
         distance = pairwise_distances(
-            self.data_dictionary["train_features"],
+            train_features,
             self.data_dictionary["prediction_features"],
             n_jobs=self.thread_count,
         )

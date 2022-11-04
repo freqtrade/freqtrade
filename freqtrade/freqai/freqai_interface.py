@@ -465,16 +465,8 @@ class IFreqaiModel(ABC):
             if self.freqai_info["data_split_parameters"]["test_size"] > 0:
                 dk.compute_inlier_metric(set_='test')
 
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.principal_component_analysis()
-
         if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
-
-        if ft_params.get("DI_threshold", 0):
-            dk.data["avg_mean_dist"] = dk.compute_distances()
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             if dk.pair in self.dd.old_DBSCAN_eps:
@@ -483,6 +475,14 @@ class IFreqaiModel(ABC):
                 eps = None
             dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
             self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
+
+        if ft_params.get("DI_threshold", 0):
+            dk.data["avg_mean_dist"] = dk.compute_distances()
+
+        if ft_params.get(
+            "principal_component_analysis", False
+        ):
+            dk.principal_component_analysis()
 
         if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
             dk.add_noise_to_training_features()
@@ -500,19 +500,19 @@ class IFreqaiModel(ABC):
         if ft_params.get('inlier_metric_window', 0):
             dk.compute_inlier_metric(set_='predict')
 
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.pca_transform(dk.data_dictionary['prediction_features'])
-
         if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
+
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
+            dk.use_DBSCAN_to_remove_outliers(predict=True)
 
         if ft_params.get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
-        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.use_DBSCAN_to_remove_outliers(predict=True)
+        if ft_params.get(
+            "principal_component_analysis", False
+        ):
+            dk.pca_transform(dk.data_dictionary['prediction_features'])
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """

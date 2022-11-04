@@ -157,5 +157,5 @@ def test_make_train_test_datasets(mocker, freqai_conf):
     data_dictionary = freqai.dk.make_train_test_datasets(features_filtered, labels_filtered)
 
     assert data_dictionary
-    assert len(data_dictionary) == 7
+    assert len(data_dictionary) == 9
     assert len(data_dictionary['train_features'].index) == 1916

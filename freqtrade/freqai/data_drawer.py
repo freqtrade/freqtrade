@@ -496,6 +496,10 @@ class FreqaiDataDrawer:
             save_path / f"{dk.model_filename}_trained_df.pkl"
         )
 
+        dk.data_dictionary["train_features_no_transf"].to_pickle(
+            save_path / f"{dk.model_filename}_trained_df_no_transf.pkl"
+        )
+
         dk.data_dictionary["train_dates"].to_pickle(
             save_path / f"{dk.model_filename}_trained_dates_df.pkl"
         )
@@ -513,6 +517,8 @@ class FreqaiDataDrawer:
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
+        self.meta_data_dictionary[coin]["train_df_no_transf"] = \
+            dk.data_dictionary["train_features_no_transf"]
         self.meta_data_dictionary[coin]["meta_data"] = dk.data
         self.save_drawer_to_disk()
 
@@ -553,6 +559,8 @@ class FreqaiDataDrawer:
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
             dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin]["train_df"]
+            dk.data_dictionary["train_features_no_transf"] = \
+                self.meta_data_dictionary[coin]["train_df_no_transf"]
         else:
             with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
                 dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
