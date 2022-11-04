@@ -248,7 +248,7 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
-            if len(self.data['constant_features_list']):
+            if 'constant_features_list' in self.data and len(self.data['constant_features_list']):
                 filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
