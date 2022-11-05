@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Optional
 from freqtrade.persistence import Trade
 from freqtrade.strategy import IStrategy
-from wao_strategy_controller import WAOStrategyController
+from wao.wao_strategy_controller import WAOStrategyController
 
 
-class WAOStrategy_futures(IStrategy):
+class WAOStrategy(IStrategy):
     # Optional order type mapping
     order_types = {
         'buy': 'market',
@@ -20,7 +20,7 @@ class WAOStrategy_futures(IStrategy):
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
-                            side: str, **kwargs) -> bool:
+                            **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -55,7 +55,7 @@ class WAOStrategy_futures(IStrategy):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, exit_reason: str,
+                           rate: float, time_in_force: str, sell_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
@@ -72,7 +72,7 @@ class WAOStrategy_futures(IStrategy):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param exit_reason: Sell reason.
+        :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
@@ -82,5 +82,5 @@ class WAOStrategy_futures(IStrategy):
         """
         coin = pair.split("/")[0]
 
-        self.controller.on_sell_signal(exit_reason, current_time, coin)
+        self.controller.on_sell_signal(sell_reason, current_time, coin)
         return True
