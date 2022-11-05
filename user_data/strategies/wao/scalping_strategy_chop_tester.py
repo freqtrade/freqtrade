@@ -6,7 +6,7 @@ import time
 import datetime
 import csv
 import os
-from brain_config import BrainConfig
+from wao.brain_config import BrainConfig
 
 coin = 'LTC'
 time_range = '1m'

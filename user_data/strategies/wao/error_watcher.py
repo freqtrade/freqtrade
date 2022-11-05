@@ -5,8 +5,8 @@ import watchdog.events
 import watchdog.observers
 import time
 
-from notifier import post_request
-from brain_config import BrainConfig
+from wao.notifier import post_request
+from wao.brain_config import BrainConfig
 
 from execution.config import Config
 from execution.romeo import Romeo, RomeoExitPriceType
