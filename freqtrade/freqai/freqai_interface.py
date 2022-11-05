@@ -776,7 +776,7 @@ class IFreqaiModel(ABC):
         """
         if self.dd.current_candle > self.current_candle:
             self.get_corr_dataframes = True
-            self.pair_it = 0
+            self.pair_it = 1
             self.current_candle = self.dd.current_candle
 
     # Following methods which are overridden by user made prediction models.
