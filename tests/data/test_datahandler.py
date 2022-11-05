@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -152,6 +153,23 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     assert len(df1) == 0
     assert log_has("Could not load data for NOPAIR/XXX.", caplog)
     assert df.columns.equals(df1.columns)
+
+
+def test_datahandler_ohlcv_data_min_max(testdatadir):
+    dh = JsonDataHandler(testdatadir)
+    min_max = dh.ohlcv_data_min_max('UNITTEST/BTC', '5m', 'spot')
+    assert len(min_max) == 2
+
+    # Empty pair
+    min_max = dh.ohlcv_data_min_max('UNITTEST/BTC', '8m', 'spot')
+    assert len(min_max) == 2
+    assert min_max[0] == datetime.fromtimestamp(0, tz=timezone.utc)
+    assert min_max[0] == min_max[1]
+    # Empty pair2
+    min_max = dh.ohlcv_data_min_max('NOPAIR/XXX', '4m', 'spot')
+    assert len(min_max) == 2
+    assert min_max[0] == datetime.fromtimestamp(0, tz=timezone.utc)
+    assert min_max[0] == min_max[1]
 
 
 def test_datahandler__check_empty_df(testdatadir, caplog):

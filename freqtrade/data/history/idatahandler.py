@@ -102,6 +102,11 @@ class IDataHandler(ABC):
         :return: (min, max)
         """
         data = self._ohlcv_load(pair, timeframe, None, candle_type)
+        if data.empty:
+            return (
+                datetime.fromtimestamp(0, tz=timezone.utc),
+                datetime.fromtimestamp(0, tz=timezone.utc)
+            )
         return data.iloc[0]['date'].to_pydatetime(), data.iloc[-1]['date'].to_pydatetime()
 
     @abstractmethod
