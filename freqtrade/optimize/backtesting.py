@@ -1064,7 +1064,7 @@ class Backtesting:
         # without positionstacking, we can only have one open trade per pair.
         # max_open_trades must be respected
         # don't open on the last row
-        # We only open trades on the initial candle.
+        # We only open trades on the main candle, not on detail candles
         trade_dir = self.check_for_trade_entry(row)
         if (
             (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)

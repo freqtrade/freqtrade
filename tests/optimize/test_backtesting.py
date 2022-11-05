@@ -663,27 +663,6 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         '',  # Exit Signal Name
 
     ]
-    row_detail = pd.DataFrame(
-        [
-            [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
-                200, 200.1, 197, 199, 1, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=1, tzinfo=timezone.utc),
-                199, 199.7, 199, 199.5, 0, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=2, tzinfo=timezone.utc),
-                199.5, 200.8, 199, 200.9, 0, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=3, tzinfo=timezone.utc),
-                200.5, 210.5, 193, 210.5, 0, 0, 0, 0, '', '', '',  # ROI sell (?)
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=4, tzinfo=timezone.utc),
-                200, 200.1, 193, 199, 0, 0, 0, 0, '', '', '',
-            ],
-        ], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                    'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag']
-    )
 
     # No data available.
     res = backtesting._get_exit_trade_entry(trade, row_sell, True)
@@ -701,17 +680,6 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
     res = backtesting._get_exit_trade_entry(trade, row, True)
     assert res is None
-
-    # Assign backtest-detail data
-    backtesting.detail_data[pair] = row_detail
-
-    res = backtesting._get_exit_trade_entry(trade, row_sell, True)
-    assert res is not None
-    assert res.exit_reason == ExitType.ROI.value
-    # Sell at minute 3 (not available above!)
-    assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    sell_order = res.select_order('sell', True)
-    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
