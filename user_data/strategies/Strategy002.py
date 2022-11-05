@@ -7,7 +7,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config import *
+from wao.brain_config2 import *
 
 
 class Strategy002(WAOStrategy):
