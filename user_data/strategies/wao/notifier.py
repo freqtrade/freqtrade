@@ -24,7 +24,7 @@ def send_stop_bot_message(reason, brain):
     post_request(text, brain=brain)
 
 
-def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN, is_from_error_handler=False):
+def post_request(text, is_from_429_watcher=False, brain=BRAIN, is_from_error_handler=False):
     text.replace("#", "_")
     # if Config.TELEGRAM_LOG_ENABLED:
     #     print("post_request: " + text + " ---------------------")
@@ -46,7 +46,7 @@ def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN, is_fr
 
 
 def get_telegram_bot_api_token(brain, is_from_429_watcher):
-    if BrainConfig.MODE == "test":
+    if MODE == "test":
         if Config.IS_BACKTEST:
             return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
         elif Config.BRAIN == "lstm":
@@ -61,7 +61,7 @@ def get_telegram_bot_api_token(brain, is_from_429_watcher):
 
 
 def get_telegram_channel_id(brain):
-    if BrainConfig.MODE == "test":
+    if MODE == "test":
         if Config.IS_BACKTEST:
             return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST
         elif Config.BRAIN == "lstm":

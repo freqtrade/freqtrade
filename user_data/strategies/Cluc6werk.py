@@ -5,7 +5,7 @@ from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy import merge_informative_pair
 from pandas import DataFrame
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config import BrainConfig
+from wao.brain_config import *
 
 
 def bollinger_bands(stock_price, window_size, num_of_std):
@@ -16,7 +16,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
 
 
 class Cluc6werk(WAOStrategy):
-    BrainConfig.BRAIN = "Freq_Cluc6werk"
+    BRAIN = "Freq_Cluc6werk"
 
     def __init__(self, config: dict):
         super().__init__(config, 8, 0.15)

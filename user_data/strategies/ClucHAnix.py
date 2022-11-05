@@ -5,7 +5,7 @@ from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy import merge_informative_pair
 from pandas import DataFrame, Series
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config import BrainConfig
+from wao.brain_config import *
 
 
 def bollinger_bands(stock_price, window_size, num_of_std):
@@ -21,7 +21,7 @@ def ha_typical_price(bars):
 
 
 class ClucHAnix(WAOStrategy):
-    BrainConfig.BRAIN = "Freq_ClucHAnix"
+    BRAIN = "Freq_ClucHAnix"
 
     def __init__(self, config: dict):
         super().__init__(config, 8, 0.15)

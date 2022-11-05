@@ -6,11 +6,11 @@ import time
 import datetime
 import csv
 import os
-from wao.brain_config import BrainConfig
+from wao.brain_config import *
 
 coin = 'LTC'
 time_range = '1m'
-json_file_name = f''+BrainConfig.FREQTRADE_PATH+'/user_data/data/binance/{coin}_USDT-{time_range}.json'
+json_file_name = f''+FREQTRADE_PATH+'/user_data/data/binance/{coin}_USDT-{time_range}.json'
 json_file_content = Path(json_file_name).read_text()
 total_loop_time = json_file_content.count(']') - 1
 minutes_per_day = 1440 if time_range == '1m' else 288
@@ -89,7 +89,7 @@ def upload_to_google_drive(csv_file_name):
 
 def run_scalping_strategy_command():
     print("run_scalping_strategy_command:... ")
-    os.chdir(BrainConfig.FREQTRADE_PATH)
+    os.chdir(FREQTRADE_PATH)
     result = subprocess.Popen([backtest_command],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
