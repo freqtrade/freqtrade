@@ -22,6 +22,7 @@ def test_update_historic_data(mocker, freqai_conf):
     historic_candles = len(freqai.dd.historic_data["ADA/BTC"]["5m"])
     dp_candles = len(strategy.dp.get_pair_dataframe("ADA/BTC", "5m"))
     candle_difference = dp_candles - historic_candles
+    freqai.dk.pair = "ADA/BTC"
     freqai.dd.update_historic_data(strategy, freqai.dk)
 
     updated_historic_candles = len(freqai.dd.historic_data["ADA/BTC"]["5m"])

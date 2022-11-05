@@ -194,6 +194,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    df = freqai.cache_corr_pairlist_dfs(df, freqai.dk)
     for i in range(5):
         df[f'%-constant_{i}'] = i
         # df.loc[:, f'%-constant_{i}'] = i
@@ -339,6 +340,7 @@ def test_follow_mode(mocker, freqai_conf):
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
 
+    freqai.dk.pair = "ADA/BTC"
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702

@@ -1153,11 +1153,13 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt like colons
             valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
             pair_cols = [col for col in dataframe.columns if
                          any(substr in col for substr in valid_strs)]
-            pair_cols.insert(0, 'date')
-            corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
+            if pair_cols:
+                pair_cols.insert(0, 'date')
+                corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
 
         return corr_dataframes
 
@@ -1175,8 +1177,9 @@ class FreqaiDataKitchen:
                     ready for training
         """
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
-
+        current_pair = current_pair.replace(':', '')
         for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt work with colons
             if current_pair != pair:
                 dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
 
@@ -1245,6 +1248,8 @@ class FreqaiDataKitchen:
                     )
 
         self.get_unique_classes_from_labels(dataframe)
+
+        dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
         return dataframe
 
@@ -1344,3 +1349,16 @@ class FreqaiDataKitchen:
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
             return False
+
+    def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """
+        Remove all special characters from feature strings (:)
+        :param dataframe: the dataframe that just finished indicator population. (unfiltered)
+        :return: dataframe with cleaned featrue names
+        """
+
+        spec_chars = [':']
+        for c in spec_chars:
+            dataframe.columns = dataframe.columns.str.replace(c, "")
+
+        return dataframe
