@@ -7,7 +7,7 @@ from notifier import send_start_deliminator_message
 from execution.config import Config
 
 
-class WAOStrategyController2:
+class WAOStrategyController:
 
     def __init__(self, time_out_hours, dup):
         self.time_out_hours = time_out_hours
