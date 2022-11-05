@@ -12,7 +12,7 @@ class BrainConfig:
     WORKSPACE_BACKTEST = "/workspace2"
     WORKSPACE_NORMAL = "/workspace"
     WORKSPACE = WORKSPACE_BACKTEST if IS_BACKTEST else WORKSPACE_NORMAL
-    ROOT = "/root"
+    ROOT = "/home/ubuntu"
     FREQTRADE_PATH = ROOT + WORKSPACE + "/freqtrade"
     _429_DIRECTORY = FREQTRADE_PATH + "/_429_directory/"
     _WAO_LOGS_DIRECTORY = FREQTRADE_PATH + "/_wao_logs/"
