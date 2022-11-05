@@ -8,11 +8,11 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config import *
+from wao.brain_config import BrainConfig
 
 
 class Strategy003(WAOStrategy):
-    BRAIN = 'Freq_Strategy003'
+    BrainConfig.BRAIN = 'Freq_Strategy003'
 
     def __init__(self, config: dict):
         super().__init__(config, 20, 0.001)

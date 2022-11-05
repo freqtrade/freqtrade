@@ -6,7 +6,7 @@ import watchdog.observers
 import time
 
 from wao.notifier import post_request
-from wao.brain_config import *
+from wao.brain_config import BrainConfig
 
 from execution.config import Config
 from execution.romeo import Romeo, RomeoExitPriceType
@@ -24,8 +24,8 @@ def is_timed_out_error(error_line):
 
 
 def stop_bot(error_line):
-    stop_bot_command = "python3 " + FREQTRADE_PATH + "/wao/stop_bot.py " + str(
-        MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
+    stop_bot_command = "python3 " + BrainConfig.FREQTRADE_PATH + "/wao/stop_bot.py " + str(
+        BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
                            .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
     result_log = subprocess.Popen([stop_bot_command],
                                   stdout=subprocess.PIPE,
@@ -36,7 +36,7 @@ def stop_bot(error_line):
 
 
 def smooth_romeo_restart(error_line):
-    romeo = ROMEO_POOL.get(Config.COIN)
+    romeo = BrainConfig.ROMEO_POOL.get(Config.COIN)
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
     error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
@@ -69,21 +69,21 @@ def check_condition(file_name):
 def __check_condition(file_name):
     error_line = get_error_line(file_name)
     if error_line is not None and not is_freqtrade_error(error_line) and not is_timed_out_error(error_line):
-        is_throttle_hit = time.time() - PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
-        if IS_SMOOTH_ERROR_HANDLING_ENABLED and is_throttle_hit:
+        is_throttle_hit = time.time() - BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
+        if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED and is_throttle_hit:
             smooth_romeo_restart(error_line)
         else:
             stop_bot(error_line)
             send_to_trello(title= "[STOPBOT] "+error_line, description= "is_throttle_hit=" + str(is_throttle_hit) + " " + error_line)
-        PREVIOUS_ERROR_TIMESTAMP_SECONDS = time.time()
+        BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS = time.time()
 
 
 def populate_last_error_lines(line_lower):
-    if len(LAST_ERROR_LINES) <= 3:
-        LAST_ERROR_LINES.append(line_lower)
+    if len(BrainConfig.LAST_ERROR_LINES) <= 3:
+        BrainConfig.LAST_ERROR_LINES.append(line_lower)
     else:
-        LAST_ERROR_LINES.pop()
-        LAST_ERROR_LINES.insert(0, line_lower)
+        BrainConfig.LAST_ERROR_LINES.pop()
+        BrainConfig.LAST_ERROR_LINES.insert(0, line_lower)
 
 
 def get_error_line(file_name):
@@ -93,20 +93,20 @@ def get_error_line(file_name):
             line_str = str(line)
             line_lower = line_str.lower()
             if ("error" in line_lower or "exception" in line_lower) and (
-                    line_lower not in LAST_ERROR_LINES):
+                    line_lower not in BrainConfig.LAST_ERROR_LINES):
                 populate_last_error_lines(line_lower)
                 return line_str
     return None
 
 
 def send_to_trello_and_telegram(title, description):
-    notifier = Notifier(MODE)
+    notifier = Notifier(BrainConfig.MODE)
     notifier.create_trello_bug_ticket(title, description)
     notifier.post_request(description, is_from_error_report=True)
 
 
 def send_to_trello(title, description):
-    notifier = Notifier(MODE)
+    notifier = Notifier(BrainConfig.MODE)
     notifier.create_trello_bug_ticket(title, description)
 
 

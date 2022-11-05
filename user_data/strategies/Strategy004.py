@@ -6,11 +6,11 @@ from pandas import DataFrame
 import talib.abstract as ta
 
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config import *
+from wao.brain_config import BrainConfig
 
 
 class Strategy004(WAOStrategy):
-    BRAIN = 'Freq_Strategy004'
+    BrainConfig.BRAIN = 'Freq_Strategy004'
 
     def __init__(self, config: dict):
         super().__init__(config, 8, 0.001)
