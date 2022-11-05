@@ -1355,13 +1355,15 @@ class FreqaiDataKitchen:
         start_mem = df.memory_usage().sum() / 1024**2
         print("Memory usage of dataframe is {:.2f} MB".format(start_mem))
 
-        for col in df.columns[1:]:
-            col_type = df[col].dtype
-            if col_type != object:
-                if str(col_type)[:3] == "int":
-                    df[col] = df[col].astype(np.int32)
-                else:
-                    df[col] = df[col].astype(np.float32)
+        df_dtypes = df.dtypes
+        for column, dtype in df_dtypes.items():
+            if column in ['open', 'high', 'low', 'close', 'volume']:
+                continue
+            if dtype == np.float64:
+                df_dtypes[column] = np.float32
+            elif dtype == np.int64:
+                df_dtypes[column] = np.int32
+        df = df.astype(df_dtypes)
 
         end_mem = df.memory_usage().sum() / 1024**2
         print("Memory usage after optimization is: {:.2f} MB".format(end_mem))
