@@ -6,7 +6,7 @@ from pandas import DataFrame
 import talib.abstract as ta
 
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config2 import *
+from wao.brain_config import *
 
 
 class Strategy004(WAOStrategy):

@@ -9,7 +9,7 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.wao_strategy_futures import WAOStrategy_futures
-from wao.brain_config2 import *
+from wao.brain_config import *
 
 
 class bbrsi_scalp_futures(WAOStrategy_futures):

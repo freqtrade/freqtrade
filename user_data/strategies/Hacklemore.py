@@ -10,7 +10,7 @@ from freqtrade.persistence import Trade
 from technical.indicators import RMI
 from statistics import mean
 from wao.wao_strategy import WAOStrategy
-from wao.brain_config2 import *
+from wao.brain_config import *
 
 """
 TODO: 

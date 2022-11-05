@@ -1,6 +1,6 @@
 import sys
 sys.path.append("wao/")
-from brain_config2 import BrainConfig
+from brain_config import BrainConfig
 import requests
 
 from execution.config import Config
