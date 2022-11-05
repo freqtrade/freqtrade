@@ -1,4 +1,4 @@
-from wao_strategy_controller import WAOStrategyController
+from wao.wao_strategy_controller import WAOStrategyController
 import time
 import datetime
 brain = ''

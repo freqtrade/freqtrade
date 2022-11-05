@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from freqtrade.persistence import Trade
 from freqtrade.strategy import IStrategy
-from wao_strategy_controller import WAOStrategyController
+from wao.wao_strategy_controller import WAOStrategyController
 
 
 class WAOStrategy(IStrategy):
