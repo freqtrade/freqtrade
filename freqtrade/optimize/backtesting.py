@@ -1181,10 +1181,10 @@ class Backtesting:
                     is_first = True
                     current_time_det = current_time
                     for det_row in detail_data[HEADERS].values.tolist():
-                        current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         open_trade_count_start = self.backtest_loop(
                             det_row, pair, current_time_det, end_date, max_open_trades,
                             open_trade_count_start, is_first)
+                        current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         is_first = False
                 else:
                     open_trade_count_start = self.backtest_loop(
