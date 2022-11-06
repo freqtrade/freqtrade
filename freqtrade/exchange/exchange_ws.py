@@ -93,6 +93,10 @@ class ExchangeWS():
         candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
         # Fake 1 candle - which is then removed again
         # TODO: is this really a good idea??
-        candles.append([candles[-1][0], 0, 0, 0, 0, 0])
-        logger.info(f"watch result for {pair}, {timeframe} with length {len(candles)}")
+        refresh_time = int(self.pairs_last_refresh[(pair, timeframe, candle_type)] * 1000)
+        candles.append([refresh_time, 0, 0, 0, 0, 0])
+        logger.info(
+            f"watch result for {pair}, {timeframe} with length {len(candles)}, "
+            f"{datetime.fromtimestamp(candles[-1][0] // 1000)}, "
+            f"lref={datetime.fromtimestamp(self.pairs_last_refresh[(pair, timeframe, candle_type)])}")
         return pair, timeframe, candle_type, candles
