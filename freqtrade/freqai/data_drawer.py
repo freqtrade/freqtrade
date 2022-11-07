@@ -636,6 +636,8 @@ class FreqaiDataDrawer:
                         axis=0,
                     )
 
+            self.current_candle = history_data[dk.pair][self.config['timeframe']].iloc[-1]['date']
+
     def load_all_pair_histories(self, timerange: TimeRange, dk: FreqaiDataKitchen) -> None:
         """
         Load pair histories for all whitelist and corr_pairlist pairs.
