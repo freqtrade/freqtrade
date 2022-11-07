@@ -25,7 +25,7 @@ def is_timed_out_error(error_line):
 
 def stop_bot(error_line):
     stop_bot_command = "python3 " + BrainConfig.FREQTRADE_PATH + "/wao/stop_bot.py " + str(
-        BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
+        BrainConfig.MODE) + " " + Config.BRAIN + " " + Config.COIN + " " + error_line.split("\n")[0].replace("_", "") \
                            .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
     result_log = subprocess.Popen([stop_bot_command],
                                   stdout=subprocess.PIPE,
