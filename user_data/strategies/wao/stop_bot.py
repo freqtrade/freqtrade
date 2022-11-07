@@ -21,7 +21,8 @@ else:
         broker = Binance_Future_Broker(notifier)
     else:
         broker = Binance_Spot_Broker(notifier)
-    broker.close_all_open_positions()
+
+    broker.close_all_open_positions_by_coin()
 
     notifier.send_stop_bot_message(reason)
 
