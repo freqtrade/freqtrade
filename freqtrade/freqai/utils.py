@@ -220,7 +220,7 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
         )
 
 
-def get_timerange_backtest_live_models(config: Config):
+def get_timerange_backtest_live_models(config: Config) -> str:
     """
     Returns a formated timerange for backtest live/ready models
     :param config: Configuration dictionary

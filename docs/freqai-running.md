@@ -88,7 +88,7 @@ The `--timerange` parameter must not be informed, as it will be automatically ca
 Each model has an identifier derived from the training end date. If you have only 1 model trained, FreqAI will backtest from the training end date until the current date. If you have more than 1 model, each model will perform the backtesting according to the training end date until the training end date of the next model and so on. For the last model, the period of the previous model will be used for the execution.
 
 !!! Note
-    Currently, there is no checking for expired models, even if the expired_hours parameter is set.
+    Currently, there is no checking for expired models, even if the `expired_hours` parameter is set.
 
 
 ### Downloading data to cover the full backtest period

@@ -804,7 +804,7 @@ class IFreqaiModel(ABC):
                                  train_it: int, total_trains: int):
         """
         Log the backtesting progress so user knows how many pairs have been trained and
-        hoe many more pairs/trains remain.
+        how many more pairs/trains remain.
         :param tr_train: the training timerange
         :param train_it: the train iteration for the current pair (the sliding window progress)
         :param pair: the current pair
