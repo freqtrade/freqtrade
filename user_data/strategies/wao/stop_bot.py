@@ -8,12 +8,13 @@ from execution.notifier import Notifier
 
 if len(sys.argv) < 3:
     exit("""Incorrect number of arguments. 
-    python3 stop_bot.py [mode:test/prod] [brain] [reason]
+    python3 stop_bot.py [mode:test/prod] [brain] [coin] [reason]
     """)
 else:
-    Config.BRAIN = str(sys.argv[2]) if str(sys.argv[2]).split("_")[0] == "Freq" else "Freq_" + str(sys.argv[2])
-    reason = str(sys.argv[3]).replace("_", "#") + " " + Config.COIN
     is_test_mode = sys.argv[1] == "test" or sys.argv[1] == "True"
+    Config.BRAIN = str(sys.argv[2]) if str(sys.argv[2]).split("_")[0] == "Freq" else "Freq_" + str(sys.argv[2])
+    coin = sys.argv[2]
+    reason = str(sys.argv[4]).replace("_", "#") + " " + coin
 
     notifier = Notifier(is_test_mode)
 
@@ -22,7 +23,7 @@ else:
     else:
         broker = Binance_Spot_Broker(notifier)
 
-    broker.close_all_open_positions_by_coin()
+    broker.close_all_open_positions_by_coin(coin)
 
     notifier.send_stop_bot_message(reason)
 
