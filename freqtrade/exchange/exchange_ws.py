@@ -6,6 +6,8 @@ from datetime import datetime
 from threading import Thread
 from typing import Dict, List, Set, Tuple
 
+import ccxt
+
 from freqtrade.constants import Config
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
@@ -70,13 +72,18 @@ class ExchangeWS():
 
     async def continuously_async_watch_ohlcv(
             self, pair: str, timeframe: str, candle_type: CandleType) -> None:
-
-        while (pair, timeframe, candle_type) in self._pairs_watching:
-            start = time.time()
-            data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
-            self.pairs_last_refresh[(pair, timeframe, candle_type)] = time.time()
-            # logger.info(
-            #     f"watch done {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
+        try:
+            while (pair, timeframe, candle_type) in self._pairs_watching:
+                start = time.time()
+                data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
+                self.pairs_last_refresh[(pair, timeframe, candle_type)] = time.time()
+                # logger.info(
+                #     f"watch done {pair}, {timeframe}, data {len(data)} "
+                #     f"in {time.time() - start:.2f}s")
+        except ccxt.BaseError:
+            logger.exception("Exception in continuously_async_watch_ohlcv")
+        finally:
+            self._pairs_watching.discard((pair, timeframe, candle_type))
 
     def schedule_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         self._pairs_watching.add((pair, timeframe, candle_type))
