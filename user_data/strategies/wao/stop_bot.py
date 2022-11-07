@@ -12,7 +12,7 @@ if len(sys.argv) < 3:
     """)
 else:
     Config.BRAIN = str(sys.argv[2]) if str(sys.argv[2]).split("_")[0] == "Freq" else "Freq_" + str(sys.argv[2])
-    reason = str(sys.argv[3]).replace("_", "#")
+    reason = str(sys.argv[3]).replace("_", "#") + " " + Config.COIN
     is_test_mode = sys.argv[1] == "test" or sys.argv[1] == "True"
 
     notifier = Notifier(is_test_mode)
