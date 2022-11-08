@@ -150,14 +150,20 @@ class Worker:
         if timeframe:
             next_tf = timeframe_to_next_date(timeframe)
             # Maximum throttling should be until new candle arrives
-            # Offset of 0.2s is added to ensure a new candle has been issued.
-            next_tf_with_offset = next_tf.timestamp() - time.time() + timeframe_offset
+            # Offset is added to ensure a new candle has been issued.
+            next_tft = next_tf.timestamp() - time.time()
+            next_tf_with_offset = next_tft + timeframe_offset
+            if next_tft < sleep_duration and sleep_duration < next_tf_with_offset:
+                # Avoid hitting a new loop between the new candle and the candle with offset
+                sleep_duration = next_tf_with_offset
             sleep_duration = min(sleep_duration, next_tf_with_offset)
         sleep_duration = max(sleep_duration, 0.0)
         # next_iter = datetime.now(timezone.utc) + timedelta(seconds=sleep_duration)
 
         logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
-                     f"last iteration took {time_passed:.2f} s.")
+                     f"last iteration took {time_passed:.2f} s."
+                     #  f"next: {next_iter}"
+                     )
         self._sleep(sleep_duration)
         return result
 
