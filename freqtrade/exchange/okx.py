@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
@@ -10,6 +10,7 @@ from freqtrade.exceptions import (DDosProtection, OperationalException, Retryabl
                                   TemporaryError)
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -179,14 +180,25 @@ class Okx(Exchange):
                 if orders_f:
                     order = orders_f[0]
                     if (order['status'] == 'closed'
-                            and order.get('info', {}).get('ordId') is not None):
+                            and (real_order_id := order.get('info', {}).get('ordId')) is not None):
                         # Once a order triggered, we fetch the regular followup order.
-                        return self.fetch_order(order['info']['ordId'], pair)
+                        order_reg = self.fetch_order(real_order_id, pair)
+                        self._log_exchange_response('fetch_stoploss_order1', order_reg)
+                        order_reg['id_stop'] = order_reg['id']
+                        order_reg['id'] = order_id
+                        order_reg['type'] = 'stop'
+                        order_reg['status_stop'] = 'triggered'
+                        return order_reg
                     return order
             except ccxt.BaseError:
                 logger.exception()
         raise RetryableOrderError(
                 f'StoplossOrder not found (pair: {pair} id: {order_id}).')
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if order['type'] == 'stop':
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
+        return order['id']
 
     def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         return self.cancel_order(
