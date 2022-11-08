@@ -1021,20 +1021,11 @@ class FreqaiDataKitchen:
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
-
-        # len_filler = len(dataframe) - len(self.full_df.index)  # startup_candle_count
-        # filler_df = pd.DataFrame(
-        #     np.zeros((len_filler, len(self.full_df.columns))), columns=self.full_df.columns
-        # )
-
-        # self.full_df = pd.concat([filler_df, self.full_df], axis=0, ignore_index=True)
-
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        # self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
-        # self.full_df = DataFrame()
-
         self.return_dataframe = pd.merge(dataframe[to_keep],
                                          self.full_df, how='left', on='date')
+        self.return_dataframe[self.full_df.columns] = (
+            self.return_dataframe[self.full_df.columns].fillna(value=0))
         self.full_df = DataFrame()
 
         return
@@ -1368,12 +1359,13 @@ class FreqaiDataKitchen:
 
         if file_exists:
             append_df = self.get_backtesting_prediction()
-            if len(append_df) == len_backtest_df:
+            if len(append_df) == len_backtest_df and 'date' in append_df:
                 logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
                 return True
             else:
                 logger.info("A new backtesting prediction file is required. "
-                            "(Number of predictions is different from dataframe length).")
+                            "(Number of predictions is different from dataframe length or "
+                            "old prediction file version).")
                 return False
         else:
             logger.info(
