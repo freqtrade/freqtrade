@@ -1014,7 +1014,7 @@ class FreqaiDataKitchen:
         if self.full_df.empty:
             self.full_df = append_df
         else:
-            self.full_df = pd.concat([self.full_df, append_df], axis=0)
+            self.full_df = pd.concat([self.full_df, append_df], axis=0, ignore_index=True)
 
     def fill_predictions(self, dataframe):
         """
