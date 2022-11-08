@@ -6,7 +6,8 @@ import ccxt
 from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.enums.pricetype import PriceType
-from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
+from freqtrade.exceptions import (DDosProtection, OperationalException, RetryableOrderError,
+                                  TemporaryError)
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
 
@@ -169,12 +170,23 @@ class Okx(Exchange):
         return params
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
-        # TODO: This does not work until the algo-order is actually triggered!
-        return self.fetch_order(
-            order_id=order_id,
-            pair=pair,
-            params={'stop': True}
-        )
+        params1 = {'stop': True, 'ordType': 'trigger'}
+        for method in (self._api.fetch_open_orders, self._api.fetch_closed_orders,
+                       self._api.fetch_canceled_orders):
+            try:
+                orders = method(pair, params=params1)
+                orders_f = [order for order in orders if order['id'] == order_id]
+                if orders_f:
+                    order = orders_f[0]
+                    if (order['status'] == 'closed'
+                            and order.get('info', {}).get('ordId') is not None):
+                        # Once a order triggered, we fetch the regular followup order.
+                        return self.fetch_order(order['info']['ordId'], pair)
+                    return order
+            except ccxt.BaseError:
+                logger.exception()
+        raise RetryableOrderError(
+                f'StoplossOrder not found (pair: {pair} id: {order_id}).')
 
     def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         return self.cancel_order(
