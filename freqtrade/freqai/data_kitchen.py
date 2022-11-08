@@ -979,7 +979,8 @@ class FreqaiDataKitchen:
         return weights
 
     def get_predictions_to_append(self, predictions: DataFrame,
-                                  do_predict: npt.ArrayLike) -> DataFrame:
+                                  do_predict: npt.ArrayLike,
+                                  dataframe_backtest: DataFrame) -> DataFrame:
         """
         Get backtest prediction from current backtest period
         """
@@ -1001,7 +1002,9 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
-        return append_df
+        dataframe_backtest.reset_index(drop=True, inplace=True)
+        merged_df = pd.concat([dataframe_backtest["date"], append_df], axis=1)
+        return merged_df
 
     def append_predictions(self, append_df: DataFrame) -> None:
         """
@@ -1019,15 +1022,19 @@ class FreqaiDataKitchen:
         when it goes back to the strategy. These rows are not included in the backtest.
         """
 
-        len_filler = len(dataframe) - len(self.full_df.index)  # startup_candle_count
-        filler_df = pd.DataFrame(
-            np.zeros((len_filler, len(self.full_df.columns))), columns=self.full_df.columns
-        )
+        # len_filler = len(dataframe) - len(self.full_df.index)  # startup_candle_count
+        # filler_df = pd.DataFrame(
+        #     np.zeros((len_filler, len(self.full_df.columns))), columns=self.full_df.columns
+        # )
 
-        self.full_df = pd.concat([filler_df, self.full_df], axis=0, ignore_index=True)
+        # self.full_df = pd.concat([filler_df, self.full_df], axis=0, ignore_index=True)
 
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
+        # self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
+        # self.full_df = DataFrame()
+
+        self.return_dataframe = pd.merge(dataframe[to_keep],
+                                         self.full_df, how='left', on='date')
         self.full_df = DataFrame()
 
         return

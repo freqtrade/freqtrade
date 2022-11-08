@@ -301,7 +301,7 @@ class IFreqaiModel(ABC):
                     self.model = self.dd.load_data(pair, dk)
 
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
-                append_df = dk.get_predictions_to_append(pred_df, do_preds)
+                append_df = dk.get_predictions_to_append(pred_df, do_preds, dataframe_backtest)
                 dk.append_predictions(append_df)
                 dk.save_backtesting_prediction(append_df)
 
