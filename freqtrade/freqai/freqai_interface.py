@@ -827,37 +827,31 @@ class IFreqaiModel(ABC):
             )
 
     def backtesting_fit_live_predictions(self, dk: FreqaiDataKitchen):
-        start_time = time.perf_counter()
+        """
+        Apply fit_live_predictions function in backtesting with a dummy historic_predictions
+        :param dk: datakitchen object
+        """
         fit_live_predictions_candles = self.freqai_info.get("fit_live_predictions_candles", 0)
         if fit_live_predictions_candles:
-            predictions_columns = [col for col in dk.full_df.columns if (
+            label_columns = [col for col in dk.full_df.columns if (
                 col.startswith("&") and
-                '_mean' not in col and
-                '_std' not in col and
+                not (col.startswith("&") and col.endswith("_mean")) and
+                not (col.startswith("&") and col.endswith("_std")) and
                 col not in self.dk.data["extra_returns_per_train"])
             ]
             self.dd.historic_predictions[self.dk.pair] = pd.DataFrame(
                 columns=dk.full_df.columns).astype(dk.full_df.dtypes)
 
-            # for index, row in dk.full_df.iterrows():
             for index in range(len(dk.full_df)):
-                if index > fit_live_predictions_candles:
+                if index >= fit_live_predictions_candles:
                     self.dd.historic_predictions[self.dk.pair] = (
-                        dk.full_df.iloc[index - fit_live_predictions_candles + 1:index + 1])
+                        dk.full_df.iloc[index - fit_live_predictions_candles:index])
                 else:
-                    self.dd.historic_predictions[self.dk.pair] = dk.full_df.iloc[:index + 1]
-                # self.dd.historic_predictions[self.dk.pair].loc[index] = row.values.tolist()
-                # pd.concat(self.dd.historic_predictions[self.dk.pair], row.values)
+                    self.dd.historic_predictions[self.dk.pair] = dk.full_df.iloc[:index]
+
                 self.fit_live_predictions(self.dk, self.dk.pair)
-                if index > fit_live_predictions_candles:
-                    print(index)
-
-                if index <= fit_live_predictions_candles:
-                    dk.full_df.at[index, "warmed_up"] = 0
-                else:
-                    dk.full_df.at[index, "warmed_up"] = 1
-
-                    for label in predictions_columns:
+                if index >= fit_live_predictions_candles:
+                    for label in label_columns:
                         if dk.full_df[label].dtype == object:
                             continue
                         if "labels_mean" in self.dk.data:
@@ -869,13 +863,8 @@ class IFreqaiModel(ABC):
                     for extra_col in self.dk.data["extra_returns_per_train"]:
                         dk.full_df.at[index, f"{extra_col}"] = (
                             self.dk.data["extra_returns_per_train"][extra_col])
-
-        end_time = time.perf_counter()
-        logger.info(f"Downloaded the tutorial in {start_time - end_time:0.4f} seconds")
-
-        # print(f"Downloaded the tutorial in {start_time - end_time:0.4f} seconds")
-
         return
+
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 
