@@ -15,9 +15,7 @@
     // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "ftuser",
 
-    "postCreateCommand": "ln -s /freqtrade/.env /workspaces/freqtrade/.env && freqtrade create-userdir --userdir user_data/",
-
-    "workspaceFolder": "/workspaces/freqtrade",
+    "postCreateCommand": "ln -s /freqtrade/.env /workspaces/freqtrade/.env && freqtrade create-userdir --userdir user_data/",    
 
     "settings": {
         "terminal.integrated.shell.linux": "/bin/bash",
@@ -35,7 +33,6 @@
         "ms-python.vscode-pylance",
         "davidanson.vscode-markdownlint",
         "ms-azuretools.vscode-docker",
-        "vscode-icons-team.vscode-icons",
-        "github.copilot",
+        "vscode-icons-team.vscode-icons",        
     ],
 }
