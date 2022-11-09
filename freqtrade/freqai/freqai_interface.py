@@ -829,6 +829,8 @@ class IFreqaiModel(ABC):
     def backtesting_fit_live_predictions(self, dk: FreqaiDataKitchen):
         """
         Apply fit_live_predictions function in backtesting with a dummy historic_predictions
+        The loop is required to simulate dry/live operation, as it is not possible to predict
+        the type of logic implemented by the user.
         :param dk: datakitchen object
         """
         fit_live_predictions_candles = self.freqai_info.get("fit_live_predictions_candles", 0)
@@ -839,8 +841,6 @@ class IFreqaiModel(ABC):
                 not (col.startswith("&") and col.endswith("_std")) and
                 col not in self.dk.data["extra_returns_per_train"])
             ]
-            self.dd.historic_predictions[self.dk.pair] = pd.DataFrame(
-                columns=dk.full_df.columns).astype(dk.full_df.dtypes)
 
             for index in range(len(dk.full_df)):
                 if index >= fit_live_predictions_candles:
