@@ -164,14 +164,17 @@ class Okx(Exchange):
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
 
-        params = super()._get_stop_params(side, ordertype, stop_price)
+        params = self._params.copy()
+        # Verify if stopPrice works for your exchange!
+        params.update({'stopLossPrice': stop_price})
+
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params['tdMode'] = self.margin_mode.value
             params['posSide'] = self._get_posSide(side, True)
         return params
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
-        params1 = {'stop': True, 'ordType': 'trigger'}
+        params1 = {'stop': True, 'ordType': 'conditional'}
         for method in (self._api.fetch_open_orders, self._api.fetch_closed_orders,
                        self._api.fetch_canceled_orders):
             try:
@@ -204,5 +207,5 @@ class Okx(Exchange):
         return self.cancel_order(
             order_id=order_id,
             pair=pair,
-            params={'stop': True}
+            params={'ordType': 'conditional'}
         )
