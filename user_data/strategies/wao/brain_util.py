@@ -56,9 +56,9 @@ def perform_create_429_watcher():
     observer.join()
 
 
-def perform_create_error_watcher():
+def perform_create_error_watcher(notifier):
     print("perform_create_error_watcher: watching:- " + str(BrainConfig._WAO_LOGS_DIRECTORY))
-    event_handler = Error_Watcher()
+    event_handler = Error_Watcher(notifier)
     observer = watchdog.observers.Observer()
     observer.schedule(event_handler, path=BrainConfig._WAO_LOGS_DIRECTORY, recursive=True)
     # Start the observer
@@ -72,12 +72,12 @@ def perform_create_error_watcher():
     observer.join()
 
 
-def create_watchers():
+def create_watchers(notifier):
     if Config.ENABLE_429_SOLUTION:
         __create_429_directory()
         __create_429_watcher()
     if BrainConfig.IS_ERROR_WATCHER_ENABLED:
-        __create_error_watcher()
+        __create_error_watcher(notifier)
 
 
 def clear_cumulative_value():
@@ -106,8 +106,8 @@ def __create_429_directory():
         os.mkdir(BrainConfig._429_DIRECTORY)
 
 
-def __create_error_watcher():
-    threading.Thread(target=perform_create_error_watcher).start()
+def __create_error_watcher(notifier):
+    threading.Thread(target=perform_create_error_watcher, args=(notifier,)).start()
 
 
 def __create_429_watcher():

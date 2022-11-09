@@ -5,7 +5,6 @@ import watchdog.events
 import watchdog.observers
 import time
 
-from wao.notifier import post_request
 from wao.brain_config import BrainConfig
 
 from execution.config import Config
@@ -63,19 +62,17 @@ def get_tail_cmd_result(file_name):
     return string_to_list(out_put_string)
 
 
-def check_condition(file_name):
-    threading.Thread(target=__check_condition, args=(file_name,)).start()
-
-
-def __check_condition(file_name):
+def check_error_condition(file_name):
     error_line = get_error_line(file_name)
+
     if error_line is not None and not is_freqtrade_error(error_line) and not is_timed_out_error(error_line):
-        is_throttle_hit = time.time() - BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
-        if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED and is_throttle_hit:
+        is_error_watcher_throttle_hit = time.time() - BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
+
+        if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED and is_error_watcher_throttle_hit:
             smooth_romeo_restart(error_line)
         else:
             stop_bot(error_line)
-            send_to_trello(title= "[STOPBOT] "+error_line, description= "is_throttle_hit=" + str(is_throttle_hit) + " " + error_line)
+            send_to_trello(title="[STOPBOT] "+error_line, description="is_error_watcher_throttle_hit=" + str(is_error_watcher_throttle_hit) + " " + error_line)
         BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS = time.time()
 
 
@@ -113,14 +110,16 @@ def send_to_trello(title, description):
 
 class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
-    def __init__(self):
-        watchdog.events.PatternMatchingEventHandler.__init__(self,
-                                                             ignore_directories=False, case_sensitive=False)
-
+    def __init__(self, notifier):
+        watchdog.events.PatternMatchingEventHandler.__init__(self, ignore_directories=False, case_sensitive=False)
+        self.notifier = notifier
+        
     def on_created(self, event):
-        file_name = str(event.src_path)
-        check_condition(file_name)
+        self.__check_error_condition(event)
 
     def on_modified(self, event):
+        self.__check_error_condition(event)
+        
+    def __check_error_condition(self, event):
         file_name = str(event.src_path)
-        check_condition(file_name)
+        threading.Thread(target=check_error_condition, args=(file_name, self.notifier)).start()

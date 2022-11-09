@@ -3,8 +3,8 @@ import watchdog.events
 import watchdog.observers
 import os
 from pathlib import Path
-
-from wao.notifier import post_request
+from wao.brain_config import BrainConfig
+from execution.notifier import Notifier
 
 
 class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
@@ -19,7 +19,8 @@ class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
             content = Path(file).read_text()
             time.sleep(1)  # this sleep makes the watcher wait to avoid overlapping
             print("sending message on: "+str(content))
-            post_request(str(content), True)
+            notifier = Notifier(BrainConfig.MODE)
+            notifier.post_request(str(content))
 
     # def on_modified(self, event):
     #     print("_429_Watcher:on_modified: file name = " + str(event.src_path))
