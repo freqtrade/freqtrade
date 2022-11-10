@@ -21,7 +21,11 @@ class Bybit(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
-        "ccxt_futures_name": "linear"
+        "ccxt_futures_name": "linear",
+        "ohlcv_has_history": False,
+    }
+    _ft_has_futures: Dict = {
+        "ohlcv_has_history": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
