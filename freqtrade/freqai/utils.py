@@ -230,5 +230,4 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     dk = FreqaiDataKitchen(config)
     models_path = dk.get_full_models_path(config)
     timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
-    tr = f"{timerange.startdt.strftime('%Y%m%d')}-{timerange.stopdt.strftime('%Y%m%d')}"
-    return tr
+    return timerange.timerange_str

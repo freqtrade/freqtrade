@@ -8,6 +8,7 @@ from typing import Optional
 
 import arrow
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
 
 
@@ -40,6 +41,40 @@ class TimeRange:
         if self.stopts:
             return datetime.fromtimestamp(self.stopts, tz=timezone.utc)
         return None
+
+    @property
+    def timerange_str(self) -> str:
+        """
+        Returns a string representation of the timerange as used by parse_timerange.
+        Follows the format yyyymmdd-yyyymmdd - leaving out the parts that are not set.
+        """
+        start = ''
+        stop = ''
+        if startdt := self.startdt:
+            start = startdt.strftime('%Y%m%d')
+        if stopdt := self.stopdt:
+            stop = stopdt.strftime('%Y%m%d')
+        return f"{start}-{stop}"
+
+    @property
+    def start_fmt(self) -> str:
+        """
+        Returns a string representation of the start date
+        """
+        val = 'unbounded'
+        if (startdt := self.startdt) is not None:
+            val = startdt.strftime(DATETIME_PRINT_FORMAT)
+        return val
+
+    @property
+    def stop_fmt(self) -> str:
+        """
+        Returns a string representation of the stop date
+        """
+        val = 'unbounded'
+        if (stopdt := self.stopdt) is not None:
+            val = stopdt.strftime(DATETIME_PRINT_FORMAT)
+        return val
 
     def __eq__(self, other):
         """Override the default Equals behavior"""

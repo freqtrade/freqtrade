@@ -432,9 +432,7 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            start = timerange_train.startdt
-            stop = timerange_train.stopdt
-            tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_training_list.append(timerange_train.timerange_str)
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
             # associated backtest period
@@ -446,9 +444,7 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            start = timerange_backtest.startdt
-            stop = timerange_backtest.stopdt
-            tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_backtesting_list.append(timerange_backtest.timerange_str)
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
             # ensure we are predicting on exactly same amount of data as requested by user defined
@@ -1055,9 +1051,7 @@ class FreqaiDataKitchen:
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
         )
-        start = backtest_timerange.startdt
-        stop = backtest_timerange.stopdt
-        full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
+        full_timerange = backtest_timerange.timerange_str
         config_path = Path(self.config["config_files"][0])
 
         if not self.full_path.is_dir():
