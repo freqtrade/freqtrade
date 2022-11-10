@@ -3,7 +3,6 @@ Functions to convert data from one format to another
 """
 import itertools
 import logging
-from datetime import datetime, timezone
 from operator import itemgetter
 from typing import Dict, List
 
@@ -137,11 +136,9 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
         df = df.iloc[startup_candles:, :]
     else:
         if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-            df = df.loc[df[df_date_col] >= start, :]
+            df = df.loc[df[df_date_col] >= timerange.startdt, :]
     if timerange.stoptype == 'date':
-        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df[df_date_col] <= stop, :]
+        df = df.loc[df[df_date_col] <= timerange.stopdt, :]
     return df
 
 

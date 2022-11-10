@@ -33,11 +33,13 @@ class TimeRange:
     def startdt(self) -> Optional[datetime]:
         if self.startts:
             return datetime.fromtimestamp(self.startts, tz=timezone.utc)
+        return None
 
     @property
     def stopdt(self) -> Optional[datetime]:
         if self.stopts:
             return datetime.fromtimestamp(self.stopts, tz=timezone.utc)
+        return None
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
