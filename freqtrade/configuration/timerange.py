@@ -3,7 +3,7 @@ This module contains the argument manager class
 """
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import arrow
@@ -28,6 +28,16 @@ class TimeRange:
         self.stoptype: Optional[str] = stoptype
         self.startts: int = startts
         self.stopts: int = stopts
+
+    @property
+    def startdt(self) -> Optional[datetime]:
+        if self.startts:
+            return datetime.fromtimestamp(self.startts, tz=timezone.utc)
+
+    @property
+    def stopdt(self) -> Optional[datetime]:
+        if self.stopts:
+            return datetime.fromtimestamp(self.stopts, tz=timezone.utc)
 
     def __eq__(self, other):
         """Override the default Equals behavior"""

@@ -1,4 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
+from datetime import datetime, timezone
+
 import arrow
 import pytest
 
@@ -18,6 +20,10 @@ def test_parse_timerange_incorrect():
     assert TimeRange(None, 'date', 0, 1233360000) == TimeRange.parse_timerange('-1233360000')
     timerange = TimeRange.parse_timerange('1231006505-1233360000')
     assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
+    assert isinstance(timerange.startdt, datetime)
+    assert isinstance(timerange.stopdt, datetime)
+    assert timerange.startdt == datetime.fromtimestamp(1231006505, tz=timezone.utc)
+    assert timerange.stopdt == datetime.fromtimestamp(1233360000, tz=timezone.utc)
 
     timerange = TimeRange.parse_timerange('1231006505000-1233360000000')
     assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
@@ -45,6 +51,7 @@ def test_subtract_start():
     x = TimeRange(None, 'date', 0, 1438214400)
     x.subtract_start(300)
     assert not x.startts
+    assert not x.startdt
 
     x = TimeRange('date', None, 1274486400, 0)
     x.subtract_start(300)
