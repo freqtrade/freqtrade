@@ -1,5 +1,6 @@
 # Include all requirements to run the bot.
 -r requirements.txt
+-r requirements-plot.txt
 
 # Required for freqai
 scikit-learn==1.1.3
