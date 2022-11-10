@@ -15,7 +15,8 @@
     // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "ftuser",
 
-    "postCreateCommand": "pip install --user -e . && freqtrade create-userdir --userdir user_data/",
+    "onCreateCommand": "pip install --user -e .",
+    "postCreateCommand": "freqtrade create-userdir --userdir user_data/",
 
     "workspaceFolder": "/workspaces/freqtrade",
 
