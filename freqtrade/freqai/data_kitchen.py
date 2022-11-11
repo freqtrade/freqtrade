@@ -1352,8 +1352,8 @@ class FreqaiDataKitchen:
         """
         Ensure all values are float32
         """
-        start_mem = df.memory_usage().sum() / 1024**2
-        print("Memory usage of dataframe is {:.2f} MB".format(start_mem))
+        logger.debug(f"Memory usage of dataframe is "
+                     f"{df.memory_usage().sum() / 1024**2:.2f} MB")
 
         df_dtypes = df.dtypes
         for column, dtype in df_dtypes.items():
@@ -1365,8 +1365,7 @@ class FreqaiDataKitchen:
                 df_dtypes[column] = np.int32
         df = df.astype(df_dtypes)
 
-        end_mem = df.memory_usage().sum() / 1024**2
-        print("Memory usage after optimization is: {:.2f} MB".format(end_mem))
-        print("Decreased by {:.1f}%".format(100 * (start_mem - end_mem) / start_mem))
+        logger.debug(f"Memory usage after optimization is: "
+                     f"{df.memory_usage().sum() / 1024**2:.2f} MB")
 
         return df
