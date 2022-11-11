@@ -87,6 +87,7 @@ class FreqaiDataDrawer:
             self.create_follower_dict()
         self.load_drawer_from_disk()
         self.load_historic_predictions_from_disk()
+        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
         self.load_metric_tracker_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
@@ -97,7 +98,6 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
-        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
@@ -153,6 +153,7 @@ class FreqaiDataDrawer:
             if exists:
                 with open(self.metric_tracker_path, "r") as fp:
                     self.metric_tracker = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
+                logger.info("Loading existing metric tracker from disk.")
             else:
                 logger.info("Could not find existing metric tracker, starting from scratch")
 
