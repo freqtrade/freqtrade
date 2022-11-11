@@ -26,7 +26,7 @@ BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'profit_ratio', 'profit_abs', 'exit_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
                    'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'enter_tag',
-                   'is_short', 'open_timestamp', 'close_timestamp', 'orders'
+                   'leverage', 'is_short', 'open_timestamp', 'close_timestamp', 'orders'
                    ]
 
 
@@ -280,6 +280,8 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
             # Compatibility support for pre short Columns
             if 'is_short' not in df.columns:
                 df['is_short'] = 0
+            if 'leverage' not in df.columns:
+                df['leverage'] = 1.0
             if 'enter_tag' not in df.columns:
                 df['enter_tag'] = df['buy_tag']
                 df = df.drop(['buy_tag'], axis=1)

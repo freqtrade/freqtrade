@@ -175,6 +175,10 @@ print(res)
 
 ## FTX
 
+!!! Warning
+    Due to the current situation, we can no longer recommend FTX.
+    Please make sure to investigate the current situation before depositing any funds to FTX.
+
 !!! Tip "Stoploss on Exchange"
     FTX supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
     You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type of stoploss shall be used.

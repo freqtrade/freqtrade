@@ -5305,7 +5305,7 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 ])
 def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls, time_machine,
                                       t1, t2):
-    time_machine.move_to(f"{t1} +00:00")
+    time_machine.move_to(f"{t1} +00:00", tick=False)
 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -5314,7 +5314,7 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
     default_conf['margin_mode'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    time_machine.move_to(f"{t2} +00:00")
+    time_machine.move_to(f"{t2} +00:00", tick=False)
     # Check schedule jobs in debugging with freqtrade._schedule.jobs
     freqtrade._schedule.run_pending()
 

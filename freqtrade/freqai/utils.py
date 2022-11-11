@@ -218,3 +218,19 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
             default=str,
             number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
         )
+
+
+def get_timerange_backtest_live_models(config: Config) -> str:
+    """
+    Returns a formated timerange for backtest live/ready models
+    :param config: Configuration dictionary
+
+    :return: a string timerange (format example: '20220801-20220822')
+    """
+    dk = FreqaiDataKitchen(config)
+    models_path = dk.get_full_models_path(config)
+    timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
+    start_date = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+    end_date = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+    tr = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+    return tr
