@@ -576,6 +576,9 @@ class Exchange:
             self._markets = self._api.load_markets(reload=True, params={})
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
+            if self._exchange_ws:
+                # Set markets to avoid reloading on websocket api
+                self._ws_async.set_markets(self._api.markets, self._api.currencies)
             self._last_markets_refresh = dt_ts()
             self.fill_leverage_tiers()
         except ccxt.BaseError:
