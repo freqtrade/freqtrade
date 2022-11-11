@@ -79,8 +79,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     ('LightGBMRegressorMultiTarget', "freqai_test_multimodel_strat"),
     ('XGBoostRegressorMultiTarget', "freqai_test_multimodel_strat"),
     ('CatboostRegressorMultiTarget', "freqai_test_multimodel_strat"),
-    # ('LightGBMClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
-    # ('XGBoostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
+    ('LightGBMClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
