@@ -208,12 +208,16 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
-    can_short = True
+    can_short = False
 
     linear_roi_offset = DecimalParameter(
         0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
     )
-    max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
+    # max roi time long in minutes
+    # max_roi_time_long = IntParameter(0, 800, default=341, space="sell", optimize=True, load=True)  # BTC
+    max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=True, load=False)
+    entry_thr = DecimalParameter(0.5, 1.0, default=0.7, space="buy", optimize=True, load=False)
+    exit_thr = DecimalParameter(0.5, 1.0, default=0.7, space="sell", optimize=True, load=False)
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
@@ -360,7 +364,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         hours_candle_stability = 4
         if df["do_predict"].rolling(12 * hours_candle_stability).sum().iloc[-1] == 12 * hours_candle_stability:  # enter the market if last `hours_candle_stability` are stable
-            enter_long_conditions = [df["do_predict"] == 1, df["min"] >= self.minima_threhsold]
+            enter_long_conditions = [df["do_predict"] == 1, df["min"] >= self.entry_thr.value]
 
             if enter_long_conditions:
                 df.loc[
@@ -368,7 +372,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
                 ] = (1, "long")
 
             if self.can_short:
-                enter_short_conditions = [df["do_predict"] == 1, df["max"] >= self.maxima_threhsold]
+                enter_short_conditions = [df["do_predict"] == 1, df["max"] >= self.exit_thr.value]
 
                 if enter_short_conditions:
                     df.loc[
@@ -379,13 +383,13 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [df["do_predict"] == 1, df["max"] >= self.maxima_threhsold]
+        exit_long_conditions = [df["do_predict"] == 1, df["max"] >= self.exit_thr.value]
         if exit_long_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_long_conditions),
                    ["exit_long", "exit_tag"]] = (1, "exit signal")
 
         if self.can_short:
-            exit_short_conditions = [df["do_predict"] == 1, df["min"] >= self.minima_threhsold]
+            exit_short_conditions = [df["do_predict"] == 1, df["min"] >= self.entry_thr.value]
             if exit_short_conditions:
                 df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
         return df
@@ -409,7 +413,9 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         if dataframe["do_predict"].iloc[-1] != 1:
             return f"OOD_{trade.enter_tag}_Exit"
 
-        if (current_time - trade.open_date_utc).seconds > self.max_roi_time_long.value * 60:
+        time_alpha = (1 + current_profit / (self.minimal_roi[0] - self.stoploss))
+        time_alpha = 1.
+        if (current_time - trade.open_date_utc).seconds > (self.max_roi_time_long.value * 60 * time_alpha):
             return f"{trade.enter_tag}_Expired"
 
     def confirm_trade_exit(
