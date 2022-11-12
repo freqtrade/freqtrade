@@ -19,6 +19,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
+from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -1275,8 +1276,8 @@ class FreqaiDataKitchen:
 
         dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
-        if self.freqai_config.get('convert_df_to_float32', False):
-            dataframe = self.reduce_dataframe_footprint(dataframe)
+        if self.config.get('convert_df_to_32bit', False):
+            dataframe = reduce_dataframe_footprint(dataframe)
 
         return dataframe
 
@@ -1492,25 +1493,3 @@ class FreqaiDataKitchen:
             dataframe.columns = dataframe.columns.str.replace(c, "")
 
         return dataframe
-
-    def reduce_dataframe_footprint(self, df: DataFrame) -> DataFrame:
-        """
-        Ensure all values are float32
-        """
-        logger.debug(f"Memory usage of dataframe is "
-                     f"{df.memory_usage().sum() / 1024**2:.2f} MB")
-
-        df_dtypes = df.dtypes
-        for column, dtype in df_dtypes.items():
-            if column in ['open', 'high', 'low', 'close', 'volume']:
-                continue
-            if dtype == np.float64:
-                df_dtypes[column] = np.float32
-            elif dtype == np.int64:
-                df_dtypes[column] = np.int32
-        df = df.astype(df_dtypes)
-
-        logger.debug(f"Memory usage after optimization is: "
-                     f"{df.memory_usage().sum() / 1024**2:.2f} MB")
-
-        return df
