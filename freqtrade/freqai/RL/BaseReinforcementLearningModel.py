@@ -234,17 +234,29 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         output = pd.DataFrame(np.zeros(len(dataframe)), columns=dk.label_list)
 
         def _predict(window):
-            market_side, current_profit, trade_duration = self.get_state_info(dk.pair)
             observations = dataframe.iloc[window.index]
-            observations['current_profit_pct'] = current_profit
-            observations['position'] = market_side
-            observations['trade_duration'] = trade_duration
+            if self.live:  # self.guard_state_info_if_backtest():
+                market_side, current_profit, trade_duration = self.get_state_info(dk.pair)
+                observations['current_profit_pct'] = current_profit
+                observations['position'] = market_side
+                observations['trade_duration'] = trade_duration
             res, _ = model.predict(observations, deterministic=True)
             return res
 
         output = output.rolling(window=self.CONV_WIDTH).apply(_predict)
 
         return output
+
+    # def guard_state_info_if_backtest(self):
+    #     """
+    #     Ensure that backtesting mode doesnt try to use state information.
+    #     """
+    #     if self.rl_config('add_state_info', False) and not self.live:
+    #         logger.warning('Backtesting with state info is currently unavailable '
+    #                        'turning it off.')
+    #         self.rl_config['add_state_info'] = False
+
+    #     return not self.rl_config['add_state_info']
 
     def build_ohlc_price_dataframes(self, data_dictionary: dict,
                                     pair: str, dk: FreqaiDataKitchen) -> Tuple[DataFrame,
