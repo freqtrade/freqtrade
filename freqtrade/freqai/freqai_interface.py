@@ -15,6 +15,7 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -99,7 +100,7 @@ class IFreqaiModel(ABC):
         self.get_corr_dataframes: bool = True
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
-        self.strategy: Optional[IStrategy] = None
+        self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
         record_params(config, self.full_path)
@@ -129,7 +130,7 @@ class IFreqaiModel(ABC):
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
-        self.strategy = strategy
+        self.data_provider = strategy.dp
 
         if self.live:
             self.inference_timer('start')

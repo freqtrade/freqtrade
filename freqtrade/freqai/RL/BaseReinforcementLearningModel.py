@@ -177,10 +177,10 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         trade_duration = 0
         for trade in open_trades:
             if trade.pair == pair:
-                if self.strategy.dp._exchange is None:  # type: ignore
+                if self.data_provider._exchange is None:  # type: ignore
                     logger.error('No exchange available.')
                 else:
-                    current_value = self.strategy.dp._exchange.get_rate(  # type: ignore
+                    current_value = self.data_provider._exchange.get_rate(  # type: ignore
                                 pair, refresh=False, side="exit", is_short=trade.is_short)
                 openrate = trade.open_rate
                 now = datetime.now(timezone.utc).timestamp()
