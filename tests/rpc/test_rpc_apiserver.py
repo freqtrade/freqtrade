@@ -1460,6 +1460,7 @@ def test_api_strategies(botclient, tmpdir):
         'StrategyTestV3CustomEntryPrice',
         'StrategyTestV3Futures',
         'freqai_test_classifier',
+        'freqai_test_multimodel_classifier_strat',
         'freqai_test_multimodel_strat',
         'freqai_test_strat'
     ]}

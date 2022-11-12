@@ -78,17 +78,19 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-@pytest.mark.parametrize('model', [
-    'LightGBMRegressorMultiTarget',
-    'XGBoostRegressorMultiTarget',
-    'CatboostRegressorMultiTarget',
+@pytest.mark.parametrize('model, strat', [
+    ('LightGBMRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('XGBoostRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('CatboostRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('LightGBMClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
+    ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
-def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
-    if is_arm() and model == 'CatboostRegressorMultiTarget':
+def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
+    if is_arm() and 'Catboost' in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
+    freqai_conf.update({"strategy": strat})
     freqai_conf.update({"freqaimodel": model})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
