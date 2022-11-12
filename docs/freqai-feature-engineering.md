@@ -2,7 +2,10 @@
 
 ## Defining the features
 
-Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%`, while labels/targets are prepended with `&`.
+Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%-{pair}`, while labels/targets are prepended with `&`.
+
+!!! Note
+    Adding the full pair string, e.g. XYZ/USD, in the feature name enables improved performance for dataframe caching on the backend. If you decide *not* to add the full pair string in the feature string, FreqAI will operate in a reduced performance mode.
 
 Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
 
@@ -15,7 +18,7 @@ It is advisable to start from the template `populate_any_indicators()` in the so
         """
         Function designed to automatically generate, name, and merge features
         from user-indicated timeframes in the configuration file. The user controls the indicators
-        passed to the training/prediction by prepending indicators with `'%-' + coin `
+        passed to the training/prediction by prepending indicators with `'%-' + pair `
         (see convention below). I.e., the user should not prepend any supporting metrics
         (e.g., bb_lowerband below) with % unless they explicitly want to pass that metric to the
         model.
@@ -23,10 +26,7 @@ It is advisable to start from the template `populate_any_indicators()` in the so
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
         :param informative: the dataframe associated with the informative pair
-        :param coin: the name of the coin which will modify the feature names.
         """
-
-        coin = pair.split('/')[0]
 
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
@@ -34,26 +34,26 @@ It is advisable to start from the template `populate_any_indicators()` in the so
         # first loop is automatically duplicating indicators for time periods
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
             bollinger = qtpylib.bollinger_bands(
                 qtpylib.typical_price(informative), window=t, stds=2.2
             )
-            informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
-            informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
-            informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
+            informative[f"{pair}bb_lowerband-period_{t}"] = bollinger["lower"]
+            informative[f"{pair}bb_middleband-period_{t}"] = bollinger["mid"]
+            informative[f"{pair}bb_upperband-period_{t}"] = bollinger["upper"]
 
-            informative[f"%-{coin}bb_width-period_{t}"] = (
-                informative[f"{coin}bb_upperband-period_{t}"]
-                - informative[f"{coin}bb_lowerband-period_{t}"]
-            ) / informative[f"{coin}bb_middleband-period_{t}"]
-            informative[f"%-{coin}close-bb_lower-period_{t}"] = (
-                informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
+            informative[f"%-{pair}bb_width-period_{t}"] = (
+                informative[f"{pair}bb_upperband-period_{t}"]
+                - informative[f"{pair}bb_lowerband-period_{t}"]
+            ) / informative[f"{pair}bb_middleband-period_{t}"]
+            informative[f"%-{pair}close-bb_lower-period_{t}"] = (
+                informative["close"] / informative[f"{pair}bb_lowerband-period_{t}"]
             )
 
-            informative[f"%-{coin}relative_volume-period_{t}"] = (
+            informative[f"%-{pair}relative_volume-period_{t}"] = (
                 informative["volume"] / informative["volume"].rolling(t).mean()
             )
 

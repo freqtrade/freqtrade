@@ -1,7 +1,7 @@
 import copy
 import logging
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from math import cos, sin
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -81,19 +81,25 @@ class FreqaiDataKitchen:
         self.svm_model: linear_model.SGDOneClassSVM = None
         self.keras: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
-        if not self.live:
-            if not self.config["timerange"]:
-                raise OperationalException(
-                    'Please pass --timerange if you intend to use FreqAI for backtesting.')
-            self.full_timerange = self.create_fulltimerange(
-                self.config["timerange"], self.freqai_config.get("train_period_days", 0)
-            )
+        self.backtest_live_models = config.get("freqai_backtest_live_models", False)
 
-            (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
-                self.full_timerange,
-                config["freqai"]["train_period_days"],
-                config["freqai"]["backtest_period_days"],
-            )
+        if not self.live:
+            self.full_path = self.get_full_models_path(self.config)
+
+            if self.backtest_live_models:
+                if self.pair:
+                    self.set_timerange_from_ready_models()
+                    (self.training_timeranges,
+                     self.backtesting_timeranges) = self.split_timerange_live_models()
+            else:
+                self.full_timerange = self.create_fulltimerange(
+                    self.config["timerange"], self.freqai_config.get("train_period_days", 0)
+                )
+                (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
+                    self.full_timerange,
+                    config["freqai"]["train_period_days"],
+                    config["freqai"]["backtest_period_days"],
+                )
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         if not self.freqai_config.get("data_kitchen_thread_count", 0):
@@ -103,6 +109,7 @@ class FreqaiDataKitchen:
         self.train_dates: DataFrame = pd.DataFrame()
         self.unique_classes: Dict[str, list] = {}
         self.unique_class_list: list = []
+        self.backtest_live_models_data: Dict[str, Any] = {}
 
     def set_paths(
         self,
@@ -114,10 +121,7 @@ class FreqaiDataKitchen:
         :param metadata: dict = strategy furnished pair metadata
         :param trained_timestamp: int = timestamp of most recent training
         """
-        self.full_path = Path(
-            self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
-        )
-
+        self.full_path = self.get_full_models_path(self.config)
         self.data_path = Path(
             self.full_path
             / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
@@ -248,7 +252,7 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
-            if len(self.data['constant_features_list']):
+            if 'constant_features_list' in self.data and len(self.data['constant_features_list']):
                 filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
@@ -458,6 +462,29 @@ class FreqaiDataKitchen:
 
         # print(tr_training_list, tr_backtesting_list)
         return tr_training_list_timerange, tr_backtesting_list_timerange
+
+    def split_timerange_live_models(
+        self
+    ) -> Tuple[list, list]:
+
+        tr_backtesting_list_timerange = []
+        asset = self.pair.split("/")[0]
+        if asset not in self.backtest_live_models_data["assets_end_dates"]:
+            raise OperationalException(
+                f"Model not available for pair {self.pair}. "
+                "Please, try again after removing this pair from the configuration file."
+            )
+        asset_data = self.backtest_live_models_data["assets_end_dates"][asset]
+        backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
+        model_end_dates = [x for x in asset_data]
+        model_end_dates.append(backtesting_timerange.stopts)
+        model_end_dates.sort()
+        for index, item in enumerate(model_end_dates):
+            if len(model_end_dates) > (index + 1):
+                tr_to_add = TimeRange("date", "date", item, model_end_dates[index + 1])
+                tr_backtesting_list_timerange.append(tr_to_add)
+
+        return tr_backtesting_list_timerange, tr_backtesting_list_timerange
 
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """
@@ -966,11 +993,13 @@ class FreqaiDataKitchen:
             append_df[label] = predictions[label]
             if append_df[label].dtype == object:
                 continue
-            append_df[f"{label}_mean"] = self.data["labels_mean"][label]
-            append_df[f"{label}_std"] = self.data["labels_std"][label]
+            if "labels_mean" in self.data:
+                append_df[f"{label}_mean"] = self.data["labels_mean"][label]
+            if "labels_std" in self.data:
+                append_df[f"{label}_std"] = self.data["labels_std"][label]
 
         for extra_col in self.data["extra_returns_per_train"]:
-            append_df["{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
+            append_df[f"{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
 
         append_df["do_predict"] = do_predict
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
@@ -1035,11 +1064,6 @@ class FreqaiDataKitchen:
         start = datetime.fromtimestamp(backtest_timerange.startts, tz=timezone.utc)
         stop = datetime.fromtimestamp(backtest_timerange.stopts, tz=timezone.utc)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
-
-        self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_config['identifier']}"
-        )
-
         config_path = Path(self.config["config_files"][0])
 
         if not self.full_path.is_dir():
@@ -1122,15 +1146,15 @@ class FreqaiDataKitchen:
 
         return retrain, trained_timerange, data_load_timerange
 
-    def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
+    def set_new_model_names(self, pair: str, timestamp_id: int):
 
         coin, _ = pair.split("/")
         self.data_path = Path(
             self.full_path
-            / f"sub-train-{pair.split('/')[0]}_{int(trained_timerange.stopts)}"
+            / f"sub-train-{pair.split('/')[0]}_{timestamp_id}"
         )
 
-        self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
+        self.model_filename = f"cb_{coin.lower()}_{timestamp_id}"
 
     def set_all_pairs(self) -> None:
 
@@ -1141,6 +1165,54 @@ class FreqaiDataKitchen:
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
 
+    def extract_corr_pair_columns_from_populated_indicators(
+        self,
+        dataframe: DataFrame
+    ) -> Dict[str, DataFrame]:
+        """
+        Find the columns of the dataframe corresponding to the corr_pairlist, save them
+        in a dictionary to be reused and attached to other pairs.
+
+        :param dataframe: fully populated dataframe (current pair + corr_pairs)
+        :return: corr_dataframes, dictionary of dataframes to be attached
+                 to other pairs in same candle.
+        """
+        corr_dataframes: Dict[str, DataFrame] = {}
+        pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+
+        for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt like colons
+            valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
+            pair_cols = [col for col in dataframe.columns if
+                         any(substr in col for substr in valid_strs)]
+            if pair_cols:
+                pair_cols.insert(0, 'date')
+                corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
+
+        return corr_dataframes
+
+    def attach_corr_pair_columns(self, dataframe: DataFrame,
+                                 corr_dataframes: Dict[str, DataFrame],
+                                 current_pair: str) -> DataFrame:
+        """
+        Attach the existing corr_pair dataframes to the current pair dataframe before training
+
+        :param dataframe: current pair strategy dataframe, indicators populated already
+        :param corr_dataframes: dictionary of saved dataframes from earlier in the same candle
+        :param current_pair: current pair to which we will attach corr pair dataframe
+        :return:
+        :dataframe: current pair dataframe of populated indicators, concatenated with corr_pairs
+                    ready for training
+        """
+        pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        current_pair = current_pair.replace(':', '')
+        for pair in pairs:
+            pair = pair.replace(':', '')  # lightgbm doesnt work with colons
+            if current_pair != pair:
+                dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
+
+        return dataframe
+
     def use_strategy_to_populate_indicators(
         self,
         strategy: IStrategy,
@@ -1148,6 +1220,7 @@ class FreqaiDataKitchen:
         base_dataframes: dict = {},
         pair: str = "",
         prediction_dataframe: DataFrame = pd.DataFrame(),
+        do_corr_pairs: bool = True,
     ) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during retrain
@@ -1157,15 +1230,15 @@ class FreqaiDataKitchen:
         :param base_dataframes: dict = dict containing the current pair dataframes
                                 (for user defined timeframes)
         :param metadata: dict = strategy furnished pair metadata
-        :returns:
+        :return:
         dataframe: DataFrame = dataframe containing populated indicators
         """
 
         # for prediction dataframe creation, we let dataprovider handle everything in the strategy
         # so we create empty dictionaries, which allows us to pass None to
         # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
-        tfs = self.freqai_config["feature_parameters"].get("include_timeframes")
-        pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+        pairs: List[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
             for tf in tfs:
@@ -1188,18 +1261,23 @@ class FreqaiDataKitchen:
                 informative=base_dataframes[tf],
                 set_generalized_indicators=sgi
             )
-            if pairs:
-                for i in pairs:
-                    if pair in i:
-                        continue  # dont repeat anything from whitelist
+
+        # ensure corr pairs are always last
+        for corr_pair in pairs:
+            if pair == corr_pair:
+                continue  # dont repeat anything from whitelist
+            for tf in tfs:
+                if pairs and do_corr_pairs:
                     dataframe = strategy.populate_any_indicators(
-                        i,
+                        corr_pair,
                         dataframe.copy(),
                         tf,
-                        informative=corr_dataframes[i][tf]
+                        informative=corr_dataframes[corr_pair][tf]
                     )
 
         self.get_unique_classes_from_labels(dataframe)
+
+        dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
         return dataframe
 
@@ -1267,14 +1345,16 @@ class FreqaiDataKitchen:
         append_df = pd.read_hdf(self.backtesting_results_path)
         return append_df
 
-    def check_if_backtest_prediction_exists(
-        self
+    def check_if_backtest_prediction_is_valid(
+        self,
+        len_backtest_df: int
     ) -> bool:
         """
-        Check if a backtesting prediction already exists
-        :param dk: FreqaiDataKitchen
+        Check if a backtesting prediction already exists and if the predictions
+        to append have the same size as the backtesting dataframe slice
+        :param length_backtesting_dataframe: Length of backtesting dataframe slice
         :return:
-        :boolean: whether the prediction file exists or not.
+        :boolean: whether the prediction file is valid.
         """
         path_to_predictionfile = Path(self.full_path /
                                       self.backtest_predictions_folder /
@@ -1282,10 +1362,134 @@ class FreqaiDataKitchen:
         self.backtesting_results_path = path_to_predictionfile
 
         file_exists = path_to_predictionfile.is_file()
+
         if file_exists:
-            logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+            append_df = self.get_backtesting_prediction()
+            if len(append_df) == len_backtest_df:
+                logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+                return True
+            else:
+                logger.info("A new backtesting prediction file is required. "
+                            "(Number of predictions is different from dataframe length).")
+                return False
         else:
             logger.info(
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
-        return file_exists
+            return False
+
+    def set_timerange_from_ready_models(self):
+        backtesting_timerange, \
+            assets_end_dates = (
+                self.get_timerange_and_assets_end_dates_from_ready_models(self.full_path))
+
+        self.backtest_live_models_data = {
+            "backtesting_timerange": backtesting_timerange,
+            "assets_end_dates": assets_end_dates
+            }
+        return
+
+    def get_full_models_path(self, config: Config) -> Path:
+        """
+        Returns default FreqAI model path
+        :param config: Configuration dictionary
+        """
+        freqai_config: Dict[str, Any] = config["freqai"]
+        return Path(
+            config["user_data_dir"] / "models" / str(freqai_config.get("identifier"))
+        )
+
+    def get_timerange_and_assets_end_dates_from_ready_models(
+            self, models_path: Path) -> Tuple[TimeRange, Dict[str, Any]]:
+        """
+        Returns timerange information based on a FreqAI model directory
+        :param models_path: FreqAI model path
+
+        :return: a Tuple with (Timerange calculated from directory and
+        a Dict with pair and model end training dates info)
+        """
+        all_models_end_dates = []
+        assets_end_dates: Dict[str, Any] = self.get_assets_timestamps_training_from_ready_models(
+                                           models_path)
+        for key in assets_end_dates:
+            for model_end_date in assets_end_dates[key]:
+                if model_end_date not in all_models_end_dates:
+                    all_models_end_dates.append(model_end_date)
+
+        if len(all_models_end_dates) == 0:
+            raise OperationalException(
+                'At least 1 saved model is required to '
+                'run backtest with the freqai-backtest-live-models option'
+            )
+
+        if len(all_models_end_dates) == 1:
+            logger.warning(
+                "Only 1 model was found. Backtesting will run with the "
+                "timerange from the end of the training date to the current date"
+            )
+
+        finish_timestamp = int(datetime.now(tz=timezone.utc).timestamp())
+        if len(all_models_end_dates) > 1:
+            # After last model end date, use the same period from previous model
+            # to finish the backtest
+            all_models_end_dates.sort(reverse=True)
+            finish_timestamp = all_models_end_dates[0] + \
+                (all_models_end_dates[0] - all_models_end_dates[1])
+
+        all_models_end_dates.append(finish_timestamp)
+        all_models_end_dates.sort()
+        start_date = (datetime(*datetime.fromtimestamp(min(all_models_end_dates),
+                      timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
+        end_date = (datetime(*datetime.fromtimestamp(max(all_models_end_dates),
+                    timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
+
+        # add 1 day to string timerange to ensure BT module will load all dataframe data
+        end_date = end_date + timedelta(days=1)
+        backtesting_timerange = TimeRange(
+            'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
+        )
+        return backtesting_timerange, assets_end_dates
+
+    def get_assets_timestamps_training_from_ready_models(
+            self, models_path: Path) -> Dict[str, Any]:
+        """
+        Scan the models path and returns all assets end training dates (timestamp)
+        :param models_path: FreqAI model path
+
+        :return: a Dict with asset and model end training dates info
+        """
+        assets_end_dates: Dict[str, Any] = {}
+        if not models_path.is_dir():
+            raise OperationalException(
+                'Model folders not found. Saved models are required '
+                'to run backtest with the freqai-backtest-live-models option'
+            )
+        for model_dir in models_path.iterdir():
+            if str(model_dir.name).startswith("sub-train"):
+                model_end_date = int(model_dir.name.split("_")[1])
+                asset = model_dir.name.split("_")[0].replace("sub-train-", "")
+                model_file_name = (
+                    f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
+                    "_model.joblib"
+                )
+
+                model_path_file = Path(model_dir / model_file_name)
+                if model_path_file.is_file():
+                    if asset not in assets_end_dates:
+                        assets_end_dates[asset] = []
+                    assets_end_dates[asset].append(model_end_date)
+
+        return assets_end_dates
+
+    def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """
+        Remove all special characters from feature strings (:)
+        :param dataframe: the dataframe that just finished indicator population. (unfiltered)
+        :return: dataframe with cleaned featrue names
+        """
+
+        spec_chars = [':']
+        for c in spec_chars:
+            dataframe.columns = dataframe.columns.str.replace(c, "")
+
+        return dataframe

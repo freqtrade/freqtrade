@@ -25,7 +25,8 @@ ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "enable_protections", "dry_run_wallet", "timeframe_detail",
                                         "strategy_list", "export", "exportfilename",
-                                        "backtest_breakdown", "backtest_cache"]
+                                        "backtest_breakdown", "backtest_cache",
+                                        "freqai_backtest_live_models"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "use_max_market_positions",

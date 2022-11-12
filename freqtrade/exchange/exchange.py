@@ -1689,6 +1689,17 @@ class Exchange:
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: MakerTaker = 'maker') -> float:
+        """
+        Retrieve fee from exchange
+        :param symbol: Pair
+        :param type: Type of order (market, limit, ...)
+        :param side: Side of order (buy, sell)
+        :param amount: Amount of order
+        :param price: Price of order
+        :param taker_or_maker: 'maker' or 'taker' (ignored if "type" is provided)
+        """
+        if type and type == 'market':
+            taker_or_maker = 'taker'
         try:
             if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']

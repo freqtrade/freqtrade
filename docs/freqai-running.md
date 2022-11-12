@@ -73,11 +73,23 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
 
 To allow for tweaking your strategy (**not** the features!), FreqAI will automatically save the predictions during backtesting so that they can be reused for future backtests and live runs using the same `identifier` model. This provides a performance enhancement geared towards enabling **high-level hyperopting** of entry/exit criteria.
 
-An additional directory called `predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder.
+An additional directory called `backtesting_predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder.
 
 To change your **features**, you **must** set a new `identifier` in the config to signal to FreqAI to train new models.
 
 To save the models generated during a particular backtest so that you can start a live deployment from one of them instead of training a new model, you must set `save_backtest_models` to `True` in the config.
+
+### Backtest live models
+
+FreqAI allow you to reuse ready models through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse models generated in dry/run for comparison or other study. For that, you must set `"purge_old_models"` to `True` in the config.
+
+The `--timerange` parameter must not be informed, as it will be automatically calculated through the training end dates of the models.
+
+Each model has an identifier derived from the training end date. If you have only 1 model trained, FreqAI will backtest from the training end date until the current date. If you have more than 1 model, each model will perform the backtesting according to the training end date until the training end date of the next model and so on. For the last model, the period of the previous model will be used for the execution.
+
+!!! Note
+    Currently, there is no checking for expired models, even if the `expired_hours` parameter is set.
+
 
 ### Downloading data to cover the full backtest period
 

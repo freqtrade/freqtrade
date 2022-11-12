@@ -87,6 +87,7 @@ class FreqaiDataDrawer:
             self.create_follower_dict()
         self.load_drawer_from_disk()
         self.load_historic_predictions_from_disk()
+        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
         self.load_metric_tracker_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
@@ -97,7 +98,6 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
-        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
         self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
         if 'rl_config' in self.freqai_info:
             self.model_type = 'stable_baselines'
@@ -160,6 +160,7 @@ class FreqaiDataDrawer:
             if exists:
                 with open(self.metric_tracker_path, "r") as fp:
                     self.metric_tracker = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
+                logger.info("Loading existing metric tracker from disk.")
             else:
                 logger.info("Could not find existing metric tracker, starting from scratch")
 
@@ -549,14 +550,6 @@ class FreqaiDataDrawer:
         if dk.live:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
-            if self.freqai_info.get("follow_mode", False):
-                # follower can be on a different system which is rsynced from the leader:
-                dk.data_path = Path(
-                    self.config["user_data_dir"]
-                    / "models"
-                    / dk.data_path.parts[-2]
-                    / dk.data_path.parts[-1]
-                )
 
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
@@ -651,6 +644,8 @@ class FreqaiDataDrawer:
                         ignore_index=True,
                         axis=0,
                     )
+
+            self.current_candle = history_data[dk.pair][self.config['timeframe']].iloc[-1]['date']
 
     def load_all_pair_histories(self, timerange: TimeRange, dk: FreqaiDataKitchen) -> None:
         """
