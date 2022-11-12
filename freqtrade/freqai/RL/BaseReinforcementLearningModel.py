@@ -253,18 +253,26 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         Builds the train prices and test prices for the environment.
         """
 
-        coin = pair.split('/')[0]
+        pair = pair.replace(':', '')
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
         # price data for model training and evaluation
         tf = self.config['timeframe']
-        ohlc_list = [f'%-{coin}raw_open_{tf}', f'%-{coin}raw_low_{tf}',
-                     f'%-{coin}raw_high_{tf}', f'%-{coin}raw_close_{tf}']
-        rename_dict = {f'%-{coin}raw_open_{tf}': 'open', f'%-{coin}raw_low_{tf}': 'low',
-                       f'%-{coin}raw_high_{tf}': ' high', f'%-{coin}raw_close_{tf}': 'close'}
+        ohlc_list = [f'%-{pair}raw_open_{tf}', f'%-{pair}raw_low_{tf}',
+                     f'%-{pair}raw_high_{tf}', f'%-{pair}raw_close_{tf}']
+        rename_dict = {f'%-{pair}raw_open_{tf}': 'open', f'%-{pair}raw_low_{tf}': 'low',
+                       f'%-{pair}raw_high_{tf}': ' high', f'%-{pair}raw_close_{tf}': 'close'}
 
         prices_train = train_df.filter(ohlc_list, axis=1)
+        if prices_train.empty:
+            raise OperationalException('Reinforcement learning module didnt find the raw prices '
+                                       'assigned in populate_any_indicators. Please assign them '
+                                       'with:\n'
+                                       'informative[f"%-{pair}raw_close"] = informative["close"]\n'
+                                       'informative[f"%-{pair}raw_open"] = informative["open"]\n'
+                                       'informative[f"%-{pair}raw_high"] = informative["high"]\n'
+                                       'informative[f"%-{pair}raw_low"] = informative["low"]\n')
         prices_train.rename(columns=rename_dict, inplace=True)
         prices_train.reset_index(drop=True)
 

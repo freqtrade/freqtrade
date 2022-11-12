@@ -38,8 +38,6 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
 
-        coin = pair.split('/')[0]
-
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 
@@ -47,15 +45,15 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
         # The following features are necessary for RL models
-        informative[f"%-{coin}raw_close"] = informative["close"]
-        informative[f"%-{coin}raw_open"] = informative["open"]
-        informative[f"%-{coin}raw_high"] = informative["high"]
-        informative[f"%-{coin}raw_low"] = informative["low"]
+        informative[f"%-{pair}raw_close"] = informative["close"]
+        informative[f"%-{pair}raw_open"] = informative["open"]
+        informative[f"%-{pair}raw_high"] = informative["high"]
+        informative[f"%-{pair}raw_low"] = informative["low"]
 
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
@@ -88,10 +86,10 @@ Most of the function remains the same as for typical Regressors, however, the fu
 
 ```python
         # The following features are necessary for RL models
-        informative[f"%-{coin}raw_close"] = informative["close"]
-        informative[f"%-{coin}raw_open"] = informative["open"]
-        informative[f"%-{coin}raw_high"] = informative["high"]
-        informative[f"%-{coin}raw_low"] = informative["low"]
+        informative[f"%-{pair}raw_close"] = informative["close"]
+        informative[f"%-{pair}raw_open"] = informative["open"]
+        informative[f"%-{pair}raw_high"] = informative["high"]
+        informative[f"%-{pair}raw_low"] = informative["low"]
 ```
 
 Finally, there is no explicit "label" to make - instead the you need to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the user set the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
