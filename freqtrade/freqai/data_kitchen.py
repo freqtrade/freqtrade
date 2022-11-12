@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, read_feather
 from scipy import stats
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
@@ -73,6 +73,9 @@ class FreqaiDataKitchen:
         self.training_features_list: List = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
+        self.backtesting_live_model_folder_path = Path()
+        self.backtesting_live_model_path = Path()
+        self.backtesting_live_model_bkp_path = Path()
         self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
@@ -1488,3 +1491,107 @@ class FreqaiDataKitchen:
             dataframe.columns = dataframe.columns.str.replace(c, "")
 
         return dataframe
+
+    def set_backtesting_live_dataframe_folder_path(
+        self
+    ) -> None:
+        """
+        Set live backtesting dataframe path
+        :param pair: current pair
+        """
+        self.backtesting_live_model_folder_path = Path(
+            self.full_path / self.backtest_predictions_folder / "live_data")
+
+    def set_backtesting_live_dataframe_path(
+        self, pair: str
+    ) -> None:
+        """
+        Set live backtesting dataframe path
+        :param pair: current pair
+        """
+        self.set_backtesting_live_dataframe_folder_path()
+        if not self.backtesting_live_model_folder_path.is_dir():
+            self.backtesting_live_model_folder_path.mkdir(parents=True, exist_ok=True)
+
+        pair_path = pair.split(":")[0].replace("/", "_").lower()
+        file_name = f"live_backtesting_{pair_path}.feather"
+        path_to_live_backtesting_file = Path(self.full_path /
+                                             self.backtesting_live_model_folder_path /
+                                             file_name)
+        path_to_live_backtesting_bkp_file = Path(self.full_path /
+                                                 self.backtesting_live_model_folder_path /
+                                                 file_name.replace(".feather", ".backup.feather"))
+
+        self.backtesting_live_model_path = path_to_live_backtesting_file
+        self.backtesting_live_model_bkp_path = path_to_live_backtesting_bkp_file
+
+    def save_backtesting_live_dataframe(
+        self, dataframe: DataFrame, pair: str
+    ) -> None:
+        """
+        Save live backtesting dataframe to feather file format
+        :param dataframe: current live dataframe
+        :param pair: current pair
+        """
+        self.set_backtesting_live_dataframe_path(pair)
+        last_row_df = dataframe.tail(1)
+        if self.backtesting_live_model_path.is_file():
+            saved_dataframe = self.get_backtesting_live_dataframe()
+            concat_dataframe = pd.concat([saved_dataframe, last_row_df])
+            concat_dataframe.reset_index(drop=True).to_feather(
+                self.backtesting_live_model_path, compression_level=9, compression='lz4')
+        else:
+            last_row_df.reset_index(drop=True).to_feather(
+                self.backtesting_live_model_path, compression_level=9, compression='lz4')
+
+        shutil.copy(self.backtesting_live_model_path, self.backtesting_live_model_bkp_path)
+
+    def get_backtesting_live_dataframe(
+        self
+    ) -> DataFrame:
+        """
+        Get live backtesting dataframe from feather file format
+        return: saved dataframe from previous dry/run or live
+        """
+        if self.backtesting_live_model_path.is_file():
+            saved_dataframe = DataFrame()
+            try:
+                saved_dataframe = read_feather(self.backtesting_live_model_path)
+            except Exception:
+                saved_dataframe = read_feather(self.backtesting_live_model_bkp_path)
+            return saved_dataframe
+        else:
+            raise OperationalException(
+                "Saved pair file not found"
+            )
+
+    def get_timerange_from_backtesting_live_dataframe(
+            self) -> TimeRange:
+        """
+        Returns timerange information based on a FreqAI model directory
+        :param models_path: FreqAI model path
+
+        :return: timerange calculated from saved live data
+        """
+        all_assets_start_dates = []
+        all_assets_end_dates = []
+        self.set_backtesting_live_dataframe_folder_path()
+        if not self.backtesting_live_model_folder_path.is_dir():
+            raise OperationalException(
+                'Saved live data not found. Saved lived data is required '
+                'to run backtest with the freqai-backtest-live-models option '
+                'and save_live_data_backtest config option as true'
+            )
+        for file_in_dir in self.backtesting_live_model_folder_path.iterdir():
+            if file_in_dir.is_file() and "backup" not in file_in_dir.name:
+                saved_dataframe = read_feather(file_in_dir)
+                all_assets_start_dates.append(saved_dataframe.date.min())
+                all_assets_end_dates.append(saved_dataframe.date.max())
+        start_date = min(all_assets_start_dates)
+        end_date = min(all_assets_end_dates)
+        # add 1 day to string timerange to ensure BT module will load all dataframe data
+        end_date = end_date + timedelta(days=1)
+        backtesting_timerange = TimeRange(
+            'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
+        )
+        return backtesting_timerange

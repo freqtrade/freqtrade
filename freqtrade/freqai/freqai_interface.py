@@ -67,6 +67,11 @@ class IFreqaiModel(ABC):
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
+        self.save_live_data_backtest: bool = self.freqai_info.get(
+            "save_live_data_backtest", True)
+        if self.save_live_data_backtest:
+            logger.info('Live configured to save data for backtest.')
+
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         # set current candle to arbitrary historical date
         self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=timezone.utc)
@@ -147,12 +152,20 @@ class IFreqaiModel(ABC):
             dataframe = self.dk.use_strategy_to_populate_indicators(
                 strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
             )
-            dk = self.start_backtesting(dataframe, metadata, self.dk)
+            if not self.save_live_data_backtest:
+                dk = self.start_backtesting(dataframe, metadata, self.dk)
+                dataframe = dk.remove_features_from_df(dk.return_dataframe)
+            else:
+                dk = self.start_backtesting_from_live_saved_files(
+                    dataframe, metadata, self.dk)
+                dataframe = dk.return_dataframe
 
-        dataframe = dk.remove_features_from_df(dk.return_dataframe)
         self.clean_up()
         if self.live:
             self.inference_timer('stop', metadata["pair"])
+            if self.save_live_data_backtest:
+                dk.save_backtesting_live_dataframe(dataframe, metadata["pair"])
+
         return dataframe
 
     def clean_up(self):
@@ -308,6 +321,31 @@ class IFreqaiModel(ABC):
         self.backtesting_fit_live_predictions(dk)
         dk.fill_predictions(dataframe)
 
+        return dk
+
+    def start_backtesting_from_live_saved_files(
+        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
+    ) -> FreqaiDataKitchen:
+        """
+        :param dataframe: DataFrame = strategy passed dataframe
+        :param metadata: Dict = pair metadata
+        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :return:
+            FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        """
+        pair = metadata["pair"]
+        dk.return_dataframe = dataframe
+
+        dk.return_dataframe = dataframe
+        self.dk.set_backtesting_live_dataframe_path(pair)
+        saved_dataframe = self.dk.get_backtesting_live_dataframe()
+        columns_to_drop = list(set(dk.return_dataframe.columns).difference(
+            ["date", "open", "high", "low", "close", "volume"]))
+        saved_dataframe = saved_dataframe.drop(
+            columns=["open", "high", "low", "close", "volume"])
+        dk.return_dataframe = dk.return_dataframe.drop(columns=list(columns_to_drop))
+        dk.return_dataframe = pd.merge(dk.return_dataframe, saved_dataframe, how='left', on='date')
+        # dk.return_dataframe = dk.return_dataframe[saved_dataframe.columns].fillna(0)
         return dk
 
     def start_live(
