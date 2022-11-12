@@ -667,7 +667,7 @@ class LocalTrade():
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
-        elif order.ft_order_side == 'stoploss':
+        elif order.ft_order_side == 'stoploss' and order.status not in ('canceled', 'open'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
