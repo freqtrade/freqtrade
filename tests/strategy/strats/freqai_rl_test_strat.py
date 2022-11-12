@@ -38,24 +38,9 @@ class freqai_rl_test_strat(IStrategy):
     startup_candle_count: int = 30
     can_short = False
 
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
-
     def populate_any_indicators(
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
-
-        coin = pair.split('/')[0]
 
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
@@ -64,16 +49,16 @@ class freqai_rl_test_strat(IStrategy):
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
         # FIXME: add these outside the user strategy?
         # The following columns are necessary for RL models.
-        informative[f"%-{coin}raw_close"] = informative["close"]
-        informative[f"%-{coin}raw_open"] = informative["open"]
-        informative[f"%-{coin}raw_high"] = informative["high"]
-        informative[f"%-{coin}raw_low"] = informative["low"]
+        informative[f"%-{pair}raw_close"] = informative["close"]
+        informative[f"%-{pair}raw_open"] = informative["open"]
+        informative[f"%-{pair}raw_high"] = informative["high"]
+        informative[f"%-{pair}raw_low"] = informative["low"]
 
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
