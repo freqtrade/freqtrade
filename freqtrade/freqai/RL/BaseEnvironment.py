@@ -165,12 +165,12 @@ class BaseEnvironment(gym.Env):
         if self._position == Positions.Neutral:
             return 0.
         elif self._position == Positions.Short:
-            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
-            return (last_trade_price - current_price) / last_trade_price
-        elif self._position == Positions.Long:
             current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
             last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
+            return (last_trade_price - current_price) / last_trade_price
+        elif self._position == Positions.Long:
+            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
             return 0.
@@ -210,9 +210,8 @@ class BaseEnvironment(gym.Env):
         """
         An example reward function. This is the one function that users will likely
         wish to inject their own creativity into.
-        :params:
-        action: int = The action made by the agent for the current candle.
-        :returns:
+        :param action: int = The action made by the agent for the current candle.
+        :return:
         float = the reward to give to the agent for current step (used for optimization
             of weights in NN)
         """
@@ -234,7 +233,7 @@ class BaseEnvironment(gym.Env):
     def _update_total_profit(self):
         pnl = self.get_unrealized_profit()
         if self.compound_trades:
-            # assumes unite stake and compounding
+            # assumes unitestake and compounding
             self._total_profit = self._total_profit * (1 + pnl)
         else:
             # assumes unit stake and no compounding

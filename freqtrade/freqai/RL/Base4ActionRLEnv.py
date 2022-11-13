@@ -74,6 +74,7 @@ class Base4ActionRLEnv(BaseEnvironment):
                 self._last_trade_tick = self._current_tick
             elif action == Actions.Exit.value:
                 self._position = Positions.Neutral
+                self._update_total_profit()
                 trade_type = "neutral"
                 self._last_trade_tick = None
             else:

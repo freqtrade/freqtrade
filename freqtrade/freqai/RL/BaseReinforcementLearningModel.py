@@ -180,17 +180,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                 if self.data_provider._exchange is None:  # type: ignore
                     logger.error('No exchange available.')
                 else:
-                    current_value = self.data_provider._exchange.get_rate(  # type: ignore
+                    current_rate = self.data_provider._exchange.get_rate(  # type: ignore
                                 pair, refresh=False, side="exit", is_short=trade.is_short)
-                openrate = trade.open_rate
+
                 now = datetime.now(timezone.utc).timestamp()
-                trade_duration = int((now - trade.open_date.timestamp()) / self.base_tf_seconds)
-                if 'long' in str(trade.enter_tag):
-                    market_side = 1
-                    current_profit = (current_value - openrate) / openrate
-                else:
-                    market_side = 0
-                    current_profit = (openrate - current_value) / openrate
+                trade_duration = int((now - trade.open_date_utc) / self.base_tf_seconds)
+                current_profit = trade.calc_profit_ratio(current_rate)
 
         return market_side, current_profit, int(trade_duration)
 
