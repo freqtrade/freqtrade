@@ -13,7 +13,7 @@ from freqtrade.freqai.utils import download_all_data_for_training, get_required_
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
-from tests.conftest import get_patched_exchange, log_has_re
+from tests.conftest import create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
 
 
@@ -32,7 +32,7 @@ def is_mac() -> bool:
     ('XGBoostRegressor', False, True),
     ('XGBoostRFRegressor', False, False),
     ('CatboostRegressor', False, False),
-    ('ReinforcementLearner', False, False),
+    ('ReinforcementLearner', False, True),
     ('ReinforcementLearner_multiproc', False, False),
     ('ReinforcementLearner_test_4ac', False, False)
     ])
@@ -40,7 +40,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac():
+    if is_mac() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
     model_save_ext = 'joblib'
@@ -53,6 +53,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
         freqai_conf = make_rl_config(freqai_conf)
+        # test the RL guardrails
+        freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
+        freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
     if 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
@@ -497,3 +500,43 @@ def test_download_all_data_for_training(mocker, freqai_conf, caplog, tmpdir):
         "Downloading",
         caplog,
     )
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('dp_exists', [(False), (True)])
+def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
+
+    if is_mac():
+        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+
+    freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
+    freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.update({"strategy": "freqai_rl_test_strat"})
+    freqai_conf = make_rl_config(freqai_conf)
+    freqai_conf['entry_pricing']['price_side'] = 'same'
+    freqai_conf['exit_pricing']['price_side'] = 'same'
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
+    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+
+    if not dp_exists:
+        strategy.dp._exchange = None
+
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.data_provider = strategy.dp
+    freqai.live = True
+
+    Trade.use_db = True
+    create_mock_trades(MagicMock(return_value=0.0025), False, True)
+    freqai.get_state_info("ADA/BTC")
+    freqai.get_state_info("ETH/BTC")
+
+    if not dp_exists:
+        assert log_has_re(
+            "No exchange available",
+            caplog,
+        )

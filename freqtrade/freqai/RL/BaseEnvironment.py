@@ -10,6 +10,8 @@ from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
 
+from freqtrade.data.dataprovider import DataProvider
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +34,21 @@ class BaseEnvironment(gym.Env):
 
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}):
-
+                 id: str = 'baseenv-1', seed: int = 1, config: dict = {},
+                 dp: Optional[DataProvider] = None):
+        """
+        Initializes the training/eval environment.
+        :param df: dataframe of features
+        :param prices: dataframe of prices to be used in the training environment
+        :param window_size: size of window (temporal) to pass to the agent
+        :param reward_kwargs: extra config settings assigned by user in `rl_config`
+        :param starting_point: start at edge of window or not
+        :param id: string id of the environment (used in backend for multiprocessed env)
+        :param seed: Sets the seed of the environment higher in the gym.Env object
+        :param config: Typical user configuration file
+        :param dp: dataprovider from freqtrade
+        """
+        self.config = config
         self.rl_config = config['freqai']['rl_config']
         self.add_state_info = self.rl_config.get('add_state_info', False)
         self.id = id
@@ -41,12 +56,23 @@ class BaseEnvironment(gym.Env):
         self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
         self.max_drawdown = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
         self.compound_trades = config['stake_amount'] == 'unlimited'
+        if self.config.get('fee', None) is not None:
+            self.fee = self.config['fee']
+        elif dp is not None:
+            self.fee = self.dp.exchange.get_fee(symbol=dp.current_whitelist()[0])
+        else:
+            self.fee = 0.0015
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
         """
         Resets the environment when the agent fails (in our case, if the drawdown
         exceeds the user set max_training_drawdown_pct)
+        :param df: dataframe of features
+        :param prices: dataframe of prices to be used in the training environment
+        :param window_size: size of window (temporal) to pass to the agent
+        :param reward_kwargs: extra config settings assigned by user in `rl_config`
+        :param starting_point: start at edge of window or not
         """
         self.df = df
         self.signal_features = self.df
@@ -55,8 +81,6 @@ class BaseEnvironment(gym.Env):
         self.starting_point = starting_point
         self.rr = reward_kwargs["rr"]
         self.profit_aim = reward_kwargs["profit_aim"]
-
-        self.fee = 0.0015
 
         # # spaces
         if self.add_state_info:
@@ -233,7 +257,7 @@ class BaseEnvironment(gym.Env):
     def _update_total_profit(self):
         pnl = self.get_unrealized_profit()
         if self.compound_trades:
-            # assumes unitestake and compounding
+            # assumes unit stake and compounding
             self._total_profit = self._total_profit * (1 + pnl)
         else:
             # assumes unit stake and no compounding

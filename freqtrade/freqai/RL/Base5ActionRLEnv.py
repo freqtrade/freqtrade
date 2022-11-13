@@ -148,7 +148,6 @@ class Base5ActionRLEnv(BaseEnvironment):
             return self._current_tick - self._last_trade_tick
 
     def is_tradesignal(self, action: int):
-        # trade signal
         """
         Determine if the signal is a trade signal
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
