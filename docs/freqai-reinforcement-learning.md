@@ -16,7 +16,10 @@ Reinforcement learning is a natural progression for FreqAI, since it adds a new 
 
 ### The RL interface
 
-With the current framework, we aim to expose the training environment to the user via the common "prediction model" file (i.e. CatboostClassifier, LightGBMRegressor, etc.). Users inherit our base environment in this file, which allows them to override as much or as little of the environment as they wish. 
+With the current framework, we aim to expose the training environment via the common "prediction model" file, which is a user inherited `BaseReinforcementLearner` object (e.g. `freqai/prediction_models/ReinforcementLearner`). Inside this user class, the RL environment is available and customized via `MyRLEnv`:
+
+
+
 
 We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configruation settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
 
@@ -49,7 +52,7 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
             informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
             informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-        # The following features are necessary for RL models
+        # The following raw price values are necessary for RL models
         informative[f"%-{pair}raw_close"] = informative["close"]
         informative[f"%-{pair}raw_open"] = informative["open"]
         informative[f"%-{pair}raw_high"] = informative["high"]
@@ -131,11 +134,12 @@ It is important to consider that `&-action` depends on which environment they ch
 
 ## Configuring the Reinforcement Learner
 
-In order to configure the `Reinforcement Learner` the following dictionary to their `freqai` config:
+In order to configure the `Reinforcement Learner` the following dictionary must exist in the `freqai` config:
 
 ```json
         "rl_config": {
             "train_cycles": 25,
+            "add_state_info": true,
             "max_trade_duration_candles": 300,
             "max_training_drawdown_pct": 0.02,
             "cpu_count": 8,
@@ -148,11 +152,14 @@ In order to configure the `Reinforcement Learner` the following dictionary to th
         }
 ```
 
-Parameter details can be found [here](freqai-parameter-table.md), but in general the `train_cycles` decides how many times the agent should cycle through the candle data in its artificial environemtn to train weights in the model. `model_type` is a string which selects one of the available models in [stable_baselines](https://stable-baselines3.readthedocs.io/en/master/)(external link). 
+Parameter details can be found [here](freqai-parameter-table.md), but in general the `train_cycles` decides how many times the agent should cycle through the candle data in its artificial environment to train weights in the model. `model_type` is a string which selects one of the available models in [stable_baselines](https://stable-baselines3.readthedocs.io/en/master/)(external link). 
+
+!!! Note
+    Remember that the general `model_training_parameters` dictionary should contain all the model hyperparameter customizations for the particular `model_type`. For example, `PPO` parameters can be found [here](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html).
 
 ## Creating the reward
 
-As users begin to modify the strategy and the prediction model, they will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, the user sets a `calculate_reward()` function inside their custom `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to give users the necessary building blocks to start their own models. It is inside the `calculate_reward()` where users express their creative theories about the market. For example, the user wants to reward their agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
 
 ```python
     class MyRLEnv(Base5ActionRLEnv):

@@ -578,6 +578,25 @@ CONF_SCHEMA = {
                 "model_training_parameters": {
                     "type": "object"
                 },
+                "rl_config": {
+                    "type": "object",
+                    "properties": {
+                        "train_cycles": {"type": "integer"},
+                        "max_trade_duration_candles": {"type": "integer"},
+                        "add_state_info": {"type": "boolean", "default": False},
+                        "max_training_drawdown_pct": {"type": "number", "default": 0.02},
+                        "cpu_count": {"type": "integer", "default": 1},
+                        "model_type": {"type": "string", "default": "PPO"},
+                        "policy_type": {"type": "string", "default": "MlpPolicy"},
+                        "model_reward_parameters": {
+                            "type": "object",
+                            "properties": {
+                                "rr": {"type": "number", "default": 1},
+                                "profit_aim": {"type": "number", "default": 0.025}
+                            }
+                        }
+                    },
+                },
             },
             "required": [
                 "enabled",

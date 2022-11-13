@@ -59,7 +59,7 @@ class BaseEnvironment(gym.Env):
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
         elif dp is not None:
-            self.fee = self.dp.exchange.get_fee(symbol=dp.current_whitelist()[0])
+            self.fee = dp._exchange.get_fee(symbol=dp.current_whitelist()[0])  # type: ignore
         else:
             self.fee = 0.0015
 
