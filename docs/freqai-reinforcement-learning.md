@@ -10,16 +10,13 @@
 
 Reinforcement learning involves two important components, the *agent* and the training *environment*. During agent training, the agent moves through historical data candle by candle, always making 1 of a set of actions: Long entry, long exit, short entry, short exit, neutral). During this training process, the environment tracks the performance of these actions and rewards the agent according to a custom user made `calculate_reward()` (here we offer a default reward for users to build on if they wish [details here](#creating-the-reward)). The reward is used to train weights in a neural network. 
 
-A second important component of the FreqAI RL implementation is the use of *state* information. State information is fed into the network at each step, including current profit, current position, and current trade duration. These are used to train the agent in the training environment, and to reinforce the agent in dry/live. *FreqAI + Freqtrade is a perfect match for this reinforcing mechanism since this information is readily available in live deployements.*
+A second important component of the FreqAI RL implementation is the use of *state* information. State information is fed into the network at each step, including current profit, current position, and current trade duration. These are used to train the agent in the training environment, and to reinforce the agent in dry/live (this functionality is not available in backtesting). *FreqAI + Freqtrade is a perfect match for this reinforcing mechanism since this information is readily available in live deployements.*
 
 Reinforcement learning is a natural progression for FreqAI, since it adds a new layer of adaptivity and market reactivity that Classifiers and Regressors cannot match. However, Classifiers and Regressors have strengths that RL does not have such as robust predictions. Improperly trained RL agents may find "cheats" and "tricks" to maximize reward without actually winning any trades. For this reason, RL is more complex and demands a higher level of understanding than typical Classifiers and Regressors.
 
 ### The RL interface
 
-With the current framework, we aim to expose the training environment via the common "prediction model" file, which is a user inherited `BaseReinforcementLearner` object (e.g. `freqai/prediction_models/ReinforcementLearner`). Inside this user class, the RL environment is available and customized via `MyRLEnv`:
-
-
-
+With the current framework, we aim to expose the training environment via the common "prediction model" file, which is a user inherited `BaseReinforcementLearner` object (e.g. `freqai/prediction_models/ReinforcementLearner`). Inside this user class, the RL environment is available and customized via `MyRLEnv` as [shown below](#creating-the-reward).
 
 We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configruation settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
 

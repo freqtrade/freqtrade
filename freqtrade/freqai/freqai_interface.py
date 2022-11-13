@@ -168,6 +168,7 @@ class IFreqaiModel(ABC):
         """
         self.model = None
         self.dk = None
+        self.data_provider = None
 
     def _on_stop(self):
         """
