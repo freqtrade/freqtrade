@@ -99,6 +99,7 @@ class FreqaiDataDrawer:
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
         if 'Reinforcement' in self.config['freqaimodel']:
+            self.model_type = 'stable_baselines'
             logger.warning('User passed a ReinforcementLearner model, FreqAI will '
                            'now use stable_baselines3 to save models.')
         else:
