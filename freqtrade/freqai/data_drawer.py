@@ -99,10 +99,9 @@ class FreqaiDataDrawer:
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
         self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
-        if 'rl_config' in self.freqai_info:
-            self.model_type = 'stable_baselines'
-            logger.warning('User indicated rl_config, FreqAI will now use stable_baselines3'
-                           ' to save models.')
+        if 'Reinforcement' in self.config['freqaimodel']:
+            logger.warning('User passed a ReinforcementLearner model, FreqAI will '
+                           'now use stable_baselines3 to save models.')
         else:
             self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
