@@ -159,7 +159,7 @@ CONF_SCHEMA = {
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
-        'convert_df_to_32bit': {'type': 'number', 'default': False},
+        'reduce_df_footprint': {'type': 'number', 'default': False},
         'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
