@@ -20,12 +20,11 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
     def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
         """
         User customizable fit method
-        :params:
-        data_dictionary: dict = common data dictionary containing all train/test
+        :param data_dictionary: dict = common data dictionary containing all train/test
             features/labels/weights.
-        dk: FreqaiDatakitchen = data kitchen for current pair.
-        :returns:
-        model: Any = trained model to be used for inference in dry/live/backtesting
+        :param dk: FreqaiDatakitchen = data kitchen for current pair.
+        :return:
+        model Any = trained model to be used for inference in dry/live/backtesting
         """
         train_df = data_dictionary["train_features"]
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
@@ -69,9 +68,8 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
-            :params:
-            action: int = The action made by the agent for the current candle.
-            :returns:
+            :param action: int = The action made by the agent for the current candle.
+            :return:
             float = the reward to give to the agent for current step (used for optimization
                 of weights in NN)
             """

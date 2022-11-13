@@ -130,13 +130,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                                         dk: FreqaiDataKitchen):
         """
         User can override this if they are using a custom MyRLEnv
-        :params:
-        data_dictionary: dict = common data dictionary containing train and test
+        :param data_dictionary: dict = common data dictionary containing train and test
             features/labels/weights.
-        prices_train/test: DataFrame = dataframe comprised of the prices to be used in the
+        :param prices_train/test: DataFrame = dataframe comprised of the prices to be used in the
             environment during training
         or testing
-        dk: FreqaiDataKitchen = the datakitchen for the current pair
+        :param dk: FreqaiDataKitchen = the datakitchen for the current pair
         """
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
@@ -229,10 +228,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                          dk: FreqaiDataKitchen, model: Any) -> DataFrame:
         """
         A helper function to make predictions in the Reinforcement learning module.
-        :params:
-        dataframe: DataFrame = the dataframe of features to make the predictions on
-        dk: FreqaiDatakitchen = data kitchen for the current pair
-        model: Any = the trained model used to inference the features.
+        :param dataframe: DataFrame = the dataframe of features to make the predictions on
+        :param dk: FreqaiDatakitchen = data kitchen for the current pair
+        :param model: Any = the trained model used to inference the features.
         """
         output = pd.DataFrame(np.zeros(len(dataframe)), columns=dk.label_list)
 
@@ -322,9 +320,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
-            :params:
-            action: int = The action made by the agent for the current candle.
-            :returns:
+            :param action: int = The action made by the agent for the current candle.
+            :return:
             float = the reward to give to the agent for current step (used for optimization
                 of weights in NN)
             """

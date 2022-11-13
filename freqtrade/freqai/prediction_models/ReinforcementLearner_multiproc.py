@@ -61,13 +61,12 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
                                         dk: FreqaiDataKitchen):
         """
         User can override this if they are using a custom MyRLEnv
-        :params:
-        data_dictionary: dict = common data dictionary containing train and test
+        :param data_dictionary: dict = common data dictionary containing train and test
             features/labels/weights.
-        prices_train/test: DataFrame = dataframe comprised of the prices to be used in
+        :param prices_train/test: DataFrame = dataframe comprised of the prices to be used in
             the environment during training
         or testing
-        dk: FreqaiDataKitchen = the datakitchen for the current pair
+        :param dk: FreqaiDataKitchen = the datakitchen for the current pair
         """
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
