@@ -214,3 +214,13 @@ tensorboard --logdir user_data/models/unique-id
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
+
+
+### Choosing a base environment
+
+FreqAI provides two base environments, `Base4ActionEnvironment` and `Base5ActionEnvironment`. As the names imply, the environments are customized for agents that can select from 4 or 5 actions. In the `Base4ActionEnvironment`, the agent can enter long, enter short, hold neutral, or exit position. Meanwhile, in the `Base5ActionEnvironment`, the agent has the same actions as Base4, but instead of a single exit action, it separates exit long and exit short. The main changes stemming from the environment selection include: 
+
+* the actions available in the `calculate_reward`
+* the actions consumed by the user strategy
+
+Both of the FreqAI provided environments inherit from an action/position agnostic environment object called the `BaseEnvironment`, which contains all shared logic. The architecture is designed to be easily customized. The simplest customization is the `calculate_reward()` (see details [here](#creating-the-reward)). However, the customizations can be further extended into any of the functions inside the environment. You can do this by simply overriding those functions inside your `MyRLEnv` in the prediction model file. Or for more advanced customizations, it is encouraged to create an entirely new environment inherited from `BaseEnvironment`. 
