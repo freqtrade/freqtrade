@@ -98,7 +98,6 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
-        self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
         if 'Reinforcement' in self.config['freqaimodel']:
             logger.warning('User passed a ReinforcementLearner model, FreqAI will '
                            'now use stable_baselines3 to save models.')
@@ -514,10 +513,10 @@ class FreqaiDataDrawer:
                 dk.pca, open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "wb")
             )
 
-        if not self.limit_ram_use:
-            self.model_dictionary[coin] = model
+        self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
+
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
@@ -565,7 +564,7 @@ class FreqaiDataDrawer:
         dk.label_list = dk.data["label_list"]
 
         # try to access model in memory instead of loading object from disk to save time
-        if dk.live and coin in self.model_dictionary and not self.limit_ram_use:
+        if dk.live and coin in self.model_dictionary:
             model = self.model_dictionary[coin]
         elif self.model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
@@ -587,7 +586,7 @@ class FreqaiDataDrawer:
             )
 
         # load it into ram if it was loaded from disk
-        if coin not in self.model_dictionary and not self.limit_ram_use:
+        if coin not in self.model_dictionary:
             self.model_dictionary[coin] = model
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
