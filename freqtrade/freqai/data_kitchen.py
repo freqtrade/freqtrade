@@ -1276,7 +1276,7 @@ class FreqaiDataKitchen:
 
         dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
-        if self.config.get('convert_df_to_32bit', False):
+        if self.config.get('reduce_df_footprint', False):
             dataframe = reduce_dataframe_footprint(dataframe)
 
         return dataframe
