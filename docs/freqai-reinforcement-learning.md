@@ -95,7 +95,7 @@ Most of the function remains the same as for typical Regressors, however, the fu
         informative[f"%-{pair}raw_low"] = informative["low"]
 ```
 
-Finally, there is no explicit "label" to make - instead the you need to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the user set the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
+Finally, there is no explicit "label" to make - instead the you need to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
 
 After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple. The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy:
 
@@ -159,7 +159,7 @@ Parameter details can be found [here](freqai-parameter-table.md), but in general
 
 ## Creating the reward
 
-As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
 
 ```python
     class MyRLEnv(Base5ActionRLEnv):
@@ -214,6 +214,6 @@ cd freqtrade
 tensorboard --logdir user_data/models/unique-id
 ```
 
-where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if the user wishes to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
