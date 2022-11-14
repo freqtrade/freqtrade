@@ -2,7 +2,7 @@ import logging
 from abc import abstractmethod
 from enum import Enum
 from typing import Optional
-
+import random
 import gym
 import numpy as np
 import pandas as pd
@@ -121,6 +121,9 @@ class BaseEnvironment(gym.Env):
         self._done = False
 
         if self.starting_point is True:
+            length_of_data = int(len(self.prices)/3) # 1/3 looks okay in any case of short or long training timerange 
+            start_tick = random.randint(self.window_size+1, length_of_data)
+            self._start_tick = start_tick
             self._position_history = (self._start_tick * [None]) + [self._position]
         else:
             self._position_history = (self.window_size * [None]) + [self._position]
