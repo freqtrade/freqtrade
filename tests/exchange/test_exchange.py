@@ -27,7 +27,7 @@ from tests.conftest import (generate_test_data_raw, get_mock_coro, get_patched_e
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'gateio']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gateio']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -3162,19 +3162,16 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
 def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', return_value={'for': 123})
-    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order', return_value={'for': 123})
     mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', return_value={'for': 123})
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     res = {'fee': {}, 'status': 'canceled', 'amount': 1234}
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value=res)
-    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', return_value=res)
     mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value=res)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == res
 
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value='canceled')
-    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', return_value='canceled')
     mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value='canceled')
     # Fall back to fetch_stoploss_order
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
@@ -3182,7 +3179,6 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
 
     exc = InvalidOrderException("")
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', side_effect=exc)
-    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order', side_effect=exc)
     mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co['amount'] == 555
@@ -3191,7 +3187,6 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     with pytest.raises(InvalidOrderException):
         exc = InvalidOrderException("Did not find order")
         mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', side_effect=exc)
-        mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', side_effect=exc)
         mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', side_effect=exc)
         exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
@@ -3253,9 +3248,6 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
-    # Don't test FTX here - that needs a separate test
-    if exchange_name == 'ftx':
-        return
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
@@ -3699,16 +3691,6 @@ def test_date_minus_candles():
         # no darkpools
         ("BTC/EUR.d", 'BTC', 'EUR', "kraken", True, False, False, 'spot',
          {"darkpool": True}, False),
-        ("BTC/USD", 'BTC', 'USD', "ftx", True, False, False, 'spot', {}, True),
-        ("USD/BTC", 'USD', 'BTC', "ftx", True, False, False, 'spot', {}, True),
-        # Can only trade spot markets
-        ("BTC/USD", 'BTC', 'USD', "ftx", False, False, True, 'spot', {}, False),
-        ("BTC/USD", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
-        # Can only trade spot markets
-        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'spot', {}, False),
-        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'margin', {}, False),
-        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
-
         ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'spot', {}, False),
         ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'margin', {}, False),
         ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'futures', {}, True),
@@ -3841,7 +3823,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
-@pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
+@pytest.mark.parametrize("exchange_name", ['binance'])
 def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_funding_history = MagicMock(return_value=[
@@ -3909,7 +3891,7 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     )
 
 
-@pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
+@pytest.mark.parametrize('exchange', ['binance', 'kraken'])
 @pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
     (9.0, 3.0, 3.0),
     (20.0, 5.0, 4.0),
@@ -3930,8 +3912,6 @@ def test_get_stake_amount_considering_leverage(
 
 @pytest.mark.parametrize("exchange_name,trading_mode", [
     ("binance", TradingMode.FUTURES),
-    ("ftx", TradingMode.MARGIN),
-    ("ftx", TradingMode.FUTURES)
 ])
 def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
 
@@ -3982,9 +3962,6 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("kraken", TradingMode.SPOT, None, False),
     ("kraken", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("kraken", TradingMode.FUTURES, MarginMode.ISOLATED, True),
-    ("ftx", TradingMode.SPOT, None, False),
-    ("ftx", TradingMode.MARGIN, MarginMode.ISOLATED, True),
-    ("ftx", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("bittrex", TradingMode.SPOT, None, False),
     ("bittrex", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("bittrex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
@@ -4005,8 +3982,6 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("kraken", TradingMode.FUTURES, MarginMode.CROSS, True),
-    ("ftx", TradingMode.MARGIN, MarginMode.CROSS, True),
-    ("ftx", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("gateio", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("gateio", TradingMode.FUTURES, MarginMode.CROSS, True),
 
@@ -4015,8 +3990,6 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     # ("binance", TradingMode.FUTURES, MarginMode.CROSS, False),
     # ("kraken", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("kraken", TradingMode.FUTURES, MarginMode.CROSS, False),
-    # ("ftx", TradingMode.MARGIN, MarginMode.CROSS, False),
-    # ("ftx", TradingMode.FUTURES, MarginMode.CROSS, False),
     # ("gateio", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("gateio", TradingMode.FUTURES, MarginMode.CROSS, False),
 ])
@@ -4046,7 +4019,6 @@ def test_validate_trading_mode_and_margin_mode(
     ("bibox", "futures", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "swap"}}),
     ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
-    ("ftx", "futures", {"options": {"defaultType": "swap"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),
     ("hitbtc", "futures", {"options": {"defaultType": "swap"}}),
     ("kraken", "futures", {"options": {"defaultType": "swap"}}),
@@ -4223,11 +4195,6 @@ def test_combine_funding_and_mark(
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0012443999999999999),
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 12:00:00", 30.0,  0.0045759),
     # ('kraken', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0008289),
-    ('ftx', 0, 2, "2021-09-01 00:10:00", "2021-09-01 00:30:00",  30.0, 0.0),
-    ('ftx', 0, 9, "2021-09-01 00:00:00", "2021-09-01 08:00:00", 30.0,  0.0010008),
-    ('ftx', 0, 13, "2021-09-01 00:00:00", "2021-09-01 12:00:00", 30.0,  0.0146691),
-    ('ftx', 0, 9, "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.001668),
-    ('ftx', 1, 9, "2021-09-01 00:00:01", "2021-09-01 08:00:00", 30.0,  0.0019932),
     ('gateio', 0, 2, "2021-09-01 00:10:00", "2021-09-01 04:00:00",  30.0, 0.0),
     ('gateio', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999),
     ('gateio', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999),
@@ -4289,7 +4256,6 @@ def test__fetch_and_calculate_funding_fees(
     d2 = datetime.strptime(f"{d2} +0000", '%Y-%m-%d %H:%M:%S %z')
     funding_rate_history = {
         'binance': funding_rate_history_octohourly,
-        'ftx': funding_rate_history_hourly,
         'gateio': funding_rate_history_octohourly,
     }[exchange][rate_start:rate_end]
     api_mock = MagicMock()
@@ -5056,7 +5022,7 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
         exchange.get_max_leverage("BTC/USDT", 1000000000.01)
 
 
-@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'ftx', 'gateio', 'okx'])
+@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gateio', 'okx'])
 def test__get_params(mocker, default_conf, exchange_name):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)

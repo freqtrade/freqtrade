@@ -553,7 +553,7 @@ The possible values are: `GTC` (default), `FOK` or `IOC`.
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance, gate, ftx and kucoin.
+    This is ongoing work. For now, it is supported only for binance, gate and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### What values can be used for fiat_display_currency?
