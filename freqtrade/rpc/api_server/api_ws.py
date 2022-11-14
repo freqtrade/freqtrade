@@ -84,11 +84,8 @@ async def _process_consumer_request(
             # Limit the amount of candles per dataframe to 'limit' or 1500
             limit = max(data.get('limit', 1500), 1500)
 
-        # They requested the full historical analyzed dataframes
-        analyzed_df = rpc._ws_request_analyzed_df(limit)
-
-        # For every dataframe, send as a separate message
-        for _, message in analyzed_df.items():
+        # For every pair in the generator, send a separate message
+        for message in rpc._ws_request_analyzed_df(limit):
             response = WSAnalyzedDFMessage(data=message)
             await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
