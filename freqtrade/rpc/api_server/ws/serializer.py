@@ -34,9 +34,6 @@ class WebSocketSerializer(ABC):
 
         return self._deserialize(data)
 
-    # async def close(self, code: int = 1000):
-    #     await self._websocket.close(code)
-
 
 class HybridJSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data) -> str:

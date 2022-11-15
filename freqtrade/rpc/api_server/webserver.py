@@ -45,10 +45,7 @@ class ApiServer(RPCHandler):
     _config: Config = {}
     # Exchange - only available in webserver mode.
     _exchange = None
-    # websocket message queue stuff
-    # _ws_channel_manager = None
-    # _ws_thread = None
-    # _ws_loop = None
+    # websocket message stuff
     _message_stream = None
 
     def __new__(cls, *args, **kwargs):
@@ -71,8 +68,6 @@ class ApiServer(RPCHandler):
         ApiServer.__initialized = True
 
         api_config = self._config['api_server']
-
-        # ApiServer._ws_channel_manager = ChannelManager()
 
         self.app = FastAPI(title="Freqtrade API",
                            docs_url='/docs' if api_config.get('enable_openapi', False) else None,
@@ -101,19 +96,6 @@ class ApiServer(RPCHandler):
             logger.info("Stopping API Server")
             self._server.cleanup()
 
-        # if self._ws_thread and self._ws_loop:
-        #     logger.info("Stopping API Server background tasks")
-
-        #     if self._ws_background_task:
-        #         # Cancel the queue task
-        #         self._ws_background_task.cancel()
-
-        #     self._ws_thread.join()
-
-        # self._ws_thread = None
-        # self._ws_loop = None
-        # self._ws_background_task = None
-
     @classmethod
     def shutdown(cls):
         cls.__initialized = False
@@ -123,6 +105,9 @@ class ApiServer(RPCHandler):
         cls._rpc = None
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
+        """
+        Publish the message to the message stream
+        """
         if ApiServer._message_stream:
             ApiServer._message_stream.publish(msg)
 
@@ -173,56 +158,20 @@ class ApiServer(RPCHandler):
         )
 
     async def _api_startup_event(self):
+        """
+        Creates the MessageStream class on startup
+        so it has access to the same event loop
+        as uvicorn
+        """
         if not ApiServer._message_stream:
             ApiServer._message_stream = MessageStream()
 
     async def _api_shutdown_event(self):
+        """
+        Removes the MessageStream class on shutdown
+        """
         if ApiServer._message_stream:
             ApiServer._message_stream = None
-
-    # def start_message_queue(self):
-    #     if self._ws_thread:
-    #         return
-
-    #     # Create a new loop, as it'll be just for the background thread
-    #     self._ws_loop = asyncio.new_event_loop()
-
-    #     # Start the thread
-    #     self._ws_thread = Thread(target=self._ws_loop.run_forever)
-    #     self._ws_thread.start()
-
-    #     # Finally, submit the coro to the thread
-    #     self._ws_background_task = asyncio.run_coroutine_threadsafe(
-    #         self._broadcast_queue_data(), loop=self._ws_loop)
-
-    # async def _broadcast_queue_data(self):
-    #     # Instantiate the queue in this coroutine so it's attached to our loop
-    #     self._ws_queue = ThreadedQueue()
-    #     async_queue = self._ws_queue.async_q
-
-    #     try:
-    #         while True:
-    #             logger.debug("Getting queue messages...")
-    #             # Get data from queue
-    #             message: WSMessageSchemaType = await async_queue.get()
-    #             logger.debug(f"Found message of type: {message.get('type')}")
-    #             async_queue.task_done()
-    #             # Broadcast it
-    #             await self._ws_channel_manager.broadcast(message)
-    #     except asyncio.CancelledError:
-    #         pass
-
-    #     # For testing, shouldn't happen when stable
-    #     except Exception as e:
-    #         logger.exception(f"Exception happened in background task: {e}")
-
-    #     finally:
-    #         # Disconnect channels and stop the loop on cancel
-    #         await self._ws_channel_manager.disconnect_all()
-    #         self._ws_loop.stop()
-    #         # Avoid adding more items to the queue if they aren't
-    #         # going to get broadcasted.
-    #         self._ws_queue = None
 
     def start_api(self):
         """

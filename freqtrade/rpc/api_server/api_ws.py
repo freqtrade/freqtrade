@@ -23,18 +23,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# async def is_websocket_alive(ws: WebSocket) -> bool:
-#     """
-#     Check if a FastAPI Websocket is still open
-#     """
-#     if (
-#         ws.application_state == WebSocketState.CONNECTED and
-#         ws.client_state == WebSocketState.CONNECTED
-#     ):
-#         return True
-#     return False
-
-
 class WebSocketChannelClosed(Exception):
     """
     General WebSocket exception to signal closing the channel
@@ -153,51 +141,3 @@ async def message_endpoint(
         finally:
             logger.info(f"Channel disconnected - {channel}")
             channel_tasks.cancel()
-
-
-# @router.websocket("/message/ws")
-# async def message_endpoint(
-#     ws: WebSocket,
-#     rpc: RPC = Depends(get_rpc),
-#     channel_manager=Depends(get_channel_manager),
-#     token: str = Depends(validate_ws_token)
-# ):
-#     """
-#     Message WebSocket endpoint, facilitates sending RPC messages
-#     """
-#     try:
-#         channel = await channel_manager.on_connect(ws)
-#         if await is_websocket_alive(ws):
-
-#             logger.info(f"Consumer connected - {channel}")
-
-#             # Keep connection open until explicitly closed, and process requests
-#             try:
-#                 while not channel.is_closed():
-#                     request = await channel.recv()
-
-#                     # Process the request here
-#                     await _process_consumer_request(request, channel, rpc, channel_manager)
-
-#             except (WebSocketDisconnect, WebSocketException):
-#                 # Handle client disconnects
-#                 logger.info(f"Consumer disconnected - {channel}")
-#             except RuntimeError:
-#                 # Handle cases like -
-#                 # RuntimeError('Cannot call "send" once a closed message has been sent')
-#                 pass
-#             except Exception as e:
-#                 logger.info(f"Consumer connection failed - {channel}: {e}")
-#                 logger.debug(e, exc_info=e)
-
-#     except RuntimeError:
-#         # WebSocket was closed
-#         # Do nothing
-#         pass
-#     except Exception as e:
-#         logger.error(f"Failed to serve - {ws.client}")
-#         # Log tracebacks to keep track of what errors are happening
-#         logger.exception(e)
-#     finally:
-#         if channel:
-#             await channel_manager.on_disconnect(ws)
