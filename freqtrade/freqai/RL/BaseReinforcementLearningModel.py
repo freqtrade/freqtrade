@@ -140,18 +140,18 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
-        self.train_env = self.MyRLEnv(df=train_df,
+        self.train_env = Monitor(self.MyRLEnv(df=train_df,
                                       prices=prices_train,
                                       window_size=self.CONV_WIDTH,
                                       reward_kwargs=self.reward_params,
                                       config=self.config,
-                                      dp=self.data_provider)
+                                      dp=self.data_provider), info_keywords=('total_profit'))
         self.eval_env = Monitor(self.MyRLEnv(df=test_df,
                                              prices=prices_test,
                                              window_size=self.CONV_WIDTH,
                                              reward_kwargs=self.reward_params,
                                              config=self.config,
-                                             dp=self.data_provider))
+                                             dp=self.data_provider), info_keywords=('total_profit'))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
