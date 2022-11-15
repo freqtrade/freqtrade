@@ -30,8 +30,8 @@ class WebSocketChannel:
         # Internal event to signify a closed websocket
         self._closed = asyncio.Event()
 
-        # Throttle how fast we send messages
-        self._throttle = 0.01
+        # The subscribed message types
+        self._subscriptions: List[str] = []
 
         # Wrap the WebSocket in the Serializing class
         self._wrapped_ws = serializer_cls(self._websocket)
@@ -51,7 +51,6 @@ class WebSocketChannel:
         """
         Send a message on the wrapped websocket
         """
-        await asyncio.sleep(self._throttle)
         await self._wrapped_ws.send(message)
 
     async def recv(self):

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from ipaddress import IPv4Address
 from typing import Any, Dict
@@ -7,15 +6,12 @@ import orjson
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# Look into alternatives
-from janus import Queue as ThreadedQueue
 from starlette.responses import JSONResponse
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
-from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
@@ -72,9 +68,6 @@ class ApiServer(RPCHandler):
         self._standalone: bool = standalone
         self._server = None
 
-        self._ws_queue = None
-        self._ws_publisher_task = None
-
         ApiServer.__initialized = True
 
         api_config = self._config['api_server']
@@ -130,9 +123,8 @@ class ApiServer(RPCHandler):
         cls._rpc = None
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
-        if self._ws_queue:
-            sync_q = self._ws_queue.sync_q
-            sync_q.put(msg)
+        if ApiServer._message_stream:
+            ApiServer._message_stream.publish(msg)
 
     def handle_rpc_exception(self, request, exc):
         logger.exception(f"API Error calling: {exc}")
@@ -184,44 +176,9 @@ class ApiServer(RPCHandler):
         if not ApiServer._message_stream:
             ApiServer._message_stream = MessageStream()
 
-        if not self._ws_queue:
-            self._ws_queue = ThreadedQueue()
-
-        if not self._ws_publisher_task:
-            self._ws_publisher_task = asyncio.create_task(
-                self._publish_messages()
-            )
-
     async def _api_shutdown_event(self):
         if ApiServer._message_stream:
             ApiServer._message_stream = None
-
-        if self._ws_queue:
-            self._ws_queue = None
-
-        if self._ws_publisher_task:
-            self._ws_publisher_task.cancel()
-
-    async def _publish_messages(self):
-        """
-        Background task that reads messages from the queue and adds them
-        to the message stream
-        """
-        try:
-            async_queue = self._ws_queue.async_q
-            message_stream = ApiServer._message_stream
-
-            while message_stream:
-                message: WSMessageSchemaType = await async_queue.get()
-                message_stream.publish(message)
-
-                # Make sure to throttle how fast we
-                # publish messages as some clients will be
-                # slower than others
-                await asyncio.sleep(0.01)
-                async_queue.task_done()
-        finally:
-            self._ws_queue = None
 
     # def start_message_queue(self):
     #     if self._ws_thread:

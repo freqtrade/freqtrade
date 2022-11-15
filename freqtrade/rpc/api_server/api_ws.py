@@ -148,7 +148,8 @@ async def message_endpoint(
                 channel_broadcaster(channel, message_stream)
             )
             await channel_tasks
-
+        except WebSocketChannelClosed:
+            pass
         finally:
             logger.info(f"Channel disconnected - {channel}")
             channel_tasks.cancel()
