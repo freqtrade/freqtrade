@@ -90,6 +90,7 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
 
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         # rsi = 0.1 * (dataframe['rsi'] - 50)
