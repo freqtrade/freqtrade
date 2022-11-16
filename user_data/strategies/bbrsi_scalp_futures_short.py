@@ -110,11 +110,14 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the buy signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
+        dataframe.loc[
+            (
+                    (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                    (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
         dataframe.loc[
             (
@@ -128,11 +131,14 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the sell signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
+        dataframe.loc[
+            (
+                    (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['exit_long', 'exit_tag']] = (1, 'rsi_too_high')
         dataframe.loc[
             (
                     (qtpylib.crossed_below(dataframe['rsi'], 30)) &  # Signal: RSI crosses below 30
