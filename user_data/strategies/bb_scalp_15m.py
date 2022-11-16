@@ -9,16 +9,31 @@ from wao.wao_strategy import WAOStrategy
 from wao.brain_config import BrainConfig
 
 
-class bbrsi_scalp(WAOStrategy):
-    BrainConfig.BRAIN = "Freq_bbrsi_scalp"
+class bb_scalp_15m(WAOStrategy):
+    timeframe = '15m'
+    BrainConfig.BRAIN = "Freq_bb_15m"
 
     def __init__(self, config: dict):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
         if self.coin == 'BTC' or self.coin == 'ADA':
-            BrainConfig.BRAIN = "Freq_bbrsi_scalp_ada_btc"
-        super().__init__(config, 2, 0.14)
+            BrainConfig.BRAIN = "Freq_bb_15m_ada_btc"
+        super().__init__(config, 4, 0.14)
 
-    timeframe = '5m'
+    # minimal_roi = {
+    #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "330": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "300": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+    #     "270": 0.012,  # Exit after 40 minutes if there is at least 1% profit
+    #     "240": 0.014,  # Exit after 40 minutes if there is at least 1% profit
+    #     "210": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "180": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "150": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "120": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "90": 0.024,  # Exit immediately if there is at least 2% profit
+    #     "60": 0.026,  # Exit immediately if there is at least 2% profit
+    #     "30": 0.028,  # Exit immediately if there is at least 2% profit
+    #     "0": 0.030,  # Exit immediately if there is at least 2% profit
+    # }
 
     minimal_roi = {
         "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
@@ -35,6 +50,39 @@ class bbrsi_scalp(WAOStrategy):
         "20": 0.018,  # Exit immediately if there is at least 2% profit
         "0": 0.020,  # Exit immediately if there is at least 2% profit
     }
+
+    # Experiment minimal roi:
+    # minimal_roi = {
+    #     "180": 0.004,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "165": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "150": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+    #     "135": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+    #     "120": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+    #     "105": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "90": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "75": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "60": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "45": 0.022,  # Exit immediately if there is at least 2% profit
+    #     "30": 0.024,  # Exit immediately if there is at least 2% profit
+    #     "15": 0.026,  # Exit immediately if there is at least 2% profit
+    #     "0": 0.028,  # Exit immediately if there is at least 2% profit
+    # }
+    #
+    # minimal_roi = {
+    #     "60": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "55": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "50": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+    #     "45": 0.012,  # Exit after 40 minutes if there is at least 1% profit
+    #     "40": 0.014,  # Exit after 40 minutes if there is at least 1% profit
+    #     "35": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "30": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "25": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "20": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "15": 0.024,  # Exit immediately if there is at least 2% profit
+    #     "10": 0.026,  # Exit immediately if there is at least 2% profit
+    #     "5": 0.028,  # Exit immediately if there is at least 2% profit
+    #     "0": 0.030,  # Exit immediately if there is at least 2% profit
+    # }
 
     # Stoploss:
     stoploss = -0.01
@@ -78,7 +126,6 @@ class bbrsi_scalp(WAOStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
-
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your refined-strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.

@@ -12,7 +12,7 @@ from wao.wao_strategy_futures import WAOStrategy_futures
 from wao.brain_config import BrainConfig
 
 
-class bbrsi_scalp_futures(WAOStrategy_futures):
+class bbrsi_scalp_futures_short(WAOStrategy_futures):
     BrainConfig.BRAIN = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
@@ -115,15 +115,17 @@ class bbrsi_scalp_futures(WAOStrategy_futures):
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
+
         dataframe.loc[
             (
-                    (dataframe['close'].shift(1) < dataframe['bb_lowerband']) &
-                    (dataframe['close'] > dataframe['bb_lowerband']) &
-                    (dataframe['rsi'] < 50)
+                    (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
+                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'enter_long'] = 1
+            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
 
-        return self.populate_buy_trend(dataframe, metadata)
+        return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -133,8 +135,10 @@ class bbrsi_scalp_futures(WAOStrategy_futures):
         """
         dataframe.loc[
             (
-                    (dataframe['close'] > dataframe['bb_upperband']) |
-                    (dataframe['rsi'] > 60)
+                    (qtpylib.crossed_below(dataframe['rsi'], 30)) &  # Signal: RSI crosses below 30
+                    (dataframe['tema'] < dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'exit_long'] = 1
-        return self.populate_sell_trend(dataframe, metadata)
+            ['exit_short', 'exit_tag']] = (1, 'rsi_too_low')
+        return dataframe
