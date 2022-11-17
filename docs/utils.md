@@ -263,7 +263,6 @@ equos            True     missing opt: fetchTicker, fetchTickers
 eterbase         True
 fcoin            True     missing opt: fetchMyTrades, fetchTickers
 fcoinjp          True     missing opt: fetchMyTrades, fetchTickers
-ftx              True
 gateio           True
 gemini           True
 gopax            True
@@ -369,7 +368,6 @@ fcoin               True     missing opt: fetchMyTrades, fetchTickers
 fcoinjp             True     missing opt: fetchMyTrades, fetchTickers
 flowbtc             False    missing: fetchOrder, fetchOHLCV
 foxbit              False    missing: fetchOrder, fetchOHLCV
-ftx                 True
 gateio              True
 gemini              True
 gopax               True

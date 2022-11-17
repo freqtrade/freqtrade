@@ -1748,28 +1748,7 @@ def limit_buy_order_canceled_empty(request):
     # https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
 
     exchange_name = request.param
-    if exchange_name == 'ftx':
-        return {
-            'info': {},
-            'id': '1234512345',
-            'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-            'lastTradeTimestamp': None,
-            'symbol': 'LTC/USDT',
-            'type': 'limit',
-            'side': 'buy',
-            'price': 34.3225,
-            'amount': 0.55,
-            'cost': 0.0,
-            'average': None,
-            'filled': 0.0,
-            'remaining': 0.0,
-            'status': 'closed',
-            'fee': None,
-            'trades': None
-        }
-    elif exchange_name == 'kraken':
+    if exchange_name == 'kraken':
         return {
             'info': {},
             'id': 'AZNPFF-4AC4N-7MKTAT',

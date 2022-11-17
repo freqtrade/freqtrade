@@ -27,16 +27,16 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan', [
-    ('LightGBMRegressor', True, False),
-    ('XGBoostRegressor', False, True),
-    ('XGBoostRFRegressor', False, False),
-    ('CatboostRegressor', False, False),
-    ('ReinforcementLearner', False, True),
-    ('ReinforcementLearner_multiproc', False, False),
-    ('ReinforcementLearner_test_4ac', False, False)
+@pytest.mark.parametrize('model, pca, dbscan, float32', [
+    ('LightGBMRegressor', True, False, True),
+    ('XGBoostRegressor', False, True, False),
+    ('XGBoostRFRegressor', False, False, False),
+    ('CatboostRegressor', False, False, False),
+    ('ReinforcementLearner', False, True, False),
+    ('ReinforcementLearner_multiproc', False, False, False),
+    ('ReinforcementLearner_test_4ac', False, False, False)
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -49,6 +49,17 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     freqai_conf.update({"strategy": "freqai_test_strat"})
     freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
+    freqai_conf.update({"reduce_df_footprint": float32})
+
+    if 'ReinforcementLearner' in model:
+        model_save_ext = 'zip'
+        freqai_conf = make_rl_config(freqai_conf)
+        # test the RL guardrails
+        freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
+        freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
+
+    if 'test_4ac' in model:
+        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'

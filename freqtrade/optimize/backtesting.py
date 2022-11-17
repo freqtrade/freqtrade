@@ -166,7 +166,7 @@ class Backtesting:
         PairLocks.use_db = True
         Trade.use_db = True
 
-    def init_backtest_detail(self):
+    def init_backtest_detail(self) -> None:
         # Load detail timeframe if specified
         self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
         if self.timeframe_detail:
@@ -1286,8 +1286,7 @@ class Backtesting:
     def _get_min_cached_backtest_date(self):
         min_backtest_date = None
         backtest_cache_age = self.config.get('backtest_cache', constants.BACKTEST_CACHE_DEFAULT)
-        if self.timerange.stopts == 0 or datetime.fromtimestamp(
-           self.timerange.stopts, tz=timezone.utc) > datetime.now(tz=timezone.utc):
+        if self.timerange.stopts == 0 or self.timerange.stopdt > datetime.now(tz=timezone.utc):
             logger.warning('Backtest result caching disabled due to use of open-ended timerange.')
         elif backtest_cache_age == 'day':
             min_backtest_date = datetime.now(tz=timezone.utc) - timedelta(days=1)
