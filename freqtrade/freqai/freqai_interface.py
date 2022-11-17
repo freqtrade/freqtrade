@@ -694,7 +694,8 @@ class IFreqaiModel(ABC):
         for label in full_labels:
             if self.dd.historic_predictions[dk.pair][label].dtype == object:
                 continue
-            f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
+            f = spy.stats.norm.fit(
+                self.dd.historic_predictions[dk.pair][label].fillna(0).tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
         return
@@ -882,11 +883,7 @@ class IFreqaiModel(ABC):
                 if index >= fit_live_predictions_candles:
                     self.dd.historic_predictions[self.dk.pair] = (
                         dk.full_df.iloc[index - fit_live_predictions_candles:index])
-                else:
-                    self.dd.historic_predictions[self.dk.pair] = dk.full_df.iloc[:index]
-
-                self.fit_live_predictions(self.dk, self.dk.pair)
-                if index >= fit_live_predictions_candles:
+                    self.fit_live_predictions(self.dk, self.dk.pair)
                     for label in label_columns:
                         if dk.full_df[label].dtype == object:
                             continue
@@ -899,6 +896,7 @@ class IFreqaiModel(ABC):
                     for extra_col in self.dk.data["extra_returns_per_train"]:
                         dk.full_df.at[index, f"{extra_col}"] = (
                             self.dk.data["extra_returns_per_train"][extra_col])
+
         return
 
     # Following methods which are overridden by user made prediction models.

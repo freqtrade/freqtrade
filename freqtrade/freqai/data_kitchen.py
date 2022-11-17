@@ -1541,13 +1541,15 @@ class FreqaiDataKitchen:
         if self.backtesting_live_model_path.is_file():
             saved_dataframe = self.get_backtesting_live_dataframe()
             concat_dataframe = pd.concat([saved_dataframe, last_row_df])
-            concat_dataframe.reset_index(drop=True).to_feather(
-                self.backtesting_live_model_path, compression_level=9, compression='lz4')
+            self.save_backtesting_live_dataframe_to_feather(concat_dataframe)
         else:
-            last_row_df.reset_index(drop=True).to_feather(
-                self.backtesting_live_model_path, compression_level=9, compression='lz4')
+            self.save_backtesting_live_dataframe_to_feather(last_row_df)
 
         shutil.copy(self.backtesting_live_model_path, self.backtesting_live_model_bkp_path)
+
+    def save_backtesting_live_dataframe_to_feather(self, dataframe: DataFrame):
+        dataframe.reset_index(drop=True).to_feather(
+            self.backtesting_live_model_path, compression_level=9, compression='lz4')
 
     def get_backtesting_live_dataframe(
         self
