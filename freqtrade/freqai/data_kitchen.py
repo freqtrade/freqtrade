@@ -1519,9 +1519,10 @@ class FreqaiDataKitchen:
 
         pair_path = pair.split(":")[0].replace("/", "_").lower()
         file_name = f"live_backtesting_{pair_path}.feather"
-        self.backtesting_live_model_path = Path(self.full_path /
-                                                self.backtesting_live_model_folder_path /
-                                                file_name)
+        self.backtesting_live_model_path = Path(
+            self.full_path /
+            self.backtesting_live_model_folder_path /
+            file_name)
         self.backtesting_live_model_bkp_path = Path(
             self.full_path /
             self.backtesting_live_model_folder_path /
