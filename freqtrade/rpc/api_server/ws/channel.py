@@ -77,20 +77,23 @@ class WebSocketChannel:
         # until self.drain_timeout for the relay to drain the outgoing queue
         # We can't use asyncio.wait_for here because the queue may have been created with a
         # different eventloop
-        start = time.time()
-        while self.queue.full():
-            await asyncio.sleep(1)
-            if (time.time() - start) > self.drain_timeout:
+        if not self.is_closed():
+            start = time.time()
+            while self.queue.full():
+                await asyncio.sleep(1)
+                if (time.time() - start) > self.drain_timeout:
+                    return False
+
+            # If for some reason the queue is still full, just return False
+            try:
+                self.queue.put_nowait(data)
+            except asyncio.QueueFull:
                 return False
 
-        # If for some reason the queue is still full, just return False
-        try:
-            self.queue.put_nowait(data)
-        except asyncio.QueueFull:
+            # If we got here everything is ok
+            return True
+        else:
             return False
-
-        # If we got here everything is ok
-        return True
 
     async def recv(self):
         """
@@ -109,13 +112,13 @@ class WebSocketChannel:
         Close the WebSocketChannel
         """
 
+        self._closed.set()
+        self._relay_task.cancel()
+
         try:
             await self.raw_websocket.close()
         except Exception:
             pass
-
-        self._closed.set()
-        self._relay_task.cancel()
 
     def is_closed(self) -> bool:
         """
