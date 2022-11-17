@@ -5,7 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import arrow
 import psutil
@@ -1063,22 +1063,19 @@ class RPC:
         self,
         pairlist: List[str],
         limit: Optional[int]
-    ) -> Dict[str, Any]:
+    ) -> Generator[Dict[str, Any], None, None]:
         """ Get the analysed dataframes of each pair in the pairlist """
         timeframe = self._freqtrade.config['timeframe']
         candle_type = self._freqtrade.config.get('candle_type_def', CandleType.SPOT)
-        _data = {}
 
         for pair in pairlist:
             dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
 
-            _data[pair] = {
+            yield {
                 "key": (pair, timeframe, candle_type),
                 "df": dataframe,
                 "la": last_analyzed
             }
-
-        return _data
 
     def _ws_request_analyzed_df(self, limit: Optional[int]):
         """ Historical Analyzed Dataframes for WebSocket """

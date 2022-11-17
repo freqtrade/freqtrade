@@ -8,4 +8,4 @@ joblib==1.2.0
 catboost==1.1.1; platform_machine != 'aarch64'
 lightgbm==3.3.3
 xgboost==1.7.1
-tensorboard==2.10.1
+tensorboard==2.11.0

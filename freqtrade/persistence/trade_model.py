@@ -1144,7 +1144,8 @@ class Trade(_DECL_BASE, LocalTrade):
 
     id = Column(Integer, primary_key=True)
 
-    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan", lazy="joined")
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan",
+                          lazy="selectin", innerjoin=True)
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)

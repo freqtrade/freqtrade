@@ -45,16 +45,6 @@ EXCHANGES = {
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
     },
-    'ftx': {
-        'pair': 'BTC/USD',
-        'stake_currency': 'USD',
-        'hasQuoteVolume': True,
-        'timeframe': '5m',
-        'futures_pair': 'BTC/USD:USD',
-        'futures': False,
-        'leverage_tiers_public': False,  # TODO: Set to True once implemented on CCXT
-        'leverage_in_spot_market': True,
-    },
     'kucoin': {
         'pair': 'XRP/USDT',
         'stake_currency': 'USDT',

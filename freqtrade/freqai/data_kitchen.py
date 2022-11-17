@@ -19,6 +19,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
+from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -1275,6 +1276,9 @@ class FreqaiDataKitchen:
         self.get_unique_classes_from_labels(dataframe)
 
         dataframe = self.remove_special_chars_from_feature_names(dataframe)
+
+        if self.config.get('reduce_df_footprint', False):
+            dataframe = reduce_dataframe_footprint(dataframe)
 
         return dataframe
 

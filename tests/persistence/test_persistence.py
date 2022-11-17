@@ -2197,15 +2197,16 @@ def test_get_trades__query(fee, is_short):
     # without orders there should be no join issued.
     query1 = Trade.get_trades([], include_orders=False)
 
-    assert "JOIN orders" in str(query)
-    assert "JOIN orders" not in str(query1)
+    # Empty "with-options -> default - selectin"
+    assert query._with_options == ()
+    assert query1._with_options != ()
 
     create_mock_trades(fee, is_short)
     query = Trade.get_trades([])
     query1 = Trade.get_trades([], include_orders=False)
 
-    assert "JOIN orders" in str(query)
-    assert "JOIN orders" not in str(query1)
+    assert query._with_options == ()
+    assert query1._with_options != ()
 
 
 def test_get_trades_backtest():
