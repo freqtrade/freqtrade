@@ -306,7 +306,7 @@ async def _main(args):
         producer['host'],
         producer['port'],
         producer['ws_token'],
-        'wss' if producer['secure'] else 'ws',
+        'wss' if producer.get('secure', False) else 'ws',
         producer['name'],
         sleep_time=sleep_time,
         ping_timeout=ping_timeout,
