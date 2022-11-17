@@ -354,7 +354,7 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.FUTURES:
             self._schedule.run_pending()
 
-    def update_closed_trades_without_assigned_fees(self):
+    def update_closed_trades_without_assigned_fees(self) -> None:
         """
         Update closed trades without close fees assigned.
         Only acts when Orders are in the database, otherwise the last order-id is unknown.
@@ -379,7 +379,7 @@ class FreqtradeBot(LoggingMixin):
                                             stoploss_order=order.ft_order_side == 'stoploss',
                                             send_msg=False)
 
-        trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+        trades = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
             if trade.is_open and not trade.fee_updated(trade.entry_side):
                 order = trade.select_order(trade.entry_side, False)

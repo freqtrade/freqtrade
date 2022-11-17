@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
+from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -788,14 +788,8 @@ class IFreqaiModel(ABC):
         :return: if the data exists or not
         """
         if self.config.get("freqai_backtest_live_models", False) and len(dataframe_backtest) == 0:
-            tr_backtest_startts_str = datetime.fromtimestamp(
-                                            tr_backtest.startts,
-                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            tr_backtest_stopts_str = datetime.fromtimestamp(
-                                            tr_backtest.stopts,
-                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            logger.info(f"No data found for pair {pair} from {tr_backtest_startts_str} "
-                        f" from {tr_backtest_startts_str} to {tr_backtest_stopts_str}. "
+            logger.info(f"No data found for pair {pair} from "
+                        f"from { tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
                         "Probably more than one training within the same candle period.")
             return False
         return True
@@ -810,18 +804,11 @@ class IFreqaiModel(ABC):
         :param pair: the current pair
         :param total_trains: total trains (total number of slides for the sliding window)
         """
-        tr_train_startts_str = datetime.fromtimestamp(
-                                            tr_train.startts,
-                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-        tr_train_stopts_str = datetime.fromtimestamp(
-                                            tr_train.stopts,
-                                            tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-
         if not self.config.get("freqai_backtest_live_models", False):
             logger.info(
                 f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
-                f" from {tr_train_startts_str} "
-                f"to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                f" from {tr_train.start_fmt} "
+                f"to {tr_train.stop_fmt}, {train_it}/{total_trains} "
                 "trains"
             )
     # Following methods which are overridden by user made prediction models.

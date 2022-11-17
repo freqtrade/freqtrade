@@ -76,12 +76,13 @@ class WebSocketChannel:
         Close the WebSocketChannel
         """
 
+        self._closed.set()
+        self._relay_task.cancel()
+
         try:
             await self._websocket.close()
         except Exception:
             pass
-
-        self._closed.set()
 
     def is_closed(self) -> bool:
         """

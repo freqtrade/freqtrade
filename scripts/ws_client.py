@@ -101,7 +101,7 @@ def json_deserialize(message):
     :param message: The message to deserialize
     """
     def json_to_dataframe(data: str) -> pandas.DataFrame:
-        dataframe = pandas.read_json(data, orient='split')
+        dataframe = pandas.DataFrame.from_dict(data, orient='tight')
         if 'date' in dataframe.columns:
             dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
 

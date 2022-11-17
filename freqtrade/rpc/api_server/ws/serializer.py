@@ -4,7 +4,7 @@ from typing import Any, Dict, Union
 
 import orjson
 import rapidjson
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
 
 from freqtrade.misc import dataframe_to_json, json_to_dataframe
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
@@ -51,6 +51,11 @@ def _json_default(z):
             '__type__': 'dataframe',
             '__value__': dataframe_to_json(z)
         }
+    # Pandas returns a Timestamp object, we need to
+    # convert it to a timestamp int (with ms) for orjson
+    # to handle it
+    if isinstance(z, Timestamp):
+        return z.timestamp() * 1e3
     raise TypeError
 
 
