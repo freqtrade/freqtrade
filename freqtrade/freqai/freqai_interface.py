@@ -68,7 +68,7 @@ class IFreqaiModel(ABC):
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.save_live_data_backtest: bool = self.freqai_info.get(
-            "save_live_data_backtest", True)
+            "save_live_data_backtest", False)
         if self.save_live_data_backtest:
             logger.info('Live configured to save data for backtest.')
 

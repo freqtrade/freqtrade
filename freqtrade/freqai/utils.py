@@ -230,7 +230,7 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     dk = FreqaiDataKitchen(config)
     models_path = dk.get_full_models_path(config)
     timerange: TimeRange = TimeRange()
-    if not config.get("save_live_data_backtest", True):
+    if not config.get("save_live_data_backtest", False):
         timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
     else:
         timerange = dk.get_timerange_from_backtesting_live_dataframe()
