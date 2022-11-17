@@ -392,7 +392,7 @@ class Edge:
         # Returning a list of pairs in order of "expectancy"
         return final
 
-    def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
+    def _find_trades_for_stoploss_range(self, df, pair: str, stoploss_range) -> list:
         buy_column = df['enter_long'].values
         sell_column = df['exit_long'].values
         date_column = df['date'].values
@@ -407,7 +407,7 @@ class Edge:
         return result
 
     def _detect_next_stop_or_sell_point(self, buy_column, sell_column, date_column,
-                                        ohlc_columns, stoploss, pair):
+                                        ohlc_columns, stoploss, pair: str):
         """
         Iterate through ohlc_columns in order to find the next trade
         Next trade opens from the first buy signal noticed to

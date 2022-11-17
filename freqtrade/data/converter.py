@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from operator import itemgetter
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
@@ -313,3 +314,29 @@ def convert_ohlcv_format(
                 if erase and convert_from != convert_to:
                     logger.info(f"Deleting source data for {pair} / {timeframe}")
                     src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
+
+
+def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
+    """
+    Ensure all values are float32 in the incoming dataframe.
+    :param df: Dataframe to be converted to float/int 32s
+    :return: Dataframe converted to float/int 32s
+    """
+
+    logger.debug(f"Memory usage of dataframe is "
+                 f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+
+    df_dtypes = df.dtypes
+    for column, dtype in df_dtypes.items():
+        if column in ['open', 'high', 'low', 'close', 'volume']:
+            continue
+        if dtype == np.float64:
+            df_dtypes[column] = np.float32
+        elif dtype == np.int64:
+            df_dtypes[column] = np.int32
+    df = df.astype(df_dtypes)
+
+    logger.debug(f"Memory usage after optimization is: "
+                 f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+
+    return df

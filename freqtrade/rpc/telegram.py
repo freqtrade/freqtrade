@@ -1061,7 +1061,8 @@ class Telegram(RPCHandler):
             try:
                 self._rpc._rpc_force_entry(pair, price, order_side=order_side)
             except RPCException as e:
-                self._send_msg(str(e))
+                logger.exception("Forcebuy error!")
+                self._send_msg(str(e), ParseMode.HTML)
 
     def _force_enter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:

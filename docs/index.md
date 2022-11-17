@@ -40,7 +40,6 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [FTX](https://ftx.com/#a=2258149)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [Huobi](http://huobi.com/)
 - [X] [Kraken](https://kraken.com/)

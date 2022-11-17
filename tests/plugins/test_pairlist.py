@@ -612,9 +612,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
      "BTC", "binance", ['ETH/BTC', 'LTC/BTC', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
-       "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
-     "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
+    # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+    #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
+    #  "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
 ])
 def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
                               pairlists, base_currency, exchange, volumefilter_result) -> None:
@@ -635,8 +635,6 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     ohlcv_history_high_volume['low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
     ohlcv_history_high_volume['high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
     ohlcv_history_high_volume['close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
-
-    mocker.patch('freqtrade.exchange.ftx.Ftx.market_is_tradable', return_value=True)
 
     ohlcv_data = {
         ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history,

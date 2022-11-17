@@ -166,7 +166,7 @@ class Backtesting:
         PairLocks.use_db = True
         Trade.use_db = True
 
-    def init_backtest_detail(self):
+    def init_backtest_detail(self) -> None:
         # Load detail timeframe if specified
         self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
         if self.timeframe_detail:

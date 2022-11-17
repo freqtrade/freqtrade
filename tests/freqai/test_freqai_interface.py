@@ -27,13 +27,13 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan', [
-    ('LightGBMRegressor', True, False),
-    ('XGBoostRegressor', False, True),
-    ('XGBoostRFRegressor', False, False),
-    ('CatboostRegressor', False, False),
+@pytest.mark.parametrize('model, pca, dbscan, float32', [
+    ('LightGBMRegressor', True, False, True),
+    ('XGBoostRegressor', False, True, False),
+    ('XGBoostRFRegressor', False, False, False),
+    ('CatboostRegressor', False, False, False),
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -43,6 +43,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     freqai_conf.update({"strategy": "freqai_test_strat"})
     freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
+    freqai_conf.update({"reduce_df_footprint": float32})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)

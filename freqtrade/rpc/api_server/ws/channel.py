@@ -35,8 +35,6 @@ class WebSocketChannel:
 
         # The WebSocket object
         self._websocket = WebSocketProxy(websocket)
-        # The Serializing class for the WebSocket object
-        self._serializer_cls = serializer_cls
 
         self.drain_timeout = drain_timeout
         self.throttle = throttle
@@ -50,7 +48,7 @@ class WebSocketChannel:
         self._closed = asyncio.Event()
 
         # Wrap the WebSocket in the Serializing class
-        self._wrapped_ws = self._serializer_cls(self._websocket)
+        self._wrapped_ws = serializer_cls(self._websocket)
 
     def __repr__(self):
         return f"WebSocketChannel({self.channel_id}, {self.remote_addr})"

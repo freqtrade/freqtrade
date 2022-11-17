@@ -3036,7 +3036,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
+@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'kraken', 'bittrex'],
                          indirect=['limit_buy_order_canceled_empty'])
 def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short, fee,
                                        limit_buy_order_canceled_empty) -> None:
