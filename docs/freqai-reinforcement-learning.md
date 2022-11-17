@@ -20,7 +20,7 @@ With the current framework, we aim to expose the training environment via the co
 
 We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configruation settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
 
-The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework (albeit with some basic assistance from core-dev). For the environment, it is inheriting from `gym.env` which means that a user would need to write an entirely new environment if they wish to switch to a different library. 
+The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework. For the environment, it is inheriting from `gym.env` which means that it is necessary to write an entirely new environment in order to switch to a different library. 
 
 
 ## Running Reinforcement Learning

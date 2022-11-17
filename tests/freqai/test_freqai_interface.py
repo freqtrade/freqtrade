@@ -196,7 +196,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac():
+    if is_mac() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
     Trade.use_db = False
 
