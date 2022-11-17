@@ -1519,15 +1519,13 @@ class FreqaiDataKitchen:
 
         pair_path = pair.split(":")[0].replace("/", "_").lower()
         file_name = f"live_backtesting_{pair_path}.feather"
-        path_to_live_backtesting_file = Path(self.full_path /
-                                             self.backtesting_live_model_folder_path /
-                                             file_name)
-        path_to_live_backtesting_bkp_file = Path(self.full_path /
-                                                 self.backtesting_live_model_folder_path /
-                                                 file_name.replace(".feather", ".backup.feather"))
-
-        self.backtesting_live_model_path = path_to_live_backtesting_file
-        self.backtesting_live_model_bkp_path = path_to_live_backtesting_bkp_file
+        self.backtesting_live_model_path = Path(self.full_path /
+                                                self.backtesting_live_model_folder_path /
+                                                file_name)
+        self.backtesting_live_model_bkp_path = Path(
+            self.full_path /
+            self.backtesting_live_model_folder_path /
+            file_name.replace(".feather", ".backup.feather"))
 
     def save_backtesting_live_dataframe(
         self, dataframe: DataFrame, pair: str
@@ -1566,15 +1564,12 @@ class FreqaiDataKitchen:
             return saved_dataframe
         else:
             raise OperationalException(
-                "Saved pair file not found"
+                "Saved live backtesting dataframe file not found."
             )
 
-    def get_timerange_from_backtesting_live_dataframe(
-            self) -> TimeRange:
+    def get_timerange_from_backtesting_live_dataframe(self) -> TimeRange:
         """
-        Returns timerange information based on a FreqAI model directory
-        :param models_path: FreqAI model path
-
+        Returns timerange information based on live backtesting dataframe file
         :return: timerange calculated from saved live data
         """
         all_assets_start_dates = []
@@ -1592,7 +1587,7 @@ class FreqaiDataKitchen:
                 all_assets_start_dates.append(saved_dataframe.date.min())
                 all_assets_end_dates.append(saved_dataframe.date.max())
         start_date = min(all_assets_start_dates)
-        end_date = min(all_assets_end_dates)
+        end_date = max(all_assets_end_dates)
         # add 1 day to string timerange to ensure BT module will load all dataframe data
         end_date = end_date + timedelta(days=1)
         backtesting_timerange = TimeRange(

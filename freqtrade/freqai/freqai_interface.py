@@ -335,8 +335,6 @@ class IFreqaiModel(ABC):
         """
         pair = metadata["pair"]
         dk.return_dataframe = dataframe
-
-        dk.return_dataframe = dataframe
         self.dk.set_backtesting_live_dataframe_path(pair)
         saved_dataframe = self.dk.get_backtesting_live_dataframe()
         columns_to_drop = list(set(dk.return_dataframe.columns).difference(

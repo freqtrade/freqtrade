@@ -81,7 +81,7 @@ To save the models generated during a particular backtest so that you can start 
 
 ### Backtest live models
 
-FreqAI allow you to reuse ready models through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse models generated in dry/run for comparison or other study. For that, you must set `"purge_old_models"` to `True` in the config.
+FreqAI allow you to reuse ready models through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse models generated in dry/run for comparison or other study. For that, you must set `"purge_old_models"` to `False` in the config.
 
 The `--timerange` parameter must not be informed, as it will be automatically calculated through the training end dates of the models.
 
