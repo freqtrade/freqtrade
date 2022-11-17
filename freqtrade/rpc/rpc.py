@@ -218,9 +218,10 @@ class RPC:
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                    open_order='({} {} rem={:.8f})'.format(
-                        order.order_type, order.side, order.remaining
-                    ) if order else None,
+                    open_order=(
+                        f'({order.order_type} {order.side} rem={order.safe_remaining:.8f})' if
+                        order else None
+                    ),
                 ))
                 results.append(trade_dict)
             return results
