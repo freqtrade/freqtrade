@@ -235,7 +235,4 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     else:
         timerange = dk.get_timerange_from_backtesting_live_dataframe()
 
-    start_date = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-    end_date = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-    tr = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-    return tr
+    return timerange.timerange_str

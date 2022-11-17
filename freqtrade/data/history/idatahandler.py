@@ -366,13 +366,11 @@ class IDataHandler(ABC):
         """
 
         if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-            if pairdata.iloc[0]['date'] > start:
+            if pairdata.iloc[0]['date'] > timerange.startdt:
                 logger.warning(f"{pair}, {candle_type}, {timeframe}, "
                                f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}")
         if timerange.stoptype == 'date':
-            stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-            if pairdata.iloc[-1]['date'] < stop:
+            if pairdata.iloc[-1]['date'] < timerange.stopdt:
                 logger.warning(f"{pair}, {candle_type}, {timeframe}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
 
