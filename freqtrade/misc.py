@@ -262,7 +262,10 @@ def dataframe_to_json(dataframe: pandas.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
-    return dataframe.to_json(orient='split')
+    # https://github.com/pandas-dev/pandas/issues/24889
+    # https://github.com/pandas-dev/pandas/issues/40443
+    # We need to convert to a dict to avoid mem leak
+    return dataframe.to_dict(orient='tight')
 
 
 def json_to_dataframe(data: str) -> pandas.DataFrame:
@@ -271,7 +274,7 @@ def json_to_dataframe(data: str) -> pandas.DataFrame:
     :param data: A JSON string
     :returns: A pandas DataFrame from the JSON string
     """
-    dataframe = pandas.read_json(data, orient='split')
+    dataframe = pandas.DataFrame.from_dict(data, orient='tight')
     if 'date' in dataframe.columns:
         dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
 
