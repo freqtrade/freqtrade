@@ -433,9 +433,7 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            start = datetime.fromtimestamp(timerange_train.startts, tz=timezone.utc)
-            stop = datetime.fromtimestamp(timerange_train.stopts, tz=timezone.utc)
-            tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_training_list.append(timerange_train.timerange_str)
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
             # associated backtest period
@@ -447,9 +445,7 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            start = datetime.fromtimestamp(timerange_backtest.startts, tz=timezone.utc)
-            stop = datetime.fromtimestamp(timerange_backtest.stopts, tz=timezone.utc)
-            tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_backtesting_list.append(timerange_backtest.timerange_str)
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
             # ensure we are predicting on exactly same amount of data as requested by user defined
@@ -491,11 +487,9 @@ class FreqaiDataKitchen:
                    it is sliced down to just the present training period.
         """
 
-        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df["date"] >= start, :]
+        df = df.loc[df["date"] >= timerange.startdt, :]
         if not self.live:
-            df = df.loc[df["date"] < stop, :]
+            df = df.loc[df["date"] < timerange.stopdt, :]
 
         return df
 
@@ -1058,9 +1052,7 @@ class FreqaiDataKitchen:
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
         )
-        start = datetime.fromtimestamp(backtest_timerange.startts, tz=timezone.utc)
-        stop = datetime.fromtimestamp(backtest_timerange.stopts, tz=timezone.utc)
-        full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
+        full_timerange = backtest_timerange.timerange_str
         config_path = Path(self.config["config_files"][0])
 
         if not self.full_path.is_dir():
