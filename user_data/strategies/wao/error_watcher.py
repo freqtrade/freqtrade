@@ -34,7 +34,7 @@ def stop_bot(error_line):
     out_put = out.decode('latin-1')
 
 
-def smooth_romeo_restart(error_line):
+def smooth_romeo_restart(error_line, notifier):
     romeo = BrainConfig.ROMEO_POOL.get(Config.COIN)
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
@@ -45,7 +45,7 @@ def smooth_romeo_restart(error_line):
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
         romeo.send_error_report(error_line)  # send_to_trello_and_telegram
     else:
-        send_to_trello_and_telegram(title=error_line, description=error_line)
+        send_to_trello_and_telegram(title=error_line, description=error_line, notifier=notifier)
 
 
 def string_to_list(string):
@@ -62,14 +62,14 @@ def get_tail_cmd_result(file_name):
     return string_to_list(out_put_string)
 
 
-def check_error_condition(file_name):
+def check_error_condition(file_name, notifier):
     error_line = get_error_line(file_name)
 
     if error_line is not None and not is_freqtrade_error(error_line) and not is_timed_out_error(error_line):
         is_error_watcher_throttle_hit = time.time() - BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
 
         if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED and is_error_watcher_throttle_hit:
-            smooth_romeo_restart(error_line)
+            smooth_romeo_restart(error_line, notifier)
         else:
             stop_bot(error_line)
             send_to_trello(title="[STOPBOT] "+error_line, description="is_error_watcher_throttle_hit=" + str(is_error_watcher_throttle_hit) + " " + error_line)
@@ -97,8 +97,7 @@ def get_error_line(file_name):
     return None
 
 
-def send_to_trello_and_telegram(title, description):
-    notifier = Notifier(BrainConfig.MODE)
+def send_to_trello_and_telegram(title, description, notifier):
     notifier.create_trello_bug_ticket(title, description)
     notifier.post_request(description, is_from_error_report=True)
 
