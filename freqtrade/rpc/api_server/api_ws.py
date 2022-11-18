@@ -1,16 +1,14 @@
-import asyncio
 import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket
 from pydantic import ValidationError
-from websockets.exceptions import ConnectionClosed
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_message_stream, get_rpc
-from freqtrade.rpc.api_server.ws import WebSocketChannel
+from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
                                                  WSRequestSchema, WSWhitelistMessage)
@@ -23,45 +21,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class WebSocketChannelClosed(Exception):
-    """
-    General WebSocket exception to signal closing the channel
-    """
-    pass
-
-
 async def channel_reader(channel: WebSocketChannel, rpc: RPC):
     """
     Iterate over the messages from the channel and process the request
     """
-    try:
-        async for message in channel:
-            await _process_consumer_request(message, channel, rpc)
-    except (
-        RuntimeError,
-        WebSocketDisconnect,
-        ConnectionClosed
-    ):
-        raise WebSocketChannelClosed
-    except asyncio.CancelledError:
-        return
+    async for message in channel:
+        await _process_consumer_request(message, channel, rpc)
 
 
 async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream):
     """
     Iterate over messages in the message stream and send them
     """
-    try:
-        async for message in message_stream:
-            await channel.send(message)
-    except (
-        RuntimeError,
-        WebSocketDisconnect,
-        ConnectionClosed
-    ):
-        raise WebSocketChannelClosed
-    except asyncio.CancelledError:
-        return
+    async for message in message_stream:
+        await channel.send(message)
 
 
 async def _process_consumer_request(
@@ -103,15 +76,11 @@ async def _process_consumer_request(
 
         # Format response
         response = WSWhitelistMessage(data=whitelist)
-        # Send it back
         await channel.send(response.dict(exclude_none=True))
 
     elif type == RPCRequestType.ANALYZED_DF:
-        limit = None
-
-        if data:
-            # Limit the amount of candles per dataframe to 'limit' or 1500
-            limit = max(data.get('limit', 1500), 1500)
+        # Limit the amount of candles per dataframe to 'limit' or 1500
+        limit = min(data.get('limit', 1500), 1500) if data else None
 
         # For every pair in the generator, send a separate message
         for message in rpc._ws_request_analyzed_df(limit):
@@ -127,17 +96,8 @@ async def message_endpoint(
     rpc: RPC = Depends(get_rpc),
     message_stream: MessageStream = Depends(get_message_stream)
 ):
-    async with WebSocketChannel(websocket).connect() as channel:
-        try:
-            logger.info(f"Channel connected - {channel}")
-
-            channel_tasks = asyncio.gather(
-                channel_reader(channel, rpc),
-                channel_broadcaster(channel, message_stream)
-            )
-            await channel_tasks
-        except WebSocketChannelClosed:
-            pass
-        finally:
-            logger.info(f"Channel disconnected - {channel}")
-            channel_tasks.cancel()
+    async with create_channel(websocket) as channel:
+        await channel.run_channel_tasks(
+            channel_reader(channel, rpc),
+            channel_broadcaster(channel, message_stream)
+        )

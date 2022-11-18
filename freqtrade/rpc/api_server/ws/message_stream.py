@@ -17,7 +17,8 @@ class MessageStream:
     async def subscribe(self):
         waiter = self._waiter
         while True:
-            message, waiter = await waiter
+            # Shield the future from being cancelled by a task waiting on it
+            message, waiter = await asyncio.shield(waiter)
             yield message
 
     __aiter__ = subscribe

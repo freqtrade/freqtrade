@@ -94,6 +94,7 @@ class ApiServer(RPCHandler):
         del ApiServer._rpc
         if self._server and not self._standalone:
             logger.info("Stopping API Server")
+            # self._server.force_exit, self._server.should_exit = True, True
             self._server.cleanup()
 
     @classmethod
