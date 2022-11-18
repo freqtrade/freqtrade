@@ -10,7 +10,8 @@ from typing import Any, Dict, Iterator, List, Mapping, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
-import pandas
+import orjson
+import pandas as pd
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
@@ -256,7 +257,7 @@ def parse_db_uri_for_logging(uri: str):
     return parsed_db_uri.geturl().replace(f':{pwd}@', ':*****@')
 
 
-def dataframe_to_json(dataframe: pandas.DataFrame) -> str:
+def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     """
     Serialize a DataFrame for transmission over the wire using JSON
     :param dataframe: A pandas DataFrame
@@ -265,23 +266,28 @@ def dataframe_to_json(dataframe: pandas.DataFrame) -> str:
     # https://github.com/pandas-dev/pandas/issues/24889
     # https://github.com/pandas-dev/pandas/issues/40443
     # We need to convert to a dict to avoid mem leak
-    return dataframe.to_dict(orient='tight')
+    def default(z):
+        if isinstance(z, pd.Timestamp):
+            return z.timestamp() * 1e3
+        raise TypeError
+
+    return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')
 
 
-def json_to_dataframe(data: str) -> pandas.DataFrame:
+def json_to_dataframe(data: str) -> pd.DataFrame:
     """
     Deserialize JSON into a DataFrame
     :param data: A JSON string
     :returns: A pandas DataFrame from the JSON string
     """
-    dataframe = pandas.DataFrame.from_dict(data, orient='tight')
+    dataframe = pd.read_json(data, orient='split')
     if 'date' in dataframe.columns:
-        dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
+        dataframe['date'] = pd.to_datetime(dataframe['date'], unit='ms', utc=True)
 
     return dataframe
 
 
-def remove_entry_exit_signals(dataframe: pandas.DataFrame):
+def remove_entry_exit_signals(dataframe: pd.DataFrame):
     """
     Remove Entry and Exit signals from a DataFrame
 
