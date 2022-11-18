@@ -10,10 +10,12 @@ class WAOStrategyController:
 
     def __init__(self, time_out_hours, dup):
         Config.BRAIN = BrainConfig.BRAIN
-        self.time_out_hours = time_out_hours
+        Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
         self.dup = dup
         self.notifier = Notifier(BrainConfig.MODE)
-        print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
+        print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST) +
+              ", system.version=" + str(Config.VERSION) + ", brain=" + Config.BRAIN +
+              ", system_ss_timeout_hour=" + str(Config.ROMEO_SS_TIMEOUT_HOURS))
         create_watchers(self.notifier)
         clear_cumulative_value()
         create_initial_account_balance_binance_file()
@@ -34,7 +36,7 @@ class WAOStrategyController:
             return
 
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, BrainConfig.BRAIN, self.time_out_hours, self.dup, "buy")
+            write_to_backtest_table(current_time, coin, self.dup, "buy")
         else:
             self.__buy_execute(coin)
 
@@ -47,7 +49,7 @@ class WAOStrategyController:
             return
 
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, BrainConfig.BRAIN, self.time_out_hours, self.dup, "sell")
+            write_to_backtest_table(current_time, coin, self.dup, "sell")
         else:
             perform_execute_sell(coin)
             remove_from_pool(coin)
@@ -55,9 +57,9 @@ class WAOStrategyController:
     def __buy_execute(self, coin):
         if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
-                             args=(coin, BrainConfig.BRAIN, self.time_out_hours, self.dup)).start()
+                             args=(coin, self.dup)).start()
         else:
-            perform_execute_buy(coin, BrainConfig.BRAIN, self.time_out_hours, self.dup)
+            perform_execute_buy(coin, self.dup)
 
     def __send_start_deliminator_message(self, brain, month, year):
         print("WAOStrategyController: send_start_deliminator_message: ")
