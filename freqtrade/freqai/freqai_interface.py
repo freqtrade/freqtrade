@@ -53,6 +53,7 @@ class IFreqaiModel(ABC):
     def __init__(self, config: Config) -> None:
 
         self.config = config
+        self.metadata: Dict[str, Any] = {}
         self.assert_config(self.config)
         self.freqai_info: Dict[str, Any] = config["freqai"]
         self.data_split_parameters: Dict[str, Any] = config.get("freqai", {}).get(
@@ -67,10 +68,10 @@ class IFreqaiModel(ABC):
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
-        self.save_live_data_backtest: bool = self.freqai_info.get(
-            "save_live_data_backtest", False)
-        if self.save_live_data_backtest:
-            logger.info('Live configured to save data for backtest.')
+        self.backtest_using_historic_predictions: bool = self.freqai_info.get(
+            "backtest_using_historic_predictions", True)
+        if self.backtest_using_historic_predictions:
+            logger.info('Backtesting live models configured to use historic predictions.')
 
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         # set current candle to arbitrary historical date
@@ -103,6 +104,7 @@ class IFreqaiModel(ABC):
         self.get_corr_dataframes: bool = True
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+        self.metadata = self.dd.load_global_metadata_from_disk()
 
         record_params(config, self.full_path)
 
@@ -136,6 +138,7 @@ class IFreqaiModel(ABC):
             self.inference_timer('start')
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
+            dataframe = dk.remove_features_from_df(dk.return_dataframe)
 
         # For backtesting, each pair enters and then gets trained for each window along the
         # sliding window defined by "train_period_days" (training window) and "live_retrain_hours"
@@ -145,14 +148,19 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             if self.dk.backtest_live_models:
-                logger.info(
-                    f"Backtesting {len(self.dk.backtesting_timeranges)} timeranges (live models)")
+                if self.backtest_using_historic_predictions:
+                    logger.info(
+                        "Backtesting using historic predictions (live models)")
+                else:
+                    logger.info(
+                        f"Backtesting {len(self.dk.backtesting_timeranges)} "
+                        "timeranges (live models)")
             else:
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
             dataframe = self.dk.use_strategy_to_populate_indicators(
                 strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
             )
-            if not self.save_live_data_backtest:
+            if not self.backtest_using_historic_predictions:
                 dk = self.start_backtesting(dataframe, metadata, self.dk)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
@@ -163,8 +171,7 @@ class IFreqaiModel(ABC):
         self.clean_up()
         if self.live:
             self.inference_timer('stop', metadata["pair"])
-            if self.save_live_data_backtest:
-                dk.save_backtesting_live_dataframe(dataframe, metadata["pair"])
+            self.set_start_dry_live_date(dataframe)
 
         return dataframe
 
@@ -335,14 +342,12 @@ class IFreqaiModel(ABC):
         """
         pair = metadata["pair"]
         dk.return_dataframe = dataframe
-        self.dk.set_backtesting_live_dataframe_path(pair)
-        saved_dataframe = self.dk.get_backtesting_live_dataframe()
-        columns_to_drop = list(set(dk.return_dataframe.columns).difference(
-            ["date", "open", "high", "low", "close", "volume"]))
-        saved_dataframe = saved_dataframe.drop(
-            columns=["open", "high", "low", "close", "volume"])
+        saved_dataframe = self.dd.historic_predictions[pair]
+        columns_to_drop = list(set(saved_dataframe.columns).intersection(
+            dk.return_dataframe.columns))
         dk.return_dataframe = dk.return_dataframe.drop(columns=list(columns_to_drop))
-        dk.return_dataframe = pd.merge(dk.return_dataframe, saved_dataframe, how='left', on='date')
+        dk.return_dataframe = pd.merge(
+            dk.return_dataframe, saved_dataframe, how='left', left_on='date', right_on="date_pred")
         # dk.return_dataframe = dk.return_dataframe[saved_dataframe.columns].fillna(0)
         return dk
 
@@ -885,6 +890,22 @@ class IFreqaiModel(ABC):
                             self.dk.data["extra_returns_per_train"][extra_col])
 
         return
+
+    def update_metadata(self, metadata: Dict[str, Any]):
+        """
+        Update global metadata and save the updated json file
+        :param metadata: new global metadata dict
+        """
+        self.dd.save_global_metadata_to_disk(metadata)
+        self.metadata = metadata
+
+    def set_start_dry_live_date(self, live_dataframe: DataFrame):
+        key_name = "start_dry_live_date"
+        if key_name not in self.metadata:
+            metadata = self.metadata
+            metadata[key_name] = int(
+                pd.to_datetime(live_dataframe.tail(1)["date"].values[0]).timestamp())
+            self.update_metadata(metadata)
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

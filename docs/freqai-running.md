@@ -83,8 +83,8 @@ To save the models generated during a particular backtest so that you can start 
 
 FreqAI allow you to reuse ready models through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse predictions generated in dry/run for comparison or other study. For that, you have 2 options:
 
-1. Set `"save_live_data_backtest"` to `True` in the config. With this option, FreqAI will save the live dataframe for reuse in backtesting. This option requires less disk space and backtesting will run faster.
-2. Set `"purge_old_models"` to `False` and `"save_live_data_backtest"` to `False` in the config. In this case, FreqAI will use the saved models to make the predictions in backtesting. This option requires more disk space and the backtest will have a longer execution time.
+1. Set `"backtest_using_historic_predictions"` to `True` in the config. With this option, FreqAI will reuse `historic_predictions` in backtesting. This option requires less disk space and backtesting will run faster.
+2. Set `"purge_old_models"` to `False` and `"backtest_using_historic_predictions"` to `False` in the config. In this case, FreqAI will use the saved models to make the predictions in backtesting. This option requires more disk space and the backtest will have a longer execution time.
 
 The `--timerange` parameter must not be informed, as it will be automatically calculated through the training end dates of the models.
 

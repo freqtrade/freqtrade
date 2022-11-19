@@ -261,45 +261,18 @@ def test_get_full_model_path(mocker, freqai_conf, model):
     assert model_path.is_dir() is True
 
 
-def test_save_backtesting_live_dataframe(mocker, freqai_conf):
-    freqai, dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
-    dataframe_without_last_candle = dataframe.copy()
-    dataframe_without_last_candle.drop(dataframe.tail(1).index, inplace=True)
-    freqai_conf.update({"save_live_data_backtest": True})
-    freqai.dk.save_backtesting_live_dataframe(dataframe_without_last_candle, "ADA/BTC")
-    saved_dataframe = freqai.dk.get_backtesting_live_dataframe()
-    assert len(saved_dataframe) == 1
-    assert saved_dataframe.iloc[-1, 0] == dataframe_without_last_candle.iloc[-1, 0]
-    freqai.dk.save_backtesting_live_dataframe(dataframe, "ADA/BTC")
-    saved_dataframe = freqai.dk.get_backtesting_live_dataframe()
-    assert len(saved_dataframe) == 2
-    assert saved_dataframe.iloc[-1, 0] == dataframe.iloc[-1, 0]
-    assert saved_dataframe.iloc[-2, 0] == dataframe.iloc[-2, 0]
-
-
 def test_get_timerange_from_backtesting_live_dataframe(mocker, freqai_conf):
     freqai, dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
-    freqai_conf.update({"save_live_data_backtest": True})
-    freqai.dk.set_backtesting_live_dataframe_path("ADA/BTC")
-    freqai.dk.save_backtesting_live_dataframe_to_feather(dataframe)
+    freqai_conf.update({"backtest_using_historic_predictions": True})
     timerange = freqai.dk.get_timerange_from_backtesting_live_dataframe()
     assert timerange.startts == 1516406400
     assert timerange.stopts == 1517356500
 
 
-def test_get_timerange_from_backtesting_live_dataframe_folder_not_found(mocker, freqai_conf):
+def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_conf):
     freqai, _ = make_unfiltered_dataframe(mocker, freqai_conf)
     with pytest.raises(
             OperationalException,
-            match=r'Saved live data not found.*'
+            match=r'Historic predictions not found.*'
             ):
         freqai.dk.get_timerange_from_backtesting_live_dataframe()
-
-
-def test_saved_live_bt_file_not_found(mocker, freqai_conf):
-    freqai, _ = make_unfiltered_dataframe(mocker, freqai_conf)
-    with pytest.raises(
-            OperationalException,
-            match=r'.*live backtesting dataframe file not found.*'
-            ):
-        freqai.dk.get_backtesting_live_dataframe()

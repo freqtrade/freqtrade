@@ -300,37 +300,6 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_start_backtesting_from_saved_live_dataframe(mocker, freqai_conf, caplog):
-    freqai_conf.update({"save_live_data_backtest": True})
-    freqai_conf.update({"freqai_backtest_live_models": True})
-
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = False
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
-    corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
-    df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
-    metadata = {"pair": "ADA/BTC"}
-
-    # create a dummy live dataframe file with 10 rows
-    dataframe_predictions = df.tail(10).copy()
-    dataframe_predictions["&s_close"] = dataframe_predictions["close"] * 1.1
-    freqai.dk.set_backtesting_live_dataframe_path("ADA/BTC")
-    freqai.dk.save_backtesting_live_dataframe_to_feather(dataframe_predictions)
-
-    freqai.start_backtesting_from_live_saved_files(df, metadata, freqai.dk)
-    assert len(freqai.dk.return_dataframe) == len(df)
-    assert len(freqai.dk.return_dataframe[freqai.dk.return_dataframe["&s_close"] > 0]) == (
-        len(dataframe_predictions))
-    shutil.rmtree(Path(freqai.dk.full_path))
-
-
 def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     freqai_conf.get("freqai", {}).update({"fit_live_predictions_candles": 10})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
