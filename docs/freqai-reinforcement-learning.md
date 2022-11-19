@@ -23,6 +23,11 @@ We envision the majority of users focusing their effort on creative design of th
 The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework. For the environment, it is inheriting from `gym.env` which means that it is necessary to write an entirely new environment in order to switch to a different library. 
 
 
+### Important considerations
+
+As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL trading environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks such as `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free-will to learn the policy (read: stoploss, take profit, ect) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
+
+
 ## Running Reinforcement Learning
 
 Setting up and running a Reinforcement Learning model is the same as running a Regressor or Classifier. The same two flags, `--freqaimodel` and `--strategy`, must be defined on the command line:
