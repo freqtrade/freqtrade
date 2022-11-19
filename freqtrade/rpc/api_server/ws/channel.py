@@ -63,8 +63,8 @@ class WebSocketChannel:
         # With the sleep call, it gives control to the event
         # loop to schedule other channel send methods, and helps
         # throttle how fast we send.
-        # 0.01 = 100 messages/second max throughput
-        await asyncio.sleep(0.01)
+        # 0.005 = 200 messages/second max throughput
+        await asyncio.sleep(0.005)
 
     async def recv(self):
         """
