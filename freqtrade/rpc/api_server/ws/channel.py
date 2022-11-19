@@ -55,14 +55,16 @@ class WebSocketChannel:
         """
         Send a message on the wrapped websocket
         """
+        await self._wrapped_ws.send(message)
 
         # Without this sleep, messages would send to one channel
-        # first then another after the first one finished.
+        # first then another after the first one finished and prevent
+        # any normal Rest API calls from processing at the same time.
         # With the sleep call, it gives control to the event
-        # loop to schedule other channel send methods.
-        await asyncio.sleep(0)
-
-        return await self._wrapped_ws.send(message)
+        # loop to schedule other channel send methods, and helps
+        # throttle how fast we send.
+        # 0.01 = 100 messages/second max throughput
+        await asyncio.sleep(0.01)
 
     async def recv(self):
         """
@@ -132,12 +134,10 @@ class WebSocketChannel:
         ]
 
         try:
-            await asyncio.gather(*self._channel_tasks, **kwargs)
+            return await asyncio.gather(*self._channel_tasks, **kwargs)
         except Exception:
-            # If an exception occurred, cancel the rest of the tasks and bubble up
-            # the error that was caught here
+            # If an exception occurred, cancel the rest of the tasks
             await self.cancel_channel_tasks()
-            raise
 
     async def cancel_channel_tasks(self):
         """
@@ -176,8 +176,6 @@ async def create_channel(websocket: WebSocketType, **kwargs):
         logger.info(f"Connected to channel - {channel}")
 
         yield channel
-    except Exception:
-        pass
     finally:
         await channel.close()
         logger.info(f"Disconnected from channel - {channel}")

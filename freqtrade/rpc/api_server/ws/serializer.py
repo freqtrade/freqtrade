@@ -31,7 +31,6 @@ class WebSocketSerializer(ABC):
 
     async def recv(self) -> bytes:
         data = await self._websocket.recv()
-
         return self._deserialize(data)
 
 
