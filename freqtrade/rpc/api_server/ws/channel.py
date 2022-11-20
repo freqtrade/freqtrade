@@ -3,7 +3,7 @@ import logging
 import time
 from collections import deque
 from contextlib import asynccontextmanager
-from typing import Any, Deque, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, Deque, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
@@ -99,6 +99,15 @@ class WebSocketChannel:
             logger.info(f"Connection for {self} is too far behind, disconnecting")
             raise
 
+        # Without this sleep, messages would send to one channel
+        # first then another after the first one finished and prevent
+        # any normal Rest API calls from processing at the same time.
+        # With the sleep call, it gives control to the event
+        # loop to schedule other channel send methods, and helps
+        # throttle how fast we send.
+        # 0.01 = 100 messages/second max throughput
+        await asyncio.sleep(0.01)
+
     async def recv(self):
         """
         Receive a message on the wrapped websocket
@@ -180,10 +189,7 @@ class WebSocketChannel:
             task.cancel()
 
         # Wait for tasks to finish cancelling
-        try:
-            await asyncio.wait(self._channel_tasks)
-        except asyncio.CancelledError:
-            pass
+        await asyncio.wait(self._channel_tasks)
 
         self._channel_tasks = []
 
@@ -199,7 +205,10 @@ class WebSocketChannel:
 
 
 @asynccontextmanager
-async def create_channel(websocket: WebSocketType, **kwargs):
+async def create_channel(
+    websocket: WebSocketType,
+    **kwargs
+) -> AsyncGenerator[WebSocketChannel, None]:
     """
     Context manager for safely opening and closing a WebSocketChannel
     """
