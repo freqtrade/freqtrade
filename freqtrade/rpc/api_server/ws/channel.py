@@ -3,7 +3,7 @@ import logging
 import time
 from collections import deque
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Deque, Dict, List, Optional, Type, Union
+from typing import Any, AsyncIterator, Deque, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
@@ -208,7 +208,7 @@ class WebSocketChannel:
 async def create_channel(
     websocket: WebSocketType,
     **kwargs
-) -> AsyncGenerator[WebSocketChannel, None]:
+) -> AsyncIterator[WebSocketChannel]:
     """
     Context manager for safely opening and closing a WebSocketChannel
     """
