@@ -181,7 +181,7 @@ class ExternalMessageConsumer:
                 host, port = producer['host'], producer['port']
                 token = producer['ws_token']
                 name = producer['name']
-                scheme = 'wss' if producer['secure'] else 'ws'
+                scheme = 'wss' if producer.get('secure', False) else 'ws'
                 ws_url = f"{scheme}://{host}:{port}/api/v1/message/ws?token={token}"
 
                 # This will raise InvalidURI if the url is bad
