@@ -34,7 +34,7 @@ async def channel_broadcaster(channel: WebSocketChannel, message_stream: Message
     Iterate over messages in the message stream and send them
     """
     async for message in message_stream:
-        await channel.send(message)
+        await channel.send(message, timeout=True)
 
 
 async def _process_consumer_request(
