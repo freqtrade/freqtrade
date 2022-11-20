@@ -1486,34 +1486,3 @@ class FreqaiDataKitchen:
             dataframe.columns = dataframe.columns.str.replace(c, "")
 
         return dataframe
-
-    def get_timerange_from_backtesting_live_dataframe(self) -> TimeRange:
-        """
-        Returns timerange information based on historic predictions file
-        :return: timerange calculated from saved live data
-        """
-        from freqtrade.freqai.data_drawer import FreqaiDataDrawer
-        dd = FreqaiDataDrawer(Path(self.full_path), self.config)
-        if not dd.historic_predictions_path.is_file():
-            raise OperationalException(
-                'Historic predictions not found. Historic predictions data is required '
-                'to run backtest with the freqai-backtest-live-models option '
-                'and backtest_using_historic_predictions config option as true'
-            )
-
-        dd.load_historic_predictions_from_disk()
-
-        all_pairs_end_dates = []
-        for pair in dd.historic_predictions:
-            pair_historic_data = dd.historic_predictions[pair]
-            all_pairs_end_dates.append(pair_historic_data.date_pred.max())
-
-        global_metadata = dd.load_global_metadata_from_disk()
-        start_date = datetime.fromtimestamp(int(global_metadata["start_dry_live_date"]))
-        end_date = max(all_pairs_end_dates)
-        # add 1 day to string timerange to ensure BT module will load all dataframe data
-        end_date = end_date + timedelta(days=1)
-        backtesting_timerange = TimeRange(
-            'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
-        )
-        return backtesting_timerange

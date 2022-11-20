@@ -14,6 +14,7 @@ from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.exchange import market_is_active
+from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 
@@ -233,6 +234,7 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     if not config.get("freqai", {}).get("backtest_using_historic_predictions", True):
         timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
     else:
-        timerange = dk.get_timerange_from_backtesting_live_dataframe()
+        dd = FreqaiDataDrawer(models_path, config)
+        timerange = dd.get_timerange_from_backtesting_live_dataframe()
 
     return timerange.timerange_str

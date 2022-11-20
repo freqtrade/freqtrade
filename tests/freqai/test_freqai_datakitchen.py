@@ -190,6 +190,7 @@ def test_get_timerange_from_ready_models(mocker, freqai_conf, model):
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
+    freqai_conf.get("freqai", {}).update({"backtest_using_historic_predictions": False})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -259,20 +260,3 @@ def test_get_full_model_path(mocker, freqai_conf, model):
 
     model_path = freqai.dk.get_full_models_path(freqai_conf)
     assert model_path.is_dir() is True
-
-
-def test_get_timerange_from_backtesting_live_dataframe(mocker, freqai_conf):
-    freqai, dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
-    freqai_conf.update({"backtest_using_historic_predictions": True})
-    timerange = freqai.dk.get_timerange_from_backtesting_live_dataframe()
-    assert timerange.startts == 1516406400
-    assert timerange.stopts == 1517356500
-
-
-def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_conf):
-    freqai, _ = make_unfiltered_dataframe(mocker, freqai_conf)
-    with pytest.raises(
-            OperationalException,
-            match=r'Historic predictions not found.*'
-            ):
-        freqai.dk.get_timerange_from_backtesting_live_dataframe()
