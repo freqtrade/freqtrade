@@ -774,6 +774,9 @@ class RPC:
             is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
+            if trade.open_order_id is not None:
+                raise RPCException(f'position for {pair} already open - id: {trade.id} '
+                                   f'and has open order {trade.open_order_id}')
         else:
             if Trade.get_open_trade_count() >= self._config['max_open_trades']:
                 raise RPCException("Maximum number of trades is reached.")
