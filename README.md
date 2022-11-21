@@ -28,7 +28,6 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [FTX](https://ftx.com/#a=2258149)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [Huobi](http://huobi.com/)
 - [X] [Kraken](https://kraken.com/)
@@ -39,7 +38,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [OKX](https://okx.com/).
+- [X] [OKX](https://okx.com/)
 
 Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 

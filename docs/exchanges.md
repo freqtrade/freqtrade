@@ -173,26 +173,6 @@ res = [p for p, x in lm.items() if 'US' in x['info']['prohibitedIn']]
 print(res)
 ```
 
-## FTX
-
-!!! Tip "Stoploss on Exchange"
-    FTX supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
-    You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type of stoploss shall be used.
-
-### Using subaccounts
-
-To use subaccounts with FTX, you need to edit the configuration and add the following:
-
-``` json
-"exchange": {
-    "ccxt_config": {
-        "headers": {
-            "FTX-SUBACCOUNT": "name"
-        }
-    },
-}
-```
-
 ## Kucoin
 
 Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:

@@ -268,7 +268,7 @@ This option is disabled by default, and will only apply if set to > 0.
 The `max_value` setting removes pairs where the minimum value change is above a specified value.
 This is useful when an exchange has unbalanced limits. For example, if step-size = 1 (so you can only buy 1, or 2, or 3, but not 1.1 Coins) - and the price is pretty high (like 20\$) as the coin has risen sharply since the last limit adaption.
 As a result of the above, you can only buy for 20\$, or 40\$ - but not for 25\$.
-On exchanges that deduct fees from the receiving currency (e.g. FTX) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.
+On exchanges that deduct fees from the receiving currency (e.g. binance) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to > 0.
@@ -285,6 +285,18 @@ Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 -
 #### ShuffleFilter
 
 Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
+
+By default, ShuffleFilter will shuffle pairs once per candle.
+To shuffle on every iteration, set `"shuffle_frequency"` to `"iteration"` instead of  the default of `"candle"`.
+
+``` json
+    {
+        "method": "ShuffleFilter", 
+        "shuffle_frequency": "candle",
+        "seed": 42
+    }
+
+```
 
 !!! Tip
     You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the `seed` only for backtesting modes - if a `seed` value is set.

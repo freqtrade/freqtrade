@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import inspect, select, text, tuple_, update
 
@@ -31,9 +31,9 @@ def get_backup_name(tabs: List[str], backup_prefix: str):
     return table_back_name
 
 
-def get_last_sequence_ids(engine, trade_back_name, order_back_name):
-    order_id: int = None
-    trade_id: int = None
+def get_last_sequence_ids(engine, trade_back_name: str, order_back_name: str):
+    order_id: Optional[int] = None
+    trade_id: Optional[int] = None
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:

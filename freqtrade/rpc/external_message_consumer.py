@@ -264,10 +264,10 @@ class ExternalMessageConsumer:
                 # We haven't received data yet. Check the connection and continue.
                 try:
                     # ping
-                    ping = await channel.ping()
+                    pong = await channel.ping()
+                    latency = (await asyncio.wait_for(pong, timeout=self.ping_timeout) * 1000)
 
-                    await asyncio.wait_for(ping, timeout=self.ping_timeout)
-                    logger.debug(f"Connection to {channel} still alive...")
+                    logger.info(f"Connection to {channel} still alive, latency: {latency}ms")
 
                     continue
                 except (websockets.exceptions.ConnectionClosed):
@@ -276,7 +276,7 @@ class ExternalMessageConsumer:
                     await asyncio.sleep(self.sleep_time)
                     break
                 except Exception as e:
-                    logger.warning(f"Ping error {channel} - retrying in {self.sleep_time}s")
+                    logger.warning(f"Ping error {channel} - {e} - retrying in {self.sleep_time}s")
                     logger.debug(e, exc_info=e)
                     await asyncio.sleep(self.sleep_time)
 
