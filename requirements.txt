@@ -2,7 +2,7 @@ numpy==1.23.4
 pandas==1.5.1
 pandas-ta==0.3.14b
 
-ccxt==2.1.75
+ccxt==2.1.96
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==38.0.1; platform_machine == 'armv7l'
 cryptography==38.0.3; platform_machine != 'armv7l'
