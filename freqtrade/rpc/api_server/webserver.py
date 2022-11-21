@@ -212,7 +212,6 @@ class ApiServer(RPCHandler):
             if self._standalone:
                 self._server.run()
             else:
-                # self.start_message_queue()
                 self._server.run_in_thread()
         except Exception:
             logger.exception("Api server failed to start.")

@@ -6,6 +6,9 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Deque, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
+from fastapi import WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed
+
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
                                                     WebSocketSerializer)
@@ -189,7 +192,16 @@ class WebSocketChannel:
             task.cancel()
 
         # Wait for tasks to finish cancelling
-        await asyncio.wait(self._channel_tasks)
+        try:
+            await task
+        except (
+            asyncio.CancelledError,
+            WebSocketDisconnect,
+            ConnectionClosed
+        ):
+            pass
+        except Exception as e:
+            logger.info(f"Encountered unknown exception: {e}", exc_info=e)
 
         self._channel_tasks = []
 
