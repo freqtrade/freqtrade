@@ -389,6 +389,23 @@ Now anytime those types of RPC messages are sent in the bot, you will receive th
 }
 ```
 
+#### Reverse Proxy and Websockets
+
+There are some quirks when using a reverse proxy with the message websocket endpoint. The message websocket endpoint keeps a long-running connection open between the Rest API and the client. It's built on top of HTTP and uses the HTTP Upgrade mechanism to change from HTTP to WebSockets during connection. There are some challenges that a reverse proxy faces when supporting WebSockets, such as WebSockets are a hop-by-hop protocol, so when a proxy intercepts an Upgrade request from the client it needs to send it's own Upgrade request to the server, including appropriate headers. Also, since these connections are long lived, the proxy needs to allow these connections to remain open.
+
+When using Nginx, the following configuration is required for WebSockets to work:
+```
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $connection_upgrade;
+proxy_set_header Host $host;
+```
+
+To configure your reverse proxy, see it's documentation for proxying websockets.
+
+- **Traefik**: Traefik supports websockets out of the box, see the [documentation](https://doc.traefik.io/traefik/)
+- **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
+
 ### OpenAPI interface
 
 To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.
@@ -459,7 +476,7 @@ The correct configuration for this case is `http://localhost:8080` - the main pa
 !!! Note
     We strongly recommend to also set `jwt_secret_key` to something random and known only to yourself to avoid unauthorized access to your bot.
 
-
+<!-- 
 ### Using SSL/TLS
 
 SSL/TLS is used to provide security and encrypt network traffic. Freqtrade does not directly support SSL, but you can easily accomplish this with a reverse proxy such as Nginx or Traefik. Below are some steps to help you get started on setting one up for your bot. For the sake of simplicity, we will use a native installation of Nginx and certbot.
@@ -626,4 +643,4 @@ You can now test your SSL setup by using curl to make a request to your bot's Re
 {'status': 'pong'}
 ```
 
-If you see a pong response then everything is working and you have successfully set up SSL/TLS termination for your bot.
+If you see a pong response then everything is working and you have successfully set up SSL/TLS termination for your bot. -->
