@@ -389,11 +389,12 @@ Now anytime those types of RPC messages are sent in the bot, you will receive th
 }
 ```
 
-#### Reverse Proxy and Websockets
+#### Reverse Proxy setup
 
-There are some quirks when using a reverse proxy with the message websocket endpoint. The message websocket endpoint keeps a long-running connection open between the Rest API and the client. It's built on top of HTTP and uses the HTTP Upgrade mechanism to change from HTTP to WebSockets during connection. There are some challenges that a reverse proxy faces when supporting WebSockets, such as WebSockets are a hop-by-hop protocol, so when a proxy intercepts an Upgrade request from the client it needs to send it's own Upgrade request to the server, including appropriate headers. Also, since these connections are long lived, the proxy needs to allow these connections to remain open.
+When using [Nginx](https://nginx.org/en/docs/), the following configuration is required for WebSockets to work (Note this configuration is incomplete, it's missing some information and can not be used as is):
 
-When using Nginx, the following configuration is required for WebSockets to work (Note this configuration isn't complete, it's missing some information and can not be used as is):
+Please make sure to replace `<freqtrade_listen_ip>` (and the subsequent port) with the IP and Port matching your configuration/setup.
+
 ```
 http {
     map $http_upgrade $connection_upgrade {
@@ -401,13 +402,14 @@ http {
         '' close;
     }
 
-    ...
+    #...
 
     server {
-        ...
+        #...
 
         location / {
             proxy_http_version 1.1;
+            proxy_pass http://<freqtrade_listen_ip>:8080;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection $connection_upgrade;
             proxy_set_header Host $host;
@@ -416,10 +418,14 @@ http {
 }
 ```
 
-To configure your reverse proxy, see it's documentation for proxying websockets.
+To properly configure your reverse proxy (securely), please consult it's documentation for proxying websockets.
 
 - **Traefik**: Traefik supports websockets out of the box, see the [documentation](https://doc.traefik.io/traefik/)
 - **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
+
+!!! Tip "SSL certificates"
+    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any fo the above reverse proxies.
+    While this will protect your data in transit, we do not recommend to run the freqtrade API outside of your private network (VPN, SSH tunnel).
 
 ### OpenAPI interface
 
@@ -490,172 +496,3 @@ The correct configuration for this case is `http://localhost:8080` - the main pa
 
 !!! Note
     We strongly recommend to also set `jwt_secret_key` to something random and known only to yourself to avoid unauthorized access to your bot.
-
-<!-- 
-### Using SSL/TLS
-
-SSL/TLS is used to provide security and encrypt network traffic. Freqtrade does not directly support SSL, but you can easily accomplish this with a reverse proxy such as Nginx or Traefik. Below are some steps to help you get started on setting one up for your bot. For the sake of simplicity, we will use a native installation of Nginx and certbot.
-
-
-**Prerequisites**
-
-Before starting this tutorial, you will need a few things.
-
-- A Freqtrade bot set up and running
-- A registered domain name, e.g. myftbot.com
-- A DNS A record for the top level domain pointing to your server's public IP
-
-**Step 1: Installing Nginx and Certbot**
-
-Once you have all of the prerequisites, the first step is to get Nginx installed on your system. This tutorial assumes the use of Ubuntu 20.04, though you can find your linux distro's package commands via a search engine. First, update your local package index so that you have access to the most recent package listings then install Nginx:
-
-``` bash
-> sudo apt update
-> sudo apt install nginx
-```
-
-After accepting the installation, Nginx and any dependencies will be installed to your system and automatically started. You can check it is running with `systemd`:
-
-``` bash
-> sudo systemctl status nginx
-
-● nginx.service - A high performance web server and a reverse proxy server
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
-     Active: active (running) since Wed 2022-11-16 12:09:27 MST; 4 days ago
-       Docs: man:nginx(8)
-    Process: 1026 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
-    Process: 1106 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
-   Main PID: 1107 (nginx)
-      Tasks: 5 (limit: 6929)
-     Memory: 5.7M
-     CGroup: /system.slice/nginx.service
-             ├─1107 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
-             ├─1108 nginx: worker process
-             ├─1109 nginx: worker process
-             ├─1110 nginx: worker process
-             └─1111 nginx: worker process
-```
-
-Next you need to install certbot which will handle all of the certificate automation for your web server and domain. To install certbot it is required to have `snapd` on Ubuntu. If you haven't installed it yet, please review the instructions on [snapcraft's site for installation](https://snapcraft.io/docs/installing-snapd/).
-
-Once you are good to go, ensure your snapd version is up to date:
-
-``` bash
-> sudo snap install core; sudo snap refresh core
-```
-
-If you have any Certbot packages installed via your package manager, you should remove them before installing Certbot:
-
-``` bash
-> sudo apt remove certbot
-```
-
-Finally, install Certbot and prepare the Certbot command.
-
-``` bash
-> sudo snap install --classic certbot
-> sudo ln -s /snap/bin/certbot /usr/bin/certbot
-```
-
-**Step 2: Adjust the firewall**
-
-The next step is to allow HTTP and HTTPS traffic through your firewall. This is different for each depending on which firewall you use, and how you have it configured. In this example, we are using `ufw`.
-
-We'll start by enabling `ufw` if it isn't already:
-
-``` bash
-> sudo ufw enable
-```
-
-You can list the application configurations that ufw knows how to work with
-
-``` bash
-> sudo ufw app list
-
-Available applications:
-  CUPS
-  Nginx Full
-  Nginx HTTP
-  Nginx HTTPS
-```
-
-As you can see in the output, there are 3 profiles available for Nginx:
-
-- **Nginx Full**: This profile opens both port 80 (normal web traffic) and port 443 (SSL/TLS traffic)
-- **Nginx HTTP**: This profile only opens port 80 (normal web traffic)
-- **Nginx HTTPS**: This profile only opens port 443 (SSL/TLS traffic)
-
-We will configure the firewall to allow both port 80 and 443:
-
-``` bash
-> sudo ufw allow 'Nginx Full'
-```
-
-You can verify the change by typing:
-
-``` bash
-> sudo ufw status
-
-Status: active
-
-To                         Action      From
---                         ------      ----
-Nginx HTTPS                ALLOW       Anywhere                  
-Nginx Full                 ALLOW       Anywhere                  
-Nginx HTTPS (v6)           ALLOW       Anywhere (v6)             
-Nginx Full (v6)            ALLOW       Anywhere (v6) 
-```
-
-**Step 3: Configuring Nginx**
-
-Using your favorite editor, edit the default nginx configuration. In our case, it'll be under `/etc/nginx/conf.d/default.conf`:
-``` bash
-> sudo vim /etc/nginx/conf.d/default.conf
-```
-
-Add a section to your configuration like this:
-
-```
-server {
-        server_name myftbot.com;
-        location / {
-                proxy_pass http://localhost:8080;
-        }
-}
-```
-
-Make sure to change `localhost` and `8080` to what you have set in your `api_server` configuration for your bot.
-
-Verify your nginx config file syntax and make sure there are no errors:
-``` bash
-> sudo nginx -t
-```
-
-Finally you can reload nginx to get the new configuration changes:
-
-``` bash
-> sudo systemctl reload nginx
-```
-
-!!! Note
-    The `reload` command forces Nginx to read the new configuration without interrupting any connections. The `restart` command restarts the whole nginx service.
-
-**Step 4: Getting the certificates**
-
-Certbot already comes with an easy way to setup Nginx with SSL/TLS th automatically changes your configuration file with the required fields:
-
-``` bash
-> sudo certbot --nginx
-```
-
-You will be prompted for some information such as your email (To receive updates about your certificates), the domain you pointed to the server, and agree to the TOS and optional newsletter. You can also set to redirect HTTP traffic to HTTPS, removing HTTP access.
-
-You can now test your SSL setup by using curl to make a request to your bot's Rest API:
-
-``` bash
-> curl https://myftbot.com/api/v1/ping
-
-{'status': 'pong'}
-```
-
-If you see a pong response then everything is working and you have successfully set up SSL/TLS termination for your bot. -->
