@@ -99,7 +99,7 @@ class WebSocketChannel:
 
             self._calc_send_limit()
         except asyncio.TimeoutError:
-            logger.info(f"Connection for {self} is too far behind, disconnecting")
+            logger.info(f"Connection for {self} timed out, disconnecting")
             raise
 
         # Without this sleep, messages would send to one channel
@@ -138,7 +138,7 @@ class WebSocketChannel:
 
         try:
             await self._websocket.close()
-        except Exception:
+        except RuntimeError:
             pass
 
     def is_closed(self) -> bool:
@@ -196,8 +196,10 @@ class WebSocketChannel:
             await task
         except (
             asyncio.CancelledError,
+            asyncio.TimeoutError,
             WebSocketDisconnect,
-            ConnectionClosed
+            ConnectionClosed,
+            RuntimeError
         ):
             pass
         except Exception as e:
