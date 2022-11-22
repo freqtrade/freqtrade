@@ -81,7 +81,7 @@ def test_freqai_backtest_live_models_model_not_found(freqai_conf, mocker, testda
     bt_config = setup_optimize_configuration(args, RunMode.BACKTEST)
 
     with pytest.raises(OperationalException,
-                       match=r".* Saved models are required to run backtest .*"):
+                       match=r".* Historic predictions data is required to run backtest .*"):
         Backtesting(bt_config)
 
     Backtesting.cleanup()

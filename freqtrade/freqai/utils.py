@@ -230,11 +230,6 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     """
     dk = FreqaiDataKitchen(config)
     models_path = dk.get_full_models_path(config)
-    timerange: TimeRange = TimeRange()
-    if not config.get("freqai", {}).get("backtest_using_historic_predictions", True):
-        timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
-    else:
-        dd = FreqaiDataDrawer(models_path, config)
-        timerange = dd.get_timerange_from_backtesting_live_dataframe()
-
+    dd = FreqaiDataDrawer(models_path, config)
+    timerange = dd.get_timerange_from_live_historic_predictions()
     return timerange.timerange_str

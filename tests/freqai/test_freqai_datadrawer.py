@@ -98,7 +98,7 @@ def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_get_timerange_from_backtesting_live_dataframe(mocker, freqai_conf):
+def test_get_timerange_from_live_historic_predictions(mocker, freqai_conf):
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -115,7 +115,7 @@ def test_get_timerange_from_backtesting_live_dataframe(mocker, freqai_conf):
     freqai.dd.save_historic_predictions_to_disk()
     freqai.dd.save_global_metadata_to_disk({"start_dry_live_date": 1516406400})
 
-    timerange = freqai.dd.get_timerange_from_backtesting_live_dataframe()
+    timerange = freqai.dd.get_timerange_from_live_historic_predictions()
     assert timerange.startts == 1516406400
     assert timerange.stopts == 1517356500
 
@@ -129,4 +129,4 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
             OperationalException,
             match=r'Historic predictions not found.*'
             ):
-        freqai.dd.get_timerange_from_backtesting_live_dataframe()
+        freqai.dd.get_timerange_from_live_historic_predictions()

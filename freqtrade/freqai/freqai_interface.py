@@ -68,10 +68,6 @@ class IFreqaiModel(ABC):
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
-        self.backtest_using_historic_predictions: bool = self.freqai_info.get(
-            "backtest_using_historic_predictions", True)
-        if self.backtest_using_historic_predictions:
-            logger.info('Backtesting live models configured to use historic predictions.')
 
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         # set current candle to arbitrary historical date
@@ -148,23 +144,18 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             if self.dk.backtest_live_models:
-                if self.backtest_using_historic_predictions:
-                    logger.info(
-                        "Backtesting using historic predictions (live models)")
-                else:
-                    logger.info(
-                        f"Backtesting {len(self.dk.backtesting_timeranges)} "
-                        "timeranges (live models)")
+                logger.info(
+                    "Backtesting using historic predictions (live models)")
             else:
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
             dataframe = self.dk.use_strategy_to_populate_indicators(
                 strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
             )
-            if not self.backtest_using_historic_predictions:
+            if not self.config.get("freqai_backtest_live_models", False):
                 dk = self.start_backtesting(dataframe, metadata, self.dk)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
-                dk = self.start_backtesting_from_live_saved_files(
+                dk = self.start_backtesting_from_historic_predictions(
                     dataframe, metadata, self.dk)
                 dataframe = dk.return_dataframe
 
@@ -330,7 +321,7 @@ class IFreqaiModel(ABC):
 
         return dk
 
-    def start_backtesting_from_live_saved_files(
+    def start_backtesting_from_historic_predictions(
         self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
     ) -> FreqaiDataKitchen:
         """

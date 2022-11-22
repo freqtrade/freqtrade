@@ -715,7 +715,7 @@ class FreqaiDataDrawer:
 
         return corr_dataframes, base_dataframes
 
-    def get_timerange_from_backtesting_live_dataframe(self) -> TimeRange:
+    def get_timerange_from_live_historic_predictions(self) -> TimeRange:
         """
         Returns timerange information based on historic predictions file
         :return: timerange calculated from saved live data
@@ -724,7 +724,6 @@ class FreqaiDataDrawer:
             raise OperationalException(
                 'Historic predictions not found. Historic predictions data is required '
                 'to run backtest with the freqai-backtest-live-models option '
-                'and backtest_using_historic_predictions config option as true'
             )
 
         self.load_historic_predictions_from_disk()
