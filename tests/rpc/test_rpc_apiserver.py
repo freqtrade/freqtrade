@@ -67,7 +67,7 @@ def botclient(default_conf, mocker):
 
 def client_post(client, url, data={}):
     return client.post(url,
-                       data=data,
+                       content=data,
                        headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
                                 'Origin': 'http://example.com',
                                 'content-type': 'application/json'

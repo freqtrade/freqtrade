@@ -1,6 +1,6 @@
 import logging
 import operator
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -160,9 +160,9 @@ def _load_cached_data_for_updating(
     end = None
     if timerange:
         if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+            start = timerange.startdt
         if timerange.stoptype == 'date':
-            end = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+            end = timerange.stopdt
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.
     data = data_handler.ohlcv_load(pair, timeframe=timeframe,

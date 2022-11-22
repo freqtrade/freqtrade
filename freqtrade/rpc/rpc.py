@@ -5,7 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import arrow
 import psutil
@@ -218,9 +218,10 @@ class RPC:
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                    open_order='({} {} rem={:.8f})'.format(
-                        order.order_type, order.side, order.remaining
-                    ) if order else None,
+                    open_order=(
+                        f'({order.order_type} {order.side} rem={order.safe_remaining:.8f})' if
+                        order else None
+                    ),
                 ))
                 results.append(trade_dict)
             return results
@@ -1063,22 +1064,19 @@ class RPC:
         self,
         pairlist: List[str],
         limit: Optional[int]
-    ) -> Dict[str, Any]:
+    ) -> Generator[Dict[str, Any], None, None]:
         """ Get the analysed dataframes of each pair in the pairlist """
         timeframe = self._freqtrade.config['timeframe']
         candle_type = self._freqtrade.config.get('candle_type_def', CandleType.SPOT)
-        _data = {}
 
         for pair in pairlist:
             dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
 
-            _data[pair] = {
+            yield {
                 "key": (pair, timeframe, candle_type),
                 "df": dataframe,
                 "la": last_analyzed
             }
-
-        return _data
 
     def _ws_request_analyzed_df(self, limit: Optional[int]):
         """ Historical Analyzed Dataframes for WebSocket """

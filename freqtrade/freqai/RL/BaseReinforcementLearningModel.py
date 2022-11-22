@@ -1,3 +1,4 @@
+import importlib
 import logging
 from abc import abstractmethod
 from datetime import datetime, timezone
@@ -58,8 +59,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                                        f'sb3_contrib. please choose one of {SB3_MODELS} or '
                                        f'{SB3_CONTRIB_MODELS}')
 
-        mod = __import__(import_str, fromlist=[
-                         self.model_type])
+        mod = importlib.import_module(import_str, self.model_type)
         self.MODELCLASS = getattr(mod, self.model_type)
         self.policy_type = self.freqai_info['rl_config']['policy_type']
         self.unset_outlier_removal()
@@ -236,7 +236,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         def _predict(window):
             observations = dataframe.iloc[window.index]
-            if self.live and self.rl_config('add_state_info', False):
+            if self.live and self.rl_config.get('add_state_info', False):
                 market_side, current_profit, trade_duration = self.get_state_info(dk.pair)
                 observations['current_profit_pct'] = current_profit
                 observations['position'] = market_side

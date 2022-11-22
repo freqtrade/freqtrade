@@ -52,7 +52,6 @@ MAP_EXCHANGE_CHILDCLASS = {
 SUPPORTED_EXCHANGES = [
     'binance',
     'bittrex',
-    'ftx',
     'gateio',
     'huobi',
     'kraken',

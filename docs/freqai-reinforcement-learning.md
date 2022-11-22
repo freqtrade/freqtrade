@@ -20,7 +20,12 @@ With the current framework, we aim to expose the training environment via the co
 
 We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configruation settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
 
-The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework (albeit with some basic assistance from core-dev). For the environment, it is inheriting from `gym.env` which means that a user would need to write an entirely new environment if they wish to switch to a different library. 
+The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework. For the environment, it is inheriting from `gym.env` which means that it is necessary to write an entirely new environment in order to switch to a different library. 
+
+
+### Important considerations
+
+As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL trading environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks such as `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free-will to learn the policy (read: stoploss, take profit, ect) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
 
 
 ## Running Reinforcement Learning

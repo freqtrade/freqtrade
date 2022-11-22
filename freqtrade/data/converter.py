@@ -3,10 +3,10 @@ Functions to convert data from one format to another
 """
 import itertools
 import logging
-from datetime import datetime, timezone
 from operator import itemgetter
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
@@ -137,11 +137,9 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
         df = df.iloc[startup_candles:, :]
     else:
         if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-            df = df.loc[df[df_date_col] >= start, :]
+            df = df.loc[df[df_date_col] >= timerange.startdt, :]
     if timerange.stoptype == 'date':
-        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-        df = df.loc[df[df_date_col] <= stop, :]
+        df = df.loc[df[df_date_col] <= timerange.stopdt, :]
     return df
 
 
@@ -313,3 +311,29 @@ def convert_ohlcv_format(
                 if erase and convert_from != convert_to:
                     logger.info(f"Deleting source data for {pair} / {timeframe}")
                     src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
+
+
+def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
+    """
+    Ensure all values are float32 in the incoming dataframe.
+    :param df: Dataframe to be converted to float/int 32s
+    :return: Dataframe converted to float/int 32s
+    """
+
+    logger.debug(f"Memory usage of dataframe is "
+                 f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+
+    df_dtypes = df.dtypes
+    for column, dtype in df_dtypes.items():
+        if column in ['open', 'high', 'low', 'close', 'volume']:
+            continue
+        if dtype == np.float64:
+            df_dtypes[column] = np.float32
+        elif dtype == np.int64:
+            df_dtypes[column] = np.int32
+    df = df.astype(df_dtypes)
+
+    logger.debug(f"Memory usage after optimization is: "
+                 f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+
+    return df

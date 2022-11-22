@@ -253,6 +253,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `add_config_files` | Additional config files. These files will be loaded and merged with the current config file. The files are resolved relative to the initial file.<br> *Defaults to `[]`*. <br> **Datatype:** List of strings
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
+| `reduce_df_footprint` | Recast all numeric columns to float32/int32, with the objective of reducing ram/disk usage (and decreasing train/inference timing in FreqAI). (Currently only affects FreqAI use-cases) <br> **Datatype:** Boolean. <br> Default: `False`.
 
 ### Parameters in the strategy
 
@@ -552,7 +553,7 @@ The possible values are: `GTC` (default), `FOK` or `IOC`.
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance, gate, ftx and kucoin.
+    This is ongoing work. For now, it is supported only for binance, gate and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### What values can be used for fiat_display_currency?

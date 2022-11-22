@@ -2,7 +2,7 @@ import asyncio
 import logging
 from ipaddress import IPv4Address
 from threading import Thread
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import orjson
 import uvicorn
@@ -51,9 +51,9 @@ class ApiServer(RPCHandler):
     # Exchange - only available in webserver mode.
     _exchange = None
     # websocket message queue stuff
-    _ws_channel_manager = None
+    _ws_channel_manager: ChannelManager
     _ws_thread = None
-    _ws_loop = None
+    _ws_loop: Optional[asyncio.AbstractEventLoop] = None
 
     def __new__(cls, *args, **kwargs):
         """
@@ -71,7 +71,7 @@ class ApiServer(RPCHandler):
             return
         self._standalone: bool = standalone
         self._server = None
-        self._ws_queue = None
+        self._ws_queue: Optional[ThreadedQueue] = None
         self._ws_background_task = None
 
         ApiServer.__initialized = True
@@ -186,7 +186,7 @@ class ApiServer(RPCHandler):
         self._ws_background_task = asyncio.run_coroutine_threadsafe(
             self._broadcast_queue_data(), loop=self._ws_loop)
 
-    async def _broadcast_queue_data(self):
+    async def _broadcast_queue_data(self) -> None:
         # Instantiate the queue in this coroutine so it's attached to our loop
         self._ws_queue = ThreadedQueue()
         async_queue = self._ws_queue.async_q
@@ -210,7 +210,8 @@ class ApiServer(RPCHandler):
         finally:
             # Disconnect channels and stop the loop on cancel
             await self._ws_channel_manager.disconnect_all()
-            self._ws_loop.stop()
+            if self._ws_loop:
+                self._ws_loop.stop()
             # Avoid adding more items to the queue if they aren't
             # going to get broadcasted.
             self._ws_queue = None
