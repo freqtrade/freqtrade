@@ -199,6 +199,7 @@ async def create_client(
         host,
         port,
         token,
+        scheme='ws',
         name='default',
         protocol=ClientProtocol(),
         sleep_time=10,
@@ -211,13 +212,14 @@ async def create_client(
     :param host: The host
     :param port: The port
     :param token: The websocket auth token
+    :param scheme: `ws` for most connections, `wss` for ssl
     :param name: The name of the producer
     :param **kwargs: Any extra kwargs passed to websockets.connect
     """
 
     while 1:
         try:
-            websocket_url = f"ws://{host}:{port}/api/v1/message/ws?token={token}"
+            websocket_url = f"{scheme}://{host}:{port}/api/v1/message/ws?token={token}"
             logger.info(f"Attempting to connect to {name} @ {host}:{port}")
 
             async with websockets.connect(websocket_url, **kwargs) as ws:
@@ -304,6 +306,7 @@ async def _main(args):
         producer['host'],
         producer['port'],
         producer['ws_token'],
+        'wss' if producer.get('secure', False) else 'ws',
         producer['name'],
         sleep_time=sleep_time,
         ping_timeout=ping_timeout,
