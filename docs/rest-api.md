@@ -393,12 +393,27 @@ Now anytime those types of RPC messages are sent in the bot, you will receive th
 
 There are some quirks when using a reverse proxy with the message websocket endpoint. The message websocket endpoint keeps a long-running connection open between the Rest API and the client. It's built on top of HTTP and uses the HTTP Upgrade mechanism to change from HTTP to WebSockets during connection. There are some challenges that a reverse proxy faces when supporting WebSockets, such as WebSockets are a hop-by-hop protocol, so when a proxy intercepts an Upgrade request from the client it needs to send it's own Upgrade request to the server, including appropriate headers. Also, since these connections are long lived, the proxy needs to allow these connections to remain open.
 
-When using Nginx, the following configuration is required for WebSockets to work:
+When using Nginx, the following configuration is required for WebSockets to work (Note this configuration isn't complete, it's missing some information and can not be used as is):
 ```
-proxy_http_version 1.1;
-proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection $connection_upgrade;
-proxy_set_header Host $host;
+http {
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+
+    ...
+
+    server {
+        ...
+
+        location / {
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+        }
+    }
+}
 ```
 
 To configure your reverse proxy, see it's documentation for proxying websockets.
