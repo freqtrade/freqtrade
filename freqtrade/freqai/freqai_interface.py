@@ -260,6 +260,7 @@ class IFreqaiModel(ABC):
 
         self.pair_it += 1
         train_it = 0
+        dk.load_prediction_pair_file()
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly

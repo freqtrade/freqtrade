@@ -263,7 +263,9 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
-    metadata = {"pair": "ADA/BTC"}
+    pair = "ADA/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
@@ -286,6 +288,9 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
+    pair = "ADA/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
@@ -293,9 +298,14 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
         caplog,
     )
 
+    pair = "ETH/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
+    freqai.start_backtesting(df, metadata, freqai.dk)
+
     path = (freqai.dd.full_path / freqai.dk.backtest_predictions_folder)
     prediction_files = [x for x in path.iterdir() if x.is_file()]
-    assert len(prediction_files) == 5
+    assert len(prediction_files) == 2
 
     shutil.rmtree(Path(freqai.dk.full_path))
 

@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, HDFStore
 from scipy import stats
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
@@ -74,6 +74,7 @@ class FreqaiDataKitchen:
         self.training_features_list: List = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
+        self.backtesting_h5_data: HDFStore = {}
         self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
@@ -1319,7 +1320,7 @@ class FreqaiDataKitchen:
         if not full_predictions_folder.is_dir():
             full_predictions_folder.mkdir(parents=True, exist_ok=True)
 
-        append_df.to_hdf(self.backtesting_results_path, key='append_df', mode='w')
+        append_df.to_hdf(self.backtesting_results_path, key=self.model_filename)
 
     def get_backtesting_prediction(
         self
@@ -1327,8 +1328,25 @@ class FreqaiDataKitchen:
         """
         Get prediction dataframe from h5 file format
         """
-        append_df = pd.read_hdf(self.backtesting_results_path)
+        append_df = self.backtesting_h5_data[self.model_filename]
         return append_df
+
+    def load_prediction_pair_file(
+        self
+    ) -> None:
+        """
+        Load prediction file if it exists
+        """
+        pair_file_name = self.pair.split(':')[0].replace('/', '_').lower()
+        path_to_predictionfile = Path(self.full_path /
+                                      self.backtest_predictions_folder /
+                                      f"{pair_file_name}_prediction.h5")
+        self.backtesting_results_path = path_to_predictionfile
+        file_exists = path_to_predictionfile.is_file()
+        if file_exists:
+            self.backtesting_h5_data = pd.HDFStore(path_to_predictionfile)
+        else:
+            self.backtesting_h5_data = {}
 
     def check_if_backtest_prediction_is_valid(
         self,
@@ -1341,17 +1359,11 @@ class FreqaiDataKitchen:
         :return:
         :boolean: whether the prediction file is valid.
         """
-        path_to_predictionfile = Path(self.full_path /
-                                      self.backtest_predictions_folder /
-                                      f"{self.model_filename}_prediction.h5")
-        self.backtesting_results_path = path_to_predictionfile
-
-        file_exists = path_to_predictionfile.is_file()
-
-        if file_exists:
+        if self.model_filename in self.backtesting_h5_data:
             append_df = self.get_backtesting_prediction()
             if len(append_df) == len_backtest_df and 'date' in append_df:
-                logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+                logger.info("Found backtesting prediction file "
+                            f"at {self.backtesting_results_path.name}")
                 return True
             else:
                 logger.info("A new backtesting prediction file is required. "
@@ -1360,7 +1372,8 @@ class FreqaiDataKitchen:
                 return False
         else:
             logger.info(
-                f"Could not find backtesting prediction file at {path_to_predictionfile}"
+                "Could not find backtesting prediction file "
+                f"at {self.backtesting_results_path.name}"
             )
             return False
 
