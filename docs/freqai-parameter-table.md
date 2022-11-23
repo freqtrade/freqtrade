@@ -48,7 +48,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `n_estimators` | The number of boosted trees to fit in the training of the model. <br> **Datatype:** Integer.
 | `learning_rate` | Boosting learning rate during training of the model. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
-|  |  *Reinforcement Learning Parameters**
+|  |  **Reinforcement Learning Parameters**
 | `rl_config` | A dictionary containing the control parameters for a Reinforcement Learning model. <br> **Datatype:** Dictionary.
 | `train_cycles` | Training time steps will be set based on the `train_cycles * number of training data points. <br> **Datatype:** Integer.
 | `cpu_count` | Number of processors to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
