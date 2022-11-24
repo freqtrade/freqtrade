@@ -97,8 +97,9 @@ async def message_endpoint(
     rpc: RPC = Depends(get_rpc),
     message_stream: MessageStream = Depends(get_message_stream)
 ):
-    async with create_channel(websocket) as channel:
-        await channel.run_channel_tasks(
-            channel_reader(channel, rpc),
-            channel_broadcaster(channel, message_stream)
-        )
+    if token:
+        async with create_channel(websocket) as channel:
+            await channel.run_channel_tasks(
+                channel_reader(channel, rpc),
+                channel_broadcaster(channel, message_stream)
+            )
