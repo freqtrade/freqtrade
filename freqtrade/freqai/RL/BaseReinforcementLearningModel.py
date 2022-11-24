@@ -166,14 +166,14 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
     def get_state_info(self, pair: str) -> Tuple[float, float, int]:
         """
-        State info during dry/live/backtesting which is fed back
+        State info during dry/live (not backtesting) which is fed back
         into the model.
-        :param:
-        pair: str = COIN/STAKE to get the environment information for
-        :returns:
-        market_side: float = representing short, long, or neutral for
+        :param pair: str = COIN/STAKE to get the environment information for
+        :return:
+        :market_side: float = representing short, long, or neutral for
             pair
-        trade_duration: int = the number of candles that the trade has
+        :current_profit: float = unrealized profit of the current trade
+        :trade_duration: int = the number of candles that the trade has
             been open for
         """
         open_trades = Trade.get_trades_proxy(is_open=True)
