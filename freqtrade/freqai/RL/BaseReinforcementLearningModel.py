@@ -133,8 +133,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         :param data_dictionary: dict = common data dictionary containing train and test
             features/labels/weights.
         :param prices_train/test: DataFrame = dataframe comprised of the prices to be used in the
-            environment during training
-        or testing
+            environment during training or testing
         :param dk: FreqaiDataKitchen = the datakitchen for the current pair
         """
         train_df = data_dictionary["train_features"]
@@ -201,7 +200,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
     ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param: unfiltered_dataframe: Full dataframe for the current backtest period.
+        :param unfiltered_dataframe: Full dataframe for the current backtest period.
         :return:
         :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
