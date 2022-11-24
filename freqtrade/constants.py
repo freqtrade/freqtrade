@@ -512,6 +512,7 @@ CONF_SCHEMA = {
                                 'minimum': 0,
                                 'maximum': 65535
                             },
+                            'secure': {'type': 'boolean', 'default': False},
                             'ws_token': {'type': 'string'},
                         },
                         'required': ['name', 'host', 'ws_token']

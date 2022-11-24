@@ -31,6 +31,7 @@ class Producer(TypedDict):
     name: str
     host: str
     port: int
+    secure: bool
     ws_token: str
 
 
@@ -180,7 +181,8 @@ class ExternalMessageConsumer:
                 host, port = producer['host'], producer['port']
                 token = producer['ws_token']
                 name = producer['name']
-                ws_url = f"ws://{host}:{port}/api/v1/message/ws?token={token}"
+                scheme = 'wss' if producer.get('secure', False) else 'ws'
+                ws_url = f"{scheme}://{host}:{port}/api/v1/message/ws?token={token}"
 
                 # This will raise InvalidURI if the url is bad
                 async with websockets.connect(

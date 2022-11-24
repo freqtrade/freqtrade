@@ -82,7 +82,7 @@ function updateenv() {
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        REQUIREMENTS_FREQAI="-r requirements-freqai.txt"
+        REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
     fi
 
     ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT} ${REQUIREMENTS_FREQAI}
