@@ -194,6 +194,9 @@ class ApiServer(RPCHandler):
         try:
             while True:
                 logger.debug("Getting queue messages...")
+                if (qsize := async_queue.qsize()) > 20:
+                    # If the queue becomes too big for too long, this may indicate a problem.
+                    logger.warning(f"Queue size now {qsize}")
                 # Get data from queue
                 message: WSMessageSchemaType = await async_queue.get()
                 logger.debug(f"Found message of type: {message.get('type')}")

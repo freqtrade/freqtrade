@@ -1207,12 +1207,17 @@ def test_create_dry_run_order_fees(
     assert order1['fee']['rate'] == fee
 
 
-@pytest.mark.parametrize("side,startprice,endprice", [
-    ("buy", 25.563, 25.566),
-    ("sell", 25.566, 25.563)
+@pytest.mark.parametrize("side,price,filled", [
+    # order_book_l2_usd spread:
+    # best ask: 25.566
+    # best bid: 25.563
+    ("buy", 25.563, False),
+    ("buy", 25.566, True),
+    ("sell", 25.566, False),
+    ("sell", 25.563, True),
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice, endprice,
+def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, filled,
                                          exchange_name, order_book_l2_usd):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -1226,7 +1231,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
         ordertype='limit',
         side=side,
         amount=1,
-        rate=startprice,
+        rate=price,
         leverage=1.0
     )
     assert order_book_l2_usd.call_count == 1
@@ -1235,22 +1240,17 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order["side"] == side
     assert order["type"] == "limit"
     assert order["symbol"] == "LTC/USDT"
+    assert order["average"] == price
+    assert order['status'] == 'open' if not filled else 'closed'
     order_book_l2_usd.reset_mock()
 
+    # fetch order again...
     order_closed = exchange.fetch_dry_run_order(order['id'])
-    assert order_book_l2_usd.call_count == 1
-    assert order_closed['status'] == 'open'
-    assert not order['fee']
-    assert order_closed['filled'] == 0
+    assert order_book_l2_usd.call_count == (1 if not filled else 0)
+    assert order_closed['status'] == ('open' if not filled else 'closed')
+    assert order_closed['filled'] == (0 if not filled else 1)
 
     order_book_l2_usd.reset_mock()
-    order_closed['price'] = endprice
-
-    order_closed = exchange.fetch_dry_run_order(order['id'])
-    assert order_closed['status'] == 'closed'
-    assert order['fee']
-    assert order_closed['filled'] == 1
-    assert order_closed['filled'] == order_closed['amount']
 
     # Empty orderbook test
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',

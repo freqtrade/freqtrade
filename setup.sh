@@ -83,7 +83,7 @@ function updateenv() {
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        REQUIREMENTS_FREQAI="-r requirements-freqai.txt"
+        REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
         read -p "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]? "
         dev=$REPLY
         if [[ $REPLY =~ ^[Yy]$ ]]
