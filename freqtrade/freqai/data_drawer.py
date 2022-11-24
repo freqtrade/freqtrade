@@ -1,4 +1,5 @@
 import collections
+import importlib
 import logging
 import re
 import shutil
@@ -573,8 +574,8 @@ class FreqaiDataDrawer:
             from tensorflow import keras
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
         elif self.model_type == 'stable_baselines':
-            mod = __import__('stable_baselines3', fromlist=[
-                             self.freqai_info['rl_config']['model_type']])
+            mod = importlib.import_module(
+                'stable_baselines3', self.freqai_info['rl_config']['model_type'])
             MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
             model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
 
