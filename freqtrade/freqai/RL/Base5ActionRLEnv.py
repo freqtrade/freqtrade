@@ -18,12 +18,6 @@ class Actions(Enum):
     Short_exit = 4
 
 
-def mean_over_std(x):
-    std = np.std(x, ddof=1)
-    mean = np.mean(x)
-    return mean / std if std > 0 else 0
-
-
 class Base5ActionRLEnv(BaseEnvironment):
     """
     Base class for a 5 action environment
