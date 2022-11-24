@@ -19,19 +19,6 @@ class freqai_rl_test_strat(IStrategy):
 
     minimal_roi = {"0": 0.1, "240": -1}
 
-    plot_config = {
-        "main_plot": {},
-        "subplots": {
-            "prediction": {"prediction": {"color": "blue"}},
-            "target_roi": {
-                "target_roi": {"color": "brown"},
-            },
-            "do_predict": {
-                "do_predict": {"color": "brown"},
-            },
-        },
-    }
-
     process_only_new_candles = True
     stoploss = -0.05
     use_exit_signal = True
@@ -50,10 +37,7 @@ class freqai_rl_test_strat(IStrategy):
 
             t = int(t)
             informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-        # FIXME: add these outside the user strategy?
         # The following columns are necessary for RL models.
         informative[f"%-{pair}raw_close"] = informative["close"]
         informative[f"%-{pair}raw_open"] = informative["open"]
@@ -79,9 +63,6 @@ class freqai_rl_test_strat(IStrategy):
         # function to populate indicators during training). Notice how we ensure not to
         # add them multiple times
         if set_generalized_indicators:
-            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
-
             # For RL, there are no direct targets to set. This is filler (neutral)
             # until the agent sends an action.
             df["&-action"] = 0

@@ -27,10 +27,9 @@ def freqai_conf(default_conf, tmpdir):
             "timerange": "20180110-20180115",
             "freqai": {
                 "enabled": True,
-                "startup_candles": 10000,
                 "purge_old_models": True,
                 "train_period_days": 2,
-                "backtest_period_days": 2,
+                "backtest_period_days": 10,
                 "live_retrain_hours": 0,
                 "expiration_hours": 1,
                 "identifier": "uniqe-id100",

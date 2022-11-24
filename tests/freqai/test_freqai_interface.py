@@ -192,13 +192,13 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 @pytest.mark.parametrize(
     "model, num_files, strat",
     [
-        ("LightGBMRegressor", 6, "freqai_test_strat"),
-        ("XGBoostRegressor", 6, "freqai_test_strat"),
-        ("CatboostRegressor", 6, "freqai_test_strat"),
-        ("ReinforcementLearner", 7, "freqai_rl_test_strat"),
-        ("XGBoostClassifier", 6, "freqai_test_classifier"),
-        ("LightGBMClassifier", 6, "freqai_test_classifier"),
-        ("CatboostClassifier", 6, "freqai_test_classifier")
+        ("LightGBMRegressor", 2, "freqai_test_strat"),
+        ("XGBoostRegressor", 2, "freqai_test_strat"),
+        ("CatboostRegressor", 2, "freqai_test_strat"),
+        ("ReinforcementLearner", 3, "freqai_rl_test_strat"),
+        ("XGBoostClassifier", 2, "freqai_test_classifier"),
+        ("LightGBMClassifier", 2, "freqai_test_classifier"),
+        ("CatboostClassifier", 2, "freqai_test_classifier")
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
@@ -305,7 +305,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    assert len(model_folders) == 6
+    assert len(model_folders) == 2
 
     # without deleting the existing folder structure, re-run
 
@@ -333,7 +333,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     path = (freqai.dd.full_path / freqai.dk.backtest_predictions_folder)
     prediction_files = [x for x in path.iterdir() if x.is_file()]
-    assert len(prediction_files) == 5
+    assert len(prediction_files) == 1
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
