@@ -168,7 +168,6 @@ class IFreqaiModel(ABC):
         """
         self.model = None
         self.dk = None
-        self.data_provider = None
 
     def _on_stop(self):
         """
@@ -185,6 +184,7 @@ class IFreqaiModel(ABC):
         logger.info("Stopping FreqAI")
         self._stop_event.set()
 
+        self.data_provider = None
         self._on_stop()
 
         logger.info("Waiting on Training iteration")
