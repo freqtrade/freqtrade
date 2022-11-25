@@ -203,6 +203,7 @@ We would like to acknowledge various beta testers of `FreqAI`:
 
 - Richárd Józsa
 - Juha Nykänen
+- Emre Suzen
 - Salah Lamkadem
 
 As well as various `Freqtrade` [developers](https://github.com/freqtrade/freqtrade/graphs/contributors) maintaining tangential, yet essential, modules.
