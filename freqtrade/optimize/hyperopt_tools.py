@@ -470,8 +470,7 @@ class HyperoptTools():
 
         base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
                         'results_metrics.profit_mean', 'results_metrics.profit_median',
-                        'results_metrics.profit_total',
-                        'Stake currency',
+                        'results_metrics.profit_total', 'Stake currency',
                         'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
                         'results_metrics.trade_count_long', 'results_metrics.trade_count_short',
                         'loss', 'is_initial_point', 'is_best']
