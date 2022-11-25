@@ -1,6 +1,6 @@
 import logging
 from ipaddress import IPv4Address
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import orjson
 import uvicorn
@@ -46,7 +46,7 @@ class ApiServer(RPCHandler):
     # Exchange - only available in webserver mode.
     _exchange = None
     # websocket message stuff
-    _message_stream = None
+    _message_stream: Optional[MessageStream] = None
 
     def __new__(cls, *args, **kwargs):
         """
