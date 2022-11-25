@@ -473,6 +473,7 @@ class HyperoptTools():
                         'results_metrics.profit_total',
                         'Stake currency',
                         'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
+                        'results_metrics.trade_count_long', 'results_metrics.trade_count_short',
                         'loss', 'is_initial_point', 'is_best']
         perc_multi = 100
 
@@ -480,7 +481,9 @@ class HyperoptTools():
         trials = trials[base_metrics + param_metrics]
 
         base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Median profit', 'Total profit',
-                        'Stake currency', 'Profit', 'Avg duration', 'Objective',
+                        'Stake currency', 'Profit', 'Avg duration',
+                        'Trade count long', 'Trade count short',
+                        'Objective',
                         'is_initial_point', 'is_best']
         param_columns = list(results[0]['params_dict'].keys())
         trials.columns = base_columns + param_columns
