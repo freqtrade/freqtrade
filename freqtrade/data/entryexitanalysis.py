@@ -152,9 +152,30 @@ def _do_group_table_output(bigdf, glist):
                 logger.warning("Invalid group mask specified.")
 
 
+def _select_rows_within_dates(df, date_start=None, date_end=None):
+    if (date_start is not None):
+        df = df.loc[(df['date'] >= date_start)]
+
+    if (date_end is not None):
+        df = df.loc[(df['date'] < date_end)]
+
+    return df
+
+
+def _select_rows_by_entry_exit_tags(df, enter_reason_list, exit_reason_list):
+    if enter_reason_list and "all" not in enter_reason_list:
+        df = df.loc[(df['enter_reason'].isin(enter_reason_list))]
+
+    if exit_reason_list and "all" not in exit_reason_list:
+        df = df.loc[(df['exit_reason'].isin(exit_reason_list))]
+
+    return df
+
+
 def _print_results(analysed_trades, stratname, analysis_groups,
                    enter_reason_list, exit_reason_list,
-                   indicator_list, columns=None):
+                   indicator_list, columns=None,
+                   date_start=None, date_end=None):
     if columns is None:
         columns = ['pair', 'open_date', 'close_date', 'profit_abs', 'enter_reason', 'exit_reason']
 
@@ -162,15 +183,13 @@ def _print_results(analysed_trades, stratname, analysis_groups,
     for pair, trades in analysed_trades[stratname].items():
         bigdf = pd.concat([bigdf, trades], ignore_index=True)
 
+    bigdf = _select_rows_within_dates(bigdf, date_start, date_end)
+
     if bigdf.shape[0] > 0 and ('enter_reason' in bigdf.columns):
         if analysis_groups:
             _do_group_table_output(bigdf, analysis_groups)
 
-        if enter_reason_list and "all" not in enter_reason_list:
-            bigdf = bigdf.loc[(bigdf['enter_reason'].isin(enter_reason_list))]
-
-        if exit_reason_list and "all" not in exit_reason_list:
-            bigdf = bigdf.loc[(bigdf['exit_reason'].isin(exit_reason_list))]
+        bigdf = _select_rows_by_entry_exit_tags(bigdf, enter_reason_list, exit_reason_list)
 
         if "all" in indicator_list:
             print(bigdf)
