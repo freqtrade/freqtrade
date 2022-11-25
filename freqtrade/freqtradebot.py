@@ -827,6 +827,8 @@ class FreqtradeBot(LoggingMixin):
                 co = self.exchange.cancel_stoploss_order_with_result(
                     trade.stoploss_order_id, trade.pair, trade.amount)
                 trade.update_order(co)
+                # Reset stoploss order id.
+                trade.stoploss_order_id = None
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
         return trade
@@ -1011,7 +1013,7 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_trade(self, trade: Trade) -> bool:
         """
-        Sells/exits_short the current pair if the threshold is reached and updates the trade record.
+        Exits the current pair if the threshold is reached and updates the trade record.
         :return: True if trade has been sold/exited_short, False otherwise
         """
         if not trade.is_open:
@@ -1168,7 +1170,6 @@ class FreqtradeBot(LoggingMixin):
             if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
                 return False
             else:
-                trade.stoploss_order_id = None
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.

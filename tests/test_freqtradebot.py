@@ -1498,6 +1498,7 @@ def test_handle_stoploss_on_exchange_trailing(
         })
     )
     assert freqtrade.handle_trade(trade) is True
+    assert trade.stoploss_order_id is None
 
 
 @pytest.mark.parametrize("is_short", [False, True])
