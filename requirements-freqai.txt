@@ -9,3 +9,7 @@ catboost==1.1.1; platform_machine != 'aarch64'
 lightgbm==3.3.3
 xgboost==1.7.1
 tensorboard==2.11.0
+torch==1.13.0
+stable-baselines3==1.6.2
+gym==0.21
+sb3-contrib==1.6.2
