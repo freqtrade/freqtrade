@@ -40,7 +40,7 @@ async def channel_broadcaster(channel: WebSocketChannel, message_stream: Message
             # Log a warning if this channel is behind
             # on the message stream by a lot
             if (time.time() - ts) > 60:
-                logger.warning("Channel {channel} is behind MessageStream by 1 minute,"
+                logger.warning(f"Channel {channel} is behind MessageStream by 1 minute,"
                                " this can cause a memory leak if you see this message"
                                " often, consider reducing pair list size or amount of"
                                " consumers.")
