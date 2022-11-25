@@ -191,7 +191,7 @@ class FreqtradeBot(LoggingMixin):
         # Check whether markets have to be reloaded and reload them when it's needed
         self.exchange.reload_markets()
 
-        self.update_closed_trades_without_assigned_fees()
+        self.update_trades_without_assigned_fees()
 
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
@@ -354,7 +354,7 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.FUTURES:
             self._schedule.run_pending()
 
-    def update_closed_trades_without_assigned_fees(self) -> None:
+    def update_trades_without_assigned_fees(self) -> None:
         """
         Update closed trades without close fees assigned.
         Only acts when Orders are in the database, otherwise the last order-id is unknown.
