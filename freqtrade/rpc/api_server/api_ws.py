@@ -7,6 +7,7 @@ from fastapi.websockets import WebSocket
 from pydantic import ValidationError
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.misc import sync_to_async_iter
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_message_stream, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
@@ -93,7 +94,7 @@ async def _process_consumer_request(
         limit = min(data.get('limit', 1500), 1500) if data else None
 
         # For every pair in the generator, send a separate message
-        for message in rpc._ws_request_analyzed_df(limit):
+        async for message in sync_to_async_iter(rpc._ws_request_analyzed_df(limit)):
             # Format response
             response = WSAnalyzedDFMessage(data=message)
             await channel.send(response.dict(exclude_none=True))
