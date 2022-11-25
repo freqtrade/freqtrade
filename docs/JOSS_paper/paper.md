@@ -35,7 +35,7 @@ authors:
     orcid: 
     affiliation: 2
   - name: Pascal Schmidt
-    orcid: 
+    orcid: 0000-0001-9328-4345
     affiliation: 2
 
 <!-- affiliation: "1, 2" # (Multiple affiliations must be quoted) -->
