@@ -104,14 +104,9 @@ class WebSocketChannel:
             logger.info(f"Connection for {self} timed out, disconnecting")
             raise
 
-        # Without this sleep, messages would send to one channel
-        # first then another after the first one finished and prevent
-        # any normal Rest API calls from processing at the same time.
-        # With the sleep call, it gives control to the event
-        # loop to schedule other channel send methods, and helps
-        # throttle how fast we send.
-        # 0.01 = 100 messages/second max throughput
-        await asyncio.sleep(0.01)
+        # Explicitly give control back to event loop as
+        # websockets.send does not
+        await asyncio.sleep(0)
 
     async def recv(self):
         """
