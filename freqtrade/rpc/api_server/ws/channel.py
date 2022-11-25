@@ -59,6 +59,10 @@ class WebSocketChannel:
     def remote_addr(self):
         return self._websocket.remote_addr
 
+    @property
+    def avg_send_time(self):
+        return sum(self._send_times) / len(self._send_times)
+
     def _calc_send_limit(self):
         """
         Calculate the send high limit for this channel
@@ -66,11 +70,9 @@ class WebSocketChannel:
 
         # Only update if we have enough data
         if len(self._send_times) == self._send_times.maxlen:
-            # At least 1s or twice the average of send times
-            self._send_high_limit = max(
-                (sum(self._send_times) / len(self._send_times)) * 2,
-                1
-            )
+            # At least 1s or twice the average of send times, with a
+            # maximum of 3 seconds per message
+            self._send_high_limit = min(max(self.avg_send_time * 2, 1), 3)
 
     async def send(
         self,

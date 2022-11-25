@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 
 class MessageStream:
@@ -11,14 +12,20 @@ class MessageStream:
         self._waiter = self._loop.create_future()
 
     def publish(self, message):
-        waiter, self._waiter = self._waiter, self._loop.create_future()
-        waiter.set_result((message, self._waiter))
+        """
+        Publish a message to this MessageStream
 
-    async def subscribe(self):
+        :param message: The message to publish
+        """
+        waiter, self._waiter = self._waiter, self._loop.create_future()
+        waiter.set_result((message, time.time(), self._waiter))
+
+    async def __aiter__(self):
+        """
+        Iterate over the messages in the message stream
+        """
         waiter = self._waiter
         while True:
             # Shield the future from being cancelled by a task waiting on it
-            message, waiter = await asyncio.shield(waiter)
-            yield message
-
-    __aiter__ = subscribe
+            message, ts, waiter = await asyncio.shield(waiter)
+            yield message, ts

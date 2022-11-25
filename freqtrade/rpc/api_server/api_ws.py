@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends
@@ -33,8 +34,16 @@ async def channel_broadcaster(channel: WebSocketChannel, message_stream: Message
     """
     Iterate over messages in the message stream and send them
     """
-    async for message in message_stream:
+    async for message, ts in message_stream:
         if channel.subscribed_to(message.get('type')):
+            # Log a warning if this channel is behind
+            # on the message stream by a lot
+            if (time.time() - ts) > 60:
+                logger.warning("Channel {channel} is behind MessageStream by 1 minute,"
+                               " this can cause a memory leak if you see this message"
+                               " often, consider reducing pair list size or amount of"
+                               " consumers.")
+
             await channel.send(message, timeout=True)
 
 
