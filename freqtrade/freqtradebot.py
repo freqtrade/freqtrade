@@ -194,7 +194,7 @@ class FreqtradeBot(LoggingMixin):
         self.update_trades_without_assigned_fees()
 
         # Query trades from persistence layer
-        trades = Trade.get_open_trades()
+        trades: List[Trade] = Trade.get_open_trades()
 
         self.active_pair_whitelist = self._refresh_active_whitelist(trades)
 
@@ -982,7 +982,7 @@ class FreqtradeBot(LoggingMixin):
 # SELL / exit positions / close trades logic and methods
 #
 
-    def exit_positions(self, trades: List[Any]) -> int:
+    def exit_positions(self, trades: List[Trade]) -> int:
         """
         Tries to execute exit orders for open trades (positions)
         """
