@@ -381,15 +381,16 @@ class FreqtradeBot(LoggingMixin):
 
         trades = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
-            if trade.is_open and not trade.fee_updated(trade.entry_side):
-                order = trade.select_order(trade.entry_side, False)
-                open_order = trade.select_order(trade.entry_side, True)
-                if order and open_order is None:
-                    logger.info(
-                        f"Updating {trade.entry_side}-fee on trade {trade}"
-                        f"for order {order.order_id}."
-                    )
-                    self.update_trade_state(trade, order.order_id, send_msg=False)
+            with self._exit_lock:
+                if trade.is_open and not trade.fee_updated(trade.entry_side):
+                    order = trade.select_order(trade.entry_side, False)
+                    open_order = trade.select_order(trade.entry_side, True)
+                    if order and open_order is None:
+                        logger.info(
+                            f"Updating {trade.entry_side}-fee on trade {trade}"
+                            f"for order {order.order_id}."
+                        )
+                        self.update_trade_state(trade, order.order_id, send_msg=False)
 
     def handle_insufficient_funds(self, trade: Trade):
         """
