@@ -165,7 +165,8 @@ Parameter details can be found [here](freqai-parameter-table.md), but in general
 As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `MyRLEnv` class (see below). A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards, but users are encouraged to create their own custom reinforcement learning model class (see below) and save it to `user_data/freqaimodels`. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
 
 ```python
-    import from freqtrade.freqai.prediction_models ReinforcementLearner import ReinforcementLearner
+    from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
+    from freqtrade.freqai.RL.Base5ActionRLEnv import Base5ActionRLEnv
 
     class MyCoolRLModel(ReinforcementLearner):
         """
