@@ -1,11 +1,9 @@
 """
 Various tool function for Freqtrade and scripts
 """
-import asyncio
 import gzip
 import logging
 import re
-import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Union
@@ -303,44 +301,3 @@ def remove_entry_exit_signals(dataframe: pd.DataFrame):
     dataframe[SignalTagType.EXIT_TAG.value] = None
 
     return dataframe
-
-
-def sync_to_async_iter(iter):
-    """
-    Wrap blocking iterator into an asynchronous by
-    offloading computation to thread and using
-    pubsub pattern for yielding results
-
-    :param iter: A synchronous iterator
-    :returns: An asynchronous iterator
-    """
-
-    loop = asyncio.get_event_loop()
-    q = asyncio.Queue(1)
-    exception = None
-    _END = object()
-
-    async def yield_queue_items():
-        while True:
-            next_item = await q.get()
-            if next_item is _END:
-                break
-            yield next_item
-        if exception is not None:
-            # The iterator has raised, propagate the exception
-            raise exception
-
-    def iter_to_queue():
-        nonlocal exception
-        try:
-            for item in iter:
-                # This runs outside the event loop thread, so we
-                # must use thread-safe API to talk to the queue.
-                asyncio.run_coroutine_threadsafe(q.put(item), loop).result()
-        except Exception as e:
-            exception = e
-        finally:
-            asyncio.run_coroutine_threadsafe(q.put(_END), loop).result()
-
-    threading.Thread(target=iter_to_queue).start()
-    return yield_queue_items()
