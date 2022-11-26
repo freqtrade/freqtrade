@@ -4,6 +4,8 @@ The table below will list all configuration parameters available for FreqAI. Som
 
 Mandatory parameters are marked as **Required** and have to be set in one of the suggested ways.
 
+### General configuration parameters
+
 |  Parameter | Description |
 |------------|-------------|
 |  |  **General configuration parameters within the `config.freqai` tree**
@@ -21,6 +23,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `write_metrics_to_disk` | Collect train timings, inference timings and cpu usage in json file. <br> **Datatype:** Boolean. <br> Default: `False`
 | `data_kitchen_thread_count` | <br> Designate the number of threads you want to use for data processing (outlier methods, normalization, etc.). This has no impact on the number of threads used for training. If user does not set it (default), FreqAI will use max number of threads - 2 (leaving 1 physical core available for Freqtrade bot and FreqUI) <br> **Datatype:** Positive integer.
 
+### Feature parameters
 
 |  Parameter | Description |
 |------------|-------------|
@@ -44,6 +47,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `outlier_protection_percentage` | Enable to prevent outlier detection methods from discarding too much data. If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection, i.e., the original dataset will be kept intact. If the outlier protection is triggered, no predictions will be made based on the training dataset. <br> **Datatype:** Float. <br> Default: `30`.
 | `reverse_train_test_order` | Split the feature dataset (see below) and use the latest data split for training and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, you should be careful to understand the unorthodox nature of this parameter before employing it. <br> **Datatype:** Boolean. <br> Default: `False` (no reversal).
 
+### Data split parameters
 
 |  Parameter | Description |
 |------------|-------------|
@@ -52,6 +56,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `test_size` | The fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
 | `shuffle` | Shuffle the training data points during training. Typically, to not remove the chronological order of data in time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean. <br> Defaut: `False`.
 
+### Model training parameters
 
 |  Parameter | Description |
 |------------|-------------|
@@ -61,6 +66,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `learning_rate` | Boosting learning rate during training of the model. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
 
+### Reinforcement Learning parameters
 
 |  Parameter | Description |
 |------------|-------------|
@@ -75,6 +81,8 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `cpu_count` | Number of threads/cpus to dedicate to the Reinforcement Learning training process (depending on if `ReinforcementLearning_multiproc` is selected or not). Recommended to leave this untouched, by default, this value is set to the total number of physical cores minus 1. <br> **Datatype:** int. 
 | `model_reward_parameters` | Parameters used inside the customizable `calculate_reward()` function in `ReinforcementLearner.py` <br> **Datatype:** int.
 | `add_state_info` | Tell FreqAI to include state information in the feature set for training and inferencing. The current state variables include trade duration, current profit, trade position. This is only available in dry/live runs, and is automatically switched to false for backtesting. <br> **Datatype:** bool. <br> Default: `False`.
+
+### Additional parameters
 
 |  Parameter | Description |
 |------------|-------------|
