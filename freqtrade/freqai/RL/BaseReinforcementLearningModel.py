@@ -38,7 +38,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
     User created Reinforcement Learning Model prediction class
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(config=kwargs['config'])
         self.max_threads = min(self.freqai_info['rl_config'].get(
             'cpu_count', 1), max(int(self.max_system_threads / 2), 1))

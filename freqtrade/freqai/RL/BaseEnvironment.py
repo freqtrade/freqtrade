@@ -200,13 +200,13 @@ class BaseEnvironment(gym.Env):
             return 0.
 
     @abstractmethod
-    def is_tradesignal(self, action: int):
+    def is_tradesignal(self, action: int) -> bool:
         """
         Determine if the signal is a trade signal. This is
         unique to the actions in the environment, and therefore must be
         inherited.
         """
-        return
+        return True
 
     def _is_valid(self, action: int) -> bool:
         """

@@ -103,7 +103,7 @@ class Base4ActionRLEnv(BaseEnvironment):
 
         return observation, step_reward, self._done, info
 
-    def is_tradesignal(self, action: int):
+    def is_tradesignal(self, action: int) -> bool:
         """
         Determine if the signal is a trade signal
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
@@ -117,7 +117,7 @@ class Base4ActionRLEnv(BaseEnvironment):
                     (action == Actions.Long_enter.value and self._position == Positions.Long) or
                     (action == Actions.Long_enter.value and self._position == Positions.Short))
 
-    def _is_valid(self, action: int):
+    def _is_valid(self, action: int) -> bool:
         """
         Determine if the signal is valid.
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
