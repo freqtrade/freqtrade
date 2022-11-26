@@ -106,7 +106,7 @@ class WebSocketChannel:
 
         # Explicitly give control back to event loop as
         # websockets.send does not
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.01)
 
     async def recv(self):
         """
