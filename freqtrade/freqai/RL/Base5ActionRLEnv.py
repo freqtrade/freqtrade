@@ -26,31 +26,6 @@ class Base5ActionRLEnv(BaseEnvironment):
     def set_action_space(self):
         self.action_space = spaces.Discrete(len(Actions))
 
-    def reset(self):
-
-        self._done = False
-
-        if self.starting_point is True:
-            self._position_history = (self._start_tick * [None]) + [self._position]
-        else:
-            self._position_history = (self.window_size * [None]) + [self._position]
-
-        self._current_tick = self._start_tick
-        self._last_trade_tick = None
-        self._position = Positions.Neutral
-
-        self.total_reward = 0.
-        self._total_profit = 1.  # unit
-        self.history = {}
-        self.trade_history = []
-        self.portfolio_log_returns = np.zeros(len(self.prices))
-
-        self._profits = [(self._start_tick, 1)]
-        self.close_trade_profit = []
-        self._total_unrealized_profit = 1
-
-        return self._get_observation()
-
     def step(self, action: int):
         """
         Logic for a single step (incrementing one candle in time)
@@ -134,12 +109,6 @@ class Base5ActionRLEnv(BaseEnvironment):
         self._update_history(info)
 
         return observation, step_reward, self._done, info
-
-    def get_trade_duration(self):
-        if self._last_trade_tick is None:
-            return 0
-        else:
-            return self._current_tick - self._last_trade_tick
 
     def is_tradesignal(self, action: int) -> bool:
         """

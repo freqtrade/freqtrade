@@ -590,6 +590,7 @@ CONF_SCHEMA = {
                         "cpu_count": {"type": "integer", "default": 1},
                         "model_type": {"type": "string", "default": "PPO"},
                         "policy_type": {"type": "string", "default": "MlpPolicy"},
+                        "net_arch": {"type": "list", "default": [128, 128]},
                         "model_reward_parameters": {
                             "type": "object",
                             "properties": {

@@ -34,7 +34,7 @@ Setting up and running a Reinforcement Learning model is the same as running a R
 freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --config config.json
 ```
 
-where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner`. The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `populate_any_indicators` as a typical Regressor:
+where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `populate_any_indicators` as a typical Regressor:
 
 ```python
     def populate_any_indicators(
