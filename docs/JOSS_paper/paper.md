@@ -179,7 +179,7 @@ There are two other open-source tools which are geared toward helping users buil
 
 # On-going research
 
-Emergent Methods, based in Arvada CO, is actively using `FreqAI` to perform large scale experiments aimed at comparing machine learning libraries in live and historical environments. Past projects include backtesting parametric sweeps, while active projects include a 3 week live deployment comparison between `CatboosRegressor`, `LightGBMRegressor`, and `XGBoostRegressor`. Results from these studies are planned for submission to scientific journals as well as more general data science blogs (e.g. Medium).
+Emergent Methods, based in Arvada CO, is actively using `FreqAI` to perform large scale experiments aimed at comparing machine learning libraries in live and historical environments. Past projects include backtesting parametric sweeps, while active projects include a 3 week live deployment comparison between `CatboostRegressor`, `LightGBMRegressor`, and `XGBoostRegressor`. Results from these studies are planned for submission to scientific journals as well as more general data science blogs (e.g. Medium).
 
 # Installing and running `FreqAI`
 
