@@ -1,11 +1,12 @@
 import logging
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 import joblib
 import pandas as pd
 from tabulate import tabulate
 
+from freqtrade.constants import Config
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
 from freqtrade.exceptions import OperationalException
@@ -153,55 +154,64 @@ def _do_group_table_output(bigdf, glist):
 
 
 def _select_rows_within_dates(df, date_start=None, date_end=None):
+    dtfmt = "%Y%m%d"
+    try:
+        bool(datetime.strptime(date_start, dtfmt))
+        bool(datetime.strptime(date_end, dtfmt))
+    except ValueError:
+        logger.error("Invalid start and/or end date provided. Use YYYYMMDD.")
+        return None
+    except TypeError:
+        return df
+
     if (date_start is not None):
         df = df.loc[(df['date'] >= date_start)]
 
     if (date_end is not None):
         df = df.loc[(df['date'] < date_end)]
-
     return df
 
 
-def _select_rows_by_entry_exit_tags(df, enter_reason_list, exit_reason_list):
+def _select_rows_by_tags(df, enter_reason_list, exit_reason_list):
     if enter_reason_list and "all" not in enter_reason_list:
         df = df.loc[(df['enter_reason'].isin(enter_reason_list))]
 
     if exit_reason_list and "all" not in exit_reason_list:
         df = df.loc[(df['exit_reason'].isin(exit_reason_list))]
-
     return df
 
 
-def _print_results(analysed_trades, stratname, analysis_groups,
-                   enter_reason_list, exit_reason_list,
-                   indicator_list, columns=None,
-                   date_start=None, date_end=None):
-    if columns is None:
-        columns = ['pair', 'open_date', 'close_date', 'profit_abs', 'enter_reason', 'exit_reason']
-
-    bigdf = pd.DataFrame()
+def prepare_results(analysed_trades, stratname,
+                    enter_reason_list, exit_reason_list,
+                    date_start=None, date_end=None):
+    res_df = pd.DataFrame()
     for pair, trades in analysed_trades[stratname].items():
-        bigdf = pd.concat([bigdf, trades], ignore_index=True)
+        res_df = pd.concat([res_df, trades], ignore_index=True)
 
-    bigdf = _select_rows_within_dates(bigdf, date_start, date_end)
+    res_df = _select_rows_within_dates(res_df, date_start, date_end)
 
-    if bigdf.shape[0] > 0 and ('enter_reason' in bigdf.columns):
+    if res_df is not None and res_df.shape[0] > 0 and ('enter_reason' in res_df.columns):
+        res_df = _select_rows_by_tags(res_df, enter_reason_list, exit_reason_list)
+
+    return res_df
+
+
+def print_results(res_df, analysis_groups, indicator_list):
+    if res_df.shape[0] > 0:
         if analysis_groups:
-            _do_group_table_output(bigdf, analysis_groups)
-
-        bigdf = _select_rows_by_entry_exit_tags(bigdf, enter_reason_list, exit_reason_list)
+            _do_group_table_output(res_df, analysis_groups)
 
         if "all" in indicator_list:
-            print(bigdf)
+            print(res_df)
         elif indicator_list is not None:
             available_inds = []
             for ind in indicator_list:
-                if ind in bigdf:
+                if ind in res_df:
                     available_inds.append(ind)
             ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
-            _print_table(bigdf[ilist], sortcols=['exit_reason'], show_index=False)
+            _print_table(res_df[ilist], sortcols=['exit_reason'], show_index=False)
     else:
-        print("\\_ No trades to show")
+        print("\\No trades to show")
 
 
 def _print_table(df, sortcols=None, show_index=False):
@@ -220,27 +230,34 @@ def _print_table(df, sortcols=None, show_index=False):
     )
 
 
-def process_entry_exit_reasons(backtest_dir: Path,
-                               pairlist: List[str],
-                               analysis_groups: Optional[List[str]] = ["0", "1", "2"],
-                               enter_reason_list: Optional[List[str]] = ["all"],
-                               exit_reason_list: Optional[List[str]] = ["all"],
-                               indicator_list: Optional[List[str]] = []):
+def process_entry_exit_reasons(config: Config):
     try:
-        backtest_stats = load_backtest_stats(backtest_dir)
+        analysis_groups = config.get('analysis_groups', [])
+        enter_reason_list = config.get('enter_reason_list', ["all"])
+        exit_reason_list = config.get('exit_reason_list', ["all"])
+        indicator_list = config.get('indicator_list', [])
+        analysis_date_start = config.get('analysis_date_start', None)
+        analysis_date_end = config.get('analysis_date_end', None)
+
+        backtest_stats = load_backtest_stats(config['exportfilename'])
+
         for strategy_name, results in backtest_stats['strategy'].items():
-            trades = load_backtest_data(backtest_dir, strategy_name)
+            trades = load_backtest_data(config['exportfilename'], strategy_name)
 
             if not trades.empty:
-                signal_candles = _load_signal_candles(backtest_dir)
-                analysed_trades_dict = _process_candles_and_indicators(pairlist, strategy_name,
-                                                                       trades, signal_candles)
-                _print_results(analysed_trades_dict,
-                               strategy_name,
-                               analysis_groups,
-                               enter_reason_list,
-                               exit_reason_list,
-                               indicator_list)
+                signal_candles = _load_signal_candles(config['exportfilename'])
+                analysed_trades_dict = _process_candles_and_indicators(
+                                        config['exchange']['pair_whitelist'], strategy_name,
+                                        trades, signal_candles)
+
+                res_df = prepare_results(analysed_trades_dict, strategy_name,
+                                         enter_reason_list, exit_reason_list,
+                                         date_start=analysis_date_start,
+                                         date_end=analysis_date_end)
+
+                print_results(res_df,
+                              analysis_groups,
+                              indicator_list)
 
     except ValueError as e:
         raise OperationalException(e) from e
