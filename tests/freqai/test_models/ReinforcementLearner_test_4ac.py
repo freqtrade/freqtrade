@@ -20,7 +20,7 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
         sets a custom reward based on profit and trade duration.
         """
 
-        def calculate_reward(self, action):
+        def calculate_reward(self, action: int) -> float:
 
             # first, penalize if the action is not valid
             if not self._is_valid(action):
@@ -28,7 +28,7 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
 
             pnl = self.get_unrealized_profit()
             rew = np.sign(pnl) * (pnl + 1)
-            factor = 100
+            factor = 100.
 
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
@@ -39,7 +39,7 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
                 return -1
 
             max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
-            trade_duration = self._current_tick - self._last_trade_tick
+            trade_duration = self._current_tick - self._last_trade_tick  # type: ignore
 
             if trade_duration <= max_trade_duration:
                 factor *= 1.5

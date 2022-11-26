@@ -208,13 +208,13 @@ class BaseEnvironment(gym.Env):
         """
         return
 
-    def _is_valid(self, action: int):
+    def _is_valid(self, action: int) -> bool:
         """
         Determine if the signal is valid.This is
         unique to the actions in the environment, and therefore must be
         inherited.
         """
-        return
+        return True
 
     def add_entry_fee(self, price):
         return price * (1 + self.fee)
@@ -230,7 +230,7 @@ class BaseEnvironment(gym.Env):
             self.history[key].append(value)
 
     @abstractmethod
-    def calculate_reward(self, action):
+    def calculate_reward(self, action: int) -> float:
         """
         An example reward function. This is the one function that users will likely
         wish to inject their own creativity into.
@@ -263,38 +263,40 @@ class BaseEnvironment(gym.Env):
             # assumes unit stake and no compounding
             self._total_profit += pnl
 
-    def most_recent_return(self, action: int):
-        """
-        Calculate the tick to tick return if in a trade.
-        Return is generated from rising prices in Long
-        and falling prices in Short positions.
-        The actions Sell/Buy or Hold during a Long position trigger the sell/buy-fee.
-        """
-        # Long positions
-        if self._position == Positions.Long:
-            current_price = self.prices.iloc[self._current_tick].open
-            previous_price = self.prices.iloc[self._current_tick - 1].open
-
-            if (self._position_history[self._current_tick - 1] == Positions.Short
-                    or self._position_history[self._current_tick - 1] == Positions.Neutral):
-                previous_price = self.add_entry_fee(previous_price)
-
-            return np.log(current_price) - np.log(previous_price)
-
-        # Short positions
-        if self._position == Positions.Short:
-            current_price = self.prices.iloc[self._current_tick].open
-            previous_price = self.prices.iloc[self._current_tick - 1].open
-            if (self._position_history[self._current_tick - 1] == Positions.Long
-                    or self._position_history[self._current_tick - 1] == Positions.Neutral):
-                previous_price = self.add_exit_fee(previous_price)
-
-            return np.log(previous_price) - np.log(current_price)
-
-        return 0
-
-    def update_portfolio_log_returns(self, action):
-        self.portfolio_log_returns[self._current_tick] = self.most_recent_return(action)
-
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
+
+    # Keeping around incase we want to start building more complex environment
+    # templates in the future.
+    # def most_recent_return(self):
+    #     """
+    #     Calculate the tick to tick return if in a trade.
+    #     Return is generated from rising prices in Long
+    #     and falling prices in Short positions.
+    #     The actions Sell/Buy or Hold during a Long position trigger the sell/buy-fee.
+    #     """
+    #     # Long positions
+    #     if self._position == Positions.Long:
+    #         current_price = self.prices.iloc[self._current_tick].open
+    #         previous_price = self.prices.iloc[self._current_tick - 1].open
+
+    #         if (self._position_history[self._current_tick - 1] == Positions.Short
+    #                 or self._position_history[self._current_tick - 1] == Positions.Neutral):
+    #             previous_price = self.add_entry_fee(previous_price)
+
+    #         return np.log(current_price) - np.log(previous_price)
+
+    #     # Short positions
+    #     if self._position == Positions.Short:
+    #         current_price = self.prices.iloc[self._current_tick].open
+    #         previous_price = self.prices.iloc[self._current_tick - 1].open
+    #         if (self._position_history[self._current_tick - 1] == Positions.Long
+    #                 or self._position_history[self._current_tick - 1] == Positions.Neutral):
+    #             previous_price = self.add_exit_fee(previous_price)
+
+    #         return np.log(previous_price) - np.log(current_price)
+
+    #     return 0
+
+    # def update_portfolio_log_returns(self, action):
+    #     self.portfolio_log_returns[self._current_tick] = self.most_recent_return(action)

@@ -89,7 +89,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         sets a custom reward based on profit and trade duration.
         """
 
-        def calculate_reward(self, action):
+        def calculate_reward(self, action: int) -> float:
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
@@ -103,7 +103,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                 return -2
 
             pnl = self.get_unrealized_profit()
-            factor = 100
+            factor = 100.
 
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
@@ -114,7 +114,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                 return -1
 
             max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
-            trade_duration = self._current_tick - self._last_trade_tick
+            trade_duration = self._current_tick - self._last_trade_tick  # type: ignore
 
             if trade_duration <= max_trade_duration:
                 factor *= 1.5

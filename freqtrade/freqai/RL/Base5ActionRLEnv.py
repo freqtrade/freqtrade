@@ -158,7 +158,7 @@ class Base5ActionRLEnv(BaseEnvironment):
                     (action == Actions.Long_exit.value and self._position == Positions.Short) or
                     (action == Actions.Long_exit.value and self._position == Positions.Neutral))
 
-    def _is_valid(self, action: int):
+    def _is_valid(self, action: int) -> bool:
         # trade signal
         """
         Determine if the signal is valid.

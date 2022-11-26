@@ -195,7 +195,7 @@ As you begin to modify the strategy and the prediction model, you will quickly r
             Users can override any functions from those parent classes. Here is an example
             of a user customized `calculate_reward()` function.
             """
-            def calculate_reward(self, action):
+            def calculate_reward(self, action: int) -> float:
                 # first, penalize if the action is not valid
                 if not self._is_valid(action):
                     return -2
