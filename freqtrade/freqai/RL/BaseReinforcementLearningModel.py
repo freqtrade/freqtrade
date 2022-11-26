@@ -3,7 +3,7 @@ import logging
 from abc import abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import gym
 import numpy as np
@@ -46,7 +46,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
         self.train_env: Union[SubprocVecEnv, gym.Env] = None
         self.eval_env: Union[SubprocVecEnv, gym.Env] = None
-        self.eval_callback: EvalCallback = None
+        self.eval_callback: Optional[EvalCallback] = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
         self.continual_learning = self.freqai_info.get('continual_learning', False)
