@@ -434,6 +434,11 @@ To keep the release-log short, best wrap the full git changelog into a collapsib
 </details>
 ```
 
+### FreqUI release
+
+If FreqUI has been updated substantially, make sure to create a release before merging the release branch.
+Make sure that freqUI CI on the release is finished and passed before merging the release.
+
 ### Create github release / tag
 
 Once the PR against stable is merged (best right after merging):
