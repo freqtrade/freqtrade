@@ -1,7 +1,6 @@
 import logging
 from enum import Enum
 
-import numpy as np
 from gym import spaces
 
 from freqtrade.freqai.RL.BaseEnvironment import BaseEnvironment, Positions
