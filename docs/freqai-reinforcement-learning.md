@@ -155,54 +155,81 @@ In order to configure the `Reinforcement Learner` the following dictionary must 
 Parameter details can be found [here](freqai-parameter-table.md), but in general the `train_cycles` decides how many times the agent should cycle through the candle data in its artificial environment to train weights in the model. `model_type` is a string which selects one of the available models in [stable_baselines](https://stable-baselines3.readthedocs.io/en/master/)(external link).
 
 !!! Note
+    If you would like to experiment with `continual_learning`, then you should set that value to `true` in the main `freqai` configuration dictionary. This will tell the Reinforcement Learning library to continue training new models from the final state of previous models, instead of retraining new models from scratch each time a retrain is initiated.
+
+!!! Note
     Remember that the general `model_training_parameters` dictionary should contain all the model hyperparameter customizations for the particular `model_type`. For example, `PPO` parameters can be found [here](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html).
 
-## Creating the reward
+## Creating a custom reward function
 
-As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `MyRLEnv` class (see below). A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards, but users are encouraged to create their own custom reinforcement learning model class (see below) and save it to `user_data/freqaimodels`. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
 
 ```python
-    class MyRLEnv(Base5ActionRLEnv):
-        """
-        User made custom environment. This class inherits from BaseEnvironment and gym.env.
-        Users can override any functions from those parent classes. Here is an example
-        of a user customized `calculate_reward()` function.
-        """
-        def calculate_reward(self, action):
-            # first, penalize if the action is not valid
-            if not self._is_valid(action):
-                return -2
-            pnl = self.get_unrealized_profit()
+    import from freqtrade.freqai.prediction_models ReinforcementLearner import ReinforcementLearner
 
-            factor = 100
-            # reward agent for entering trades
-            if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
-                    and self._position == Positions.Neutral:
-                return 25
-            # discourage agent from not entering trades
-            if action == Actions.Neutral.value and self._position == Positions.Neutral:
-                return -1
-            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
-            trade_duration = self._current_tick - self._last_trade_tick
-            if trade_duration <= max_trade_duration:
-                factor *= 1.5
-            elif trade_duration > max_trade_duration:
-                factor *= 0.5
-            # discourage sitting in position
-            if self._position in (Positions.Short, Positions.Long) and \
-               action == Actions.Neutral.value:
-                return -1 * trade_duration / max_trade_duration
-            # close long
-            if action == Actions.Long_exit.value and self._position == Positions.Long:
-                if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(pnl * factor)
-            # close short
-            if action == Actions.Short_exit.value and self._position == Positions.Short:
-                if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(pnl * factor)
-            return 0.
+    class MyCoolRLModel(ReinforcementLearner):
+        """
+        User created RL prediction model. 
+
+        Save this file to `freqtrade/user_data/freqaimodels`
+
+        then use it with:
+
+        freqtrade trade --freqaimodel MyCoolRLModel --config config.json --strategy SomeCoolStrat
+        
+        Here the users can override any of the functions 
+        available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this 
+        is where the user overrides `MyRLEnv` (see below), to define custom
+        `calculate_reward()` function, or to override any other parts of the environment.
+        
+        This class also allows users to override any other part of the IFreqaiModel tree.
+        For example, the user can override `def fit()` or `def train()` or `def predict()` 
+        to take fine-tuned control over these processes.
+
+        Another common override may be `def data_cleaning_predict()` where the user can
+        take fine-tuned control over the data handling pipeline.
+        """
+        class MyRLEnv(Base5ActionRLEnv):
+            """
+            User made custom environment. This class inherits from BaseEnvironment and gym.env.
+            Users can override any functions from those parent classes. Here is an example
+            of a user customized `calculate_reward()` function.
+            """
+            def calculate_reward(self, action):
+                # first, penalize if the action is not valid
+                if not self._is_valid(action):
+                    return -2
+                pnl = self.get_unrealized_profit()
+
+                factor = 100
+                # reward agent for entering trades
+                if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                        and self._position == Positions.Neutral:
+                    return 25
+                # discourage agent from not entering trades
+                if action == Actions.Neutral.value and self._position == Positions.Neutral:
+                    return -1
+                max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+                trade_duration = self._current_tick - self._last_trade_tick
+                if trade_duration <= max_trade_duration:
+                    factor *= 1.5
+                elif trade_duration > max_trade_duration:
+                    factor *= 0.5
+                # discourage sitting in position
+                if self._position in (Positions.Short, Positions.Long) and \
+                action == Actions.Neutral.value:
+                    return -1 * trade_duration / max_trade_duration
+                # close long
+                if action == Actions.Long_exit.value and self._position == Positions.Long:
+                    if pnl > self.profit_aim * self.rr:
+                        factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    return float(pnl * factor)
+                # close short
+                if action == Actions.Short_exit.value and self._position == Positions.Short:
+                    if pnl > self.profit_aim * self.rr:
+                        factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    return float(pnl * factor)
+                return 0.
 ```
 
 ### Using Tensorboard
