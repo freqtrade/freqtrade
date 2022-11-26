@@ -21,6 +21,7 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
                 "name": "default", // This can be any name you'd like, default is "default"
                 "host": "127.0.0.1", // The host from your producer's api_server config
                 "port": 8080, // The port from your producer's api_server config
+                "secure": false, // Use a secure websockets connection, default false
                 "ws_token": "sercet_Ws_t0ken" // The ws_token from your producer's api_server config
             }
         ],
@@ -42,6 +43,7 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 | `producers.name` | **Required.** Name of this producer. This name must be used in calls to `get_producer_pairs()` and `get_producer_df()` if more than one producer is used.<br> **Datatype:** string
 | `producers.host` | **Required.** The hostname or IP address from your producer.<br> **Datatype:** string
 | `producers.port` | **Required.** The port matching the above host.<br> **Datatype:** string
+| `producers.secure` | **Optional.**  Use ssl in websockets connection. Default False.<br> **Datatype:** string
 | `producers.ws_token` | **Required.**  `ws_token` as configured on the producer.<br> **Datatype:** string
 | | **Optional settings**
 | `wait_timeout` | Timeout until we ping again if no message is received. <br>*Defaults to `300`.*<br> **Datatype:** Integer - in seconds.

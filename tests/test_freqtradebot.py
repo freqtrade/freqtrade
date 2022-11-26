@@ -1498,6 +1498,7 @@ def test_handle_stoploss_on_exchange_trailing(
         })
     )
     assert freqtrade.handle_trade(trade) is True
+    assert trade.stoploss_order_id is None
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -5046,7 +5047,7 @@ def test_startup_backpopulate_precision(mocker, default_conf_usdt, fee, caplog):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
-def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_short):
+def test_update_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
     def patch_with_fee(order):
@@ -5075,7 +5076,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, f
         assert trade.fee_close_cost is None
         assert trade.fee_close_currency is None
 
-    freqtrade.update_closed_trades_without_assigned_fees()
+    freqtrade.update_trades_without_assigned_fees()
 
     # Does nothing for dry-run
     trades = Trade.get_trades().all()
@@ -5088,7 +5089,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, f
 
     freqtrade.config['dry_run'] = False
 
-    freqtrade.update_closed_trades_without_assigned_fees()
+    freqtrade.update_trades_without_assigned_fees()
 
     trades = Trade.get_trades().all()
     assert len(trades) == MOCK_TRADE_COUNT
@@ -5551,7 +5552,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert trade.stake_amount == 110
 
     # Assume it does nothing since order is closed and trade is open
-    freqtrade.update_closed_trades_without_assigned_fees()
+    freqtrade.update_trades_without_assigned_fees()
 
     trade = Trade.query.first()
     assert trade
@@ -5622,7 +5623,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     mocker.patch('freqtrade.exchange.Exchange.create_order', fetch_order_mm)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', fetch_order_mm)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order', fetch_order_mm)
-    freqtrade.update_closed_trades_without_assigned_fees()
+    freqtrade.update_trades_without_assigned_fees()
 
     orders = Order.query.all()
     assert orders
@@ -5839,7 +5840,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.stake_amount == bid * amount
 
     # Assume it does nothing since order is closed and trade is open
-    freqtrade.update_closed_trades_without_assigned_fees()
+    freqtrade.update_trades_without_assigned_fees()
 
     trade = Trade.query.first()
     assert trade
