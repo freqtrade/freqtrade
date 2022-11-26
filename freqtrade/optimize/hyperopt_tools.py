@@ -17,6 +17,7 @@ from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
 from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
+from freqtrade.optimize.optimize_reports import generate_wins_draws_losses
 
 
 logger = logging.getLogger(__name__)
@@ -325,8 +326,10 @@ class HyperoptTools():
 
         # New mode, using backtest result for metrics
         trials['results_metrics.winsdrawslosses'] = trials.apply(
-            lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
-                      f"{x['results_metrics.losses']:>4}", axis=1)
+            lambda x: generate_wins_draws_losses(
+                            x['results_metrics.wins'], x['results_metrics.draws'],
+                            x['results_metrics.losses']
+                      ), axis=1)
 
         trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
                          'results_metrics.winsdrawslosses',
@@ -337,7 +340,7 @@ class HyperoptTools():
                          'loss', 'is_initial_point', 'is_random', 'is_best']]
 
         trials.columns = [
-            'Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
+            'Best', 'Epoch', 'Trades', ' Win  Draw  Loss  Win%', 'Avg profit',
             'Total profit', 'Profit', 'Avg duration', 'max_drawdown', 'max_drawdown_account',
             'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_random', 'is_best'
             ]
@@ -467,9 +470,9 @@ class HyperoptTools():
 
         base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
                         'results_metrics.profit_mean', 'results_metrics.profit_median',
-                        'results_metrics.profit_total',
-                        'Stake currency',
+                        'results_metrics.profit_total', 'Stake currency',
                         'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
+                        'results_metrics.trade_count_long', 'results_metrics.trade_count_short',
                         'loss', 'is_initial_point', 'is_best']
         perc_multi = 100
 
@@ -477,7 +480,9 @@ class HyperoptTools():
         trials = trials[base_metrics + param_metrics]
 
         base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Median profit', 'Total profit',
-                        'Stake currency', 'Profit', 'Avg duration', 'Objective',
+                        'Stake currency', 'Profit', 'Avg duration',
+                        'Trade count long', 'Trade count short',
+                        'Objective',
                         'is_initial_point', 'is_best']
         param_columns = list(results[0]['params_dict'].keys())
         trials.columns = base_columns + param_columns

@@ -675,7 +675,7 @@ freqtrade
 
 #### Proxy exchange requests
 
-To use a proxy for exchange connections - you can will have to define the proxies as part of the ccxt configuration.
+To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.
 
 ``` json
 { 
