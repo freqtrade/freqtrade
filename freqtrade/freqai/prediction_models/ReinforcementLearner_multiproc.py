@@ -1,60 +1,23 @@
 import logging
-from pathlib import Path
 from typing import Any, Dict  # , Tuple
 
 # import numpy.typing as npt
-import torch as th
 from pandas import DataFrame
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import (BaseReinforcementLearningModel,
-                                                                make_env)
+from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import make_env
 
 
 logger = logging.getLogger(__name__)
 
 
-class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
+class ReinforcementLearner_multiproc(ReinforcementLearner):
     """
-    User created Reinforcement Learning Model prediction model.
+    Demonstration of how to build vectorized environments
     """
-
-    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
-
-        train_df = data_dictionary["train_features"]
-        total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
-
-        # model arch
-        policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=self.net_arch)
-
-        if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
-            model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                    tensorboard_log=Path(
-                                        dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
-                                    **self.freqai_info['model_training_parameters']
-                                    )
-        else:
-            logger.info('Continual learning activated - starting training from previously '
-                        'trained agent.')
-            model = self.dd.model_dictionary[dk.pair]
-            model.set_env(self.train_env)
-
-        model.learn(
-            total_timesteps=int(total_timesteps),
-            callback=self.eval_callback
-        )
-
-        if Path(dk.data_path / "best_model.zip").is_file():
-            logger.info('Callback found a best model.')
-            best_model = self.MODELCLASS.load(dk.data_path / "best_model")
-            return best_model
-
-        logger.info('Couldnt find best model, using final model instead.')
-
-        return model
 
     def set_train_and_eval_environments(self, data_dictionary: Dict[str, Any],
                                         prices_train: DataFrame, prices_test: DataFrame,

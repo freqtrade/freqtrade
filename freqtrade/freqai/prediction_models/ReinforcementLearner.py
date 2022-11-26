@@ -14,7 +14,32 @@ logger = logging.getLogger(__name__)
 
 class ReinforcementLearner(BaseReinforcementLearningModel):
     """
-    User created Reinforcement Learning Model prediction model.
+    Reinforcement Learning Model prediction model.
+
+    Users can inherit from this class to make their own RL model with custom
+    environment/training controls. Define the file as follows:
+
+    ```
+    from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
+
+    class MyCoolRLModel(ReinforcementLearner):
+    ```
+
+    Save the file to `user_data/freqaimodels`, then run it with:
+
+    freqtrade trade --freqaimodel MyCoolRLModel --config config.json --strategy SomeCoolStrat
+
+    Here the users can override any of the functions
+    available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this
+    is where the user overrides `MyRLEnv` (see below), to define custom
+    `calculate_reward()` function, or to override any other parts of the environment.
+
+    This class also allows users to override any other part of the IFreqaiModel tree.
+    For example, the user can override `def fit()` or `def train()` or `def predict()`
+    to take fine-tuned control over these processes.
+
+    Another common override may be `def data_cleaning_predict()` where the user can
+    take fine-tuned control over the data handling pipeline.
     """
 
     def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
