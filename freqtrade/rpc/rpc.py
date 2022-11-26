@@ -1062,31 +1062,28 @@ class RPC:
         self,
         pair: str,
         timeframe: str,
-        limit: Optional[Union[int, List[str]]] = None
+        limit: Optional[int] = None
     ) -> Tuple[DataFrame, datetime]:
         """
         Get the dataframe and last analyze from the dataprovider
 
         :param pair: The pair to get
         :param timeframe: The timeframe of data to get
-        :param limit: If an integer, limits the size of dataframe
-                      If a list of string date times, only returns those candles
+        :param limit: The amount of candles in the dataframe
         """
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
             pair, timeframe)
         _data = _data.copy()
 
-        if limit and isinstance(limit, int):
+        if limit:
             _data = _data.iloc[-limit:]
-        elif limit and isinstance(limit, str):
-            _data = _data.iloc[_data['date'].isin(limit)]
 
         return _data, last_analyzed
 
     def _ws_all_analysed_dataframes(
         self,
         pairlist: List[str],
-        limit: Optional[Union[int, List[str]]] = None
+        limit: Optional[int] = None
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Get the analysed dataframes of each pair in the pairlist.
@@ -1113,7 +1110,7 @@ class RPC:
     def _ws_request_analyzed_df(
         self,
         pair: Optional[str],
-        limit: Optional[Union[int, List[str]]] = None,
+        limit: Optional[int] = None,
     ):
         """ Historical Analyzed Dataframes for WebSocket """
         pairlist = [pair] if pair else self._freqtrade.active_pair_whitelist

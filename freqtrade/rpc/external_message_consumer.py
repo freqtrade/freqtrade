@@ -388,8 +388,8 @@ class ExternalMessageConsumer:
                 producer_name=producer_name
             )
 
-        elif len(df) == 1:
-            # This is just a single candle
+        elif len(df) < 999:
+            # This is n single candles
             # Have dataprovider append it to
             # the full datafame. If it can't,
             # request the missing candles

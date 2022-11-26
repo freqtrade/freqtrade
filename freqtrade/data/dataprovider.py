@@ -7,9 +7,9 @@ Common Interface for bot and strategy to access data.
 import logging
 from collections import deque
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pandas import DataFrame, concat, date_range
+from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
@@ -165,40 +165,36 @@ class DataProvider:
         timeframe: str,
         candle_type: CandleType,
         producer_name: str = "default"
-    ) -> Tuple[bool, Optional[List[str]]]:
+    ) -> Union[bool, int]:
         """
         Append a candle to the existing external dataframe
 
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :returns: A tuple with a boolean value signifying if the candle was correctly appended,
-                  and a list of datetimes missing from the candle if it finds some.
-                  Will return false if has no data for `producer_name`.
-                  Will return false if no existing data for (pair, timeframe, candle_type).
-                  Will return false if there's missing candles, and a list of datetimes of
-                  the missing candles.
+        :returns: False if the candle could not be appended, or the int number of missing candles.
         """
         pair_key = (pair, timeframe, candle_type)
 
         if producer_name not in self.__producer_pairs_df:
             # We don't have data from this producer yet,
             # so we can't append a candle
-            return (False, None)
+            return False
 
         if pair_key not in self.__producer_pairs_df[producer_name]:
             # We don't have data for this pair_key,
             # so we can't append a candle
-            return (False, None)
+            return False
 
         # CHECK FOR MISSING CANDLES
+        # return int
 
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
         appended_df = self._append_candle_to_dataframe(existing_df, dataframe)
 
         # Everything is good, we appended
         self.__producer_pairs_df[producer_name][pair_key] = appended_df, last_analyzed
-        return (True, None)
+        return True
 
     def _append_candle_to_dataframe(self, existing: DataFrame, new: DataFrame) -> DataFrame:
         """
@@ -212,24 +208,9 @@ class DataProvider:
             existing = concat([existing, new])
 
         # Only keep the last 1000 candles in memory
-        # TODO: Do this better
         existing = existing[-1000:] if len(existing) > 1000 else existing
 
         return existing
-
-    def _is_missing_candles(self, dataframe: DataFrame) -> bool:
-        """
-        Check if the dataframe is missing any candles
-
-        :param dataframe: The DataFrame to check
-        """
-        logger.info(dataframe.index)
-        return len(
-            date_range(
-                dataframe.index.min(),
-                dataframe.index.max()
-            ).difference(dataframe.index)
-        ) > 0
 
     def get_producer_df(
         self,
