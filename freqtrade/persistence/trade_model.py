@@ -91,6 +91,13 @@ class Order(_DECL_BASE):
         return self.filled if self.filled is not None else self.amount or 0.0
 
     @property
+    def safe_remaining(self) -> float:
+        return (
+            self.remaining if self.remaining is not None else
+            self.amount - (self.filled or 0.0)
+        )
+
+    @property
     def safe_fee_base(self) -> float:
         return self.ft_fee_base or 0.0
 
@@ -667,7 +674,7 @@ class LocalTrade():
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
-        elif order.ft_order_side == 'stoploss':
+        elif order.ft_order_side == 'stoploss' and order.status not in ('canceled', 'open'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
@@ -1144,7 +1151,8 @@ class Trade(_DECL_BASE, LocalTrade):
 
     id = Column(Integer, primary_key=True)
 
-    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan", lazy="joined")
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan",
+                          lazy="selectin", innerjoin=True)
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)

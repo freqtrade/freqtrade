@@ -354,7 +354,7 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.FUTURES:
             self._schedule.run_pending()
 
-    def update_closed_trades_without_assigned_fees(self):
+    def update_closed_trades_without_assigned_fees(self) -> None:
         """
         Update closed trades without close fees assigned.
         Only acts when Orders are in the database, otherwise the last order-id is unknown.
@@ -379,7 +379,7 @@ class FreqtradeBot(LoggingMixin):
                                             stoploss_order=order.ft_order_side == 'stoploss',
                                             send_msg=False)
 
-        trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+        trades = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
             if trade.is_open and not trade.fee_updated(trade.entry_side):
                 order = trade.select_order(trade.entry_side, False)
@@ -1133,10 +1133,8 @@ class FreqtradeBot(LoggingMixin):
             trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
-            # Lock pair for one candle to prevent immediate rebuys
-            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
-                                    reason='Auto lock')
             self._notify_exit(trade, "stoploss", True)
+            self.handle_protections(trade.pair, trade.trade_direction)
             return True
 
         if trade.open_order_id or not trade.is_open:
@@ -1595,11 +1593,6 @@ class FreqtradeBot(LoggingMixin):
         trade.close_rate_requested = limit
         trade.exit_reason = exit_reason
 
-        if not sub_trade_amt:
-            # Lock pair for one candle to prevent immediate re-trading
-            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
-                                    reason='Auto lock')
-
         self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order_obj)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
@@ -1809,6 +1802,8 @@ class FreqtradeBot(LoggingMixin):
             self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
 
     def handle_protections(self, pair: str, side: LongShort) -> None:
+        # Lock pair for one candle to prevent immediate rebuys
+        self.strategy.lock_pair(pair, datetime.now(timezone.utc), reason='Auto lock')
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
             msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }

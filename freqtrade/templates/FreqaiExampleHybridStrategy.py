@@ -110,8 +110,6 @@ class FreqaiExampleHybridStrategy(IStrategy):
         :param informative: the dataframe associated with the informative pair
         """
 
-        coin = pair.split('/')[0]
-
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 
@@ -119,13 +117,13 @@ class FreqaiExampleHybridStrategy(IStrategy):
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, timeperiod=t)
-            informative[f"%-{coin}sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
-            informative[f"%-{coin}ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-            informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
-            informative[f"%-{coin}relative_volume-period_{t}"] = (
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, timeperiod=t)
+            informative[f"%-{pair}sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
+            informative[f"%-{pair}ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
+            informative[f"%-{pair}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
+            informative[f"%-{pair}relative_volume-period_{t}"] = (
                 informative["volume"] / informative["volume"].rolling(t).mean()
             )
 

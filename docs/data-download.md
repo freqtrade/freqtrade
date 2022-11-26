@@ -177,13 +177,13 @@ freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT --
 
 ### Data format
 
-Freqtrade currently supports 3 data-formats for both OHLCV and trades data:
+Freqtrade currently supports the following data-formats:
 
 * `json` -  plain "text" json files
 * `jsongz` - a gzip-zipped version of json files
 * `hdf5` - a high performance datastore
-* `feather` - a dataformat based on Apache Arrow
-* `parquet` - columnar datastore
+* `feather` - a dataformat based on Apache Arrow (OHLCV only)
+* `parquet` - columnar datastore (OHLCV only)
 
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 

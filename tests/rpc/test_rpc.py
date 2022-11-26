@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -28,27 +29,7 @@ def prec_satoshi(a, b) -> float:
 
 # Unit tests
 def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
-    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        get_fee=fee,
-    )
-
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot)
-    rpc = RPC(freqtradebot)
-
-    freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*no active trade*'):
-        rpc._rpc_trade_status()
-
-    freqtradebot.enter_positions()
-    trades = Trade.get_open_trades()
-    freqtradebot.exit_positions(trades)
-
-    results = rpc._rpc_trade_status()
-    assert results[0] == {
+    gen_response = {
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'ETH',
@@ -127,91 +108,103 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'remaining': ANY, 'status': ANY, 'ft_is_entry': True,
         }],
     }
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(side_effect=[False, True]),
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    freqtradebot.state = State.RUNNING
+    with pytest.raises(RPCException, match=r'.*no active trade*'):
+        rpc._rpc_trade_status()
+
+    freqtradebot.enter_positions()
+
+    # Open order...
+    results = rpc._rpc_trade_status()
+    response_unfilled = deepcopy(gen_response)
+    # Different from "filled" response:
+    response_unfilled.update({
+        'amount': 91.07468124,
+        'profit_ratio': 0.0,
+        'profit_pct': 0.0,
+        'profit_abs': 0.0,
+        'current_profit': 0.0,
+        'current_profit_pct': 0.0,
+        'current_profit_abs': 0.0,
+        'stop_loss_abs': 0.0,
+        'stop_loss_pct': None,
+        'stop_loss_ratio': None,
+        'stoploss_current_dist': -1.099e-05,
+        'stoploss_current_dist_ratio': -1.0,
+        'stoploss_current_dist_pct': pytest.approx(-100.0),
+        'stoploss_entry_dist': -0.0010025,
+        'stoploss_entry_dist_ratio': -1.0,
+        'initial_stop_loss_abs': 0.0,
+        'initial_stop_loss_pct': None,
+        'initial_stop_loss_ratio': None,
+        'open_order': '(limit buy rem=91.07468123)',
+    })
+    response_unfilled['orders'][0].update({
+        'is_open': True,
+        'filled': 0.0,
+        'remaining': 91.07468123
+    })
+    assert results[0] == response_unfilled
+
+    # Open order without remaining
+    trade = Trade.get_open_trades()[0]
+    # kucoin case (no remaining set).
+    trade.orders[0].remaining = None
+    Trade.commit()
+
+    results = rpc._rpc_trade_status()
+    # Reuse above object, only remaining changed.
+    response_unfilled['orders'][0].update({
+        'remaining': None
+    })
+    assert results[0] == response_unfilled
+
+    trade = Trade.get_open_trades()[0]
+    trade.orders[0].remaining = trade.amount
+    Trade.commit()
+
+    # Fill open order ...
+    freqtradebot.manage_open_orders()
+    trades = Trade.get_open_trades()
+    freqtradebot.exit_positions(trades)
+
+    results = rpc._rpc_trade_status()
+
+    response = deepcopy(gen_response)
+    assert results[0] == response
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
     assert isnan(results[0]['current_rate'])
-    assert results[0] == {
-        'trade_id': 1,
-        'pair': 'ETH/BTC',
-        'base_currency': 'ETH',
-        'quote_currency': 'BTC',
-        'open_date': ANY,
-        'open_timestamp': ANY,
-        'is_open': ANY,
-        'fee_open': ANY,
-        'fee_open_cost': ANY,
-        'fee_open_currency': ANY,
-        'fee_close': fee.return_value,
-        'fee_close_cost': ANY,
-        'fee_close_currency': ANY,
-        'open_rate_requested': ANY,
-        'open_trade_value': ANY,
-        'close_rate_requested': ANY,
-        'sell_reason': ANY,
-        'exit_reason': ANY,
-        'exit_order_status': ANY,
-        'min_rate': ANY,
-        'max_rate': ANY,
-        'strategy': ANY,
-        'buy_tag': ANY,
-        'enter_tag': ANY,
-        'timeframe': ANY,
-        'open_order_id': ANY,
-        'close_date': None,
-        'close_timestamp': None,
-        'open_rate': 1.098e-05,
-        'close_rate': None,
-        'current_rate': ANY,
-        'amount': 91.07468123,
-        'amount_requested': 91.07468124,
-        'trade_duration': ANY,
-        'trade_duration_s': ANY,
-        'stake_amount': 0.001,
-        'close_profit': None,
-        'close_profit_pct': None,
-        'close_profit_abs': None,
-        'current_profit': ANY,
-        'current_profit_pct': ANY,
-        'current_profit_abs': ANY,
-        'profit_ratio': ANY,
-        'profit_pct': ANY,
-        'profit_abs': ANY,
-        'profit_fiat': ANY,
-        'stop_loss_abs': 9.89e-06,
-        'stop_loss_pct': -10.0,
-        'stop_loss_ratio': -0.1,
-        'stoploss_order_id': None,
-        'stoploss_last_update': ANY,
-        'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss_abs': 9.89e-06,
-        'initial_stop_loss_pct': -10.0,
-        'initial_stop_loss_ratio': -0.1,
+    response_norate = deepcopy(gen_response)
+    # Update elements that are NaN when no rate is available.
+    response_norate.update({
         'stoploss_current_dist': ANY,
         'stoploss_current_dist_ratio': ANY,
         'stoploss_current_dist_pct': ANY,
-        'stoploss_entry_dist': -0.00010402,
-        'stoploss_entry_dist_ratio': -0.10376381,
-        'open_order': None,
-        'exchange': 'binance',
-        'realized_profit': 0.0,
-        'leverage': 1.0,
-        'interest_rate': 0.0,
-        'liquidation_price': None,
-        'is_short': False,
-        'funding_fees': 0.0,
-        'trading_mode': TradingMode.SPOT,
-        'orders': [{
-            'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
-            'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
-            'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
-            'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
-            'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
-            'remaining': ANY, 'status': ANY, 'ft_is_entry': True,
-        }],
-    }
+        'profit_ratio': ANY,
+        'profit_pct': ANY,
+        'profit_abs': ANY,
+        'current_profit_abs': ANY,
+        'current_profit': ANY,
+        'current_profit_pct': ANY,
+        'current_rate': ANY,
+    })
+    assert results[0] == response_norate
 
 
 def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
@@ -1073,6 +1066,11 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
     assert trade.buy_tag == 'force_entry'
+    assert trade.open_order_id == 'mocked_limit_buy'
+
+    freqtradebot.strategy.position_adjustment_enable = True
+    with pytest.raises(RPCException, match=r'position for LTC/BTC already open.*open order.*'):
+        rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
 
     # Test not buying
     pair = 'XRP/BTC'

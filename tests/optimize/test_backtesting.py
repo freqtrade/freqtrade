@@ -764,6 +764,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
          'enter_tag': [None, None],
+         "leverage": [1.0, 1.0],
          "is_short": [False, False],
          'open_timestamp': [1517251200000, 1517283000000],
          'close_timestamp': [1517265300000, 1517285400000],
@@ -788,13 +789,14 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
         assert len(t['orders']) == 2
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate
-        assert ln is not None
+        assert not ln.empty
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
         # check close trade rate alignes to close rate or is between high and low
-        ln = data_pair.loc[data_pair["date"] == t["close_date"]]
-        assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
-                round(ln.iloc[0]["low"], 6) < round(
-                t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
+        ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
+        assert not ln1.empty
+        assert (round(ln1.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
+                round(ln1.iloc[0]["low"], 6) < round(
+                t["close_rate"], 6) < round(ln1.iloc[0]["high"], 6))
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:

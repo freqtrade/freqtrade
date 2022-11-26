@@ -2,6 +2,8 @@
 
 import logging
 import time
+from copy import deepcopy
+from datetime import timedelta
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
@@ -610,9 +612,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
      "BTC", "binance", ['ETH/BTC', 'LTC/BTC', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
-       "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
-     "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
+    # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+    #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
+    #  "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
 ])
 def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
                               pairlists, base_currency, exchange, volumefilter_result) -> None:
@@ -633,8 +635,6 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     ohlcv_history_high_volume['low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
     ohlcv_history_high_volume['high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
     ohlcv_history_high_volume['close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
-
-    mocker.patch('freqtrade.exchange.ftx.Ftx.market_is_tradable', return_value=True)
 
     ohlcv_data = {
         ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history,
@@ -719,15 +719,26 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
 def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
     whitelist_conf['pairlists'] = [
         {"method": "StaticPairList"},
-        {"method": "ShuffleFilter", "seed": 42}
+        {"method": "ShuffleFilter", "seed": 43}
     ]
 
     exchange = get_patched_exchange(mocker, whitelist_conf)
-    PairListManager(exchange, whitelist_conf)
-    assert log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    plm = PairListManager(exchange, whitelist_conf)
+    assert log_has("Backtesting mode detected, applying seed value: 43", caplog)
+
+    with time_machine.travel("2021-09-01 05:01:00 +00:00") as t:
+        plm.refresh_pairlist()
+        pl1 = deepcopy(plm.whitelist)
+        plm.refresh_pairlist()
+        assert plm.whitelist == pl1
+
+        t.shift(timedelta(minutes=10))
+        plm.refresh_pairlist()
+        assert plm.whitelist != pl1
+
     caplog.clear()
     whitelist_conf['runmode'] = RunMode.DRY_RUN
-    PairListManager(exchange, whitelist_conf)
+    plm = PairListManager(exchange, whitelist_conf)
     assert not log_has("Backtesting mode detected, applying seed value: 42", caplog)
     assert log_has("Live mode detected, not applying seed.", caplog)
 

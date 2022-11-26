@@ -27,13 +27,13 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model', [
-    'LightGBMRegressor',
-    'XGBoostRegressor',
-    'XGBoostRFRegressor',
-    'CatboostRegressor',
+@pytest.mark.parametrize('model, pca, dbscan, float32', [
+    ('LightGBMRegressor', True, False, True),
+    ('XGBoostRegressor', False, True, False),
+    ('XGBoostRFRegressor', False, False, False),
+    ('CatboostRegressor', False, False, False),
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -41,6 +41,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
+    freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
+    freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
+    freqai_conf.update({"reduce_df_footprint": float32})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -75,17 +78,19 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-@pytest.mark.parametrize('model', [
-    'LightGBMRegressorMultiTarget',
-    'XGBoostRegressorMultiTarget',
-    'CatboostRegressorMultiTarget',
+@pytest.mark.parametrize('model, strat', [
+    ('LightGBMRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('XGBoostRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('CatboostRegressorMultiTarget', "freqai_test_multimodel_strat"),
+    ('LightGBMClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
+    ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
-def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
-    if is_arm() and model == 'CatboostRegressorMultiTarget':
+def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
+    if is_arm() and 'Catboost' in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
+    freqai_conf.update({"strategy": strat})
     freqai_conf.update({"freqaimodel": model})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -192,6 +197,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    df = freqai.cache_corr_pairlist_dfs(df, freqai.dk)
     for i in range(5):
         df[f'%-constant_{i}'] = i
         # df.loc[:, f'%-constant_{i}'] = i
@@ -234,6 +240,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
+
     assert len(model_folders) == 9
 
     shutil.rmtree(Path(freqai.dk.full_path))
@@ -336,6 +343,7 @@ def test_follow_mode(mocker, freqai_conf):
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
 
+    freqai.dk.pair = "ADA/BTC"
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702

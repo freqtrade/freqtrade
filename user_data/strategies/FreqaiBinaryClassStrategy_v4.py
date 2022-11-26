@@ -208,7 +208,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
-    can_short = False
+    can_short = True
 
     linear_roi_offset = DecimalParameter(
         0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
@@ -259,45 +259,45 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
             out = adx(informative["high"], informative["low"], informative["close"], window=t)
-            informative[f"%-{coin}adx-period_{t}"] = out["ADX_14"]
-            informative[f"%-{coin}diplus-period_{t}"] = out["DMP_14"]
-            informative[f"%-{coin}diminus-period_{t}"] = out["DMN_14"]
+            informative[f"%-{pair}adx-period_{t}"] = out["ADX_14"]
+            informative[f"%-{pair}diplus-period_{t}"] = out["DMP_14"]
+            informative[f"%-{pair}diminus-period_{t}"] = out["DMN_14"]
 
-            informative[f"{coin}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
-            #informative[f"{coin}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-            informative[f"%-{coin}close_over_20sma-period_{t}"] = (
-                informative["close"] / informative[f"{coin}20sma-period_{t}"]
+            informative[f"{pair}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
+            #informative[f"{pair}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
+            informative[f"%-{pair}close_over_20sma-period_{t}"] = (
+                informative["close"] / informative[f"{pair}20sma-period_{t}"]
             )
 
             bollinger = qtpylib.bollinger_bands(
                 qtpylib.typical_price(informative), window=t, stds=2.2
             )
-            informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
-            informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
-            informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
+            informative[f"{pair}bb_lowerband-period_{t}"] = bollinger["lower"]
+            informative[f"{pair}bb_middleband-period_{t}"] = bollinger["mid"]
+            informative[f"{pair}bb_upperband-period_{t}"] = bollinger["upper"]
 
-            informative[f"%-{coin}bb_width-period_{t}"] = (
-                informative[f"{coin}bb_upperband-period_{t}"]
-                - informative[f"{coin}bb_lowerband-period_{t}"]
-            ) / informative[f"{coin}bb_middleband-period_{t}"]
-            informative[f"%-{coin}close-bb_lower-period_{t}"] = (
-                informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
+            informative[f"%-{pair}bb_width-period_{t}"] = (
+                informative[f"{pair}bb_upperband-period_{t}"]
+                - informative[f"{pair}bb_lowerband-period_{t}"]
+            ) / informative[f"{pair}bb_middleband-period_{t}"]
+            informative[f"%-{pair}close-bb_lower-period_{t}"] = (
+                informative["close"] / informative[f"{pair}bb_lowerband-period_{t}"]
             )
 
-            informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
+            informative[f"%-{pair}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
             macd = ta.MACD(informative, timeperiod=t)
-            informative[f"%-{coin}macd-period_{t}"] = macd["macd"]
+            informative[f"%-{pair}macd-period_{t}"] = macd["macd"]
 
-            informative[f"%-{coin}relative_volume-period_{t}"] = (
+            informative[f"%-{pair}relative_volume-period_{t}"] = (
                 informative["volume"] / informative["volume"].rolling(t).mean()
             )
 
-        informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
-        informative[f"%-{coin}raw_volume"] = informative["volume"]
-        informative[f"%-{coin}raw_price"] = informative["close"]
+        informative[f"%-{pair}pct-change"] = informative["close"].pct_change()
+        informative[f"%-{pair}raw_volume"] = informative["volume"]
+        informative[f"%-{pair}raw_price"] = informative["close"]
 
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
@@ -391,7 +391,8 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         if self.can_short:
             exit_short_conditions = [df["do_predict"] == 1, df["min"] >= self.entry_thr.value]
             if exit_short_conditions:
-                df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
+                df.loc[reduce(lambda x, y: x & y, exit_short_conditions),
+                       ["exit_short", "exit_tag"]] = (1, "exit signal")
         return df
 
     def get_ticker_indicator(self):
@@ -402,6 +403,9 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
     ):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+
+        if dataframe.empty:
+            return None
 
         trade_date = timeframe_to_prev_date(self.config["timeframe"], trade.open_date_utc)
         trade_candle = dataframe.loc[(dataframe["date"] == trade_date)]

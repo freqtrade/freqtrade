@@ -61,7 +61,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         """
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User controls the indicators
-        passed to the training/prediction by prepending indicators with `'%-' + coin `
+        passed to the training/prediction by prepending indicators with `'%-' + pair `
         (see convention below). I.e. user should not prepend any supporting metrics
         (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
         model.
@@ -69,10 +69,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
         :param informative: the dataframe associated with the informative pair
-        :param coin: the name of the coin which will modify the feature names.
         """
-
-        coin = pair.split('/')[0]
 
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
@@ -80,9 +77,9 @@ The FreqAI strategy requires including the following lines of code in the standa
         # first loop is automatically duplicating indicators for time periods
         for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
             t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
 
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
@@ -134,7 +131,7 @@ Notice also the location of the labels under `if set_generalized_indicators:` at
     (as exemplified in `freqtrade/templates/FreqaiExampleStrategy.py`):
 
     ```python
-        def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False):
+        def populate_any_indicators(self, pair, df, tf, informative=None, set_generalized_indicators=False):
 
             ...
 

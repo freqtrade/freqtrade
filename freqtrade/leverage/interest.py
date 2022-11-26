@@ -35,9 +35,5 @@ def interest(
     elif exchange_name == "kraken":
         # Rounded based on https://kraken-fees-calculator.github.io/
         return borrowed * rate * (one + FtPrecise(ceil(hours / four)))
-    elif exchange_name == "ftx":
-        # As Explained under #Interest rates section in
-        # https://help.ftx.com/hc/en-us/articles/360053007671-Spot-Margin-Trading-Explainer
-        return borrowed * rate * FtPrecise(ceil(hours)) / twenty_four
     else:
         raise OperationalException(f"Leverage not available on {exchange_name} with freqtrade")
