@@ -27,7 +27,8 @@ class WebSocketChannel:
         self,
         websocket: WebSocketType,
         channel_id: Optional[str] = None,
-        serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer
+        serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer,
+        send_throttle: float = 0.01
     ):
         self.channel_id = channel_id if channel_id else uuid4().hex[:8]
         self._websocket = WebSocketProxy(websocket)
@@ -41,6 +42,7 @@ class WebSocketChannel:
         self._send_times: Deque[float] = deque([], maxlen=10)
         # High limit defaults to 3 to start
         self._send_high_limit = 3
+        self._send_throttle = send_throttle
 
         # The subscribed message types
         self._subscriptions: List[str] = []
@@ -106,7 +108,8 @@ class WebSocketChannel:
 
         # Explicitly give control back to event loop as
         # websockets.send does not
-        await asyncio.sleep(0.01)
+        # Also throttles how fast we send
+        await asyncio.sleep(self._send_throttle)
 
     async def recv(self):
         """

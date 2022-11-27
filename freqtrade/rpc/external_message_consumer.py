@@ -202,7 +202,11 @@ class ExternalMessageConsumer:
                     max_size=self.message_size_limit,
                     ping_interval=None
                 ) as ws:
-                    async with create_channel(ws, channel_id=name) as channel:
+                    async with create_channel(
+                        ws,
+                        channel_id=name,
+                        send_throttle=0.5
+                    ) as channel:
 
                         # Create the message stream for this channel
                         self._channel_streams[name] = MessageStream()
