@@ -166,7 +166,8 @@ As you begin to modify the strategy and the prediction model, you will quickly r
 
 ```python
     from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
-    from freqtrade.freqai.RL.Base5ActionRLEnv import Base5ActionRLEnv
+    from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
+
 
     class MyCoolRLModel(ReinforcementLearner):
         """
