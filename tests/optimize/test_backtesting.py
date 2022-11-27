@@ -663,30 +663,9 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         '',  # Exit Signal Name
 
     ]
-    row_detail = pd.DataFrame(
-        [
-            [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
-                200, 200.1, 197, 199, 1, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=1, tzinfo=timezone.utc),
-                199, 199.7, 199, 199.5, 0, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=2, tzinfo=timezone.utc),
-                199.5, 200.8, 199, 200.9, 0, 0, 0, 0, '', '', '',
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=3, tzinfo=timezone.utc),
-                200.5, 210.5, 193, 210.5, 0, 0, 0, 0, '', '', '',  # ROI sell (?)
-            ], [
-                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=4, tzinfo=timezone.utc),
-                200, 200.1, 193, 199, 0, 0, 0, 0, '', '', '',
-            ],
-        ], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                    'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag']
-    )
 
     # No data available.
-    res = backtesting._get_exit_trade_entry(trade, row_sell)
+    res = backtesting._get_exit_trade_entry(trade, row_sell, True)
     assert res is not None
     assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
@@ -699,19 +678,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         [], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                      'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag'])
 
-    res = backtesting._get_exit_trade_entry(trade, row)
+    res = backtesting._get_exit_trade_entry(trade, row, True)
     assert res is None
-
-    # Assign backtest-detail data
-    backtesting.detail_data[pair] = row_detail
-
-    res = backtesting._get_exit_trade_entry(trade, row_sell)
-    assert res is not None
-    assert res.exit_reason == ExitType.ROI.value
-    # Sell at minute 3 (not available above!)
-    assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    sell_order = res.select_order('sell', True)
-    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -788,15 +756,96 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     for _, t in results.iterrows():
         assert len(t['orders']) == 2
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
-        # Check open trade rate alignes to open rate
+        # Check open trade rate aligns to open rate
         assert not ln.empty
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
-        # check close trade rate alignes to close rate or is between high and low
+        # check close trade rate aligns to close rate or is between high and low
         ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
-        assert not ln1.empty
         assert (round(ln1.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
                 round(ln1.iloc[0]["low"], 6) < round(
                 t["close_rate"], 6) < round(ln1.iloc[0]["high"], 6))
+
+
+@pytest.mark.parametrize('use_detail', [True, False])
+def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+    default_conf_usdt['use_exit_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    if use_detail:
+        default_conf_usdt['timeframe_detail'] = '1m'
+    patch_exchange(mocker)
+
+    def advise_entry(df, *args, **kwargs):
+        # Mock function to force several entries
+        df.loc[(df['rsi'] < 40), 'enter_long'] = 1
+        return df
+
+    def custom_entry_price(proposed_rate, **kwargs):
+        return proposed_rate * 0.997
+
+    backtesting = Backtesting(default_conf_usdt)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.strategy.populate_entry_trend = advise_entry
+    backtesting.strategy.custom_entry_price = custom_entry_price
+    pair = 'XRP/ETH'
+    # Pick a timerange adapted to the pair we use to test
+    timerange = TimeRange.parse_timerange('20191010-20191013')
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['XRP/ETH'],
+                             timerange=timerange)
+    if use_detail:
+        data_1m = history.load_data(datadir=testdatadir, timeframe='1m', pairs=['XRP/ETH'],
+                                    timerange=timerange)
+        backtesting.detail_data = data_1m
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    result = backtesting.backtest(
+        processed=deepcopy(processed),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+    )
+    results = result['results']
+    assert not results.empty
+    # Timeout settings from default_conf = entry: 10, exit: 30
+    assert len(results) == (2 if use_detail else 3)
+
+    assert 'orders' in results.columns
+    data_pair = processed[pair]
+
+    data_1m_pair = data_1m[pair] if use_detail else pd.DataFrame()
+    late_entry = 0
+    for _, t in results.iterrows():
+        assert len(t['orders']) == 2
+
+        entryo = t['orders'][0]
+        entry_ts = datetime.fromtimestamp(entryo['order_filled_timestamp'] // 1000, tz=timezone.utc)
+        if entry_ts > t['open_date']:
+            late_entry += 1
+
+        # Get "entry fill" candle
+        ln = (data_1m_pair.loc[data_1m_pair["date"] == entry_ts]
+              if use_detail else data_pair.loc[data_pair["date"] == entry_ts])
+        # Check open trade rate aligns to open rate
+        assert not ln.empty
+
+        # assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
+        assert round(ln.iloc[0]["low"], 6) <= round(
+                t["open_rate"], 6) <= round(ln.iloc[0]["high"], 6)
+        # check close trade rate aligns to close rate or is between high and low
+        ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
+        if use_detail:
+            ln1_1m = data_1m_pair.loc[data_1m_pair["date"] == t["close_date"]]
+            assert not ln1.empty or not ln1_1m.empty
+        else:
+            assert not ln1.empty
+        ln2 = ln1_1m if ln1.empty else ln1
+
+        assert (round(ln2.iloc[0]["low"], 6) <= round(
+                t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
+
+    assert late_entry > 0
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
