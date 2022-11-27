@@ -1,4 +1,5 @@
 import logging
+import random
 from abc import abstractmethod
 from enum import Enum
 from typing import Optional
@@ -9,7 +10,6 @@ import pandas as pd
 from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
-import random
 
 from freqtrade.data.dataprovider import DataProvider
 
