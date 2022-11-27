@@ -393,14 +393,16 @@ class ExternalMessageConsumer:
             # Have dataprovider append it to
             # the full datafame. If it can't,
             # request the missing candles
-            if not self._dp._add_external_candle(
+            did_append, n_missing = self._dp._add_external_candle(
                 pair,
                 df,
                 last_analyzed=la,
                 timeframe=timeframe,
                 candle_type=candle_type,
                 producer_name=producer_name
-            ):
+            )
+
+            if not did_append:
                 logger.info("Holes in data or no existing df, "
                             f"requesting data for {key} from `{producer_name}`")
 
@@ -408,7 +410,7 @@ class ExternalMessageConsumer:
                     producer_name,
                     WSAnalyzedDFRequest(
                         data={
-                            "limit": 1000,
+                            "limit": n_missing if n_missing > 0 else 1000,
                             "pair": pair
                         }
                     )

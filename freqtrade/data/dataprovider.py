@@ -7,7 +7,7 @@ Common Interface for bot and strategy to access data.
 import logging
 from collections import deque
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame, concat
 
@@ -165,7 +165,7 @@ class DataProvider:
         timeframe: str,
         candle_type: CandleType,
         producer_name: str = "default"
-    ) -> Union[bool, int]:
+    ) -> Tuple[bool, int]:
         """
         Append a candle to the existing external dataframe
 
@@ -179,22 +179,22 @@ class DataProvider:
         if producer_name not in self.__producer_pairs_df:
             # We don't have data from this producer yet,
             # so we can't append a candle
-            return False
+            return (False, 0)
 
         if pair_key not in self.__producer_pairs_df[producer_name]:
             # We don't have data for this pair_key,
             # so we can't append a candle
-            return False
+            return (False, 0)
 
         # CHECK FOR MISSING CANDLES
-        # return int
+        # return (False, int > 0)
 
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
         appended_df = self._append_candle_to_dataframe(existing_df, dataframe)
 
         # Everything is good, we appended
         self.__producer_pairs_df[producer_name][pair_key] = appended_df, last_analyzed
-        return True
+        return (True, 0)
 
     def _append_candle_to_dataframe(self, existing: DataFrame, new: DataFrame) -> DataFrame:
         """
