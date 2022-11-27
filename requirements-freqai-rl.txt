@@ -1,0 +1,8 @@
+# Include all requirements to run the bot.
+-r requirements-freqai.txt
+
+# Required for freqai-rl
+torch==1.12.1
+stable-baselines3==1.6.1
+gym==0.21
+sb3-contrib==1.6.1

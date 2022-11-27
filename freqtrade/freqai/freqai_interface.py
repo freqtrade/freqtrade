@@ -5,15 +5,17 @@ from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import psutil
 from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -98,6 +100,8 @@ class IFreqaiModel(ABC):
         self.get_corr_dataframes: bool = True
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+        self.data_provider: Optional[DataProvider] = None
+        self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
         record_params(config, self.full_path)
 
@@ -126,6 +130,7 @@ class IFreqaiModel(ABC):
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
+        self.data_provider = strategy.dp
 
         if self.live:
             self.inference_timer('start')
@@ -164,6 +169,13 @@ class IFreqaiModel(ABC):
         self.model = None
         self.dk = None
 
+    def _on_stop(self):
+        """
+        Callback for Subclasses to override to include logic for shutting down resources
+        when SIGINT is sent.
+        """
+        return
+
     def shutdown(self):
         """
         Cleans up threads on Shutdown, set stop event. Join threads to wait
@@ -171,6 +183,9 @@ class IFreqaiModel(ABC):
         """
         logger.info("Stopping FreqAI")
         self._stop_event.set()
+
+        self.data_provider = None
+        self._on_stop()
 
         logger.info("Waiting on Training iteration")
         for _thread in self._threads:

@@ -3,6 +3,7 @@
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
 -r requirements-freqai.txt
+-r requirements-freqai-rl.txt
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1

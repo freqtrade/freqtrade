@@ -27,10 +27,9 @@ def freqai_conf(default_conf, tmpdir):
             "timerange": "20180110-20180115",
             "freqai": {
                 "enabled": True,
-                "startup_candles": 10000,
                 "purge_old_models": True,
                 "train_period_days": 2,
-                "backtest_period_days": 2,
+                "backtest_period_days": 10,
                 "live_retrain_hours": 0,
                 "expiration_hours": 1,
                 "identifier": "uniqe-id100",
@@ -56,6 +55,30 @@ def freqai_conf(default_conf, tmpdir):
     )
     freqaiconf['exchange'].update({'pair_whitelist': ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC']})
     return freqaiconf
+
+
+def make_rl_config(conf):
+    conf.update({"strategy": "freqai_rl_test_strat"})
+    conf["freqai"].update({"model_training_parameters": {
+        "learning_rate": 0.00025,
+        "gamma": 0.9,
+        "verbose": 1
+    }})
+    conf["freqai"]["rl_config"] = {
+        "train_cycles": 1,
+        "thread_count": 2,
+        "max_trade_duration_candles": 300,
+        "model_type": "PPO",
+        "policy_type": "MlpPolicy",
+        "max_training_drawdown_pct": 0.5,
+        "net_arch": [32, 32],
+        "model_reward_parameters": {
+            "rr": 1,
+            "profit_aim": 0.02,
+            "win_reward_factor": 2
+        }}
+
+    return conf
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):

@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import psutil
 from pandas import DataFrame
 from scipy import stats
 from sklearn import linear_model
@@ -102,7 +103,10 @@ class FreqaiDataKitchen:
                 )
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
-        self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
+        if not self.freqai_config.get("data_kitchen_thread_count", 0):
+            self.thread_count = max(int(psutil.cpu_count() * 2 - 2), 1)
+        else:
+            self.thread_count = self.freqai_config["data_kitchen_thread_count"]
         self.train_dates: DataFrame = pd.DataFrame()
         self.unique_classes: Dict[str, list] = {}
         self.unique_class_list: list = []

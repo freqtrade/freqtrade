@@ -1,4 +1,5 @@
 import collections
+import importlib
 import logging
 import re
 import shutil
@@ -98,6 +99,12 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
+        if 'Reinforcement' in self.config['freqaimodel']:
+            self.model_type = 'stable_baselines'
+            logger.warning('User passed a ReinforcementLearner model, FreqAI will '
+                           'now use stable_baselines3 to save models.')
+        else:
+            self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
@@ -476,10 +483,12 @@ class FreqaiDataDrawer:
         save_path = Path(dk.data_path)
 
         # Save the trained model
-        if not dk.keras:
+        if self.model_type == 'joblib':
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
+        elif 'stable_baselines' in self.model_type:
+            model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
             dump(dk.svm_model, save_path / f"{dk.model_filename}_svm_model.joblib")
@@ -506,11 +515,10 @@ class FreqaiDataDrawer:
                 dk.pca, open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "wb")
             )
 
-        # if self.live:
-        # store as much in ram as possible to increase performance
         self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
+
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
@@ -542,14 +550,6 @@ class FreqaiDataDrawer:
         if dk.live:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
-            if self.freqai_info.get("follow_mode", False):
-                # follower can be on a different system which is rsynced from the leader:
-                dk.data_path = Path(
-                    self.config["user_data_dir"]
-                    / "models"
-                    / dk.data_path.parts[-2]
-                    / dk.data_path.parts[-1]
-                )
 
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
@@ -568,12 +568,16 @@ class FreqaiDataDrawer:
         # try to access model in memory instead of loading object from disk to save time
         if dk.live and coin in self.model_dictionary:
             model = self.model_dictionary[coin]
-        elif not dk.keras:
+        elif self.model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif self.model_type == 'keras':
             from tensorflow import keras
-
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
+        elif self.model_type == 'stable_baselines':
+            mod = importlib.import_module(
+                'stable_baselines3', self.freqai_info['rl_config']['model_type'])
+            MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
+            model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
@@ -582,6 +586,10 @@ class FreqaiDataDrawer:
             raise OperationalException(
                 f"Unable to load model, ensure model exists at " f"{dk.data_path} "
             )
+
+        # load it into ram if it was loaded from disk
+        if coin not in self.model_dictionary:
+            self.model_dictionary[coin] = model
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             dk.pca = cloudpickle.load(
