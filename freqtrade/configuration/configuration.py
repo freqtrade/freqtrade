@@ -462,11 +462,8 @@ class Configuration:
         self._args_to_config(config, argname='indicator_list',
                              logstring='Analysis indicator list: {}')
 
-        self._args_to_config(config, argname='analysis_date_start',
-                             logstring='Analysis filter start date: {}')
-
-        self._args_to_config(config, argname='analysis_date_end',
-                             logstring='Analysis filter end date: {}')
+        self._args_to_config(config, argname='timerange',
+                             logstring='Filter trades by timerange: {}')
 
     def _process_runmode(self, config: Config) -> None:
 

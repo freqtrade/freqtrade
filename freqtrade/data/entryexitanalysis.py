@@ -1,11 +1,11 @@
 import logging
-from datetime import datetime
 from pathlib import Path
 
 import joblib
 import pandas as pd
 from tabulate import tabulate
 
+from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
@@ -153,22 +153,12 @@ def _do_group_table_output(bigdf, glist):
                 logger.warning("Invalid group mask specified.")
 
 
-def _select_rows_within_dates(df, date_start=None, date_end=None):
-    dtfmt = "%Y%m%d"
-    try:
-        bool(datetime.strptime(date_start, dtfmt))
-        bool(datetime.strptime(date_end, dtfmt))
-    except ValueError:
-        logger.error("Invalid start and/or end date provided. Use YYYYMMDD.")
-        return None
-    except TypeError:
-        return df
-
-    if (date_start is not None):
-        df = df.loc[(df['date'] >= date_start)]
-
-    if (date_end is not None):
-        df = df.loc[(df['date'] < date_end)]
+def _select_rows_within_dates(df, timerange=None, df_date_col: str = 'date'):
+    if timerange:
+        if timerange.starttype == 'date':
+            df = df.loc[(df[df_date_col] >= timerange.startdt)]
+        if timerange.stoptype == 'date':
+            df = df.loc[(df[df_date_col] < timerange.stopdt)]
     return df
 
 
@@ -183,12 +173,12 @@ def _select_rows_by_tags(df, enter_reason_list, exit_reason_list):
 
 def prepare_results(analysed_trades, stratname,
                     enter_reason_list, exit_reason_list,
-                    date_start=None, date_end=None):
+                    timerange=None):
     res_df = pd.DataFrame()
     for pair, trades in analysed_trades[stratname].items():
         res_df = pd.concat([res_df, trades], ignore_index=True)
 
-    res_df = _select_rows_within_dates(res_df, date_start, date_end)
+    res_df = _select_rows_within_dates(res_df, timerange)
 
     if res_df is not None and res_df.shape[0] > 0 and ('enter_reason' in res_df.columns):
         res_df = _select_rows_by_tags(res_df, enter_reason_list, exit_reason_list)
@@ -236,8 +226,9 @@ def process_entry_exit_reasons(config: Config):
         enter_reason_list = config.get('enter_reason_list', ["all"])
         exit_reason_list = config.get('exit_reason_list', ["all"])
         indicator_list = config.get('indicator_list', [])
-        analysis_date_start = config.get('analysis_date_start', None)
-        analysis_date_end = config.get('analysis_date_end', None)
+
+        timerange = TimeRange.parse_timerange(None if config.get(
+            'timerange') is None else str(config.get('timerange')))
 
         backtest_stats = load_backtest_stats(config['exportfilename'])
 
@@ -252,8 +243,7 @@ def process_entry_exit_reasons(config: Config):
 
                 res_df = prepare_results(analysed_trades_dict, strategy_name,
                                          enter_reason_list, exit_reason_list,
-                                         date_start=analysis_date_start,
-                                         date_end=analysis_date_end)
+                                         timerange=timerange)
 
                 print_results(res_df,
                               analysis_groups,

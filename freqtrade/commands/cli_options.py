@@ -658,16 +658,6 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         default=[],
     ),
-    "analysis_date_start": Arg(
-        "--analysis-date-start",
-        help=("Start date to filter trades for analysis (inclusive). "
-              "e.g. '20220101'"),
-    ),
-    "analysis_date_end": Arg(
-        "--analysis-date-end",
-        help=("End date to filter trades for analysis (exclusive). "
-              "e.g. '20220131'"),
-    ),
     "freqaimodel": Arg(
         '--freqaimodel',
         help='Specify a custom freqaimodels.',
