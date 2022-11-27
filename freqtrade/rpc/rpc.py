@@ -1109,8 +1109,8 @@ class RPC:
 
     def _ws_request_analyzed_df(
         self,
-        pair: Optional[str],
         limit: Optional[int] = None,
+        pair: Optional[str] = None
     ):
         """ Historical Analyzed Dataframes for WebSocket """
         pairlist = [pair] if pair else self._freqtrade.active_pair_whitelist
