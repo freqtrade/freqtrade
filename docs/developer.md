@@ -51,10 +51,10 @@ If necessary, the Freqtrade team can assist and give guidance with writing good 
 
 #### How to run tests
 
-Use `py.test` in root folder to run all available testcases and confirm your local environment is setup correctly
+Use `pytest` in root folder to run all available testcases and confirm your local environment is setup correctly
 
-!!! Note "develop branch"
-    This assumes that you have `stable` branch checked out. Other branches may be work in progress with tests not working yet.
+!!! Note "feature branches"
+    Tests are expected to pass on the `develop` and `stable` branches. Other branches may be work in progress with tests not working yet.
 
 #### Checking log content in tests
 
