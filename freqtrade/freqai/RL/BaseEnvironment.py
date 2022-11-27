@@ -9,6 +9,7 @@ import pandas as pd
 from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
+import random
 
 from freqtrade.data.dataprovider import DataProvider
 
@@ -121,6 +122,9 @@ class BaseEnvironment(gym.Env):
         self._done = False
 
         if self.starting_point is True:
+            length_of_data = int(self._end_tick/4)
+            start_tick = random.randint(self.window_size+1, length_of_data)
+            self._start_tick = start_tick
             self._position_history = (self._start_tick * [None]) + [self._position]
         else:
             self._position_history = (self.window_size * [None]) + [self._position]
