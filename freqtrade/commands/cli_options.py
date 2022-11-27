@@ -49,7 +49,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=0,
     ),
     "logfile": Arg(
-        '--logfile',
+        '--logfile', '--log-file',
         help="Log to the file specified. Special values are: 'syslog', 'journald'. "
              "See the documentation for more details.",
         metavar='FILE',
@@ -667,5 +667,10 @@ AVAILABLE_CLI_OPTIONS = {
         '--freqaimodel-path',
         help='Specify additional lookup path for freqaimodels.',
         metavar='PATH',
+    ),
+    "freqai_backtest_live_models": Arg(
+        '--freqai-backtest-live-models',
+        help='Run backtest with ready models.',
+        action='store_true'
     ),
 }

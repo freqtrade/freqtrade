@@ -159,6 +159,7 @@ CONF_SCHEMA = {
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
+        'reduce_df_footprint': {'type': 'boolean', 'default': False},
         'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
@@ -511,6 +512,7 @@ CONF_SCHEMA = {
                                 'minimum': 0,
                                 'maximum': 65535
                             },
+                            'secure': {'type': 'boolean', 'default': False},
                             'ws_token': {'type': 'string'},
                         },
                         'required': ['name', 'host', 'ws_token']
@@ -542,7 +544,7 @@ CONF_SCHEMA = {
                 "keras": {"type": "boolean", "default": False},
                 "write_metrics_to_disk": {"type": "boolean", "default": False},
                 "purge_old_models": {"type": "boolean", "default": True},
-                "conv_width": {"type": "integer", "default": 2},
+                "conv_width": {"type": "integer", "default": 1},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "number", "default": 7},
                 "identifier": {"type": "string", "default": "example"},

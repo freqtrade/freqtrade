@@ -546,8 +546,8 @@ In addition to the above assumptions, strategy authors should carefully read the
 
 ### Trading limits in backtesting
 
-Exchanges have certain trading limits, like minimum base currency, or minimum stake (quote) currency.
-These limits are usually listed in the exchange documentation as "trading rules" or similar.
+Exchanges have certain trading limits, like minimum (and maximum) base currency, or minimum/maximum stake (quote) currency.
+These limits are usually listed in the exchange documentation as "trading rules" or similar and can be quite different between different pairs.
 
 Backtesting (as well as live and dry-run) does honor these limits, and will ensure that a stoploss can be placed below this value - so the value will be slightly higher than what the exchange specifies.
 Freqtrade has however no information about historic limits.

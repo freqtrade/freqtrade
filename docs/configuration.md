@@ -253,6 +253,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `add_config_files` | Additional config files. These files will be loaded and merged with the current config file. The files are resolved relative to the initial file.<br> *Defaults to `[]`*. <br> **Datatype:** List of strings
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
+| `reduce_df_footprint` | Recast all numeric columns to float32/int32, with the objective of reducing ram/disk usage (and decreasing train/inference timing in FreqAI). (Currently only affects FreqAI use-cases) <br> **Datatype:** Boolean. <br> Default: `False`.
 
 ### Parameters in the strategy
 
@@ -552,7 +553,7 @@ The possible values are: `GTC` (default), `FOK` or `IOC`.
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance, gate, ftx and kucoin.
+    This is ongoing work. For now, it is supported only for binance, gate and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### What values can be used for fiat_display_currency?
@@ -664,6 +665,7 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 ### Using proxy with Freqtrade
 
 To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
+This will have the proxy settings applied to everything (telegram, coingecko, ...) except exchange requests.
 
 ``` bash
 export HTTP_PROXY="http://addr:port"
@@ -671,17 +673,20 @@ export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
 
-#### Proxy just exchange requests
+#### Proxy exchange requests
 
-To use a proxy just for exchange connections (skips/ignores telegram and coingecko) - you can also define the proxies as part of the ccxt configuration.
+To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.
 
 ``` json
-"ccxt_config": {
+{ 
+  "exchange": {
+    "ccxt_config": {
     "aiohttp_proxy": "http://addr:port",
     "proxies": {
-        "http": "http://addr:port",
-        "https": "http://addr:port"
+      "http": "http://addr:port",
+      "https": "http://addr:port"
     },
+  }
 }
 ```
 

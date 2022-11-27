@@ -389,6 +389,44 @@ Now anytime those types of RPC messages are sent in the bot, you will receive th
 }
 ```
 
+#### Reverse Proxy setup
+
+When using [Nginx](https://nginx.org/en/docs/), the following configuration is required for WebSockets to work (Note this configuration is incomplete, it's missing some information and can not be used as is):
+
+Please make sure to replace `<freqtrade_listen_ip>` (and the subsequent port) with the IP and Port matching your configuration/setup.
+
+```
+http {
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+
+    #...
+
+    server {
+        #...
+
+        location / {
+            proxy_http_version 1.1;
+            proxy_pass http://<freqtrade_listen_ip>:8080;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+        }
+    }
+}
+```
+
+To properly configure your reverse proxy (securely), please consult it's documentation for proxying websockets.
+
+- **Traefik**: Traefik supports websockets out of the box, see the [documentation](https://doc.traefik.io/traefik/)
+- **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
+
+!!! Tip "SSL certificates"
+    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any fo the above reverse proxies.
+    While this will protect your data in transit, we do not recommend to run the freqtrade API outside of your private network (VPN, SSH tunnel).
+
 ### OpenAPI interface
 
 To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.

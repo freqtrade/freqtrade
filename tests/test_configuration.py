@@ -1538,3 +1538,85 @@ def test_flat_vars_to_nested_dict(caplog):
 
     assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
     assert not log_has("Loading variable 'NOT_RELEVANT'", caplog)
+
+
+def test_setup_hyperopt_freqai(mocker, default_conf, caplog) -> None:
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
+    )
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
+    arglist = [
+        'hyperopt',
+        '--config', 'config.json',
+        '--strategy', CURRENT_TEST_STRATEGY,
+        '--timerange', '20220801-20220805',
+        "--freqaimodel",
+        "LightGBMRegressorMultiTarget",
+        "--analyze-per-epoch"
+    ]
+
+    args = Arguments(arglist).get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    config['freqai'] = {
+        "enabled": True
+    }
+    with pytest.raises(
+        OperationalException, match=r".*analyze-per-epoch parameter is not supported.*"
+    ):
+        validate_config_consistency(config)
+
+
+def test_setup_freqai_backtesting(mocker, default_conf, caplog) -> None:
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
+    )
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
+    arglist = [
+        'backtesting',
+        '--config', 'config.json',
+        '--strategy', CURRENT_TEST_STRATEGY,
+        '--timerange', '20220801-20220805',
+        "--freqaimodel",
+        "LightGBMRegressorMultiTarget",
+        "--freqai-backtest-live-models"
+    ]
+
+    args = Arguments(arglist).get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    config['runmode'] = RunMode.BACKTEST
+
+    with pytest.raises(
+        OperationalException, match=r".*--freqai-backtest-live-models parameter is only.*"
+    ):
+        validate_config_consistency(config)
+
+    conf = deepcopy(config)
+    conf['freqai'] = {
+        "enabled": True
+    }
+    with pytest.raises(
+        OperationalException, match=r".* timerange parameter is not supported with .*"
+    ):
+        validate_config_consistency(conf)
+
+    conf['timerange'] = None
+    conf['freqai_backtest_live_models'] = False
+
+    with pytest.raises(
+        OperationalException, match=r".* pass --timerange if you intend to use FreqAI .*"
+    ):
+        validate_config_consistency(conf)

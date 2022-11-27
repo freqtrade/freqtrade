@@ -72,6 +72,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'max_rate': [0.10481985, 0.1038888],
          'is_open': [False, False],
          'enter_tag': [None, None],
+         'leverage': [1.0, 1.0],
          'is_short': [False, False],
          'open_timestamp': [1517251200000, 1517283000000],
          'close_timestamp': [1517265300000, 1517285400000],

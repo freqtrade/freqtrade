@@ -113,6 +113,16 @@ def test_throttle_sleep_time(mocker, default_conf, caplog) -> None:
         # 300 (5m) - 60 (1m - see set time above) - 5 (duration of throttled_func) = 235
         assert 235.2 < sleep_mock.call_args[0][0] < 235.6
 
+        t.move_to("2022-09-01 05:04:51 +00:00")
+        sleep_mock.reset_mock()
+        # Offset of 5s, so we hit the sweet-spot between "candle" and "candle offset"
+        # Which should not get a throttle iteration to avoid late candle fetching
+        assert worker._throttle(throttled_func, throttle_secs=10, timeframe='5m',
+                                timeframe_offset=5, x=1.2) == 42
+        assert sleep_mock.call_count == 1
+        # Time is slightly bigger than throttle secs due to the high timeframe offset.
+        assert 11.1 < sleep_mock.call_args[0][0] < 13.2
+
 
 def test_throttle_with_assets(mocker, default_conf) -> None:
     def throttled_func(nb_assets=-1):
