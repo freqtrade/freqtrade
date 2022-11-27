@@ -179,15 +179,19 @@ class DataProvider:
         if producer_name not in self.__producer_pairs_df:
             # We don't have data from this producer yet,
             # so we can't append a candle
-            return (False, 0)
+            return (False, 999)
 
         if pair_key not in self.__producer_pairs_df[producer_name]:
             # We don't have data for this pair_key,
             # so we can't append a candle
-            return (False, 0)
+            return (False, 999)
 
         # CHECK FOR MISSING CANDLES
-        # return (False, int > 0)
+        # Calculate difference between last candle in local dataframe
+        # and first candle in incoming dataframe. Take difference and divide
+        # by timeframe to find out how many candles we still need. If 1
+        # then the incoming candle is the right candle. If more than 1,
+        # return (False, missing candles - 1)
 
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
         appended_df = self._append_candle_to_dataframe(existing_df, dataframe)
@@ -207,8 +211,8 @@ class DataProvider:
         if existing.iloc[-1]['date'] != new.iloc[-1]['date']:
             existing = concat([existing, new])
 
-        # Only keep the last 1000 candles in memory
-        existing = existing[-1000:] if len(existing) > 1000 else existing
+        # Only keep the last 1500 candles in memory
+        existing = existing[-1500:] if len(existing) > 1000 else existing
 
         return existing
 
