@@ -2292,7 +2292,7 @@ class Exchange:
 
     def _build_ohlcv_dl_jobs(
         self, pair_list: ListPairsWithTimeframes, since_ms: Optional[int], cache: bool
-    ) -> Tuple[List[Coroutine], List[Tuple[str, str, CandleType]]]:
+    ) -> Tuple[List[Coroutine], List[PairWithTimeframe]]:
         """
         Build Coroutines to execute as part of refresh_latest_ohlcv
         """

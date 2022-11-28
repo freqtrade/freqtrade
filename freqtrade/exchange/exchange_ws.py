@@ -8,7 +8,7 @@ from typing import Dict, List, Set, Tuple
 
 import ccxt
 
-from freqtrade.constants import Config
+from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
 
@@ -23,10 +23,10 @@ class ExchangeWS():
         self._thread = Thread(name="ccxt_ws", target=self.__start_forever)
         self._background_tasks: Set[asyncio.Task] = set()
 
-        self._klines_watching: Set[Tuple[str, str, CandleType]] = set()
-        self._klines_scheduled: Set[Tuple[str, str, CandleType]] = set()
-        self.klines_last_refresh: Dict[Tuple[str, str, CandleType], float] = {}
-        self.klines_last_request: Dict[Tuple[str, str, CandleType], float] = {}
+        self._klines_watching: Set[PairWithTimeframe] = set()
+        self._klines_scheduled: Set[PairWithTimeframe] = set()
+        self.klines_last_refresh: Dict[PairWithTimeframe, float] = {}
+        self.klines_last_request: Dict[PairWithTimeframe, float] = {}
         self._thread.start()
 
     def __start_forever(self) -> None:
