@@ -9,7 +9,7 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, to_timedelta
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
@@ -176,24 +176,30 @@ class DataProvider:
         """
         pair_key = (pair, timeframe, candle_type)
 
-        if producer_name not in self.__producer_pairs_df:
+        if (producer_name not in self.__producer_pairs_df) \
+           or (pair_key not in self.__producer_pairs_df[producer_name]):
             # We don't have data from this producer yet,
-            # so we can't append a candle
-            return (False, 999)
-
-        if pair_key not in self.__producer_pairs_df[producer_name]:
-            # We don't have data for this pair_key,
-            # so we can't append a candle
-            return (False, 999)
-
-        # CHECK FOR MISSING CANDLES
-        # Calculate difference between last candle in local dataframe
-        # and first candle in incoming dataframe. Take difference and divide
-        # by timeframe to find out how many candles we still need. If 1
-        # then the incoming candle is the right candle. If more than 1,
-        # return (False, missing candles - 1)
+            # sor we don't have data for this pair_key
+            # return False and 1000 for the full df
+            return (False, 1000)
 
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
+
+        # CHECK FOR MISSING CANDLES
+        timeframe_delta = to_timedelta(timeframe)  # Convert the timeframe to a timedelta for pandas
+        local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy of data
+        incoming_first = dataframe.iloc[0]['date']  # We want the first date from the incoming data
+
+        candle_difference = (incoming_first - local_last) / timeframe_delta
+
+        # If the difference divided by the timeframe is 1, then this
+        # is the candle we want and the incoming data isn't missing any.
+        # If the candle_difference is more than 1, that means
+        # we missed some candles between our data and the incoming
+        # so return False and candle_difference.
+        if candle_difference > 1:
+            return (False, candle_difference)
+
         appended_df = self._append_candle_to_dataframe(existing_df, dataframe)
 
         # Everything is good, we appended
@@ -212,7 +218,7 @@ class DataProvider:
             existing = concat([existing, new])
 
         # Only keep the last 1500 candles in memory
-        existing = existing[-1500:] if len(existing) > 1000 else existing
+        existing = existing[-1500:] if len(existing) > 1500 else existing
 
         return existing
 
