@@ -282,10 +282,12 @@ class Exchange:
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         _has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws_enabled"]
+        _has_watch_orderbook = self.exchange_has("watchOrderBook") and self._ft_has["ws_enabled"]
+        self._has_watch_orderbook = _has_watch_orderbook
         if (
             self._config["runmode"] in TRADE_MODES
             and exchange_conf.get("enable_ws", True)
-            and _has_watch_ohlcv
+            and (_has_watch_ohlcv or _has_watch_orderbook)
         ):
             self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
@@ -2231,6 +2233,15 @@ class Exchange:
             self._ft_has["l2_limit_range_required"],
             self._ft_has["l2_limit_upper"],
         )
+
+        if self._has_watch_orderbook and self._exchange_ws:
+            self._exchange_ws.schedule_orderbook(pair)
+
+            ob = self._exchange_ws.get_orderbook(pair)
+            if ob:
+                logger.info(f"using orderbook for {pair}")
+                return ob
+
         try:
             return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:

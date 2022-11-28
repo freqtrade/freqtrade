@@ -95,6 +95,7 @@ EXCHANGE_HAS_OPTIONAL: dict[str, list[str]] = {
     "fetchOrders": ["fetchOpenOrders", "fetchClosedOrders"],  # ,  # Refinding balance...
     # ccxt.pro
     "watchOHLCV": [],
+    "watchOrderBook": [],
 }
 
 EXCHANGE_HAS_OPTIONAL_FUTURES: dict[str, list[str]] = {

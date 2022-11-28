@@ -33,6 +33,10 @@ class ExchangeWS:
         self._thread = Thread(name="ccxt_ws", target=self._start_forever)
         self._thread.start()
 
+        self._ob_watching: set[str] = set()
+        self._ob_scheduled: set[str] = set()
+        self.ob_last_request: dict[str, float] = {}
+
     def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
         self._loop_ready.set()
@@ -151,6 +155,14 @@ class ExchangeWS:
         if changed:
             logger.info(f"Removal done: new watch list ({len(self._klines_watching)})")
 
+        with self._state_lock:
+            for pair in list(self._ob_watching):
+                timeout = 60  # 1m
+                last_refresh = self.ob_last_request.get(pair, 0)
+                if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeout + 20) * 1000):
+                    logger.info(f"Removing {pair} from orderbook watchlist")
+                    self._ob_watching.discard(pair)
+
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
         with self._state_lock:
@@ -176,6 +188,25 @@ class ExchangeWS:
                     candle_type=candle_type,
                 )
             )
+
+        with self._state_lock:
+            ob_pairs_to_check = list(self._ob_watching)
+
+        for ob_pair in ob_pairs_to_check:
+            # Check if they're already scheduled
+            with self._state_lock:
+                if ob_pair in self._ob_scheduled:
+                    continue
+                self._ob_scheduled.add(ob_pair)
+            ob_task = asyncio.create_task(self._continuously_async_watch_orderbook(ob_pair))
+            with self._state_lock:
+                self._background_tasks.add(ob_task)
+            ob_task.add_done_callback(partial(self._orderbook_stopped, pair=ob_pair))
+
+    def _orderbook_stopped(self, task: asyncio.Task, pair: str) -> None:
+        with self._state_lock:
+            self._background_tasks.discard(task)
+            self._ob_scheduled.discard(pair)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -230,6 +261,18 @@ class ExchangeWS:
             with self._state_lock:
                 self._klines_scheduled.discard((pair, timeframe, candle_type))
             self._pop_history((pair, timeframe, candle_type))
+
+    async def _continuously_async_watch_orderbook(self, pair: str) -> None:
+        try:
+            while pair in self._ob_watching:
+                await self._ccxt_object.watch_order_book(pair)
+        except ccxt.ExchangeClosedByUser:
+            logger.debug("Exchange connection closed by user")
+        except ccxt.BaseError:
+            logger.exception(f"Exception in continuously_async_watch_orderbook for {pair}")
+        finally:
+            with self._state_lock:
+                self._ob_watching.discard(pair)
 
     async def _continuously_async_watch_ohlcv(
         self, pair: str, timeframe: str, candle_type: CandleType
@@ -296,3 +339,22 @@ class ExchangeWS:
             f"candle_ts={format_ms_time(candle_ts)}, {drop_hint=}"
         )
         return pair, timeframe, candle_type, candles, drop_hint
+
+    def get_orderbook(self, pair: str) -> dict:
+        """
+        Returns cached orderbook from ccxt's "watch" cache.
+        """
+        return self._ccxt_object.orderbooks.get(pair, {})
+
+    def schedule_orderbook(self, pair: str) -> None:
+        """
+        Schedule a pair to be watched for orderbook updates
+        """
+        if not self._wait_for_loop():
+            logger.warning(f"Websocket loop not ready. Could not schedule orderbook for {pair}.")
+            return
+        with self._state_lock:
+            self._ob_watching.add(pair)
+            self.ob_last_request[pair] = dt_ts()
+        asyncio.run_coroutine_threadsafe(self._schedule_while_true(), loop=self._loop)
+        self.cleanup_expired()
