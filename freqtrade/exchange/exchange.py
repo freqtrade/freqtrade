@@ -2252,7 +2252,7 @@ class Exchange:
             if self._exchange_ws:
                 candle_date = int(timeframe_to_prev_date(timeframe).timestamp())
                 candles = self._exchange_ws.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
-                x = self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type))
+                x = self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
                 logger.info(f"{candle_date < x}, {candle_date}, {x}")
                 if candles and candles[-1][0] > min_date and candle_date < x:
                     # Usable result ...
