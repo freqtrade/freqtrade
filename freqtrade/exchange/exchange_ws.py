@@ -53,24 +53,24 @@ class ExchangeWS():
                 logger.info(f"Removing {p} from watchlist")
                 self._klines_watching.discard(p)
 
-    async def schedule_while_true(self) -> None:
+    async def _schedule_while_true(self) -> None:
 
         for p in self._klines_watching:
             if p not in self._klines_scheduled:
                 self._klines_scheduled.add(p)
                 pair, timeframe, candle_type = p
                 task = asyncio.create_task(
-                    self.continuously_async_watch_ohlcv(pair, timeframe, candle_type))
+                    self._continuously_async_watch_ohlcv(pair, timeframe, candle_type))
                 self._background_tasks.add(task)
-                task.add_done_callback(self.continuous_stopped)
+                task.add_done_callback(self._continuous_stopped)
 
-    def continuous_stopped(self, task: asyncio.Task):
+    def _continuous_stopped(self, task: asyncio.Task):
         self._background_tasks.discard(task)
         result = task.result()
         logger.info(f"Task finished {result}")
         # self._pairs_scheduled.discard(pair, timeframe, candle_type)
 
-    async def continuously_async_watch_ohlcv(
+    async def _continuously_async_watch_ohlcv(
             self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         try:
             while (pair, timeframe, candle_type) in self._klines_watching:
@@ -92,7 +92,7 @@ class ExchangeWS():
         self._klines_watching.add((pair, timeframe, candle_type))
         self.klines_last_request[(pair, timeframe, candle_type)] = time.time()
         # asyncio.run_coroutine_threadsafe(self.schedule_schedule(), loop=self._loop)
-        asyncio.run_coroutine_threadsafe(self.schedule_while_true(), loop=self._loop)
+        asyncio.run_coroutine_threadsafe(self._schedule_while_true(), loop=self._loop)
         self.cleanup_expired()
 
     async def get_ohlcv(
