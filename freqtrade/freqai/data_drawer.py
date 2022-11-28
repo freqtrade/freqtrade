@@ -99,12 +99,7 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
-        if 'Reinforcement' in self.config['freqaimodel']:
-            self.model_type = 'stable_baselines'
-            logger.warning('User passed a ReinforcementLearner model, FreqAI will '
-                           'now use stable_baselines3 to save models.')
-        else:
-            self.model_type = self.freqai_info.get('model_save_type', 'joblib')
+        self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
