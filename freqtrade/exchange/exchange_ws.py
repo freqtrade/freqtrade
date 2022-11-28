@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExchangeWS():
-    def __init__(self, config: Config, ccxt_object) -> None:
+    def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
         self.config = config
         self.ccxt_object = ccxt_object
         self._thread = Thread(name="ccxt_ws", target=self.__start_forever)
@@ -96,7 +96,11 @@ class ExchangeWS():
         self.cleanup_expired()
 
     async def get_ohlcv(
-            self, pair: str, timeframe: str, candle_type: CandleType) -> Tuple[str, str, str, List]:
+            self,
+            pair: str,
+            timeframe: str,
+            candle_type: CandleType
+    ) -> Tuple[str, str, CandleType, List]:
         """
         Returns cached klines from ccxt's "watch" cache.
         """
