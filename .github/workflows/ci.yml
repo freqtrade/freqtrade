@@ -353,7 +353,15 @@ jobs:
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit, build_linux_online ]
+    needs: [
+      build_linux,
+      build_macos,
+      build_windows,
+      docs_check,
+      mypy_version_check,
+      pre-commit,
+      build_linux_online
+    ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
     if: (github.event_name != 'schedule')
