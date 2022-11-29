@@ -4,7 +4,7 @@ import logging
 import time
 from datetime import datetime
 from threading import Thread
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import ccxt
 
@@ -20,23 +20,24 @@ class ExchangeWS():
     def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
         self.config = config
         self.ccxt_object = ccxt_object
-        self._thread = Thread(name="ccxt_ws", target=self.__start_forever)
         self._background_tasks: Set[asyncio.Task] = set()
 
         self._klines_watching: Set[PairWithTimeframe] = set()
         self._klines_scheduled: Set[PairWithTimeframe] = set()
         self.klines_last_refresh: Dict[PairWithTimeframe, float] = {}
         self.klines_last_request: Dict[PairWithTimeframe, float] = {}
+        self._thread = Thread(name="ccxt_ws", target=self._start_forever)
         self._thread.start()
 
-    def __start_forever(self) -> None:
+    def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
         self._loop.run_forever()
 
     def cleanup(self) -> None:
         logger.debug("Cleanup called - stopping")
         self._klines_watching.clear()
-        self._loop.stop()
+        if hasattr(self, '_loop'):
+            self._loop.stop()
         self._thread.join()
         logger.debug("Stopped")
 
