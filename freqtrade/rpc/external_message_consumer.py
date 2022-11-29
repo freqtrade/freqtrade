@@ -293,18 +293,11 @@ class ExternalMessageConsumer:
                     logger.info(f"Connection to {channel} still alive, latency: {latency}ms")
                     continue
 
-                except (websockets.exceptions.ConnectionClosed):
-                    # Just eat the error and continue reconnecting
-                    logger.warning(f"Disconnection in {channel} - retrying in {self.sleep_time}s")
-                    await asyncio.sleep(self.sleep_time)
-                    break
-
                 except Exception as e:
                     # Just eat the error and continue reconnecting
                     logger.warning(f"Ping error {channel} - {e} - retrying in {self.sleep_time}s")
                     logger.debug(e, exc_info=e)
-                    await asyncio.sleep(self.sleep_time)
-                    break
+                    raise
 
     def send_producer_request(
         self,
