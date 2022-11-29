@@ -75,7 +75,6 @@ class FreqaiDataKitchen:
         self.training_features_list: List = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
-        self.backtesting_h5_data: HDFStore = {}
         self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
@@ -456,28 +455,6 @@ class FreqaiDataKitchen:
         # print(tr_training_list, tr_backtesting_list)
         return tr_training_list_timerange, tr_backtesting_list_timerange
 
-    # def split_timerange_live_models(
-    #     self
-    # ) -> Tuple[list, list]:
-
-    #     tr_backtesting_list_timerange = []
-    #     asset = self.pair.split("/")[0]
-    #     if asset not in self.backtest_live_models_data["assets_end_dates"]:
-    #         raise OperationalException(
-    #             f"Model not available for pair {self.pair}. "
-    #             "Please, try again after removing this pair from the configuration file."
-    #         )
-    #     asset_data = self.backtest_live_models_data["assets_end_dates"][asset]
-    #     backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
-    #     model_end_dates = [x for x in asset_data]
-    #     model_end_dates.append(backtesting_timerange.stopts)
-    #     model_end_dates.sort()
-    #     for index, item in enumerate(model_end_dates):
-    #         if len(model_end_dates) > (index + 1):
-    #             tr_to_add = TimeRange("date", "date", item, model_end_dates[index + 1])
-    #             tr_backtesting_list_timerange.append(tr_to_add)
-
-    #     return tr_backtesting_list_timerange, tr_backtesting_list_timerange
 
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """

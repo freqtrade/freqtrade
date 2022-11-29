@@ -55,7 +55,6 @@ class IFreqaiModel(ABC):
     def __init__(self, config: Config) -> None:
 
         self.config = config
-        self.metadata: Dict[str, Any] = {}
         self.assert_config(self.config)
         self.freqai_info: Dict[str, Any] = config["freqai"]
         self.data_split_parameters: Dict[str, Any] = config.get("freqai", {}).get(
@@ -102,7 +101,7 @@ class IFreqaiModel(ABC):
         self.get_corr_dataframes: bool = True
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
-        self.metadata = self.dd.load_global_metadata_from_disk()
+        self.metadata: Dict[str, Any] = self.dd.load_global_metadata_from_disk()
         self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
@@ -148,18 +147,13 @@ class IFreqaiModel(ABC):
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
-            if self.dk.backtest_live_models:
-                logger.info(
-                    "Backtesting using historic predictions (live models)")
-            else:
-                logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
-            dataframe = self.dk.use_strategy_to_populate_indicators(
-                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-            )
             if not self.config.get("freqai_backtest_live_models", False):
+                logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
                 dk = self.start_backtesting(dataframe, metadata, self.dk)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
+                logger.info(
+                    "Backtesting using historic predictions (live models)")
                 dk = self.start_backtesting_from_historic_predictions(
                     dataframe, metadata, self.dk)
                 dataframe = dk.return_dataframe
@@ -167,7 +161,6 @@ class IFreqaiModel(ABC):
         self.clean_up()
         if self.live:
             self.inference_timer('stop', metadata["pair"])
-            self.set_start_dry_live_date(dataframe)
 
         return dataframe
 
@@ -334,27 +327,6 @@ class IFreqaiModel(ABC):
         self.backtesting_fit_live_predictions(dk)
         dk.fill_predictions(dataframe)
 
-        return dk
-
-    def start_backtesting_from_historic_predictions(
-        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
-    ) -> FreqaiDataKitchen:
-        """
-        :param dataframe: DataFrame = strategy passed dataframe
-        :param metadata: Dict = pair metadata
-        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
-        :return:
-            FreqaiDataKitchen = Data management/analysis tool associated to present pair only
-        """
-        pair = metadata["pair"]
-        dk.return_dataframe = dataframe
-        saved_dataframe = self.dd.historic_predictions[pair]
-        columns_to_drop = list(set(saved_dataframe.columns).intersection(
-            dk.return_dataframe.columns))
-        dk.return_dataframe = dk.return_dataframe.drop(columns=list(columns_to_drop))
-        dk.return_dataframe = pd.merge(
-            dk.return_dataframe, saved_dataframe, how='left', left_on='date', right_on="date_pred")
-        # dk.return_dataframe = dk.return_dataframe[saved_dataframe.columns].fillna(0)
         return dk
 
     def start_live(
@@ -665,6 +637,8 @@ class IFreqaiModel(ABC):
         self.dd.historic_predictions[pair] = pred_df
         hist_preds_df = self.dd.historic_predictions[pair]
 
+        self.set_start_dry_live_date(pred_df)
+
         for label in hist_preds_df.columns:
             if hist_preds_df[label].dtype == object:
                 continue
@@ -912,6 +886,27 @@ class IFreqaiModel(ABC):
             metadata[key_name] = int(
                 pd.to_datetime(live_dataframe.tail(1)["date"].values[0]).timestamp())
             self.update_metadata(metadata)
+
+    def start_backtesting_from_historic_predictions(
+        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
+    ) -> FreqaiDataKitchen:
+        """
+        :param dataframe: DataFrame = strategy passed dataframe
+        :param metadata: Dict = pair metadata
+        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :return:
+            FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        """
+        pair = metadata["pair"]
+        dk.return_dataframe = dataframe
+        saved_dataframe = self.dd.historic_predictions[pair]
+        columns_to_drop = list(set(saved_dataframe.columns).intersection(
+            dk.return_dataframe.columns))
+        dk.return_dataframe = dk.return_dataframe.drop(columns=list(columns_to_drop))
+        dk.return_dataframe = pd.merge(
+            dk.return_dataframe, saved_dataframe, how='left', left_on='date', right_on="date_pred")
+        # dk.return_dataframe = dk.return_dataframe[saved_dataframe.columns].fillna(0)
+        return dk
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

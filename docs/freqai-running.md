@@ -79,11 +79,11 @@ To change your **features**, you **must** set a new `identifier` in the config t
 
 To save the models generated during a particular backtest so that you can start a live deployment from one of them instead of training a new model, you must set `save_backtest_models` to `True` in the config.
 
-### Backtest live models
+### Backtest live collected predictions
 
 FreqAI allow you to reuse live historic predictions through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse predictions generated in dry/run for comparison or other study.
 
-The `--timerange` parameter must not be informed, as it will be automatically calculated through the data in historic predictions file.
+The `--timerange` parameter must not be informed, as it will be automatically calculated through the data in the historic predictions file.
 
 
 ### Downloading data to cover the full backtest period
