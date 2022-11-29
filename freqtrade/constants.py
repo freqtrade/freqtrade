@@ -512,6 +512,7 @@ CONF_SCHEMA = {
                                 'minimum': 0,
                                 'maximum': 65535
                             },
+                            'secure': {'type': 'boolean', 'default': False},
                             'ws_token': {'type': 'string'},
                         },
                         'required': ['name', 'host', 'ws_token']
@@ -577,9 +578,27 @@ CONF_SCHEMA = {
                     },
                 },
                 "model_training_parameters": {
+                    "type": "object"
+                },
+                "rl_config": {
                     "type": "object",
                     "properties": {
-                        "n_estimators": {"type": "integer", "default": 1000}
+                        "train_cycles": {"type": "integer"},
+                        "max_trade_duration_candles": {"type": "integer"},
+                        "add_state_info": {"type": "boolean", "default": False},
+                        "max_training_drawdown_pct": {"type": "number", "default": 0.02},
+                        "cpu_count": {"type": "integer", "default": 1},
+                        "model_type": {"type": "string", "default": "PPO"},
+                        "policy_type": {"type": "string", "default": "MlpPolicy"},
+                        "net_arch": {"type": "array", "default": [128, 128]},
+                        "randomize_startinng_position": {"type": "boolean", "default": False},
+                        "model_reward_parameters": {
+                            "type": "object",
+                            "properties": {
+                                "rr": {"type": "number", "default": 1},
+                                "profit_aim": {"type": "number", "default": 0.025}
+                            }
+                        }
                     },
                 },
             },

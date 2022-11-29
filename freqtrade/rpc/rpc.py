@@ -789,17 +789,18 @@ class RPC:
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
                 'force_entry', self._freqtrade.strategy.order_types['entry'])
-        if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade,
-                                         is_short=is_short,
-                                         enter_tag=enter_tag,
-                                         leverage_=leverage,
-                                         ):
-            Trade.commit()
-            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
-            return trade
-        else:
-            raise RPCException(f'Failed to enter position for {pair}.')
+        with self._freqtrade._exit_lock:
+            if self._freqtrade.execute_entry(pair, stake_amount, price,
+                                             ordertype=order_type, trade=trade,
+                                             is_short=is_short,
+                                             enter_tag=enter_tag,
+                                             leverage_=leverage,
+                                             ):
+                Trade.commit()
+                trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+                return trade
+            else:
+                raise RPCException(f'Failed to enter position for {pair}.')
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """

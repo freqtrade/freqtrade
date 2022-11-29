@@ -446,15 +446,17 @@ A full sample can be found [in the DataProvider section](#complete-data-provider
 
 ??? Note "Alternative candle types"
     Informative_pairs can also provide a 3rd tuple element defining the candle type explicitly.
-    Availability of alternative candle-types will depend on the trading-mode and the exchange. Details about this can be found in the exchange documentation.
+    Availability of alternative candle-types will depend on the trading-mode and the exchange. 
+    In general, spot pairs cannot be used in futures markets, and futures candles can't be used as informative pairs for spot bots.
+    Details about this may vary, if they do, this can be found in the exchange documentation.
 
     ``` python
     def informative_pairs(self):
         return [
-            ("ETH/USDT", "5m", ""),   # Uses default candletype, depends on trading_mode 
-            ("ETH/USDT", "5m", "spot"),   # Forces usage of spot candles
-            ("BTC/TUSD", "15m", "futures"),  # Uses futures candles
-            ("BTC/TUSD", "15m", "mark"),  # Uses mark candles
+            ("ETH/USDT", "5m", ""),   # Uses default candletype, depends on trading_mode (recommended)
+            ("ETH/USDT", "5m", "spot"),   # Forces usage of spot candles (only valid for bots running on spot markets).
+            ("BTC/TUSD", "15m", "futures"),  # Uses futures candles (only bots with `trading_mode=futures`)
+            ("BTC/TUSD", "15m", "mark"),  # Uses mark candles (only bots with `trading_mode=futures`)
         ]
     ```
 ***
