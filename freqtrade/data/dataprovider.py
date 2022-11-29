@@ -179,7 +179,7 @@ class DataProvider:
         if (producer_name not in self.__producer_pairs_df) \
            or (pair_key not in self.__producer_pairs_df[producer_name]):
             # We don't have data from this producer yet,
-            # sor we don't have data for this pair_key
+            # or we don't have data for this pair_key
             # return False and 1000 for the full df
             return (False, 1000)
 
@@ -189,6 +189,13 @@ class DataProvider:
         timeframe_delta = to_timedelta(timeframe)  # Convert the timeframe to a timedelta for pandas
         local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy of data
         incoming_first = dataframe.iloc[0]['date']  # We want the first date from the incoming data
+
+        # We have received this candle before, update our copy
+        # and return True, 0
+        if local_last == incoming_first:
+            existing_df.iloc[-1] = dataframe.iloc[0]
+            existing_df = existing_df.reset_index(drop=True)
+            return (True, 0)
 
         candle_difference = (incoming_first - local_last) / timeframe_delta
 

@@ -253,7 +253,7 @@ class ExternalMessageConsumer:
         # Now send any subsequent requests published to
         # this channel's stream
         async for request, _ in channel_stream:
-            logger.info(f"Sending request to channel - {channel} - {request}")
+            logger.debug(f"Sending request to channel - {channel} - {request}")
             await channel.send(request)
 
     async def _receive_messages(
@@ -377,14 +377,14 @@ class ExternalMessageConsumer:
         pair, timeframe, candle_type = key
 
         if df.empty:
-            logger.info(f"Received Empty Dataframe for {key}")
+            logger.debug(f"Received Empty Dataframe for {key}")
             return
 
         # If set, remove the Entry and Exit signals from the Producer
         if self._emc_config.get('remove_entry_exit_signals', False):
             df = remove_entry_exit_signals(df)
 
-        logger.info(f"Received {len(df)} candle(s) for {key}")
+        logger.debug(f"Received {len(df)} candle(s) for {key}")
 
         if len(df) >= 999:
             # This is a full dataframe
@@ -413,9 +413,9 @@ class ExternalMessageConsumer:
             )
 
             if not did_append:
-                logger.info("Holes in data or no existing df, "
-                            f"requesting {n_missing} candles "
-                            f"for {key} from `{producer_name}`")
+                logger.debug("Holes in data or no existing df, "
+                             f"requesting {n_missing} candles "
+                             f"for {key} from `{producer_name}`")
 
                 self.send_producer_request(
                     producer_name,
@@ -428,6 +428,6 @@ class ExternalMessageConsumer:
                 )
                 return
 
-        logger.info(
+        logger.debug(
             f"Consumed message from `{producer_name}` "
             f"of type `RPCMessageType.ANALYZED_DF` for {key}")
