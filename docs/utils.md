@@ -722,6 +722,7 @@ usage: freqtrade backtesting-analysis [-h] [-v] [--logfile FILE] [-V]
                                       [--enter-reason-list ENTER_REASON_LIST [ENTER_REASON_LIST ...]]
                                       [--exit-reason-list EXIT_REASON_LIST [EXIT_REASON_LIST ...]]
                                       [--indicator-list INDICATOR_LIST [INDICATOR_LIST ...]]
+                                      [--timerange YYYYMMDD-[YYYYMMDD]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -744,6 +745,10 @@ optional arguments:
   --indicator-list INDICATOR_LIST [INDICATOR_LIST ...]
                         Comma separated list of indicators to analyse. e.g.
                         'close,rsi,bb_lowerband,profit_abs'
+  --timerange YYYYMMDD-[YYYYMMDD]
+                        Timerange to filter trades for analysis, 
+                        start inclusive, end exclusive. e.g.
+                        20220101-20220201
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
