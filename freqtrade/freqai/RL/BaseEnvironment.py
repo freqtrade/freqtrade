@@ -1,4 +1,5 @@
 import logging
+import random
 from abc import abstractmethod
 from enum import Enum
 from typing import Optional
@@ -121,6 +122,10 @@ class BaseEnvironment(gym.Env):
         self._done = False
 
         if self.starting_point is True:
+            if self.rl_config.get('randomize_starting_position', False):
+                length_of_data = int(self._end_tick / 4)
+                start_tick = random.randint(self.window_size + 1, length_of_data)
+                self._start_tick = start_tick
             self._position_history = (self._start_tick * [None]) + [self._position]
         else:
             self._position_history = (self.window_size * [None]) + [self._position]
