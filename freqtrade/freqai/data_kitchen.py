@@ -1317,40 +1317,23 @@ class FreqaiDataKitchen:
         self, append_df: DataFrame
     ) -> None:
         """
-        Save prediction dataframe from backtesting to h5 file format
+        Save prediction dataframe from backtesting to feather file format
         :param append_df: dataframe for backtesting period
         """
         full_predictions_folder = Path(self.full_path / self.backtest_predictions_folder)
         if not full_predictions_folder.is_dir():
             full_predictions_folder.mkdir(parents=True, exist_ok=True)
 
-        append_df.to_hdf(self.backtesting_results_path, key=self.model_filename)
+        append_df.to_feather(self.backtesting_results_path)
 
     def get_backtesting_prediction(
         self
     ) -> DataFrame:
         """
-        Get prediction dataframe from h5 file format
+        Get prediction dataframe from feather file format
         """
-        append_df = self.backtesting_h5_data[self.model_filename]
+        append_df = pd.read_feather(self.backtesting_results_path)
         return append_df
-
-    def load_prediction_pair_file(
-        self
-    ) -> None:
-        """
-        Load prediction file if it exists
-        """
-        pair_file_name = self.pair.split(':')[0].replace('/', '_').lower()
-        path_to_predictionfile = Path(self.full_path /
-                                      self.backtest_predictions_folder /
-                                      f"{pair_file_name}_prediction.h5")
-        self.backtesting_results_path = path_to_predictionfile
-        file_exists = path_to_predictionfile.is_file()
-        if file_exists:
-            self.backtesting_h5_data = pd.HDFStore(path_to_predictionfile)
-        else:
-            self.backtesting_h5_data = {}
 
     def check_if_backtest_prediction_is_valid(
         self,
@@ -1363,11 +1346,17 @@ class FreqaiDataKitchen:
         :return:
         :boolean: whether the prediction file is valid.
         """
-        if self.model_filename in self.backtesting_h5_data:
+        path_to_predictionfile = Path(self.full_path /
+                                      self.backtest_predictions_folder /
+                                      f"{self.model_filename}_prediction.feather")
+        self.backtesting_results_path = path_to_predictionfile
+
+        file_exists = path_to_predictionfile.is_file()
+
+        if file_exists:
             append_df = self.get_backtesting_prediction()
             if len(append_df) == len_backtest_df and 'date' in append_df:
-                logger.info("Found backtesting prediction file "
-                            f"at {self.backtesting_results_path.name}")
+                logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
                 return True
             else:
                 logger.info("A new backtesting prediction file is required. "
@@ -1376,8 +1365,7 @@ class FreqaiDataKitchen:
                 return False
         else:
             logger.info(
-                "Could not find backtesting prediction file "
-                f"at {self.backtesting_results_path.name}"
+                f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
             return False
 
