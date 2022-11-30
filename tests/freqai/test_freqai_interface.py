@@ -301,7 +301,9 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
-    metadata = {"pair": "ADA/BTC"}
+    pair = "ADA/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
@@ -324,6 +326,9 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
+    pair = "ADA/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
@@ -331,10 +336,40 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
         caplog,
     )
 
+    pair = "ETH/BTC"
+    metadata = {"pair": pair}
+    freqai.dk.pair = pair
+    freqai.start_backtesting(df, metadata, freqai.dk)
+
     path = (freqai.dd.full_path / freqai.dk.backtest_predictions_folder)
     prediction_files = [x for x in path.iterdir() if x.is_file()]
-    assert len(prediction_files) == 1
+    assert len(prediction_files) == 2
 
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
+    freqai_conf.get("freqai", {}).update({"fit_live_predictions_candles": 10})
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180128-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+    sub_timerange = TimeRange.parse_timerange("20180129-20180130")
+    corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
+    df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    freqai.dk.pair = "ADA/BTC"
+    freqai.dk.full_df = df.fillna(0)
+    freqai.dk.full_df
+    assert "&-s_close_mean" not in freqai.dk.full_df.columns
+    assert "&-s_close_std" not in freqai.dk.full_df.columns
+    freqai.backtesting_fit_live_predictions(freqai.dk)
+    assert "&-s_close_mean" in freqai.dk.full_df.columns
+    assert "&-s_close_std" in freqai.dk.full_df.columns
     shutil.rmtree(Path(freqai.dk.full_path))
 
 

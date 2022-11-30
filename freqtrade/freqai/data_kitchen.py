@@ -1,7 +1,7 @@
 import copy
 import logging
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from math import cos, sin
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -87,12 +87,7 @@ class FreqaiDataKitchen:
         if not self.live:
             self.full_path = self.get_full_models_path(self.config)
 
-            if self.backtest_live_models:
-                if self.pair:
-                    self.set_timerange_from_ready_models()
-                    (self.training_timeranges,
-                     self.backtesting_timeranges) = self.split_timerange_live_models()
-            else:
+            if not self.backtest_live_models:
                 self.full_timerange = self.create_fulltimerange(
                     self.config["timerange"], self.freqai_config.get("train_period_days", 0)
                 )
@@ -459,29 +454,6 @@ class FreqaiDataKitchen:
 
         # print(tr_training_list, tr_backtesting_list)
         return tr_training_list_timerange, tr_backtesting_list_timerange
-
-    def split_timerange_live_models(
-        self
-    ) -> Tuple[list, list]:
-
-        tr_backtesting_list_timerange = []
-        asset = self.pair.split("/")[0]
-        if asset not in self.backtest_live_models_data["assets_end_dates"]:
-            raise OperationalException(
-                f"Model not available for pair {self.pair}. "
-                "Please, try again after removing this pair from the configuration file."
-            )
-        asset_data = self.backtest_live_models_data["assets_end_dates"][asset]
-        backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
-        model_end_dates = [x for x in asset_data]
-        model_end_dates.append(backtesting_timerange.stopts)
-        model_end_dates.sort()
-        for index, item in enumerate(model_end_dates):
-            if len(model_end_dates) > (index + 1):
-                tr_to_add = TimeRange("date", "date", item, model_end_dates[index + 1])
-                tr_backtesting_list_timerange.append(tr_to_add)
-
-        return tr_backtesting_list_timerange, tr_backtesting_list_timerange
 
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """
@@ -978,7 +950,8 @@ class FreqaiDataKitchen:
         return weights
 
     def get_predictions_to_append(self, predictions: DataFrame,
-                                  do_predict: npt.ArrayLike) -> DataFrame:
+                                  do_predict: npt.ArrayLike,
+                                  dataframe_backtest: DataFrame) -> DataFrame:
         """
         Get backtest prediction from current backtest period
         """
@@ -1000,7 +973,9 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
-        return append_df
+        dataframe_backtest.reset_index(drop=True, inplace=True)
+        merged_df = pd.concat([dataframe_backtest["date"], append_df], axis=1)
+        return merged_df
 
     def append_predictions(self, append_df: DataFrame) -> None:
         """
@@ -1010,23 +985,18 @@ class FreqaiDataKitchen:
         if self.full_df.empty:
             self.full_df = append_df
         else:
-            self.full_df = pd.concat([self.full_df, append_df], axis=0)
+            self.full_df = pd.concat([self.full_df, append_df], axis=0, ignore_index=True)
 
     def fill_predictions(self, dataframe):
         """
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
-
-        len_filler = len(dataframe) - len(self.full_df.index)  # startup_candle_count
-        filler_df = pd.DataFrame(
-            np.zeros((len_filler, len(self.full_df.columns))), columns=self.full_df.columns
-        )
-
-        self.full_df = pd.concat([filler_df, self.full_df], axis=0, ignore_index=True)
-
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
+        self.return_dataframe = pd.merge(dataframe[to_keep],
+                                         self.full_df, how='left', on='date')
+        self.return_dataframe[self.full_df.columns] = (
+            self.return_dataframe[self.full_df.columns].fillna(value=0))
         self.full_df = DataFrame()
 
         return
@@ -1323,22 +1293,22 @@ class FreqaiDataKitchen:
         self, append_df: DataFrame
     ) -> None:
         """
-        Save prediction dataframe from backtesting to h5 file format
+        Save prediction dataframe from backtesting to feather file format
         :param append_df: dataframe for backtesting period
         """
         full_predictions_folder = Path(self.full_path / self.backtest_predictions_folder)
         if not full_predictions_folder.is_dir():
             full_predictions_folder.mkdir(parents=True, exist_ok=True)
 
-        append_df.to_hdf(self.backtesting_results_path, key='append_df', mode='w')
+        append_df.to_feather(self.backtesting_results_path)
 
     def get_backtesting_prediction(
         self
     ) -> DataFrame:
         """
-        Get prediction dataframe from h5 file format
+        Get prediction dataframe from feather file format
         """
-        append_df = pd.read_hdf(self.backtesting_results_path)
+        append_df = pd.read_feather(self.backtesting_results_path)
         return append_df
 
     def check_if_backtest_prediction_is_valid(
@@ -1354,36 +1324,26 @@ class FreqaiDataKitchen:
         """
         path_to_predictionfile = Path(self.full_path /
                                       self.backtest_predictions_folder /
-                                      f"{self.model_filename}_prediction.h5")
+                                      f"{self.model_filename}_prediction.feather")
         self.backtesting_results_path = path_to_predictionfile
 
         file_exists = path_to_predictionfile.is_file()
 
         if file_exists:
             append_df = self.get_backtesting_prediction()
-            if len(append_df) == len_backtest_df:
+            if len(append_df) == len_backtest_df and 'date' in append_df:
                 logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
                 return True
             else:
                 logger.info("A new backtesting prediction file is required. "
-                            "(Number of predictions is different from dataframe length).")
+                            "(Number of predictions is different from dataframe length or "
+                            "old prediction file version).")
                 return False
         else:
             logger.info(
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
             return False
-
-    def set_timerange_from_ready_models(self):
-        backtesting_timerange, \
-            assets_end_dates = (
-                self.get_timerange_and_assets_end_dates_from_ready_models(self.full_path))
-
-        self.backtest_live_models_data = {
-            "backtesting_timerange": backtesting_timerange,
-            "assets_end_dates": assets_end_dates
-            }
-        return
 
     def get_full_models_path(self, config: Config) -> Path:
         """
@@ -1394,88 +1354,6 @@ class FreqaiDataKitchen:
         return Path(
             config["user_data_dir"] / "models" / str(freqai_config.get("identifier"))
         )
-
-    def get_timerange_and_assets_end_dates_from_ready_models(
-            self, models_path: Path) -> Tuple[TimeRange, Dict[str, Any]]:
-        """
-        Returns timerange information based on a FreqAI model directory
-        :param models_path: FreqAI model path
-
-        :return: a Tuple with (Timerange calculated from directory and
-        a Dict with pair and model end training dates info)
-        """
-        all_models_end_dates = []
-        assets_end_dates: Dict[str, Any] = self.get_assets_timestamps_training_from_ready_models(
-                                           models_path)
-        for key in assets_end_dates:
-            for model_end_date in assets_end_dates[key]:
-                if model_end_date not in all_models_end_dates:
-                    all_models_end_dates.append(model_end_date)
-
-        if len(all_models_end_dates) == 0:
-            raise OperationalException(
-                'At least 1 saved model is required to '
-                'run backtest with the freqai-backtest-live-models option'
-            )
-
-        if len(all_models_end_dates) == 1:
-            logger.warning(
-                "Only 1 model was found. Backtesting will run with the "
-                "timerange from the end of the training date to the current date"
-            )
-
-        finish_timestamp = int(datetime.now(tz=timezone.utc).timestamp())
-        if len(all_models_end_dates) > 1:
-            # After last model end date, use the same period from previous model
-            # to finish the backtest
-            all_models_end_dates.sort(reverse=True)
-            finish_timestamp = all_models_end_dates[0] + \
-                (all_models_end_dates[0] - all_models_end_dates[1])
-
-        all_models_end_dates.append(finish_timestamp)
-        all_models_end_dates.sort()
-        start_date = (datetime(*datetime.fromtimestamp(min(all_models_end_dates),
-                      timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
-        end_date = (datetime(*datetime.fromtimestamp(max(all_models_end_dates),
-                    timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
-
-        # add 1 day to string timerange to ensure BT module will load all dataframe data
-        end_date = end_date + timedelta(days=1)
-        backtesting_timerange = TimeRange(
-            'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
-        )
-        return backtesting_timerange, assets_end_dates
-
-    def get_assets_timestamps_training_from_ready_models(
-            self, models_path: Path) -> Dict[str, Any]:
-        """
-        Scan the models path and returns all assets end training dates (timestamp)
-        :param models_path: FreqAI model path
-
-        :return: a Dict with asset and model end training dates info
-        """
-        assets_end_dates: Dict[str, Any] = {}
-        if not models_path.is_dir():
-            raise OperationalException(
-                'Model folders not found. Saved models are required '
-                'to run backtest with the freqai-backtest-live-models option'
-            )
-        for model_dir in models_path.iterdir():
-            if str(model_dir.name).startswith("sub-train"):
-                model_end_date = int(model_dir.name.split("_")[1])
-                asset = model_dir.name.split("_")[0].replace("sub-train-", "")
-                model_file_name = (
-                    f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
-                    "_model.joblib"
-                )
-
-                model_path_file = Path(model_dir / model_file_name)
-                if model_path_file.is_file():
-                    if asset not in assets_end_dates:
-                        assets_end_dates[asset] = []
-                    assets_end_dates[asset].append(model_end_date)
-
-        return assets_end_dates
 
     def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
         """
