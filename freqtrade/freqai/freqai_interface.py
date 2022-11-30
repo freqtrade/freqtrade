@@ -147,6 +147,9 @@ class IFreqaiModel(ABC):
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
             if not self.config.get("freqai_backtest_live_models", False):
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
                 dk = self.start_backtesting(dataframe, metadata, self.dk)
@@ -637,7 +640,7 @@ class IFreqaiModel(ABC):
         self.dd.historic_predictions[pair] = pred_df
         hist_preds_df = self.dd.historic_predictions[pair]
 
-        self.set_start_dry_live_date(pred_df)
+        self.set_start_dry_live_date(strat_df)
 
         for label in hist_preds_df.columns:
             if hist_preds_df[label].dtype == object:
@@ -680,7 +683,7 @@ class IFreqaiModel(ABC):
             if self.dd.historic_predictions[dk.pair][label].dtype == object:
                 continue
             f = spy.stats.norm.fit(
-                self.dd.historic_predictions[dk.pair][label].fillna(0).tail(num_candles))
+                self.dd.historic_predictions[dk.pair][label].tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
         return
@@ -844,6 +847,7 @@ class IFreqaiModel(ABC):
         """
         fit_live_predictions_candles = self.freqai_info.get("fit_live_predictions_candles", 0)
         if fit_live_predictions_candles:
+            logger.info("Applying fit_live_predictions in backtesting")
             label_columns = [col for col in dk.full_df.columns if (
                 col.startswith("&") and
                 not (col.startswith("&") and col.endswith("_mean")) and

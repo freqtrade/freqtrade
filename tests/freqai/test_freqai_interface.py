@@ -363,7 +363,8 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
     freqai.dk.pair = "ADA/BTC"
-    freqai.dk.full_df = df
+    freqai.dk.full_df = df.fillna(0)
+    freqai.dk.full_df
     assert "&-s_close_mean" not in freqai.dk.full_df.columns
     assert "&-s_close_std" not in freqai.dk.full_df.columns
     freqai.backtesting_fit_live_predictions(freqai.dk)
