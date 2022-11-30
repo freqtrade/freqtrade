@@ -462,6 +462,9 @@ class Configuration:
         self._args_to_config(config, argname='indicator_list',
                              logstring='Analysis indicator list: {}')
 
+        self._args_to_config(config, argname='timerange',
+                             logstring='Filter trades by timerange: {}')
+
     def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',
