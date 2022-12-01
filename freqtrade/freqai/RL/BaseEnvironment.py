@@ -194,12 +194,12 @@ class BaseEnvironment(gym.Env):
         if self._position == Positions.Neutral:
             return 0.
         elif self._position == Positions.Short:
-            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
-            return (last_trade_price - current_price) / last_trade_price
-        elif self._position == Positions.Long:
             current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
             last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
+            return (last_trade_price - current_price) / last_trade_price
+        elif self._position == Positions.Long:
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
             return 0.
