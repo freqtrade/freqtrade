@@ -7,11 +7,13 @@ export DOCKER_BUILDKIT=1
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
 TAG_FREQAI=${TAG}_freqai
+TAG_FREQAI_RL=${TAG_FREQAI}rl
 TAG_PI="${TAG}_pi"
 
 TAG_ARM=${TAG}_arm
 TAG_PLOT_ARM=${TAG_PLOT}_arm
 TAG_FREQAI_ARM=${TAG_FREQAI}_arm
+TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL}_arm
 CACHE_IMAGE=freqtradeorg/freqtrade_cache
 
 echo "Running for ${TAG}"
@@ -41,9 +43,11 @@ docker tag freqtrade:$TAG_ARM ${CACHE_IMAGE}:$TAG_ARM
 
 docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
 docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_ARM} -f docker/Dockerfile.freqai .
+docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_RL_ARM} -f docker/Dockerfile.freqai_rl .
 
 docker tag freqtrade:$TAG_PLOT_ARM ${CACHE_IMAGE}:$TAG_PLOT_ARM
 docker tag freqtrade:$TAG_FREQAI_ARM ${CACHE_IMAGE}:$TAG_FREQAI_ARM
+docker tag freqtrade:$TAG_FREQAI_RL_ARM ${CACHE_IMAGE}:$TAG_FREQAI_RL_ARM
 
 # Run backtest
 docker run --rm -v $(pwd)/config_examples/config_bittrex.example.json:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG_ARM} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy StrategyTestV3
@@ -58,6 +62,7 @@ docker images
 # docker push ${IMAGE_NAME}
 docker push ${CACHE_IMAGE}:$TAG_PLOT_ARM
 docker push ${CACHE_IMAGE}:$TAG_FREQAI_ARM
+docker push ${CACHE_IMAGE}:$TAG_FREQAI_RL_ARM
 docker push ${CACHE_IMAGE}:$TAG_ARM
 
 # Create multi-arch image
@@ -73,6 +78,9 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_PLOT}
 
 docker manifest create ${IMAGE_NAME}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI_ARM} ${CACHE_IMAGE}:${TAG_FREQAI}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI}
+
+docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM} ${CACHE_IMAGE}:${TAG_FREQAI_RL}
+docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then

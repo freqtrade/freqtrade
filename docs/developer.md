@@ -49,6 +49,13 @@ For more information about the [Remote container extension](https://code.visuals
 New code should be covered by basic unittests. Depending on the complexity of the feature, Reviewers may request more in-depth unittests.
 If necessary, the Freqtrade team can assist and give guidance with writing good tests (however please don't expect anyone to write the tests for you).
 
+#### How to run tests
+
+Use `pytest` in root folder to run all available testcases and confirm your local environment is setup correctly
+
+!!! Note "feature branches"
+    Tests are expected to pass on the `develop` and `stable` branches. Other branches may be work in progress with tests not working yet.
+
 #### Checking log content in tests
 
 Freqtrade uses 2 main methods to check log content in tests, `log_has()` and `log_has_re()` (to check using regex, in case of dynamic log-messages).
@@ -433,6 +440,11 @@ To keep the release-log short, best wrap the full git changelog into a collapsib
 
 </details>
 ```
+
+### FreqUI release
+
+If FreqUI has been updated substantially, make sure to create a release before merging the release branch.
+Make sure that freqUI CI on the release is finished and passed before merging the release.
 
 ### Create github release / tag
 

@@ -6,6 +6,7 @@
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
 TAG_FREQAI=${TAG}_freqai
+TAG_FREQAI_RL=${TAG_FREQAI}rl
 TAG_PI="${TAG}_pi"
 
 PI_PLATFORM="linux/arm/v7"
@@ -51,9 +52,11 @@ docker tag freqtrade:$TAG ${CACHE_IMAGE}:$TAG
 
 docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
 docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG} -t freqtrade:${TAG_FREQAI} -f docker/Dockerfile.freqai .
+docker build --cache-from freqtrade:${TAG_FREQAI} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_FREQAI} -t freqtrade:${TAG_FREQAI_RL} -f docker/Dockerfile.freqai_rl .
 
 docker tag freqtrade:$TAG_PLOT ${CACHE_IMAGE}:$TAG_PLOT
 docker tag freqtrade:$TAG_FREQAI ${CACHE_IMAGE}:$TAG_FREQAI
+docker tag freqtrade:$TAG_FREQAI_RL ${CACHE_IMAGE}:$TAG_FREQAI_RL
 
 # Run backtest
 docker run --rm -v $(pwd)/config_examples/config_bittrex.example.json:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy StrategyTestV3
@@ -68,6 +71,7 @@ docker images
 docker push ${CACHE_IMAGE}
 docker push ${CACHE_IMAGE}:$TAG_PLOT
 docker push ${CACHE_IMAGE}:$TAG_FREQAI
+docker push ${CACHE_IMAGE}:$TAG_FREQAI_RL
 docker push ${CACHE_IMAGE}:$TAG
 
 

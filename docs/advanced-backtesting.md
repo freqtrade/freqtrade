@@ -100,3 +100,17 @@ freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 2 --enter-re
 The indicators have to be present in your strategy's main DataFrame (either for your main
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.
+
+### Filtering the trade output by date
+
+To show only trades between dates within your backtested timerange, supply the usual `timerange` option in `YYYYMMDD-[YYYYMMDD]` format:
+
+```
+--timerange : Timerange to filter output trades, start date inclusive, end date exclusive. e.g. 20220101-20221231
+```
+
+For example, if your backtest timerange was `20220101-20221231` but you only want to output trades in January:
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --timerange 20220101-20220201
+```

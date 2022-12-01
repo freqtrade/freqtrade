@@ -218,9 +218,10 @@ class RPC:
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                    open_order='({} {} rem={:.8f})'.format(
-                        order.order_type, order.side, order.remaining
-                    ) if order else None,
+                    open_order=(
+                        f'({order.order_type} {order.side} rem={order.safe_remaining:.8f})' if
+                        order else None
+                    ),
                 ))
                 results.append(trade_dict)
             return results
@@ -739,6 +740,24 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
+    def _force_entry_validations(self, pair: str, order_side: SignalDirection):
+        if not self._freqtrade.config.get('force_entry_enable', False):
+            raise RPCException('Force_entry not enabled.')
+
+        if self._freqtrade.state != State.RUNNING:
+            raise RPCException('trader is not running')
+
+        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
+            raise RPCException("Can't go short on Spot markets.")
+
+        if pair not in self._freqtrade.exchange.get_markets(tradable_only=True):
+            raise RPCException('Symbol does not exist or market is not active.')
+        # Check if pair quote currency equals to the stake currency.
+        stake_currency = self._freqtrade.config.get('stake_currency')
+        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
+            raise RPCException(
+                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
+
     def _rpc_force_entry(self, pair: str, price: Optional[float], *,
                          order_type: Optional[str] = None,
                          order_side: SignalDirection = SignalDirection.LONG,
@@ -749,21 +768,8 @@ class RPC:
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
         """
+        self._force_entry_validations(pair, order_side)
 
-        if not self._freqtrade.config.get('force_entry_enable', False):
-            raise RPCException('Force_entry not enabled.')
-
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-
-        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
-            raise RPCException("Can't go short on Spot markets.")
-
-        # Check if pair quote currency equals to the stake currency.
-        stake_currency = self._freqtrade.config.get('stake_currency')
-        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
-            raise RPCException(
-                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
         # check if valid pair
 
         # check if pair already has an open pair
@@ -773,6 +779,9 @@ class RPC:
             is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
+            if trade.open_order_id is not None:
+                raise RPCException(f'position for {pair} already open - id: {trade.id} '
+                                   f'and has open order {trade.open_order_id}')
         else:
             if Trade.get_open_trade_count() >= self._config['max_open_trades']:
                 raise RPCException("Maximum number of trades is reached.")
@@ -785,17 +794,18 @@ class RPC:
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
                 'force_entry', self._freqtrade.strategy.order_types['entry'])
-        if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade,
-                                         is_short=is_short,
-                                         enter_tag=enter_tag,
-                                         leverage_=leverage,
-                                         ):
-            Trade.commit()
-            trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
-            return trade
-        else:
-            raise RPCException(f'Failed to enter position for {pair}.')
+        with self._freqtrade._exit_lock:
+            if self._freqtrade.execute_entry(pair, stake_amount, price,
+                                             ordertype=order_type, trade=trade,
+                                             is_short=is_short,
+                                             enter_tag=enter_tag,
+                                             leverage_=leverage,
+                                             ):
+                Trade.commit()
+                trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+                return trade
+            else:
+                raise RPCException(f'Failed to enter position for {pair}.')
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """

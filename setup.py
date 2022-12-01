@@ -15,6 +15,14 @@ freqai = [
     'scikit-learn',
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
+    'xgboost'
+]
+
+freqai_rl = [
+    'torch',
+    'stable-baselines3',
+    'gym==0.21',
+    'sb3-contrib'
 ]
 
 develop = [
@@ -36,7 +44,7 @@ jupyter = [
     'nbconvert',
 ]
 
-all_extra = plot + develop + jupyter + hyperopt + freqai
+all_extra = plot + develop + jupyter + hyperopt + freqai + freqai_rl
 
 setup(
     tests_require=[
@@ -90,6 +98,7 @@ setup(
         'jupyter': jupyter,
         'hyperopt': hyperopt,
         'freqai': freqai,
+        'freqai_rl': freqai_rl,
         'all': all_extra,
     },
 )

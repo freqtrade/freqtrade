@@ -19,7 +19,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
     Launching this strategy would be:
 
-    freqtrade trade --strategy FreqaiExampleHyridStrategy --strategy-path freqtrade/templates
+    freqtrade trade --strategy FreqaiExampleHybridStrategy --strategy-path freqtrade/templates
     --freqaimodel CatboostClassifier --config config_examples/config_freqai.example.json
 
     or the user simply adds this to their config:
@@ -86,7 +86,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
     process_only_new_candles = True
     stoploss = -0.05
     use_exit_signal = True
-    startup_candle_count: int = 300
+    startup_candle_count: int = 30
     can_short = True
 
     # Hyperoptable parameters
