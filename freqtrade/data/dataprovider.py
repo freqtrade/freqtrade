@@ -194,7 +194,9 @@ class DataProvider:
         # and return True, 0
         if local_last == incoming_first:
             existing_df.iloc[-1] = dataframe.iloc[0]
-            existing_df = existing_df.reset_index(drop=True)
+            existing_data = (existing_df.reset_index(drop=True), _)
+
+            self.__producer_pairs_df[producer_name][pair_key] = existing_data
             return (True, 0)
 
         candle_difference = (incoming_first - local_last) / timeframe_delta
