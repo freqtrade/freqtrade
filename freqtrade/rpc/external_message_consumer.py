@@ -43,10 +43,6 @@ def schema_to_dict(schema: Union[WSMessageSchema, WSRequestSchema]):
     return schema.dict(exclude_none=True)
 
 
-# def parse_message(message: Dict[str, Any], message_schema: Type[WSMessageSchema]):
-#     return message_schema.parse_obj(message)
-
-
 class ExternalMessageConsumer:
     """
     The main controller class for consuming external messages from
