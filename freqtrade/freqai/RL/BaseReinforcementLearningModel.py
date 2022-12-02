@@ -64,7 +64,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.policy_type = self.freqai_info['rl_config']['policy_type']
         self.unset_outlier_removal()
         self.net_arch = self.rl_config.get('net_arch', [128, 128])
-        self.dd.model_type = "stable_baselines"
+        self.dd.model_type = import_str
 
     def unset_outlier_removal(self):
         """
