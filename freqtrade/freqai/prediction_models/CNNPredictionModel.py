@@ -106,7 +106,7 @@ class CNNPredictionModel(BaseTensorFlowModel):
         dk.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk, filtered_dataframe)
+        self.data_cleaning_predict(dk)
 
         if first:
             full_df = dk.data_dictionary["prediction_features"]
