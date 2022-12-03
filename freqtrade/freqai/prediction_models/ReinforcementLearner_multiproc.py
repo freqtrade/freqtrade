@@ -8,7 +8,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import make_env
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import TensorboardCallback, make_env
 
 
 logger = logging.getLogger(__name__)
@@ -49,3 +49,5 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
+
+        self.tensorboard_callback = TensorboardCallback()

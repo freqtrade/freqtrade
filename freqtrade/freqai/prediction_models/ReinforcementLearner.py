@@ -102,7 +102,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             for action in Actions:
                 self.custom_info[f"{action.name}"] = 0
             return super().reset()
-        
+
         def step(self, action: int):
             observation, step_reward, done, info = super().step(action)
             info = dict(
@@ -134,7 +134,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             factor = 100.
 
             # reward agent for entering trades
-            if (action ==Actions.Long_enter.value
+            if (action == Actions.Long_enter.value
                     and self._position == Positions.Neutral):
                 self.custom_info[f"{Actions.Long_enter.name}"] += 1
                 return 25
@@ -174,6 +174,6 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
                 self.custom_info[f"{Actions.Short_exit.name}"] += 1
                 return float(pnl * factor)
-            
+
             self.custom_info["Unknown"] += 1
             return 0.
