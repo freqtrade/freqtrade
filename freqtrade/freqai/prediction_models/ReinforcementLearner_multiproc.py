@@ -1,14 +1,14 @@
 import logging
-from typing import Any, Dict  # , Tuple
+from typing import Any, Dict
 
-# import numpy.typing as npt
 from pandas import DataFrame
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import TensorboardCallback, make_env
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import make_env
+from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
 
 
 logger = logging.getLogger(__name__)
@@ -50,4 +50,5 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
-        self.tensorboard_callback = TensorboardCallback()
+        actions = self.train_env.env_method("get_actions")[0]
+        self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)

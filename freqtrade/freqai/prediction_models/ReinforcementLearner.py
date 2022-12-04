@@ -88,33 +88,6 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         User can override any function in BaseRLEnv and gym.Env. Here the user
         sets a custom reward based on profit and trade duration.
         """
-        def reset(self):
-
-            # Reset custom info
-            self.custom_info = {}
-            self.custom_info["Invalid"] = 0
-            self.custom_info["Hold"] = 0
-            self.custom_info["Unknown"] = 0
-            self.custom_info["pnl_factor"] = 0
-            self.custom_info["duration_factor"] = 0
-            self.custom_info["reward_exit"] = 0
-            self.custom_info["reward_hold"] = 0
-            for action in Actions:
-                self.custom_info[f"{action.name}"] = 0
-            return super().reset()
-
-        def step(self, action: int):
-            observation, step_reward, done, info = super().step(action)
-            info = dict(
-                tick=self._current_tick,
-                action=action,
-                total_reward=self.total_reward,
-                total_profit=self._total_profit,
-                position=self._position.value,
-                trade_duration=self.get_trade_duration(),
-                current_profit_pct=self.get_unrealized_profit()
-            )
-            return observation, step_reward, done, info
 
         def calculate_reward(self, action: int) -> float:
             """

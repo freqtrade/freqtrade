@@ -21,6 +21,9 @@ class Base5ActionRLEnv(BaseEnvironment):
     """
     Base class for a 5 action environment
     """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.actions = Actions
 
     def set_action_space(self):
         self.action_space = spaces.Discrete(len(Actions))
@@ -98,9 +101,12 @@ class Base5ActionRLEnv(BaseEnvironment):
 
         info = dict(
             tick=self._current_tick,
+            action=action,
             total_reward=self.total_reward,
             total_profit=self._total_profit,
-            position=self._position.value
+            position=self._position.value,
+            trade_duration=self.get_trade_duration(),
+            current_profit_pct=self.get_unrealized_profit()
         )
 
         observation = self._get_observation()

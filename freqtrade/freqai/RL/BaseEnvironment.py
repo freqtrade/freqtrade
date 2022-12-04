@@ -2,7 +2,7 @@ import logging
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import Optional, Type
 
 import gym
 import numpy as np
@@ -15,6 +15,17 @@ from freqtrade.data.dataprovider import DataProvider
 
 
 logger = logging.getLogger(__name__)
+
+
+class BaseActions(Enum):
+    """
+    Default action space, mostly used for type handling.
+    """
+    Neutral = 0
+    Long_enter = 1
+    Long_exit = 2
+    Short_enter = 3
+    Short_exit = 4
 
 
 class Positions(Enum):
@@ -64,6 +75,9 @@ class BaseEnvironment(gym.Env):
         else:
             self.fee = 0.0015
 
+        # set here to default 5Ac, but all children envs can overwrite this
+        self.actions: Type[Enum] = BaseActions
+
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
         """
@@ -106,6 +120,7 @@ class BaseEnvironment(gym.Env):
         self._total_unrealized_profit: float = 1
         self.history: dict = {}
         self.trade_history: list = []
+        self.custom_info: dict = {}
 
     @abstractmethod
     def set_action_space(self):
@@ -118,6 +133,19 @@ class BaseEnvironment(gym.Env):
         return [seed]
 
     def reset(self):
+        """
+        Reset is called at the beginning of every episode
+        """
+        # custom_info is used for episodic reports and tensorboard logging
+        self.custom_info["Invalid"] = 0
+        self.custom_info["Hold"] = 0
+        self.custom_info["Unknown"] = 0
+        self.custom_info["pnl_factor"] = 0
+        self.custom_info["duration_factor"] = 0
+        self.custom_info["reward_exit"] = 0
+        self.custom_info["reward_hold"] = 0
+        for action in self.actions:
+            self.custom_info[f"{action.name}"] = 0
 
         self._done = False
 
@@ -270,6 +298,13 @@ class BaseEnvironment(gym.Env):
 
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
+
+    def get_actions(self) -> Type[Enum]:
+        """
+        Used by SubprocVecEnv to get actions from
+        initialized env for tensorboard callback
+        """
+        return self.actions
 
     # Keeping around incase we want to start building more complex environment
     # templates in the future.
