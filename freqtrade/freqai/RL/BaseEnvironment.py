@@ -77,6 +77,7 @@ class BaseEnvironment(gym.Env):
 
         # set here to default 5Ac, but all children envs can overwrite this
         self.actions: Type[Enum] = BaseActions
+        self.custom_info: dict = {}
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
