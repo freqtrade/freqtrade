@@ -1,9 +1,10 @@
 import collections
+import importlib
 import logging
 import re
 import shutil
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple, TypedDict
 
@@ -81,6 +82,7 @@ class FreqaiDataDrawer:
         self.historic_predictions_bkp_path = Path(
             self.full_path / "historic_predictions.backup.pkl")
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
+        self.global_metadata_path = Path(self.full_path / "global_metadata.json")
         self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
         self.follow_mode = follow_mode
         if follow_mode:
@@ -98,6 +100,7 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
+        self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
@@ -124,6 +127,17 @@ class FreqaiDataDrawer:
         self.update_metric_tracker('cpu_load1min', load1 / cpus, pair)
         self.update_metric_tracker('cpu_load5min', load5 / cpus, pair)
         self.update_metric_tracker('cpu_load15min', load15 / cpus, pair)
+
+    def load_global_metadata_from_disk(self):
+        """
+        Locate and load a previously saved global metadata in present model folder.
+        """
+        exists = self.global_metadata_path.is_file()
+        if exists:
+            with open(self.global_metadata_path, "r") as fp:
+                metatada_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
+                return metatada_dict
+        return {}
 
     def load_drawer_from_disk(self):
         """
@@ -224,6 +238,15 @@ class FreqaiDataDrawer:
         with open(self.follower_dict_path, "w") as fp:
             rapidjson.dump(self.follower_dict, fp, default=self.np_encoder,
                            number_mode=rapidjson.NM_NATIVE)
+
+    def save_global_metadata_to_disk(self, metadata: Dict[str, Any]):
+        """
+        Save global metadata json to disk
+        """
+        with self.save_lock:
+            with open(self.global_metadata_path, 'w') as fp:
+                rapidjson.dump(metadata, fp, default=self.np_encoder,
+                               number_mode=rapidjson.NM_NATIVE)
 
     def create_follower_dict(self):
         """
@@ -476,10 +499,12 @@ class FreqaiDataDrawer:
         save_path = Path(dk.data_path)
 
         # Save the trained model
-        if not dk.keras:
+        if self.model_type == 'joblib':
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
+        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
+            model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
             dump(dk.svm_model, save_path / f"{dk.model_filename}_svm_model.joblib")
@@ -506,11 +531,10 @@ class FreqaiDataDrawer:
                 dk.pca, open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "wb")
             )
 
-        # if self.live:
-        # store as much in ram as possible to increase performance
         self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
+
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
@@ -542,14 +566,6 @@ class FreqaiDataDrawer:
         if dk.live:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
-            if self.freqai_info.get("follow_mode", False):
-                # follower can be on a different system which is rsynced from the leader:
-                dk.data_path = Path(
-                    self.config["user_data_dir"]
-                    / "models"
-                    / dk.data_path.parts[-2]
-                    / dk.data_path.parts[-1]
-                )
 
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
@@ -568,12 +584,16 @@ class FreqaiDataDrawer:
         # try to access model in memory instead of loading object from disk to save time
         if dk.live and coin in self.model_dictionary:
             model = self.model_dictionary[coin]
-        elif not dk.keras:
+        elif self.model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif self.model_type == 'keras':
             from tensorflow import keras
-
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
+        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
+            mod = importlib.import_module(
+                self.model_type, self.freqai_info['rl_config']['model_type'])
+            MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
+            model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
@@ -582,6 +602,10 @@ class FreqaiDataDrawer:
             raise OperationalException(
                 f"Unable to load model, ensure model exists at " f"{dk.data_path} "
             )
+
+        # load it into ram if it was loaded from disk
+        if coin not in self.model_dictionary:
+            self.model_dictionary[coin] = model
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             dk.pca = cloudpickle.load(
@@ -693,3 +717,31 @@ class FreqaiDataDrawer:
                         ).reset_index(drop=True)
 
         return corr_dataframes, base_dataframes
+
+    def get_timerange_from_live_historic_predictions(self) -> TimeRange:
+        """
+        Returns timerange information based on historic predictions file
+        :return: timerange calculated from saved live data
+        """
+        if not self.historic_predictions_path.is_file():
+            raise OperationalException(
+                'Historic predictions not found. Historic predictions data is required '
+                'to run backtest with the freqai-backtest-live-models option '
+            )
+
+        self.load_historic_predictions_from_disk()
+
+        all_pairs_end_dates = []
+        for pair in self.historic_predictions:
+            pair_historic_data = self.historic_predictions[pair]
+            all_pairs_end_dates.append(pair_historic_data.date_pred.max())
+
+        global_metadata = self.load_global_metadata_from_disk()
+        start_date = datetime.fromtimestamp(int(global_metadata["start_dry_live_date"]))
+        end_date = max(all_pairs_end_dates)
+        # add 1 day to string timerange to ensure BT module will load all dataframe data
+        end_date = end_date + timedelta(days=1)
+        backtesting_timerange = TimeRange(
+            'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
+        )
+        return backtesting_timerange

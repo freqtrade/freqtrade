@@ -54,6 +54,9 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 
 ## Binance
 
+!!! Warning "Server location and geo-ip restrictions"
+    Please be aware that binance restrict api access regarding the server country. The currents and non exhaustive countries blocked are United States, Malaysia (Singapour), Ontario (Canada). Please go to [binance terms > b. Eligibility](https://www.binance.com/en/terms) to find up to date list.
+
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"

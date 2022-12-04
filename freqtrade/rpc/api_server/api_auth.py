@@ -81,8 +81,6 @@ async def validate_ws_token(
     except HTTPException:
         pass
 
-    # No checks passed, deny the connection
-    logger.debug("Denying websocket request.")
     # If it doesn't match, close the websocket connection
     await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 
