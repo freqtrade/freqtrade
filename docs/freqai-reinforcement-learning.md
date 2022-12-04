@@ -243,7 +243,7 @@ cd freqtrade
 tensorboard --logdir user_data/models/unique-id
 ```
 
-where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6006 (6006 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
 
