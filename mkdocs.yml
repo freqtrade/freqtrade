@@ -29,6 +29,7 @@ nav:
         - Parameter table: freqai-parameter-table.md
         - Feature engineering: freqai-feature-engineering.md
         - Running FreqAI: freqai-running.md
+        - Reinforcement Learning: freqai-reinforcement-learning.md
         - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md

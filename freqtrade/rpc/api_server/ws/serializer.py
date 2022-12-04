@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Union
 
 import orjson
 import rapidjson
@@ -7,6 +8,7 @@ from pandas import DataFrame
 
 from freqtrade.misc import dataframe_to_json, json_to_dataframe
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 
 
 logger = logging.getLogger(__name__)
@@ -24,16 +26,12 @@ class WebSocketSerializer(ABC):
     def _deserialize(self, data):
         raise NotImplementedError()
 
-    async def send(self, data: bytes):
+    async def send(self, data: Union[WSMessageSchemaType, Dict[str, Any]]):
         await self._websocket.send(self._serialize(data))
 
     async def recv(self) -> bytes:
         data = await self._websocket.recv()
-
         return self._deserialize(data)
-
-    async def close(self, code: int = 1000):
-        await self._websocket.close(code)
 
 
 class HybridJSONWebSocketSerializer(WebSocketSerializer):

@@ -1151,7 +1151,7 @@ class FreqtradeBot(LoggingMixin):
             stoploss = (
                 self.edge.stoploss(pair=trade.pair)
                 if self.edge else
-                self.strategy.stoploss / trade.leverage
+                trade.stop_loss_pct / trade.leverage
             )
             if trade.is_short:
                 stop_price = trade.open_rate * (1 - stoploss)

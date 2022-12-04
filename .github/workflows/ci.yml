@@ -66,12 +66,6 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-      if: matrix.python-version != '3.9' || matrix.os != 'ubuntu-22.04'
-
-    - name: Tests incl. ccxt compatibility tests
-      run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
-      if: matrix.python-version == '3.9' && matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
@@ -310,9 +304,64 @@ jobs:
           details: Freqtrade doc test failed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
+
+  build_linux_online:
+    # Run pytest with "live" checks
+    runs-on: ubuntu-22.04
+    # permissions:
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+
+    - name: Cache_dependencies
+      uses: actions/cache@v3
+      id: cache
+      with:
+        path: ~/dependencies/
+        key: ${{ runner.os }}-dependencies
+
+    - name: pip cache (linux)
+      uses: actions/cache@v3
+      if: runner.os == 'Linux'
+      with:
+        path: ~/.cache/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+    - name: TA binary *nix
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
+
+    - name: Installation - *nix
+      if: runner.os == 'Linux'
+      run: |
+        python -m pip install --upgrade pip wheel
+        export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+        export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+        export TA_INCLUDE_PATH=${HOME}/dependencies/include
+        pip install -r requirements-dev.txt
+        pip install -e .
+
+    - name: Tests incl. ccxt compatibility tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
+
+
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+    needs: [
+      build_linux,
+      build_macos,
+      build_windows,
+      docs_check,
+      mypy_version_check,
+      pre-commit,
+      build_linux_online
+    ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
     if: (github.event_name != 'schedule')

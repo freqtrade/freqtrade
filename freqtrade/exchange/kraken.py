@@ -218,3 +218,19 @@ class Kraken(Exchange):
             fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)
 
         return fees if is_short else -fees
+
+    def _trades_contracts_to_amount(self, trades: List) -> List:
+        """
+        Fix "last" id issue for kraken data downloads
+        This whole override can probably be removed once the following
+        issue is closed in ccxt: https://github.com/ccxt/ccxt/issues/15827
+        """
+        super()._trades_contracts_to_amount(trades)
+        if (
+            len(trades) > 0
+            and isinstance(trades[-1].get('info'), list)
+            and len(trades[-1].get('info', [])) > 7
+        ):
+
+            trades[-1]['id'] = trades[-1].get('info', [])[-1]
+        return trades

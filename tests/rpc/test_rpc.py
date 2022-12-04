@@ -1056,6 +1056,10 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     assert trade.pair == pair
     assert trade.open_rate == 0.0001
 
+    with pytest.raises(RPCException,
+                       match=r'Symbol does not exist or market is not active.'):
+        rpc._rpc_force_entry('LTC/NOTHING', 0.0001)
+
     # Test buy pair not with stakes
     with pytest.raises(RPCException,
                        match=r'Wrong pair selected. Only pairs with stake-currency.*'):
