@@ -101,7 +101,12 @@ class DataProvider:
         """
         return self.__producer_pairs.get(producer_name, []).copy()
 
-    def _emit_df(self, pair_key: PairWithTimeframe, dataframe: DataFrame, new_candle: bool) -> None:
+    def _emit_df(
+        self,
+        pair_key: PairWithTimeframe,
+        dataframe: DataFrame,
+        new_candle: bool
+    ) -> None:
         """
         Send this dataframe as an ANALYZED_DF message to RPC
 
@@ -121,14 +126,10 @@ class DataProvider:
                 }
             )
             if new_candle:
-                self.__rpc.send_msg(
-                    {
+                self.__rpc.send_msg({
                         'type': RPCMessageType.NEW_CANDLE,
-                        'data': {
-                            'key': pair_key,
-                            }
-                        }
-                    )
+                        'data': pair_key,
+                    })
 
     def _add_external_df(
         self,
