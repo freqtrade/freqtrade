@@ -15,22 +15,30 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def _load_signal_candles(backtest_dir: Path):
+def _load_backtest_analysis_data(backtest_dir: Path, name: str):
     if backtest_dir.is_dir():
         scpf = Path(backtest_dir,
-                    Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl"
+                    Path(get_latest_backtest_filename(backtest_dir)).stem + "_" + name + ".pkl"
                     )
     else:
-        scpf = Path(backtest_dir.parent / f"{backtest_dir.stem}_signals.pkl")
+        scpf = Path(backtest_dir.parent / f"{backtest_dir.stem}_{name}.pkl")
 
     try:
         scp = open(scpf, "rb")
-        signal_candles = joblib.load(scp)
-        logger.info(f"Loaded signal candles: {str(scpf)}")
+        rejected_trades = joblib.load(scp)
+        logger.info(f"Loaded {name} data: {str(scpf)}")
     except Exception as e:
-        logger.error("Cannot load signal candles from pickled results: ", e)
+        logger.error(f"Cannot load {name} data from pickled results: ", e)
 
-    return signal_candles
+    return rejected_trades
+
+
+def _load_rejected_trades(backtest_dir: Path):
+    return _load_backtest_analysis_data(backtest_dir, "rejected")
+
+
+def _load_signal_candles(backtest_dir: Path):
+    return _load_backtest_analysis_data(backtest_dir, "signals")
 
 
 def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_candles):
@@ -43,9 +51,9 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
         for pair in pairlist:
             if pair in signal_candles[strategy_name]:
                 analysed_trades_dict[strategy_name][pair] = _analyze_candles_and_indicators(
-                                                              pair,
-                                                              trades,
-                                                              signal_candles[strategy_name][pair])
+                                                            pair,
+                                                            trades,
+                                                            signal_candles[strategy_name][pair])
     except Exception as e:
         print(f"Cannot process entry/exit reasons for {strategy_name}: ", e)
 
@@ -85,7 +93,7 @@ def _analyze_candles_and_indicators(pair, trades, signal_candles):
         return pd.DataFrame()
 
 
-def _do_group_table_output(bigdf, glist):
+def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
     for g in glist:
         # 0: summary wins/losses grouped by enter tag
         if g == "0":
@@ -116,7 +124,8 @@ def _do_group_table_output(bigdf, glist):
 
             sortcols = ['total_num_buys']
 
-            _print_table(new, sortcols, show_index=True)
+            _print_table(new, sortcols, show_index=True, name="Group 0:",
+                         to_csv=to_csv, csv_path=csv_path)
 
         else:
             agg_mask = {'profit_abs': ['count', 'sum', 'median', 'mean'],
@@ -148,9 +157,21 @@ def _do_group_table_output(bigdf, glist):
                 new['mean_profit_pct'] = new['mean_profit_pct'] * 100
                 new['total_profit_pct'] = new['total_profit_pct'] * 100
 
-                _print_table(new, sortcols)
+                _print_table(new, sortcols, name=f"Group {g}:",
+                             to_csv=to_csv, csv_path=csv_path)
             else:
                 logger.warning("Invalid group mask specified.")
+
+
+def _do_rejected_trades_output(rejected_trades_df, to_csv=False, csv_path=None):
+    cols = ['pair', 'date', 'enter_tag']
+    sortcols = ['date', 'pair', 'enter_tag']
+    _print_table(rejected_trades_df[cols],
+                 sortcols,
+                 show_index=False,
+                 name="Rejected Trades:",
+                 to_csv=to_csv,
+                 csv_path=csv_path)
 
 
 def _select_rows_within_dates(df, timerange=None, df_date_col: str = 'date'):
@@ -186,38 +207,65 @@ def prepare_results(analysed_trades, stratname,
     return res_df
 
 
-def print_results(res_df, analysis_groups, indicator_list):
+def print_results(res_df, analysis_groups, indicator_list,
+                  rejected_trades=None, to_csv=False, csv_path=None):
     if res_df.shape[0] > 0:
         if analysis_groups:
-            _do_group_table_output(res_df, analysis_groups)
+            _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
 
+        if rejected_trades is not None and not rejected_trades.empty:
+            _do_rejected_trades_output(rejected_trades, to_csv=to_csv, csv_path=csv_path)
+
+        # NB this can be large for big dataframes!
         if "all" in indicator_list:
-            print(res_df)
-        elif indicator_list is not None:
+            _print_table(res_df,
+                         show_index=False,
+                         name="Indicators:",
+                         to_csv=to_csv,
+                         csv_path=csv_path)
+        elif indicator_list is not None and indicator_list:
             available_inds = []
             for ind in indicator_list:
                 if ind in res_df:
                     available_inds.append(ind)
             ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
-            _print_table(res_df[ilist], sortcols=['exit_reason'], show_index=False)
+            _print_table(res_df[ilist],
+                         sortcols=['exit_reason'],
+                         show_index=False,
+                         name="Indicators:",
+                         to_csv=to_csv,
+                         csv_path=csv_path)
     else:
         print("\\No trades to show")
 
 
-def _print_table(df, sortcols=None, show_index=False):
+def _print_table(df, sortcols=None, show_index=False, name=None, to_csv=False, csv_path=None):
     if (sortcols is not None):
         data = df.sort_values(sortcols)
     else:
         data = df
 
-    print(
-        tabulate(
-            data,
-            headers='keys',
-            tablefmt='psql',
-            showindex=show_index
+    if to_csv:
+        if csv_path is not None:
+            safe_name = Path(csv_path,
+                             name.lower().replace(" ", "_").replace(":", ""))
+        else:
+            safe_name = Path("user_data",
+                             "backtest_results",
+                             name.lower().replace(" ", "_").replace(":", ""))
+        data.to_csv(f"{str(safe_name)}.csv")
+    else:
+        if name is not None:
+            print(name)
+
+        print(
+            tabulate(
+                data,
+                headers='keys',
+                tablefmt='psql',
+                showindex=show_index
+            )
         )
-    )
 
 
 def process_entry_exit_reasons(config: Config):
@@ -226,6 +274,9 @@ def process_entry_exit_reasons(config: Config):
         enter_reason_list = config.get('enter_reason_list', ["all"])
         exit_reason_list = config.get('exit_reason_list', ["all"])
         indicator_list = config.get('indicator_list', [])
+        do_rejected = config.get('analysis_rejected', False)
+        to_csv = config.get('analysis_to_csv', False)
+        csv_path = config.get('analysis_csv_path', config['exportfilename'])
 
         timerange = TimeRange.parse_timerange(None if config.get(
             'timerange') is None else str(config.get('timerange')))
@@ -235,8 +286,16 @@ def process_entry_exit_reasons(config: Config):
         for strategy_name, results in backtest_stats['strategy'].items():
             trades = load_backtest_data(config['exportfilename'], strategy_name)
 
-            if not trades.empty:
+            if trades is not None and not trades.empty:
                 signal_candles = _load_signal_candles(config['exportfilename'])
+
+                rej_df = None
+                if do_rejected:
+                    rejected_trades_dict = _load_rejected_trades(config['exportfilename'])
+                    rej_df = prepare_results(rejected_trades_dict, strategy_name,
+                                             enter_reason_list, exit_reason_list,
+                                             timerange=timerange)
+
                 analysed_trades_dict = _process_candles_and_indicators(
                                         config['exchange']['pair_whitelist'], strategy_name,
                                         trades, signal_candles)
@@ -247,7 +306,10 @@ def process_entry_exit_reasons(config: Config):
 
                 print_results(res_df,
                               analysis_groups,
-                              indicator_list)
+                              indicator_list,
+                              rejected_trades=rej_df,
+                              to_csv=to_csv,
+                              csv_path=csv_path)
 
     except ValueError as e:
         raise OperationalException(e) from e

@@ -191,8 +191,18 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '2.5' in captured.out
 
     # test date filtering
-    args = get_args(base_args + ['--timerange', "20180129-20180130"])
+    args = get_args(base_args +
+                    ['--analysis-groups', "0", "1", "2",
+                     '--timerange', "20180129-20180130"]
+                    )
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'enter_tag_long_a' in captured.out
     assert 'enter_tag_long_b' not in captured.out
+
+    # test rejected - how to mock this?
+    # args = get_args(base_args + ['--rejected'])
+    # start_analysis_entries_exits(args)
+    # captured = capsys.readouterr()
+    # assert 'Rejected Trades:' in captured.out
+    # assert False

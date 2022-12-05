@@ -106,7 +106,8 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "disableparamexport", "backtest_breakdown"]
 
 ARGS_ANALYZE_ENTRIES_EXITS = ["exportfilename", "analysis_groups", "enter_reason_list",
-                              "exit_reason_list", "indicator_list", "timerange"]
+                              "exit_reason_list", "indicator_list", "timerange",
+                              "analysis_rejected", "analysis_to_csv", "analysis_csv_path"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-freqaimodels",

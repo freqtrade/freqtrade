@@ -45,27 +45,39 @@ def store_backtest_stats(
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_signal_candles(
-        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
+def _store_backtest_analysis_data(
+        recordfilename: Path, data: Dict[str, Dict],
+        dtappendix: str, name: str) -> Path:
     """
-    Stores backtest trade signal candles
+    Stores backtest trade candles for analysis
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
-        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
+        while for directories, <directory>/backtest-result-<datetime>_<name>.pkl will be used
         as filename
-    :param stats: Dict containing the backtesting signal candles
+    :param candles: Dict containing the backtesting data for analysis
     :param dtappendix: Datetime to use for the filename
+    :param name: Name to use for the file, e.g. signals, rejected
     """
     if recordfilename.is_dir():
-        filename = (recordfilename / f'backtest-result-{dtappendix}_signals.pkl')
+        filename = (recordfilename / f'backtest-result-{dtappendix}_{name}.pkl')
     else:
         filename = Path.joinpath(
-            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_signals.pkl'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_{name}.pkl'
         )
 
-    file_dump_joblib(filename, candles)
+    file_dump_joblib(filename, data)
 
     return filename
+
+
+def store_backtest_signal_candles(
+        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
+    return _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
+
+
+def store_backtest_rejected_trades(
+        recordfilename: Path, trades: Dict[str, Dict], dtappendix: str) -> Path:
+    return _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:

@@ -634,7 +634,7 @@ AVAILABLE_CLI_OPTIONS = {
               "3: by pair and enter_tag, "
               "4: by pair, enter_ and exit_tag (this can get quite large)"),
         nargs='+',
-        default=['0', '1', '2'],
+        default=[],
         choices=['0', '1', '2', '3', '4'],
     ),
     "enter_reason_list": Arg(
@@ -657,6 +657,21 @@ AVAILABLE_CLI_OPTIONS = {
               "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
         nargs='+',
         default=[],
+    ),
+    "analysis_rejected": Arg(
+        '--rejected',
+        help='Analyse rejected trades',
+        action='store_true',
+    ),
+    "analysis_to_csv": Arg(
+        '--analysis-to-csv',
+        help='Save selected analysis tables to individual CSVs',
+        action='store_true',
+    ),
+    "analysis_csv_path": Arg(
+        '--analysis-csv-path',
+        help=("Specify a path to save the analysis CSVs "
+              "if --analysis-to-csv is enabled. Default: user_data/basktesting_results/"),
     ),
     "freqaimodel": Arg(
         '--freqaimodel',
