@@ -75,11 +75,16 @@ class CNNPredictionModel(BaseTensorFlowModel):
             metrics=[tf.metrics.MeanAbsoluteError()],
         )
 
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+            val_data = None
+        else:
+            val_data = w1.val
+
         model.fit(
             w1.train,
             epochs=MAX_EPOCHS,
             shuffle=False,
-            validation_data=w1.val,
+            validation_data=val_data,
             callbacks=[early_stopping],
             verbose=1,
         )

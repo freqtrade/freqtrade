@@ -23,6 +23,7 @@ class BaseTensorFlowModel(IFreqaiModel):
         if self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
+        self.dd.model_type = 'keras'
 
     def train(
         self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
