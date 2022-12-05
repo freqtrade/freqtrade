@@ -503,7 +503,7 @@ class FreqaiDataDrawer:
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
         elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
-        elif 'stable_baselines' in self.model_type:
+        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
@@ -589,9 +589,9 @@ class FreqaiDataDrawer:
         elif self.model_type == 'keras':
             from tensorflow import keras
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
-        elif self.model_type == 'stable_baselines':
+        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
             mod = importlib.import_module(
-                'stable_baselines3', self.freqai_info['rl_config']['model_type'])
+                self.model_type, self.freqai_info['rl_config']['model_type'])
             MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
             model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
 
