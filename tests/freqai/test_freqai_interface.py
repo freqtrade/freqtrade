@@ -237,7 +237,6 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     df = freqai.cache_corr_pairlist_dfs(df, freqai.dk)
     for i in range(5):
         df[f'%-constant_{i}'] = i
-        # df.loc[:, f'%-constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)

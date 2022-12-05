@@ -75,7 +75,7 @@ class BaseEnvironment(gym.Env):
         else:
             self.fee = 0.0015
 
-        # set here to default 5Ac, but all children envs can overwrite this
+        # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.custom_info: dict = {}
 
@@ -121,7 +121,6 @@ class BaseEnvironment(gym.Env):
         self._total_unrealized_profit: float = 1
         self.history: dict = {}
         self.trade_history: list = []
-        self.custom_info: dict = {}
 
     @abstractmethod
     def set_action_space(self):

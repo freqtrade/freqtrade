@@ -42,7 +42,7 @@ class TensorboardCallback(BaseCallback):
         )
 
     def _on_step(self) -> bool:
-        custom_info = self.training_env.custom_info
+        custom_info = self.training_env.get_attr("custom_info")[0]
         self.logger.record("_state/position", self.locals["infos"][0]["position"])
         self.logger.record("_state/trade_duration", self.locals["infos"][0]["trade_duration"])
         self.logger.record("_state/current_profit_pct", self.locals["infos"]

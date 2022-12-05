@@ -20,8 +20,8 @@ class Base4ActionRLEnv(BaseEnvironment):
     """
     Base class for a 4 action environment
     """
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.actions = Actions
 
     def set_action_space(self):
