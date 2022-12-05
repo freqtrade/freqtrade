@@ -1,14 +1,16 @@
 import logging
 from typing import Any, Dict, Tuple
 
-from pandas import DataFrame
-from freqtrade.exceptions import OperationalException
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-import tensorflow as tf
-from freqtrade.freqai.base_models.BaseTensorFlowModel import BaseTensorFlowModel, WindowGenerator
-from tensorflow.keras.layers import Input, Conv1D, Dense
-from tensorflow.keras.models import Model
 import numpy as np
+import tensorflow as tf
+from pandas import DataFrame
+from tensorflow.keras.layers import Conv1D, Dense, Input
+from tensorflow.keras.models import Model
+
+from freqtrade.exceptions import OperationalException
+from freqtrade.freqai.base_models.BaseTensorFlowModel import BaseTensorFlowModel, WindowGenerator
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+
 
 logger = logging.getLogger(__name__)
 

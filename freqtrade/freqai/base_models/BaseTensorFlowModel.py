@@ -2,11 +2,13 @@ import logging
 from time import time
 from typing import Any
 
-from pandas import DataFrame
 import numpy as np
+import tensorflow as tf
+from pandas import DataFrame
+
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
-import tensorflow as tf
+
 
 logger = logging.getLogger(__name__)
 
