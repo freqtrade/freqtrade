@@ -233,3 +233,23 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     dd = FreqaiDataDrawer(models_path, config)
     timerange = dd.get_timerange_from_live_historic_predictions()
     return timerange.timerange_str
+
+
+def ensure_base_tf_in_include_timeframes(config: Config) -> Config:
+    """
+    Ensure that the base timeframe is included in the include_timeframes list
+    :param config: Configuration dictionary
+
+    :return config: Configuration dictionary
+    """
+    feature_parameters = config.get('freqai', {}).get('feature_parameters', {})
+    include_timeframes = feature_parameters.get('include_timeframes', [])
+
+    if config['timeframe'] in include_timeframes:
+        return config
+
+    include_timeframes = [config['timeframe']] + include_timeframes
+    config.get('freqai', {}).get('feature_parameters', {}) \
+        .update({**feature_parameters, 'include_timeframes': include_timeframes})
+
+    return config
