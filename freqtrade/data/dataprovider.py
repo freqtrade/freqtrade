@@ -167,7 +167,8 @@ class DataProvider:
         producer_name: str = "default"
     ) -> Tuple[bool, int]:
         """
-        Append a candle to the existing external dataframe
+        Append a candle to the existing external dataframe. The incoming dataframe
+        must have at least 1 candle.
 
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
@@ -176,28 +177,31 @@ class DataProvider:
         """
         pair_key = (pair, timeframe, candle_type)
 
-        if (producer_name not in self.__producer_pairs_df) \
-           or (pair_key not in self.__producer_pairs_df[producer_name]):
+        if dataframe.empty:
+            # The incoming dataframe must have at least 1 candle
+            return (False, 0)
+
+        if (producer_name not in self.__producer_pairs_df
+           or pair_key not in self.__producer_pairs_df[producer_name]):
             # We don't have data from this producer yet,
             # or we don't have data for this pair_key
             # return False and 1000 for the full df
             return (False, 1000)
 
-        existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
+        existing_df, la = self.__producer_pairs_df[producer_name][pair_key]
+
+        # Iterate over any overlapping candles and update the values
+        for idx, candle in dataframe.iterrows():
+            existing_df.iloc[
+                existing_df['date'] == candle['date']
+            ] = candle
+
+        existing_df.reset_index(drop=True, inplace=True)
 
         # CHECK FOR MISSING CANDLES
         timeframe_delta = to_timedelta(timeframe)  # Convert the timeframe to a timedelta for pandas
         local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy of data
         incoming_first = dataframe.iloc[0]['date']  # We want the first date from the incoming data
-
-        # We have received this candle before, update our copy
-        # and return True, 0
-        if local_last == incoming_first:
-            existing_df.iloc[-1] = dataframe.iloc[0]
-            existing_data = (existing_df.reset_index(drop=True), _)
-
-            self.__producer_pairs_df[producer_name][pair_key] = existing_data
-            return (True, 0)
 
         candle_difference = (incoming_first - local_last) / timeframe_delta
 
@@ -228,6 +232,7 @@ class DataProvider:
 
         # Only keep the last 1500 candles in memory
         existing = existing[-1500:] if len(existing) > 1500 else existing
+        existing.reset_index(drop=True, inplace=True)
 
         return existing
 

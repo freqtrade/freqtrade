@@ -1062,7 +1062,7 @@ class RPC:
         self,
         pair: str,
         timeframe: str,
-        limit: Optional[int] = None
+        limit: Optional[int]
     ) -> Tuple[DataFrame, datetime]:
         """
         Get the dataframe and last analyze from the dataprovider
@@ -1083,7 +1083,7 @@ class RPC:
     def _ws_all_analysed_dataframes(
         self,
         pairlist: List[str],
-        limit: Optional[int] = None
+        limit: Optional[int]
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Get the analysed dataframes of each pair in the pairlist.

@@ -36,6 +36,9 @@ class Producer(TypedDict):
     ws_token: str
 
 
+FULL_DATAFRAME_THRESHOLD = 100
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -376,8 +379,8 @@ class ExternalMessageConsumer:
 
         logger.debug(f"Received {len(df)} candle(s) for {key}")
 
-        if len(df) >= 999:
-            # This is a full dataframe
+        if len(df) >= FULL_DATAFRAME_THRESHOLD:
+            # This is likely a full dataframe
             # Add the dataframe to the dataprovider
             self._dp._add_external_df(
                 pair,
@@ -388,8 +391,8 @@ class ExternalMessageConsumer:
                 producer_name=producer_name
             )
 
-        elif len(df) < 999:
-            # This is n single candles
+        elif len(df) < FULL_DATAFRAME_THRESHOLD:
+            # This is likely n single candles
             # Have dataprovider append it to
             # the full datafame. If it can't,
             # request the missing candles
@@ -403,9 +406,14 @@ class ExternalMessageConsumer:
             )
 
             if not did_append:
-                logger.debug("Holes in data or no existing df, "
-                             f"requesting {n_missing} candles "
-                             f"for {key} from `{producer_name}`")
+                # We want an overlap in candles incase some data has changed
+                n_missing += 1
+                # Set to None for all candles if we missed a full df's worth of candles
+                n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500
+
+                logger.warning("Holes in data or no existing df, "
+                               f"requesting {n_missing} candles "
+                               f"for {key} from `{producer_name}`")
 
                 self.send_producer_request(
                     producer_name,
