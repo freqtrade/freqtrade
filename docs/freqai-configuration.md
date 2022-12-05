@@ -26,10 +26,7 @@ FreqAI is configured through the typical [Freqtrade config file](configuration.m
         },
         "data_split_parameters" : {
             "test_size": 0.25
-        },
-        "model_training_parameters" : {
-            "n_estimators": 100
-        },
+        }
     }
 ```
 
@@ -118,7 +115,7 @@ The FreqAI strategy requires including the following lines of code in the standa
 
 ```
 
-Notice how the `populate_any_indicators()` is where [features](freqai-feature-engineering.md#feature-engineering) and labels/targets are added. A full example strategy is available in `templates/FreqaiExampleStrategy.py`. 
+Notice how the `populate_any_indicators()` is where [features](freqai-feature-engineering.md#feature-engineering) and labels/targets are added. A full example strategy is available in `templates/FreqaiExampleStrategy.py`.
 
 Notice also the location of the labels under `if set_generalized_indicators:` at the bottom of the example. This is where single features and labels/targets should be added to the feature set to avoid duplication of them from various configuration parameters that multiply the feature set, such as `include_timeframes`.
 
@@ -182,7 +179,7 @@ The `startup_candle_count` in the FreqAI strategy needs to be set up in the same
 
 ## Creating a dynamic target threshold
 
-Deciding when to enter or exit a trade can be done in a dynamic way to reflect current market conditions. FreqAI allows you to return additional information from the training of a model (more info [here](freqai-feature-engineering.md#returning-additional-info-from-training)). For example, the `&*_std/mean` return values describe the statistical distribution of the target/label *during the most recent training*. Comparing a given prediction to these values allows you to know the rarity of the prediction. In `templates/FreqaiExampleStrategy.py`, the `target_roi` and  `sell_roi` are defined to be 1.25 z-scores away from the mean which causes predictions that are closer to the mean to be filtered out. 
+Deciding when to enter or exit a trade can be done in a dynamic way to reflect current market conditions. FreqAI allows you to return additional information from the training of a model (more info [here](freqai-feature-engineering.md#returning-additional-info-from-training)). For example, the `&*_std/mean` return values describe the statistical distribution of the target/label *during the most recent training*. Comparing a given prediction to these values allows you to know the rarity of the prediction. In `templates/FreqaiExampleStrategy.py`, the `target_roi` and  `sell_roi` are defined to be 1.25 z-scores away from the mean which causes predictions that are closer to the mean to be filtered out.
 
 ```python
 dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
@@ -230,7 +227,7 @@ If you want to predict multiple targets, you need to define multiple labels usin
 
 #### Classifiers
 
-If you are using a classifier, you need to specify a target that has discrete values. FreqAI includes a variety of classifiers, such as the `CatboostClassifier` via the flag `--freqaimodel CatboostClassifier`. If you elects to use a classifier, the classes need to be set using strings. For example, if you want to predict if the price 100 candles into the future goes up or down you would set 
+If you are using a classifier, you need to specify a target that has discrete values. FreqAI includes a variety of classifiers, such as the `CatboostClassifier` via the flag `--freqaimodel CatboostClassifier`. If you elects to use a classifier, the classes need to be set using strings. For example, if you want to predict if the price 100 candles into the future goes up or down you would set
 
 ```python
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'down')
