@@ -9,9 +9,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import (download_all_data_for_training,
-                                    ensure_base_tf_in_include_timeframes,
-                                    get_required_data_timerange)
+from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
@@ -528,19 +526,6 @@ def test_start_set_train_queue(mocker, freqai_conf, caplog):
         "Set fresh train queue from whitelist.",
         caplog,
     )
-
-
-def test_base_tf_in_include_timeframes(mocker, freqai_conf):
-    freqai_conf['timeframe'] = '5m'
-    freqai_conf['freqai']['feature_parameters'].update({
-        'include_timeframes': ['15m', '1h']
-    })
-    updated_conf = ensure_base_tf_in_include_timeframes(freqai_conf)
-    assert updated_conf['freqai']['feature_parameters']['include_timeframes'] == [
-        '5m', '15m', '1h',
-    ]
-    last_conf = ensure_base_tf_in_include_timeframes(updated_conf)
-    assert last_conf == updated_conf
 
 
 def test_get_required_data_timerange(mocker, freqai_conf):
