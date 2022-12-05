@@ -462,10 +462,10 @@ class FreqaiDataKitchen:
         :param df: Dataframe containing all candles to run the entire backtest. Here
                    it is sliced down to just the present training period.
         """
-
-        df = df.loc[df["date"] >= timerange.startdt, :]
         if not self.live:
-            df = df.loc[df["date"] < timerange.stopdt, :]
+            df = df.loc[(df["date"] >= timerange.startdt) & (df["date"] < timerange.stopdt), :]
+        else:
+            df = df.loc[df["date"] >= timerange.startdt, :]
 
         return df
 
