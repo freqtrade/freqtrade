@@ -1,4 +1,5 @@
 import logging
+import random
 from abc import abstractmethod
 from enum import Enum
 from typing import Optional
@@ -121,6 +122,10 @@ class BaseEnvironment(gym.Env):
         self._done = False
 
         if self.starting_point is True:
+            if self.rl_config.get('randomize_starting_position', False):
+                length_of_data = int(self._end_tick / 4)
+                start_tick = random.randint(self.window_size + 1, length_of_data)
+                self._start_tick = start_tick
             self._position_history = (self._start_tick * [None]) + [self._position]
         else:
             self._position_history = (self.window_size * [None]) + [self._position]
@@ -189,12 +194,12 @@ class BaseEnvironment(gym.Env):
         if self._position == Positions.Neutral:
             return 0.
         elif self._position == Positions.Short:
-            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
-            return (last_trade_price - current_price) / last_trade_price
-        elif self._position == Positions.Long:
             current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
             last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
+            return (last_trade_price - current_price) / last_trade_price
+        elif self._position == Positions.Long:
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
             return 0.

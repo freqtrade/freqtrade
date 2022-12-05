@@ -740,6 +740,24 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
+    def _force_entry_validations(self, pair: str, order_side: SignalDirection):
+        if not self._freqtrade.config.get('force_entry_enable', False):
+            raise RPCException('Force_entry not enabled.')
+
+        if self._freqtrade.state != State.RUNNING:
+            raise RPCException('trader is not running')
+
+        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
+            raise RPCException("Can't go short on Spot markets.")
+
+        if pair not in self._freqtrade.exchange.get_markets(tradable_only=True):
+            raise RPCException('Symbol does not exist or market is not active.')
+        # Check if pair quote currency equals to the stake currency.
+        stake_currency = self._freqtrade.config.get('stake_currency')
+        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
+            raise RPCException(
+                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
+
     def _rpc_force_entry(self, pair: str, price: Optional[float], *,
                          order_type: Optional[str] = None,
                          order_side: SignalDirection = SignalDirection.LONG,
@@ -750,21 +768,8 @@ class RPC:
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
         """
+        self._force_entry_validations(pair, order_side)
 
-        if not self._freqtrade.config.get('force_entry_enable', False):
-            raise RPCException('Force_entry not enabled.')
-
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-
-        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
-            raise RPCException("Can't go short on Spot markets.")
-
-        # Check if pair quote currency equals to the stake currency.
-        stake_currency = self._freqtrade.config.get('stake_currency')
-        if not self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
-            raise RPCException(
-                f'Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed.')
         # check if valid pair
 
         # check if pair already has an open pair
