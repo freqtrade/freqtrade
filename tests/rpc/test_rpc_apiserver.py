@@ -588,7 +588,7 @@ def test_api_show_config(botclient):
     assert 'unfilledtimeout' in response
     assert 'version' in response
     assert 'api_version' in response
-    assert 2.1 <= response['api_version'] <= 2.2
+    assert 2.1 <= response['api_version'] < 3.0
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):

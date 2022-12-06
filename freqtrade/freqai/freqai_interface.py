@@ -282,10 +282,10 @@ class IFreqaiModel(ABC):
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             self.training_timerange = tr_train
-            dataframe_train = dk.slice_dataframe(tr_train, dataframe)
-            dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
+            len_backtest_df = len(dataframe.loc[(dataframe["date"] >= tr_backtest.startdt) & (
+                                  dataframe["date"] < tr_backtest.stopdt), :])
 
-            if not self.ensure_data_exists(dataframe_backtest, tr_backtest, pair):
+            if not self.ensure_data_exists(len_backtest_df, tr_backtest, pair):
                 continue
 
             self.log_backtesting_progress(tr_train, pair, train_it, total_trains)
@@ -298,13 +298,15 @@ class IFreqaiModel(ABC):
 
             dk.set_new_model_names(pair, timestamp_model_id)
 
-            if dk.check_if_backtest_prediction_is_valid(len(dataframe_backtest)):
+            if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
                 self.dd.load_metadata(dk)
-                dk.find_features(dataframe_train)
+                dk.find_features(dataframe)
                 self.check_if_feature_list_matches_strategy(dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
+                dataframe_train = dk.slice_dataframe(tr_train, dataframe)
+                dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
                     dk.find_labels(dataframe_train)
@@ -804,16 +806,16 @@ class IFreqaiModel(ABC):
             self.pair_it = 1
             self.current_candle = self.dd.current_candle
 
-    def ensure_data_exists(self, dataframe_backtest: DataFrame,
+    def ensure_data_exists(self, len_dataframe_backtest: int,
                            tr_backtest: TimeRange, pair: str) -> bool:
         """
         Check if the dataframe is empty, if not, report useful information to user.
-        :param dataframe_backtest: the backtesting dataframe, maybe empty.
+        :param len_dataframe_backtest: the len of backtesting dataframe
         :param tr_backtest: current backtesting timerange.
         :param pair: current pair
         :return: if the data exists or not
         """
-        if self.config.get("freqai_backtest_live_models", False) and len(dataframe_backtest) == 0:
+        if self.config.get("freqai_backtest_live_models", False) and len_dataframe_backtest == 0:
             logger.info(f"No data found for pair {pair} from "
                         f"from { tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
                         "Probably more than one training within the same candle period.")

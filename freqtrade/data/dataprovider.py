@@ -104,13 +104,15 @@ class DataProvider:
     def _emit_df(
         self,
         pair_key: PairWithTimeframe,
-        dataframe: DataFrame
+        dataframe: DataFrame,
+        new_candle: bool
     ) -> None:
         """
         Send this dataframe as an ANALYZED_DF message to RPC
 
         :param pair_key: PairWithTimeframe tuple
-        :param data: Tuple containing the DataFrame and the datetime it was cached
+        :param dataframe: Dataframe to emit
+        :param new_candle: This is a new candle
         """
         if self.__rpc:
             self.__rpc.send_msg(
@@ -123,6 +125,11 @@ class DataProvider:
                     }
                 }
             )
+            if new_candle:
+                self.__rpc.send_msg({
+                        'type': RPCMessageType.NEW_CANDLE,
+                        'data': pair_key,
+                    })
 
     def _add_external_df(
         self,
