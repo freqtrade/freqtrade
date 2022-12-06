@@ -17,6 +17,7 @@ from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
 from freqtrade.util import PeriodicCache
 
@@ -190,18 +191,30 @@ class DataProvider:
 
         existing_df, la = self.__producer_pairs_df[producer_name][pair_key]
 
-        # Iterate over any overlapping candles and update the values
-        for idx, candle in dataframe.iterrows():
-            existing_df.iloc[
-                existing_df['date'] == candle['date']
-            ] = candle
+        # Handle overlapping candles
+        old_candles = existing_df[
+            ~existing_df['date'].isin(
+                dataframe['date']
+            )
+        ]
+        overlapping_candles = existing_df[
+            existing_df['date'].isin(
+                dataframe['date']
+            )
+        ]
+        new_candles = dataframe[
+            ~dataframe['date'].isin(
+                existing_df['date']
+            )
+        ]
 
-        existing_df.reset_index(drop=True, inplace=True)
+        if overlapping_candles:
+            existing_df = concat([old_candles, overlapping_candles], axis=0)
 
         # CHECK FOR MISSING CANDLES
         timeframe_delta = to_timedelta(timeframe)  # Convert the timeframe to a timedelta for pandas
-        local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy of data
-        incoming_first = dataframe.iloc[0]['date']  # We want the first date from the incoming data
+        local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy
+        incoming_first = new_candles.iloc[0]['date']  # We want the first date from the incoming
 
         candle_difference = (incoming_first - local_last) / timeframe_delta
 
@@ -213,28 +226,11 @@ class DataProvider:
         if candle_difference > 1:
             return (False, candle_difference)
 
-        appended_df = self._append_candle_to_dataframe(existing_df, dataframe)
+        appended_df = append_candles_to_dataframe(existing_df, dataframe)
 
         # Everything is good, we appended
         self.__producer_pairs_df[producer_name][pair_key] = appended_df, last_analyzed
         return (True, 0)
-
-    def _append_candle_to_dataframe(self, existing: DataFrame, new: DataFrame) -> DataFrame:
-        """
-        Append the `new` dataframe to the `existing` dataframe
-
-        :param existing: The full dataframe you want appended to
-        :param new: The new dataframe containing the data you want appended
-        :returns: The dataframe with the new data in it
-        """
-        if existing.iloc[-1]['date'] != new.iloc[-1]['date']:
-            existing = concat([existing, new])
-
-        # Only keep the last 1500 candles in memory
-        existing = existing[-1500:] if len(existing) > 1500 else existing
-        existing.reset_index(drop=True, inplace=True)
-
-        return existing
 
     def get_producer_df(
         self,
