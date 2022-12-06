@@ -85,10 +85,9 @@ class CNNPredictionModel(BaseTensorFlowModel):
 
         model.fit(
             w1.train,
-            **self.model_training_parameters,
             validation_data=val_data,
             callbacks=[early_stopping],
-            verbose=1,
+            **self.model_training_parameters,
         )
 
         return model
