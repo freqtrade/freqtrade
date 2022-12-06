@@ -14,9 +14,6 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 logger = logging.getLogger(__name__)
 
-# tf.config.run_functions_eagerly(True)
-# tf.data.experimental.enable_debug_mode()
-
 
 class CNNPredictionModel(BaseTensorFlowModel):
     """
@@ -49,7 +46,8 @@ class CNNPredictionModel(BaseTensorFlowModel):
         # we need to remove batch_size from the model_training_params because
         # we dont want fit() to get the incorrect assignment (we use the WindowGenerator)
         # to handle our batches.
-        self.model_training_parameters.pop('batch_size')
+        if 'batch_size' in self.model_training_parameters:
+            self.model_training_parameters.pop('batch_size')
         input_dims = [BATCH_SIZE, self.CONV_WIDTH, n_features]
 
         w1 = WindowGenerator(

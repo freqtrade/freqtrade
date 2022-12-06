@@ -34,7 +34,8 @@ def is_mac() -> bool:
     ('CatboostRegressor', False, False, False),
     ('ReinforcementLearner', False, True, False),
     ('ReinforcementLearner_multiproc', False, False, False),
-    ('ReinforcementLearner_test_4ac', False, False, False)
+    ('ReinforcementLearner_test_4ac', False, False, False),
+    ('CNNPredictionModel', False, False, False)
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
     if is_arm() and model == 'CatboostRegressor':
@@ -70,6 +71,10 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
 
     if 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+
+    if 'CNNPredictionModel' in model:
+        freqai_conf['freqai']['model_training_parameters'].pop('n_estimators')
+        model_save_ext = 'h5'
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)

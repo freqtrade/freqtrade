@@ -43,7 +43,6 @@ class BaseTensorFlowModel(IFreqaiModel):
 
         start_time = time()
 
-        # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
             unfiltered_df,
             dk.training_features_list,
