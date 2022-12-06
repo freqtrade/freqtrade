@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 # tf.config.run_functions_eagerly(True)
 # tf.data.experimental.enable_debug_mode()
 
-MAX_EPOCHS = 10
-
 
 class CNNPredictionModel(BaseTensorFlowModel):
     """
@@ -46,7 +44,12 @@ class CNNPredictionModel(BaseTensorFlowModel):
             )
 
         n_features = len(data_dictionary["train_features"].columns)
-        BATCH_SIZE = self.freqai_info.get("batch_size", 64)
+        BATCH_SIZE = self.model_training_parameters.get("batch_size", 64)
+
+        # we need to remove batch_size from the model_training_params because
+        # we dont want fit() to get the incorrect assignment (we use the WindowGenerator)
+        # to handle our batches.
+        self.model_training_parameters.pop('batch_size')
         input_dims = [BATCH_SIZE, self.CONV_WIDTH, n_features]
 
         w1 = WindowGenerator(
@@ -84,8 +87,7 @@ class CNNPredictionModel(BaseTensorFlowModel):
 
         model.fit(
             w1.train,
-            epochs=MAX_EPOCHS,
-            shuffle=False,
+            **self.model_training_parameters,
             validation_data=val_data,
             callbacks=[early_stopping],
             verbose=1,

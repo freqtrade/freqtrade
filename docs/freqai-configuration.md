@@ -242,3 +242,23 @@ If you want to predict multiple targets you must specify all labels in the same 
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'down')
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) == df["close"], 'same', df['&s-up_or_down'])
 ```
+
+### Convolutional Neural Network model
+
+The `CNNPredictionModel` is a non-linear regression based on `Tensorflow` which follows very similar configuration to the other regressors. Feature engineering and label creation remains the same as highlighted [here](#building-a-freqai-strategy) and [here](#setting-model-targets). Control of the model is focused in the `model_training_parameters` configuration dictionary, which accepts any hyperparameter available to the CNN `fit()` function of Tensorflow [more here](https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit). For example, this is where the `epochs` and `batch_size` are controlled:
+
+```json
+    "model_training_parameters" : {
+        "batch_size": 64,
+        "epochs": 10,
+        "verbose": "auto",
+        "shuffle": false
+        "workers": 1,
+        "use_multiprocessing": False
+    }
+```
+
+Running the `CNNPredictionModel` is the same as other regressors: `--freqaimodel CNNPredictionModel`.
+
+
+```
