@@ -6,7 +6,7 @@ from freqtrade.enums.exittype import ExitType
 from freqtrade.enums.hyperoptstate import HyperoptState
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.ordertypevalue import OrderTypeValues
-from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType
+from freqtrade.enums.rpcmessagetype import NO_ECHO_MESSAGES, RPCMessageType, RPCRequestType
 from freqtrade.enums.runmode import NON_UTIL_MODES, OPTIMIZE_MODES, TRADING_MODES, RunMode
 from freqtrade.enums.signaltype import SignalDirection, SignalTagType, SignalType
 from freqtrade.enums.state import State
