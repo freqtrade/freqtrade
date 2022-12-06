@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 # 2.16: Additional daily metrics
 # 2.17: Forceentry - leverage, partial force_exit
 # 2.20: Add websocket endpoints
-API_VERSION = 2.20
+# 2.21: Add new_candle messagetype
+API_VERSION = 2.21
 
 # Public API, requires no auth.
 router_public = APIRouter()

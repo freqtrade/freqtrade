@@ -207,12 +207,18 @@ def test_emit_df(mocker, default_conf, ohlcv_history):
     assert send_mock.call_count == 0
 
     # Rpc is added, we call emit, should call send_msg
-    dataprovider._emit_df(pair, ohlcv_history)
+    dataprovider._emit_df(pair, ohlcv_history, False)
     assert send_mock.call_count == 1
 
+    send_mock.reset_mock()
+    dataprovider._emit_df(pair, ohlcv_history, True)
+    assert send_mock.call_count == 2
+
+    send_mock.reset_mock()
+
     # No rpc added, emit called, should not call send_msg
-    dataprovider_no_rpc._emit_df(pair, ohlcv_history)
-    assert send_mock.call_count == 1
+    dataprovider_no_rpc._emit_df(pair, ohlcv_history, False)
+    assert send_mock.call_count == 0
 
 
 def test_refresh(mocker, default_conf, ohlcv_history):

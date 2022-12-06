@@ -68,6 +68,7 @@ class Webhook(RPCHandler):
                 RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
                 RPCMessageType.WHITELIST,
                 RPCMessageType.ANALYZED_DF,
+                RPCMessageType.NEW_CANDLE,
                 RPCMessageType.STRATEGY_MSG):
             # Don't fail for non-implemented types
             return None
