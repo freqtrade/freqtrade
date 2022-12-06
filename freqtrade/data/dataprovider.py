@@ -189,7 +189,7 @@ class DataProvider:
             # return False and 1000 for the full df
             return (False, 1000)
 
-        existing_df, la = self.__producer_pairs_df[producer_name][pair_key]
+        existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
 
         # Handle overlapping candles
         old_candles = existing_df[
