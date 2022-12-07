@@ -64,6 +64,8 @@ class RemotePairList(IPairList):
             'User-Agent': 'Freqtrade - Remotepairlist',
         }
 
+        info = "Pairlist"
+
         try:
             response = requests.get(self._pairlist_url, headers=headers,
                                     timeout=self._read_timeout)
@@ -109,7 +111,6 @@ class RemotePairList(IPairList):
         :return: List of pairs
         """
         pairlist = self._pair_cache.get('pairlist')
-        info = "Pairlist"
 
         if pairlist:
             # Item found - no refresh necessary
