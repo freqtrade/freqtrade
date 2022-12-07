@@ -34,13 +34,13 @@ def stop_bot(error_line):
     out_put = out.decode('latin-1')
 
 
-def smooth_romeo_restart(error_line, notifier):
+def smooth_system_restart(error_line, notifier):
     romeo = BrainConfig.ROMEO_POOL.get(Config.COIN)
-    is_romeo_alive = romeo is not None
-    error_line = "[REPORT TO TRELLO]" + error_line
-    error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
-
-    if is_romeo_alive:
+    is_system_alive = romeo is not None
+    error_line = "[REPORT TO TRELLO] " + error_line
+    error_line += ("[SENDING SS]" if is_system_alive else " [POOL EMPTY. NO SYSTEM INSTANCE FOUND]")
+    print("smooth_system_restart: is_system_alive="+str(is_system_alive))
+    if is_system_alive:
         romeo.is_error = True
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
         romeo.send_error_report(error_line)  # send_to_trello_and_telegram
@@ -69,7 +69,7 @@ def check_error_condition(file_name, notifier):
         is_error_watcher_throttle_hit = time.time() - BrainConfig.PREVIOUS_ERROR_TIMESTAMP_SECONDS > 3
 
         if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED and is_error_watcher_throttle_hit:
-            smooth_romeo_restart(error_line, notifier)
+            smooth_system_restart(error_line, notifier)
         else:
             stop_bot(error_line)
             send_to_trello(title="[STOPBOT] "+error_line, description="is_error_watcher_throttle_hit=" + str(is_error_watcher_throttle_hit) + " " + error_line)
