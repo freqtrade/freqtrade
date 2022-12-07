@@ -259,6 +259,3 @@ The `CNNPredictionModel` is a non-linear regression based on `Tensorflow` which 
 ```
 
 Running the `CNNPredictionModel` is the same as other regressors: `--freqaimodel CNNPredictionModel`.
-
-
-```
