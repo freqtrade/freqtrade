@@ -133,6 +133,7 @@ class CNNPredictionModel(BaseTensorFlowModel):
         else:
             data = dk.data_dictionary["prediction_features"]
             data = tf.expand_dims(data, axis=0)
+            data = tf.convert_to_tensor(data)
             predictions = self.model(data, training=False)
 
         predictions = predictions[:, 0, 0]

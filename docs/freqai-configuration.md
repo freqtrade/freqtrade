@@ -252,9 +252,9 @@ The `CNNPredictionModel` is a non-linear regression based on `Tensorflow` which 
         "batch_size": 64,
         "epochs": 10,
         "verbose": "auto",
-        "shuffle": false
+        "shuffle": false,
         "workers": 1,
-        "use_multiprocessing": False
+        "use_multiprocessing": false
     }
 ```
 
