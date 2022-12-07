@@ -5,6 +5,7 @@ Provides pair list fetched from a remote source
 """
 import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List
 
 import requests
@@ -110,21 +111,36 @@ class RemotePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
+
+        time_elapsed = 0
         pairlist = self._pair_cache.get('pairlist')
 
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
         else:
-            # Fetch Pairlist from Remote URL
-            plist, time_elapsed, info = self.fetch_pairlist()
-            pairlist = []
+            if self._pairlist_url.startswith("file:///"):
+                filename = self._pairlist_url.split("file:///", 1)[1]
+                file_path = Path(filename)
 
-            for i in plist:
-                if i not in pairlist:
-                    pairlist.append(i)
+                if file_path.exists():
+                    with open(filename) as json_file:
+                        # Load the JSON data into a dictionary
+                        jsonp = json.load(json_file)
+                        plist = jsonp['pairs']
                 else:
-                    continue
+                    raise ValueError(f"{self._pairlist_url} does not exist.")
+            else:
+                # Fetch Pairlist from Remote URL
+                plist, time_elapsed, info = self.fetch_pairlist()
+
+        pairlist = []
+
+        for i in plist:
+            if i not in pairlist:
+                pairlist.append(i)
+            else:
+                continue
 
         pairlist = self.filter_pairlist(pairlist, tickers)
         self._pair_cache['pairlist'] = pairlist.copy()
