@@ -90,6 +90,7 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
 
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         # rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -110,11 +111,6 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the buy signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
 
         dataframe.loc[
             (
@@ -128,11 +124,7 @@ class bbrsi_scalp_futures_short(WAOStrategy_futures):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the sell signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
+
         dataframe.loc[
             (
                     (qtpylib.crossed_below(dataframe['rsi'], 30)) &  # Signal: RSI crosses below 30
