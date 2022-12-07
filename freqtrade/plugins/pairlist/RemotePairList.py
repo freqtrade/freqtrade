@@ -59,6 +59,49 @@ class RemotePairList(IPairList):
         """
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
 
+    def fetch_pairlist(self):
+        headers = {
+            'User-Agent': 'Freqtrade - Remotepairlist',
+        }
+
+        try:
+            response = requests.get(self._pairlist_url, headers=headers,
+                                    timeout=self._read_timeout)
+            content_type = response.headers.get('content-type')
+            time_elapsed = response.elapsed.total_seconds()
+
+            rsplit = response.text.split("#")
+
+            if "text/html" in str(content_type):
+                if len(rsplit) > 1:
+                    plist = rsplit[0].strip()
+                    plist = json.loads(plist)
+                    info = rsplit[1].strip()
+                else:
+                    plist = json.loads(rsplit[0])
+            elif "application/json" in str(content_type):
+                jsonr = response.json()
+                plist = jsonr['pairs']
+
+                if 'info' in jsonr:
+                    info = jsonr['info']
+                if 'refresh_period' in jsonr:
+                    self._refresh_period = jsonr['refresh_period']
+
+        except requests.exceptions.RequestException:
+            self.log_once(f'Was not able to fetch pairlist from:'
+                          f' {self._pairlist_url}', logger.info)
+
+            if self._keep_pairlist_on_failure:
+                plist = str(self._last_pairlist)
+                self.log_once('Keeping last fetched pairlist', logger.info)
+            else:
+                plist = ""
+
+            time_elapsed = 0
+
+        return plist, time_elapsed, info
+
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
         Generate the pairlist
@@ -66,49 +109,14 @@ class RemotePairList(IPairList):
         :return: List of pairs
         """
         pairlist = self._pair_cache.get('pairlist')
-        info = ""
+        info = "Pairlist"
 
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
         else:
-            # Fetch Pairlist from Remote
-            headers = {
-                'User-Agent': 'Freqtrade - Remotepairlist',
-            }
-
-            try:
-                response = requests.get(self._pairlist_url, headers=headers,
-                                        timeout=self._read_timeout)
-                content_type = response.headers.get('content-type')
-                time_elapsed = response.elapsed.total_seconds()
-
-                rsplit = response.text.split("#")
-
-                if "text/html" in str(content_type):
-                    if len(rsplit) > 1:
-                        plist = rsplit[0].strip()
-                        plist = json.loads(plist)
-                        info = rsplit[1].strip()
-                    else:
-                        plist = json.loads(rsplit[0])
-                elif "application/json" in str(content_type):
-                    jsonp = json.loads(' '.join(rsplit))
-                    plist = jsonp['pairs']
-                    info = jsonp['info']
-
-            except requests.exceptions.RequestException:
-                self.log_once(f'Was not able to fetch pairlist from:'
-                              f' {self._pairlist_url}', logger.info)
-
-                if self._keep_pairlist_on_failure:
-                    plist = str(self._last_pairlist)
-                    self.log_once('Keeping last fetched pairlist', logger.info)
-                else:
-                    plist = ""
-
-                time_elapsed = 0
-
+            # Fetch Pairlist from Remote URL
+            plist, time_elapsed, info = self.fetch_pairlist()
             pairlist = []
 
             for i in plist:
@@ -121,8 +129,7 @@ class RemotePairList(IPairList):
         self._pair_cache['pairlist'] = pairlist.copy()
 
         if(time_elapsed):
-            self.log_once(info + " | " + " Fetched in " + str(time_elapsed) +
-                          " seconds.", logger.info)
+            self.log_once(f'{info} Fetched in {time_elapsed} seconds.', logger.info)
 
         self._last_pairlist = list(pairlist)
         return pairlist
