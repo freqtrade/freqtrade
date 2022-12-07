@@ -83,6 +83,7 @@ class BaseEnvironment(gym.Env):
         if dp:
             self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         if not self.live and self.add_state_info:
+            self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
