@@ -219,6 +219,7 @@ def calculate_expectancy(trades: pd.DataFrame) -> float:
 
     return expectancy
 
+
 def calculate_sortino(trades: pd.DataFrame,
                       min_date: datetime, max_date: datetime) -> float:
     """
@@ -226,7 +227,7 @@ def calculate_sortino(trades: pd.DataFrame,
     :param trades: DataFrame containing trades (requires columns profit_ratio)
     :return: sortino
     """
-    if (len(trades) == 0) or (min_date == None) or (max_date == None) or (min_date == max_date):
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
     total_profit = trades["profit_ratio"]
@@ -252,14 +253,15 @@ def calculate_sortino(trades: pd.DataFrame,
     # print(expected_returns_mean, down_stdev, sortino_ratio)
     return sortino_ratio
 
+
 def calculate_sharpe(trades: pd.DataFrame,
-                      min_date: datetime, max_date: datetime) -> float:
+                     min_date: datetime, max_date: datetime) -> float:
     """
     Calculate sharpe
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :return: sharpe
     """
-    if (len(trades) == 0) or (min_date == None) or (max_date == None) or (min_date == max_date):
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
     total_profit = trades["profit_ratio"]
@@ -282,14 +284,15 @@ def calculate_sharpe(trades: pd.DataFrame,
     # print(expected_returns_mean, up_stdev, sharp_ratio)
     return sharp_ratio
 
+
 def calculate_calmar(trades: pd.DataFrame,
-                      min_date: datetime, max_date: datetime) -> float:
+                     min_date: datetime, max_date: datetime) -> float:
     """
     Calculate calmar
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :return: calmar
     """
-    if (len(trades) == 0) or (min_date == None) or (max_date == None) or (min_date == max_date):
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
     total_profit = trades["profit_ratio"]
