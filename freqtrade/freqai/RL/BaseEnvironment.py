@@ -137,15 +137,9 @@ class BaseEnvironment(gym.Env):
         Reset is called at the beginning of every episode
         """
         # custom_info is used for episodic reports and tensorboard logging
-        self.custom_info["Invalid"] = 0
-        self.custom_info["Hold"] = 0
-        self.custom_info["Unknown"] = 0
-        self.custom_info["pnl_factor"] = 0
-        self.custom_info["duration_factor"] = 0
-        self.custom_info["reward_exit"] = 0
-        self.custom_info["reward_hold"] = 0
+        self.custom_info: dict = {}
         for action in self.actions:
-            self.custom_info[f"{action.name}"] = 0
+            self.custom_info[action.name] = 0
 
         self._done = False
 
