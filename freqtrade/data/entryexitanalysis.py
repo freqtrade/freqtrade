@@ -25,15 +25,15 @@ def _load_backtest_analysis_data(backtest_dir: Path, name: str):
 
     try:
         scp = open(scpf, "rb")
-        rejected_trades = joblib.load(scp)
+        loaded_data = joblib.load(scp)
         logger.info(f"Loaded {name} data: {str(scpf)}")
     except Exception as e:
         logger.error(f"Cannot load {name} data from pickled results: ", e)
 
-    return rejected_trades
+    return loaded_data
 
 
-def _load_rejected_trades(backtest_dir: Path):
+def _load_rejected_signals(backtest_dir: Path):
     return _load_backtest_analysis_data(backtest_dir, "rejected")
 
 
@@ -163,13 +163,13 @@ def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
                 logger.warning("Invalid group mask specified.")
 
 
-def _do_rejected_trades_output(rejected_trades_df, to_csv=False, csv_path=None):
+def _do_rejected_signals_output(rejected_signals_df, to_csv=False, csv_path=None):
     cols = ['pair', 'date', 'enter_tag']
     sortcols = ['date', 'pair', 'enter_tag']
-    _print_table(rejected_trades_df[cols],
+    _print_table(rejected_signals_df[cols],
                  sortcols,
                  show_index=False,
-                 name="Rejected Trades:",
+                 name="Rejected Signals:",
                  to_csv=to_csv,
                  csv_path=csv_path)
 
@@ -208,13 +208,13 @@ def prepare_results(analysed_trades, stratname,
 
 
 def print_results(res_df, analysis_groups, indicator_list,
-                  rejected_trades=None, to_csv=False, csv_path=None):
+                  rejected_signals=None, to_csv=False, csv_path=None):
     if res_df.shape[0] > 0:
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
 
-        if rejected_trades is not None and not rejected_trades.empty:
-            _do_rejected_trades_output(rejected_trades, to_csv=to_csv, csv_path=csv_path)
+        if rejected_signals is not None and not rejected_signals.empty:
+            _do_rejected_signals_output(rejected_signals, to_csv=to_csv, csv_path=csv_path)
 
         # NB this can be large for big dataframes!
         if "all" in indicator_list:
@@ -291,8 +291,8 @@ def process_entry_exit_reasons(config: Config):
 
                 rej_df = None
                 if do_rejected:
-                    rejected_trades_dict = _load_rejected_trades(config['exportfilename'])
-                    rej_df = prepare_results(rejected_trades_dict, strategy_name,
+                    rejected_signals_dict = _load_rejected_signals(config['exportfilename'])
+                    rej_df = prepare_results(rejected_signals_dict, strategy_name,
                                              enter_reason_list, exit_reason_list,
                                              timerange=timerange)
 
@@ -307,7 +307,7 @@ def process_entry_exit_reasons(config: Config):
                 print_results(res_df,
                               analysis_groups,
                               indicator_list,
-                              rejected_trades=rej_df,
+                              rejected_signals=rej_df,
                               to_csv=to_csv,
                               csv_path=csv_path)
 

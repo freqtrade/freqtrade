@@ -466,7 +466,7 @@ class Configuration:
                              logstring='Filter trades by timerange: {}')
 
         self._args_to_config(config, argname='analysis_rejected',
-                             logstring='Analyse rejected trades: {}')
+                             logstring='Analyse rejected signals: {}')
 
         self._args_to_config(config, argname='analysis_to_csv',
                              logstring='Store analysis tables to CSV: {}')

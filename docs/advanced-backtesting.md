@@ -116,12 +116,12 @@ For example, if your backtest timerange was `20220101-20221231` but you only wan
 freqtrade backtesting-analysis -c <config.json> --timerange 20220101-20220201
 ```
 
-### Printing out rejected trades
+### Printing out rejected signals
 
-Use the `--rejected` option to print out rejected trades.
+Use the `--rejected-signals` option to print out rejected signals.
 
 ```bash
-freqtrade backtesting-analysis -c <config.json> --rejected
+freqtrade backtesting-analysis -c <config.json> --rejected-signals
 ```
 
 ### Writing tables to CSV
@@ -136,11 +136,11 @@ freqtrade backtesting-analysis -c <config.json> --analysis-to-csv
 By default this will write one file per output table you specified in the `backtesting-analysis` command, e.g.
 
 ```bash
-freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --rejected --analysis-groups 0 1
+freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --rejected-signals --analysis-groups 0 1
 ```
 
 This will write to `user_data/backtest_results`:
-* rejected.csv
+* rejected_signals.csv
 * group_0.csv
 * group_1.csv
 

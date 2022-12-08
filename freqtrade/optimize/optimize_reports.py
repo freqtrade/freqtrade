@@ -75,7 +75,7 @@ def store_backtest_signal_candles(
     return _store_backtest_analysis_data(Path(recordfilename), candles, dtappendix, "signals")
 
 
-def store_backtest_rejected_trades(
+def store_backtest_rejected_signals(
         recordfilename: Path, trades: Dict[str, Dict], dtappendix: str) -> Path:
     return _store_backtest_analysis_data(Path(recordfilename), trades, dtappendix, "rejected")
 

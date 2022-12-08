@@ -29,7 +29,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
-                                                 store_backtest_rejected_trades,
+                                                 store_backtest_rejected_signals,
                                                  store_backtest_signal_candles,
                                                  store_backtest_stats)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
@@ -1053,7 +1053,7 @@ class Backtesting:
 
     def _collate_rejected(self, pair, row):
         """
-        Temporarily store rejected trade information for downstream use in backtesting_analysis
+        Temporarily store rejected signal information for downstream use in backtesting_analysis
         """
         # It could be fun to enable hyperopt mode to write
         # a loss function to reduce rejected signals
@@ -1283,7 +1283,7 @@ class Backtesting:
         if (self.config.get('export', 'none') == 'signals' and
                 self.dataprovider.runmode == RunMode.BACKTEST):
             self._generate_trade_signal_candles(preprocessed_tmp, results)
-            self._generate_rejected_trades(preprocessed_tmp, self.rejected_dict)
+            self._generate_rejected_signals(preprocessed_tmp, self.rejected_dict)
 
         return min_date, max_date
 
@@ -1308,22 +1308,22 @@ class Backtesting:
 
         self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
 
-    def _generate_rejected_trades(self, preprocessed_df, rejected_dict):
+    def _generate_rejected_signals(self, preprocessed_df, rejected_dict):
         rejected_candles_only = {}
-        for pair, trades in rejected_dict.items():
-            rejected_trades_only_df = DataFrame()
+        for pair, signals in rejected_dict.items():
+            rejected_signals_only_df = DataFrame()
             pairdf = preprocessed_df[pair]
 
-            for t in trades:
+            for t in signals:
                 data_df_row = pairdf.loc[(pairdf['date'] == t[0])].copy()
                 data_df_row['pair'] = pair
                 data_df_row['enter_tag'] = t[1]
 
-                rejected_trades_only_df = pd.concat([
-                    rejected_trades_only_df.infer_objects(),
+                rejected_signals_only_df = pd.concat([
+                    rejected_signals_only_df.infer_objects(),
                     data_df_row.infer_objects()])
 
-            rejected_candles_only[pair] = rejected_trades_only_df
+            rejected_candles_only[pair] = rejected_signals_only_df
 
         self.rejected_df[self.strategy.get_strategy_name()] = rejected_candles_only
 
@@ -1392,7 +1392,7 @@ class Backtesting:
                 store_backtest_signal_candles(
                     self.config['exportfilename'], self.processed_dfs, dt_appendix)
 
-                store_backtest_rejected_trades(
+                store_backtest_rejected_signals(
                     self.config['exportfilename'], self.rejected_df, dt_appendix)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.

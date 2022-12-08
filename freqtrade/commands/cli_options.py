@@ -659,8 +659,8 @@ AVAILABLE_CLI_OPTIONS = {
         default=[],
     ),
     "analysis_rejected": Arg(
-        '--rejected',
-        help='Analyse rejected trades',
+        '--rejected-signals',
+        help='Analyse rejected signals',
         action='store_true',
     ),
     "analysis_to_csv": Arg(
