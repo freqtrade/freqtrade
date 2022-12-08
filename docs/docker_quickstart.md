@@ -4,13 +4,15 @@ This page explains how to run the bot with Docker. It is not meant to work out o
 
 ## Install Docker
 
-Start by downloading and installing Docker CE for your platform:
+Start by downloading and installing Docker / Docker Desktop for your platform:
 
 * [Mac](https://docs.docker.com/docker-for-mac/install/)
 * [Windows](https://docs.docker.com/docker-for-windows/install/)
 * [Linux](https://docs.docker.com/install/)
 
-To simplify running freqtrade, [`docker compose`](https://docs.docker.com/compose/install/) should be installed and available to follow the below [docker quick start guide](#docker-quick-start).
+!!! Info "Docker compose install"
+    Freqtrade documentation assumes the use of Docker desktop (or the docker compose plugin).  
+    While the docker-compose standalone installation still works, it will require changing all `docker compose` commands from `docker compose` to `docker-compose` to work (e.g. `docker compose up -d` will become `docker-compose up -d`).
 
 ## Freqtrade with docker
 
