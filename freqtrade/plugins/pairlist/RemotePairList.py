@@ -83,13 +83,11 @@ class RemotePairList(IPairList):
                 else:
                     plist = json.loads(rsplit[0])
             elif "application/json" in str(content_type):
-                jsonr = response.json()
-                plist = jsonr['pairs']
+                jsonp = response.json()
+                plist = jsonp['pairs']
 
-                if 'info' in jsonr:
-                    info = jsonr['info']
-                if 'refresh_period' in jsonr:
-                    self._refresh_period = jsonr['refresh_period']
+                info = jsonp.get('info', '')
+                self._refresh_period = jsonp.get('refresh_period', self._refresh_period)
 
         except requests.exceptions.RequestException:
             self.log_once(f'Was not able to fetch pairlist from:'
@@ -128,6 +126,10 @@ class RemotePairList(IPairList):
                         # Load the JSON data into a dictionary
                         jsonp = json.load(json_file)
                         plist = jsonp['pairs']
+
+                        info = jsonp.get('info', '')
+                        self._refresh_period = jsonp.get('refresh_period', self._refresh_period)
+
                 else:
                     raise ValueError(f"{self._pairlist_url} does not exist.")
             else:
@@ -145,8 +147,10 @@ class RemotePairList(IPairList):
         pairlist = self.filter_pairlist(pairlist, tickers)
         self._pair_cache['pairlist'] = pairlist.copy()
 
-        if(time_elapsed):
+        if (time_elapsed) in locals():
             self.log_once(f'{info} Fetched in {time_elapsed} seconds.', logger.info)
+        else:
+            self.log_once(f'{info} Fetched Pairlist.', logger.info)
 
         self._last_pairlist = list(pairlist)
         return pairlist
