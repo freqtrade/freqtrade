@@ -12,6 +12,7 @@ from unittest.mock import ANY, MagicMock
 
 import arrow
 import pytest
+import time_machine
 from pandas import DataFrame
 from telegram import Chat, Message, ReplyKeyboardMarkup, Update
 from telegram.error import BadRequest, NetworkError, TelegramError
@@ -1906,119 +1907,120 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
-    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    with time_machine.travel("2022-09-01 05:00:00 +00:00", tick=False):
+        telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
-    old_convamount = telegram._rpc._fiat_converter.convert_amount
-    telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
-    telegram.send_msg({
-        'type': RPCMessageType.EXIT,
-        'trade_id': 1,
-        'exchange': 'Binance',
-        'pair': 'KEY/ETH',
-        'leverage': 1.0,
-        'direction': 'Long',
-        'gain': 'loss',
-        'order_rate': 3.201e-05,
-        'amount': 1333.3333333333335,
-        'order_type': 'market',
-        'open_rate': 7.5e-05,
-        'current_rate': 3.201e-05,
-        'profit_amount': -0.05746268,
-        'profit_ratio': -0.57405275,
-        'stake_currency': 'ETH',
-        'fiat_currency': 'USD',
-        'enter_tag': 'buy_signal1',
-        'exit_reason': ExitType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(hours=-1),
-        'close_date': arrow.utcnow(),
-    })
-    assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-        '*Enter Tag:* `buy_signal1`\n'
-        '*Exit Reason:* `stop_loss`\n'
-        '*Direction:* `Long`\n'
-        '*Amount:* `1333.33333333`\n'
-        '*Open Rate:* `0.00007500`\n'
-        '*Current Rate:* `0.00003201`\n'
-        '*Exit Rate:* `0.00003201`\n'
-        '*Duration:* `1:00:00 (60.0 min)`'
-    )
-
-    msg_mock.reset_mock()
-    telegram.send_msg({
-        'type': RPCMessageType.EXIT,
-        'trade_id': 1,
-        'exchange': 'Binance',
-        'pair': 'KEY/ETH',
-        'direction': 'Long',
-        'gain': 'loss',
-        'order_rate': 3.201e-05,
-        'amount': 1333.3333333333335,
-        'order_type': 'market',
-        'open_rate': 7.5e-05,
-        'current_rate': 3.201e-05,
-        'cumulative_profit': -0.15746268,
-        'profit_amount': -0.05746268,
-        'profit_ratio': -0.57405275,
-        'stake_currency': 'ETH',
-        'fiat_currency': 'USD',
-        'enter_tag': 'buy_signal1',
-        'exit_reason': ExitType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-        'close_date': arrow.utcnow(),
-        'stake_amount': 0.01,
-        'sub_trade': True,
-    })
-    assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-        '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
-        '*Enter Tag:* `buy_signal1`\n'
-        '*Exit Reason:* `stop_loss`\n'
-        '*Direction:* `Long`\n'
-        '*Amount:* `1333.33333333`\n'
-        '*Open Rate:* `0.00007500`\n'
-        '*Current Rate:* `0.00003201`\n'
-        '*Exit Rate:* `0.00003201`\n'
-        '*Remaining:* `(0.01 ETH, -24.812 USD)`'
+        old_convamount = telegram._rpc._fiat_converter.convert_amount
+        telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
+        telegram.send_msg({
+            'type': RPCMessageType.EXIT,
+            'trade_id': 1,
+            'exchange': 'Binance',
+            'pair': 'KEY/ETH',
+            'leverage': 1.0,
+            'direction': 'Long',
+            'gain': 'loss',
+            'order_rate': 3.201e-05,
+            'amount': 1333.3333333333335,
+            'order_type': 'market',
+            'open_rate': 7.5e-05,
+            'current_rate': 3.201e-05,
+            'profit_amount': -0.05746268,
+            'profit_ratio': -0.57405275,
+            'stake_currency': 'ETH',
+            'fiat_currency': 'USD',
+            'enter_tag': 'buy_signal1',
+            'exit_reason': ExitType.STOP_LOSS.value,
+            'open_date': arrow.utcnow().shift(hours=-1),
+            'close_date': arrow.utcnow(),
+        })
+        assert msg_mock.call_args[0][0] == (
+            '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Enter Tag:* `buy_signal1`\n'
+            '*Exit Reason:* `stop_loss`\n'
+            '*Direction:* `Long`\n'
+            '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
+            '*Current Rate:* `0.00003201`\n'
+            '*Exit Rate:* `0.00003201`\n'
+            '*Duration:* `1:00:00 (60.0 min)`'
         )
 
-    msg_mock.reset_mock()
-    telegram.send_msg({
-        'type': RPCMessageType.EXIT,
-        'trade_id': 1,
-        'exchange': 'Binance',
-        'pair': 'KEY/ETH',
-        'direction': 'Long',
-        'gain': 'loss',
-        'order_rate': 3.201e-05,
-        'amount': 1333.3333333333335,
-        'order_type': 'market',
-        'open_rate': 7.5e-05,
-        'current_rate': 3.201e-05,
-        'profit_amount': -0.05746268,
-        'profit_ratio': -0.57405275,
-        'stake_currency': 'ETH',
-        'enter_tag': 'buy_signal1',
-        'exit_reason': ExitType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-        'close_date': arrow.utcnow(),
-    })
-    assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
-        '*Enter Tag:* `buy_signal1`\n'
-        '*Exit Reason:* `stop_loss`\n'
-        '*Direction:* `Long`\n'
-        '*Amount:* `1333.33333333`\n'
-        '*Open Rate:* `0.00007500`\n'
-        '*Current Rate:* `0.00003201`\n'
-        '*Exit Rate:* `0.00003201`\n'
-        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
-    )
-    # Reset singleton function to avoid random breaks
-    telegram._rpc._fiat_converter.convert_amount = old_convamount
+        msg_mock.reset_mock()
+        telegram.send_msg({
+            'type': RPCMessageType.EXIT,
+            'trade_id': 1,
+            'exchange': 'Binance',
+            'pair': 'KEY/ETH',
+            'direction': 'Long',
+            'gain': 'loss',
+            'order_rate': 3.201e-05,
+            'amount': 1333.3333333333335,
+            'order_type': 'market',
+            'open_rate': 7.5e-05,
+            'current_rate': 3.201e-05,
+            'cumulative_profit': -0.15746268,
+            'profit_amount': -0.05746268,
+            'profit_ratio': -0.57405275,
+            'stake_currency': 'ETH',
+            'fiat_currency': 'USD',
+            'enter_tag': 'buy_signal1',
+            'exit_reason': ExitType.STOP_LOSS.value,
+            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
+            'close_date': arrow.utcnow(),
+            'stake_amount': 0.01,
+            'sub_trade': True,
+        })
+        assert msg_mock.call_args[0][0] == (
+            '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
+            '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
+            '*Enter Tag:* `buy_signal1`\n'
+            '*Exit Reason:* `stop_loss`\n'
+            '*Direction:* `Long`\n'
+            '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
+            '*Current Rate:* `0.00003201`\n'
+            '*Exit Rate:* `0.00003201`\n'
+            '*Remaining:* `(0.01 ETH, -24.812 USD)`'
+            )
+
+        msg_mock.reset_mock()
+        telegram.send_msg({
+            'type': RPCMessageType.EXIT,
+            'trade_id': 1,
+            'exchange': 'Binance',
+            'pair': 'KEY/ETH',
+            'direction': 'Long',
+            'gain': 'loss',
+            'order_rate': 3.201e-05,
+            'amount': 1333.3333333333335,
+            'order_type': 'market',
+            'open_rate': 7.5e-05,
+            'current_rate': 3.201e-05,
+            'profit_amount': -0.05746268,
+            'profit_ratio': -0.57405275,
+            'stake_currency': 'ETH',
+            'enter_tag': 'buy_signal1',
+            'exit_reason': ExitType.STOP_LOSS.value,
+            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
+            'close_date': arrow.utcnow(),
+        })
+        assert msg_mock.call_args[0][0] == (
+            '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+            '*Enter Tag:* `buy_signal1`\n'
+            '*Exit Reason:* `stop_loss`\n'
+            '*Direction:* `Long`\n'
+            '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
+            '*Current Rate:* `0.00003201`\n'
+            '*Exit Rate:* `0.00003201`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
+        )
+        # Reset singleton function to avoid random breaks
+        telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
 def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
@@ -2065,41 +2067,42 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
     default_conf['telegram']['notification_settings']['exit_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
-    telegram.send_msg({
-        'type': RPCMessageType.EXIT_FILL,
-        'trade_id': 1,
-        'exchange': 'Binance',
-        'pair': 'KEY/ETH',
-        'leverage': leverage,
-        'direction': direction,
-        'gain': 'loss',
-        'limit': 3.201e-05,
-        'amount': 1333.3333333333335,
-        'order_type': 'market',
-        'open_rate': 7.5e-05,
-        'close_rate': 3.201e-05,
-        'profit_amount': -0.05746268,
-        'profit_ratio': -0.57405275,
-        'stake_currency': 'ETH',
-        'enter_tag': enter_signal,
-        'exit_reason': ExitType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-        'close_date': arrow.utcnow(),
-    })
+    with time_machine.travel("2022-09-01 05:00:00 +00:00", tick=False):
+        telegram.send_msg({
+            'type': RPCMessageType.EXIT_FILL,
+            'trade_id': 1,
+            'exchange': 'Binance',
+            'pair': 'KEY/ETH',
+            'leverage': leverage,
+            'direction': direction,
+            'gain': 'loss',
+            'limit': 3.201e-05,
+            'amount': 1333.3333333333335,
+            'order_type': 'market',
+            'open_rate': 7.5e-05,
+            'close_rate': 3.201e-05,
+            'profit_amount': -0.05746268,
+            'profit_ratio': -0.57405275,
+            'stake_currency': 'ETH',
+            'enter_tag': enter_signal,
+            'exit_reason': ExitType.STOP_LOSS.value,
+            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
+            'close_date': arrow.utcnow(),
+        })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
-    assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
-        '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
-        f'*Enter Tag:* `{enter_signal}`\n'
-        '*Exit Reason:* `stop_loss`\n'
-        f"*Direction:* `{direction}`\n"
-        f"{leverage_text}"
-        '*Amount:* `1333.33333333`\n'
-        '*Open Rate:* `0.00007500`\n'
-        '*Exit Rate:* `0.00003201`\n'
-        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
-    )
+        leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
+        assert msg_mock.call_args[0][0] == (
+            '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
+            '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+            f'*Enter Tag:* `{enter_signal}`\n'
+            '*Exit Reason:* `stop_loss`\n'
+            f"*Direction:* `{direction}`\n"
+            f"{leverage_text}"
+            '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
+            '*Exit Rate:* `0.00003201`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
+        )
 
 
 def test_send_msg_status_notification(default_conf, mocker) -> None:

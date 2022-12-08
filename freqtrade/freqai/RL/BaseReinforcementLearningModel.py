@@ -21,7 +21,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv
-from freqtrade.freqai.RL.BaseEnvironment import Positions
+from freqtrade.freqai.RL.BaseEnvironment import BaseActions, Positions
+from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
 from freqtrade.persistence import Trade
 
 
@@ -44,8 +45,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             'cpu_count', 1), max(int(self.max_system_threads / 2), 1))
         th.set_num_threads(self.max_threads)
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
-        self.train_env: Union[SubprocVecEnv, gym.Env] = None
-        self.eval_env: Union[SubprocVecEnv, gym.Env] = None
+        self.train_env: Union[SubprocVecEnv, Type[gym.Env]] = gym.Env()
+        self.eval_env: Union[SubprocVecEnv, Type[gym.Env]] = gym.Env()
         self.eval_callback: Optional[EvalCallback] = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
@@ -65,6 +66,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.unset_outlier_removal()
         self.net_arch = self.rl_config.get('net_arch', [128, 128])
         self.dd.model_type = import_str
+        self.tensorboard_callback: TensorboardCallback = \
+            TensorboardCallback(verbose=1, actions=BaseActions)
 
     def unset_outlier_removal(self):
         """
@@ -155,6 +158,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
+
+        actions = self.train_env.get_actions()
+        self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
 
     @abstractmethod
     def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
