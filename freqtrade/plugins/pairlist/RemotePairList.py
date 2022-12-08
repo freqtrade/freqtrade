@@ -110,8 +110,8 @@ class RemotePairList(IPairList):
         :return: List of pairs
         """
 
-        time_elapsed = 0
         pairlist = self._pair_cache.get('pairlist')
+        time_elapsed = 0
 
         if pairlist:
             # Item found - no refresh necessary
@@ -125,7 +125,7 @@ class RemotePairList(IPairList):
                     with open(filename) as json_file:
                         # Load the JSON data into a dictionary
                         jsonp = json.load(json_file)
-                        plist = jsonp['pairs']
+                        pairlist = jsonp['pairs']
 
                         info = jsonp.get('info', '')
                         self._refresh_period = jsonp.get('refresh_period', self._refresh_period)
@@ -134,20 +134,12 @@ class RemotePairList(IPairList):
                     raise ValueError(f"{self._pairlist_url} does not exist.")
             else:
                 # Fetch Pairlist from Remote URL
-                plist, time_elapsed, info = self.fetch_pairlist()
-
-        pairlist = []
-
-        for i in plist:
-            if i not in pairlist:
-                pairlist.append(i)
-            else:
-                continue
+                pairlist, time_elapsed, info = self.fetch_pairlist()
 
         pairlist = self.filter_pairlist(pairlist, tickers)
         self._pair_cache['pairlist'] = pairlist.copy()
 
-        if (time_elapsed) in locals():
+        if time_elapsed:
             self.log_once(f'{info} Fetched in {time_elapsed} seconds.', logger.info)
         else:
             self.log_once(f'{info} Fetched Pairlist.', logger.info)
