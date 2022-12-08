@@ -105,6 +105,42 @@ A similar setup can also be taken for Pycharm - using `freqtrade` as module name
 !!! Note "Startup directory"
     This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).
 
+## How to work on new features
+
+For details look at [Contributing Guidelines](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md) but this is the outline of best practices for working on a new feature plannned to be contributed as a pull request (PR)
+
+### Create feature branch
+### Add unittests testing config switch
+### Add config switch to safeguard
+### Add unittests with new feature 
+### Add new feature
+### Create pr
+
+At this point of time, depending on how long it took you to work on it, you may have merged `develop` branch a lot of time with you `feature/my-thing` a lot of times. If you now want to rebase all the merges to the start of the current `develop` history, you will want to do the following:
+
+1. First, and that is very `git` uncanonical, backup the whole freqtrade folder!
+2. Prerequisit
+  - `git fetch --all` (just to make sure you are all synced).
+  - Now `git checkout feature/my-thing` your feature branch and `git stash` OR `git add . && git commit` everything you are currently working on. Even if you just make a  "WIP" commit.
+  - Then go into `develop` branch first (`git checkout develop`)
+  - Then `git pull`. That puts current changes from remote develop into your local develop
+3. Put current `develop` history at beginning of your branch
+  - Now go `git checkout feature/my-thing` back to your branch, then you can do `git rebase develop`
+  - At this point there probably will be a few merge conflicts. You will have to read the status messages carefully and then fix the conflict. A good editor helps here, so you don't miss any. (Don't forget `git rebase --continue` after you fix your conflicts)
+
+Now you are already done with your rebase. Congratulations the hardest part is over.
+
+!!! Note "Push Troubles"
+Only thing left is to push it into the remote branch. Usually `git push` is how you do this, but this time it won't work because rebase messed up your history so it won't sync with it. So you have to force it via `git push -f`. This will overwrite your remote branch with your local branch.
+
+Then you should be done.
+It sounds more scary than it is, but the first time it probably need a few tries.  But once you done it, you will feel super confident  having taken the next step with git and understand more of it
+
+!!! Tip "Messed up"
+Also there is `git reflog` to help you out if you really mess up (basically if you forget to backup your whole folder, this can get you out of trouble)
+
+### Incorporate feedback
+
 ## ErrorHandling
 
 Freqtrade Exceptions all inherit from `FreqtradeException`.
