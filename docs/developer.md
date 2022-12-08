@@ -128,6 +128,9 @@ At this point of time, depending on how long it took you to work on it, you may 
   - Now go `git checkout feature/my-thing` back to your branch, then you can do `git rebase develop`
   - At this point there probably will be a few merge conflicts. You will have to read the status messages carefully and then fix the conflict. A good editor helps here, so you don't miss any. (Don't forget `git rebase --continue` after you fix your conflicts)
 
+!!! Note "Conflicts"
+#Todo: eating my own dogfood here, there should be a section about accepting the right side of changes for files that definitly haven't been touched by this feature. Good examples are `freqtrade/__init__.py` with it's version shenaningangs, because most likely will have changed for bigger features
+
 Now you are already done with your rebase. Congratulations the hardest part is over.
 
 !!! Note "Push Troubles"
