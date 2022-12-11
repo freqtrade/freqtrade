@@ -95,6 +95,9 @@ class BaseRegressionModel(IFreqaiModel):
         self.data_cleaning_predict(dk)
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
+        if self.CONV_WIDTH == 1:
+            predictions = np.reshape(predictions, (-1, len(dk.label_list)))
+
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
         pred_df = dk.denormalize_labels_from_metadata(pred_df)
