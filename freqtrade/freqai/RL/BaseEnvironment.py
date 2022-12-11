@@ -77,7 +77,7 @@ class BaseEnvironment(gym.Env):
 
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
-        self.custom_info: dict = {}
+        self.tensorboard_metrics: dict = {}
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -136,10 +136,10 @@ class BaseEnvironment(gym.Env):
         """
         Reset is called at the beginning of every episode
         """
-        # custom_info is used for episodic reports and tensorboard logging
-        self.custom_info: dict = {}
+        # tensorboard_metrics is used for episodic reports and tensorboard logging
+        self.tensorboard_metrics: dict = {}
         for action in self.actions:
-            self.custom_info[action.name] = 0
+            self.tensorboard_metrics[action.name] = 0
 
         self._done = False
 

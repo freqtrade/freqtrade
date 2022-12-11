@@ -108,15 +108,12 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             # reward agent for entering trades
             if (action == Actions.Long_enter.value
                     and self._position == Positions.Neutral):
-                self.custom_info[Actions.Long_enter.name] += 1
                 return 25
             if (action == Actions.Short_enter.value
                     and self._position == Positions.Neutral):
-                self.custom_info[Actions.Short_enter.name] += 1
                 return 25
             # discourage agent from not entering trades
             if action == Actions.Neutral.value and self._position == Positions.Neutral:
-                self.custom_info[Actions.Neutral.name] += 1
                 return -1
 
             max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
@@ -130,21 +127,18 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             # discourage sitting in position
             if (self._position in (Positions.Short, Positions.Long) and
                     action == Actions.Neutral.value):
-                self.custom_info[Actions.Neutral.name] += 1
                 return -1 * trade_duration / max_trade_duration
 
             # close long
             if action == Actions.Long_exit.value and self._position == Positions.Long:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                self.custom_info[Actions.Long_exit.name] += 1
                 return float(pnl * factor)
 
             # close short
             if action == Actions.Short_exit.value and self._position == Positions.Short:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                self.custom_info[Actions.Short_exit.name] += 1
                 return float(pnl * factor)
 
             return 0.
