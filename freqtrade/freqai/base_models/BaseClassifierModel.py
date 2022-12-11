@@ -101,6 +101,8 @@ class BaseClassifierModel(IFreqaiModel):
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
         predictions_prob = self.model.predict_proba(dk.data_dictionary["prediction_features"])
+        if self.CONV_WIDTH == 1:
+            predictions_prob = np.reshape(predictions_prob, (-1, len(self.model.classes_)))
         pred_df_prob = DataFrame(predictions_prob, columns=self.model.classes_)
 
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
