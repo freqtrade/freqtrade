@@ -61,7 +61,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
                                     tensorboard_log=Path(
                                         dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
-                                    **self.freqai_info['model_training_parameters']
+                                    **self.freqai_info.get('model_training_parameters', {})
                                     )
         else:
             logger.info('Continual training activated - starting training from previously '

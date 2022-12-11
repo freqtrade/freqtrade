@@ -12,6 +12,7 @@ from gym.utils import seeding
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,12 @@ class BaseEnvironment(gym.Env):
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
+        self.live: bool = False
+        if dp:
+            self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        if not self.live and self.add_state_info:
+            self.add_state_info = False
+            logger.warning("add_state_info is not available in backtesting. Deactivating.")
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -205,7 +212,7 @@ class BaseEnvironment(gym.Env):
         """
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        if self.add_state_info:
+        if self.add_state_info and self.live:
             features_and_state = DataFrame(np.zeros((len(features_window), 3)),
                                            columns=['current_profit_pct',
                                                     'position',

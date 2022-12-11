@@ -218,7 +218,7 @@ class VolumePairList(IPairList):
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
         else:
-            # Tickers mode - filter based on incomming pairlist.
+            # Tickers mode - filter based on incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
         if self._min_value > 0:
