@@ -360,7 +360,7 @@ def _validate_freqai_include_timeframes(conf: Dict[str, Any]) -> None:
             feature_parameters = conf.get('freqai', {}).get('feature_parameters', {})
             include_timeframes = [main_tf] + freqai_include_timeframes
             conf.get('freqai', {}).get('feature_parameters', {}) \
-                .update({'include_timeframes': include_timeframes, **feature_parameters})
+                .update({**feature_parameters, 'include_timeframes': include_timeframes})
 
 
 def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
