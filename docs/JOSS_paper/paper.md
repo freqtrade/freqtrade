@@ -201,11 +201,11 @@ However, `FreqAI` also benefits from `Freqtrade` docker distributions, and can b
 
 We would like to acknowledge various beta testers of `FreqAI`:
 
-- Longlong Yu (@lolongcovas)
-- Richárd Józsa (@richardjozsa)
-- Juha Nykänen (@suikula)
-- Emre Suzen (@aemr3)
-- Salah Lamkadem (@ikonx)
+- Longlong Yu (lolongcovas)
+- Richárd Józsa (richardjozsa)
+- Juha Nykänen (suikula)
+- Emre Suzen (aemr3)
+- Salah Lamkadem (ikonx)
 
 As well as various `Freqtrade` [developers](https://github.com/freqtrade/freqtrade/graphs/contributors) maintaining tangential, yet essential, modules.
 
