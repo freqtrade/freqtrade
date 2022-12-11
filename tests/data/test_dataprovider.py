@@ -469,6 +469,8 @@ def test_dp__add_external_candle(default_conf_usdt):
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
     # New length = 61 + 1
     assert len(df) == 61
+    assert df.iloc[-2]['date'] == Timestamp('2022-01-03 11:00:00+00:00')
+    assert df.iloc[-1]['date'] == Timestamp('2022-01-03 12:00:00+00:00')
 
     # Gap in the data ...
     df4 = generate_test_data(timeframe, 1, '2022-01-05 00:00:00+00:00')
@@ -476,3 +478,13 @@ def test_dp__add_external_candle(default_conf_usdt):
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert res[1] == 36
+    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    # New length = 61 + 1
+    assert len(df) == 61
+
+    # Empty dataframe
+    df4 = generate_test_data(timeframe, 0, '2022-01-05 00:00:00+00:00')
+    res = dp._add_external_candle('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    assert res[0] is False
+    # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
+    assert res[1] == 0
