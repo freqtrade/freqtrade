@@ -2,7 +2,7 @@ import logging
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import Optional, Type
 
 import gym
 import numpy as np
@@ -12,9 +12,21 @@ from gym.utils import seeding
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)
+
+
+class BaseActions(Enum):
+    """
+    Default action space, mostly used for type handling.
+    """
+    Neutral = 0
+    Long_enter = 1
+    Long_exit = 2
+    Short_enter = 3
+    Short_exit = 4
 
 
 class Positions(Enum):
@@ -63,6 +75,16 @@ class BaseEnvironment(gym.Env):
             self.fee = dp._exchange.get_fee(symbol=dp.current_whitelist()[0])  # type: ignore
         else:
             self.fee = 0.0015
+
+        # set here to default 5Ac, but all children envs can override this
+        self.actions: Type[Enum] = BaseActions
+        self.custom_info: dict = {}
+        self.live: bool = False
+        if dp:
+            self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        if not self.live and self.add_state_info:
+            self.add_state_info = False
+            logger.warning("add_state_info is not available in backtesting. Deactivating.")
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -118,6 +140,19 @@ class BaseEnvironment(gym.Env):
         return [seed]
 
     def reset(self):
+        """
+        Reset is called at the beginning of every episode
+        """
+        # custom_info is used for episodic reports and tensorboard logging
+        self.custom_info["Invalid"] = 0
+        self.custom_info["Hold"] = 0
+        self.custom_info["Unknown"] = 0
+        self.custom_info["pnl_factor"] = 0
+        self.custom_info["duration_factor"] = 0
+        self.custom_info["reward_exit"] = 0
+        self.custom_info["reward_hold"] = 0
+        for action in self.actions:
+            self.custom_info[f"{action.name}"] = 0
 
         self._done = False
 
@@ -160,7 +195,7 @@ class BaseEnvironment(gym.Env):
         """
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        if self.add_state_info:
+        if self.add_state_info and self.live:
             features_and_state = DataFrame(np.zeros((len(features_window), 3)),
                                            columns=['current_profit_pct',
                                                     'position',
@@ -270,6 +305,13 @@ class BaseEnvironment(gym.Env):
 
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
+
+    def get_actions(self) -> Type[Enum]:
+        """
+        Used by SubprocVecEnv to get actions from
+        initialized env for tensorboard callback
+        """
+        return self.actions
 
     # Keeping around incase we want to start building more complex environment
     # templates in the future.
