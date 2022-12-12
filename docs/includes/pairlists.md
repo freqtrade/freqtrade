@@ -2,7 +2,7 @@
 
 Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
 
-In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
+In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler), Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
 Additionally, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter), [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
@@ -23,6 +23,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`ProducerPairList`](#producerpairlist)
+* [`RemotePairList`](#remotepairlist)
 * [`AgeFilter`](#agefilter)
 * [`OffsetFilter`](#offsetfilter)
 * [`PerformanceFilter`](#performancefilter)
@@ -172,6 +173,49 @@ You can limit the length of the pairlist with the optional parameter `number_ass
     This pairlist can be combined with all other pairlists and filters for further pairlist reduction, and can also act as an "additional" pairlist, on top of already defined pairs.
     `ProducerPairList` can also be used multiple times in sequence, combining the pairs from multiple producers.
     Obviously in complex such configurations, the Producer may not provide data for all pairs, so the strategy must be fit for this.
+
+#### RemotePairList
+
+It allows the user to fetch a pairlist from a remote server or a locally stored json file within the freqtrade directory, enabling dynamic updates and customization of the trading pairlist.
+
+The RemotePairList is defined in the pairlists section of the configuration settings. It uses the following configuration options:
+
+```json
+"pairlists": [
+    {
+        "method": "RemotePairList",
+        "pairlist_url": "https://example.com/pairlist",
+        "number_assets": 10,
+        "refresh_period": 1800,
+        "keep_pairlist_on_failure": true,
+        "read_timeout": 60,
+        "bearer_token": "my-bearer-token"
+    }
+]
+```
+
+The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
+
+The user is responsible for providing a server or local file that returns a JSON object with the following structure:
+
+```json
+{
+    "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
+    "refresh_period": 1800,
+    "info": "Pairlist updated on 2022-12-12 at 12:12"
+}
+```
+
+The `pairs` property should contain a list of strings with the trading pairs to be used by the bot. The `refresh_period` property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed. The `info` property is also optional and can be used to provide any additional information about the pairlist.
+
+The optional `keep_pairlist_on_failure` specifies whether the previous received pairlist should be used if the remote server is not reachable or returns an error. The default value is true.
+
+The optional `read_timeout` specifies the maximum amount of time (in seconds) to wait for a response from the remote source, The default value is 60.
+
+The optional `bearer_token` will be included in the requests Authorization Header.
+
+!!! Note
+    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false a empty pairlist is returned.
 
 #### AgeFilter
 

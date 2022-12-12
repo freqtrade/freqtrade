@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Tuple
 import requests
 from cachetools import TTLCache
 
+from freqtrade import __version__
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
@@ -43,6 +44,7 @@ class RemotePairList(IPairList):
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._pairlist_url = self._pairlistconfig.get('pairlist_url', '')
         self._read_timeout = self._pairlistconfig.get('read_timeout', 60)
+        self._bearer_token = self._pairlistconfig.get('bearer_token', '')
         self._last_pairlist: List[Any] = list()
 
     @property
@@ -61,9 +63,13 @@ class RemotePairList(IPairList):
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
 
     def fetch_pairlist(self) -> Tuple[List[str], float, str]:
+
         headers = {
-            'User-Agent': 'Freqtrade - Remotepairlist',
+            'User-Agent': 'Freqtrade/' + __version__ + ' Remotepairlist'
         }
+
+        if self._bearer_token:
+            headers['Authorization'] = f'Bearer {self._bearer_token}'
 
         info = "Pairlist"
 
@@ -76,7 +82,7 @@ class RemotePairList(IPairList):
                 if "application/json" in str(content_type):
                     jsonparse = response.json()
                     pairlist = jsonparse['pairs']
-                    info = jsonparse.get('info', '')
+                    info = jsonparse.get('info', '')[:1000]
                 else:
                     raise OperationalException(
                         'Remotepairlist is not of type JSON abort')
@@ -121,7 +127,7 @@ class RemotePairList(IPairList):
                         # Load the JSON data into a dictionary
                         jsonparse = json.load(json_file)
                         pairlist = jsonparse['pairs']
-                        info = jsonparse.get('info', '')
+                        info = jsonparse.get('info', '')[:1000]
                         self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
                         self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
