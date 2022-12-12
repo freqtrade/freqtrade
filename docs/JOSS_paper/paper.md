@@ -7,10 +7,10 @@ tags:
   - chaotic systems
   - time-series forecasting
 authors:
-  - name: Robert A. Caulk Ph.D
+  - name: Robert A. Caulk
     orcid: 0000-0001-5618-8629
     affiliation: 1, 2 
-  - name: Elin Törnquist Ph.D
+  - name: Elin Törnquist
     orcid: 0000-0003-3289-8604
     affiliation: 1, 2
   - name: Matthias Voppichler 
