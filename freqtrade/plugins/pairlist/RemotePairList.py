@@ -6,7 +6,7 @@ Provides pair list fetched from a remote source
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import requests
 from cachetools import TTLCache
@@ -60,7 +60,7 @@ class RemotePairList(IPairList):
         """
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
 
-    def fetch_pairlist(self):
+    def fetch_pairlist(self) -> Tuple[List[str], float, str]:
         headers = {
             'User-Agent': 'Freqtrade - Remotepairlist',
         }
@@ -68,40 +68,35 @@ class RemotePairList(IPairList):
         info = "Pairlist"
 
         try:
-            response = requests.get(self._pairlist_url, headers=headers,
-                                    timeout=self._read_timeout)
-            content_type = response.headers.get('content-type')
-            time_elapsed = response.elapsed.total_seconds()
+            with requests.get(self._pairlist_url, headers=headers,
+                              timeout=self._read_timeout) as response:
+                content_type = response.headers.get('content-type')
+                time_elapsed = response.elapsed.total_seconds()
 
-            rsplit = response.text.split("#")
-
-            if "text/html" in str(content_type):
-                if len(rsplit) > 1:
-                    plist = rsplit[0].strip()
-                    plist = json.loads(plist)
-                    info = rsplit[1].strip()
+                if "application/json" in str(content_type):
+                    jsonparse = response.json()
+                    pairlist = jsonparse['pairs']
+                    info = jsonparse.get('info', '')
                 else:
-                    plist = json.loads(rsplit[0])
-            elif "application/json" in str(content_type):
-                jsonp = response.json()
-                plist = jsonp['pairs']
+                    raise OperationalException(
+                        'Remotepairlist is not of type JSON abort')
 
-                info = jsonp.get('info', '')
-                self._refresh_period = jsonp.get('refresh_period', self._refresh_period)
+                self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
+                self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
         except requests.exceptions.RequestException:
             self.log_once(f'Was not able to fetch pairlist from:'
                           f' {self._pairlist_url}', logger.info)
 
             if self._keep_pairlist_on_failure:
-                plist = str(self._last_pairlist)
+                pairlist = self._last_pairlist
                 self.log_once('Keeping last fetched pairlist', logger.info)
             else:
-                plist = ""
+                pairlist = []
 
             time_elapsed = 0
 
-        return plist, time_elapsed, info
+        return pairlist, time_elapsed, info
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
@@ -111,7 +106,7 @@ class RemotePairList(IPairList):
         """
 
         pairlist = self._pair_cache.get('pairlist')
-        time_elapsed = 0
+        time_elapsed = 0.0
 
         if pairlist:
             # Item found - no refresh necessary
@@ -124,11 +119,11 @@ class RemotePairList(IPairList):
                 if file_path.exists():
                     with open(filename) as json_file:
                         # Load the JSON data into a dictionary
-                        jsonp = json.load(json_file)
-                        pairlist = jsonp['pairs']
-
-                        info = jsonp.get('info', '')
-                        self._refresh_period = jsonp.get('refresh_period', self._refresh_period)
+                        jsonparse = json.load(json_file)
+                        pairlist = jsonparse['pairs']
+                        info = jsonparse.get('info', '')
+                        self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
+                        self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
                 else:
                     raise ValueError(f"{self._pairlist_url} does not exist.")
@@ -139,7 +134,7 @@ class RemotePairList(IPairList):
         pairlist = self.filter_pairlist(pairlist, tickers)
         self._pair_cache['pairlist'] = pairlist.copy()
 
-        if time_elapsed:
+        if time_elapsed != 0.0:
             self.log_once(f'{info} Fetched in {time_elapsed} seconds.', logger.info)
         else:
             self.log_once(f'{info} Fetched Pairlist.', logger.info)
