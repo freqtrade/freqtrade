@@ -49,6 +49,7 @@ class Base5ActionRLEnv(BaseEnvironment):
         self._update_unrealized_total_profit()
         step_reward = self.calculate_reward(action)
         self.total_reward += step_reward
+        self.tensorboard_log(self.actions._member_names_[action])
 
         trade_type = None
         if self.is_tradesignal(action):
