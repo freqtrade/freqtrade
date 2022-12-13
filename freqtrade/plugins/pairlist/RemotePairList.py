@@ -79,8 +79,6 @@ class RemotePairList(IPairList):
             content_type = response.headers.get('content-type')
             time_elapsed = response.elapsed.total_seconds()
 
-            print(response)
-
             if "application/json" in str(content_type):
                 jsonparse = response.json()
                 pairlist = jsonparse['pairs']
