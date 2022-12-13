@@ -74,21 +74,22 @@ class RemotePairList(IPairList):
         info = "Pairlist"
 
         try:
-            with requests.get(self._pairlist_url, headers=headers,
-                              timeout=self._read_timeout) as response:
-                content_type = response.headers.get('content-type')
-                time_elapsed = response.elapsed.total_seconds()
+            response = requests.get(self._pairlist_url, headers=headers,
+                                    timeout=self._read_timeout)
+            content_type = response.headers.get('content-type')
+            time_elapsed = response.elapsed.total_seconds()
 
-                if "application/json" in str(content_type):
-                    jsonparse = response.json()
-                    pairlist = jsonparse['pairs']
-                    info = jsonparse.get('info', '')[:1000]
-                else:
-                    raise OperationalException(
-                        'Remotepairlist is not of type JSON abort')
+            print(response)
 
-                self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
-                self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
+            if "application/json" in str(content_type):
+                jsonparse = response.json()
+                pairlist = jsonparse['pairs']
+                info = jsonparse.get('info', '')
+            else:
+                raise OperationalException('RemotePairList is not of type JSON abort ')
+
+            self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
+            self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
         except requests.exceptions.RequestException:
             self.log_once(f'Was not able to fetch pairlist from:'
@@ -127,7 +128,7 @@ class RemotePairList(IPairList):
                         # Load the JSON data into a dictionary
                         jsonparse = json.load(json_file)
                         pairlist = jsonparse['pairs']
-                        info = jsonparse.get('info', '')[:1000]
+                        info = jsonparse.get('info', '')
                         self._refresh_period = jsonparse.get('refresh_period', self._refresh_period)
                         self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
