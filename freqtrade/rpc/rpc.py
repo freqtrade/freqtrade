@@ -1087,8 +1087,8 @@ class RPC:
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Get the analysed dataframes of each pair in the pairlist.
-        Limit size of dataframe if specified.
-        If candles, only return the candles specified.
+        If specified, only return the most recent `limit` candles for
+        each dataframe.
 
         :param pairlist: A list of pairs to get
         :param limit: If an integer, limits the size of dataframe
