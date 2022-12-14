@@ -5,6 +5,7 @@ from pandas import DataFrame
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
+from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import make_env
@@ -34,17 +35,23 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
+        env_info = {"live": False}
+        if self.data_provider:
+            env_info["live"] = self.data_provider.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+            env_info["fee"] = self.data_provider._exchange \
+                .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore
+
         env_id = "train_env"
         self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1, train_df, prices_train,
                                         self.reward_params, self.CONV_WIDTH, monitor=True,
-                                        config=self.config, dp=self.data_provider) for i
+                                        config=self.config, env_info=env_info) for i
                                         in range(self.max_threads)])
 
         eval_env_id = 'eval_env'
         self.eval_env = SubprocVecEnv([make_env(self.MyRLEnv, eval_env_id, i, 1,
                                                 test_df, prices_test,
                                                 self.reward_params, self.CONV_WIDTH, monitor=True,
-                                                config=self.config, dp=self.data_provider) for i
+                                                config=self.config, env_info=env_info) for i
                                        in range(self.max_threads)])
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),

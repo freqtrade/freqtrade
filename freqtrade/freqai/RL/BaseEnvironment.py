@@ -11,9 +11,6 @@ from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
 
-from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +45,7 @@ class BaseEnvironment(gym.Env):
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1, config: dict = {},
-                 dp: Optional[DataProvider] = None):
+                 env_info: dict = {}):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -59,7 +56,7 @@ class BaseEnvironment(gym.Env):
         :param id: string id of the environment (used in backend for multiprocessed env)
         :param seed: Sets the seed of the environment higher in the gym.Env object
         :param config: Typical user configuration file
-        :param dp: dataprovider from freqtrade
+        :param env_info: Environment info dictionary, used to pass live status, fee, etc.
         """
         self.config = config
         self.rl_config = config['freqai']['rl_config']
@@ -71,17 +68,13 @@ class BaseEnvironment(gym.Env):
         self.compound_trades = config['stake_amount'] == 'unlimited'
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
-        elif dp is not None:
-            self.fee = dp._exchange.get_fee(symbol=dp.current_whitelist()[0])  # type: ignore
         else:
-            self.fee = 0.0015
+            self.fee = env_info.get('fee', 0.0015)
 
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
-        self.live: bool = False
-        if dp:
-            self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        self.live = env_info.get('live', False)
         if not self.live and self.add_state_info:
             self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
@@ -213,7 +206,7 @@ class BaseEnvironment(gym.Env):
         """
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        if self.add_state_info and self.live:
+        if self.add_state_info:
             features_and_state = DataFrame(np.zeros((len(features_window), 3)),
                                            columns=['current_profit_pct',
                                                     'position',
