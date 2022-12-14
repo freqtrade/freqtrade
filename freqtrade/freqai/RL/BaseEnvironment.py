@@ -62,8 +62,6 @@ class BaseEnvironment(gym.Env):
         self.rl_config = config['freqai']['rl_config']
         self.add_state_info = self.rl_config.get('add_state_info', False)
         self.id = id
-        self.seed(seed)
-        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
         self.max_drawdown = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
         self.compound_trades = config['stake_amount'] == 'unlimited'
         if self.config.get('fee', None) is not None:
@@ -78,6 +76,8 @@ class BaseEnvironment(gym.Env):
         if not self.live and self.add_state_info:
             self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
+        self.seed(seed)
+        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
