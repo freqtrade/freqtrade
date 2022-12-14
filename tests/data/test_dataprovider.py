@@ -161,9 +161,9 @@ def test_producer_pairs(mocker, default_conf, ohlcv_history):
     assert dataprovider.get_producer_pairs("bad") == []
 
 
-def test_get_producer_df(mocker, default_conf, ohlcv_history):
+def test_get_producer_df(mocker, default_conf):
     dataprovider = DataProvider(default_conf, None)
-
+    ohlcv_history = generate_test_data('5m', 150)
     pair = 'BTC/USDT'
     timeframe = default_conf['timeframe']
     candle_type = CandleType.SPOT
@@ -414,27 +414,28 @@ def test_dp_send_msg(default_conf):
     assert msg not in dp._msg_queue
 
 
-def test_dp__add_external_candle(default_conf_usdt):
+def test_dp__add_external_df(default_conf_usdt):
     timeframe = '1h'
     default_conf_usdt["timeframe"] = timeframe
     dp = DataProvider(default_conf_usdt, None)
     df = generate_test_data(timeframe, 24, '2022-01-01 00:00:00+00:00')
     last_analyzed = datetime.now(timezone.utc)
 
-    res = dp._add_external_candle('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # Why 1000 ??
     assert res[1] == 1000
 
-    dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    # Hard add dataframe
+    dp._replace_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
     # BTC is not stored yet
-    res = dp._add_external_candle('BTC/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('BTC/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
-    assert len(df) == 24
+    df_res, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    assert len(df_res) == 24
 
     # Add the same dataframe again - dataframe size shall not change.
-    res = dp._add_external_candle('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
@@ -443,7 +444,7 @@ def test_dp__add_external_candle(default_conf_usdt):
     # Add a new day.
     df2 = generate_test_data(timeframe, 24, '2022-01-02 00:00:00+00:00')
 
-    res = dp._add_external_candle('ETH/USDT', df2, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df2, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
@@ -452,7 +453,7 @@ def test_dp__add_external_candle(default_conf_usdt):
     # Add a dataframe with a 12 hour offset - so 12 candles are overlapping, and 12 valid.
     df3 = generate_test_data(timeframe, 24, '2022-01-02 12:00:00+00:00')
 
-    res = dp._add_external_candle('ETH/USDT', df3, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df3, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
@@ -463,7 +464,7 @@ def test_dp__add_external_candle(default_conf_usdt):
 
     # Generate 1 new candle
     df4 = generate_test_data(timeframe, 1, '2022-01-03 12:00:00+00:00')
-    res = dp._add_external_candle('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
     # assert res[0] is True
     # assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
@@ -474,7 +475,7 @@ def test_dp__add_external_candle(default_conf_usdt):
 
     # Gap in the data ...
     df4 = generate_test_data(timeframe, 1, '2022-01-05 00:00:00+00:00')
-    res = dp._add_external_candle('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert res[1] == 36
@@ -484,7 +485,7 @@ def test_dp__add_external_candle(default_conf_usdt):
 
     # Empty dataframe
     df4 = generate_test_data(timeframe, 0, '2022-01-05 00:00:00+00:00')
-    res = dp._add_external_candle('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert res[1] == 0

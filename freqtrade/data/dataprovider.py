@@ -186,7 +186,7 @@ class DataProvider:
         if len(dataframe) >= FULL_DATAFRAME_THRESHOLD:
             # This is likely a full dataframe
             # Add the dataframe to the dataprovider
-            self._add_external_df(
+            self._replace_external_df(
                 pair,
                 dataframe,
                 last_analyzed=last_analyzed,
@@ -228,7 +228,7 @@ class DataProvider:
             appended_df = append_candles_to_dataframe(existing_df1, dataframe)
 
         # Everything is good, we appended
-        self._add_external_df(
+        self._replace_external_df(
                     pair,
                     appended_df,
                     last_analyzed=last_analyzed,
