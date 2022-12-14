@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypedDict, Union
 import websockets
 from pydantic import ValidationError
 
+from freqtrade.constants import FULL_DATAFRAME_THRESHOLD
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
 from freqtrade.misc import remove_entry_exit_signals
@@ -34,9 +35,6 @@ class Producer(TypedDict):
     port: int
     secure: bool
     ws_token: str
-
-
-FULL_DATAFRAME_THRESHOLD = 100
 
 
 logger = logging.getLogger(__name__)
@@ -379,51 +377,34 @@ class ExternalMessageConsumer:
 
         logger.debug(f"Received {len(df)} candle(s) for {key}")
 
-        if len(df) >= FULL_DATAFRAME_THRESHOLD:
-            # This is likely a full dataframe
-            # Add the dataframe to the dataprovider
-            self._dp._add_external_df(
-                pair,
-                df,
-                last_analyzed=la,
-                timeframe=timeframe,
-                candle_type=candle_type,
-                producer_name=producer_name
+        did_append, n_missing = self._dp._add_external_df(
+            pair,
+            df,
+            last_analyzed=la,
+            timeframe=timeframe,
+            candle_type=candle_type,
+            producer_name=producer_name
             )
 
-        elif len(df) < FULL_DATAFRAME_THRESHOLD:
-            # This is likely n single candles
-            # Have dataprovider append it to
-            # the full datafame. If it can't,
-            # request the missing candles
-            did_append, n_missing = self._dp._add_external_candle(
-                pair,
-                df,
-                last_analyzed=la,
-                timeframe=timeframe,
-                candle_type=candle_type,
-                producer_name=producer_name
-            )
+        if not did_append:
+            # We want an overlap in candles incase some data has changed
+            n_missing += 1
+            # Set to None for all candles if we missed a full df's worth of candles
+            n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500
 
-            if not did_append:
-                # We want an overlap in candles incase some data has changed
-                n_missing += 1
-                # Set to None for all candles if we missed a full df's worth of candles
-                n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500
+            logger.warning(f"Holes in data or no existing df, requesting {n_missing} candles "
+                           f"for {key} from `{producer_name}`")
 
-                logger.warning("Holes in data or no existing df, requesting {n_missing} candles "
-                               f"for {key} from `{producer_name}`")
-
-                self.send_producer_request(
-                    producer_name,
-                    WSAnalyzedDFRequest(
-                        data={
-                            "limit": n_missing,
-                            "pair": pair
-                        }
-                    )
+            self.send_producer_request(
+                producer_name,
+                WSAnalyzedDFRequest(
+                    data={
+                        "limit": n_missing,
+                        "pair": pair
+                    }
                 )
-                return
+            )
+            return
 
         logger.debug(
             f"Consumed message from `{producer_name}` "

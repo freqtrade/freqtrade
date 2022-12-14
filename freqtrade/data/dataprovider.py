@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame, to_timedelta
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
+from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
+                                 PairWithTimeframe)
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
@@ -132,7 +133,7 @@ class DataProvider:
                         'data': pair_key,
                     })
 
-    def _add_external_df(
+    def _replace_external_df(
         self,
         pair: str,
         dataframe: DataFrame,
@@ -158,7 +159,7 @@ class DataProvider:
         self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
         logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
-    def _add_external_candle(
+    def _add_external_df(
         self,
         pair: str,
         dataframe: DataFrame,
@@ -181,6 +182,19 @@ class DataProvider:
         if dataframe.empty:
             # The incoming dataframe must have at least 1 candle
             return (False, 0)
+
+        if len(dataframe) >= FULL_DATAFRAME_THRESHOLD:
+            # This is likely a full dataframe
+            # Add the dataframe to the dataprovider
+            self._add_external_df(
+                pair,
+                dataframe,
+                last_analyzed=last_analyzed,
+                timeframe=timeframe,
+                candle_type=candle_type,
+                producer_name=producer_name
+            )
+            return (True, 0)
 
         if (producer_name not in self.__producer_pairs_df
            or pair_key not in self.__producer_pairs_df[producer_name]):
@@ -214,7 +228,14 @@ class DataProvider:
             appended_df = append_candles_to_dataframe(existing_df1, dataframe)
 
         # Everything is good, we appended
-        self.__producer_pairs_df[producer_name][pair_key] = appended_df, last_analyzed
+        self._add_external_df(
+                    pair,
+                    appended_df,
+                    last_analyzed=last_analyzed,
+                    timeframe=timeframe,
+                    candle_type=candle_type,
+                    producer_name=producer_name
+                    )
         return (True, 0)
 
     def get_producer_df(
