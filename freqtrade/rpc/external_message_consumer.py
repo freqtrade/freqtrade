@@ -411,8 +411,7 @@ class ExternalMessageConsumer:
                 # Set to None for all candles if we missed a full df's worth of candles
                 n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500
 
-                logger.warning("Holes in data or no existing df, "
-                               f"requesting {n_missing} candles "
+                logger.warning("Holes in data or no existing df, requesting {n_missing} candles "
                                f"for {key} from `{producer_name}`")
 
                 self.send_producer_request(

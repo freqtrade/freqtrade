@@ -83,6 +83,7 @@ def test_emc_init(patched_emc):
 def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
     producer_name = test_producer['name']
+    invalid_msg = r"Invalid message .+"
 
     caplog.set_level(logging.DEBUG)
 
@@ -119,7 +120,8 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     malformed_message = {"type": "whitelist", "data": {"pair": "BTC/USDT"}}
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
 
     malformed_message = {
         "type": "analyzed_df",
@@ -132,13 +134,30 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
+
+    # Empty dataframe
+    malformed_message = {
+            "type": "analyzed_df",
+            "data": {
+                "key": ("BTC/USDT", "5m", "spot"),
+                "df": ohlcv_history.loc[ohlcv_history['open'] < 0],
+                "la": datetime.now(timezone.utc)
+                }
+            }
+    patched_emc.handle_producer_message(test_producer, malformed_message)
+
+    assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
+    assert not log_has_re(invalid_msg, caplog)
+    assert log_has_re(r"Received Empty Dataframe for.+", caplog)
 
     caplog.clear()
     malformed_message = {"some": "stuff"}
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
 
     caplog.clear()
     malformed_message = {"type": "whitelist", "data": None}
