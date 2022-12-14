@@ -24,6 +24,7 @@ from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv
 from freqtrade.freqai.RL.BaseEnvironment import BaseActions, Positions
 from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
 from freqtrade.persistence import Trade
+from freqtrade.data.dataprovider import DataProvider
 
 
 logger = logging.getLogger(__name__)
@@ -384,7 +385,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
              reward_params: Dict[str, int], window_size: int, monitor: bool = False,
-             config: Dict[str, Any] = {}) -> Callable:
+             config: Dict[str, Any] = {}, dp: DataProvider = None) -> Callable:
     """
     Utility function for multiprocessed env.
 
@@ -398,7 +399,8 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
     def _init() -> gym.Env:
 
         env = MyRLEnv(df=train_df, prices=price, window_size=window_size,
-                      reward_kwargs=reward_params, id=env_id, seed=seed + rank, config=config)
+                      reward_kwargs=reward_params, id=env_id, seed=seed + rank,
+                      config=config, dp=dp)
         if monitor:
             env = Monitor(env)
         return env
