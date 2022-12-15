@@ -56,7 +56,8 @@ class BaseEnvironment(gym.Env):
         :param id: string id of the environment (used in backend for multiprocessed env)
         :param seed: Sets the seed of the environment higher in the gym.Env object
         :param config: Typical user configuration file
-        :param env_info: Environment info dictionary, used to pass live status, fee, etc.
+        :param live: Whether or not this environment is active in dry/live/backtesting
+        :param fee: The fee to use for environmental interactions.
         """
         self.config = config
         self.rl_config = config['freqai']['rl_config']

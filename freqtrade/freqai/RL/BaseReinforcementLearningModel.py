@@ -402,6 +402,7 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
     :param num_env: (int) the number of environment you wish to have in subprocesses
     :param seed: (int) the inital seed for RNG
     :param rank: (int) index of the subprocess
+    :param env_info: (dict) all required arguments to instantiate the environment.
     :return: (Callable)
     """
 
