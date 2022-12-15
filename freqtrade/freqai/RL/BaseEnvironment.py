@@ -44,8 +44,8 @@ class BaseEnvironment(gym.Env):
 
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1, config: dict = {},
-                 env_info: dict = {}):
+                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
+                 fee: float = 0.0015):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -67,12 +67,12 @@ class BaseEnvironment(gym.Env):
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
         else:
-            self.fee = env_info.get('fee', 0.0015)
+            self.fee = fee
 
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
-        self.live = env_info.get('live', False)
+        self.live = live
         if not self.live and self.add_state_info:
             self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
