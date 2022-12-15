@@ -11,9 +11,6 @@ from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
 
-from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +44,8 @@ class BaseEnvironment(gym.Env):
 
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1, config: dict = {},
-                 dp: Optional[DataProvider] = None):
+                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
+                 fee: float = 0.0015):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -59,32 +56,29 @@ class BaseEnvironment(gym.Env):
         :param id: string id of the environment (used in backend for multiprocessed env)
         :param seed: Sets the seed of the environment higher in the gym.Env object
         :param config: Typical user configuration file
-        :param dp: dataprovider from freqtrade
+        :param live: Whether or not this environment is active in dry/live/backtesting
+        :param fee: The fee to use for environmental interactions.
         """
         self.config = config
         self.rl_config = config['freqai']['rl_config']
         self.add_state_info = self.rl_config.get('add_state_info', False)
         self.id = id
-        self.seed(seed)
-        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
         self.max_drawdown = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
         self.compound_trades = config['stake_amount'] == 'unlimited'
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
-        elif dp is not None:
-            self.fee = dp._exchange.get_fee(symbol=dp.current_whitelist()[0])  # type: ignore
         else:
-            self.fee = 0.0015
+            self.fee = fee
 
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
-        self.live: bool = False
-        if dp:
-            self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        self.live = live
         if not self.live and self.add_state_info:
             self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
+        self.seed(seed)
+        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -213,7 +207,7 @@ class BaseEnvironment(gym.Env):
         """
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        if self.add_state_info and self.live:
+        if self.add_state_info:
             features_and_state = DataFrame(np.zeros((len(features_window), 3)),
                                            columns=['current_profit_pct',
                                                     'position',

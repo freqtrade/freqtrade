@@ -143,24 +143,34 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
+        env_info = self.pack_env_dict()
+
         self.train_env = self.MyRLEnv(df=train_df,
                                       prices=prices_train,
-                                      window_size=self.CONV_WIDTH,
-                                      reward_kwargs=self.reward_params,
-                                      config=self.config,
-                                      dp=self.data_provider)
+                                      **env_info)
         self.eval_env = Monitor(self.MyRLEnv(df=test_df,
                                              prices=prices_test,
-                                             window_size=self.CONV_WIDTH,
-                                             reward_kwargs=self.reward_params,
-                                             config=self.config,
-                                             dp=self.data_provider))
+                                             **env_info))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
         actions = self.train_env.get_actions()
         self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
+
+    def pack_env_dict(self) -> Dict[str, Any]:
+        """
+        Create dictionary of environment arguments
+        """
+        env_info = {"window_size": self.CONV_WIDTH,
+                    "reward_kwargs": self.reward_params,
+                    "config": self.config,
+                    "live": self.live}
+        if self.data_provider:
+            env_info["fee"] = self.data_provider._exchange \
+                .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore
+
+        return env_info
 
     @abstractmethod
     def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
@@ -383,8 +393,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
 def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
-             reward_params: Dict[str, int], window_size: int, monitor: bool = False,
-             config: Dict[str, Any] = {}) -> Callable:
+             monitor: bool = False,
+             env_info: Dict[str, Any] = {}) -> Callable:
     """
     Utility function for multiprocessed env.
 
@@ -392,13 +402,14 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
     :param num_env: (int) the number of environment you wish to have in subprocesses
     :param seed: (int) the inital seed for RNG
     :param rank: (int) index of the subprocess
+    :param env_info: (dict) all required arguments to instantiate the environment.
     :return: (Callable)
     """
 
     def _init() -> gym.Env:
 
-        env = MyRLEnv(df=train_df, prices=price, window_size=window_size,
-                      reward_kwargs=reward_params, id=env_id, seed=seed + rank, config=config)
+        env = MyRLEnv(df=train_df, prices=price, id=env_id, seed=seed + rank,
+                      **env_info)
         if monitor:
             env = Monitor(env)
         return env

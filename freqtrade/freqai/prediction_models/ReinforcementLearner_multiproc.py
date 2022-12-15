@@ -34,17 +34,20 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
+        env_info = self.pack_env_dict()
+
         env_id = "train_env"
-        self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1, train_df, prices_train,
-                                        self.reward_params, self.CONV_WIDTH, monitor=True,
-                                        config=self.config) for i
+        self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1,
+                                        train_df, prices_train,
+                                        monitor=True,
+                                        env_info=env_info) for i
                                         in range(self.max_threads)])
 
         eval_env_id = 'eval_env'
         self.eval_env = SubprocVecEnv([make_env(self.MyRLEnv, eval_env_id, i, 1,
                                                 test_df, prices_test,
-                                                self.reward_params, self.CONV_WIDTH, monitor=True,
-                                                config=self.config) for i
+                                                monitor=True,
+                                                env_info=env_info) for i
                                        in range(self.max_threads)])
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
