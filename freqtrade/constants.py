@@ -608,9 +608,8 @@ CONF_SCHEMA = {
                 "backtest_period_days",
                 "identifier",
                 "feature_parameters",
-                "data_split_parameters",
-                "model_training_parameters"
-                ]
+                "data_split_parameters"
+            ]
         },
     },
 }

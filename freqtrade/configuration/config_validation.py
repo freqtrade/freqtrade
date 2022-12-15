@@ -355,6 +355,13 @@ def _validate_freqai_include_timeframes(conf: Dict[str, Any]) -> None:
                 f"Main timeframe of {main_tf} must be smaller or equal to FreqAI "
                 f"`include_timeframes`.Offending include-timeframes: {', '.join(offending_lines)}")
 
+        # Ensure that the base timeframe is included in the include_timeframes list
+        if main_tf not in freqai_include_timeframes:
+            feature_parameters = conf.get('freqai', {}).get('feature_parameters', {})
+            include_timeframes = [main_tf] + freqai_include_timeframes
+            conf.get('freqai', {}).get('feature_parameters', {}) \
+                .update({**feature_parameters, 'include_timeframes': include_timeframes})
+
 
 def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
     if conf.get('runmode', RunMode.OTHER) == RunMode.BACKTEST:

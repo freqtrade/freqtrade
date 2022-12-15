@@ -42,19 +42,18 @@ class TensorboardCallback(BaseCallback):
         )
 
     def _on_step(self) -> bool:
-        custom_info = self.training_env.get_attr("custom_info")[0]
-        self.logger.record("_state/position", self.locals["infos"][0]["position"])
-        self.logger.record("_state/trade_duration", self.locals["infos"][0]["trade_duration"])
-        self.logger.record("_state/current_profit_pct", self.locals["infos"]
-                           [0]["current_profit_pct"])
-        self.logger.record("_reward/total_profit", self.locals["infos"][0]["total_profit"])
-        self.logger.record("_reward/total_reward", self.locals["infos"][0]["total_reward"])
-        self.logger.record_mean("_reward/mean_trade_duration", self.locals["infos"]
-                                [0]["trade_duration"])
-        self.logger.record("_actions/action", self.locals["infos"][0]["action"])
-        self.logger.record("_actions/_Invalid", custom_info["Invalid"])
-        self.logger.record("_actions/_Unknown", custom_info["Unknown"])
-        self.logger.record("_actions/Hold", custom_info["Hold"])
-        for action in self.actions:
-            self.logger.record(f"_actions/{action.name}", custom_info[action.name])
+
+        local_info = self.locals["infos"][0]
+        tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
+
+        for info in local_info:
+            if info not in ["episode", "terminal_observation"]:
+                self.logger.record(f"_info/{info}", local_info[info])
+
+        for info in tensorboard_metrics:
+            if info in [action.name for action in self.actions]:
+                self.logger.record(f"_actions/{info}", tensorboard_metrics[info])
+            else:
+                self.logger.record(f"_custom/{info}", tensorboard_metrics[info])
+
         return True

@@ -2,7 +2,7 @@ import logging
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional, Type
+from typing import Optional, Type, Union
 
 import gym
 import numpy as np
@@ -12,6 +12,7 @@ from gym.utils import seeding
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,13 @@ class BaseEnvironment(gym.Env):
 
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
-        self.custom_info: dict = {}
+        self.tensorboard_metrics: dict = {}
+        self.live: bool = False
+        if dp:
+            self.live = dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        if not self.live and self.add_state_info:
+            self.add_state_info = False
+            logger.warning("add_state_info is not available in backtesting. Deactivating.")
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -132,20 +139,38 @@ class BaseEnvironment(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def tensorboard_log(self, metric: str, value: Union[int, float] = 1, inc: bool = True):
+        """
+        Function builds the tensorboard_metrics dictionary
+        to be parsed by the TensorboardCallback. This
+        function is designed for tracking incremented objects,
+        events, actions inside the training environment.
+        For example, a user can call this to track the
+        frequency of occurence of an `is_valid` call in
+        their `calculate_reward()`:
+
+        def calculate_reward(self, action: int) -> float:
+            if not self._is_valid(action):
+                self.tensorboard_log("is_valid")
+                return -2
+
+        :param metric: metric to be tracked and incremented
+        :param value: value to increment `metric` by
+        :param inc: sets whether the `value` is incremented or not
+        """
+        if not inc or metric not in self.tensorboard_metrics:
+            self.tensorboard_metrics[metric] = value
+        else:
+            self.tensorboard_metrics[metric] += value
+
+    def reset_tensorboard_log(self):
+        self.tensorboard_metrics = {}
+
     def reset(self):
         """
         Reset is called at the beginning of every episode
         """
-        # custom_info is used for episodic reports and tensorboard logging
-        self.custom_info["Invalid"] = 0
-        self.custom_info["Hold"] = 0
-        self.custom_info["Unknown"] = 0
-        self.custom_info["pnl_factor"] = 0
-        self.custom_info["duration_factor"] = 0
-        self.custom_info["reward_exit"] = 0
-        self.custom_info["reward_hold"] = 0
-        for action in self.actions:
-            self.custom_info[f"{action.name}"] = 0
+        self.reset_tensorboard_log()
 
         self._done = False
 
@@ -188,7 +213,7 @@ class BaseEnvironment(gym.Env):
         """
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        if self.add_state_info:
+        if self.add_state_info and self.live:
             features_and_state = DataFrame(np.zeros((len(features_window), 3)),
                                            columns=['current_profit_pct',
                                                     'position',
