@@ -27,16 +27,17 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32', [
-    ('LightGBMRegressor', True, False, True),
-    ('XGBoostRegressor', False, True, False),
-    ('XGBoostRFRegressor', False, False, False),
-    ('CatboostRegressor', False, False, False),
-    ('ReinforcementLearner', False, True, False),
-    ('ReinforcementLearner_multiproc', False, False, False),
-    ('ReinforcementLearner_test_4ac', False, False, False)
+@pytest.mark.parametrize('model, pca, dbscan, float32, shuffle', [
+    ('LightGBMRegressor', True, False, True, False),
+    ('XGBoostRegressor', False, True, False, False),
+    ('XGBoostRFRegressor', False, False, False, False),
+    ('CatboostRegressor', False, False, False, True),
+    ('ReinforcementLearner', False, True, False, False),
+    ('ReinforcementLearner_multiproc', False, False, False, False),
+    ('ReinforcementLearner_test_4ac', False, False, False, False)
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
+                                               dbscan, float32, shuffle):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -50,6 +51,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
     freqai_conf.update({"reduce_df_footprint": float32})
+    freqai_conf['freqai']['feature_parameters'].update({"shuffle_after_split": shuffle})
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
