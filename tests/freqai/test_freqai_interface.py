@@ -41,7 +41,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac() and 'Reinforcement' in model:
+    if is_mac() and not is_arm() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
     model_save_ext = 'joblib'
