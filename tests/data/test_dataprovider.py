@@ -144,7 +144,7 @@ def test_available_pairs(mocker, default_conf, ohlcv_history):
     assert dp.available_pairs == [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe), ]
 
 
-def test_producer_pairs(mocker, default_conf, ohlcv_history):
+def test_producer_pairs(default_conf):
     dataprovider = DataProvider(default_conf, None)
 
     producer = "default"
@@ -161,7 +161,7 @@ def test_producer_pairs(mocker, default_conf, ohlcv_history):
     assert dataprovider.get_producer_pairs("bad") == []
 
 
-def test_get_producer_df(mocker, default_conf):
+def test_get_producer_df(default_conf):
     dataprovider = DataProvider(default_conf, None)
     ohlcv_history = generate_test_data('5m', 150)
     pair = 'BTC/USDT'
@@ -221,7 +221,7 @@ def test_emit_df(mocker, default_conf, ohlcv_history):
     assert send_mock.call_count == 0
 
 
-def test_refresh(mocker, default_conf, ohlcv_history):
+def test_refresh(mocker, default_conf):
     refresh_mock = MagicMock()
     mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
 
