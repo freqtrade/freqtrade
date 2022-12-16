@@ -79,9 +79,7 @@
             "test_size": 0.33,
             "random_state": 1
         },
-        "model_training_parameters": {
-            "n_estimators": 1000
-        }
+        "model_training_parameters": {}
     },
     "bot_name": "",
     "force_entry_enable": true,

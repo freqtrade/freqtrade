@@ -61,6 +61,7 @@ USERPATH_FREQAIMODELS = 'freqaimodels'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
+FULL_DATAFRAME_THRESHOLD = 100
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
@@ -608,9 +609,8 @@ CONF_SCHEMA = {
                 "backtest_period_days",
                 "identifier",
                 "feature_parameters",
-                "data_split_parameters",
-                "model_training_parameters"
-                ]
+                "data_split_parameters"
+            ]
         },
     },
 }

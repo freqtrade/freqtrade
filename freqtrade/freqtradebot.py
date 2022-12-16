@@ -155,6 +155,8 @@ class FreqtradeBot(LoggingMixin):
                 self.cancel_all_open_orders()
 
             self.check_for_open_trades()
+        except Exception as e:
+            logger.warning(f'Exception during cleanup: {e.__class__.__name__} {e}')
 
         finally:
             self.strategy.ft_bot_cleanup()
@@ -162,8 +164,13 @@ class FreqtradeBot(LoggingMixin):
         self.rpc.cleanup()
         if self.emc:
             self.emc.shutdown()
-        Trade.commit()
         self.exchange.close()
+        try:
+            Trade.commit()
+        except Exception:
+            # Exeptions here will be happening if the db disappeared.
+            # At which point we can no longer commit anyway.
+            pass
 
     def startup(self) -> None:
         """

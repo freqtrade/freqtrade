@@ -88,7 +88,7 @@ jobs:
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
@@ -410,7 +410,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.6.1
+      uses: pypa/gh-action-pypi-publish@v1.6.4
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -418,7 +418,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.6.1
+      uses: pypa/gh-action-pypi-publish@v1.6.4
       if: (github.event_name == 'release')
       with:
         user: __token__

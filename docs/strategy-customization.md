@@ -363,9 +363,9 @@ class AwesomeStrategy(IStrategy):
     timeframe = "1d"
     timeframe_mins = timeframe_to_minutes(timeframe)
     minimal_roi = {
-        "0": 0.05,                             # 5% for the first 3 candles
-        str(timeframe_mins * 3)): 0.02,  # 2% after 3 candles
-        str(timeframe_mins * 6)): 0.01,  # 1% After 6 candles
+        "0": 0.05,                      # 5% for the first 3 candles
+        str(timeframe_mins * 3): 0.02,  # 2% after 3 candles
+        str(timeframe_mins * 6): 0.01,  # 1% After 6 candles
     }
 ```
 
