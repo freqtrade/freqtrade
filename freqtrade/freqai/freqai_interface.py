@@ -133,6 +133,7 @@ class IFreqaiModel(ABC):
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
         self.data_provider = strategy.dp
+        self.can_short = strategy.can_short
 
         if self.live:
             self.inference_timer('start')
