@@ -34,6 +34,7 @@ def is_mac() -> bool:
     ('CatboostRegressor', False, False, False),
     ('ReinforcementLearner', False, True, False),
     ('ReinforcementLearner_multiproc', False, False, False),
+    ('ReinforcementLearner_test_3ac', False, False, False),
     ('ReinforcementLearner_test_4ac', False, False, False)
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
@@ -58,7 +59,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'test_4ac' in model:
+    if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
     if 'ReinforcementLearner' in model:
@@ -68,7 +69,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'test_4ac' in model:
+    if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
