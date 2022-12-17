@@ -78,7 +78,7 @@ Forecasting chaotic time-series based systems, such as equity/cryptocurrency mar
 
 ### Citing FreqAI
 
-FreqAI is published in the Journal of Open Source Software [link](https://joss.theoj.org/papers/10.21105/joss.04864). If you find FreqAI useful in your research, please use the following citation:
+FreqAI is [published in the Journal of Open Source Software](https://joss.theoj.org/papers/10.21105/joss.04864). If you find FreqAI useful in your research, please use the following citation:
 
 ```bibtex
 @article{Caulk2022, 
