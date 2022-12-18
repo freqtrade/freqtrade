@@ -202,7 +202,7 @@ The user is responsible for providing a server or local file that returns a JSON
 {
     "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
     "refresh_period": 1800,
-    "info": "Pairlist updated on 2022-12-12 at 12:12"
+    "info": "Pairlist updated on 2022-12-12 at 12:12" // Maximum Length: 256 Characters, Charset: Alphanumeric + "+-.,%:"
 }
 ```
 
