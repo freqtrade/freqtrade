@@ -13,6 +13,7 @@ nav:
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Strategy Callbacks: strategy-callbacks.md
+    - Trade Object: trade-object.md
     - Stoploss: stoploss.md
     - Plugins: plugins.md
     - Start the bot: bot-usage.md
