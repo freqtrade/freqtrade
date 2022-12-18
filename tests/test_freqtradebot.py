@@ -2378,7 +2378,7 @@ def test_close_trade(
     trade.is_short = is_short
     assert trade
 
-    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], trade.enter_side)
+    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], trade.entry_side)
     trade.update_trade(oobj)
     oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], trade.exit_side)
     trade.update_trade(oobj)

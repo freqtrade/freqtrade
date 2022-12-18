@@ -398,12 +398,6 @@ class LocalTrade():
         return self.close_date.replace(tzinfo=timezone.utc)
 
     @property
-    def enter_side(self) -> str:
-        """ DEPRECATED, please use entry_side instead"""
-        # TODO: Please remove me after 2022.5
-        return self.entry_side
-
-    @property
     def entry_side(self) -> str:
         if self.is_short:
             return "sell"
