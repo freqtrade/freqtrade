@@ -63,6 +63,29 @@ class RemotePairList(IPairList):
         """
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
 
+    def process_json(self, jsonparse) -> Tuple[List[str], str]:
+
+        pairlist = jsonparse.get('pairs', [])
+        remote_info = jsonparse.get('info', '')[:256].strip()
+        remote_refresh_period = jsonparse.get('refresh_period', self._refresh_period)
+
+        info = "".join(char if char.isalnum() or
+                       char in " +-.,%:" else "-" for char in remote_info)
+
+        if not self._init_done:
+            if self._refresh_period < remote_refresh_period:
+                self.log_once(f'Refresh Period has been increased from {self._refresh_period}'
+                              f' to {remote_refresh_period} from Remote.', logger.info)
+
+                self._refresh_period = remote_refresh_period
+                self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
+            else:
+                self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
+
+            self._init_done = True
+
+        return pairlist, info
+
     def return_last_pairlist(self) -> List[str]:
         if self._keep_pairlist_on_failure:
             pairlist = self._last_pairlist
@@ -91,27 +114,12 @@ class RemotePairList(IPairList):
 
             if "application/json" in str(content_type):
                 jsonparse = response.json()
-                pairlist = jsonparse.get('pairs', [])
-                remote_info = jsonparse.get('info', '')[:256].strip()
-                remote_refresh_period = jsonparse.get('refresh_period', self._refresh_period)
-
-                info = "".join(char if char.isalnum() or
-                               char in " +-.,%:" else "-" for char in remote_info)
-
-                if not self._init_done and self._refresh_period < remote_refresh_period:
-                    self.log_once(f'Refresh Period has been increased from {self._refresh_period}'
-                                  f' to {remote_refresh_period} from Remote.', logger.info)
-
-                    self._refresh_period = remote_refresh_period
-                    self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
-
-                self._init_done = True
+                pairlist, info = self.process_json(jsonparse)
             else:
                 if self._init_done:
                     self.log_once(f'Error: RemotePairList is not of type JSON: '
                                   f' {self._pairlist_url}', logger.info)
                     pairlist = self.return_last_pairlist()
-
                 else:
                     raise OperationalException('RemotePairList is not of type JSON abort ')
 
@@ -132,7 +140,7 @@ class RemotePairList(IPairList):
         :return: List of pairs
         """
 
-        if self._init_done and self._pair_cache:
+        if self._init_done and self._pair_cache is not None:
             pairlist = self._pair_cache.get('pairlist')
         else:
             pairlist = []
@@ -142,7 +150,6 @@ class RemotePairList(IPairList):
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
-            self._init_done = True
         else:
             if self._pairlist_url.startswith("file:///"):
                 filename = self._pairlist_url.split("file:///", 1)[1]
@@ -152,14 +159,7 @@ class RemotePairList(IPairList):
                     with open(filename) as json_file:
                         # Load the JSON data into a dictionary
                         jsonparse = json.load(json_file)
-                        pairlist = jsonparse['pairs']
-                        info = jsonparse.get('info', '')
-
-                        if not self._init_done:
-                            self._refresh_period = jsonparse.get('refresh_period',
-                                                                 self._refresh_period)
-                            self._pair_cache = TTLCache(maxsize=1, ttl=self._refresh_period)
-                        self._init_done = True
+                        pairlist, info = self.process_json(jsonparse)
                 else:
                     raise ValueError(f"{self._pairlist_url} does not exist.")
             else:
@@ -171,7 +171,7 @@ class RemotePairList(IPairList):
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
-        if self._pair_cache:
+        if self._pair_cache is not None:
             self._pair_cache['pairlist'] = pairlist.copy()
 
         if time_elapsed != 0.0:
