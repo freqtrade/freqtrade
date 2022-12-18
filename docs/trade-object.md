@@ -2,39 +2,39 @@
 
 ## Trade
 
-A position freqtrade enters is stored in a Trade object - which is persisted to the database.
-It's a core concept of Freqtrade - and something you'll come across in many sections of the documentation, which will most likely point you to this location.
+A position freqtrade enters is stored in a `Trade` object - which is persisted to the database.
+It's a core concept of freqtrade - and something you'll come across in many sections of the documentation, which will most likely point you to this location.
 
-It will be passed to the strategy in many [strategy callbacks](strategy-callbacks.md). The object passed to the strategy cannot be modified.
+It will be passed to the strategy in many [strategy callbacks](strategy-callbacks.md). The object passed to the strategy cannot be modified directly. Indirect modifications may occur based on callback results.
 
-## Available attributes
+## Trade - Available attributes
 
 The following attributes / properties are available for each individual trade - and can be used with `trade.<property>` (e.g. `trade.pair`).
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
-| `pair`| string | Pair of this trade
-| `is_open`| boolean | Is the trade currently open, or has it been concluded
-| `open_rate`| float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments)
-| `close_rate`| float | Close rate - only set when is_open = False
-| `stake_amount`| float | Amount in Stake (or Quote) currency.
-| `amount`| float | Amount in Asset / Base currency that is currently owned.
-| `open_date`| datetime | Timestamp when trade was opened **use `open_date_utc` instead**
-| `open_date_utc`| datetime | Timestamp when trade was opened - in UTC
-| `close_date`| datetime | Timestamp when trade was closed **use `close_date_utc` instead**
-| `close_date_utc`| datetime | Timestamp when trade was closed - in UTC
-| `close_profit`| float | Relative profit at the time of trade closure. `0.01` == 1%
-| `close_profit_abs`| float | Absolute profit (in stake currency) at the time of trade closure.
-| `leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets.
-| `enter_tag`| string | Tag provided on entry via the `enter_tag` column in the dataframe
-| `is_short` | boolean | True for short trades, False otherwise
-| `orders` | Order[] | List of order objects attached to this trade.
-| `date_last_filled_utc` | datetime | Time of the last filled order
-| `entry_side` | "buy" / "sell" | Order Side the trade was entered
-| `exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction.
-| `trade_direction` | "long" / "short" | Trade direction in text - long or short.
-| `nr_of_successful_entries` | int | Number of successful (filled) entry orders
-| `nr_of_successful_exits` | int | Number of successful (filled) exit orders
+`pair`| string | Pair of this trade
+`is_open`| boolean | Is the trade currently open, or has it been concluded
+`open_rate`| float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments)
+`close_rate`| float | Close rate - only set when is_open = False
+`stake_amount`| float | Amount in Stake (or Quote) currency.
+`amount`| float | Amount in Asset / Base currency that is currently owned.
+`open_date`| datetime | Timestamp when trade was opened **use `open_date_utc` instead**
+`open_date_utc`| datetime | Timestamp when trade was opened - in UTC
+`close_date`| datetime | Timestamp when trade was closed **use `close_date_utc` instead**
+`close_date_utc`| datetime | Timestamp when trade was closed - in UTC
+`close_profit`| float | Relative profit at the time of trade closure. `0.01` == 1%
+`close_profit_abs`| float | Absolute profit (in stake currency) at the time of trade closure.
+`leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets.
+`enter_tag`| string | Tag provided on entry via the `enter_tag` column in the dataframe
+`is_short` | boolean | True for short trades, False otherwise
+`orders` | Order[] | List of order objects attached to this trade (includes both filled and cancelled orders)
+`date_last_filled_utc` | datetime | Time of the last filled order
+`entry_side` | "buy" / "sell" | Order Side the trade was entered
+`exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction.
+`trade_direction` | "long" / "short" | Trade direction in text - long or short.
+`nr_of_successful_entries` | int | Number of successful (filled) entry orders
+`nr_of_successful_exits` | int | Number of successful (filled) exit orders
 
 ## Class methods
 
@@ -123,10 +123,26 @@ Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of
 An `Order` object represents an order on the exchange (or a simulated order in dry-run mode).
 An `Order` object will always be tied to it's corresponding [`Trade`](#trade-object), and only really makes sense in the context of a trade.
 
-## Available information
+### Order - Available attributes
 
-TODO: write me
+an Order object is typically attached to a trade.
+Most properties here can be None as they are dependant on the exchange response.
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
-TODO: write me
+`trade` | Trade | Trade object this order is attached to
+`ft_pair` | string | Pair this order is for
+`ft_is_open` | boolean | is the order filled?
+`order_type` | string | Order type as defined on the exchange - usually market, limit or stoploss
+`status` | string | Status as defined by ccxt. Usually open, closed, expired or canceled
+`side` | string | Buy or Sell
+`price` | float | Price the order was placed at
+`average` | float | Average price the order filled at
+`amount` | float | Amount in base currency
+`filled` | float | Filled amount (in base currency)
+`remaining` | float | Remaining amount
+`cost` | float | Cost of the order - usually average * filled
+`order_date` | datetime | Order creation date **use `order_date_utc` instead**
+`order_date_utc` | datetime | Order creation date (in UTC)
+`order_fill_date` | datetime |  Order fill date **use `order_fill_utc` instead**
+`order_fill_date_utc` | datetime | Order fill date
