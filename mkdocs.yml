@@ -56,7 +56,6 @@ theme:
   name: material
   logo: "images/logo.png"
   favicon: "images/logo.png"
-  custom_dir: "docs/overrides"
   features:
     - search.share
   palette:
