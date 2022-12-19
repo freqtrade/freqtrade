@@ -74,7 +74,8 @@ class RemotePairList(IPairList):
 
             self._refresh_period = remote_refresh_period
             self._pair_cache = TTLCache(maxsize=1, ttl=remote_refresh_period)
-            self._init_done = True
+
+        self._init_done = True
 
         return pairlist
 
