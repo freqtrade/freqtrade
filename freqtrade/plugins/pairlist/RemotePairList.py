@@ -122,7 +122,7 @@ class RemotePairList(IPairList):
                                   f' {self._pairlist_url}', logger.info)
                     pairlist = self.return_last_pairlist()
                 else:
-                    raise OperationalException('RemotePairList is not of type JSON abort ')
+                    raise OperationalException('RemotePairList is not of type JSON, abort.')
 
         except requests.exceptions.RequestException:
             self.log_once(f'Was not able to fetch pairlist from:'
