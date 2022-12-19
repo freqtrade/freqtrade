@@ -165,7 +165,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         env_info = {"window_size": self.CONV_WIDTH,
                     "reward_kwargs": self.reward_params,
                     "config": self.config,
-                    "live": self.live}
+                    "live": self.live,
+                    "can_short": self.can_short}
         if self.data_provider:
             env_info["fee"] = self.data_provider._exchange \
                 .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore

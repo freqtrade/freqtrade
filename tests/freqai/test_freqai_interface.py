@@ -27,20 +27,23 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32', [
-    ('LightGBMRegressor', True, False, True),
-    ('XGBoostRegressor', False, True, False),
-    ('XGBoostRFRegressor', False, False, False),
-    ('CatboostRegressor', False, False, False),
-    ('ReinforcementLearner', False, True, False),
-    ('ReinforcementLearner_multiproc', False, False, False),
-    ('ReinforcementLearner_test_4ac', False, False, False)
+@pytest.mark.parametrize('model, pca, dbscan, float32, can_short', [
+    ('LightGBMRegressor', True, False, True, True),
+    ('XGBoostRegressor', False, True, False, True),
+    ('XGBoostRFRegressor', False, False, False, True),
+    ('CatboostRegressor', False, False, False, True),
+    ('ReinforcementLearner', False, True, False, True),
+    ('ReinforcementLearner_multiproc', False, False, False, True),
+    ('ReinforcementLearner_test_3ac', False, False, False, False),
+    ('ReinforcementLearner_test_3ac', False, False, False, True),
+    ('ReinforcementLearner_test_4ac', False, False, False, True)
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, dbscan, float32):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
+                                               dbscan, float32, can_short):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac() and 'Reinforcement' in model:
+    if is_mac() and not is_arm() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
     model_save_ext = 'joblib'
@@ -58,9 +61,6 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'test_4ac' in model:
-        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
-
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
         freqai_conf = make_rl_config(freqai_conf)
@@ -68,7 +68,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'test_4ac' in model:
+    if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -77,6 +77,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, 
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
+    freqai.can_short = can_short
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.set_paths('ADA/BTC', 10000)
     timerange = TimeRange.parse_timerange("20180110-20180130")

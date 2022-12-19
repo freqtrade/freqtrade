@@ -45,7 +45,7 @@ class BaseEnvironment(gym.Env):
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
-                 fee: float = 0.0015):
+                 fee: float = 0.0015, can_short: bool = False):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -58,6 +58,7 @@ class BaseEnvironment(gym.Env):
         :param config: Typical user configuration file
         :param live: Whether or not this environment is active in dry/live/backtesting
         :param fee: The fee to use for environmental interactions.
+        :param can_short: Whether or not the environment can short
         """
         self.config = config
         self.rl_config = config['freqai']['rl_config']
@@ -73,6 +74,7 @@ class BaseEnvironment(gym.Env):
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
+        self.can_short = can_short
         self.live = live
         if not self.live and self.add_state_info:
             self.add_state_info = False

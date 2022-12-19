@@ -104,6 +104,7 @@ class IFreqaiModel(ABC):
         self.metadata: Dict[str, Any] = self.dd.load_global_metadata_from_disk()
         self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
+        self.can_short = True  # overridden in start() with strategy.can_short
 
         record_params(config, self.full_path)
 
@@ -133,6 +134,7 @@ class IFreqaiModel(ABC):
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
         self.data_provider = strategy.dp
+        self.can_short = strategy.can_short
 
         if self.live:
             self.inference_timer('start')
