@@ -267,7 +267,7 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
         assert log_has("Unexpected error has occurred:", caplog)
     finally:
         emc.shutdown()
