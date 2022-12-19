@@ -202,11 +202,10 @@ The user is responsible for providing a server or local file that returns a JSON
 {
     "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
     "refresh_period": 1800,
-    "info": "Pairlist updated on 2022-12-12 at 12:12" // Maximum Length: 256 Characters, Charset: Alphanumeric + "+-.,%:"
 }
 ```
 
-The `pairs` property should contain a list of strings with the trading pairs to be used by the bot. The `refresh_period` property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed. The `info` property is also optional and can be used to provide any additional information about the pairlist.
+The `pairs` property should contain a list of strings with the trading pairs to be used by the bot. The `refresh_period` property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed.
 
 The optional `keep_pairlist_on_failure` specifies whether the previous received pairlist should be used if the remote server is not reachable or returns an error. The default value is true.
 

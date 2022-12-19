@@ -107,7 +107,7 @@ def test_fetch_pairlist_timeout_keep_last_pairlist(mocker, rpl_config, caplog):
 
     remote_pairlist._last_pairlist = ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
 
-    pairs, time_elapsed, info = remote_pairlist.fetch_pairlist()
+    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
     assert log_has(f"Was not able to fetch pairlist from: {remote_pairlist._pairlist_url}", caplog)
     assert log_has("Keeping last fetched pairlist", caplog)
     assert pairs == ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
@@ -163,7 +163,6 @@ def test_fetch_pairlist_mock_response_valid(mocker, rpl_config):
 
     mock_response.json.return_value = {
         "pairs": ["ETH/USDT", "XRP/USDT", "LTC/USDT", "EOS/USDT"],
-        "info": "Mock pairlist response",
         "refresh_period": 60
     }
 
@@ -179,9 +178,8 @@ def test_fetch_pairlist_mock_response_valid(mocker, rpl_config):
     pairlistmanager = PairListManager(exchange, rpl_config)
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config['pairlists'][0], 0)
-    pairs, time_elapsed, info = remote_pairlist.fetch_pairlist()
+    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["ETH/USDT", "XRP/USDT", "LTC/USDT", "EOS/USDT"]
     assert time_elapsed == 0.4
-    assert info == "Mock pairlist response"
     assert remote_pairlist._refresh_period == 60
