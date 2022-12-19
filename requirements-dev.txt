@@ -16,7 +16,7 @@ pytest-asyncio==0.20.3
 pytest-cov==4.0.0
 pytest-mock==3.10.0
 pytest-random-order==1.1.0
-isort==5.10.1
+isort==5.11.3
 # For datetime mocking
 time-machine==2.8.2
 # fastapi testing
