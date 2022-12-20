@@ -423,6 +423,7 @@ class BacktestRequest(BaseModel):
     stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
+    backtest_cache: Optional[str]
     freqaimodel: Optional[str]
 
 
