@@ -372,6 +372,10 @@ class StrategyListResponse(BaseModel):
     strategies: List[str]
 
 
+class FreqAIModelListResponse(BaseModel):
+    freqaimodels: List[str]
+
+
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
@@ -419,6 +423,7 @@ class BacktestRequest(BaseModel):
     stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
+    freqaimodel: Optional[str]
 
 
 class BacktestResponse(BaseModel):
