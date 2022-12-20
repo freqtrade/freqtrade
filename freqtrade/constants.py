@@ -548,6 +548,7 @@ CONF_SCHEMA = {
                 "conv_width": {"type": "integer", "default": 1},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "number", "default": 7},
+                "backtest_drop_shifted_labels": {"type": "boolean", "default": False},
                 "identifier": {"type": "string", "default": "example"},
                 "feature_parameters": {
                     "type": "object",

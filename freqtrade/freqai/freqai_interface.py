@@ -308,6 +308,11 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
             else:
                 dataframe_train = dk.slice_dataframe(tr_train, dataframe)
+                if self.freqai_info.get('backtest_drop_shifted_labels', False):
+                    label_period_candles = self.freqai_info.get('feature_parameters', {}) \
+                        .get("label_period_candles", 0)
+                    if label_period_candles > 0:
+                        dataframe_train = dataframe_train.iloc[:-label_period_candles, :]
                 dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
