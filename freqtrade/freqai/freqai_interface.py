@@ -149,12 +149,13 @@ class IFreqaiModel(ABC):
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
-            dataframe = self.dk.use_strategy_to_populate_indicators(
-                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-            )
+
+            # dataframe = self.dk.use_strategy_to_populate_indicators(
+            #     strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            # )
             if not self.config.get("freqai_backtest_live_models", False):
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
-                dk = self.start_backtesting(dataframe, metadata, self.dk)
+                dk = self.start_backtesting(dataframe, metadata, self.dk, strategy)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
                 logger.info(
@@ -255,7 +256,7 @@ class IFreqaiModel(ABC):
                     self.dd.save_metric_tracker_to_disk()
 
     def start_backtesting(
-        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
+        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen, strategy: IStrategy
     ) -> FreqaiDataKitchen:
         """
         The main broad execution for backtesting. For backtesting, each pair enters and then gets
@@ -267,12 +268,14 @@ class IFreqaiModel(ABC):
         :param dataframe: DataFrame = strategy passed dataframe
         :param metadata: Dict = pair metadata
         :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :param strategy: Strategy to train on
         :return:
             FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
 
         self.pair_it += 1
         train_it = 0
+        set_only_targets = False
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
@@ -301,14 +304,39 @@ class IFreqaiModel(ABC):
             dk.set_new_model_names(pair, timestamp_model_id)
 
             if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
-                self.dd.load_metadata(dk)
-                dk.find_features(dataframe)
-                self.check_if_feature_list_matches_strategy(dk)
+                # self.dd.load_metadata(dk)
+                # dk.find_features(dataframe)
+                # self.check_if_feature_list_matches_strategy(dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
-                dataframe_train = dk.slice_dataframe(tr_train, dataframe)
-                dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
+                if set_only_targets is False:
+                    dataframe = self.dk.use_strategy_to_populate_indicators(
+                        strategy, prediction_dataframe=dataframe,
+                        pair=metadata["pair"], set_only_targets=set_only_targets
+                    )
+                    set_only_targets = True
+
+                dataframe_base_train = dataframe.loc[dataframe["date"] < tr_train.stopdt, :]
+                dataframe_base_train = self.dk.use_strategy_to_populate_indicators(
+                    strategy, prediction_dataframe=dataframe_base_train,
+                    pair=metadata["pair"], set_only_targets=set_only_targets
+                )
+
+                # region need to verify if this block is needed
+                # (or slice dataframe_backtest from dataframe)
+                dataframe_base_backtest = dataframe.loc[dataframe["date"] < tr_backtest.stopdt, :]
+                dataframe_base_backtest = self.dk.use_strategy_to_populate_indicators(
+                    strategy, prediction_dataframe=dataframe_base_backtest,
+                    pair=metadata["pair"], set_only_targets=set_only_targets
+                )
+                # endregion
+
+                set_only_targets = True
+
+                dataframe_train = dk.slice_dataframe(tr_train, dataframe_base_train)
+                dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe_base_backtest)
+
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
                     dk.find_labels(dataframe_train)

@@ -1184,6 +1184,7 @@ class FreqaiDataKitchen:
         pair: str = "",
         prediction_dataframe: DataFrame = pd.DataFrame(),
         do_corr_pairs: bool = True,
+        set_only_targets: bool = False
     ) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during retrain
@@ -1222,7 +1223,8 @@ class FreqaiDataKitchen:
                 dataframe.copy(),
                 tf,
                 informative=base_dataframes[tf],
-                set_generalized_indicators=sgi
+                set_generalized_indicators=sgi,
+                set_only_targets=set_only_targets
             )
 
         # ensure corr pairs are always last
@@ -1235,7 +1237,8 @@ class FreqaiDataKitchen:
                         corr_pair,
                         dataframe.copy(),
                         tf,
-                        informative=corr_dataframes[corr_pair][tf]
+                        informative=corr_dataframes[corr_pair][tf],
+                        set_only_targets=set_only_targets
                     )
 
         self.get_unique_classes_from_labels(dataframe)

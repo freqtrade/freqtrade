@@ -596,7 +596,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
                                 informative: DataFrame = None,
-                                set_generalized_indicators: bool = False) -> DataFrame:
+                                set_generalized_indicators: bool = False,
+                                set_only_targets: bool = False) -> DataFrame:
         """
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add
@@ -607,6 +608,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
         :param informative: the dataframe associated with the informative pair
+        :param set_only_targets: if True, only the target features will be set
         """
         return df
 
