@@ -414,6 +414,10 @@ class PairHistory(BaseModel):
         }
 
 
+class BacktestFreqAIInputs(BaseModel):
+    identifier: str
+
+
 class BacktestRequest(BaseModel):
     strategy: str
     timeframe: Optional[str]
@@ -425,6 +429,7 @@ class BacktestRequest(BaseModel):
     dry_run_wallet: Optional[float]
     backtest_cache: Optional[str]
     freqaimodel: Optional[str]
+    freqai: Optional[BacktestFreqAIInputs]
 
 
 class BacktestResponse(BaseModel):
