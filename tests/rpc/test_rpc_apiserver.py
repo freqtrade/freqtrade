@@ -1488,6 +1488,33 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
+def test_api_freqaimodels(botclient, tmpdir):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+
+    rc = client_get(client, f"{BASE_URI}/freqaimodels")
+
+    assert_response(rc)
+
+    assert rc.json() == {'freqaimodels': [
+        'CatboostClassifier',
+        'CatboostClassifierMultiTarget',
+        'CatboostRegressor',
+        'CatboostRegressorMultiTarget',
+        'LightGBMClassifier',
+        'LightGBMClassifierMultiTarget',
+        'LightGBMRegressor',
+        'LightGBMRegressorMultiTarget',
+        'ReinforcementLearner',
+        'ReinforcementLearner_multiproc',
+        'XGBoostClassifier',
+        'XGBoostRFClassifier',
+        'XGBoostRFRegressor',
+        'XGBoostRegressor',
+        'XGBoostRegressorMultiTarget'
+    ]}
+
+
 def test_list_available_pairs(botclient):
     ftbot, client = botclient
 
