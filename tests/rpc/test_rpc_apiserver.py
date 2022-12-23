@@ -1488,19 +1488,30 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
-def test_api_freqaimodels(botclient, tmpdir):
+def test_api_freqaimodels(botclient, tmpdir, mocker):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
+    mocker.patch(
+        "freqtrade.resolvers.freqaimodel_resolver.FreqaiModelResolver.search_all_objects",
+        return_value=[
+            {'name': 'LightGBMClassifier'},
+            {'name': 'LightGBMClassifierMultiTarget'},
+            {'name': 'LightGBMRegressor'},
+            {'name': 'LightGBMRegressorMultiTarget'},
+            {'name': 'ReinforcementLearner'},
+            {'name': 'ReinforcementLearner_multiproc'},
+            {'name': 'XGBoostClassifier'},
+            {'name': 'XGBoostRFClassifier'},
+            {'name': 'XGBoostRFRegressor'},
+            {'name': 'XGBoostRegressor'},
+            {'name': 'XGBoostRegressorMultiTarget'},
+        ])
 
     rc = client_get(client, f"{BASE_URI}/freqaimodels")
 
     assert_response(rc)
 
     assert rc.json() == {'freqaimodels': [
-        'CatboostClassifier',
-        'CatboostClassifierMultiTarget',
-        'CatboostRegressor',
-        'CatboostRegressorMultiTarget',
         'LightGBMClassifier',
         'LightGBMClassifierMultiTarget',
         'LightGBMRegressor',
