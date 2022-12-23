@@ -147,7 +147,15 @@ jobs:
     - name: Installation - macOS
       if: runner.os == 'macOS'
       run: |
-        brew update
+        # homebrew fails to update python 3.9.1 to 3.9.1.1 due to unlinking failure
+        rm /usr/local/bin/2to3 || true
+        # homebrew fails to update python from 3.9 to 3.10 due to another unlinking failure
+        rm /usr/local/bin/idle3 || true
+        rm /usr/local/bin/pydoc3 || true
+        rm /usr/local/bin/python3 || true
+        rm /usr/local/bin/python3-config || true
+        # Ignore brew update failures - https://github.com/actions/runner-images/issues/6817
+        brew update || true
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
