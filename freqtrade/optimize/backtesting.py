@@ -769,6 +769,7 @@ class Backtesting:
             stake_amount=stake_amount,
             min_stake_amount=min_stake_amount,
             max_stake_amount=max_stake_amount,
+            trade_amount=trade.stake_amount if trade else None
         )
 
         return propose_rate, stake_amount_val, leverage, min_stake_amount

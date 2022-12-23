@@ -912,6 +912,7 @@ class FreqtradeBot(LoggingMixin):
             stake_amount=stake_amount,
             min_stake_amount=min_stake_amount,
             max_stake_amount=max_stake_amount,
+            trade_amount=trade.stake_amount if trade else None,
         )
 
         return enter_limit_requested, stake_amount, leverage
