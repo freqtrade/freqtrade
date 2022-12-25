@@ -287,8 +287,8 @@ def calculate_sharpe(trades: pd.DataFrame,
     return sharp_ratio
 
 
-def calculate_calmar(trades: pd.DataFrame,
-                     min_date: datetime, max_date: datetime) -> float:
+def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                     starting_balance: float) -> float:
     """
     Calculate calmar
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
@@ -297,17 +297,17 @@ def calculate_calmar(trades: pd.DataFrame,
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
-    total_profit = trades["profit_ratio"]
-    days_period = (max_date - min_date).days
+    total_profit = trades['profit_abs'].sum() / starting_balance
+    days_period = max(1, (max_date - min_date).days)
 
     # adding slippage of 0.1% per trade
     # total_profit = total_profit - 0.0005
-    expected_returns_mean = total_profit.sum() / days_period * 100
+    expected_returns_mean = total_profit / days_period * 100
 
     # calculate max drawdown
     try:
         _, _, _, _, _, max_drawdown = calculate_max_drawdown(
-            trades, value_col="profit_abs"
+            trades, value_col="profit_abs", starting_balance=starting_balance
         )
     except ValueError:
         max_drawdown = 0
