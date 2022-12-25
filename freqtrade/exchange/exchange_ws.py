@@ -106,12 +106,12 @@ class ExchangeWS():
         Returns cached klines from ccxt's "watch" cache.
         """
         candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
-        # Fake 1 candle - which is then removed again
-        # TODO: is this really a good idea??
         refresh_time = int(self.klines_last_refresh[(pair, timeframe, candle_type)] * 1000)
-        candles.append([refresh_time, 0, 0, 0, 0, 0])
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
             f"{datetime.fromtimestamp(candles[-1][0] // 1000)}, "
             f"lref={datetime.fromtimestamp(self.klines_last_refresh[(pair, timeframe, candle_type)])}")
+        # Fake 1 candle - which is then removed again
+        # TODO: is this really a good idea??
+        # candles.append([refresh_time, 0, 0, 1, 2, 0])
         return pair, timeframe, candle_type, candles
