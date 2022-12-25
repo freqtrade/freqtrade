@@ -31,7 +31,7 @@ class Binance(Exchange):
         "ccxt_futures_name": "future"
     }
     _ft_has_futures: Dict = {
-        "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "tickers_have_price": False,
     }
 
