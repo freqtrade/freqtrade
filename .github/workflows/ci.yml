@@ -149,8 +149,18 @@ jobs:
       run: |
         brew update
         # homebrew fails to update python due to unlinking failures
-        # Ignore brew update failures - https://github.com/actions/runner-images/issues/6817
-        brew link --overwrite python@3.10 python@3.11
+        # https://github.com/actions/runner-images/issues/6817
+        rm /usr/local/bin/2to3 || true
+        rm /usr/local/bin/2to3-3.11 || true
+        rm /usr/local/bin/idle3 || true
+        rm /usr/local/bin/idle3.11 || true
+        rm /usr/local/bin/pydoc3 || true
+        rm /usr/local/bin/pydoc3.11 || true
+        rm /usr/local/bin/python3 || true
+        rm /usr/local/bin/python3.11 || true
+        rm /usr/local/bin/python3-config || true
+        rm /usr/local/bin/python3.11-config || true
+
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
