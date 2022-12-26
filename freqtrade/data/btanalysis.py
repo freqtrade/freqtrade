@@ -279,7 +279,7 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                               )
             # Compatibility support for pre short Columns
             if 'is_short' not in df.columns:
-                df['is_short'] = 0
+                df['is_short'] = False
             if 'leverage' not in df.columns:
                 df['leverage'] = 1.0
             if 'enter_tag' not in df.columns:
