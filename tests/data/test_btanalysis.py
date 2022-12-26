@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -12,9 +13,11 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelis
                                        get_latest_hyperopt_file, load_backtest_data,
                                        load_backtest_metadata, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from freqtrade.data.metrics import (calculate_cagr, calculate_csum, calculate_market_change,
-                                    calculate_max_drawdown, calculate_underwater,
-                                    combine_dataframes_with_mean, create_cum_profit)
+from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
+                                    calculate_expectancy, calculate_market_change,
+                                    calculate_max_drawdown, calculate_sharpe, calculate_sortino,
+                                    calculate_underwater, combine_dataframes_with_mean,
+                                    create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -334,6 +337,69 @@ def test_calculate_csum(testdatadir):
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
+
+
+def test_calculate_expectancy(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    expectancy = calculate_expectancy(DataFrame())
+    assert expectancy == 0.0
+
+    expectancy = calculate_expectancy(bt_data)
+    assert isinstance(expectancy, float)
+    assert pytest.approx(expectancy) == 0.07151374226574791
+
+
+def test_calculate_sortino(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    sortino = calculate_sortino(DataFrame(), None, None, 0)
+    assert sortino == 0.0
+
+    sortino = calculate_sortino(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(sortino, float)
+    assert pytest.approx(sortino) == 55.1447312
+
+
+def test_calculate_sharpe(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    sharpe = calculate_sharpe(DataFrame(), None, None, 0)
+    assert sharpe == 0.0
+
+    sharpe = calculate_sharpe(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(sharpe, float)
+    assert pytest.approx(sharpe) == 44.5078669
+
+
+def test_calculate_calmar(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    calmar = calculate_calmar(DataFrame(), None, None, 0)
+    assert calmar == 0.0
+
+    calmar = calculate_calmar(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(calmar, float)
+    assert pytest.approx(calmar) == 559.040508
 
 
 @pytest.mark.parametrize('start,end,days, expected', [
