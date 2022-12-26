@@ -149,6 +149,7 @@ jobs:
       run: |
         # homebrew fails to update python 3.9.1 to 3.9.1.1 due to unlinking failure
         rm /usr/local/bin/2to3 || true
+        rm /usr/local/bin/2to3-3.11 || true
         # homebrew fails to update python from 3.9 to 3.10 due to another unlinking failure
         rm /usr/local/bin/idle3 || true
         rm /usr/local/bin/pydoc3 || true
