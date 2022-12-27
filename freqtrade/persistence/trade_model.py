@@ -876,6 +876,7 @@ class LocalTrade():
         ZERO = FtPrecise(0.0)
         current_amount = FtPrecise(0.0)
         current_stake = FtPrecise(0.0)
+        max_stake_amount = FtPrecise(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
@@ -917,8 +918,9 @@ class LocalTrade():
                     exit_rate, amount=exit_amount, open_rate=avg_price)
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
+                max_stake_amount += (tmp_amount * price)
         self.funding_fees = funding_fees
-        self.max_stake_amount = total_stake
+        self.max_stake_amount = float(max_stake_amount)
 
         if close_profit:
             self.close_profit = close_profit
