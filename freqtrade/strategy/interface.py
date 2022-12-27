@@ -598,6 +598,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                 informative: DataFrame = None,
                                 set_generalized_indicators: bool = False) -> DataFrame:
         """
+        DEPRECATED - USE FEATURE ENGINEERING FUNCTIONS INSTEAD
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add
         additional features here, but must follow the naming convention.
@@ -609,6 +610,45 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param informative: the dataframe associated with the informative pair
         """
         return df
+
+    def freqai_feature_engineering_indicator_periods(self, dataframe: DataFrame,
+                                                     period: int, **kwargs):
+        """
+        This function will be called for all include_timeframes in each indicator_periods_candles
+        (including corr_pairs).
+        After that, the features will be shifted by the number of candles in the
+        include_shifted_candles.
+        :param df: strategy dataframe which will receive the features
+        :param period: period of the indicator - usage example:
+        dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
+        """
+        return dataframe
+
+    def freqai_feature_engineering_generic(self, dataframe: DataFrame, **kwargs):
+        """
+        This optional function will be called for all include_timeframes (including corr_pairs).
+        After that, the features will be shifted by the number of candles in the
+        include_shifted_candles.
+        :param df: strategy dataframe which will receive the features
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        """
+        return dataframe
+
+    def freqai_feature_engineering_generalized_indicators(self, dataframe: DataFrame, **kwargs):
+        """
+        This optional function will be called once with the dataframe of the main timeframe.
+        :param df: strategy dataframe which will receive the features
+        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        """
+        return dataframe
+
+    def freqai_set_targets(self, dataframe, **kwargs):
+        """
+        Required function to set the targets for the model.
+        :param df: strategy dataframe which will receive the targets
+        usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
+        """
+        return dataframe
 
 ###
 # END - Intended to be overridden by strategy

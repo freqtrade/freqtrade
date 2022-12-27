@@ -47,16 +47,94 @@ class FreqaiExampleStrategy(IStrategy):
     std_dev_multiplier_sell = CategoricalParameter(
         [0.75, 1, 1.25, 1.5, 1.75], space="sell", default=1.25, optimize=True)
 
-    def populate_any_indicators(
+    def freqai_feature_engineering_indicator_periods(self, dataframe, period, **kwargs):
+        """
+        This function will be called for all include_timeframes in each indicator_periods_candles
+        (including corr_pairs).
+        After that, the features will be shifted by the number of candles in the
+        include_shifted_candles.
+        :param df: strategy dataframe which will receive the features
+        :param period: period of the indicator - usage example:
+        dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
+        """
+        dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
+        dataframe["%-mfi-period"] = ta.MFI(dataframe, timeperiod=period)
+        dataframe["%-adx-period"] = ta.ADX(dataframe, timeperiod=period)
+        dataframe["%-sma-period"] = ta.SMA(dataframe, timeperiod=period)
+        dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
+
+        bollinger = qtpylib.bollinger_bands(
+            qtpylib.typical_price(dataframe), window=period, stds=2.2
+        )
+        dataframe["bb_lowerband-period"] = bollinger["lower"]
+        dataframe["bb_middleband-period"] = bollinger["mid"]
+        dataframe["bb_upperband-period"] = bollinger["upper"]
+
+        dataframe["%-bb_width-period"] = (
+            dataframe["bb_upperband-period"]
+            - dataframe["bb_lowerband-period"]
+        ) / dataframe["bb_middleband-period"]
+        dataframe["%-close-bb_lower-period"] = (
+            dataframe["close"] / dataframe["bb_lowerband-period"]
+        )
+
+        dataframe["%-roc-period"] = ta.ROC(dataframe, timeperiod=period)
+
+        dataframe["%-relative_volume-period"] = (
+            dataframe["volume"] / dataframe["volume"].rolling(period).mean()
+        )
+
+        return dataframe
+
+    def freqai_feature_engineering_generic(self, dataframe, **kwargs):
+        """
+        This optional function will be called for all include_timeframes (including corr_pairs).
+        After that, the features will be shifted by the number of candles in the
+        include_shifted_candles.
+        :param df: strategy dataframe which will receive the features
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        """
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        dataframe["%-raw_volume"] = dataframe["volume"]
+        dataframe["%-raw_price"] = dataframe["close"]
+        return dataframe
+
+    def freqai_feature_engineering_generalized_indicators(self, dataframe, **kwargs):
+        """
+        This optional function will be called once with the dataframe of the main timeframe.
+        :param df: strategy dataframe which will receive the features
+        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        """
+        dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
+        return dataframe
+
+    def freqai_set_targets(self, dataframe, **kwargs):
+        """
+        Required function to set the targets for the model.
+        :param df: strategy dataframe which will receive the targets
+        usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
+        """
+        dataframe["&-s_close"] = (
+            dataframe["close"]
+            .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+            .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+            .mean()
+            / dataframe["close"]
+            - 1
+            )
+        return dataframe
+
+    def populate_any_indicators_old(
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
         """
+        DEPRECATED - USE FEATURE ENGINEERING FUNCTIONS INSTEAD
         Function designed to automatically generate, name and merge features
-        from user indicated timeframes in the configuration file. User controls the indicators
-        passed to the training/prediction by prepending indicators with `f'%-{pair}`
-        (see convention below). I.e. user should not prepend any supporting metrics
-        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
-        model.
+        from user indicated timeframes in the configuration file. User can add
+        additional features here, but must follow the naming convention.
+        This method is *only* used in FreqaiDataKitchen class and therefore
+        it is only called if FreqAI is active.
         :param pair: pair to be used as informative
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
