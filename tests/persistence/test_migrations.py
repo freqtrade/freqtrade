@@ -264,6 +264,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert pytest.approx(trade.open_trade_value) == trade._calc_open_trade_value(
         trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
+    assert trade.stake_amount == trade.max_stake_amount
 
     orders = trade.orders
     assert len(orders) == 4

@@ -293,6 +293,7 @@ class LocalTrade():
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
     stake_amount: float = 0.0
+    max_stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -918,6 +919,7 @@ class LocalTrade():
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
         self.funding_fees = funding_fees
+        self.max_stake_amount = total_stake
 
         if close_profit:
             self.close_profit = close_profit
@@ -1169,6 +1171,7 @@ class Trade(_DECL_BASE, LocalTrade):
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
+    max_stake_amount = Column(Float)
     amount = Column(Float)
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
