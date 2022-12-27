@@ -258,8 +258,7 @@ def test_interest(fee, exchange, is_short, lev, minutes, rate, interest,
     (True, 3.0, 30.0, margin),
 ])
 @pytest.mark.usefixtures("init_persistence")
-def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
-                  caplog, is_short, lev, borrowed, trading_mode):
+def test_borrowed(fee, is_short, lev, borrowed, trading_mode):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
         fee: 0.25% quote
@@ -1369,7 +1368,6 @@ def test_to_json(fee):
                       'profit_ratio': None,
                       'profit_pct': None,
                       'profit_abs': None,
-                      'sell_reason': None,
                       'exit_reason': None,
                       'exit_order_status': None,
                       'stop_loss_abs': None,
@@ -1384,7 +1382,6 @@ def test_to_json(fee):
                       'min_rate': None,
                       'max_rate': None,
                       'strategy': None,
-                      'buy_tag': None,
                       'enter_tag': None,
                       'timeframe': None,
                       'exchange': 'binance',
@@ -1460,11 +1457,9 @@ def test_to_json(fee):
                       'open_order_id': None,
                       'open_rate_requested': None,
                       'open_trade_value': 12.33075,
-                      'sell_reason': None,
                       'exit_reason': None,
                       'exit_order_status': None,
                       'strategy': None,
-                      'buy_tag': 'buys_signal_001',
                       'enter_tag': 'buys_signal_001',
                       'timeframe': None,
                       'exchange': 'binance',

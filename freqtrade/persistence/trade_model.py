@@ -472,7 +472,6 @@ class LocalTrade():
             'stake_amount': round(self.stake_amount, 8),
             'max_stake_amount': round(self.max_stake_amount, 8) if self.max_stake_amount else None,
             'strategy': self.strategy,
-            'buy_tag': self.enter_tag,
             'enter_tag': self.enter_tag,
             'timeframe': self.timeframe,
 
@@ -509,7 +508,6 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.exit_reason,  # Deprecated
             'exit_reason': self.exit_reason,
             'exit_order_status': self.exit_order_status,
             'stop_loss_abs': self.stop_loss,
