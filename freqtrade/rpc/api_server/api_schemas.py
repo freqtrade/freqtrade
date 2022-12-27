@@ -217,8 +217,8 @@ class TradeSchema(BaseModel):
     amount: float
     amount_requested: float
     stake_amount: float
+    max_stake_amount: Optional[float]
     strategy: str
-    buy_tag: Optional[str]  # Deprecated
     enter_tag: Optional[str]
     timeframe: int
     fee_open: Optional[float]
@@ -243,7 +243,6 @@ class TradeSchema(BaseModel):
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
-    sell_reason: Optional[str]  # Deprecated
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]

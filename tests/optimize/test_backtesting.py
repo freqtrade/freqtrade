@@ -710,6 +710,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     expected = pd.DataFrame(
         {'pair': [pair, pair],
          'stake_amount': [0.001, 0.001],
+         'max_stake_amount': [0.001, 0.001],
          'amount': [0.00957442, 0.0097064],
          'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
