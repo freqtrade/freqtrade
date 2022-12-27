@@ -64,6 +64,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount': 91.07468123,
         'amount_requested': 91.07468124,
         'stake_amount': 0.001,
+        'max_stake_amount': ANY,
         'trade_duration': None,
         'trade_duration_s': None,
         'close_profit': None,

@@ -217,6 +217,7 @@ class TradeSchema(BaseModel):
     amount: float
     amount_requested: float
     stake_amount: float
+    max_stake_amount: Optional[float]
     strategy: str
     buy_tag: Optional[str]  # Deprecated
     enter_tag: Optional[str]

@@ -470,6 +470,7 @@ class LocalTrade():
             'amount': round(self.amount, 8),
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
+            'max_stake_amount': round(self.max_stake_amount, 8) if self.max_stake_amount else None,
             'strategy': self.strategy,
             'buy_tag': self.enter_tag,
             'enter_tag': self.enter_tag,
