@@ -1252,12 +1252,12 @@ class FreqaiDataKitchen:
             informative_copy = informative_df.copy()
 
             for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
-                df_features = strategy.freqai_feature_engineering_indicator_periods(
+                df_features = strategy.feature_engineering_expand_all(
                     informative_copy.copy(), t)
                 suffix = f"{t}"
                 informative_df = self.merge_features(informative_df, df_features, tf, tf, suffix)
 
-            generic_df = strategy.freqai_feature_engineering_generic(informative_copy.copy())
+            generic_df = strategy.feature_engineering_expand_basic(informative_copy.copy())
             suffix = "gen"
 
             informative_df = self.merge_features(informative_df, generic_df, tf, tf, suffix)
@@ -1332,8 +1332,8 @@ class FreqaiDataKitchen:
                     dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
                                                        corr_dataframes, base_dataframes, True)
 
-            dataframe = strategy.freqai_feature_engineering_generalized_indicators(dataframe.copy())
-            dataframe = strategy.freqai_set_targets(dataframe.copy())
+            dataframe = strategy.feature_engineering_standard(dataframe.copy())
+            dataframe = strategy.set_freqai_targets(dataframe.copy())
 
             self.get_unique_classes_from_labels(dataframe)
 

@@ -290,8 +290,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         prices_train = train_df.filter(ohlc_list, axis=1)
         if prices_train.empty:
             raise OperationalException('Reinforcement learning module didnt find the raw prices '
-                                       'assigned in populate_any_indicators. Please assign them '
-                                       'with:\n'
+                                       'assigned in feature_engineering_standard(). '
+                                       'Please assign them with:\n'
                                        'informative[f"%-{pair}raw_close"] = informative["close"]\n'
                                        'informative[f"%-{pair}raw_open"] = informative["open"]\n'
                                        'informative[f"%-{pair}raw_high"] = informative["high"]\n'
