@@ -217,8 +217,8 @@ class TradeSchema(BaseModel):
     amount: float
     amount_requested: float
     stake_amount: float
+    max_stake_amount: Optional[float]
     strategy: str
-    buy_tag: Optional[str]  # Deprecated
     enter_tag: Optional[str]
     timeframe: int
     fee_open: Optional[float]
@@ -243,7 +243,6 @@ class TradeSchema(BaseModel):
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
-    sell_reason: Optional[str]  # Deprecated
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
@@ -372,6 +371,10 @@ class StrategyListResponse(BaseModel):
     strategies: List[str]
 
 
+class FreqAIModelListResponse(BaseModel):
+    freqaimodels: List[str]
+
+
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
@@ -410,6 +413,10 @@ class PairHistory(BaseModel):
         }
 
 
+class BacktestFreqAIInputs(BaseModel):
+    identifier: str
+
+
 class BacktestRequest(BaseModel):
     strategy: str
     timeframe: Optional[str]
@@ -419,6 +426,9 @@ class BacktestRequest(BaseModel):
     stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
+    backtest_cache: Optional[str]
+    freqaimodel: Optional[str]
+    freqai: Optional[BacktestFreqAIInputs]
 
 
 class BacktestResponse(BaseModel):

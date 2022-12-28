@@ -1,7 +1,8 @@
 import logging
+import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import Optional, Type, Union
 
 import gym
 import numpy as np
@@ -10,10 +11,19 @@ from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
 
-from freqtrade.data.dataprovider import DataProvider
-
 
 logger = logging.getLogger(__name__)
+
+
+class BaseActions(Enum):
+    """
+    Default action space, mostly used for type handling.
+    """
+    Neutral = 0
+    Long_enter = 1
+    Long_exit = 2
+    Short_enter = 3
+    Short_exit = 4
 
 
 class Positions(Enum):
@@ -34,8 +44,8 @@ class BaseEnvironment(gym.Env):
 
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1, config: dict = {},
-                 dp: Optional[DataProvider] = None):
+                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
+                 fee: float = 0.0015, can_short: bool = False):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -46,22 +56,31 @@ class BaseEnvironment(gym.Env):
         :param id: string id of the environment (used in backend for multiprocessed env)
         :param seed: Sets the seed of the environment higher in the gym.Env object
         :param config: Typical user configuration file
-        :param dp: dataprovider from freqtrade
+        :param live: Whether or not this environment is active in dry/live/backtesting
+        :param fee: The fee to use for environmental interactions.
+        :param can_short: Whether or not the environment can short
         """
         self.config = config
         self.rl_config = config['freqai']['rl_config']
         self.add_state_info = self.rl_config.get('add_state_info', False)
         self.id = id
-        self.seed(seed)
-        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
         self.max_drawdown = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
         self.compound_trades = config['stake_amount'] == 'unlimited'
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
-        elif dp is not None:
-            self.fee = dp._exchange.get_fee(symbol=dp.current_whitelist()[0])  # type: ignore
         else:
-            self.fee = 0.0015
+            self.fee = fee
+
+        # set here to default 5Ac, but all children envs can override this
+        self.actions: Type[Enum] = BaseActions
+        self.tensorboard_metrics: dict = {}
+        self.can_short = can_short
+        self.live = live
+        if not self.live and self.add_state_info:
+            self.add_state_info = False
+            logger.warning("add_state_info is not available in backtesting. Deactivating.")
+        self.seed(seed)
+        self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
@@ -116,11 +135,46 @@ class BaseEnvironment(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def tensorboard_log(self, metric: str, value: Union[int, float] = 1, inc: bool = True):
+        """
+        Function builds the tensorboard_metrics dictionary
+        to be parsed by the TensorboardCallback. This
+        function is designed for tracking incremented objects,
+        events, actions inside the training environment.
+        For example, a user can call this to track the
+        frequency of occurence of an `is_valid` call in
+        their `calculate_reward()`:
+
+        def calculate_reward(self, action: int) -> float:
+            if not self._is_valid(action):
+                self.tensorboard_log("is_valid")
+                return -2
+
+        :param metric: metric to be tracked and incremented
+        :param value: value to increment `metric` by
+        :param inc: sets whether the `value` is incremented or not
+        """
+        if not inc or metric not in self.tensorboard_metrics:
+            self.tensorboard_metrics[metric] = value
+        else:
+            self.tensorboard_metrics[metric] += value
+
+    def reset_tensorboard_log(self):
+        self.tensorboard_metrics = {}
+
     def reset(self):
+        """
+        Reset is called at the beginning of every episode
+        """
+        self.reset_tensorboard_log()
 
         self._done = False
 
         if self.starting_point is True:
+            if self.rl_config.get('randomize_starting_position', False):
+                length_of_data = int(self._end_tick / 4)
+                start_tick = random.randint(self.window_size + 1, length_of_data)
+                self._start_tick = start_tick
             self._position_history = (self._start_tick * [None]) + [self._position]
         else:
             self._position_history = (self.window_size * [None]) + [self._position]
@@ -189,12 +243,12 @@ class BaseEnvironment(gym.Env):
         if self._position == Positions.Neutral:
             return 0.
         elif self._position == Positions.Short:
-            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
-            return (last_trade_price - current_price) / last_trade_price
-        elif self._position == Positions.Long:
             current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
             last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
+            return (last_trade_price - current_price) / last_trade_price
+        elif self._position == Positions.Long:
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
             return 0.
@@ -265,6 +319,13 @@ class BaseEnvironment(gym.Env):
 
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
+
+    def get_actions(self) -> Type[Enum]:
+        """
+        Used by SubprocVecEnv to get actions from
+        initialized env for tensorboard callback
+        """
+        return self.actions
 
     # Keeping around incase we want to start building more complex environment
     # templates in the future.

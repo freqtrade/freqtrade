@@ -28,15 +28,15 @@ EXCHANGES = {
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
     },
-    'binance': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
-        'hasQuoteVolume': True,
-        'timeframe': '5m',
-        'futures': True,
-        'leverage_tiers_public': False,
-        'leverage_in_spot_market': False,
-    },
+    # 'binance': {
+    #     'pair': 'BTC/USDT',
+    #     'stake_currency': 'USDT',
+    #     'hasQuoteVolume': True,
+    #     'timeframe': '5m',
+    #     'futures': True,
+    #     'leverage_tiers_public': False,
+    #     'leverage_in_spot_market': False,
+    # },
     'kraken': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
@@ -224,8 +224,13 @@ class TestCCXTExchange():
         for val in [1, 2, 5, 25, 100]:
             l2 = exchange.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
-                assert len(l2['asks']) == val
-                assert len(l2['bids']) == val
+                if val > 50:
+                    # Orderbooks are not always this deep.
+                    assert val - 5 < len(l2['asks']) <= val
+                    assert val - 5 < len(l2['bids']) <= val
+                else:
+                    assert len(l2['asks']) == val
+                    assert len(l2['bids']) == val
             else:
                 next_limit = exchange.get_next_limit_in_list(
                     val, l2_limit_range, l2_limit_range_required)

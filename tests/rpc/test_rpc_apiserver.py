@@ -588,7 +588,7 @@ def test_api_show_config(botclient):
     assert 'unfilledtimeout' in response
     assert 'version' in response
     assert 'api_version' in response
-    assert 2.1 <= response['api_version'] <= 2.2
+    assert 2.1 <= response['api_version'] < 3.0
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -985,6 +985,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'base_currency': 'ETH',
         'quote_currency': 'BTC',
         'stake_amount': 0.001,
+        'max_stake_amount': ANY,
         'stop_loss_abs': ANY,
         'stop_loss_pct': ANY,
         'stop_loss_ratio': ANY,
@@ -1014,11 +1015,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_order_id': open_order_id,
         'open_rate_requested': ANY,
         'open_trade_value': open_trade_value,
-        'sell_reason': None,
         'exit_reason': None,
         'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
-        'buy_tag': None,
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -1188,6 +1187,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'base_currency': 'ETH',
         'quote_currency': 'BTC',
         'stake_amount': 1,
+        'max_stake_amount': ANY,
         'stop_loss_abs': None,
         'stop_loss_pct': None,
         'stop_loss_ratio': None,
@@ -1218,11 +1218,9 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'open_order_id': '123456',
         'open_rate_requested': None,
         'open_trade_value': 0.24605460,
-        'sell_reason': None,
         'exit_reason': None,
         'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
-        'buy_tag': None,
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -1488,6 +1486,44 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
+def test_api_freqaimodels(botclient, tmpdir, mocker):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+    mocker.patch(
+        "freqtrade.resolvers.freqaimodel_resolver.FreqaiModelResolver.search_all_objects",
+        return_value=[
+            {'name': 'LightGBMClassifier'},
+            {'name': 'LightGBMClassifierMultiTarget'},
+            {'name': 'LightGBMRegressor'},
+            {'name': 'LightGBMRegressorMultiTarget'},
+            {'name': 'ReinforcementLearner'},
+            {'name': 'ReinforcementLearner_multiproc'},
+            {'name': 'XGBoostClassifier'},
+            {'name': 'XGBoostRFClassifier'},
+            {'name': 'XGBoostRFRegressor'},
+            {'name': 'XGBoostRegressor'},
+            {'name': 'XGBoostRegressorMultiTarget'},
+        ])
+
+    rc = client_get(client, f"{BASE_URI}/freqaimodels")
+
+    assert_response(rc)
+
+    assert rc.json() == {'freqaimodels': [
+        'LightGBMClassifier',
+        'LightGBMClassifierMultiTarget',
+        'LightGBMRegressor',
+        'LightGBMRegressorMultiTarget',
+        'ReinforcementLearner',
+        'ReinforcementLearner_multiproc',
+        'XGBoostClassifier',
+        'XGBoostRFClassifier',
+        'XGBoostRFRegressor',
+        'XGBoostRegressor',
+        'XGBoostRegressorMultiTarget'
+    ]}
+
+
 def test_list_available_pairs(botclient):
     ftbot, client = botclient
 
@@ -1671,7 +1707,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     mocker.patch('freqtrade.data.btanalysis._get_backtest_files',
                  return_value=[
                      testdatadir / 'backtest_results/backtest-result_multistrat.json',
-                     testdatadir / 'backtest_results/backtest-result_new.json'
+                     testdatadir / 'backtest_results/backtest-result.json'
                      ])
 
     rc = client_get(client, f"{BASE_URI}/backtest/history")

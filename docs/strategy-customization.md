@@ -363,9 +363,9 @@ class AwesomeStrategy(IStrategy):
     timeframe = "1d"
     timeframe_mins = timeframe_to_minutes(timeframe)
     minimal_roi = {
-        "0": 0.05,                             # 5% for the first 3 candles
-        str(timeframe_mins * 3)): 0.02,  # 2% after 3 candles
-        str(timeframe_mins * 6)): 0.01,  # 1% After 6 candles
+        "0": 0.05,                      # 5% for the first 3 candles
+        str(timeframe_mins * 3): 0.02,  # 2% after 3 candles
+        str(timeframe_mins * 6): 0.01,  # 1% After 6 candles
     }
 ```
 
@@ -989,38 +989,18 @@ from freqtrade.persistence import Trade
 The following example queries for the current pair and trades from today, however other filters can easily be added.
 
 ``` python
-if self.config['runmode'].value in ('live', 'dry_run'):
-    trades = Trade.get_trades([Trade.pair == metadata['pair'],
-                               Trade.open_date > datetime.utcnow() - timedelta(days=1),
-                               Trade.is_open.is_(False),
-                ]).order_by(Trade.close_date).all()
-    # Summarize profit for this pair.
-    curdayprofit = sum(trade.close_profit for trade in trades)
+trades = Trade.get_trades_proxy(pair=metadata['pair'],
+                                open_date=datetime.now(timezone.utc) - timedelta(days=1),
+                                is_open=False,
+            ]).order_by(Trade.close_date).all()
+# Summarize profit for this pair.
+curdayprofit = sum(trade.close_profit for trade in trades)
 ```
 
-Get amount of stake_currency currently invested in Trades:
-
-``` python
-if self.config['runmode'].value in ('live', 'dry_run'):
-    total_stakes = Trade.total_open_trades_stakes()
-```
-
-Retrieve performance per pair.
-Returns a List of dicts per pair.
-
-``` python
-if self.config['runmode'].value in ('live', 'dry_run'):
-    performance = Trade.get_overall_performance()
-```
-
-Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).
-
-``` json
-{"pair": "ETH/BTC", "profit": 0.015, "count": 5}
-```
+For a full list of available methods, please consult the [Trade object](trade-object.md) documentation.
 
 !!! Warning
-    Trade history is not available during backtesting or hyperopt.
+    Trade history is not available in `populate_*` methods during backtesting or hyperopt, and will result in empty results.
 
 ## Prevent trades from happening for a specific pair
 

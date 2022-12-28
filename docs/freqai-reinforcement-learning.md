@@ -1,14 +1,14 @@
 # Reinforcement Learning
 
 !!! Note "Installation size"
-    Reinforcement learning dependencies include large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]?".  
+    Reinforcement learning dependencies include large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]?".
     Users who prefer docker should ensure they use the docker image appended with `_freqairl`.
 
 ## Background and terminology
 
 ### What is RL and why does FreqAI need it?
 
-Reinforcement learning involves two important components, the *agent* and the training *environment*. During agent training, the agent moves through historical data candle by candle, always making 1 of a set of actions: Long entry, long exit, short entry, short exit, neutral). During this training process, the environment tracks the performance of these actions and rewards the agent according to a custom user made `calculate_reward()` (here we offer a default reward for users to build on if they wish [details here](#creating-the-reward)). The reward is used to train weights in a neural network.
+Reinforcement learning involves two important components, the *agent* and the training *environment*. During agent training, the agent moves through historical data candle by candle, always making 1 of a set of actions: Long entry, long exit, short entry, short exit, neutral). During this training process, the environment tracks the performance of these actions and rewards the agent according to a custom user made `calculate_reward()` (here we offer a default reward for users to build on if they wish [details here](#creating-a-custom-reward-function)). The reward is used to train weights in a neural network.
 
 A second important component of the FreqAI RL implementation is the use of *state* information. State information is fed into the network at each step, including current profit, current position, and current trade duration. These are used to train the agent in the training environment, and to reinforce the agent in dry/live (this functionality is not available in backtesting). *FreqAI + Freqtrade is a perfect match for this reinforcing mechanism since this information is readily available in live deployments.*
 
@@ -16,15 +16,15 @@ Reinforcement learning is a natural progression for FreqAI, since it adds a new 
 
 ### The RL interface
 
-With the current framework, we aim to expose the training environment via the common "prediction model" file, which is a user inherited `BaseReinforcementLearner` object (e.g. `freqai/prediction_models/ReinforcementLearner`). Inside this user class, the RL environment is available and customized via `MyRLEnv` as [shown below](#creating-the-reward).
+With the current framework, we aim to expose the training environment via the common "prediction model" file, which is a user inherited `BaseReinforcementLearner` object (e.g. `freqai/prediction_models/ReinforcementLearner`). Inside this user class, the RL environment is available and customized via `MyRLEnv` as [shown below](#creating-a-custom-reward-function).
 
-We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configuration settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
+We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-a-custom-reward-function), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configuration settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
 
 The framework is built on stable_baselines3 (torch) and OpenAI gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework. For the environment, it is inheriting from `gym.env` which means that it is necessary to write an entirely new environment in order to switch to a different library.
 
 ### Important considerations
 
-As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL trading environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks such as `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free-will to learn the policy (read: stoploss, take profit, ect) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
+As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL training environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks like `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free-will to learn the policy (read: stoploss, take profit, etc.) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
 
 ## Running Reinforcement Learning
 
@@ -95,7 +95,7 @@ Most of the function remains the same as for typical Regressors, however, the fu
         informative[f"%-{pair}raw_low"] = informative["low"]
 ```
 
-Finally, there is no explicit "label" to make - instead the you need to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
+Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
 
 After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple. The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy:
 
@@ -130,7 +130,7 @@ After users realize there are no labels to set, they will soon understand that t
         return df
 ```
 
-It is important to consider that `&-action` depends on which environment they choose to use. The example above shows 5 actions, where 0 is neutral, 1 is enter long, 2 is exit long, 3 is enter short and 4 is exit short. 
+It is important to consider that `&-action` depends on which environment they choose to use. The example above shows 5 actions, where 0 is neutral, 1 is enter long, 2 is exit long, 3 is enter short and 4 is exit short.
 
 ## Configuring the Reinforcement Learner
 
@@ -166,25 +166,26 @@ As you begin to modify the strategy and the prediction model, you will quickly r
 
 ```python
     from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
-    from freqtrade.freqai.RL.Base5ActionRLEnv import Base5ActionRLEnv
+    from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
+
 
     class MyCoolRLModel(ReinforcementLearner):
         """
-        User created RL prediction model. 
+        User created RL prediction model.
 
         Save this file to `freqtrade/user_data/freqaimodels`
 
         then use it with:
 
         freqtrade trade --freqaimodel MyCoolRLModel --config config.json --strategy SomeCoolStrat
-        
-        Here the users can override any of the functions 
-        available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this 
+
+        Here the users can override any of the functions
+        available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this
         is where the user overrides `MyRLEnv` (see below), to define custom
         `calculate_reward()` function, or to override any other parts of the environment.
-        
+
         This class also allows users to override any other part of the IFreqaiModel tree.
-        For example, the user can override `def fit()` or `def train()` or `def predict()` 
+        For example, the user can override `def fit()` or `def train()` or `def predict()`
         to take fine-tuned control over these processes.
 
         Another common override may be `def data_cleaning_predict()` where the user can
@@ -242,18 +243,44 @@ cd freqtrade
 tensorboard --logdir user_data/models/unique-id
 ```
 
-where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell to view the output in their browser at 127.0.0.1:6006 (6006 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
 
+
+### Custom logging
+
+FreqAI also provides a built in episodic summary logger called `self.tensorboard_log` for adding custom information to the Tensorboard log. By default, this function is already called once per step inside the environment to record the agent actions. All values accumulated for all steps in a single episode are reported at the conclusion of each episode, followed by a full reset of all metrics to 0 in preparation for the subsequent episode.
+
+
+`self.tensorboard_log` can also be used anywhere inside the environment, for example, it can be added to the `calculate_reward` function to collect more detailed information about how often various parts of the reward were called:
+
+```py
+        class MyRLEnv(Base5ActionRLEnv):
+            """
+            User made custom environment. This class inherits from BaseEnvironment and gym.env.
+            Users can override any functions from those parent classes. Here is an example
+            of a user customized `calculate_reward()` function.
+            """
+            def calculate_reward(self, action: int) -> float:
+                if not self._is_valid(action):
+                    self.tensorboard_log("is_valid")
+                    return -2
+
+```
+
+!!! Note
+    The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)` would add 0.23 to `float_metric`. In this case you can also disable incrementing using `inc=False` parameter.
+
+
 ### Choosing a base environment
 
-FreqAI provides two base environments, `Base4ActionEnvironment` and `Base5ActionEnvironment`. As the names imply, the environments are customized for agents that can select from 4 or 5 actions. In the `Base4ActionEnvironment`, the agent can enter long, enter short, hold neutral, or exit position. Meanwhile, in the `Base5ActionEnvironment`, the agent has the same actions as Base4, but instead of a single exit action, it separates exit long and exit short. The main changes stemming from the environment selection include:
+FreqAI provides three base environments, `Base3ActionRLEnvironment`, `Base4ActionEnvironment` and `Base5ActionEnvironment`. As the names imply, the environments are customized for agents that can select from 3, 4 or 5 actions. The `Base3ActionEnvironment` is the simplest, the agent can select from hold, long, or short. This environment can also be used for long-only bots (it automatically follows the `can_short` flag from the strategy), where long is the enter condition and short is the exit condition. Meanwhile, in the `Base4ActionEnvironment`, the agent can enter long, enter short, hold neutral, or exit position. Finally, in the `Base5ActionEnvironment`, the agent has the same actions as Base4, but instead of a single exit action, it separates exit long and exit short. The main changes stemming from the environment selection include:
 
 * the actions available in the `calculate_reward`
 * the actions consumed by the user strategy
 
-Both of the FreqAI provided environments inherit from an action/position agnostic environment object called the `BaseEnvironment`, which contains all shared logic. The architecture is designed to be easily customized. The simplest customization is the `calculate_reward()` (see details [here](#creating-the-reward)). However, the customizations can be further extended into any of the functions inside the environment. You can do this by simply overriding those functions inside your `MyRLEnv` in the prediction model file. Or for more advanced customizations, it is encouraged to create an entirely new environment inherited from `BaseEnvironment`.
+All of the FreqAI provided environments inherit from an action/position agnostic environment object called the `BaseEnvironment`, which contains all shared logic. The architecture is designed to be easily customized. The simplest customization is the `calculate_reward()` (see details [here](#creating-a-custom-reward-function)). However, the customizations can be further extended into any of the functions inside the environment. You can do this by simply overriding those functions inside your `MyRLEnv` in the prediction model file. Or for more advanced customizations, it is encouraged to create an entirely new environment inherited from `BaseEnvironment`.
 
 !!! Note
-    FreqAI does not provide by default, a long-only training environment. However, creating one should be as simple as copy-pasting one of the built in environments and removing the `short` actions (and all associated references to those).
+    Only the `Base3ActionRLEnv` can do long-only training/trading (set the user strategy attribute `can_short = False`).

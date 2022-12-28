@@ -409,6 +409,11 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
 
 
 @pytest.fixture(autouse=True)
+def patch_gc(mocker) -> None:
+    mocker.patch("freqtrade.main.gc_set_threshold")
+
+
+@pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
     """
     Mocker to coingekko to speed up tests

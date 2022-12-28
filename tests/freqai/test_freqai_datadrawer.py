@@ -2,8 +2,11 @@
 import shutil
 from pathlib import Path
 
+import pytest
+
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from tests.conftest import get_patched_exchange
 from tests.freqai.conftest import get_patched_freqai_strategy
@@ -93,3 +96,37 @@ def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
 
     assert len(df.columns) == 33
     shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_get_timerange_from_live_historic_predictions(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180126-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+    sub_timerange = TimeRange.parse_timerange("20180128-20180130")
+    _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "ADA/BTC", freqai.dk)
+    base_df["5m"]["date_pred"] = base_df["5m"]["date"]
+    freqai.dd.historic_predictions = {}
+    freqai.dd.historic_predictions["ADA/USDT"] = base_df["5m"]
+    freqai.dd.save_historic_predictions_to_disk()
+    freqai.dd.save_global_metadata_to_disk({"start_dry_live_date": 1516406400})
+
+    timerange = freqai.dd.get_timerange_from_live_historic_predictions()
+    assert timerange.startts == 1516406400
+    assert timerange.stopts == 1517356500
+
+
+def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    with pytest.raises(
+            OperationalException,
+            match=r'Historic predictions not found.*'
+            ):
+        freqai.dd.get_timerange_from_live_historic_predictions()

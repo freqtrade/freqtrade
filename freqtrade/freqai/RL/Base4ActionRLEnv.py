@@ -20,6 +20,9 @@ class Base4ActionRLEnv(BaseEnvironment):
     """
     Base class for a 4 action environment
     """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.actions = Actions
 
     def set_action_space(self):
         self.action_space = spaces.Discrete(len(Actions))
@@ -43,9 +46,9 @@ class Base4ActionRLEnv(BaseEnvironment):
             self._done = True
 
         self._update_unrealized_total_profit()
-
         step_reward = self.calculate_reward(action)
         self.total_reward += step_reward
+        self.tensorboard_log(self.actions._member_names_[action])
 
         trade_type = None
         if self.is_tradesignal(action):
@@ -85,16 +88,20 @@ class Base4ActionRLEnv(BaseEnvironment):
                     {'price': self.current_price(), 'index': self._current_tick,
                      'type': trade_type})
 
-        if self._total_profit < 1 - self.rl_config.get('max_training_drawdown_pct', 0.8):
+        if (self._total_profit < self.max_drawdown or
+                self._total_unrealized_profit < self.max_drawdown):
             self._done = True
 
         self._position_history.append(self._position)
 
         info = dict(
             tick=self._current_tick,
+            action=action,
             total_reward=self.total_reward,
             total_profit=self._total_profit,
-            position=self._position.value
+            position=self._position.value,
+            trade_duration=self.get_trade_duration(),
+            current_profit_pct=self.get_unrealized_profit()
         )
 
         observation = self._get_observation()

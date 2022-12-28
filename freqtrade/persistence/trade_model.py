@@ -293,6 +293,7 @@ class LocalTrade():
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
     stake_amount: float = 0.0
+    max_stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -398,12 +399,6 @@ class LocalTrade():
         return self.close_date.replace(tzinfo=timezone.utc)
 
     @property
-    def enter_side(self) -> str:
-        """ DEPRECATED, please use entry_side instead"""
-        # TODO: Please remove me after 2022.5
-        return self.entry_side
-
-    @property
     def entry_side(self) -> str:
         if self.is_short:
             return "sell"
@@ -475,8 +470,8 @@ class LocalTrade():
             'amount': round(self.amount, 8),
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
+            'max_stake_amount': round(self.max_stake_amount, 8) if self.max_stake_amount else None,
             'strategy': self.strategy,
-            'buy_tag': self.enter_tag,
             'enter_tag': self.enter_tag,
             'timeframe': self.timeframe,
 
@@ -513,7 +508,6 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.exit_reason,  # Deprecated
             'exit_reason': self.exit_reason,
             'exit_order_status': self.exit_order_status,
             'stop_loss_abs': self.stop_loss,
@@ -882,6 +876,7 @@ class LocalTrade():
         ZERO = FtPrecise(0.0)
         current_amount = FtPrecise(0.0)
         current_stake = FtPrecise(0.0)
+        max_stake_amount = FtPrecise(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
@@ -923,7 +918,9 @@ class LocalTrade():
                     exit_rate, amount=exit_amount, open_rate=avg_price)
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
+                max_stake_amount += (tmp_amount * price)
         self.funding_fees = funding_fees
+        self.max_stake_amount = float(max_stake_amount)
 
         if close_profit:
             self.close_profit = close_profit
@@ -1175,6 +1172,7 @@ class Trade(_DECL_BASE, LocalTrade):
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
+    max_stake_amount = Column(Float)
     amount = Column(Float)
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)

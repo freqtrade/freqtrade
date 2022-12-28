@@ -2,12 +2,37 @@
 
 Debugging a strategy can be time-consuming. Freqtrade offers helper functions to visualize raw data.
 The following assumes you work with SampleStrategy, data for 5m timeframe from Binance and have downloaded them into the data directory in the default location.
+Please follow the [documentation](https://www.freqtrade.io/en/stable/data-download/) for more details.
 
 ## Setup
 
+### Change Working directory to repository root
+
 
 ```python
+import os
 from pathlib import Path
+
+# Change directory
+# Modify this cell to insure that the output shows the correct path.
+# Define all paths relative to the project root shown in the cell output
+project_root = "somedir/freqtrade"
+i=0
+try:
+    os.chdirdir(project_root)
+    assert Path('LICENSE').is_file()
+except:
+    while i<4 and (not Path('LICENSE').is_file()):
+        os.chdir(Path(Path.cwd(), '../'))
+        i+=1
+    project_root = Path.cwd()
+print(Path.cwd())
+```
+
+### Configure Freqtrade environment
+
+
+```python
 from freqtrade.configuration import Configuration
 
 # Customize these according to your needs.
@@ -15,14 +40,14 @@ from freqtrade.configuration import Configuration
 # Initialize empty configuration object
 config = Configuration.from_files([])
 # Optionally (recommended), use existing configuration file
-# config = Configuration.from_files(["config.json"])
+# config = Configuration.from_files(["user_data/config.json"])
 
 # Define some constants
 config["timeframe"] = "5m"
 # Name of the strategy class
 config["strategy"] = "SampleStrategy"
 # Location of the data
-data_location = config['datadir']
+data_location = config["datadir"]
 # Pair to analyze - Only use one pair here
 pair = "BTC/USDT"
 ```
@@ -36,12 +61,12 @@ from freqtrade.enums import CandleType
 candles = load_pair_history(datadir=data_location,
                             timeframe=config["timeframe"],
                             pair=pair,
-                            data_format = "hdf5",
+                            data_format = "json",  # Make sure to update this to your data
                             candle_type=CandleType.SPOT,
                             )
 
 # Confirm success
-print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
+print(f"Loaded {len(candles)} rows of data for {pair} from {data_location}")
 candles.head()
 ```
 
@@ -232,7 +257,7 @@ graph = generate_candlestick_graph(pair=pair,
 # Show graph inline
 # graph.show()
 
-# Render graph in a seperate window
+# Render graph in a separate window
 graph.show(renderer="browser")
 
 ```

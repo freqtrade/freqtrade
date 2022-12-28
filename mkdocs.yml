@@ -41,6 +41,7 @@ nav:
         - Backtest analysis: advanced-backtesting.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
+        - Trade Object: trade-object.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md

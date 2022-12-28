@@ -87,7 +87,7 @@ class PairLocks():
         Get the lock that expires the latest for the pair given.
         """
         locks = PairLocks.get_pair_locks(pair, now, side=side)
-        locks = sorted(locks, key=lambda l: l.lock_end_time, reverse=True)
+        locks = sorted(locks, key=lambda lock: lock.lock_end_time, reverse=True)
         return locks[0] if locks else None
 
     @staticmethod

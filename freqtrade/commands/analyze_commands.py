@@ -60,10 +60,4 @@ def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
 
     logger.info('Starting freqtrade in analysis mode')
 
-    process_entry_exit_reasons(config['exportfilename'],
-                               config['exchange']['pair_whitelist'],
-                               config['analysis_groups'],
-                               config['enter_reason_list'],
-                               config['exit_reason_list'],
-                               config['indicator_list']
-                               )
+    process_entry_exit_reasons(config)
