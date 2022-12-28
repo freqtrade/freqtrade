@@ -237,9 +237,7 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
 
     expected_returns_mean = total_profit.sum() / days_period
 
-    trades['downside_returns'] = 0
-    trades.loc[total_profit < 0, 'downside_returns'] = (trades['profit_abs'] / starting_balance)
-    down_stdev = np.std(trades['downside_returns'])
+    down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
 
     if down_stdev != 0:
         sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)

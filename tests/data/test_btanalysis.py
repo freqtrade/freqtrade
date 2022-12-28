@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -365,7 +364,7 @@ def test_calculate_sortino(testdatadir):
         0.01,
         )
     assert isinstance(sortino, float)
-    assert pytest.approx(sortino) == 55.1447312
+    assert pytest.approx(sortino) == 35.17722
 
 
 def test_calculate_sharpe(testdatadir):
