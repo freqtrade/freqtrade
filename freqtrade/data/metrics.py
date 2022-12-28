@@ -226,7 +226,7 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
                       starting_balance: float) -> float:
     """
     Calculate sortino
-    :param trades: DataFrame containing trades (requires columns profit_ratio)
+    :param trades: DataFrame containing trades (requires columns profit_abs)
     :return: sortino
     """
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
@@ -255,7 +255,7 @@ def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetim
                      starting_balance: float) -> float:
     """
     Calculate sharpe
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires column profit_abs)
     :return: sharpe
     """
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
@@ -281,7 +281,7 @@ def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetim
                      starting_balance: float) -> float:
     """
     Calculate calmar
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :return: calmar
     """
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
