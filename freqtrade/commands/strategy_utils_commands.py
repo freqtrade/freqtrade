@@ -17,7 +17,7 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     """
 
     # Import here to avoid loading backtesting module when it's not used
-    from freqtrade.strategy.strategy_updater import strategy_updater
+    from freqtrade.strategy.strategyupdater import StrategyUpdater
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -33,5 +33,5 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
 
     for filtered_strategy_obj in filtered_strategy_objs:
         # Initialize backtesting object
-        instance_strategy_updater = strategy_updater()
-        strategy_updater.start(instance_strategy_updater, filtered_strategy_obj)
+        instance_strategy_updater = StrategyUpdater()
+        StrategyUpdater.start(instance_strategy_updater, config, filtered_strategy_obj)
