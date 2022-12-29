@@ -29,6 +29,7 @@ nav:
         - Parameter table: freqai-parameter-table.md
         - Feature engineering: freqai-feature-engineering.md
         - Running FreqAI: freqai-running.md
+        - Reinforcement Learning: freqai-reinforcement-learning.md
         - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
@@ -40,6 +41,7 @@ nav:
         - Backtest analysis: advanced-backtesting.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
+        - Trade Object: trade-object.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md

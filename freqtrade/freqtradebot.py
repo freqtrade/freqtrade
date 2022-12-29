@@ -155,6 +155,8 @@ class FreqtradeBot(LoggingMixin):
                 self.cancel_all_open_orders()
 
             self.check_for_open_trades()
+        except Exception as e:
+            logger.warning(f'Exception during cleanup: {e.__class__.__name__} {e}')
 
         finally:
             self.strategy.ft_bot_cleanup()
@@ -162,8 +164,13 @@ class FreqtradeBot(LoggingMixin):
         self.rpc.cleanup()
         if self.emc:
             self.emc.shutdown()
-        Trade.commit()
         self.exchange.close()
+        try:
+            Trade.commit()
+        except Exception:
+            # Exeptions here will be happening if the db disappeared.
+            # At which point we can no longer commit anyway.
+            pass
 
     def startup(self) -> None:
         """
@@ -905,6 +912,7 @@ class FreqtradeBot(LoggingMixin):
             stake_amount=stake_amount,
             min_stake_amount=min_stake_amount,
             max_stake_amount=max_stake_amount,
+            trade_amount=trade.stake_amount if trade else None,
         )
 
         return enter_limit_requested, stake_amount, leverage
@@ -1151,7 +1159,7 @@ class FreqtradeBot(LoggingMixin):
             stoploss = (
                 self.edge.stoploss(pair=trade.pair)
                 if self.edge else
-                self.strategy.stoploss / trade.leverage
+                trade.stop_loss_pct / trade.leverage
             )
             if trade.is_short:
                 stop_price = trade.open_rate * (1 - stoploss)

@@ -50,6 +50,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
     expected = pd.DataFrame(
         {'pair': [pair, pair],
          'stake_amount': [500.0, 100.0],
+         'max_stake_amount': [500.0, 100],
          'amount': [4806.87657523, 970.63960782],
          'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True

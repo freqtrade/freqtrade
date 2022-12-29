@@ -46,13 +46,11 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_rate_requested': ANY,
         'open_trade_value': 0.0010025,
         'close_rate_requested': ANY,
-        'sell_reason': ANY,
         'exit_reason': ANY,
         'exit_order_status': ANY,
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
-        'buy_tag': ANY,
         'enter_tag': ANY,
         'timeframe': 5,
         'open_order_id': ANY,
@@ -64,6 +62,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount': 91.07468123,
         'amount_requested': 91.07468124,
         'stake_amount': 0.001,
+        'max_stake_amount': ANY,
         'trade_duration': None,
         'trade_duration_s': None,
         'close_profit': None,
@@ -1055,6 +1054,10 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     assert isinstance(trade, Trade)
     assert trade.pair == pair
     assert trade.open_rate == 0.0001
+
+    with pytest.raises(RPCException,
+                       match=r'Symbol does not exist or market is not active.'):
+        rpc._rpc_force_entry('LTC/NOTHING', 0.0001)
 
     # Test buy pair not with stakes
     with pytest.raises(RPCException,

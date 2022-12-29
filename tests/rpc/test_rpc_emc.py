@@ -83,6 +83,7 @@ def test_emc_init(patched_emc):
 def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
     producer_name = test_producer['name']
+    invalid_msg = r"Invalid message .+"
 
     caplog.set_level(logging.DEBUG)
 
@@ -94,7 +95,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     assert log_has(
         f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`", caplog)
 
-    # Test handle analyzed_df message
+    # Test handle analyzed_df single candle message
     df_message = {
         "type": "analyzed_df",
         "data": {
@@ -106,8 +107,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, df_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
-    assert log_has(
-        f"Consumed message from `{producer_name}` of type `RPCMessageType.ANALYZED_DF`", caplog)
+    assert log_has_re(r"Holes in data or no existing df,.+", caplog)
 
     # Test unhandled message
     unhandled_message = {"type": "status", "data": "RUNNING"}
@@ -120,7 +120,8 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     malformed_message = {"type": "whitelist", "data": {"pair": "BTC/USDT"}}
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
 
     malformed_message = {
         "type": "analyzed_df",
@@ -133,13 +134,30 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
+
+    # Empty dataframe
+    malformed_message = {
+            "type": "analyzed_df",
+            "data": {
+                "key": ("BTC/USDT", "5m", "spot"),
+                "df": ohlcv_history.loc[ohlcv_history['open'] < 0],
+                "la": datetime.now(timezone.utc)
+                }
+            }
+    patched_emc.handle_producer_message(test_producer, malformed_message)
+
+    assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
+    assert not log_has_re(invalid_msg, caplog)
+    assert log_has_re(r"Received Empty Dataframe for.+", caplog)
 
     caplog.clear()
     malformed_message = {"some": "stuff"}
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(invalid_msg, caplog)
+    caplog.clear()
 
     caplog.clear()
     malformed_message = {"type": "whitelist", "data": None}
@@ -183,7 +201,7 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
         async with websockets.serve(eat, _TEST_WS_HOST, _TEST_WS_PORT):
             await emc._create_connection(test_producer, lock)
 
-        assert log_has_re(r"Producer connection success.+", caplog)
+        assert log_has_re(r"Connected to channel.+", caplog)
     finally:
         emc.shutdown()
 
@@ -212,7 +230,8 @@ async def test_emc_create_connection_invalid_url(default_conf, caplog, mocker, h
 
     dp = DataProvider(default_conf, None, None, None)
     # Handle start explicitly to avoid messing with threading in tests
-    mocker.patch("freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start",)
+    mocker.patch("freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start")
+    mocker.patch("freqtrade.rpc.api_server.ws.channel.create_channel")
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
@@ -248,7 +267,7 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
         assert log_has("Unexpected error has occurred:", caplog)
     finally:
         emc.shutdown()
@@ -390,7 +409,9 @@ async def test_emc_receive_messages_timeout(default_conf, caplog, mocker):
     try:
         change_running(emc)
         loop.call_soon(functools.partial(change_running, emc=emc))
-        await emc._receive_messages(TestChannel(), test_producer, lock)
+
+        with pytest.raises(asyncio.TimeoutError):
+            await emc._receive_messages(TestChannel(), test_producer, lock)
 
         assert log_has_re(r"Ping error.+", caplog)
     finally:

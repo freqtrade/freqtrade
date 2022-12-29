@@ -57,7 +57,10 @@ def botclient(default_conf, mocker):
     try:
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(rpc)
-        yield ftbot, TestClient(apiserver.app)
+        # We need to use the TestClient as a context manager to
+        # handle lifespan events correctly
+        with TestClient(apiserver.app) as client:
+            yield ftbot, client
         # Cleanup ... ?
     finally:
         if apiserver:
@@ -438,7 +441,6 @@ def test_api_cleanup(default_conf, mocker, caplog):
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
-    assert log_has("Stopping API Server background tasks", caplog)
     ApiServer.shutdown()
 
 
@@ -586,7 +588,7 @@ def test_api_show_config(botclient):
     assert 'unfilledtimeout' in response
     assert 'version' in response
     assert 'api_version' in response
-    assert 2.1 <= response['api_version'] <= 2.2
+    assert 2.1 <= response['api_version'] < 3.0
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -983,6 +985,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'base_currency': 'ETH',
         'quote_currency': 'BTC',
         'stake_amount': 0.001,
+        'max_stake_amount': ANY,
         'stop_loss_abs': ANY,
         'stop_loss_pct': ANY,
         'stop_loss_ratio': ANY,
@@ -1012,11 +1015,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_order_id': open_order_id,
         'open_rate_requested': ANY,
         'open_trade_value': open_trade_value,
-        'sell_reason': None,
         'exit_reason': None,
         'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
-        'buy_tag': None,
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -1186,6 +1187,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'base_currency': 'ETH',
         'quote_currency': 'BTC',
         'stake_amount': 1,
+        'max_stake_amount': ANY,
         'stop_loss_abs': None,
         'stop_loss_pct': None,
         'stop_loss_ratio': None,
@@ -1216,11 +1218,9 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'open_order_id': '123456',
         'open_rate_requested': None,
         'open_trade_value': 0.24605460,
-        'sell_reason': None,
         'exit_reason': None,
         'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
-        'buy_tag': None,
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -1459,6 +1459,7 @@ def test_api_strategies(botclient, tmpdir):
         'StrategyTestV3',
         'StrategyTestV3CustomEntryPrice',
         'StrategyTestV3Futures',
+        'freqai_rl_test_strat',
         'freqai_test_classifier',
         'freqai_test_multimodel_classifier_strat',
         'freqai_test_multimodel_strat',
@@ -1483,6 +1484,44 @@ def test_api_strategy(botclient):
     # Disallow base64 strategies
     rc = client_get(client, f"{BASE_URI}/strategy/xx:cHJpbnQoImhlbGxvIHdvcmxkIik=")
     assert_response(rc, 500)
+
+
+def test_api_freqaimodels(botclient, tmpdir, mocker):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+    mocker.patch(
+        "freqtrade.resolvers.freqaimodel_resolver.FreqaiModelResolver.search_all_objects",
+        return_value=[
+            {'name': 'LightGBMClassifier'},
+            {'name': 'LightGBMClassifierMultiTarget'},
+            {'name': 'LightGBMRegressor'},
+            {'name': 'LightGBMRegressorMultiTarget'},
+            {'name': 'ReinforcementLearner'},
+            {'name': 'ReinforcementLearner_multiproc'},
+            {'name': 'XGBoostClassifier'},
+            {'name': 'XGBoostRFClassifier'},
+            {'name': 'XGBoostRFRegressor'},
+            {'name': 'XGBoostRegressor'},
+            {'name': 'XGBoostRegressorMultiTarget'},
+        ])
+
+    rc = client_get(client, f"{BASE_URI}/freqaimodels")
+
+    assert_response(rc)
+
+    assert rc.json() == {'freqaimodels': [
+        'LightGBMClassifier',
+        'LightGBMClassifierMultiTarget',
+        'LightGBMRegressor',
+        'LightGBMRegressorMultiTarget',
+        'ReinforcementLearner',
+        'ReinforcementLearner_multiproc',
+        'XGBoostClassifier',
+        'XGBoostRFClassifier',
+        'XGBoostRFRegressor',
+        'XGBoostRegressor',
+        'XGBoostRegressorMultiTarget'
+    ]}
 
 
 def test_list_available_pairs(botclient):
@@ -1668,7 +1707,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     mocker.patch('freqtrade.data.btanalysis._get_backtest_files',
                  return_value=[
                      testdatadir / 'backtest_results/backtest-result_multistrat.json',
-                     testdatadir / 'backtest_results/backtest-result_new.json'
+                     testdatadir / 'backtest_results/backtest-result.json'
                      ])
 
     rc = client_get(client, f"{BASE_URI}/backtest/history")
@@ -1714,12 +1753,14 @@ def test_api_ws_subscribe(botclient, mocker):
 
     with client.websocket_connect(ws_url) as ws:
         ws.send_json({'type': 'subscribe', 'data': ['whitelist']})
+        time.sleep(1)
 
     # Check call count is now 1 as we sent a valid subscribe request
     assert sub_mock.call_count == 1
 
     with client.websocket_connect(ws_url) as ws:
         ws.send_json({'type': 'subscribe', 'data': 'whitelist'})
+        time.sleep(1)
 
     # Call count hasn't changed as the subscribe request was invalid
     assert sub_mock.call_count == 1
@@ -1773,24 +1814,18 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
         mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api')
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
-        apiserver.start_message_queue()
-        # Give the queue thread time to start
-        time.sleep(0.2)
 
-        # Test message_queue coro receives the message
-        test_message = {"type": "status", "data": "test"}
-        apiserver.send_msg(test_message)
-        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
-        assert log_has("Found message of type: status", caplog)
+        # Start test client context manager to run lifespan events
+        with TestClient(apiserver.app):
+            # Test message is published on the Message Stream
+            test_message = {"type": "status", "data": "test"}
+            first_waiter = apiserver._message_stream._waiter
+            apiserver.send_msg(test_message)
+            assert first_waiter.result()[0] == test_message
 
-        # Test if exception logged when error occurs in sending
-        mocker.patch('freqtrade.rpc.api_server.ws.channel.ChannelManager.broadcast',
-                     side_effect=Exception)
-
-        apiserver.send_msg(test_message)
-        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
-        assert log_has_re(r"Exception happened in background task.*", caplog)
+            second_waiter = apiserver._message_stream._waiter
+            apiserver.send_msg(test_message)
+            assert first_waiter != second_waiter
 
     finally:
-        apiserver.cleanup()
         ApiServer.shutdown()

@@ -13,12 +13,13 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
-                                                  ForceEnterResponse, ForceExitPayload, Health,
-                                                  Locks, Logs, OpenTradeSchema, PairHistory,
-                                                  PerformanceEntry, Ping, PlotConfig, Profit,
-                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse, SysInfo,
-                                                  Version, WhitelistResponse)
+                                                  ForceEnterResponse, ForceExitPayload,
+                                                  FreqAIModelListResponse, Health, Locks, Logs,
+                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
+                                                  Stats, StatusMsg, StrategyListResponse,
+                                                  StrategyResponse, SysInfo, Version,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -37,7 +38,9 @@ logger = logging.getLogger(__name__)
 # 2.16: Additional daily metrics
 # 2.17: Forceentry - leverage, partial force_exit
 # 2.20: Add websocket endpoints
-API_VERSION = 2.20
+# 2.21: Add new_candle messagetype
+# 2.22: Add FreqAI to backtesting
+API_VERSION = 2.22
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -276,6 +279,16 @@ def get_strategy(strategy: str, config=Depends(get_config)):
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
     }
+
+
+@router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])
+def list_freqaimodels(config=Depends(get_config)):
+    from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+    strategies = FreqaiModelResolver.search_all_objects(
+        config, False)
+    strategies = sorted(strategies, key=lambda x: x['name'])
+
+    return {'freqaimodels': [x['name'] for x in strategies]}
 
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])

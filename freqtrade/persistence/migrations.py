@@ -109,11 +109,10 @@ def migrate_trades_and_orders_table(
     else:
         is_short = get_column_def(cols, 'is_short', '0')
 
-    # Margin Properties
+    # Futures Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
-
-    # Futures properties
     funding_fees = get_column_def(cols, 'funding_fees', '0.0')
+    max_stake_amount = get_column_def(cols, 'max_stake_amount', 'stake_amount')
 
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
@@ -162,7 +161,8 @@ def migrate_trades_and_orders_table(
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
             interest_rate, funding_fees, realized_profit,
-            amount_precision, price_precision, precision_mode, contract_size
+            amount_precision, price_precision, precision_mode, contract_size,
+            max_stake_amount
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -190,7 +190,8 @@ def migrate_trades_and_orders_table(
             {is_short} is_short, {interest_rate} interest_rate,
             {funding_fees} funding_fees, {realized_profit} realized_profit,
             {amount_precision} amount_precision, {price_precision} price_precision,
-            {precision_mode} precision_mode, {contract_size} contract_size
+            {precision_mode} precision_mode, {contract_size} contract_size,
+            {max_stake_amount} max_stake_amount
             from {trade_back_name}
             """))
 
@@ -310,8 +311,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    # if not has_column(cols_trades, 'contract_size'):
-    if not has_column(cols_orders, 'funding_fee'):
+    # if not has_column(cols_orders, 'funding_fee'):
+    if not has_column(cols_trades, 'max_stake_amount'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")

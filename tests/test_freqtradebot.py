@@ -88,6 +88,18 @@ def test_bot_cleanup(mocker, default_conf_usdt, caplog) -> None:
     assert coo_mock.call_count == 1
 
 
+def test_bot_cleanup_db_errors(mocker, default_conf_usdt, caplog) -> None:
+    mocker.patch('freqtrade.freqtradebot.Trade.commit',
+                 side_effect=OperationalException())
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.check_for_open_trades',
+                 side_effect=OperationalException())
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.emc = MagicMock()
+    freqtrade.emc.shutdown = MagicMock()
+    freqtrade.cleanup()
+    assert freqtrade.emc.shutdown.call_count == 1
+
+
 @pytest.mark.parametrize('runmode', [
     RunMode.DRY_RUN,
     RunMode.LIVE
@@ -2366,7 +2378,7 @@ def test_close_trade(
     trade.is_short = is_short
     assert trade
 
-    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], trade.enter_side)
+    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], trade.entry_side)
     trade.update_trade(oobj)
     oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], trade.exit_side)
     trade.update_trade(oobj)
