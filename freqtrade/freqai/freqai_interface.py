@@ -271,14 +271,19 @@ class IFreqaiModel(ABC):
 
         self.pair_it += 1
         train_it = 0
+        pair = metadata["pair"]
+
         populate_indicators = True
+        timerange = TimeRange.parse_timerange(self.dk.full_timerange)
+        self.dd.load_all_pair_histories(timerange, self.dk)
+        corr_df, base_df = self.dd.get_base_and_corr_dataframes(timerange, pair, dk)
+
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            pair = metadata["pair"]
             (_, _, _) = self.dd.get_pair_dict_info(pair)
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
@@ -308,7 +313,8 @@ class IFreqaiModel(ABC):
             else:
                 if populate_indicators:
                     dataframe = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"],
+                        corr_dataframes=corr_df, base_dataframes=base_df
                     )
                     populate_indicators = False
 
@@ -323,7 +329,14 @@ class IFreqaiModel(ABC):
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
                     dk.find_labels(dataframe_train)
-                    self.model = self.train(dataframe_train, pair, dk)
+
+                    try:
+                        self.model = self.train(dataframe_train, pair, dk)
+                    except Exception as msg:
+                        logger.warning(
+                            f"Training {pair} raised exception {msg.__class__.__name__}. "
+                            f"Message: {msg}, skipping.")
+
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(
                         tr_train.stopts)
                     if self.plot_features:

@@ -1308,14 +1308,17 @@ class FreqaiDataKitchen:
             pairs: List[str] = self.freqai_config["feature_parameters"].get(
                 "include_corr_pairlist", [])
 
-            if not prediction_dataframe.empty:
-                dataframe = prediction_dataframe.copy()
-                for tf in tfs:
+            for tf in tfs:
+                if tf not in base_dataframes:
                     base_dataframes[tf] = pd.DataFrame()
+                if not corr_dataframes.keys():
                     for p in pairs:
                         if p not in corr_dataframes:
                             corr_dataframes[p] = {}
                         corr_dataframes[p][tf] = pd.DataFrame()
+
+            if not prediction_dataframe.empty:
+                dataframe = prediction_dataframe.copy()
             else:
                 dataframe = base_dataframes[self.config["timeframe"]].copy()
 
