@@ -2035,8 +2035,8 @@ class Exchange:
             # Fetch OHLCV asynchronously
             s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
-                "Fetching pair %s, interval %s, since %s %s...",
-                pair, timeframe, since_ms, s
+                "Fetching pair %s, %s, interval %s, since %s %s...",
+                pair, candle_type, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
             candle_limit = self.ohlcv_candle_limit(
