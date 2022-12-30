@@ -2050,11 +2050,12 @@ class Exchange:
                     limit=candle_limit, params=params)
             else:
                 # Funding rate
-                data = await self._api_async.fetch_funding_rate_history(
-                    pair, since=since_ms,
-                    limit=candle_limit)
-                # Convert funding rate to candle pattern
-                data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
+                data = await self._fetch_funding_rate_history(
+                    pair=pair,
+                    timeframe=timeframe,
+                    limit=candle_limit,
+                    since_ms=since_ms,
+                )
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
             # while GDAX returns the list of OHLCV in DESC order (newest first, oldest last)
@@ -2081,6 +2082,24 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch historical candle (OHLCV) data '
                                        f'for pair {pair}. Message: {e}') from e
+
+    async def _fetch_funding_rate_history(
+        self,
+        pair: str,
+        timeframe: str,
+        limit: int,
+        since_ms: Optional[int] = None,
+    ) -> List[List]:
+        """
+        Fetch funding rate history - used to selectively override this by subclasses.
+        """
+        # Funding rate
+        data = await self._api_async.fetch_funding_rate_history(
+            pair, since=since_ms,
+            limit=limit)
+        # Convert funding rate to candle pattern
+        data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
+        return data
 
     # Fetch historic trades
 
