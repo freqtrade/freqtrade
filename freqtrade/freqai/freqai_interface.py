@@ -273,7 +273,7 @@ class IFreqaiModel(ABC):
         train_it = 0
         pair = metadata["pair"]
         populate_indicators = True
-
+        check_features = True
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
@@ -301,9 +301,14 @@ class IFreqaiModel(ABC):
             dk.set_new_model_names(pair, timestamp_model_id)
 
             if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
-                # self.dd.load_metadata(dk)
-                # dk.find_features(dataframe)
-                # self.check_if_feature_list_matches_strategy(dk)
+                if check_features:
+                    self.dd.load_metadata(dk)
+                    dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
+                        strategy, prediction_dataframe=dataframe.tail(1), pair=metadata["pair"]
+                    )
+                    dk.find_features(dataframe_dummy_features)
+                    self.check_if_feature_list_matches_strategy(dk)
+                    check_features = False
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
