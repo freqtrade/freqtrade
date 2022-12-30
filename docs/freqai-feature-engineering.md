@@ -2,7 +2,7 @@
 
 ## Defining the features
 
-Low level feature engineering is performed in the user strategy within a set of functions called `feature_engineering_*`. These function set the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names defined within `feature_engineering_*` functions must be prepended with `%-{pair}`. FreqAI is equipped with a set of functions to simplify rapid large-scale feature engineering:
+Low level feature engineering is performed in the user strategy within a set of functions called `feature_engineering_*`. These function set the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. FreqAI is equipped with a set of functions to simplify rapid large-scale feature engineering:
 
 |  Function | Description |
 |---------------|-------------|
@@ -10,10 +10,6 @@ Low level feature engineering is performed in the user strategy within a set of 
 | `feature_engineering__expand_basic()` | This optional function will automatically expand the defined features on the config defined `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`. Note: this function does *not* expand across `include_periods_candles`.
 | `feature_engineering_standard()` | This optional function will be called once with the dataframe of the base timeframe. This is the final function to be called, which means that the dataframe entering this function will contain all the features and columns created by all other `feature_engineering_expand` functions. This function is a good place to do custom exotic feature extractions (e.g. tsfresh). This function is also a good place for any feature that should not be auto-expanded upon (e.g. day of the week).
 | `set_freqai_targets()` | Required function to set the targets for the model. All targets must be prepended with `&` to be recognized by the FreqAI internals.
-
-
-!!! Note
-    Adding the full pair string, e.g. XYZ/USD, in the feature name enables improved performance for dataframe caching on the backend. If you decide *not* to add the full pair string in the feature string, FreqAI will operate in a reduced performance mode.
 
 Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
 

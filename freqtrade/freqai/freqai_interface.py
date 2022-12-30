@@ -272,11 +272,7 @@ class IFreqaiModel(ABC):
         self.pair_it += 1
         train_it = 0
         pair = metadata["pair"]
-
         populate_indicators = True
-        timerange = TimeRange.parse_timerange(self.dk.full_timerange)
-        self.dd.load_all_pair_histories(timerange, self.dk)
-        corr_df, base_df = self.dd.get_base_and_corr_dataframes(timerange, pair, dk)
 
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
@@ -312,6 +308,9 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
             else:
                 if populate_indicators:
+                    timerange = TimeRange.parse_timerange(self.dk.full_timerange)
+                    self.dd.load_all_pair_histories(timerange, self.dk)
+                    corr_df, base_df = self.dd.get_base_and_corr_dataframes(timerange, pair, dk)
                     dataframe = self.dk.use_strategy_to_populate_indicators(
                         strategy, prediction_dataframe=dataframe, pair=metadata["pair"],
                         corr_dataframes=corr_df, base_dataframes=base_df

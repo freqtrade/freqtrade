@@ -1311,10 +1311,10 @@ class FreqaiDataKitchen:
             for tf in tfs:
                 if tf not in base_dataframes:
                     base_dataframes[tf] = pd.DataFrame()
-                if not corr_dataframes.keys():
-                    for p in pairs:
-                        if p not in corr_dataframes:
-                            corr_dataframes[p] = {}
+                for p in pairs:
+                    if p not in corr_dataframes:
+                        corr_dataframes[p] = {}
+                    if tf not in corr_dataframes[p]:
                         corr_dataframes[p][tf] = pd.DataFrame()
 
             if not prediction_dataframe.empty:
