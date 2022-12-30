@@ -25,11 +25,12 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
         config, enum_failed=True, recursive=config.get('recursive_strategy_search', False))
 
     filtered_strategy_objs = []
-    for args_strategy in args['strategy_list']:
-        for strategy_obj in strategy_objs:
+    for strategy_obj in strategy_objs:
+        for args_strategy in args['strategy_list']:
             if strategy_obj['name'] == args_strategy and strategy_obj not in filtered_strategy_objs:
                 filtered_strategy_objs.append(strategy_obj)
                 break
+        print(f"strategy {strategy_obj['name']} could not be loaded or found and is skipped.")
 
     for filtered_strategy_obj in filtered_strategy_objs:
         # Initialize backtesting object

@@ -52,6 +52,7 @@ class StrategyUpdater:
         """
 
         source_file = strategy_obj['location']
+        print(f"started conversion of {source_file}")
         strategies_backup_folder = Path.joinpath(config['user_data_dir'], "strategies_orig_updater")
         target_file = Path.joinpath(strategies_backup_folder, strategy_obj['location_rel'])
 
@@ -106,6 +107,8 @@ class NameUpdater(ast.NodeTransformer):
         # traverse the AST recursively by calling the visitor method for each child node
         if hasattr(node, "_fields"):
             for field_name, field_value in ast.iter_fields(node):
+                if not isinstance(field_value, ast.AST):
+                    continue  # to avoid unnecessary loops
                 self.visit(field_value)
                 self.generic_visit(field_value)
                 self.check_fields(field_value)
@@ -204,8 +207,9 @@ class NameUpdater(ast.NodeTransformer):
                 node.slice.value = StrategyUpdater.rename_dict[node.slice.value]
         if hasattr(node.slice, "elts"):
             self.visit_slice_elts(node.slice.elts)
-        if hasattr(node.slice.value, "elts"):
-            self.visit_slice_elts(node.slice.value.elts)
+        if hasattr(node.slice, "value"):
+            if hasattr(node.slice.value, "elts"):
+                self.visit_slice_elts(node.slice.value.elts)
         return node
 
     # elts can have elts (technically recursively)
