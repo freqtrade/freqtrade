@@ -35,17 +35,17 @@ class freqai_rl_test_strat(IStrategy):
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-raw_volume"] = dataframe["volume"]
 
-        dataframe["%-raw_close"] = dataframe["close"]
-        dataframe["%-raw_open"] = dataframe["open"]
-        dataframe["%-raw_high"] = dataframe["high"]
-        dataframe["%-raw_low"] = dataframe["low"]
-
         return dataframe
 
     def feature_engineering_standard(self, dataframe, **kwargs):
 
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
+
+        dataframe["%-raw_close"] = dataframe["close"]
+        dataframe["%-raw_open"] = dataframe["open"]
+        dataframe["%-raw_high"] = dataframe["high"]
+        dataframe["%-raw_low"] = dataframe["low"]
 
         return dataframe
 
