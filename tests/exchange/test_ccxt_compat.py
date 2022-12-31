@@ -100,6 +100,16 @@ EXCHANGES = {
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
+    'bybit': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+        'futures_pair': 'BTC/USDT:USDT',
+        'futures': True,
+        'leverage_tiers_public': True,
+        'leverage_in_spot_market': True,
+    },
     'huobi': {
         'pair': 'ETH/BTC',
         'stake_currency': 'BTC',
