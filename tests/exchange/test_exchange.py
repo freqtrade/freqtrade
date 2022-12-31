@@ -4587,7 +4587,7 @@ def test_liquidation_price_is_none(
         ("binance", False, 'futures', 'cross', 1535443.01, 356512.508,
          -448192.89, 16300.000, 109.488, 32481.980, 0.025, 26316.89)
     ])
-def test_liquidation_price(
+def test_liquidation_price_binance(
     mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
     margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, amount, mm_ratio, expected
 ):
