@@ -2764,11 +2764,16 @@ class Exchange:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
-         gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
+         gateio: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
+         > Liquidation Price = (Entry Price ± Margin / Contract Multiplier / Size) /
+                                [ 1 ± (Maintenance Margin Ratio + Taker Rate)]
+            Wherein, "+" or "-" depends on whether the contract goes long or short:
+            "-" for long, and "+" for short.
+
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
 
-        :param exchange_name:
+        :param pair: Pair to calculate liquidation price for
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param amount: Absolute value of position size incl. leverage (in base currency)
