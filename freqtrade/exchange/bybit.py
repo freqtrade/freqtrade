@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.exchange_utils import timeframe_to_msecs
 
@@ -80,3 +81,65 @@ class Bybit(Exchange):
         # Convert funding rate to candle pattern
         data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
         return data
+
+    def dry_run_liquidation_price(
+        self,
+        pair: str,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        amount: float,
+        stake_amount: float,
+        leverage: float,
+        wallet_balance: float,  # Or margin balance
+        mm_ex_1: float = 0.0,  # (Binance) Cross only
+        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        Important: Must be fetching data from cached values as this is used by backtesting!
+        PERPETUAL:
+         bybit:
+          https://www.bybithelp.com/HelpCenterKnowledge/bybitHC_Article?language=en_US&id=000001067
+
+        Long:
+        Liquidation Price = (
+            Entry Price * (1 - Initial Margin Rate + Maintenance Margin Rate)
+            - Extra Margin Added/ Contract)
+        Short:
+        Liquidation Price = (
+            Entry Price * (1 + Initial Margin Rate - Maintenance Margin Rate)
+            + Extra Margin Added/ Contract)
+
+        Implementation Note: Extra margin is currently not used.
+
+        :param pair: Pair to calculate liquidation price for
+        :param open_rate: Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param amount: Absolute value of position size incl. leverage (in base currency)
+        :param stake_amount: Stake amount - Collateral in settle currency.
+        :param leverage: Leverage used for this position.
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param margin_mode: Either ISOLATED or CROSS
+        :param wallet_balance: Amount of margin_mode in the wallet being used to trade
+            Cross-Margin Mode: crossWalletBalance
+            Isolated-Margin Mode: isolatedWalletBalance
+        """
+
+        market = self.markets[pair]
+        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
+
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
+
+            if market['inverse']:
+                raise OperationalException(
+                    "Freqtrade does not yet support inverse contracts")
+            initial_margin_rate = 1 / leverage
+
+            # See docstring - ignores extra margin!
+            if is_short:
+                return open_rate * (1 + initial_margin_rate - mm_ratio)
+            else:
+                return open_rate * (1 - initial_margin_rate + mm_ratio)
+
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")

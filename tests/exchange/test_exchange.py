@@ -5115,7 +5115,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         )
 
 
-@pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
+@pytest.mark.parametrize('liquidation_buffer', [0.0])
 @pytest.mark.parametrize(
     "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
         (False, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
@@ -5144,6 +5144,16 @@ def test_get_liquidation_price1(mocker, default_conf):
         (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
         (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
         (False, 'futures', 'okx', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
+        # bybit, long
+        (False, 'futures', 'bybit', 'isolated', 1.0, 10.0, 1.0, 0.1),
+        (False, 'futures', 'bybit', 'isolated', 3.0, 10.0, 1.0, 6.7666666),
+        (False, 'futures', 'bybit', 'isolated', 5.0, 10.0, 1.0, 8.1),
+        (False, 'futures', 'bybit', 'isolated', 10.0, 10.0, 1.0, 9.1),
+        # bybit, short
+        (True, 'futures', 'bybit', 'isolated', 1.0, 10.0, 1.0, 19.9),
+        (True, 'futures', 'bybit', 'isolated', 3.0, 10.0, 1.0, 13.233333),
+        (True, 'futures', 'bybit', 'isolated', 5.0, 10.0, 1.0, 11.9),
+        (True, 'futures', 'bybit', 'isolated', 10.0, 10.0, 1.0, 10.9),
     ]
 )
 def test_get_liquidation_price(
