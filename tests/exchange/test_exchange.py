@@ -4566,6 +4566,7 @@ def test_liquidation_price_is_none(
         is_short=is_short,
         amount=71200.81144,
         stake_amount=open_rate * 71200.81144,
+        leverage=5,
         wallet_balance=-56354.57,
         mm_ex_1=0.10,
         upnl_ex_1=0.0
@@ -4604,6 +4605,7 @@ def test_liquidation_price(
         upnl_ex_1=upnl_ex_1,
         amount=amount,
         stake_amount=open_rate * amount,
+        leverage=5,
     ), 2)) == expected
 
 
@@ -5025,6 +5027,7 @@ def test__get_params(mocker, default_conf, exchange_name):
 def test_get_liquidation_price1(mocker, default_conf):
 
     api_mock = MagicMock()
+    leverage = 9.97
     positions = [
         {
             'info': {},
@@ -5037,7 +5040,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             'maintenanceMarginPercentage': 0.025,
             'entryPrice': 18.884,
             'notional': 15.1072,
-            'leverage': 9.97,
+            'leverage': leverage,
             'unrealizedPnl': 0.0048,
             'contracts': 8,
             'contractSize': 0.1,
@@ -5067,6 +5070,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        leverage=leverage,
         wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.47
@@ -5079,6 +5083,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        leverage=leverage,
         wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.540699999999998
@@ -5091,6 +5096,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        leverage=leverage,
         wallet_balance=18.884 * 0.8,
     )
     assert liq_price is None
@@ -5104,6 +5110,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             is_short=False,
             amount=0.8,
             stake_amount=18.884 * 0.8,
+            leverage=leverage,
             wallet_balance=18.884 * 0.8,
         )
 
@@ -5222,7 +5229,7 @@ def test_get_liquidation_price(
         amount=amount,
         stake_amount=amount * open_rate / leverage,
         wallet_balance=amount * open_rate / leverage,
-        # leverage=leverage,
+        leverage=leverage,
         is_short=is_short,
     )
     if expected_liq is None:
