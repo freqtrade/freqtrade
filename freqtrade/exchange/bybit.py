@@ -2,6 +2,7 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
@@ -81,6 +82,31 @@ class Bybit(Exchange):
         # Convert funding rate to candle pattern
         data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
         return data
+
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
+        if self.trading_mode != TradingMode.SPOT:
+            params = {'leverage': leverage}
+            self.set_margin_mode(pair, self.margin_mode, accept_fail=True, params=params)
+            self._set_leverage(leverage, pair, accept_fail=True)
+
+    def _get_params(
+        self,
+        side: BuySell,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'GTC',
+    ) -> Dict:
+        params = super()._get_params(
+            side=side,
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
+            params['position_idx'] = 0
+        return params
 
     def dry_run_liquidation_price(
         self,

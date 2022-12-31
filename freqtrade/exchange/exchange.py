@@ -2484,7 +2484,8 @@ class Exchange:
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
+        trading_mode: Optional[TradingMode] = None,
+        accept_fail: bool = False,
     ):
         """
         Set's the leverage before making a trade, in order to not
@@ -2499,6 +2500,10 @@ class Exchange:
             self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.BadRequest as e:
+            if not accept_fail:
+                raise TemporaryError(
+                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
@@ -2520,7 +2525,8 @@ class Exchange:
         return open_date.minute > 0 or open_date.second > 0
 
     @retrier
-    def set_margin_mode(self, pair: str, margin_mode: MarginMode, params: dict = {}):
+    def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False,
+                        params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
@@ -2534,6 +2540,10 @@ class Exchange:
             self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.BadRequest as e:
+            if not accept_fail:
+                raise TemporaryError(
+                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
