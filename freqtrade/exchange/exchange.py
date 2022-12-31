@@ -2808,7 +2808,7 @@ class Exchange:
     def get_maintenance_ratio_and_amt(
         self,
         pair: str,
-        nominal_value: float = 0.0,
+        nominal_value: float,
     ) -> Tuple[float, Optional[float]]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
