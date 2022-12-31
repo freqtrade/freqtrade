@@ -1,6 +1,6 @@
 """ Bybit exchange subclass """
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
@@ -50,6 +50,13 @@ class Bybit(Exchange):
             })
         config.update(super()._ccxt_config)
         return config
+
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        main = super().market_is_future(market)
+        # For ByBit, we'll only support USDT markets for now.
+        return (
+            main and market['settle'] == 'USDT'
+        )
 
     async def _fetch_funding_rate_history(
         self,
