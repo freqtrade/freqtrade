@@ -4,11 +4,11 @@ from freqtrade.strategy.strategyupdater import StrategyUpdater
 
 
 def test_strategy_updater(default_conf, caplog) -> None:
-    modified_code5 = StrategyUpdater.update_code(StrategyUpdater, """
-def confirm_trade_exit(sell_reason: str):
-    pass
+    modified_code2 = StrategyUpdater.update_code(StrategyUpdater, """
+ticker_interval = '15m'
+buy_some_parameter = IntParameter(space='buy')
+sell_some_parameter = IntParameter(space='sell')
 """)
-
     modified_code1 = StrategyUpdater.update_code(StrategyUpdater, """
 class testClass(IStrategy):
     def populate_buy_trend():
@@ -22,12 +22,6 @@ class testClass(IStrategy):
     def custom_sell():
         pass
 """)
-
-    modified_code2 = StrategyUpdater.update_code(StrategyUpdater, """
-buy_some_parameter = IntParameter(space='buy')
-sell_some_parameter = IntParameter(space='sell')
-ticker_interval = '15m'
-""")
     modified_code3 = StrategyUpdater.update_code(StrategyUpdater, """
 use_sell_signal = True
 sell_profit_only = True
@@ -38,6 +32,32 @@ forcebuy_enable = True
     modified_code4 = StrategyUpdater.update_code(StrategyUpdater, """
 dataframe.loc[reduce(lambda x, y: x & y, conditions), ["buy", "buy_tag"]] = (1, "buy_signal_1")
 dataframe.loc[reduce(lambda x, y: x & y, conditions), 'sell'] = 1
+""")
+    modified_code5 = StrategyUpdater.update_code(StrategyUpdater, """
+def confirm_trade_exit(sell_reason: str):
+    pass
+    """)
+    modified_code6 = StrategyUpdater.update_code(StrategyUpdater, """
+order_time_in_force = {
+    'buy': 'gtc',
+    'sell': 'ioc'
+}
+order_types = {
+    'buy': 'limit',
+    'sell': 'market',
+    'stoploss': 'market',
+    'stoploss_on_exchange': False
+}
+unfilledtimeout = {
+    'buy': 1,
+    'sell': 2
+}
+""")
+
+    modified_code7 = StrategyUpdater.update_code(StrategyUpdater, """
+def confirm_trade_exit(sell_reason):
+    if (sell_reason == 'stop_loss'):
+        pass
 """)
 
     assert "populate_entry_trend" in modified_code1
@@ -63,3 +83,13 @@ dataframe.loc[reduce(lambda x, y: x & y, conditions), 'sell'] = 1
     assert "enter_tag" in modified_code4
 
     assert "exit_reason" in modified_code5
+
+    assert "'entry': 'gtc'" in modified_code6
+    assert "'exit': 'ioc'" in modified_code6
+    assert "'entry': 'limit'" in modified_code6
+    assert "'exit': 'market'" in modified_code6
+    assert "'entry': 1" in modified_code6
+    assert "'exit': 2" in modified_code6
+
+    assert "exit_reason" in modified_code7
+    assert "exit_reason == 'stop_loss'" in modified_code7

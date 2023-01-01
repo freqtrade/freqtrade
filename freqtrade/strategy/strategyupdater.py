@@ -107,12 +107,16 @@ class NameUpdater(ast.NodeTransformer):
             for field_name, field_value in ast.iter_fields(node):
                 self.check_strategy_and_config_settings(node, field_value)
                 self.check_fields(field_value)
+                for child in ast.iter_child_nodes(node):
+                    self.generic_visit(child)
 
     def check_fields(self, field_value):
         if isinstance(field_value, list):
             for item in field_value:
-                if isinstance(item, ast.AST):
+                if isinstance(item, ast.AST) or isinstance(item, ast.If):
                     self.visit(item)
+        if isinstance(field_value, ast.Name):
+            self.visit_Name(field_value)
 
     def check_strategy_and_config_settings(self, node, field_value):
         if (isinstance(field_value, ast.AST) and
@@ -157,6 +161,11 @@ class NameUpdater(ast.NodeTransformer):
         #        node.module = "freqtrade.strategy"
         return node
 
+    def visit_If(self, node: ast.If):
+        for child in ast.iter_child_nodes(node):
+            self.visit(child)
+        return self.generic_visit(node)
+
     def visit_FunctionDef(self, node):
         # if the function name is in the mapping, update it
         if node.name in StrategyUpdater.function_mapping:
@@ -164,6 +173,13 @@ class NameUpdater(ast.NodeTransformer):
         if hasattr(node, "args"):
             self.check_args(node)
         return self.generic_visit(node)
+
+    def visit_Assign(self, node):
+        if hasattr(node, "targets") and isinstance(node.targets, list):
+            for target in node.targets:
+                if hasattr(target, "id") and target.id in StrategyUpdater.name_mapping:
+                    target.id = StrategyUpdater.name_mapping[target.id]
+        return node
 
     def visit_Attribute(self, node):
         # if the attribute name is 'nr_of_successful_buys',
