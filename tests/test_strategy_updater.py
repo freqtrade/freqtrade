@@ -4,6 +4,11 @@ from freqtrade.strategy.strategyupdater import StrategyUpdater
 
 
 def test_strategy_updater(default_conf, caplog) -> None:
+    modified_code5 = StrategyUpdater.update_code(StrategyUpdater, """
+def confirm_trade_exit(sell_reason: str):
+    pass
+""")
+
     modified_code1 = StrategyUpdater.update_code(StrategyUpdater, """
 class testClass(IStrategy):
     def populate_buy_trend():
@@ -31,9 +36,10 @@ ignore_roi_if_buy_signal = True
 forcebuy_enable = True
 """)
     modified_code4 = StrategyUpdater.update_code(StrategyUpdater, """
-dataframe.loc[reduce(lambda x, y: x & y, conditions), 'buy'] = 1
+dataframe.loc[reduce(lambda x, y: x & y, conditions), ["buy", "buy_tag"]] = (1, "buy_signal_1")
 dataframe.loc[reduce(lambda x, y: x & y, conditions), 'sell'] = 1
 """)
+
     assert "populate_entry_trend" in modified_code1
     assert "populate_exit_trend" in modified_code1
     assert "check_entry_timeout" in modified_code1
@@ -54,3 +60,6 @@ dataframe.loc[reduce(lambda x, y: x & y, conditions), 'sell'] = 1
 
     assert "enter_long" in modified_code4
     assert "exit_long" in modified_code4
+    assert "enter_tag" in modified_code4
+
+    assert "exit_reason" in modified_code5
