@@ -43,6 +43,14 @@ def default_conf(default_conf) -> dict:
     return default_conf
 
 
+@pytest.fixture
+def update():
+    message = Message(0, datetime.utcnow(), Chat(0, 0))
+    _update = Update(0, message=message)
+
+    return _update
+
+
 class DummyCls(Telegram):
     """
     Dummy class for testing the Telegram @authorized_only decorator
