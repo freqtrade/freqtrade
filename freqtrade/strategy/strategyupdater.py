@@ -3,8 +3,6 @@ import os
 import shutil
 from pathlib import Path
 
-import astor
-
 
 class StrategyUpdater:
     name_mapping = {
@@ -59,7 +57,7 @@ class StrategyUpdater:
         # read the file
         with open(source_file, 'r') as f:
             old_code = f.read()
-        if not os.path.exists(strategies_backup_folder):
+        if not strategies_backup_folder.is_dir():
             os.makedirs(strategies_backup_folder)
 
         # backup original
@@ -96,7 +94,7 @@ class StrategyUpdater:
         ast.increment_lineno(tree, n=1)
 
         # generate the new code from the updated AST
-        return astor.to_source(tree)
+        return ast.dump(tree)
 
 
 # Here we go through each respective node, slice, elt, key ... to replace outdated entries.
@@ -187,9 +185,9 @@ class NameUpdater(ast.NodeTransformer):
         # if the attribute name is 'nr_of_successful_buys',
         # update it to 'nr_of_successful_entries'
         if (
-            isinstance(node.value, ast.Name)
-            and node.value.id == 'trades'
-            and node.attr == 'nr_of_successful_buys'
+                isinstance(node.value, ast.Name)
+                and node.value.id == 'trades'
+                and node.attr == 'nr_of_successful_buys'
         ):
             node.attr = 'nr_of_successful_entries'
         return self.generic_visit(node)
@@ -213,9 +211,9 @@ class NameUpdater(ast.NodeTransformer):
             else:
                 for child in node.body:
                     if (
-                        isinstance(child, ast.Assign)
-                        and isinstance(child.targets[0], ast.Name)
-                        and child.targets[0].id == 'INTERFACE_VERSION'
+                            isinstance(child, ast.Assign)
+                            and isinstance(child.targets[0], ast.Name)
+                            and child.targets[0].id == 'INTERFACE_VERSION'
                     ):
                         child.value = ast.parse('3').body[0].value
         return self.generic_visit(node)
