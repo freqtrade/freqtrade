@@ -159,8 +159,8 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
-    update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), datetime.utcnow(), chat)
+    message = Message(randint(1, 100), datetime.utcnow(), chat)
+    update = Update(randint(1, 100), message=message)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -193,9 +193,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None
 
 
 def test_telegram_status(default_conf, update, mocker) -> None:
-    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = "123"
 
     status_table = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Telegram._status_table', status_table)
@@ -252,9 +250,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
 
 @pytest.mark.usefixtures("init_persistence")
 def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
-    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = "123"
     default_conf['position_adjustment_enable'] = True
     mocker.patch.multiple(
         EXMS,
@@ -305,9 +301,7 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
 
 @pytest.mark.usefixtures("init_persistence")
 def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -> None:
-    update.message.chat.id = "123"
     default_conf['telegram']['enabled'] = False
-    default_conf['telegram']['chat_id'] = "123"
     default_conf['position_adjustment_enable'] = True
     mocker.patch.multiple(
         EXMS,
@@ -1277,7 +1271,6 @@ def test_force_enter_handle_exception(default_conf, update, mocker) -> None:
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
 
-    update.message.text = '/forcebuy ETH/Nonepair'
     telegram._force_enter(update=update, context=MagicMock(), order_side=SignalDirection.LONG)
 
     assert msg_mock.call_count == 1
