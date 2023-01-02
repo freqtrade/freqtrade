@@ -124,6 +124,8 @@ It is advisable to start from the template `feature_engineering_*` functions in 
             / dataframe["close"]
             - 1
             )
+        
+        return dataframe
 ```
 
 In the presented example, the user does not wish to pass the `bb_lowerband` as a feature to the model,
