@@ -21,7 +21,7 @@ from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
+from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 from telegram.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
@@ -104,6 +104,7 @@ class Telegram(RPCHandler):
         super().__init__(rpc, config)
 
         self._updater: Updater
+        self._app: Application
         self._init_keyboard()
         self._init()
 
@@ -162,8 +163,9 @@ class Telegram(RPCHandler):
         registers all known command handlers
         and starts polling for message updates
         """
-        self._updater = Updater(token=self._config['telegram']['token'], workers=0,
-                                use_context=True)
+        self._app = Application.builder().token(self._config['telegram']['token']).build
+        # self._updater = Updater(token=, workers=0,
+                                # use_context=True)
 
         # Register command handler and start telegram message polling
         handles = [
@@ -222,12 +224,12 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._force_enter_inline, pattern=r"\S+\/\S+"),
         ]
         for handle in handles:
-            self._updater.dispatcher.add_handler(handle)
+            self._app.add_handler(handle)
 
         for callback in callbacks:
-            self._updater.dispatcher.add_handler(callback)
+            self._app.add_handler(callback)
 
-        self._updater.start_polling(
+        self._app.run_polling(
             bootstrap_retries=-1,
             timeout=20,
             read_latency=60,  # Assumed transmission latency
@@ -244,7 +246,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         # This can take up to `timeout` from the call to `start_polling`.
-        self._updater.stop()
+        self._app.stop()
 
     def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
         """
