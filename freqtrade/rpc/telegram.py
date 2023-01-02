@@ -235,7 +235,7 @@ class Telegram(RPCHandler):
         )
         logger.info(
             'rpc.telegram is listening for following commands: %s',
-            [h.command for h in handles]
+            [[x for x in sorted(h.commands)] for h in handles]
         )
 
     def cleanup(self) -> None:

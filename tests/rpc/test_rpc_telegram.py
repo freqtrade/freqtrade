@@ -115,14 +115,14 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
-                   "['forcesell', 'forceexit', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
-                   "['trades'], ['delete'], ['coo', 'cancel_open_order'], ['performance'], "
-                   "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
+                   "['forceexit', 'forcesell', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
+                   "['trades'], ['delete'], ['cancel_open_order', 'coo'], ['performance'], "
+                   "['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
-                   "['count'], ['locks'], ['unlock', 'delete_locks'], "
-                   "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
+                   "['count'], ['locks'], ['delete_locks', 'unlock'], "
+                   "['reload_conf', 'reload_config'], ['show_conf', 'show_config'], "
                    "['stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], "
-                   "['blacklist_delete', 'bl_delete'], "
+                   "['bl_delete', 'blacklist_delete'], "
                    "['logs'], ['edge'], ['health'], ['help'], ['version'], ['marketdir']"
                    "]")
 
