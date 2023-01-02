@@ -39,4 +39,4 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     for filtered_strategy_obj in filtered_strategy_objs:
         # Initialize backtesting object
         instance_strategy_updater = StrategyUpdater()
-        StrategyUpdater.start(instance_strategy_updater, config, filtered_strategy_obj)
+        self.start(config, filtered_strategy_obj)

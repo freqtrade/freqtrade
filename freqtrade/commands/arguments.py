@@ -111,7 +111,8 @@ ARGS_ANALYZE_ENTRIES_EXITS = ["exportfilename", "analysis_groups", "enter_reason
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-freqaimodels",
                     "list-data", "hyperopt-list", "hyperopt-show", "backtest-filter",
-                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv"]
+                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv",
+                    "strategy-updater"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
