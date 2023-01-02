@@ -81,7 +81,7 @@ class StrategyUpdater:
         tree = ast.parse(code)
 
         # use the AST to update the code
-        updated_code = self.modify_ast(self, tree)
+        updated_code = self.modify_ast(tree)
 
         # return the modified code without executing it
         return updated_code
