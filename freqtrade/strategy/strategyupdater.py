@@ -69,7 +69,7 @@ class StrategyUpdater:
         shutil.copy(source_file, target_file)
 
         # update the code
-        new_code = StrategyUpdater.update_code(self, old_code)
+        new_code = self.update_code(old_code)
         # write the modified code to the destination folder
         with open(source_file, 'w') as f:
             f.write(new_code)
@@ -113,7 +113,8 @@ class NameUpdater(ast.NodeTransformer):
     def check_fields(self, field_value):
         if isinstance(field_value, list):
             for item in field_value:
-                if isinstance(item, ast.AST) or isinstance(item, ast.If):
+                if (isinstance(item, ast.AST) or isinstance(item, ast.If) or
+                        isinstance(item, ast.Expr)):
                     self.visit(item)
         if isinstance(field_value, ast.Name):
             self.visit_Name(field_value)
@@ -138,7 +139,8 @@ class NameUpdater(ast.NodeTransformer):
         if hasattr(node, "args"):
             if isinstance(node.args, list):
                 for arg in node.args:
-                    arg.arg = StrategyUpdater.name_mapping[arg.arg]
+                    if arg.arg in StrategyUpdater.name_mapping:
+                        arg.arg = StrategyUpdater.name_mapping[arg.arg]
         return node
 
     def visit_Name(self, node):

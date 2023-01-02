@@ -59,6 +59,11 @@ def confirm_trade_exit(sell_reason):
     if (sell_reason == 'stop_loss'):
         pass
 """)
+    #    modified_code8 = StrategyUpdater.update_code(StrategyUpdater, """
+    # sell_reason == 'sell_signal'
+    # sell_reason == 'force_sell'
+    # sell_reason == 'emergency_sell'
+    # """)
 
     assert "populate_entry_trend" in modified_code1
     assert "populate_exit_trend" in modified_code1
@@ -93,3 +98,9 @@ def confirm_trade_exit(sell_reason):
 
     assert "exit_reason" in modified_code7
     assert "exit_reason == 'stop_loss'" in modified_code7
+
+    # those tests currently don't work, next in line.
+    # assert "exit_signal" in modified_code8
+    # assert "exit_reason" in modified_code8
+    # assert "force_exit" in modified_code8
+    # assert "emergency_exit" in modified_code8

@@ -22,7 +22,7 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     strategy_objs = StrategyResolver.search_all_objects(
-        config, enum_failed=True, recursive=config.get('recursive_strategy_search', False))
+        config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
 
     filtered_strategy_objs = []
     for args_strategy in args['strategy_list']:
