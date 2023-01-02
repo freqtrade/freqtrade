@@ -184,9 +184,11 @@ class NameUpdater(ast.NodeTransformer):
     def visit_Attribute(self, node):
         # if the attribute name is 'nr_of_successful_buys',
         # update it to 'nr_of_successful_entries'
-        if isinstance(node.value, ast.Name) and \
-                node.value.id == 'trades' and \
-                node.attr == 'nr_of_successful_buys':
+        if (
+            isinstance(node.value, ast.Name)
+            and node.value.id == 'trades'
+            and node.attr == 'nr_of_successful_buys'
+        ):
             node.attr = 'nr_of_successful_entries'
         return self.generic_visit(node)
 
@@ -208,9 +210,11 @@ class NameUpdater(ast.NodeTransformer):
             # otherwise, update its value to 3
             else:
                 for child in node.body:
-                    if isinstance(child, ast.Assign) and \
-                            isinstance(child.targets[0], ast.Name) and \
-                            child.targets[0].id == 'INTERFACE_VERSION':
+                    if (
+                        isinstance(child, ast.Assign)
+                        and isinstance(child.targets[0], ast.Name)
+                        and child.targets[0].id == 'INTERFACE_VERSION'
+                    ):
                         child.value = ast.parse('3').body[0].value
         return self.generic_visit(node)
 
@@ -253,8 +257,6 @@ class NameUpdater(ast.NodeTransformer):
 
     def visit_Constant(self, node):
         # do not update the names in import statements
-        if node.value in \
-                StrategyUpdater.otif_ot_unfilledtimeout:
-            node.value = \
-                StrategyUpdater.otif_ot_unfilledtimeout[node.value]
+        if node.value in StrategyUpdater.otif_ot_unfilledtimeout:
+            node.value = StrategyUpdater.otif_ot_unfilledtimeout[node.value]
         return node
