@@ -124,7 +124,11 @@ class FtRestClient():
         :param lock_id: ID for the lock to delete
         :return: json object
         """
-        return self._delete(f"locks/{lock_id}")
+        if not self.locks().get(lock_id):
+            logger.warning("Lock id not found!")
+            return None
+        else:
+            return self._delete(f"locks/{lock_id}")
 
     def daily(self, days=None):
         """Return the profits for each day, and amount of trades.
