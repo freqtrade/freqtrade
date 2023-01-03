@@ -52,7 +52,7 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
     return analysed_trades_dict
 
 
-def _analyze_candles_and_indicators(pair, trades:pd.DataFrame, signal_candles:pd.DataFrame):
+def _analyze_candles_and_indicators(pair, trades: pd.DataFrame, signal_candles: pd.DataFrame):
     buyf = signal_candles
 
     if len(buyf) > 0:
