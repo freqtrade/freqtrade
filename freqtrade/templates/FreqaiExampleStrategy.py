@@ -39,7 +39,7 @@ class FreqaiExampleStrategy(IStrategy):
     use_exit_signal = True
     # this is the maximum period fed to talib (timeframe independent)
     startup_candle_count: int = 40
-    can_short = False
+    can_short = True
 
     std_dev_multiplier_buy = CategoricalParameter(
         [0.75, 1, 1.25, 1.5, 1.75], default=1.25, space="buy", optimize=True)
