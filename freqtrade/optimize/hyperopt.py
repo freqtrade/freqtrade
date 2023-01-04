@@ -119,10 +119,13 @@ class Hyperopt:
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
-            self.max_open_trades = self.config['max_open_trades']
+            self.max_open_trades = self.config['max_open_trades'] \
+                if self.config['max_open_trades'] != float('inf') else -1
         else:
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             self.max_open_trades = 0
+
+        print("Strategy max open trades", self.max_open_trades)
 
         if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_exit_signal is enabled

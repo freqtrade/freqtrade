@@ -191,7 +191,7 @@ def generate_tag_metrics(tag_type: str,
         return []
 
 
-def generate_exit_reason_stats(max_open_trades: int | float, results: DataFrame) -> List[Dict]:
+def generate_exit_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param max_open_trades: Max_open_trades parameter

@@ -371,19 +371,20 @@ def test_strategy_max_open_trades_infinity_from_strategy(caplog, default_conf):
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # this test assumes -1 set to 'max_open_trades' in CURRENT_TEST_STRATEGY
-    assert strategy.max_open_trades == float('inf')
+    assert strategy.max_open_trades == -1
+    assert default_conf['max_open_trades'] == float('inf')
 
 
 def test_strategy_max_open_trades_infinity_from_config(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'max_open_trades': -1
+        'max_open_trades': float('inf')
     })
 
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.max_open_trades == float('inf')
+    assert strategy.max_open_trades == -1
 
 
 @ pytest.mark.filterwarnings("ignore:deprecated")

@@ -55,7 +55,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     stoploss: float
 
     # max open trades for the strategy
-    max_open_trades:  int | float
+    max_open_trades:  int
 
     # trailing stoploss
     trailing_stop: bool = False
