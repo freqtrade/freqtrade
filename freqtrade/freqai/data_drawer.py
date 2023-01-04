@@ -645,12 +645,20 @@ class FreqaiDataDrawer:
                             + 1
                         )
                     except IndexError:
+                        index = -1
+                        if history_data[pair][tf].iloc[-1]['date'] < df_dp['date'].iloc[0]:
+                            index = 0
+                        else:
+                            index = -1
                         logger.warning(
-                            f"Unable to update pair history for {pair}. "
-                            "If this does not resolve itself after 1 additional candle, "
-                            "please report the error to #freqai discord channel"
+                            f"No common dates in historical data and dataprovider for {pair}. "
+                            f"Appending dataprovider to historical data (full? {not bool(index)})"
+                            "but please be aware that there is likely a gap in the historical "
+                            "data.\n"
+                            f"Historical data ends at {history_data[pair][tf].iloc[-1]['date']} "
+                            f"while dataprovider starts at {df_dp['date'].iloc[0]} and"
+                            f"ends at {df_dp['date'].iloc[0]}."
                         )
-                        return
 
                     history_data[pair][tf] = pd.concat(
                         [
