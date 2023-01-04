@@ -27,7 +27,7 @@ class FreqaiExampleStrategy(IStrategy):
     plot_config = {
         "main_plot": {},
         "subplots": {
-            "prediction": {"prediction": {"color": "blue"}},
+            "&-s_close": {"prediction": {"color": "blue"}},
             "do_predict": {
                 "do_predict": {"color": "brown"},
             },
@@ -184,7 +184,8 @@ class FreqaiExampleStrategy(IStrategy):
         # If user wishes to use multiple targets, they can add more by
         # appending more columns with '&'. User should keep in mind that multi targets
         # requires a multioutput prediction model such as
-        # templates/CatboostPredictionMultiModel.py,
+        # freqai/prediction_models/CatboostRegressorMultiTarget.py,
+        # freqtrade trade --freqaimodel CatboostRegressorMultiTarget
 
         # df["&-s_range"] = (
         #     df["close"]
