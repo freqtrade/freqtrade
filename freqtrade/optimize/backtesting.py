@@ -1177,6 +1177,7 @@ class Backtesting:
                         open_trade_count_start = self.backtest_loop(
                             row, pair, current_time, end_date, max_open_trades,
                             open_trade_count_start)
+                        continue
                     detail_data.loc[:, 'enter_long'] = row[LONG_IDX]
                     detail_data.loc[:, 'exit_long'] = row[ELONG_IDX]
                     detail_data.loc[:, 'enter_short'] = row[SHORT_IDX]

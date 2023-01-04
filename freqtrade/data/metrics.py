@@ -1,4 +1,6 @@
 import logging
+import math
+from datetime import datetime
 from typing import Dict, Tuple
 
 import numpy as np
@@ -190,3 +192,119 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     :return: CAGR
     """
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+
+
+def calculate_expectancy(trades: pd.DataFrame) -> float:
+    """
+    Calculate expectancy
+    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :return: expectancy
+    """
+    if len(trades) == 0:
+        return 0
+
+    expectancy = 1
+
+    profit_sum = trades.loc[trades['profit_abs'] > 0, 'profit_abs'].sum()
+    loss_sum = abs(trades.loc[trades['profit_abs'] < 0, 'profit_abs'].sum())
+    nb_win_trades = len(trades.loc[trades['profit_abs'] > 0])
+    nb_loss_trades = len(trades.loc[trades['profit_abs'] < 0])
+
+    if (nb_win_trades > 0) and (nb_loss_trades > 0):
+        average_win = profit_sum / nb_win_trades
+        average_loss = loss_sum / nb_loss_trades
+        risk_reward_ratio = average_win / average_loss
+        winrate = nb_win_trades / len(trades)
+        expectancy = ((1 + risk_reward_ratio) * winrate) - 1
+    elif nb_win_trades == 0:
+        expectancy = 0
+
+    return expectancy
+
+
+def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                      starting_balance: float) -> float:
+    """
+    Calculate sortino
+    :param trades: DataFrame containing trades (requires columns profit_abs)
+    :return: sortino
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'] / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    expected_returns_mean = total_profit.sum() / days_period
+
+    down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
+
+    if down_stdev != 0 and not np.isnan(down_stdev):
+        sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
+    else:
+        # Define high (negative) sortino ratio to be clear that this is NOT optimal.
+        sortino_ratio = -100
+
+    # print(expected_returns_mean, down_stdev, sortino_ratio)
+    return sortino_ratio
+
+
+def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                     starting_balance: float) -> float:
+    """
+    Calculate sharpe
+    :param trades: DataFrame containing trades (requires column profit_abs)
+    :return: sharpe
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'] / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    expected_returns_mean = total_profit.sum() / days_period
+    up_stdev = np.std(total_profit)
+
+    if up_stdev != 0:
+        sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
+    else:
+        # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
+        sharp_ratio = -100
+
+    # print(expected_returns_mean, up_stdev, sharp_ratio)
+    return sharp_ratio
+
+
+def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                     starting_balance: float) -> float:
+    """
+    Calculate calmar
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
+    :return: calmar
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'].sum() / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    # adding slippage of 0.1% per trade
+    # total_profit = total_profit - 0.0005
+    expected_returns_mean = total_profit / days_period * 100
+
+    # calculate max drawdown
+    try:
+        _, _, _, _, _, max_drawdown = calculate_max_drawdown(
+            trades, value_col="profit_abs", starting_balance=starting_balance
+        )
+    except ValueError:
+        max_drawdown = 0
+
+    if max_drawdown != 0:
+        calmar_ratio = expected_returns_mean / max_drawdown * math.sqrt(365)
+    else:
+        # Define high (negative) calmar ratio to be clear that this is NOT optimal.
+        calmar_ratio = -100
+
+    # print(expected_returns_mean, max_drawdown, calmar_ratio)
+    return calmar_ratio
