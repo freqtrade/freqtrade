@@ -920,7 +920,7 @@ class Backtesting:
                 trade.close(exit_row[OPEN_IDX], show_msg=False)
                 LocalTrade.close_bt_trade(trade)
 
-    def trade_slot_available(self, max_open_trades: int, open_trade_count: int) -> bool:
+    def trade_slot_available(self, max_open_trades: int | float, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
         if max_open_trades <= 0 or open_trade_count < max_open_trades:
             return True
@@ -1051,7 +1051,8 @@ class Backtesting:
 
     def backtest_loop(
             self, row: Tuple, pair: str, current_time: datetime, end_date: datetime,
-            max_open_trades: int, open_trade_count_start: int, is_first: bool = True) -> int:
+            max_open_trades: int | float,
+            open_trade_count_start: int, is_first: bool = True) -> int:
         """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
 
@@ -1122,7 +1123,7 @@ class Backtesting:
 
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
-                 max_open_trades: int = 0) -> Dict[str, Any]:
+                 max_open_trades: int | float = 0) -> Dict[str, Any]:
         """
         Implement backtesting functionality
 

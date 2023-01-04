@@ -175,6 +175,18 @@ def test_strategy_override_stoploss(caplog, default_conf):
     assert log_has("Override strategy 'stoploss' with value in config file: -0.5.", caplog)
 
 
+def test_strategy_override_max_open_trades(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': CURRENT_TEST_STRATEGY,
+        'max_open_trades': 7
+    })
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    assert strategy.max_open_trades == 7
+    assert log_has("Override strategy 'max_open_trades' with value in config file: 7.", caplog)
+
+
 def test_strategy_override_trailing_stop(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
@@ -347,6 +359,31 @@ def test_strategy_override_use_exit_profit_only(caplog, default_conf):
     assert strategy.exit_profit_only
     assert isinstance(strategy.exit_profit_only, bool)
     assert log_has("Override strategy 'exit_profit_only' with value in config file: True.", caplog)
+
+
+def test_strategy_max_open_trades_infinity_from_strategy(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': CURRENT_TEST_STRATEGY,
+    })
+    del default_conf['max_open_trades']
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    # this test assumes -1 set to 'max_open_trades' in CURRENT_TEST_STRATEGY
+    assert strategy.max_open_trades == float('inf')
+
+
+def test_strategy_max_open_trades_infinity_from_config(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': CURRENT_TEST_STRATEGY,
+        'max_open_trades': -1
+    })
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    assert strategy.max_open_trades == float('inf')
 
 
 @ pytest.mark.filterwarnings("ignore:deprecated")

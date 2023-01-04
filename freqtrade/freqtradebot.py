@@ -520,7 +520,8 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
-            stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
+            stake_amount = self.wallets.get_trade_stake_amount(
+                pair, self.edge, self.config['max_open_trades'])
 
             bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and

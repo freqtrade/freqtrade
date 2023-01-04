@@ -80,6 +80,8 @@ class HyperStrategyMixin:
 
             self.stoploss = params.get('stoploss', {}).get(
                 'stoploss', getattr(self, 'stoploss', -0.1))
+            self.max_open_trades = params.get('max_open_trades', {}).get(
+                'max_open_trades', getattr(self, 'max_open_trades', -1))
             trailing = params.get('trailing', {})
             self.trailing_stop = trailing.get(
                 'trailing_stop', getattr(self, 'trailing_stop', False))

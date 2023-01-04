@@ -123,6 +123,12 @@ class MyAwesomeStrategy(IStrategy):
 
                 Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
+
+        # Define a custom max_open_trades space
+        def trades_space(self) -> List[Dimension]:
+            return [
+                Integer(1, 10, name='max_open_trades'),
+            ]
 ```
 
 !!! Note

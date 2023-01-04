@@ -332,7 +332,7 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
 
 def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
-                          max_open_trades: int) -> pd.DataFrame:
+                          max_open_trades: int | float) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
     and then counting overlaps

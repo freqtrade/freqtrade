@@ -76,6 +76,7 @@ class StrategyResolver(IResolver):
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
                       ("max_entry_position_adjustment",      -1),
+                      ("max_open_trades",                    -1)
                       ]
         for attribute, default in attributes:
             StrategyResolver._override_attribute_helper(strategy, config,
@@ -128,6 +129,8 @@ class StrategyResolver(IResolver):
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):
             strategy.stoploss = float(strategy.stoploss)
+        if hasattr(strategy, 'max_open_trades') and strategy.max_open_trades == -1:
+            strategy.max_open_trades = float('inf')
         return strategy
 
     @staticmethod

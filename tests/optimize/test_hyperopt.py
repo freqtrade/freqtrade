@@ -292,6 +292,8 @@ def test_params_no_optimize_details(hyperopt) -> None:
     assert res['roi']['0'] == 0.04
     assert "stoploss" in res
     assert res['stoploss']['stoploss'] == -0.1
+    assert "max_open_trades" in res
+    assert res['max_open_trades']['max_open_trades'] == 1
 
 
 def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
@@ -474,6 +476,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'trailing_stop_positive': 0.02,
         'trailing_stop_positive_offset_p1': 0.05,
         'trailing_only_offset_is_reached': False,
+        'max_open_trades': 3,
     }
     response_expected = {
         'loss': 1.9147239021396234,
@@ -499,7 +502,9 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                            'trailing': {'trailing_only_offset_is_reached': False,
                                         'trailing_stop': True,
                                         'trailing_stop_positive': 0.02,
-                                        'trailing_stop_positive_offset': 0.07}},
+                                        'trailing_stop_positive_offset': 0.07},
+                           'max_open_trades': {'max_open_trades': 3}
+                           },
         'params_dict': optimizer_param,
         'params_not_optimized': {'buy': {}, 'protection': {}, 'sell': {}},
         'results_metrics': ANY,
@@ -548,7 +553,8 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
                 'buy': {'mfi-value': None},
                 'sell': {'sell-mfi-value': None},
                 'roi': {}, 'stoploss': {'stoploss': None},
-                'trailing': {'trailing_stop': None}
+                'trailing': {'trailing_stop': None},
+                'max_open_trades': {'max_open_trades': None}
             },
             'results_metrics': generate_result_metrics(),
         }])
@@ -571,7 +577,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
     out, err = capsys.readouterr()
     result_str = (
         '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi"'
-        ':{},"stoploss":null,"trailing_stop":null}'
+        ':{},"stoploss":null,"trailing_stop":null,"max_open_trades":null}'
     )
     assert result_str in out  # noqa: E501
     # Should be called for historical candle data
@@ -874,6 +880,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
     assert hyperopt.backtesting.strategy.sell_rsi.value == 74
     assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value == 30
+    assert hyperopt.max_open_trades == 1
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)
     # Range from 0 - 50 (inclusive)
@@ -884,6 +891,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value != 30
     assert hyperopt.backtesting.strategy.buy_rsi.value != 35
     assert hyperopt.backtesting.strategy.sell_rsi.value != 74
+    assert hyperopt.max_open_trades != 1
 
     hyperopt.custom_hyperopt.generate_estimator = lambda *args, **kwargs: 'ET1'
     with pytest.raises(OperationalException, match="Estimator ET1 not supported."):

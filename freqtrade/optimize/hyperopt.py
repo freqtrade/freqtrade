@@ -74,6 +74,7 @@ class Hyperopt:
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
+        self.trades_space: List[Dimension] = []
         self.dimensions: List[Dimension] = []
 
         self.config = config
@@ -209,6 +210,8 @@ class Hyperopt:
             result['stoploss'] = {p.name: params.get(p.name) for p in self.stoploss_space}
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
+        if HyperoptTools.has_space(self.config, 'trades'):
+            result['max_open_trades'] = {p.name: params.get(p.name) for p in self.trades_space}
 
         return result
 
@@ -229,6 +232,8 @@ class Hyperopt:
                 'trailing_stop_positive_offset': strategy.trailing_stop_positive_offset,
                 'trailing_only_offset_is_reached': strategy.trailing_only_offset_is_reached,
             }
+        if not HyperoptTools.has_space(self.config, 'trades'):
+            result['max_open_trades'] = {'max_open_trades': strategy.max_open_trades}
         return result
 
     def print_results(self, results) -> None:
@@ -280,8 +285,13 @@ class Hyperopt:
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
 
+        if HyperoptTools.has_space(self.config, 'trades'):
+            logger.debug("Hyperopt has 'trades' space")
+            self.trades_space = self.custom_hyperopt.trades_space()
+
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
-                           + self.roi_space + self.stoploss_space + self.trailing_space)
+                           + self.roi_space + self.stoploss_space + self.trailing_space
+                           + self.trades_space)
 
     def assign_params(self, params_dict: Dict, category: str) -> None:
         """
@@ -327,6 +337,9 @@ class Hyperopt:
                 d['trailing_stop_positive_offset']
             self.backtesting.strategy.trailing_only_offset_is_reached = \
                 d['trailing_only_offset_is_reached']
+
+        if HyperoptTools.has_space(self.config, 'trades'):
+            self.max_open_trades = params_dict['max_open_trades']
 
         with self.data_pickle_file.open('rb') as f:
             processed = load(f, mmap_mode='r')
