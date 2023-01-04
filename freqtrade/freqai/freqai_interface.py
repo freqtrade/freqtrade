@@ -313,14 +313,8 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
             else:
                 if populate_indicators:
-                    tr_from_main_df = (f'{dataframe["date"].min().strftime("%Y%m%d")}'
-                                       f'-{dataframe["date"].max().strftime("%Y%m%d")}')
-                    timerange = TimeRange.parse_timerange(tr_from_main_df)
-                    self.dd.load_all_pair_histories(timerange, self.dk)
-                    corr_df, base_df = self.dd.get_base_and_corr_dataframes(timerange, pair, dk)
                     dataframe = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"],
-                        corr_dataframes=corr_df, base_dataframes=base_df
+                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
                     )
                     populate_indicators = False
 

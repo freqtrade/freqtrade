@@ -67,6 +67,12 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
     *want* to retrain a new model with the same config file, you should simply change the `identifier`.
     This way, you can return to using any model you wish by simply specifying the `identifier`.
 
+!!! Note
+    Backtesting calls the `set_freqai_targets()` function for every window defined in `backtest_period_days` parameter 
+    to better simulate the dry/run live behavior, but it's analyzes the whole time-range at once in `feature_engineering_*()` for performance reasons. 
+    Because of this, strategy authors need to make sure that strategies do not look-ahead into the future at `feature_engineering_*()` functions. 
+    Strategy authors should carefully read the [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies)
+
 ---
 
 ### Saving prediction data
