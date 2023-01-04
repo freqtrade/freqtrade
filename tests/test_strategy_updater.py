@@ -4,11 +4,6 @@ from freqtrade.strategy.strategyupdater import StrategyUpdater
 
 
 def test_strategy_updater(default_conf, caplog) -> None:
-    modified_code2 = StrategyUpdater.update_code(StrategyUpdater, """
-ticker_interval = '15m'
-buy_some_parameter = IntParameter(space='buy')
-sell_some_parameter = IntParameter(space='sell')
-""")
     modified_code1 = StrategyUpdater.update_code(StrategyUpdater, """
 class testClass(IStrategy):
     def populate_buy_trend():
@@ -21,6 +16,11 @@ class testClass(IStrategy):
         pass
     def custom_sell():
         pass
+""")
+    modified_code2 = StrategyUpdater.update_code(StrategyUpdater, """
+ticker_interval = '15m'
+buy_some_parameter = IntParameter(space='buy')
+sell_some_parameter = IntParameter(space='sell')
 """)
     modified_code3 = StrategyUpdater.update_code(StrategyUpdater, """
 use_sell_signal = True
@@ -59,11 +59,14 @@ def confirm_trade_exit(sell_reason):
     if (sell_reason == 'stop_loss'):
         pass
 """)
-    #    modified_code8 = StrategyUpdater.update_code(StrategyUpdater, """
-    # sell_reason == 'sell_signal'
-    # sell_reason == 'force_sell'
-    # sell_reason == 'emergency_sell'
-    # """)
+    modified_code8 = StrategyUpdater.update_code(StrategyUpdater, """
+sell_reason == 'sell_signal'
+sell_reason == 'force_sell'
+sell_reason == 'emergency_sell'
+""")
+
+    # currently still missing:
+    # Webhook terminology, Telegram notification settings, Strategy/Config settings
 
     assert "populate_entry_trend" in modified_code1
     assert "populate_exit_trend" in modified_code1
@@ -100,7 +103,7 @@ def confirm_trade_exit(sell_reason):
     assert "exit_reason == 'stop_loss'" in modified_code7
 
     # those tests currently don't work, next in line.
-    # assert "exit_signal" in modified_code8
-    # assert "exit_reason" in modified_code8
-    # assert "force_exit" in modified_code8
-    # assert "emergency_exit" in modified_code8
+    assert "exit_signal" in modified_code8
+    assert "exit_reason" in modified_code8
+    assert "force_exit" in modified_code8
+    assert "emergency_exit" in modified_code8
