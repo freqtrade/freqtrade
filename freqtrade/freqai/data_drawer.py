@@ -645,7 +645,6 @@ class FreqaiDataDrawer:
                             + 1
                         )
                     except IndexError:
-                        index = -1
                         if history_data[pair][tf].iloc[-1]['date'] < df_dp['date'].iloc[0]:
                             index = 0
                         else:
