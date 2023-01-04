@@ -1,6 +1,7 @@
 """ Bybit exchange subclass """
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
@@ -169,3 +170,14 @@ class Bybit(Exchange):
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+        """
+        Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+        Dry-run handling happens as part of _calculate_funding_fees.
+        :param pair: (e.g. ADA/USDT)
+        :param since: The earliest time of consideration for calculating funding fees,
+            in unix time or as a datetime
+        """
+        # TODO: Workaround for bybit, which has no funding-fees
+        return 0
