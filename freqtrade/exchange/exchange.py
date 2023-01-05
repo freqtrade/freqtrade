@@ -1876,8 +1876,9 @@ class Exchange:
         data = sorted(data, key=lambda x: x[0])
         return pair, timeframe, candle_type, data
 
-    def _build_coroutine(self, pair: str, timeframe: str, candle_type: CandleType,
-                         since_ms: Optional[int], cache: bool) -> Coroutine:
+    def _build_coroutine(
+            self, pair: str, timeframe: str, candle_type: CandleType,
+            since_ms: Optional[int], cache: bool) -> Coroutine[Any, Any, OHLCVResponse]:
         not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
@@ -1914,7 +1915,7 @@ class Exchange:
         """
         Build Coroutines to execute as part of refresh_latest_ohlcv
         """
-        input_coroutines = []
+        input_coroutines: List[Coroutine[Any, Any, OHLCVResponse]] = []
         cached_pairs = []
         for pair, timeframe, candle_type in set(pair_list):
             if (timeframe not in self.timeframes
