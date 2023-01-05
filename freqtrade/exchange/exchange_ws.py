@@ -4,13 +4,14 @@ import logging
 import time
 from datetime import datetime
 from threading import Thread
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Set
 
 import ccxt
 
 from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
+from freqtrade.exchange.types import OHLCVResponse
 
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ class ExchangeWS():
             pair: str,
             timeframe: str,
             candle_type: CandleType
-    ) -> Tuple[str, str, CandleType, List]:
+    ) -> OHLCVResponse:
         """
         Returns cached klines from ccxt's "watch" cache.
         """
