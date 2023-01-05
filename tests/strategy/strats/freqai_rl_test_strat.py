@@ -21,7 +21,7 @@ class freqai_rl_test_strat(IStrategy):
     process_only_new_candles = True
     stoploss = -0.05
     use_exit_signal = True
-    startup_candle_count: int = 30
+    startup_candle_count: int = 300
     can_short = False
 
     def feature_engineering_expand_all(self, dataframe, period, **kwargs):

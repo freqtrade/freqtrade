@@ -222,6 +222,9 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     if 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"indicator_periods_candles": [2]})
+
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -260,6 +263,8 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180124"})
     freqai_conf.get("freqai", {}).update({"backtest_period_days": 0.5})
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"indicator_periods_candles": [2]})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -285,6 +290,8 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
 def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai_conf.update({"timerange": "20180120-20180130"})
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"indicator_periods_candles": [2]})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -294,7 +301,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
+    sub_timerange = TimeRange.parse_timerange("20180101-20180130")
     _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
     df = base_df[freqai_conf["timeframe"]]
 
