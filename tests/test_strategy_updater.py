@@ -4,7 +4,8 @@ from freqtrade.strategy.strategyupdater import StrategyUpdater
 
 
 def test_strategy_updater(default_conf, caplog) -> None:
-    modified_code1 = StrategyUpdater.update_code(StrategyUpdater, """
+    instance_strategy_updater = StrategyUpdater()
+    modified_code1 = instance_strategy_updater.update_code("""
 class testClass(IStrategy):
     def populate_buy_trend():
         pass
@@ -17,27 +18,27 @@ class testClass(IStrategy):
     def custom_sell():
         pass
 """)
-    modified_code2 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code2 = instance_strategy_updater.update_code("""
 ticker_interval = '15m'
 buy_some_parameter = IntParameter(space='buy')
 sell_some_parameter = IntParameter(space='sell')
 """)
-    modified_code3 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code3 = instance_strategy_updater.update_code("""
 use_sell_signal = True
 sell_profit_only = True
 sell_profit_offset = True
 ignore_roi_if_buy_signal = True
 forcebuy_enable = True
 """)
-    modified_code4 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code4 = instance_strategy_updater.update_code("""
 dataframe.loc[reduce(lambda x, y: x & y, conditions), ["buy", "buy_tag"]] = (1, "buy_signal_1")
 dataframe.loc[reduce(lambda x, y: x & y, conditions), 'sell'] = 1
 """)
-    modified_code5 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code5 = instance_strategy_updater.update_code("""
 def confirm_trade_exit(sell_reason: str):
     pass
     """)
-    modified_code6 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code6 = instance_strategy_updater.update_code("""
 order_time_in_force = {
     'buy': 'gtc',
     'sell': 'ioc'
@@ -54,12 +55,12 @@ unfilledtimeout = {
 }
 """)
 
-    modified_code7 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code7 = instance_strategy_updater.update_code("""
 def confirm_trade_exit(sell_reason):
     if (sell_reason == 'stop_loss'):
         pass
 """)
-    modified_code8 = StrategyUpdater.update_code(StrategyUpdater, """
+    modified_code8 = instance_strategy_updater.update_code("""
 sell_reason == 'sell_signal'
 sell_reason == 'force_sell'
 sell_reason == 'emergency_sell'

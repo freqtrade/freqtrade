@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, Dict
 
 from freqtrade.configuration import setup_utils_configuration
@@ -33,4 +34,7 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
 
     for filtered_strategy_obj in filtered_strategy_objs:
         instance_strategy_updater = StrategyUpdater()
+        start = time.perf_counter()
         instance_strategy_updater.start(config, filtered_strategy_obj)
+        elapsed = time.perf_counter() - start
+        print(f"Conversion of {filtered_strategy_obj['name']} took {elapsed:.1f} seconds.")

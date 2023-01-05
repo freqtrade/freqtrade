@@ -52,7 +52,6 @@ class StrategyUpdater:
         """
 
         source_file = strategy_obj['location']
-        print(f"started conversion of {source_file}")
         strategies_backup_folder = Path.joinpath(config['user_data_dir'], "strategies_orig_updater")
         target_file = Path.joinpath(strategies_backup_folder, strategy_obj['location_rel'])
 
@@ -73,7 +72,6 @@ class StrategyUpdater:
         # write the modified code to the destination folder
         with open(source_file, 'w') as f:
             f.write(new_code)
-        print(f"conversion of file {source_file} successful.")
 
     # define the function to update the code
     def update_code(self, code):
@@ -81,7 +79,7 @@ class StrategyUpdater:
         tree = ast.parse(code)
 
         # use the AST to update the code
-        updated_code = self.modify_ast(self, tree)
+        updated_code = self.modify_ast(tree)
 
         # return the modified code without executing it
         return updated_code
@@ -96,6 +94,7 @@ class StrategyUpdater:
         ast.increment_lineno(tree, n=1)
 
         # generate the new code from the updated AST
+        # without indent {} parameters would just be written straight one after the other.
         return astor.to_source(tree)
 
 
@@ -131,8 +130,9 @@ class NameUpdater(ast.NodeTransformer):
         return node
 
     def visit_Expr(self, node):
-        node.value.left.id = self.check_dict(StrategyUpdater.name_mapping, node.value.left.id)
-        self.visit(node.value)
+        if hasattr(node.value, "left") and hasattr(node.value.left, "id"):
+            node.value.left.id = self.check_dict(StrategyUpdater.name_mapping, node.value.left.id)
+            self.visit(node.value)
         return node
 
     # Renames an element if contained inside a dictionary.
