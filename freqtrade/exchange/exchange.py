@@ -36,7 +36,7 @@ from freqtrade.exchange.exchange_utils import (CcxtModuleType, amount_to_contrac
                                                price_to_precision, timeframe_to_minutes,
                                                timeframe_to_msecs, timeframe_to_next_date,
                                                timeframe_to_prev_date, timeframe_to_seconds)
-from freqtrade.exchange.types import Ticker, Tickers
+from freqtrade.exchange.types import OHLCVResponse, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1838,7 +1838,7 @@ class Exchange:
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
                                         until_ms: Optional[int] = None
-                                        ) -> Tuple[str, str, str, List]:
+                                        ) -> OHLCVResponse:
         """
         Download historic ohlcv
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
@@ -2025,7 +2025,7 @@ class Exchange:
         timeframe: str,
         candle_type: CandleType,
         since_ms: Optional[int] = None,
-    ) -> Tuple[str, str, str, List]:
+    ) -> OHLCVResponse:
         """
         Asynchronously get candle history data using fetch_ohlcv
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
