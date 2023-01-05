@@ -1988,62 +1988,6 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     assert log_has_re(r"Async code raised an exception: .*", caplog)
 
 
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
-@pytest.mark.parametrize('candle_type', ['mark', ''])
-def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_type):
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    ohlcv = [
-        [
-            arrow.utcnow().int_timestamp * 1000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ],
-        [
-            arrow.utcnow().shift(minutes=5).int_timestamp * 1000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ],
-        [
-            arrow.utcnow().shift(minutes=10).int_timestamp * 1000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ]
-    ]
-    pair = 'ETH/BTC'
-
-    async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
-        return pair, timeframe, candle_type, ohlcv
-
-    exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
-    # one_call calculation * 1.8 should do 2 calls
-
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
-    ret = exchange.get_historic_ohlcv_as_df(
-        pair,
-        "5m",
-        int((arrow.utcnow().int_timestamp - since) * 1000),
-        candle_type=candle_type
-    )
-
-    assert exchange._async_get_candle_history.call_count == 2
-    # Returns twice the above OHLCV data
-    assert len(ret) == 2
-    assert isinstance(ret, DataFrame)
-    assert 'date' in ret.columns
-    assert 'open' in ret.columns
-    assert 'close' in ret.columns
-    assert 'high' in ret.columns
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize('candle_type', [CandleType.MARK, CandleType.SPOT])
