@@ -2035,8 +2035,8 @@ class Exchange:
             # Fetch OHLCV asynchronously
             s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
-                "Fetching pair %s, interval %s, since %s %s...",
-                pair, timeframe, since_ms, s
+                "Fetching pair %s, %s, interval %s, since %s %s...",
+                pair, candle_type, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
             candle_limit = self.ohlcv_candle_limit(
@@ -2050,11 +2050,12 @@ class Exchange:
                     limit=candle_limit, params=params)
             else:
                 # Funding rate
-                data = await self._api_async.fetch_funding_rate_history(
-                    pair, since=since_ms,
-                    limit=candle_limit)
-                # Convert funding rate to candle pattern
-                data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
+                data = await self._fetch_funding_rate_history(
+                    pair=pair,
+                    timeframe=timeframe,
+                    limit=candle_limit,
+                    since_ms=since_ms,
+                )
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
             # while GDAX returns the list of OHLCV in DESC order (newest first, oldest last)
@@ -2081,6 +2082,24 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch historical candle (OHLCV) data '
                                        f'for pair {pair}. Message: {e}') from e
+
+    async def _fetch_funding_rate_history(
+        self,
+        pair: str,
+        timeframe: str,
+        limit: int,
+        since_ms: Optional[int] = None,
+    ) -> List[List]:
+        """
+        Fetch funding rate history - used to selectively override this by subclasses.
+        """
+        # Funding rate
+        data = await self._api_async.fetch_funding_rate_history(
+            pair, since=since_ms,
+            limit=limit)
+        # Convert funding rate to candle pattern
+        data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
+        return data
 
     # Fetch historic trades
 
@@ -2745,11 +2764,16 @@ class Exchange:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
-         gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
+         gateio: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
+         > Liquidation Price = (Entry Price ± Margin / Contract Multiplier / Size) /
+                                [ 1 ± (Maintenance Margin Ratio + Taker Rate)]
+            Wherein, "+" or "-" depends on whether the contract goes long or short:
+            "-" for long, and "+" for short.
+
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
 
-        :param exchange_name:
+        :param pair: Pair to calculate liquidation price for
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param amount: Absolute value of position size incl. leverage (in base currency)
@@ -2789,7 +2813,7 @@ class Exchange:
     def get_maintenance_ratio_and_amt(
         self,
         pair: str,
-        nominal_value: float = 0.0,
+        nominal_value: float,
     ) -> Tuple[float, Optional[float]]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!

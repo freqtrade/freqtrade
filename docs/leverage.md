@@ -92,6 +92,8 @@ One account is used to share collateral between markets (trading pairs). Margin 
 "margin_mode": "cross"
 ```
 
+Please read the [exchange specific notes](exchanges.md) for exchanges that support this mode and how they differ.
+
 ## Set leverage to use
 
 Different strategies and risk profiles will require different levels of leverage.
