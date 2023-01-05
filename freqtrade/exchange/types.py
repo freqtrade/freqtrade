@@ -17,5 +17,5 @@ class Ticker(TypedDict):
 
 Tickers = Dict[str, Ticker]
 
-# pair, timeframe, candleType, OHLCV
-OHLCVResponse = Tuple[str, str, CandleType, List]
+# pair, timeframe, candleType, OHLCV, drop last?,
+OHLCVResponse = Tuple[str, str, CandleType, List, bool]

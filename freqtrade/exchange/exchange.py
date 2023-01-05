@@ -1813,7 +1813,7 @@ class Exchange:
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List with candle (OHLCV) data
         """
-        pair, _, _, data = self.loop.run_until_complete(
+        pair, _, _, data, _ = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, until_ms=until_ms,
                                            is_new_pair=is_new_pair, candle_type=candle_type))
@@ -1855,12 +1855,12 @@ class Exchange:
                     continue
                 else:
                     # Deconstruct tuple if it's not an exception
-                    p, _, c, new_data = res
+                    p, _, c, new_data, _ = res
                     if p == pair and c == candle_type:
                         data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        return pair, timeframe, candle_type, data
+        return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
     def _build_coroutine(
             self, pair: str, timeframe: str, candle_type: CandleType,
@@ -1965,7 +1965,6 @@ class Exchange:
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-        drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
 
         # Gather coroutines to run
         input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
@@ -1983,8 +1982,9 @@ class Exchange:
                 if isinstance(res, Exception):
                     logger.warning(f"Async code raised an exception: {repr(res)}")
                     continue
-                # Deconstruct tuple (has 4 elements)
-                pair, timeframe, c_type, ticks = res
+                # Deconstruct tuple (has 5 elements)
+                pair, timeframe, c_type, ticks, drop_hint = res
+                drop_incomplete = drop_hint if drop_incomplete is None else drop_incomplete
                 ohlcv_df = self._process_ohlcv_df(
                     pair, timeframe, c_type, ticks, cache, drop_incomplete)
 
@@ -2052,9 +2052,9 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, timeframe, candle_type, []
+                return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
             logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
-            return pair, timeframe, candle_type, data
+            return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
         except ccxt.NotSupported as e:
             raise OperationalException(

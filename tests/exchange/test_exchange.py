@@ -1955,7 +1955,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     pair = 'ETH/BTC'
 
     async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
-        return pair, timeframe, candle_type, ohlcv
+        return pair, timeframe, candle_type, ohlcv, True
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -2007,7 +2007,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/USDT'
-    respair, restf, _, res = await exchange._async_get_historic_ohlcv(
+    respair, restf, _, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, candle_type=candle_type, is_new_pair=False)
     assert respair == pair
     assert restf == '5m'
@@ -2018,7 +2018,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     exchange._api_async.fetch_ohlcv.reset_mock()
     end_ts = 1_500_500_000_000
     start_ts = 1_500_000_000_000
-    respair, restf, _, res = await exchange._async_get_historic_ohlcv(
+    respair, restf, _, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", since_ms=start_ts, candle_type=candle_type, is_new_pair=False,
         until_ms=end_ts
         )
@@ -2250,7 +2250,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT)
     assert type(res) is tuple
-    assert len(res) == 4
+    assert len(res) == 5
     assert res[0] == pair
     assert res[1] == "5m"
     assert res[2] == CandleType.SPOT
@@ -2337,7 +2337,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT)
     assert type(res) is tuple
-    assert len(res) == 4
+    assert len(res) == 5
     assert res[0] == pair
     assert res[1] == "5m"
     assert res[2] == CandleType.SPOT
