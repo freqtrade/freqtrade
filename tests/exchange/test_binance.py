@@ -557,7 +557,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
-    respair, restf, restype, res = await exchange._async_get_historic_ohlcv(
+    respair, restf, restype, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=False, candle_type=candle_type)
     assert respair == pair
     assert restf == '5m'
@@ -566,7 +566,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert exchange._api_async.fetch_ohlcv.call_count > 400
     # assert res == ohlcv
     exchange._api_async.fetch_ohlcv.reset_mock()
-    _, _, _, res = await exchange._async_get_historic_ohlcv(
+    _, _, _, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=True, candle_type=candle_type)
 
     # Called twice - one "init" call - and one to get the actual data.
