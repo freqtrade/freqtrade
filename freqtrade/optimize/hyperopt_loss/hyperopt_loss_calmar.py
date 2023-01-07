@@ -5,8 +5,6 @@ This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
 from datetime import datetime
-from math import sqrt as msqrt
-from typing import Any, Dict
 
 from pandas import DataFrame
 
