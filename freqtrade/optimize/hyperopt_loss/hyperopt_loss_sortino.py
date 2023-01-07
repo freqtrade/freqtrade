@@ -8,9 +8,9 @@ from datetime import datetime
 
 from pandas import DataFrame
 
-from freqtrade.optimize.hyperopt import IHyperOptLoss
 from freqtrade.constants import Config
 from freqtrade.data.metrics import calculate_sortino
+from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
 class SortinoHyperOptLoss(IHyperOptLoss):
