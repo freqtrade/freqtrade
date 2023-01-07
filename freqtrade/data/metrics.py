@@ -197,7 +197,7 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
 def calculate_expectancy(trades: pd.DataFrame) -> float:
     """
     Calculate expectancy
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :return: expectancy
     """
     if len(trades) == 0:
@@ -239,7 +239,7 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
 
     down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
 
-    if down_stdev != 0:
+    if down_stdev != 0 and not np.isnan(down_stdev):
         sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
     else:
         # Define high (negative) sortino ratio to be clear that this is NOT optimal.

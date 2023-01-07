@@ -746,9 +746,7 @@ def test_download_data_no_exchange(mocker, caplog):
         start_download_data(pargs)
 
 
-def test_download_data_no_pairs(mocker, caplog):
-
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+def test_download_data_no_pairs(mocker):
 
     mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
@@ -769,8 +767,6 @@ def test_download_data_no_pairs(mocker, caplog):
 
 
 def test_download_data_all_pairs(mocker, markets):
-
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
