@@ -474,7 +474,7 @@ class Exchange:
         try:
             if self._api_async:
                 self.loop.run_until_complete(
-                    self._api_async.load_markets(reload=reload))
+                    self._api_async.load_markets(reload=reload, params={}))
 
         except (asyncio.TimeoutError, ccxt.BaseError) as e:
             logger.warning('Could not load async markets. Reason: %s', e)
@@ -483,7 +483,7 @@ class Exchange:
     def _load_markets(self) -> None:
         """ Initialize markets both sync and async """
         try:
-            self._markets = self._api.load_markets()
+            self._markets = self._api.load_markets(params={})
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
             if self._ft_has['needs_trading_fees']:
@@ -501,7 +501,7 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._markets = self._api.load_markets(reload=True)
+            self._markets = self._api.load_markets(reload=True, params={})
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
@@ -1705,7 +1705,7 @@ class Exchange:
                 return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
-                self._api.load_markets()
+                self._api.load_markets(params={})
 
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
