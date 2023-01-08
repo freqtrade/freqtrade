@@ -85,8 +85,12 @@ class Order(_DECL_BASE):
         )
 
     @property
+    def safe_amount(self) -> float:
+        return self.amount or self.ft_amount
+
+    @property
     def safe_price(self) -> float:
-        return self.average or self.price or self.stop_price
+        return self.average or self.price or self.stop_price or self.ft_price
 
     @property
     def safe_filled(self) -> float:
@@ -96,7 +100,7 @@ class Order(_DECL_BASE):
     def safe_remaining(self) -> float:
         return (
             self.remaining if self.remaining is not None else
-            self.amount - (self.filled or 0.0)
+            self.safe_amount - (self.filled or 0.0)
         )
 
     @property
