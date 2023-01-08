@@ -374,7 +374,7 @@ class FreqtradeBot(LoggingMixin):
         for trade in trades:
             if not trade.is_open and not trade.fee_updated(trade.exit_side):
                 # Get sell fee
-                order = trade.select_order(trade.exit_side, False)
+                order = trade.select_order(trade.exit_side, False, only_filled=True)
                 if not order:
                     order = trade.select_order('stoploss', False)
                 if order:
@@ -390,7 +390,7 @@ class FreqtradeBot(LoggingMixin):
         for trade in trades:
             with self._exit_lock:
                 if trade.is_open and not trade.fee_updated(trade.entry_side):
-                    order = trade.select_order(trade.entry_side, False)
+                    order = trade.select_order(trade.entry_side, False, only_filled=True)
                     open_order = trade.select_order(trade.entry_side, True)
                     if order and open_order is None:
                         logger.info(

@@ -956,11 +956,12 @@ class LocalTrade():
         return None
 
     def select_order(self, order_side: Optional[str] = None,
-                     is_open: Optional[bool] = None) -> Optional[Order]:
+                     is_open: Optional[bool] = None, only_filled: bool = False) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: ft_order_side of the order (either 'buy', 'sell' or 'stoploss')
         :param is_open: Only search for open orders?
+        :param only_filled: Only search for Filled orders (only valid with is_open=False).
         :return: latest Order object if it exists, else None
         """
         orders = self.orders
@@ -968,6 +969,8 @@ class LocalTrade():
             orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
+        if is_open is False and only_filled:
+            orders = [o for o in orders if o.filled and o.status in NON_OPEN_EXCHANGE_STATES]
         if len(orders) > 0:
             return orders[-1]
         else:
