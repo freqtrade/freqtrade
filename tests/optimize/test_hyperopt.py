@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 from filelock import Timeout
+from skopt.space import Integer
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
@@ -1040,6 +1041,8 @@ def test_max_open_trades_consistency(mocker, hyperopt_conf, tmpdir, fee) -> None
     hyperopt = Hyperopt(hyperopt_conf)
 
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+
+    hyperopt.custom_hyperopt.trades_space = lambda: [Integer(1, 10, name='max_open_trades')]
 
     first_time_evaluated = False
 
