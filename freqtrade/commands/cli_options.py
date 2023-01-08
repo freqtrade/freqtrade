@@ -252,7 +252,7 @@ AVAILABLE_CLI_OPTIONS = {
         '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list.',
         choices=['all', 'buy', 'sell', 'roi', 'stoploss',
-                 'trailing', 'protection', 'default', 'trades'],
+                 'trailing', 'protection', 'trades', 'default'],
         nargs='+',
         default='default',
     ),

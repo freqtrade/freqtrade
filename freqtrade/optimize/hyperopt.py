@@ -118,14 +118,10 @@ class Hyperopt:
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            self.max_open_trades = self.config['max_open_trades'] \
-                if self.config['max_open_trades'] != float('inf') else -1
-        else:
+        if not self.config.get('use_max_market_positions', True):
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            self.max_open_trades = 0
-
-        print("Strategy max open trades", self.max_open_trades)
+            self.backtesting.strategy.max_open_trades = -1
+            config.update({'max_open_trades': float('inf')})
 
         if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_exit_signal is enabled
@@ -214,7 +210,8 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
         if HyperoptTools.has_space(self.config, 'trades'):
-            result['max_open_trades'] = {p.name: params.get(p.name) for p in self.trades_space}
+            result['max_open_trades'] = {
+                'max_open_trades': self.backtesting.strategy.max_open_trades}
 
         return result
 
@@ -342,7 +339,21 @@ class Hyperopt:
                 d['trailing_only_offset_is_reached']
 
         if HyperoptTools.has_space(self.config, 'trades'):
-            self.max_open_trades = params_dict['max_open_trades']
+            if self.config["stake_amount"] == "unlimited" and \
+                    (params_dict['max_open_trades'] == -1 or params_dict['max_open_trades'] == 0):
+                # Ignore unlimited max open trades if stake amount is unlimited
+                params_dict.update({'max_open_trades': self.config['max_open_trades']})
+
+            updated_config_max_open_trades = int(params_dict['max_open_trades']) \
+                if (params_dict['max_open_trades'] != -1
+                    and params_dict['max_open_trades'] != 0) else float('inf')
+
+            updated_strategy_max_open_trades = int(updated_config_max_open_trades) \
+                if updated_config_max_open_trades != float('inf') else -1
+
+            self.config.update({'max_open_trades': updated_config_max_open_trades})
+
+            self.backtesting.strategy.max_open_trades = updated_strategy_max_open_trades
 
         with self.data_pickle_file.open('rb') as f:
             processed = load(f, mmap_mode='r')
@@ -353,8 +364,7 @@ class Hyperopt:
         bt_results = self.backtesting.backtest(
             processed=processed,
             start_date=self.min_date,
-            end_date=self.max_date,
-            max_open_trades=self.max_open_trades,
+            end_date=self.max_date
         )
         backtest_end_time = datetime.now(timezone.utc)
         bt_results.update({

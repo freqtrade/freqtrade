@@ -17,6 +17,7 @@ from tests.conftest import patch_exchange
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
+    default_conf['max_open_trades'] = 10
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.amount_to_contract_precision',
                  lambda x, *args, **kwargs: round(x, 8))
@@ -41,7 +42,6 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
     results = result['results']
     assert not results.empty
