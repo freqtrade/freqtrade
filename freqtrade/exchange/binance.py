@@ -87,7 +87,8 @@ class Binance(Exchange):
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
+        trading_mode: Optional[TradingMode] = None,
+        accept_fail: bool = False,
     ):
         """
         Set's the leverage before making a trade, in order to not
