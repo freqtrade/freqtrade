@@ -32,6 +32,8 @@ class Bybit(Exchange):
         "ohlcv_candle_limit": 200,
         "ohlcv_has_history": True,
         "mark_ohlcv_timeframe": "4h",
+        "stoploss_on_exchange": True,
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
