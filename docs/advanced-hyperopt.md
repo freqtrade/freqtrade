@@ -127,7 +127,7 @@ class MyAwesomeStrategy(IStrategy):
         # Define a custom max_open_trades space
         def trades_space(self) -> List[Dimension]:
             return [
-                Integer(1, 10, name='max_open_trades'),
+                Integer(-1, 10, name='max_open_trades'),
             ]
 ```
 

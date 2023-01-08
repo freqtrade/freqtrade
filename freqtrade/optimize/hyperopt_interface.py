@@ -198,7 +198,7 @@ class IHyperOpt(ABC):
         You may override it in your custom Hyperopt class.
         """
         return [
-            Integer(1, 10, name='max_open_trades'),
+            Integer(-1, 10, name='max_open_trades'),
         ]
 
     # This is needed for proper unpickling the class attribute timeframe
