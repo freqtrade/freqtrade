@@ -253,6 +253,8 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
         ft_order_side='buy',
         ft_pair=trade.pair,
         ft_is_open=False,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
         status="closed",
         symbol=trade.pair,
         order_type="market",

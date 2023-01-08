@@ -1168,6 +1168,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         order_id='100',
         ft_pair=trade.pair,
         ft_is_open=True,
+        ft_amount=trade.amount,
+        ft_price=0.0,
     ))
     assert trade
 
@@ -4615,6 +4617,7 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
         'amount': amount,
         'status': 'open',
         'side': 'buy',
+        'price': 0.245441,
     }
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order_obj = Order.parse_from_ccxt_object(order, 'LTC/ETH', 'buy')
