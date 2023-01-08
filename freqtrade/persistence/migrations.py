@@ -214,17 +214,22 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
     average = get_column_def(cols_order, 'average', 'null')
     stop_price = get_column_def(cols_order, 'stop_price', 'null')
     funding_fee = get_column_def(cols_order, 'funding_fee', '0.0')
+    ft_amount = get_column_def(cols_order, 'ft_amount', 'coalesce(amount, 0.0)')
+    ft_price = get_column_def(cols_order, 'ft_price', 'coalesce(price, 0.0)')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee)
+            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee,
+            ft_amount, ft_price
+            )
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
             cost, {stop_price} stop_price, order_date, order_filled_date,
-            order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee
+            order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee,
+            {ft_amount} ft_amount, {ft_price} ft_price
             from {table_back_name}
             """))
 
@@ -311,8 +316,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    # if not has_column(cols_orders, 'funding_fee'):
-    if not has_column(cols_trades, 'max_stake_amount'):
+    # if not has_column(cols_trades, 'max_stake_amount'):
+    if not has_column(cols_orders, 'ft_price'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
