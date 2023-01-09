@@ -20,7 +20,7 @@ isort==5.11.4
 # For datetime mocking
 time-machine==2.9.0
 # fastapi testing
-httpx==0.23.1
+httpx==0.23.3
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==7.2.7
