@@ -1051,7 +1051,8 @@ class Backtesting:
 
     def backtest_loop(
             self, row: Tuple, pair: str, current_time: datetime, end_date: datetime,
-            max_open_trades: int, open_trade_count_start: int, is_first: bool = True) -> int:
+            max_open_trades: int, open_trade_count_start: int, trade_dir: Optional[LongShort],
+            is_first: bool = True) -> int:
         """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
 
@@ -1070,7 +1071,6 @@ class Backtesting:
         # max_open_trades must be respected
         # don't open on the last row
         # We only open trades on the main candle, not on detail candles
-        trade_dir = self.check_for_trade_entry(row)
         if (
             (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
             and is_first
@@ -1164,7 +1164,15 @@ class Backtesting:
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
                 current_detail_time: datetime = row[DATE_IDX].to_pydatetime()
-                if self.timeframe_detail and pair in self.detail_data:
+                trade_dir: Optional[LongShort] = self.check_for_trade_entry(row)
+
+                if (
+                    (trade_dir is not None or len(LocalTrade.bt_trades_open_pp[pair]) > 0)
+                    and self.timeframe_detail and pair in self.detail_data
+                ):
+                    # Spread out into detail timeframe.
+                    # Should only happen when we are either in a trade for this pair
+                    # or when we got the signal for a new trade.
                     exit_candle_end = current_detail_time + timedelta(minutes=self.timeframe_min)
 
                     detail_data = self.detail_data[pair]
@@ -1176,7 +1184,7 @@ class Backtesting:
                         # Fall back to "regular" data if no detail data was found for this candle
                         open_trade_count_start = self.backtest_loop(
                             row, pair, current_time, end_date, max_open_trades,
-                            open_trade_count_start)
+                            open_trade_count_start, trade_dir)
                         continue
                     detail_data.loc[:, 'enter_long'] = row[LONG_IDX]
                     detail_data.loc[:, 'exit_long'] = row[ELONG_IDX]
@@ -1189,12 +1197,13 @@ class Backtesting:
                     for det_row in detail_data[HEADERS].values.tolist():
                         open_trade_count_start = self.backtest_loop(
                             det_row, pair, current_time_det, end_date, max_open_trades,
-                            open_trade_count_start, is_first)
+                            open_trade_count_start, trade_dir, is_first)
                         current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         is_first = False
                 else:
                     open_trade_count_start = self.backtest_loop(
-                        row, pair, current_time, end_date, max_open_trades, open_trade_count_start)
+                        row, pair, current_time, end_date, max_open_trades,
+                        open_trade_count_start, trade_dir)
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
