@@ -720,7 +720,7 @@ class FreqtradeBot(LoggingMixin):
             time_in_force=time_in_force,
             leverage=leverage
         )
-        order_obj = Order.parse_from_ccxt_object(order, pair, side)
+        order_obj = Order.parse_from_ccxt_object(order, pair, side, amount, enter_limit_requested)
         order_id = order['id']
         order_status = order.get('status')
         logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
@@ -1094,7 +1094,8 @@ class FreqtradeBot(LoggingMixin):
                 leverage=trade.leverage
             )
 
-            order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
+            order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss',
+                                                     trade.amount, stop_price)
             trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
             trade.stoploss_last_update = datetime.now(timezone.utc)
@@ -1595,7 +1596,7 @@ class FreqtradeBot(LoggingMixin):
             self.handle_insufficient_funds(trade)
             return False
 
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side)
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side, amount, limit)
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
