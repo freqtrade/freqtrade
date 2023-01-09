@@ -1147,9 +1147,9 @@ class FreqaiDataKitchen:
 
         for pair in pairs:
             pair = pair.replace(':', '')  # lightgbm doesnt like colons
-            valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
-            pair_cols = [col for col in dataframe.columns if
-                         any(substr in col for substr in valid_strs)]
+            pair_cols = [col for col in dataframe.columns if col.startswith("%")
+                         and f"{pair}_" in col]
+
             if pair_cols:
                 pair_cols.insert(0, 'date')
                 corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
@@ -1327,6 +1327,7 @@ class FreqaiDataKitchen:
             dataframe = self.populate_features(dataframe.copy(), pair, strategy,
                                                corr_dataframes, base_dataframes)
 
+            dataframe = strategy.feature_engineering_standard(dataframe.copy())
             # ensure corr pairs are always last
             for corr_pair in corr_pairs:
                 if pair == corr_pair:
@@ -1335,7 +1336,6 @@ class FreqaiDataKitchen:
                     dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
                                                        corr_dataframes, base_dataframes, True)
 
-            dataframe = strategy.feature_engineering_standard(dataframe.copy())
             dataframe = strategy.set_freqai_targets(dataframe.copy())
 
             self.get_unique_classes_from_labels(dataframe)
