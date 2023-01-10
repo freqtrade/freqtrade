@@ -1,11 +1,10 @@
 import logging
 from functools import reduce
 
-import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.strategy import IStrategy, merge_informative_pair
+from freqtrade.strategy import IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -22,52 +21,39 @@ class freqai_rl_test_strat(IStrategy):
     process_only_new_candles = True
     stoploss = -0.05
     use_exit_signal = True
-    startup_candle_count: int = 30
+    startup_candle_count: int = 300
     can_short = False
 
-    def populate_any_indicators(
-        self, pair, df, tf, informative=None, set_generalized_indicators=False
-    ):
+    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
 
-        if informative is None:
-            informative = self.dp.get_pair_dataframe(pair, tf)
+        dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
 
-        # first loop is automatically duplicating indicators for time periods
-        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+        return dataframe
 
-            t = int(t)
-            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs):
 
-        # The following columns are necessary for RL models.
-        informative[f"%-{pair}raw_close"] = informative["close"]
-        informative[f"%-{pair}raw_open"] = informative["open"]
-        informative[f"%-{pair}raw_high"] = informative["high"]
-        informative[f"%-{pair}raw_low"] = informative["low"]
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        dataframe["%-raw_volume"] = dataframe["volume"]
 
-        indicators = [col for col in informative if col.startswith("%")]
-        # This loop duplicates and shifts all indicators to add a sense of recency to data
-        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-            if n == 0:
-                continue
-            informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-            informative = pd.concat((informative, informative_shift), axis=1)
+        return dataframe
 
-        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-        skip_columns = [
-            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-        ]
-        df = df.drop(columns=skip_columns)
+    def feature_engineering_standard(self, dataframe, **kwargs):
 
-        # Add generalized indicators here (because in live, it will call this
-        # function to populate indicators during training). Notice how we ensure not to
-        # add them multiple times
-        if set_generalized_indicators:
-            # For RL, there are no direct targets to set. This is filler (neutral)
-            # until the agent sends an action.
-            df["&-action"] = 0
+        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
-        return df
+        dataframe["%-raw_close"] = dataframe["close"]
+        dataframe["%-raw_open"] = dataframe["open"]
+        dataframe["%-raw_high"] = dataframe["high"]
+        dataframe["%-raw_low"] = dataframe["low"]
+
+        return dataframe
+
+    def set_freqai_targets(self, dataframe, **kwargs):
+
+        dataframe["&-action"] = 0
+
+        return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
