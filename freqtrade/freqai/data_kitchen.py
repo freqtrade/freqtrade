@@ -1349,13 +1349,6 @@ class FreqaiDataKitchen:
 
         else:
             # the user is using the populate_any_indicators functions which is deprecated
-            logger.warning("DEPRECATION WARNING: "
-                           "You are using the deprecated populate_any_indicators function. "
-                           "This function will raise an error on March 1 2023. "
-                           "Please update your strategy by using "
-                           "the new feature_engineering functions. See \n"
-                           "https://www.freqtrade.io/en/latest/freqai-feature-engineering/"
-                           "for details.")
 
             df = self.use_strategy_to_populate_indicators_old_version(
                 strategy, corr_dataframes, base_dataframes, pair,

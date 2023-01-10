@@ -1,3 +1,4 @@
+import inspect
 import logging
 import threading
 import time
@@ -106,6 +107,8 @@ class IFreqaiModel(ABC):
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
 
+        self.warned_deprecated_populate_any_indicators = False
+
         record_params(config, self.full_path)
 
     def __getstate__(self):
@@ -135,6 +138,9 @@ class IFreqaiModel(ABC):
         self.dd.set_pair_dict_info(metadata)
         self.data_provider = strategy.dp
         self.can_short = strategy.can_short
+
+        # check if the strategy has deprecated populate_any_indicators function
+        self.check_deprecated_populate_any_indicators(strategy)
 
         if self.live:
             self.inference_timer('start')
@@ -373,7 +379,6 @@ class IFreqaiModel(ABC):
         :returns:
         dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
-
         # update follower
         if self.follow_mode:
             self.dd.update_follower_metadata()
@@ -938,6 +943,26 @@ class IFreqaiModel(ABC):
         dk.return_dataframe = pd.merge(
             dk.return_dataframe, saved_dataframe, how='left', left_on='date', right_on="date_pred")
         return dk
+
+    def check_deprecated_populate_any_indicators(self, strategy: IStrategy):
+        """
+        Check and warn if the deprecated populate_any_indicators function is used.
+        :param strategy: strategy object
+        """
+
+        if not self.warned_deprecated_populate_any_indicators:
+            self.warned_deprecated_populate_any_indicators = True
+            old_version = inspect.getsource(strategy.populate_any_indicators) != (
+                inspect.getsource(IStrategy.populate_any_indicators))
+
+            if old_version:
+                logger.warning("DEPRECATION WARNING: "
+                               "You are using the deprecated populate_any_indicators function. "
+                               "This function will raise an error on March 1 2023. "
+                               "Please update your strategy by using "
+                               "the new feature_engineering functions. See \n"
+                               "https://www.freqtrade.io/en/latest/freqai-feature-engineering/"
+                               "for details.")
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
