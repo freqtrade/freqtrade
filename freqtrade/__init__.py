@@ -3,11 +3,13 @@ __version__ = '2023.1.dev'
 
 if 'dev' in __version__:
     try:
+        import os
         import subprocess
+        freqtrade_basedir = os.path.dirname(os.path.abspath(__file__))
 
         __version__ = __version__ + '-' + subprocess.check_output(
             ['git', 'log', '--format="%h"', '-n 1'],
-            stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
+            stderr=subprocess.DEVNULL, cwd=freqtrade_basedir).decode("utf-8").rstrip().strip('"')
 
     except Exception:  # pragma: no cover
         # git not available, ignore
