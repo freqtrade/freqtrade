@@ -59,7 +59,11 @@ theme:
   favicon: "images/logo.png"
   custom_dir: "docs/overrides"
   features:
+    - content.code.annotate
     - search.share
+    - content.code.copy
+    - navigation.top
+    - navigation.footer
   palette:
     - scheme: default
       primary: "blue grey"

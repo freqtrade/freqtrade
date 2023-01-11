@@ -77,8 +77,8 @@ EXCHANGES = {
         'leverage_in_spot_market': True,
     },
     'huobi': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
+        'pair': 'ETH/BTC',
+        'stake_currency': 'BTC',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': False,

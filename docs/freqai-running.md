@@ -67,6 +67,10 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
     *want* to retrain a new model with the same config file, you should simply change the `identifier`.
     This way, you can return to using any model you wish by simply specifying the `identifier`.
 
+!!! Note
+    Backtesting calls `set_freqai_targets()` one time for each backtest window (where the number of windows is the full backtest timerange divided by the `backtest_period_days` parameter). Doing this means that the targets simulate dry/live behavior without look ahead bias. However, the definition of the features in `feature_engineering_*()` is performed once on the entire backtest timerange. This means that you should be sure that features do look-ahead into the future.
+    More details about look-ahead bias can be found in [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies).
+
 ---
 
 ### Saving prediction data
@@ -135,7 +139,7 @@ freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleSt
 `hyperopt` requires you to have the data pre-downloaded in the same fashion as if you were doing [backtesting](#backtesting). In addition, you must consider some restrictions when trying to hyperopt FreqAI strategies:
 
 - The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
-- It's not possible to hyperopt indicators in the `populate_any_indicators()` function. This means that you cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
+- It's not possible to hyperopt indicators in the `feature_engineering_*()` and `set_freqai_targets()` functions. This means that you cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
 - The backtesting instructions also apply to hyperopt.
 
 The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. You need to focus on hyperopting parameters that are not used in your features. For example, you should not try to hyperopt rolling window lengths in the feature creation, or any part of the FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only.

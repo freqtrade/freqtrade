@@ -49,6 +49,8 @@ class Order(_DECL_BASE):
     ft_order_side: str = Column(String(25), nullable=False)
     ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
+    ft_amount = Column(Float, nullable=False)
+    ft_price = Column(Float, nullable=False)
 
     order_id: str = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -83,8 +85,12 @@ class Order(_DECL_BASE):
         )
 
     @property
+    def safe_amount(self) -> float:
+        return self.amount or self.ft_amount
+
+    @property
     def safe_price(self) -> float:
-        return self.average or self.price or self.stop_price
+        return self.average or self.price or self.stop_price or self.ft_price
 
     @property
     def safe_filled(self) -> float:
@@ -94,7 +100,7 @@ class Order(_DECL_BASE):
     def safe_remaining(self) -> float:
         return (
             self.remaining if self.remaining is not None else
-            self.amount - (self.filled or 0.0)
+            self.safe_amount - (self.filled or 0.0)
         )
 
     @property
@@ -227,11 +233,20 @@ class Order(_DECL_BASE):
             logger.warning(f"Did not find order for {order}.")
 
     @staticmethod
-    def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
+    def parse_from_ccxt_object(
+            order: Dict[str, Any], pair: str, side: str,
+            amount: Optional[float] = None, price: Optional[float] = None) -> 'Order':
         """
         Parse an order from a ccxt object and return a new order Object.
+        Optional support for overriding amount and price is only used for test simplification.
         """
-        o = Order(order_id=str(order['id']), ft_order_side=side, ft_pair=pair)
+        o = Order(
+            order_id=str(order['id']),
+            ft_order_side=side,
+            ft_pair=pair,
+            ft_amount=amount if amount else order['amount'],
+            ft_price=price if price else order['price'],
+            )
 
         o.update_from_ccxt_object(order)
         return o

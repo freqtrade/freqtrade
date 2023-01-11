@@ -2,11 +2,10 @@ import logging
 from functools import reduce
 
 import numpy as np
-import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_informative_pair
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -57,55 +56,35 @@ class freqai_test_classifier(IStrategy):
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
-    def populate_any_indicators(
-        self, pair, df, tf, informative=None, set_generalized_indicators=False
-    ):
+    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
 
-        coin = pair.split('/')[0]
+        dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
+        dataframe["%-mfi-period"] = ta.MFI(dataframe, timeperiod=period)
+        dataframe["%-adx-period"] = ta.ADX(dataframe, timeperiod=period)
 
-        if informative is None:
-            informative = self.dp.get_pair_dataframe(pair, tf)
+        return dataframe
 
-        # first loop is automatically duplicating indicators for time periods
-        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs):
 
-            t = int(t)
-            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        dataframe["%-raw_volume"] = dataframe["volume"]
+        dataframe["%-raw_price"] = dataframe["close"]
 
-        informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
-        informative[f"%-{coin}raw_volume"] = informative["volume"]
-        informative[f"%-{coin}raw_price"] = informative["close"]
+        return dataframe
 
-        indicators = [col for col in informative if col.startswith("%")]
-        # This loop duplicates and shifts all indicators to add a sense of recency to data
-        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-            if n == 0:
-                continue
-            informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-            informative = pd.concat((informative, informative_shift), axis=1)
+    def feature_engineering_standard(self, dataframe, **kwargs):
 
-        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-        skip_columns = [
-            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-        ]
-        df = df.drop(columns=skip_columns)
+        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
-        # Add generalized indicators here (because in live, it will call this
-        # function to populate indicators during training). Notice how we ensure not to
-        # add them multiple times
-        if set_generalized_indicators:
-            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+        return dataframe
 
-            # user adds targets here by prepending them with &- (see convention below)
-            # If user wishes to use multiple targets, a multioutput prediction model
-            # needs to be used such as templates/CatboostPredictionMultiModel.py
-        df['&s-up_or_down'] = np.where(df["close"].shift(-100) > df["close"], 'up', 'down')
+    def set_freqai_targets(self, dataframe, **kwargs):
 
-        return df
+        dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-100) >
+                                              dataframe["close"], 'up', 'down')
+
+        return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 

@@ -1,4 +1,5 @@
 import copy
+import inspect
 import logging
 import shutil
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from freqtrade.constants import Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -1145,9 +1147,9 @@ class FreqaiDataKitchen:
 
         for pair in pairs:
             pair = pair.replace(':', '')  # lightgbm doesnt like colons
-            valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
-            pair_cols = [col for col in dataframe.columns if
-                         any(substr in col for substr in valid_strs)]
+            pair_cols = [col for col in dataframe.columns if col.startswith("%")
+                         and f"{pair}_" in col]
+
             if pair_cols:
                 pair_cols.insert(0, 'date')
                 corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
@@ -1176,6 +1178,103 @@ class FreqaiDataKitchen:
 
         return dataframe
 
+    def get_pair_data_for_features(self,
+                                   pair: str,
+                                   tf: str,
+                                   strategy: IStrategy,
+                                   corr_dataframes: dict = {},
+                                   base_dataframes: dict = {},
+                                   is_corr_pairs: bool = False) -> DataFrame:
+        """
+        Get the data for the pair. If it's not in the dictionary, get it from the data provider
+        :param pair: str = pair to get data for
+        :param tf: str = timeframe to get data for
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the df pair dataframes
+                                (for user defined timeframes)
+        :param base_dataframes: dict = dict containing the current pair dataframes
+                                (for user defined timeframes)
+        :param is_corr_pairs: bool = whether the pair is a corr pair or not
+        :return: dataframe = dataframe containing the pair data
+        """
+        if is_corr_pairs:
+            dataframe = corr_dataframes[pair][tf]
+            if not dataframe.empty:
+                return dataframe
+            else:
+                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
+                return dataframe
+        else:
+            dataframe = base_dataframes[tf]
+            if not dataframe.empty:
+                return dataframe
+            else:
+                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
+                return dataframe
+
+    def merge_features(self, df_main: DataFrame, df_to_merge: DataFrame,
+                       tf: str, timeframe_inf: str, suffix: str) -> DataFrame:
+        """
+        Merge the features of the dataframe and remove HLCV and date added columns
+        :param df_main: DataFrame = main dataframe
+        :param df_to_merge: DataFrame = dataframe to merge
+        :param tf: str = timeframe of the main dataframe
+        :param timeframe_inf: str = timeframe of the dataframe to merge
+        :param suffix: str = suffix to add to the columns of the dataframe to merge
+        :return: dataframe = merged dataframe
+        """
+        dataframe = merge_informative_pair(df_main, df_to_merge, tf, timeframe_inf=timeframe_inf,
+                                           append_timeframe=False, suffix=suffix, ffill=True)
+        skip_columns = [
+            (f"{s}_{suffix}") for s in ["date", "open", "high", "low", "close", "volume"]
+        ]
+        dataframe = dataframe.drop(columns=skip_columns)
+        return dataframe
+
+    def populate_features(self, dataframe: DataFrame, pair: str, strategy: IStrategy,
+                          corr_dataframes: dict, base_dataframes: dict,
+                          is_corr_pairs: bool = False) -> DataFrame:
+        """
+        Use the user defined strategy functions for populating features
+        :param dataframe: DataFrame = dataframe to populate
+        :param pair: str = pair to populate
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the df pair dataframes
+        :param base_dataframes: dict = dict containing the current pair dataframes
+        :param is_corr_pairs: bool = whether the pair is a corr pair or not
+        :return: dataframe = populated dataframe
+        """
+        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+
+        for tf in tfs:
+            informative_df = self.get_pair_data_for_features(
+                pair, tf, strategy, corr_dataframes, base_dataframes, is_corr_pairs)
+            informative_copy = informative_df.copy()
+
+            for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
+                df_features = strategy.feature_engineering_expand_all(
+                    informative_copy.copy(), t)
+                suffix = f"{t}"
+                informative_df = self.merge_features(informative_df, df_features, tf, tf, suffix)
+
+            generic_df = strategy.feature_engineering_expand_basic(informative_copy.copy())
+            suffix = "gen"
+
+            informative_df = self.merge_features(informative_df, generic_df, tf, tf, suffix)
+
+            indicators = [col for col in informative_df if col.startswith("%")]
+            for n in range(self.freqai_config["feature_parameters"]["include_shifted_candles"] + 1):
+                if n == 0:
+                    continue
+                df_shift = informative_df[indicators].shift(n)
+                df_shift = df_shift.add_suffix("_shift-" + str(n))
+                informative_df = pd.concat((informative_df, df_shift), axis=1)
+
+            dataframe = self.merge_features(dataframe.copy(), informative_df,
+                                            self.config["timeframe"], tf, f'{pair}_{tf}')
+
+        return dataframe
+
     def use_strategy_to_populate_indicators(
         self,
         strategy: IStrategy,
@@ -1188,7 +1287,87 @@ class FreqaiDataKitchen:
         """
         Use the user defined strategy for populating indicators during retrain
         :param strategy: IStrategy = user defined strategy object
-        :param corr_dataframes: dict = dict containing the informative pair dataframes
+        :param corr_dataframes: dict = dict containing the df pair dataframes
+                                (for user defined timeframes)
+        :param base_dataframes: dict = dict containing the current pair dataframes
+                                (for user defined timeframes)
+        :param pair: str = pair to populate
+        :param prediction_dataframe: DataFrame = dataframe containing the pair data
+        used for prediction
+        :param do_corr_pairs: bool = whether to populate corr pairs or not
+        :return:
+        dataframe: DataFrame = dataframe containing populated indicators
+        """
+
+        # this is a hack to check if the user is using the populate_any_indicators function
+        new_version = inspect.getsource(strategy.populate_any_indicators) == (
+            inspect.getsource(IStrategy.populate_any_indicators))
+
+        if new_version:
+            tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+            pairs: List[str] = self.freqai_config["feature_parameters"].get(
+                "include_corr_pairlist", [])
+
+            for tf in tfs:
+                if tf not in base_dataframes:
+                    base_dataframes[tf] = pd.DataFrame()
+                for p in pairs:
+                    if p not in corr_dataframes:
+                        corr_dataframes[p] = {}
+                    if tf not in corr_dataframes[p]:
+                        corr_dataframes[p][tf] = pd.DataFrame()
+
+            if not prediction_dataframe.empty:
+                dataframe = prediction_dataframe.copy()
+            else:
+                dataframe = base_dataframes[self.config["timeframe"]].copy()
+
+            corr_pairs: List[str] = self.freqai_config["feature_parameters"].get(
+                "include_corr_pairlist", [])
+            dataframe = self.populate_features(dataframe.copy(), pair, strategy,
+                                               corr_dataframes, base_dataframes)
+
+            dataframe = strategy.feature_engineering_standard(dataframe.copy())
+            # ensure corr pairs are always last
+            for corr_pair in corr_pairs:
+                if pair == corr_pair:
+                    continue  # dont repeat anything from whitelist
+                if corr_pairs and do_corr_pairs:
+                    dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
+                                                       corr_dataframes, base_dataframes, True)
+
+            dataframe = strategy.set_freqai_targets(dataframe.copy())
+
+            self.get_unique_classes_from_labels(dataframe)
+
+            dataframe = self.remove_special_chars_from_feature_names(dataframe)
+
+            if self.config.get('reduce_df_footprint', False):
+                dataframe = reduce_dataframe_footprint(dataframe)
+
+            return dataframe
+
+        else:
+            # the user is using the populate_any_indicators functions which is deprecated
+
+            df = self.use_strategy_to_populate_indicators_old_version(
+                strategy, corr_dataframes, base_dataframes, pair,
+                prediction_dataframe, do_corr_pairs)
+            return df
+
+    def use_strategy_to_populate_indicators_old_version(
+        self,
+        strategy: IStrategy,
+        corr_dataframes: dict = {},
+        base_dataframes: dict = {},
+        pair: str = "",
+        prediction_dataframe: DataFrame = pd.DataFrame(),
+        do_corr_pairs: bool = True,
+    ) -> DataFrame:
+        """
+        Use the user defined strategy for populating indicators during retrain
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the df pair dataframes
                                 (for user defined timeframes)
         :param base_dataframes: dict = dict containing the current pair dataframes
                                 (for user defined timeframes)
