@@ -10,7 +10,6 @@ from typing import Any, Dict, Iterator, List, Mapping, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
-import orjson
 import pandas as pd
 import rapidjson
 
@@ -263,15 +262,7 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
-    # https://github.com/pandas-dev/pandas/issues/24889
-    # https://github.com/pandas-dev/pandas/issues/40443
-    # We need to convert to a dict to avoid mem leak
-    def default(z):
-        if isinstance(z, pd.Timestamp):
-            return z.timestamp() * 1e3
-        raise TypeError
-
-    return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')
+    return dataframe.to_json(orient='split')
 
 
 def json_to_dataframe(data: str) -> pd.DataFrame:
