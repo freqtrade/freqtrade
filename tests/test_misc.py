@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
 
 from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
@@ -231,3 +232,7 @@ def test_dataframe_json(ohlcv_history):
     assert len(ohlcv_history) == len(dataframe)
 
     assert_frame_equal(ohlcv_history, dataframe)
+    ohlcv_history.at[1, 'date'] = pd.NaT
+    json = dataframe_to_json(ohlcv_history)
+
+    dataframe = json_to_dataframe(json)
