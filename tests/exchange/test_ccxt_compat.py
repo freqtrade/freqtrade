@@ -32,7 +32,7 @@ EXCHANGES = {
         'leverage_in_spot_market': False,
     },
     # 'binance': {
-    #     'pair': 'BTC/USDT',
+    #     'pair': 'BTC/USDT:USDT',
     #     'stake_currency': 'USDT',
     #     'hasQuoteVolume': True,
     #     'timeframe': '5m',
