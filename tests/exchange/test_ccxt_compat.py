@@ -32,11 +32,12 @@ EXCHANGES = {
         'leverage_in_spot_market': False,
     },
     # 'binance': {
-    #     'pair': 'BTC/USDT:USDT',
+    #     'pair': 'BTC/USDT',
     #     'stake_currency': 'USDT',
     #     'hasQuoteVolume': True,
     #     'timeframe': '5m',
     #     'futures': True,
+    #     'futures_pair': 'BTC/USDT:USDT',
     #     'leverage_tiers_public': False,
     #     'leverage_in_spot_market': False,
     # },
