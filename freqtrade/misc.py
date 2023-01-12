@@ -269,6 +269,8 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     def default(z):
         if isinstance(z, pd.Timestamp):
             return z.timestamp() * 1e3
+        if z is pd.NaT:
+            return 'NaT'
         raise TypeError
 
     return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')
