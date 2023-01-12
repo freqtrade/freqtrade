@@ -18,10 +18,11 @@ def migrate_binance_futures_names(config: Config):
         # only act on new futures
         return
     _migrate_binance_futures_db(config)
+    _migrate_binance_futures_data(config)
 
 
 def _migrate_binance_futures_db(config: Config):
-    logger.warning('Migrating binance futures pairs')
+    logger.warning('Migrating binance futures pairs in database.')
     trades = Trade.get_trades([Trade.exchange == 'binance', Trade.trading_mode == 'FUTURES']).all()
     for trade in trades:
         if ':' in trade.pair:
@@ -41,4 +42,22 @@ def _migrate_binance_futures_db(config: Config):
     # print(pls)
     # pls.update({'pair': concat(PairLock.pair,':USDT')})
     Trade.commit()
-    logger.warning('Done migrating binance futures pairs')
+    logger.warning('Done migrating binance futures pairs in database.')
+
+
+def _migrate_binance_futures_data(config: Config):
+
+    from freqtrade.data.history.idatahandler import get_datahandler
+    dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
+
+    paircombs = dhc.ohlcv_get_available_data(
+        config['datadir'],
+        config.get('trading_mode', TradingMode.SPOT)
+        )
+
+    for pair, timeframe, candle_type in paircombs:
+        if ':' in pair:
+            # already migrated
+            continue
+        new_pair = f"{pair}:{config['stake_currency']}"
+        dhc.rename_futures_data(pair, new_pair, timeframe, candle_type)
