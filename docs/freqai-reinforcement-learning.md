@@ -58,11 +58,12 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
 Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
+    def feature_engineering_standard():
         # The following features are necessary for RL models
-        informative[f"%-{pair}raw_close"] = informative["close"]
-        informative[f"%-{pair}raw_open"] = informative["open"]
-        informative[f"%-{pair}raw_high"] = informative["high"]
-        informative[f"%-{pair}raw_low"] = informative["low"]
+        informative[f"%-raw_close"] = informative["close"]
+        informative[f"%-raw_open"] = informative["open"]
+        informative[f"%-raw_high"] = informative["high"]
+        informative[f"%-raw_low"] = informative["low"]
 ```
 
 Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
