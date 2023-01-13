@@ -3957,7 +3957,7 @@ def test_validate_trading_mode_and_margin_mode(
 @pytest.mark.parametrize("exchange_name,trading_mode,ccxt_config", [
     ("binance", "spot", {}),
     ("binance", "margin", {"options": {"defaultType": "margin"}}),
-    ("binance", "futures", {"options": {"defaultType": "future"}}),
+    ("binance", "futures", {"options": {"defaultType": "swap"}}),
     ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),

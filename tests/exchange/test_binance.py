@@ -575,18 +575,6 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
-@pytest.mark.parametrize("trading_mode,margin_mode,config", [
-    ("spot", "", {}),
-    ("margin", "cross", {"options": {"defaultType": "margin"}}),
-    ("futures", "isolated", {"options": {"defaultType": "swap"}}),
-])
-def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = margin_mode
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange._ccxt_config == config
-
-
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
     ("BNB/BUSD", 0.0, 0.025, 0),
     ("BNB/USDT", 100.0, 0.0065, 0),
