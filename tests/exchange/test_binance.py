@@ -578,7 +578,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
 @pytest.mark.parametrize("trading_mode,margin_mode,config", [
     ("spot", "", {}),
     ("margin", "cross", {"options": {"defaultType": "margin"}}),
-    ("futures", "isolated", {"options": {"defaultType": "future"}}),
+    ("futures", "isolated", {"options": {"defaultType": "swap"}}),
 ])
 def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
     default_conf['trading_mode'] = trading_mode
