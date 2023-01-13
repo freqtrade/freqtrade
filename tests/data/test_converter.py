@@ -315,7 +315,10 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         files_new.append(file_new)
 
     default_conf['datadir'] = tmpdir1
-    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT', 'UNITTEST_USDT']
+    if candletype == CandleType.SPOT:
+        default_conf['pairs'] = ['XRP/ETH', 'XRP/USDT', 'UNITTEST/USDT']
+    else:
+        default_conf['pairs'] = ['XRP/ETH:ETH', 'XRP/USDT:USDT', 'UNITTEST/USDT:USDT']
     default_conf['timeframes'] = ['1m', '5m', '1h']
 
     assert not file_new.exists()

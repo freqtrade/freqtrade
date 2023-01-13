@@ -142,7 +142,7 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     df = dh.ohlcv_load('XRP/ETH', '5m', 'spot')
     assert len(df) == 712
 
-    df_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', candle_type="mark")
+    df_mark = dh.ohlcv_load('UNITTEST/USDT:USDT', '1h', candle_type="mark")
     assert len(df_mark) == 100
 
     df_no_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', 'spot')
@@ -424,7 +424,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     # Data goes from 2018-01-10 - 2018-01-30
     ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
     # Mark data goes from to 2021-11-15 2021-11-19
-    ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
+    ('UNITTEST/USDT:USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])
 @pytest.mark.parametrize('datahandler', ['hdf5', 'feather', 'parquet'])
 def test_generic_datahandler_ohlcv_load_and_resave(

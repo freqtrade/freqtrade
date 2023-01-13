@@ -78,11 +78,11 @@ def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) ->
 
 def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history)
-    file = testdatadir / 'futures/UNITTEST_USDT-1h-mark.json'
+    file = testdatadir / 'futures/UNITTEST_USDT_USDT-1h-mark.json'
     load_data(datadir=testdatadir, timeframe='1h', pairs=['UNITTEST/BTC'], candle_type='mark')
     assert file.is_file()
     assert not log_has(
-        'Download history data for pair: "UNITTEST/USDT", interval: 1m '
+        'Download history data for pair: "UNITTEST/USDT:USDT", interval: 1m '
         'and store in None.', caplog
     )
 
