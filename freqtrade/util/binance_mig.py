@@ -18,7 +18,7 @@ def migrate_binance_futures_names(config: Config):
         # only act on new futures
         return
     _migrate_binance_futures_db(config)
-    _migrate_binance_futures_data(config)
+    migrate_binance_futures_data(config)
 
 
 def _migrate_binance_futures_db(config: Config):
@@ -45,7 +45,14 @@ def _migrate_binance_futures_db(config: Config):
     logger.warning('Done migrating binance futures pairs in database.')
 
 
-def _migrate_binance_futures_data(config: Config):
+def migrate_binance_futures_data(config: Config):
+
+    if (
+        not (config.get('trading_mode', TradingMode.SPOT) == TradingMode.FUTURES
+             and config['exchange']['name'] == 'binance')
+    ):
+        # only act on new futures
+        return
 
     from freqtrade.data.history.idatahandler import get_datahandler
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
