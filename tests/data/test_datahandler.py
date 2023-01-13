@@ -33,10 +33,10 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
     assert set(pairs) == {'UNITTEST/BTC'}
 
     pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
-    assert set(pairs) == {'UNITTEST/USDT', 'XRP/USDT'}
+    assert set(pairs) == {'UNITTEST/USDT:USDT', 'XRP/USDT:USDT'}
 
     pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.FUTURES)
-    assert set(pairs) == {'XRP/USDT'}
+    assert set(pairs) == {'XRP/USDT:USDT'}
 
     pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT:USDT'}
@@ -104,11 +104,11 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.FUTURES)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
-        ('UNITTEST/USDT', '1h', 'mark'),
-        ('XRP/USDT', '1h', 'futures'),
-        ('XRP/USDT', '1h', 'mark'),
-        ('XRP/USDT', '8h', 'mark'),
-        ('XRP/USDT', '8h', 'funding_rate'),
+        ('UNITTEST/USDT:USDT', '1h', 'mark'),
+        ('XRP/USDT:USDT', '1h', 'futures'),
+        ('XRP/USDT:USDT', '1h', 'mark'),
+        ('XRP/USDT:USDT', '8h', 'mark'),
+        ('XRP/USDT:USDT', '8h', 'funding_rate'),
     }
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)

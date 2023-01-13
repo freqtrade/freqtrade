@@ -294,8 +294,8 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
 
 @pytest.mark.parametrize('file_base,candletype', [
     (['XRP_ETH-5m', 'XRP_ETH-1m'], CandleType.SPOT),
-    (['UNITTEST_USDT-1h-mark', 'XRP_USDT-1h-mark'], CandleType.MARK),
-    (['XRP_USDT-1h-futures'], CandleType.FUTURES),
+    (['UNITTEST_USDT_USDT-1h-mark', 'XRP_USDT_USDT-1h-mark'], CandleType.MARK),
+    (['XRP_USDT_USDT-1h-futures'], CandleType.FUTURES),
 ])
 def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
     tmpdir1 = Path(tmpdir)
