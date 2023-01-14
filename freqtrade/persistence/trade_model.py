@@ -49,6 +49,8 @@ class Order(_DECL_BASE):
     ft_order_side: str = Column(String(25), nullable=False)
     ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
+    ft_amount = Column(Float, nullable=False)
+    ft_price = Column(Float, nullable=False)
 
     order_id: str = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -83,8 +85,12 @@ class Order(_DECL_BASE):
         )
 
     @property
+    def safe_amount(self) -> float:
+        return self.amount or self.ft_amount
+
+    @property
     def safe_price(self) -> float:
-        return self.average or self.price or self.stop_price
+        return self.average or self.price or self.stop_price or self.ft_price
 
     @property
     def safe_filled(self) -> float:
@@ -94,7 +100,7 @@ class Order(_DECL_BASE):
     def safe_remaining(self) -> float:
         return (
             self.remaining if self.remaining is not None else
-            self.amount - (self.filled or 0.0)
+            self.safe_amount - (self.filled or 0.0)
         )
 
     @property
@@ -227,11 +233,20 @@ class Order(_DECL_BASE):
             logger.warning(f"Did not find order for {order}.")
 
     @staticmethod
-    def parse_from_ccxt_object(order: Dict[str, Any], pair: str, side: str) -> 'Order':
+    def parse_from_ccxt_object(
+            order: Dict[str, Any], pair: str, side: str,
+            amount: Optional[float] = None, price: Optional[float] = None) -> 'Order':
         """
         Parse an order from a ccxt object and return a new order Object.
+        Optional support for overriding amount and price is only used for test simplification.
         """
-        o = Order(order_id=str(order['id']), ft_order_side=side, ft_pair=pair)
+        o = Order(
+            order_id=str(order['id']),
+            ft_order_side=side,
+            ft_pair=pair,
+            ft_amount=amount if amount else order['amount'],
+            ft_price=price if price else order['price'],
+            )
 
         o.update_from_ccxt_object(order)
         return o
@@ -293,6 +308,7 @@ class LocalTrade():
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
     stake_amount: float = 0.0
+    max_stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -398,12 +414,6 @@ class LocalTrade():
         return self.close_date.replace(tzinfo=timezone.utc)
 
     @property
-    def enter_side(self) -> str:
-        """ DEPRECATED, please use entry_side instead"""
-        # TODO: Please remove me after 2022.5
-        return self.entry_side
-
-    @property
     def entry_side(self) -> str:
         if self.is_short:
             return "sell"
@@ -475,8 +485,8 @@ class LocalTrade():
             'amount': round(self.amount, 8),
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
+            'max_stake_amount': round(self.max_stake_amount, 8) if self.max_stake_amount else None,
             'strategy': self.strategy,
-            'buy_tag': self.enter_tag,
             'enter_tag': self.enter_tag,
             'timeframe': self.timeframe,
 
@@ -513,7 +523,6 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.exit_reason,  # Deprecated
             'exit_reason': self.exit_reason,
             'exit_order_status': self.exit_order_status,
             'stop_loss_abs': self.stop_loss,
@@ -882,6 +891,7 @@ class LocalTrade():
         ZERO = FtPrecise(0.0)
         current_amount = FtPrecise(0.0)
         current_stake = FtPrecise(0.0)
+        max_stake_amount = FtPrecise(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
@@ -923,7 +933,9 @@ class LocalTrade():
                     exit_rate, amount=exit_amount, open_rate=avg_price)
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
+                max_stake_amount += (tmp_amount * price)
         self.funding_fees = funding_fees
+        self.max_stake_amount = float(max_stake_amount)
 
         if close_profit:
             self.close_profit = close_profit
@@ -959,11 +971,12 @@ class LocalTrade():
         return None
 
     def select_order(self, order_side: Optional[str] = None,
-                     is_open: Optional[bool] = None) -> Optional[Order]:
+                     is_open: Optional[bool] = None, only_filled: bool = False) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: ft_order_side of the order (either 'buy', 'sell' or 'stoploss')
         :param is_open: Only search for open orders?
+        :param only_filled: Only search for Filled orders (only valid with is_open=False).
         :return: latest Order object if it exists, else None
         """
         orders = self.orders
@@ -971,6 +984,8 @@ class LocalTrade():
             orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
+        if is_open is False and only_filled:
+            orders = [o for o in orders if o.filled and o.status in NON_OPEN_EXCHANGE_STATES]
         if len(orders) > 0:
             return orders[-1]
         else:
@@ -1175,6 +1190,7 @@ class Trade(_DECL_BASE, LocalTrade):
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
+    max_stake_amount = Column(Float)
     amount = Column(Float)
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)

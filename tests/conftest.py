@@ -409,6 +409,11 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
 
 
 @pytest.fixture(autouse=True)
+def patch_gc(mocker) -> None:
+    mocker.patch("freqtrade.main.gc_set_threshold")
+
+
+@pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
     """
     Mocker to coingekko to speed up tests
@@ -2601,6 +2606,8 @@ def open_trade():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2637,6 +2644,8 @@ def open_trade_usdt():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2654,6 +2663,8 @@ def open_trade_usdt():
             ft_order_side='exit',
             ft_pair=trade.pair,
             ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789_exit',
             status="open",
             symbol=trade.pair,

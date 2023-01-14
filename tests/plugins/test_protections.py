@@ -39,6 +39,8 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         order_id=f'{pair}-{trade.entry_side}-{trade.open_date}',
         ft_is_open=False,
         ft_pair=pair,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
         amount=trade.amount,
         filled=trade.amount,
         remaining=0,
@@ -49,16 +51,19 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         side=trade.entry_side,
     ))
     if not is_open:
+        close_price = open_rate * (2 - profit_rate if is_short else profit_rate)
         trade.orders.append(Order(
             ft_order_side=trade.exit_side,
             order_id=f'{pair}-{trade.exit_side}-{trade.close_date}',
             ft_is_open=False,
             ft_pair=pair,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             amount=trade.amount,
             filled=trade.amount,
             remaining=0,
-            price=open_rate * (2 - profit_rate if is_short else profit_rate),
-            average=open_rate * (2 - profit_rate if is_short else profit_rate),
+            price=close_price,
+            average=close_price,
             status="closed",
             order_type="market",
             side=trade.exit_side,
@@ -66,7 +71,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
 
     trade.recalc_open_trade_value()
     if not is_open:
-        trade.close(open_rate * (2 - profit_rate if is_short else profit_rate))
+        trade.close(close_price)
         trade.exit_reason = exit_reason
 
     Trade.query.session.add(trade)

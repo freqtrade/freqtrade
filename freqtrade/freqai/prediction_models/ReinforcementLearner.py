@@ -61,7 +61,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
                                     tensorboard_log=Path(
                                         dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
-                                    **self.freqai_info['model_training_parameters']
+                                    **self.freqai_info.get('model_training_parameters', {})
                                     )
         else:
             logger.info('Continual training activated - starting training from previously '
@@ -71,7 +71,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         model.learn(
             total_timesteps=int(total_timesteps),
-            callback=self.eval_callback
+            callback=[self.eval_callback, self.tensorboard_callback]
         )
 
         if Path(dk.data_path / "best_model.zip").is_file():
@@ -100,13 +100,17 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             """
             # first, penalize if the action is not valid
             if not self._is_valid(action):
+                self.tensorboard_log("is_valid")
                 return -2
 
             pnl = self.get_unrealized_profit()
             factor = 100.
 
             # reward agent for entering trades
-            if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
+            if (action == Actions.Long_enter.value
+                    and self._position == Positions.Neutral):
+                return 25
+            if (action == Actions.Short_enter.value
                     and self._position == Positions.Neutral):
                 return 25
             # discourage agent from not entering trades

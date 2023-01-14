@@ -1046,8 +1046,13 @@ def test__validate_freqai_include_timeframes(default_conf, caplog) -> None:
     # Validation pass
     conf.update({'timeframe': '1m'})
     validate_config_consistency(conf)
-    conf.update({'analyze_per_epoch': True})
 
+    # Ensure base timeframe is in include_timeframes
+    conf['freqai']['feature_parameters']['include_timeframes'] = ["5m", "15m"]
+    validate_config_consistency(conf)
+    assert conf['freqai']['feature_parameters']['include_timeframes'] == ["1m", "5m", "15m"]
+
+    conf.update({'analyze_per_epoch': True})
     with pytest.raises(OperationalException,
                        match=r"Using analyze-per-epoch .* not supported with a FreqAI strategy."):
         validate_config_consistency(conf)

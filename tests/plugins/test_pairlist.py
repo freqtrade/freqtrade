@@ -22,6 +22,11 @@ from tests.conftest import (create_mock_trades_usdt, get_patched_exchange, get_p
                             log_has, log_has_re, num_log_has)
 
 
+# Exclude RemotePairList from tests.
+# It has a mandatory parameter, and requires special handling, which happens in test_remotepairlist.
+TESTABLE_PAIRLISTS = [p for p in AVAILABLE_PAIRLISTS if p not in ['RemotePairList']]
+
+
 @pytest.fixture(scope="function")
 def whitelist_conf(default_conf):
     default_conf['stake_currency'] = 'BTC'
@@ -824,7 +829,7 @@ def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> N
         get_patched_freqtradebot(mocker, default_conf)
 
 
-@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+@pytest.mark.parametrize("pairlist", TESTABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     whitelist_conf['pairlists'][0]['method'] = pairlist
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -839,7 +844,7 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     assert isinstance(freqtrade.pairlists.blacklist, list)
 
 
-@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+@pytest.mark.parametrize("pairlist", TESTABLE_PAIRLISTS)
 @pytest.mark.parametrize("whitelist,log_message", [
     (['ETH/BTC', 'TKN/BTC'], ""),
     # TRX/ETH not in markets
@@ -872,7 +877,7 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
     assert log_message in caplog.text
 
 
-@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+@pytest.mark.parametrize("pairlist", TESTABLE_PAIRLISTS)
 def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, tickers):
     whitelist_conf['pairlists'][0]['method'] = pairlist
 
