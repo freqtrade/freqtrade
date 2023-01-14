@@ -135,7 +135,7 @@ class VolumePairList(IPairList):
                 filtered_tickers = [
                     v for k, v in tickers.items()
                     if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v[self._sort_key] is not None)
+                        and (self._use_range or v.get(self._sort_key) is not None)
                         and v['symbol'] in _pairlist)]
                 pairlist = [s['symbol'] for s in filtered_tickers]
             else:
@@ -218,7 +218,7 @@ class VolumePairList(IPairList):
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
         else:
-            # Tickers mode - filter based on incomming pairlist.
+            # Tickers mode - filter based on incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
         if self._min_value > 0:

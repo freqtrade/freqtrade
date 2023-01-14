@@ -11,7 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.types import OHLCVResponse, Tickers
 from freqtrade.misc import deep_merge_dicts, json_load
 
 
@@ -31,7 +31,7 @@ class Binance(Exchange):
         "ccxt_futures_name": "future"
     }
     _ft_has_futures: Dict = {
-        "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "tickers_have_price": False,
     }
 
@@ -112,7 +112,7 @@ class Binance(Exchange):
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
                                         until_ms: Optional[int] = None
-                                        ) -> Tuple[str, str, str, List]:
+                                        ) -> OHLCVResponse:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"

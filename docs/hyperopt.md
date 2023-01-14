@@ -365,7 +365,7 @@ class MyAwesomeStrategy(IStrategy):
     timeframe = '15m'
     minimal_roi = {
         "0":  0.10
-    },
+    }
     # Define the parameter spaces
     buy_ema_short = IntParameter(3, 50, default=5)
     buy_ema_long = IntParameter(15, 200, default=50)
@@ -400,7 +400,7 @@ class MyAwesomeStrategy(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-          conditions = []
+        conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_long_{self.buy_ema_long.value}'], dataframe[f'ema_short_{self.buy_ema_short.value}']
             ))

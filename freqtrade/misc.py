@@ -269,6 +269,8 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     def default(z):
         if isinstance(z, pd.Timestamp):
             return z.timestamp() * 1e3
+        if z is pd.NaT:
+            return 'NaT'
         raise TypeError
 
     return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')
@@ -301,3 +303,21 @@ def remove_entry_exit_signals(dataframe: pd.DataFrame):
     dataframe[SignalTagType.EXIT_TAG.value] = None
 
     return dataframe
+
+
+def append_candles_to_dataframe(left: pd.DataFrame, right: pd.DataFrame) -> pd.DataFrame:
+    """
+    Append the `right` dataframe to the `left` dataframe
+
+    :param left: The full dataframe you want appended to
+    :param right: The new dataframe containing the data you want appended
+    :returns: The dataframe with the right data in it
+    """
+    if left.iloc[-1]['date'] != right.iloc[-1]['date']:
+        left = pd.concat([left, right])
+
+    # Only keep the last 1500 candles in memory
+    left = left[-1500:] if len(left) > 1500 else left
+    left.reset_index(drop=True, inplace=True)
+
+    return left

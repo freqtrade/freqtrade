@@ -652,7 +652,7 @@ Common arguments:
 
 You can also use webserver mode via docker.
 Starting a one-off container requires the configuration of the port explicitly, as ports are not exposed by default.
-You can use `docker-compose run --rm -p 127.0.0.1:8080:8080 freqtrade webserver` to start a one-off container that'll be removed once you stop it. This assumes that port 8080 is still available and no other bot is running on that port.
+You can use `docker compose run --rm -p 127.0.0.1:8080:8080 freqtrade webserver` to start a one-off container that'll be removed once you stop it. This assumes that port 8080 is still available and no other bot is running on that port.
 
 Alternatively, you can reconfigure the docker-compose file to have the command updated:
 
@@ -662,7 +662,7 @@ Alternatively, you can reconfigure the docker-compose file to have the command u
       --config /freqtrade/user_data/config.json
 ```
 
-You can now use `docker-compose up` to start the webserver.
+You can now use `docker compose up` to start the webserver.
 This assumes that the configuration has a webserver enabled and configured for docker (listening port = `0.0.0.0`).
 
 !!! Tip
