@@ -549,6 +549,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
     default_conf_usdt['stake_currency'] = 'USDT'
+    default_conf_usdt['datadir'] = Path(default_conf_usdt['datadir'])
     default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])
