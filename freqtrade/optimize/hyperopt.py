@@ -74,7 +74,7 @@ class Hyperopt:
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
-        self.trades_space: List[Dimension] = []
+        self.max_open_trades_space: List[Dimension] = []
         self.dimensions: List[Dimension] = []
 
         self.config = config
@@ -288,11 +288,11 @@ class Hyperopt:
 
         if HyperoptTools.has_space(self.config, 'trades'):
             logger.debug("Hyperopt has 'trades' space")
-            self.trades_space = self.custom_hyperopt.trades_space()
+            self.max_open_trades_space = self.custom_hyperopt.max_open_trades_space()
 
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
                            + self.roi_space + self.stoploss_space + self.trailing_space
-                           + self.trades_space)
+                           + self.max_open_trades_space)
 
     def assign_params(self, params_dict: Dict, category: str) -> None:
         """

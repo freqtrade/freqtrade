@@ -1088,7 +1088,8 @@ def test_max_open_trades_consistency(mocker, hyperopt_conf, tmpdir, fee) -> None
 
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
 
-    hyperopt.custom_hyperopt.trades_space = lambda: [Integer(1, 10, name='max_open_trades')]
+    hyperopt.custom_hyperopt.max_open_trades_space = lambda: [
+        Integer(1, 10, name='max_open_trades')]
 
     first_time_evaluated = False
 

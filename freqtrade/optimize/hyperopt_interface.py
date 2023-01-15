@@ -191,7 +191,7 @@ class IHyperOpt(ABC):
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
 
-    def trades_space(self) -> List[Dimension]:
+    def max_open_trades_space(self) -> List[Dimension]:
         """
         Create a max open trades space.
 
