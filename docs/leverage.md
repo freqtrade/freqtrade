@@ -67,8 +67,6 @@ You will also have to pick a "margin mode" (explanation below) - with freqtrade 
 Freqtrade follows the [ccxt naming conventions for futures](https://docs.ccxt.com/en/latest/manual.html?#perpetual-swap-perpetual-future).
 A futures pair will therefore have the naming of `base/quote:settle` (e.g. `ETH/USDT:USDT`).
 
-Binance is currently still an exception to this naming scheme, where pairs are named `ETH/USDT` also for futures markets, but will be aligned as soon as CCXT is ready.
-
 ### Margin mode
 
 On top of `trading_mode` - you will also have to configure your `margin_mode`.

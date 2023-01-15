@@ -1553,13 +1553,13 @@ def test_list_available_pairs(botclient):
         client, f"{BASE_URI}/available_pairs?timeframe=1h")
     assert_response(rc)
     assert rc.json()['length'] == 1
-    assert rc.json()['pairs'] == ['XRP/USDT']
+    assert rc.json()['pairs'] == ['XRP/USDT:USDT']
 
     rc = client_get(
         client, f"{BASE_URI}/available_pairs?timeframe=1h&candletype=mark")
     assert_response(rc)
     assert rc.json()['length'] == 2
-    assert rc.json()['pairs'] == ['UNITTEST/USDT', 'XRP/USDT']
+    assert rc.json()['pairs'] == ['UNITTEST/USDT:USDT', 'XRP/USDT:USDT']
     assert len(rc.json()['pair_interval']) == 2
 
 

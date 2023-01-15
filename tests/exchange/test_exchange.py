@@ -3957,7 +3957,7 @@ def test_validate_trading_mode_and_margin_mode(
 @pytest.mark.parametrize("exchange_name,trading_mode,ccxt_config", [
     ("binance", "spot", {}),
     ("binance", "margin", {"options": {"defaultType": "margin"}}),
-    ("binance", "futures", {"options": {"defaultType": "future"}}),
+    ("binance", "futures", {"options": {"defaultType": "swap"}}),
     ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),
@@ -4898,22 +4898,22 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
         OperationalException,
         match='nominal value can not be lower than 0',
     ):
-        exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT', -1)
+        exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT:USDT', -1)
 
     exchange._leverage_tiers = {}
 
     with pytest.raises(
         InvalidOrderException,
-        match="Maintenance margin rate for 1000SHIB/USDT is unavailable for",
+        match="Maintenance margin rate for 1000SHIB/USDT:USDT is unavailable for",
     ):
-        exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT', 10000)
+        exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT:USDT', 10000)
 
 
 @pytest.mark.parametrize('pair,value,mmr,maintAmt', [
-    ('ADA/BUSD', 500, 0.025, 0.0),
-    ('ADA/BUSD', 20000000, 0.5, 1527500.0),
-    ('ZEC/USDT', 500, 0.01, 0.0),
-    ('ZEC/USDT', 20000000, 0.5, 654500.0),
+    ('ADA/BUSD:BUSD', 500, 0.025, 0.0),
+    ('ADA/BUSD:BUSD', 20000000, 0.5, 1527500.0),
+    ('ZEC/USDT:USDT', 500, 0.01, 0.0),
+    ('ZEC/USDT:USDT', 20000000, 0.5, 654500.0),
 ])
 def test_get_maintenance_ratio_and_amt(
     mocker,
@@ -4946,21 +4946,21 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
 
     exchange._leverage_tiers = leverage_tiers
 
-    assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
-    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
-    assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
-    assert pytest.approx(exchange.get_max_leverage("BNB/BUSD", 99999.9)) == 5.000005
-    assert pytest.approx(exchange.get_max_leverage("BNB/USDT", 1500)) == 33.333333333333333
-    assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
-    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
+    assert exchange.get_max_leverage("BNB/BUSD:BUSD", 1.0) == 20.0
+    assert exchange.get_max_leverage("BNB/USDT:USDT", 100.0) == 75.0
+    assert exchange.get_max_leverage("BTC/USDT:USDT", 170.30) == 125.0
+    assert pytest.approx(exchange.get_max_leverage("BNB/BUSD:BUSD", 99999.9)) == 5.000005
+    assert pytest.approx(exchange.get_max_leverage("BNB/USDT:USDT", 1500)) == 33.333333333333333
+    assert exchange.get_max_leverage("BTC/USDT:USDT", 300000000) == 2.0
+    assert exchange.get_max_leverage("BTC/USDT:USDT", 600000000) == 1.0  # Last tier
 
-    assert exchange.get_max_leverage("SPONGE/USDT", 200) == 1.0    # Pair not in leverage_tiers
-    assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
+    assert exchange.get_max_leverage("SPONGE/USDT:USDT", 200) == 1.0    # Pair not in leverage_tiers
+    assert exchange.get_max_leverage("BTC/USDT:USDT", 0.0) == 125.0  # No stake amount
     with pytest.raises(
         InvalidOrderException,
-        match=r'Amount 1000000000.01 too high for BTC/USDT'
+        match=r'Amount 1000000000.01 too high for BTC/USDT:USDT'
     ):
-        exchange.get_max_leverage("BTC/USDT", 1000000000.01)
+        exchange.get_max_leverage("BTC/USDT:USDT", 1000000000.01)
 
 
 @pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gateio', 'okx'])
