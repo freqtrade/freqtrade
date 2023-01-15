@@ -1020,6 +1020,52 @@ def test_stake_amount_unlimited_max_open_trades(mocker, hyperopt_conf, tmpdir, f
     assert hyperopt.backtesting.strategy.max_open_trades == 1
 
 
+def test_max_open_trades_dump(mocker, hyperopt_conf, tmpdir, fee, capsys) -> None:
+    # This test is to ensure that after hyperopting, max_open_trades is never
+    # saved as inf in the output json params
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    hyperopt_conf.update({
+        'strategy': 'HyperoptableStrategy',
+        'user_data_dir': Path(tmpdir),
+        'hyperopt_random_state': 42,
+        'spaces': ['trades'],
+    })
+    hyperopt = Hyperopt(hyperopt_conf)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._get_params_dict',
+                 return_value={
+                     'max_open_trades': -1
+                     })
+
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+
+    hyperopt.start()
+
+    out, err = capsys.readouterr()
+
+    assert 'max_open_trades = -1' in out
+    assert 'max_open_trades = inf' not in out
+
+    ##############
+
+    hyperopt_conf.update({'print_json': True})
+
+    hyperopt = Hyperopt(hyperopt_conf)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._get_params_dict',
+                 return_value={
+                     'max_open_trades': -1
+                     })
+
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+
+    hyperopt.start()
+
+    out, err = capsys.readouterr()
+
+    assert '"max_open_trades":-1' in out
+
+
 def test_max_open_trades_consistency(mocker, hyperopt_conf, tmpdir, fee) -> None:
     # This test is to ensure that max_open_trades is the same across all functions needing it
     # after it has been changed from the hyperopt

@@ -104,11 +104,7 @@ class StrategyResolver(IResolver):
         if (attribute in config
                 and not isinstance(getattr(type(strategy), attribute, None), property)):
             # Ensure Properties are not overwritten
-            val = config[attribute]
-            # max_open_trades set to float('inf') in the config will be copied as -1 in the strategy
-            if attribute == 'max_open_trades' and val == float('inf'):
-                val = -1
-            setattr(strategy, attribute, val)
+            setattr(strategy, attribute, config[attribute])
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
         elif hasattr(strategy, attribute):
@@ -137,6 +133,8 @@ class StrategyResolver(IResolver):
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):
             strategy.stoploss = float(strategy.stoploss)
+        if hasattr(strategy, 'max_open_trades') and strategy.max_open_trades < 0:
+            strategy.max_open_trades = float('inf')
         return strategy
 
     @staticmethod

@@ -681,3 +681,4 @@ MakerTaker = Literal['maker', 'taker']
 BidAsk = Literal['bid', 'ask']
 
 Config = Dict[str, Any]
+IntOrInf = float

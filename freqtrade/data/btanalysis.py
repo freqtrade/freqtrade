@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
@@ -332,7 +332,7 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
 
 def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
-                          max_open_trades: int) -> pd.DataFrame:
+                          max_open_trades: IntOrInf) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
     and then counting overlaps

@@ -1237,8 +1237,8 @@ class Backtesting:
         if not self.config.get('use_max_market_positions', True):
             logger.info(
                 'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            self.strategy.max_open_trades = -1
-            self.config.update({'max_open_trades': float('inf')})
+            self.strategy.max_open_trades = float('inf')
+            self.config.update({'max_open_trades': self.strategy.max_open_trades})
 
         # need to reprocess data every time to populate signals
         preprocessed = self.strategy.advise_all_indicators(data)
