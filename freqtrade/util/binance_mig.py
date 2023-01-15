@@ -2,6 +2,7 @@ import logging
 
 from freqtrade.constants import Config
 from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Trade
 
@@ -17,6 +18,11 @@ def migrate_binance_futures_names(config: Config):
     ):
         # only act on new futures
         return
+    import ccxt
+    if "2.6.6" > ccxt.__version__:
+        raise OperationalException(
+            "Please follow the update instructions in the docs "
+            "(https://www.freqtrade.io/en/latest/updating/) to install a compatible ccxt version.")
     _migrate_binance_futures_db(config)
     migrate_binance_futures_data(config)
 
