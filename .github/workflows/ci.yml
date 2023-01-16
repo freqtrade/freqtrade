@@ -360,6 +360,8 @@ jobs:
         pip install -e .
 
     - name: Tests incl. ccxt compatibility tests
+      env:
+        CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
 
