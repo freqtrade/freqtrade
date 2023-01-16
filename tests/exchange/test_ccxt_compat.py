@@ -113,12 +113,14 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
     # Set proxy to test in CI.
     import os
     if use_proxy and (proxy := os.environ.get('CI_WEB_PROXY')):
-        config['exchange']['ccxt_config'] = {
+        config1 = deepcopy(config)
+        config1['exchange']['ccxt_config'] = {
             'proxies': {
                 'https': proxy,
                 'http': proxy,
             }
         }
+        return config1
 
     return config
 
