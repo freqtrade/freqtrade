@@ -37,6 +37,7 @@ EXCHANGES = {
     #     'hasQuoteVolume': True,
     #     'timeframe': '5m',
     #     'futures': True,
+    #     'futures_pair': 'BTC/USDT:USDT',
     #     'leverage_tiers_public': False,
     #     'leverage_in_spot_market': False,
     # },

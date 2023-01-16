@@ -548,6 +548,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
     default_conf_usdt['stake_currency'] = 'USDT'
+    default_conf_usdt['datadir'] = Path(default_conf_usdt['datadir'])
     default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -1467,7 +1468,7 @@ def test_backtest_start_futures_noliq(default_conf_usdt, mocker,
     patch_exchange(mocker)
 
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
-                 PropertyMock(return_value=['HULUMULU/USDT', 'XRP/USDT']))
+                 PropertyMock(return_value=['HULUMULU/USDT', 'XRP/USDT:USDT']))
     # mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
 
     patched_configuration_load_config_file(mocker, default_conf_usdt)
@@ -1498,7 +1499,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
         "strategy": CURRENT_TEST_STRATEGY,
     })
     patch_exchange(mocker)
-    result1 = pd.DataFrame({'pair': ['XRP/USDT', 'XRP/USDT'],
+    result1 = pd.DataFrame({'pair': ['XRP/USDT:USDT', 'XRP/USDT:USDT'],
                             'profit_ratio': [0.0, 0.0],
                             'profit_abs': [0.0, 0.0],
                             'open_date': pd.to_datetime(['2021-11-18 18:00:00',
@@ -1514,7 +1515,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
                             'close_rate': [0.104969, 0.103541],
                             'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
-    result2 = pd.DataFrame({'pair': ['XRP/USDT', 'XRP/USDT', 'XRP/USDT'],
+    result2 = pd.DataFrame({'pair': ['XRP/USDT:USDT', 'XRP/USDT:USDT', 'XRP/USDT:USDT'],
                             'profit_ratio': [0.03, 0.01, 0.1],
                             'profit_abs': [0.01, 0.02, 0.2],
                             'open_date': pd.to_datetime(['2021-11-19 18:00:00',
@@ -1559,7 +1560,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
         }
     ])
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
-                 PropertyMock(return_value=['XRP/USDT']))
+                 PropertyMock(return_value=['XRP/USDT:USDT']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
 
     patched_configuration_load_config_file(mocker, default_conf_usdt)
@@ -1582,8 +1583,8 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
         'up to 2021-11-21 04:00:00 (4 days).',
         'Backtesting with data from 2021-11-17 21:00:00 '
         'up to 2021-11-21 04:00:00 (3 days).',
-        'XRP/USDT, funding_rate, 8h, data starts at 2021-11-18 00:00:00',
-        'XRP/USDT, mark, 8h, data starts at 2021-11-18 00:00:00',
+        'XRP/USDT:USDT, funding_rate, 8h, data starts at 2021-11-18 00:00:00',
+        'XRP/USDT:USDT, mark, 8h, data starts at 2021-11-18 00:00:00',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
     ]
 
