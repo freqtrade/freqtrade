@@ -632,10 +632,11 @@ AVAILABLE_CLI_OPTIONS = {
               "1: by enter_tag, "
               "2: by enter_tag and exit_tag, "
               "3: by pair and enter_tag, "
-              "4: by pair, enter_ and exit_tag (this can get quite large)"),
+              "4: by pair, enter_ and exit_tag (this can get quite large), "
+              "5: by exit_tag"),
         nargs='+',
         default=['0', '1', '2'],
-        choices=['0', '1', '2', '3', '4'],
+        choices=['0', '1', '2', '3', '4', '5'],
     ),
     "enter_reason_list": Arg(
         "--enter-reason-list",
