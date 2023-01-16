@@ -127,7 +127,8 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf):
-    set_test_proxy(exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
+    exchange_conf = set_test_proxy(
+        exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
     exchange_conf['exchange']['name'] = request.param
     exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
     exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
@@ -140,7 +141,8 @@ def exchange_futures(request, exchange_conf, class_mocker):
     if not EXCHANGES[request.param].get('futures') is True:
         yield None, request.param
     else:
-        set_test_proxy(exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
+        exchange_conf = set_test_proxy(
+            exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
         exchange_conf = deepcopy(exchange_conf)
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
