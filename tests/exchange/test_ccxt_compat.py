@@ -222,6 +222,26 @@ class TestCCXTExchange():
         if EXCHANGES[exchangename].get('hasQuoteVolume'):
             assert tickers[pair]['quoteVolume'] is not None
 
+    def test_ccxt_fetch_tickers_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange_futures
+        if not exch or exchangename in ('gateio'):
+            # exchange_futures only returns values for supported exchanges
+            return
+
+        pair = EXCHANGES[exchangename]['pair']
+        pair = EXCHANGES[exchangename].get('futures_pair', pair)
+
+        tickers = exch.get_tickers()
+        assert pair in tickers
+        assert 'ask' in tickers[pair]
+        assert tickers[pair]['ask'] is not None
+        assert 'bid' in tickers[pair]
+        assert tickers[pair]['bid'] is not None
+        # assert 'quoteVolume' in tickers[pair]
+        # if EXCHANGES[exchangename].get('hasQuoteVolume'):
+            # assert tickers[pair]['quoteVolume'] is not None
+
+
     def test_ccxt_fetch_ticker(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
