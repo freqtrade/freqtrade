@@ -3,7 +3,6 @@
 Cryptocurrency Exchanges support
 """
 import asyncio
-import http
 import inspect
 import logging
 from copy import deepcopy
@@ -43,12 +42,6 @@ from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 logger = logging.getLogger(__name__)
-
-
-# Workaround for adding samesite support to pre 3.8 python
-# Only applies to python3.7, and only on certain exchanges (kraken)
-# Replicates the fix from starlette (which is actually causing this problem)
-http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Exchange:
