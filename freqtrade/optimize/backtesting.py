@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
-from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, LongShort
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, IntOrInf, LongShort
 from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
@@ -924,7 +924,7 @@ class Backtesting:
 
     def trade_slot_available(self, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
-        max_open_trades = self.config['max_open_trades']
+        max_open_trades: IntOrInf = self.config['max_open_trades']
         if max_open_trades <= 0 or open_trade_count < max_open_trades:
             return True
         # Rejected trade

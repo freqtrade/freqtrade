@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pandas import DataFrame
 
-from freqtrade.configuration.configuration import Configuration
+from freqtrade.configuration import Configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.interface import IStrategy
