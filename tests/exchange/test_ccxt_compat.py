@@ -40,6 +40,7 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
+        'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
     },
@@ -66,6 +67,7 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
+        'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
@@ -74,8 +76,9 @@ EXCHANGES = {
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
+        'futures_pair': 'BTC/USDT:USDT',
+        'hasQuoteVolumeFutures': False,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
@@ -237,10 +240,9 @@ class TestCCXTExchange():
         assert tickers[pair]['ask'] is not None
         assert 'bid' in tickers[pair]
         assert tickers[pair]['bid'] is not None
-        # assert 'quoteVolume' in tickers[pair]
-        # if EXCHANGES[exchangename].get('hasQuoteVolume'):
-            # assert tickers[pair]['quoteVolume'] is not None
-
+        assert 'quoteVolume' in tickers[pair]
+        if EXCHANGES[exchangename].get('hasQuoteVolumeFutures'):
+            assert tickers[pair]['quoteVolume'] is not None
 
     def test_ccxt_fetch_ticker(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
