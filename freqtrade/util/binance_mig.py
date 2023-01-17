@@ -21,7 +21,7 @@ def migrate_binance_futures_names(config: Config):
         # only act on new futures
         return
     import ccxt
-    if version.parse("2.6.6") > version.parse(ccxt.__version__):
+    if version.parse("2.6.26") > version.parse(ccxt.__version__):
         raise OperationalException(
             "Please follow the update instructions in the docs "
             "(https://www.freqtrade.io/en/latest/updating/) to install a compatible ccxt version.")
