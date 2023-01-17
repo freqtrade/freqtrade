@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import arrow
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RunMode, SignalDirection,
                              SignalTagType, SignalType, TradingMode)
@@ -53,6 +53,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # associated stoploss
     stoploss: float
+
+    # max open trades for the strategy
+    max_open_trades:  IntOrInf
 
     # trailing stoploss
     trailing_stop: bool = False

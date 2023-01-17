@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
-from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, LongShort
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, IntOrInf, LongShort
 from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
@@ -922,8 +922,9 @@ class Backtesting:
                 trade.close(exit_row[OPEN_IDX], show_msg=False)
                 LocalTrade.close_bt_trade(trade)
 
-    def trade_slot_available(self, max_open_trades: int, open_trade_count: int) -> bool:
+    def trade_slot_available(self, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
+        max_open_trades: IntOrInf = self.config['max_open_trades']
         if max_open_trades <= 0 or open_trade_count < max_open_trades:
             return True
         # Rejected trade
@@ -1053,7 +1054,7 @@ class Backtesting:
 
     def backtest_loop(
             self, row: Tuple, pair: str, current_time: datetime, end_date: datetime,
-            max_open_trades: int, open_trade_count_start: int, trade_dir: Optional[LongShort],
+            open_trade_count_start: int, trade_dir: Optional[LongShort],
             is_first: bool = True) -> int:
         """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
@@ -1076,7 +1077,7 @@ class Backtesting:
         if (
             (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
             and is_first
-            and self.trade_slot_available(max_open_trades, open_trade_count_start)
+            and self.trade_slot_available(open_trade_count_start)
             and current_time != end_date
             and trade_dir is not None
             and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
@@ -1123,8 +1124,7 @@ class Backtesting:
         return open_trade_count_start
 
     def backtest(self, processed: Dict,
-                 start_date: datetime, end_date: datetime,
-                 max_open_trades: int = 0) -> Dict[str, Any]:
+                 start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """
         Implement backtesting functionality
 
@@ -1136,7 +1136,6 @@ class Backtesting:
         optimize memory usage!
         :param start_date: backtesting timerange start datetime
         :param end_date: backtesting timerange end datetime
-        :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
         :return: DataFrame with trades (results of backtesting)
         """
         self.prepare_backtest(self.enable_protections)
@@ -1185,7 +1184,7 @@ class Backtesting:
                     if len(detail_data) == 0:
                         # Fall back to "regular" data if no detail data was found for this candle
                         open_trade_count_start = self.backtest_loop(
-                            row, pair, current_time, end_date, max_open_trades,
+                            row, pair, current_time, end_date,
                             open_trade_count_start, trade_dir)
                         continue
                     detail_data.loc[:, 'enter_long'] = row[LONG_IDX]
@@ -1198,13 +1197,13 @@ class Backtesting:
                     current_time_det = current_time
                     for det_row in detail_data[HEADERS].values.tolist():
                         open_trade_count_start = self.backtest_loop(
-                            det_row, pair, current_time_det, end_date, max_open_trades,
+                            det_row, pair, current_time_det, end_date,
                             open_trade_count_start, trade_dir, is_first)
                         current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         is_first = False
                 else:
                     open_trade_count_start = self.backtest_loop(
-                        row, pair, current_time, end_date, max_open_trades,
+                        row, pair, current_time, end_date,
                         open_trade_count_start, trade_dir)
 
             # Move time one configured time_interval ahead.
@@ -1237,13 +1236,11 @@ class Backtesting:
         self._set_strategy(strat)
 
         # Use max_open_trades in backtesting, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            # Must come from strategy config, as the strategy may modify this setting.
-            max_open_trades = self.strategy.config['max_open_trades']
-        else:
+        if not self.config.get('use_max_market_positions', True):
             logger.info(
                 'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            max_open_trades = 0
+            self.strategy.max_open_trades = float('inf')
+            self.config.update({'max_open_trades': self.strategy.max_open_trades})
 
         # need to reprocess data every time to populate signals
         preprocessed = self.strategy.advise_all_indicators(data)
@@ -1266,7 +1263,6 @@ class Backtesting:
             processed=preprocessed,
             start_date=min_date,
             end_date=max_date,
-            max_open_trades=max_open_trades,
         )
         backtest_end_time = datetime.now(timezone.utc)
         results.update({

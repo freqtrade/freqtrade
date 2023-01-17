@@ -96,7 +96,6 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
         'processed': processed,
         'start_date': min_date,
         'end_date': max_date,
-        'max_open_trades': 10,
     }
 
 
@@ -685,6 +684,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
+    default_conf['max_open_trades'] = 10
+
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -702,7 +703,6 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
     results = result['results']
     assert not results.empty
@@ -786,6 +786,8 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
     def custom_entry_price(proposed_rate, **kwargs):
         return proposed_rate * 0.997
 
+    default_conf_usdt['max_open_trades'] = 10
+
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.populate_entry_trend = advise_entry
@@ -806,7 +808,6 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
     results = result['results']
     assert not results.empty
@@ -860,6 +861,7 @@ def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) 
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 1
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     # Testing dataframe contains 11 candles. Expecting 10 timed out orders.
@@ -872,7 +874,6 @@ def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) 
         processed=deepcopy(data),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=1,
     )
 
     assert result['timedout_entry_orders'] == 10
@@ -880,6 +881,7 @@ def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) 
 
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
+    default_conf['max_open_trades'] = 1
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -897,7 +899,6 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
         processed=processed,
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=1,
     )
     assert not results['results'].empty
     assert len(results['results']) == 1
@@ -905,6 +906,8 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
 
 def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
+    default_conf['max_open_trades'] = 10
+
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -928,7 +931,6 @@ def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> N
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
 
 
@@ -949,6 +951,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
 
 def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
+    default_conf['max_open_trades'] = 10
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=100000)
@@ -982,7 +985,6 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
     assert count == 5
 
@@ -999,6 +1001,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
 
     default_conf['enable_protections'] = True
     default_conf['timeframe'] = '1m'
+    default_conf['max_open_trades'] = 1
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -1025,7 +1028,6 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
             processed=processed,
             start_date=min_date,
             end_date=max_date,
-            max_open_trades=1,
         )
         assert len(results['results']) == numres
 
@@ -1063,11 +1065,12 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     assert isinstance(processed, dict)
+    backtesting.strategy.max_open_trades = 1
+    backtesting.config.update({'max_open_trades': 1})
     results = backtesting.backtest(
         processed=processed,
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=1,
     )
     assert len(results['results']) == expected
 
@@ -1078,7 +1081,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
         buy_value = 1
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
-
+    default_conf['max_open_trades'] = 10
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -1095,6 +1098,7 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
 
+    default_conf['max_open_trades'] = 10
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -1108,6 +1112,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    default_conf['max_open_trades'] = 10
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
@@ -1166,6 +1171,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     if tres > 0:
         data[pair] = data[pair][tres:].reset_index()
     default_conf['timeframe'] = '5m'
+    default_conf['max_open_trades'] = 3
 
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -1174,11 +1180,11 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
+
     backtest_conf = {
         'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
-        'max_open_trades': 3,
     }
 
     results = backtesting.backtest(**backtest_conf)
@@ -1196,11 +1202,12 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         backtesting.dataprovider.get_analyzed_dataframe('NXT/BTC', '5m')[0]
     ) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
 
+    backtesting.strategy.max_open_trades = 1
+    backtesting.config.update({'max_open_trades': 1})
     backtest_conf = {
         'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
-        'max_open_trades': 1,
     }
     results = backtesting.backtest(**backtest_conf)
     assert len(evaluate_result_multi(results['results'], '5m', 1)) == 0

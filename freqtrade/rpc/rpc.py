@@ -673,6 +673,7 @@ class RPC:
         if self._freqtrade.state == State.RUNNING:
             # Set 'max_open_trades' to 0
             self._freqtrade.config['max_open_trades'] = 0
+            self._freqtrade.strategy.max_open_trades = 0
 
         return {'status': 'No more entries will occur from now. Run /reload_config to reset.'}
 

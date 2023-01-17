@@ -191,6 +191,16 @@ class IHyperOpt(ABC):
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
 
+    def max_open_trades_space(self) -> List[Dimension]:
+        """
+        Create a max open trades space.
+
+        You may override it in your custom Hyperopt class.
+        """
+        return [
+            Integer(-1, 10, name='max_open_trades'),
+        ]
+
     # This is needed for proper unpickling the class attribute timeframe
     # which is set to the actual value by the resolver.
     # Why do I still need such shamanic mantras in modern python?
