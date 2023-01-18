@@ -1127,12 +1127,12 @@ class RPC:
         return self._freqtrade.active_pair_whitelist
 
     @staticmethod
-    def _rpc_analysed_history_full(config, pair: str, timeframe: str,
+    def _rpc_analysed_history_full(config: Config, pair: str, timeframe: str,
                                    timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
-            datadir=config.get("datadir"),
+            datadir=config["datadir"],
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
