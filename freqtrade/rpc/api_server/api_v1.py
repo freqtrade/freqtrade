@@ -248,8 +248,18 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
-def plot_config(rpc: RPC = Depends(get_rpc)):
-    return PlotConfig.parse_obj(rpc._rpc_plot_config())
+def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
+                rpc: Optional[RPC] = Depends(get_rpc_optional)):
+    if not strategy:
+        if not rpc:
+            raise RPCException("Strategy is mandatory in webserver mode.")
+        return PlotConfig.parse_obj(rpc._rpc_plot_config())
+    else:
+        config1 = deepcopy(config)
+        config1.update({
+            'strategy': strategy
+        })
+        return PlotConfig.parse_obj(RPC._rpc_plot_config_with_strategy(config1))
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])

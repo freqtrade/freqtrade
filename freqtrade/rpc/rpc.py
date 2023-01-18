@@ -1158,6 +1158,16 @@ class RPC:
         return self._freqtrade.strategy.plot_config
 
     @staticmethod
+    def _rpc_plot_config_with_strategy(config: Config) -> Dict[str, Any]:
+
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        strategy = StrategyResolver.load_strategy(config)
+
+        if (strategy.plot_config and 'subplots' not in strategy.plot_config):
+            strategy.plot_config['subplots'] = {}
+        return strategy.plot_config
+
+    @staticmethod
     def _rpc_sysinfo() -> Dict[str, Any]:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
