@@ -359,7 +359,6 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = '1m'
-    default_conf['datadir'] = testdatadir
     default_conf['export'] = 'signals'
     default_conf['exportfilename'] = 'export.txt'
     default_conf['timerange'] = '-1510694220'
@@ -395,7 +394,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = "1m"
-    default_conf['datadir'] = testdatadir
     default_conf['export'] = 'none'
     default_conf['timerange'] = '20180101-20180102'
 
@@ -416,7 +414,6 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
                  PropertyMock(return_value=[]))
 
     default_conf['timeframe'] = "1m"
-    default_conf['datadir'] = testdatadir
     default_conf['export'] = 'none'
     default_conf['timerange'] = '20180101-20180102'
 
@@ -450,7 +447,6 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.refresh_pairlist')
 
     default_conf['ticker_interval'] = "1m"
-    default_conf['datadir'] = testdatadir
     default_conf['export'] = 'none'
     # Use stoploss from strategy
     del default_conf['stoploss']
@@ -548,7 +544,6 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
     default_conf_usdt['stake_currency'] = 'USDT'
-    default_conf_usdt['datadir'] = Path(default_conf_usdt['datadir'])
     default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])

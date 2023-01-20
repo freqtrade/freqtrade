@@ -53,7 +53,6 @@ def test_binance_mig_db_conversion(default_conf_usdt, fee, caplog):
         t.exchange = 'binance'
     Trade.commit()
 
-    default_conf_usdt['datadir'] = Path(default_conf_usdt['datadir'])
     default_conf_usdt['trading_mode'] = 'futures'
     migrate_binance_futures_names(default_conf_usdt)
     assert log_has('Migrating binance futures pairs in database.', caplog)
