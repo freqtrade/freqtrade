@@ -105,6 +105,7 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/USDT:USDT', '1h', 'mark'),
+        ('XRP/USDT:USDT', '5m', 'futures'),
         ('XRP/USDT:USDT', '1h', 'futures'),
         ('XRP/USDT:USDT', '1h', 'mark'),
         ('XRP/USDT:USDT', '8h', 'mark'),
