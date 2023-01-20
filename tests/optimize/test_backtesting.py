@@ -19,12 +19,12 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import ExitType, RunMode
+from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.persistence import LocalTrade
+from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
@@ -844,6 +844,95 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
                 t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
 
     assert late_entry > 0
+
+
+@pytest.mark.parametrize('use_detail', [True, False])
+def test_backtest_one_detail_futures(
+        default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+    default_conf_usdt['use_exit_signal'] = False
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
+    default_conf_usdt['candle_type_def'] = CandleType.FUTURES
+
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['XRP/USDT:USDT']))
+    mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt",
+                 return_value=(0.01, 0.01))
+    default_conf_usdt['timeframe'] = '1h'
+    if use_detail:
+        default_conf_usdt['timeframe_detail'] = '5m'
+    patch_exchange(mocker)
+
+    def advise_entry(df, *args, **kwargs):
+        # Mock function to force several entries
+        df.loc[(df['rsi'] < 40), 'enter_long'] = 1
+        return df
+
+    def custom_entry_price(proposed_rate, **kwargs):
+        return proposed_rate * 0.997
+
+    default_conf_usdt['max_open_trades'] = 10
+
+    backtesting = Backtesting(default_conf_usdt)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.strategy.populate_entry_trend = advise_entry
+    backtesting.strategy.custom_entry_price = custom_entry_price
+    pair = 'XRP/USDT:USDT'
+    # Pick a timerange adapted to the pair we use to test
+    timerange = TimeRange.parse_timerange('20211117-20211119')
+    data = history.load_data(datadir=Path(testdatadir), timeframe='1h', pairs=[pair],
+                             timerange=timerange, candle_type=CandleType.FUTURES)
+    backtesting.load_bt_data_detail()
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    result = backtesting.backtest(
+        processed=deepcopy(processed),
+        start_date=min_date,
+        end_date=max_date,
+    )
+    results = result['results']
+    assert not results.empty
+    # Timeout settings from default_conf = entry: 10, exit: 30
+    assert len(results) == (5 if use_detail else 2)
+
+    assert 'orders' in results.columns
+    data_pair = processed[pair]
+
+    data_1m_pair = backtesting.detail_data[pair] if use_detail else pd.DataFrame()
+    late_entry = 0
+    for _, t in results.iterrows():
+        assert len(t['orders']) == 2
+
+        entryo = t['orders'][0]
+        entry_ts = datetime.fromtimestamp(entryo['order_filled_timestamp'] // 1000, tz=timezone.utc)
+        if entry_ts > t['open_date']:
+            late_entry += 1
+
+        # Get "entry fill" candle
+        ln = (data_1m_pair.loc[data_1m_pair["date"] == entry_ts]
+              if use_detail else data_pair.loc[data_pair["date"] == entry_ts])
+        # Check open trade rate aligns to open rate
+        assert not ln.empty
+
+        assert round(ln.iloc[0]["low"], 6) <= round(
+                t["open_rate"], 6) <= round(ln.iloc[0]["high"], 6)
+        # check close trade rate aligns to close rate or is between high and low
+        ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
+        if use_detail:
+            ln1_1m = data_1m_pair.loc[data_1m_pair["date"] == t["close_date"]]
+            assert not ln1.empty or not ln1_1m.empty
+        else:
+            assert not ln1.empty
+        ln2 = ln1_1m if ln1.empty else ln1
+
+        assert (round(ln2.iloc[0]["low"], 6) <= round(
+                t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
+    assert -0.0181 < Trade.trades[1].funding_fees < -0.01
+    # assert late_entry > 0
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
