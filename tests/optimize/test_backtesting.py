@@ -795,10 +795,10 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
     pair = 'XRP/ETH'
     # Pick a timerange adapted to the pair we use to test
     timerange = TimeRange.parse_timerange('20191010-20191013')
-    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['XRP/ETH'],
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=[pair],
                              timerange=timerange)
     if use_detail:
-        data_1m = history.load_data(datadir=testdatadir, timeframe='1m', pairs=['XRP/ETH'],
+        data_1m = history.load_data(datadir=testdatadir, timeframe='1m', pairs=[pair],
                                     timerange=timerange)
         backtesting.detail_data = data_1m
     processed = backtesting.strategy.advise_all_indicators(data)
