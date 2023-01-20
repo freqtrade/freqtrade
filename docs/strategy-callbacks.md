@@ -659,6 +659,7 @@ Position adjustments will always be applied in the direction of the trade, so a 
 
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
+    This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.
 
 ``` python
 from freqtrade.persistence import Trade
