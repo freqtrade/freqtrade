@@ -575,26 +575,6 @@ class Backtesting:
         """ Rate is within candle, therefore filled"""
         return row[LOW_IDX] <= rate <= row[HIGH_IDX]
 
-    def _get_exit_trade_entry_for_candle(self, trade: LocalTrade,
-                                         row: Tuple) -> Optional[LocalTrade]:
-
-        # Check if we need to adjust our current positions
-        if self.strategy.position_adjustment_enable:
-            trade = self._get_adjust_trade_entry_for_candle(trade, row)
-
-        enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
-        exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
-        exits = self.strategy.should_exit(
-            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
-            enter=enter, exit_=exit_sig,
-            low=row[LOW_IDX], high=row[HIGH_IDX]
-        )
-        for exit_ in exits:
-            t = self._get_exit_for_signal(trade, row, exit_)
-            if t:
-                return t
-        return None
-
     def _get_exit_for_signal(
             self, trade: LocalTrade, row: Tuple, exit_: ExitCheckTuple,
             amount: Optional[float] = None) -> Optional[LocalTrade]:
@@ -694,8 +674,7 @@ class Backtesting:
         trade.orders.append(order)
         return trade
 
-    def _get_exit_trade_entry(
-            self, trade: LocalTrade, row: Tuple, is_first: bool) -> Optional[LocalTrade]:
+    def _get_exit_trade_entry(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
 
         if self.trading_mode == TradingMode.FUTURES:
@@ -707,7 +686,22 @@ class Backtesting:
                 close_date=exit_candle_time,
             )
 
-        return self._get_exit_trade_entry_for_candle(trade, row)
+        # Check if we need to adjust our current positions
+        if self.strategy.position_adjustment_enable:
+            trade = self._get_adjust_trade_entry_for_candle(trade, row)
+
+        enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
+        exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
+        exits = self.strategy.should_exit(
+            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
+            enter=enter, exit_=exit_sig,
+            low=row[LOW_IDX], high=row[HIGH_IDX]
+        )
+        for exit_ in exits:
+            t = self._get_exit_for_signal(trade, row, exit_)
+            if t:
+                return t
+        return None
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
@@ -1102,7 +1096,7 @@ class Backtesting:
 
                 # 4. Create exit orders (if any)
             if not trade.open_order_id:
-                self._get_exit_trade_entry(trade, row, is_first)  # Place exit order if necessary
+                self._get_exit_trade_entry(trade, row)  # Place exit order if necessary
 
                 # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
