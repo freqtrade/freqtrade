@@ -674,7 +674,7 @@ class Backtesting:
         trade.orders.append(order)
         return trade
 
-    def _get_exit_trade_entry(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
+    def _check_trade_exit(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
 
         if self.trading_mode == TradingMode.FUTURES:
@@ -1096,7 +1096,7 @@ class Backtesting:
 
                 # 4. Create exit orders (if any)
             if not trade.open_order_id:
-                self._get_exit_trade_entry(trade, row)  # Place exit order if necessary
+                self._check_trade_exit(trade, row)  # Place exit order if necessary
 
                 # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)

@@ -614,7 +614,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     assert trade is None
 
 
-def test_backtest__get_exit_trade_entry(default_conf, fee, mocker) -> None:
+def test_backtest__check_trade_exit(default_conf, fee, mocker) -> None:
     default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
@@ -660,7 +660,7 @@ def test_backtest__get_exit_trade_entry(default_conf, fee, mocker) -> None:
     ]
 
     # No data available.
-    res = backtesting._get_exit_trade_entry(trade, row_sell)
+    res = backtesting._check_trade_exit(trade, row_sell)
     assert res is not None
     assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
@@ -673,7 +673,7 @@ def test_backtest__get_exit_trade_entry(default_conf, fee, mocker) -> None:
         [], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                      'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag'])
 
-    res = backtesting._get_exit_trade_entry(trade, row)
+    res = backtesting._check_trade_exit(trade, row)
     assert res is None
 
 
