@@ -56,6 +56,3 @@ exclude = [
   "build_helpers/*.py",
 ]
 ignore = ["freqtrade/vendor/**"]
-
-# Align pyright to mypy config
-strictParameterNoneValue = false
