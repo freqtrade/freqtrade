@@ -19,6 +19,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 import rapidjson
 import requests
 from requests.exceptions import ConnectionError
+from typing import Optional
 
 
 logging.basicConfig(
@@ -36,7 +37,7 @@ class FtRestClient():
         self._session = requests.Session()
         self._session.auth = (username, password)
 
-    def _call(self, method, apipath, params: dict = None, data=None, files=None):
+    def _call(self, method, apipath, params: Optional[dict] = None, data=None, files=None):
 
         if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise ValueError(f'invalid method <{method}>')
@@ -60,13 +61,13 @@ class FtRestClient():
         except ConnectionError:
             logger.warning("Connection error")
 
-    def _get(self, apipath, params: dict = None):
+    def _get(self, apipath, params: Optional[dict] = None):
         return self._call("GET", apipath, params=params)
 
-    def _delete(self, apipath, params: dict = None):
+    def _delete(self, apipath, params: Optional[dict] = None):
         return self._call("DELETE", apipath, params=params)
 
-    def _post(self, apipath, params: dict = None, data: dict = None):
+    def _post(self, apipath, params: Optional[dict] = None, data: Optional[dict] = None):
         return self._call("POST", apipath, params=params, data=data)
 
     def start(self):
