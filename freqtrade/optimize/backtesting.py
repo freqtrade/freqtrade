@@ -698,7 +698,7 @@ class Backtesting:
             self, trade: LocalTrade, row: Tuple, is_first: bool) -> Optional[LocalTrade]:
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
 
-        if is_first and self.trading_mode == TradingMode.FUTURES:
+        if self.trading_mode == TradingMode.FUTURES:
             trade.funding_fees = self.exchange.calculate_funding_fees(
                 self.futures_data[trade.pair],
                 amount=trade.amount,
