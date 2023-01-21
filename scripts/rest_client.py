@@ -14,12 +14,12 @@ import logging
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import rapidjson
 import requests
 from requests.exceptions import ConnectionError
-from typing import Optional
 
 
 logging.basicConfig(
