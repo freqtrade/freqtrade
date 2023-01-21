@@ -33,7 +33,7 @@ class StrategyResolver(IResolver):
     extra_path = "strategy_path"
 
     @staticmethod
-    def load_strategy(config: Config = None) -> IStrategy:
+    def load_strategy(config: Optional[Config] = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None

@@ -675,7 +675,7 @@ class Exchange:
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
 
-    def get_option(self, param: str, default: Any = None) -> Any:
+    def get_option(self, param: str, default: Optional[Any] = None) -> Any:
         """
         Get parameter value from _ft_has
         """
@@ -1350,7 +1350,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self, pair: str = None) -> List[Dict]:
+    def fetch_positions(self, pair: Optional[str] = None) -> List[Dict]:
         """
         Fetch positions from the exchange.
         If no pair is given, all positions are returned.
@@ -1794,7 +1794,7 @@ class Exchange:
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int, candle_type: CandleType,
                            is_new_pair: bool = False,
-                           until_ms: int = None) -> List:
+                           until_ms: Optional[int] = None) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.

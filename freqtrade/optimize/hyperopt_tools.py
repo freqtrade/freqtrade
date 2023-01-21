@@ -170,7 +170,7 @@ class HyperoptTools():
 
     @staticmethod
     def show_epoch_details(results, total_epochs: int, print_json: bool,
-                           no_header: bool = False, header_str: str = None) -> None:
+                           no_header: bool = False, header_str: Optional[str] = None) -> None:
         """
         Display details of the hyperopt result
         """
@@ -264,7 +264,7 @@ class HyperoptTools():
             print(result)
 
     @staticmethod
-    def _space_params(params, space: str, r: int = None) -> Dict:
+    def _space_params(params, space: str, r: Optional[int] = None) -> Dict:
         d = params.get(space)
         if d:
             # Round floats to `r` digits after the decimal point if requested

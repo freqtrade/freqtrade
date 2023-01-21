@@ -644,7 +644,7 @@ class Backtesting:
         return None
 
     def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
-                    close_rate: float, amount: float = None) -> Optional[LocalTrade]:
+                    close_rate: float, amount: Optional[float] = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         exit_candle_time = sell_row[DATE_IDX].to_pydatetime()
         order_type = self.strategy.order_types['exit']

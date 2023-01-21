@@ -26,7 +26,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Config = None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Optional[Config] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """

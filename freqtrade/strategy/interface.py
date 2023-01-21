@@ -598,7 +598,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return None
 
     def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
-                                informative: DataFrame = None,
+                                informative: Optional[DataFrame] = None,
                                 set_generalized_indicators: bool = False) -> DataFrame:
         """
         DEPRECATED - USE FEATURE ENGINEERING FUNCTIONS INSTEAD
@@ -759,7 +759,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime, reason: str = None, side: str = '*') -> None:
+    def lock_pair(self, pair: str, until: datetime,
+                  reason: Optional[str] = None, side: str = '*') -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -791,7 +792,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
 
-    def is_pair_locked(self, pair: str, *, candle_date: datetime = None, side: str = '*') -> bool:
+    def is_pair_locked(self, pair: str, *, candle_date: Optional[datetime] = None,
+                       side: str = '*') -> bool:
         """
         Checks if a pair is currently locked
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
@@ -962,7 +964,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-        is_short: bool = None
+        is_short: Optional[bool] = None
     ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current exit signal based based on the dataframe
@@ -1061,7 +1063,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
-                    low: float = None, high: float = None,
+                    low: Optional[float] = None, high: Optional[float] = None,
                     force_stoploss: float = 0) -> List[ExitCheckTuple]:
         """
         This function evaluates if one of the conditions required to trigger an exit order
@@ -1149,8 +1151,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
-                          force_stoploss: float, low: float = None,
-                          high: float = None) -> ExitCheckTuple:
+                          force_stoploss: float, low: Optional[float] = None,
+                          high: Optional[float] = None) -> ExitCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to exit or not

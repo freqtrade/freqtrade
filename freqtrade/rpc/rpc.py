@@ -945,7 +945,7 @@ class RPC:
         resp['errors'] = errors
         return resp
 
-    def _rpc_blacklist(self, add: List[str] = None) -> Dict:
+    def _rpc_blacklist(self, add: Optional[List[str]] = None) -> Dict:
         """ Returns the currently active blacklist"""
         errors = {}
         if add:

@@ -15,18 +15,19 @@ from freqtrade.util import FtPrecise
 CcxtModuleType = Any
 
 
-def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
+def is_exchange_known_ccxt(
+        exchange_name: str, ccxt_module: Optional[CcxtModuleType] = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 
 
-def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
+def ccxt_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
     """
     Return the list of all exchanges known to ccxt
     """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 
-def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
+def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
     """
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
@@ -86,7 +87,7 @@ def timeframe_to_msecs(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
-def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
+def timeframe_to_prev_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
     """
     Use Timeframe and determine the candle start date for this date.
     Does not round when given a candle start date.
@@ -102,7 +103,7 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
 
 
-def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
+def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
     """
     Use Timeframe and determine next candle.
     :param timeframe: timeframe in string format (e.g. "5m")

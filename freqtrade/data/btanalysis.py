@@ -90,7 +90,8 @@ def get_latest_hyperopt_filename(directory: Union[Path, str]) -> str:
         return 'hyperopt_results.pickle'
 
 
-def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str = None) -> Path:
+def get_latest_hyperopt_file(
+        directory: Union[Path, str], predef_filename: Optional[str] = None) -> Path:
     """
     Get latest hyperopt export based on '.last_result.json'.
     :param directory: Directory to search for last result
@@ -193,7 +194,7 @@ def get_backtest_resultlist(dirname: Path):
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
-                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
+                                 min_backtest_date: Optional[datetime] = None) -> Dict[str, Any]:
     """
     Find existing backtest stats that match specified run IDs and load them.
     :param dirname: pathlib.Path object, or string pointing to the file.

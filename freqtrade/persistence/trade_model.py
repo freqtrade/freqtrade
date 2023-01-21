@@ -799,7 +799,7 @@ class LocalTrade():
         else:
             return close_trade - fees
 
-    def calc_close_trade_value(self, rate: float, amount: float = None) -> float:
+    def calc_close_trade_value(self, rate: float, amount: Optional[float] = None) -> float:
         """
         Calculate the Trade's close value including fees
         :param rate: rate to compare with.
@@ -837,7 +837,8 @@ class LocalTrade():
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
 
-    def calc_profit(self, rate: float, amount: float = None, open_rate: float = None) -> float:
+    def calc_profit(self, rate: float, amount: Optional[float] = None,
+                    open_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param rate: close rate to compare with.
@@ -858,7 +859,8 @@ class LocalTrade():
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(
-            self, rate: float, amount: float = None, open_rate: float = None) -> float:
+            self, rate: float, amount: Optional[float] = None,
+            open_rate: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with.
@@ -1059,8 +1061,9 @@ class LocalTrade():
         return self.exit_reason
 
     @staticmethod
-    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
-                         open_date: datetime = None, close_date: datetime = None,
+    def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
+                         open_date: Optional[datetime] = None,
+                         close_date: Optional[datetime] = None,
                          ) -> List['LocalTrade']:
         """
         Helper function to query Trades.
@@ -1257,8 +1260,9 @@ class Trade(_DECL_BASE, LocalTrade):
         Trade.query.session.rollback()
 
     @staticmethod
-    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
-                         open_date: datetime = None, close_date: datetime = None,
+    def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
+                         open_date: Optional[datetime] = None,
+                         close_date: Optional[datetime] = None,
                          ) -> List['LocalTrade']:
         """
         Helper function to query Trades.j
