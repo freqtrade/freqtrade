@@ -418,8 +418,8 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 
 
-def get_datahandler(datadir: Path, data_format: str = None,
-                    data_handler: IDataHandler = None) -> IDataHandler:
+def get_datahandler(datadir: Path, data_format: Optional[str] = None,
+                    data_handler: Optional[IDataHandler] = None) -> IDataHandler:
     """
     :param datadir: Folder to save data
     :param data_format: dataformat to use
