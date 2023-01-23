@@ -43,6 +43,24 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+        'sample_order': {
+            "symbol": "SOLUSDT",
+            "orderId": 3551312894,
+            "orderListId": -1,
+            "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
+            "transactTime": 1674493798550,
+            "price": "15.00000000",
+            "origQty": "1.00000000",
+            "executedQty": "0.00000000",
+            "cummulativeQuoteQty": "0.00000000",
+            "status": "NEW",
+            "timeInForce": "GTC",
+            "type": "LIMIT",
+            "side": "BUY",
+            "workingTime": 1674493798550,
+            "fills": [],
+            "selfTradePreventionMode": "NONE",
+        }
     },
     'kraken': {
         'pair': 'BTC/USDT',
@@ -210,6 +228,19 @@ class TestCCXTExchange():
         assert isinstance(markets[pair], dict)
 
         assert exchange.market_is_future(markets[pair])
+
+    def test_ccxt_order_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchange_name = exchange
+        if stuff := EXCHANGES[exchange_name].get('sample_order'):
+
+            po = exch._api.parse_order(stuff)
+            assert po['timestamp'] == 1674493798550
+            assert isinstance(po['timestamp'], int)
+            assert isinstance(po['price'], float)
+            assert isinstance(po['amount'], float)
+            assert isinstance(po['status'], str)
+        else:
+            pytest.skip(f"No sample order available for exchange {exchange_name}")
 
     def test_ccxt_fetch_tickers(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
