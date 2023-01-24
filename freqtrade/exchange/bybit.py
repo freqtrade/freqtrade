@@ -1,7 +1,7 @@
 """ Bybit exchange subclass """
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
