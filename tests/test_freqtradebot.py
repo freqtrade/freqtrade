@@ -751,6 +751,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
     (True, 'futures', 'okx', 'isolated', 0.0, 11.87413417771621),
     (False, 'futures', 'okx', 'isolated', 0.0, 8.085708510208207),
+    (True, 'futures', 'bybit', 'isolated', 0.0, 11.9),
+    (False, 'futures', 'bybit', 'isolated', 0.0, 8.1),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
