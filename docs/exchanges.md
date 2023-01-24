@@ -260,6 +260,8 @@ The configuration parameter `exchange.unknown_fee_rate` can be used to specify t
 Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.
 Users with unified accounts (there's no way back) can create a subaccount which will start as "non-unified", and can therefore use isolated futures.
 
+As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.

@@ -173,13 +173,20 @@ class Bybit(Exchange):
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
-    def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+    def get_funding_fees(
+            self, pair: str, amount: float, is_short: bool, open_date: datetime) -> float:
         """
-        Returns the sum of all funding fees that were exchanged for a pair within a timeframe
-        Dry-run handling happens as part of _calculate_funding_fees.
-        :param pair: (e.g. ADA/USDT)
-        :param since: The earliest time of consideration for calculating funding fees,
-            in unix time or as a datetime
+        Fetch funding fees, either from the exchange (live) or calculates them
+        based on funding rate/mark price history
+        :param pair: The quote/base pair of the trade
+        :param is_short: trade direction
+        :param amount: Trade amount
+        :param open_date: Open date of the trade
+        :return: funding fee since open_date
+        :raises: ExchangeError if something goes wrong.
         """
-        # TODO: Workaround for bybit, which has no funding-fees
-        return 0
+        # Bybit does not provide "applied" funding fees per position.
+        if self.trading_mode == TradingMode.FUTURES:
+            return self._fetch_and_calculate_funding_fees(
+                    pair, amount, is_short, open_date)
+        return 0.0
