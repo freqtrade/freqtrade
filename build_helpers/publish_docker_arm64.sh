@@ -70,7 +70,7 @@ docker push ${CACHE_IMAGE}:$TAG_ARM
 # Otherwise installation might fail.
 echo "create manifests"
 
-docker manifest create --amend ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
+docker manifest create ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
 docker manifest push -p ${IMAGE_NAME}:${TAG}
 
 docker manifest create ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM} ${CACHE_IMAGE}:${TAG_PLOT}
@@ -84,6 +84,7 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
+    echo 'Tagging image as latest'
     docker manifest create ${IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
     docker manifest push -p ${IMAGE_NAME}:latest
 fi
