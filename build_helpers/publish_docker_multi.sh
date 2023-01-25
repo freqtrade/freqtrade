@@ -26,7 +26,10 @@ if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
         --cache-to=type=registry,ref=${CACHE_TAG} \
         -f docker/Dockerfile.armhf \
         --platform ${PI_PLATFORM} \
-        -t ${IMAGE_NAME}:${TAG_PI} --push .
+        -t ${IMAGE_NAME}:${TAG_PI} \
+        --push \
+        --provenance=false \
+        .
 else
     echo "event ${GITHUB_EVENT_NAME}: building with cache"
     # Build regular image
@@ -35,12 +38,16 @@ else
 
     # Pull last build to avoid rebuilding the whole image
     # docker pull --platform ${PI_PLATFORM} ${IMAGE_NAME}:${TAG}
+    # disable provenance due to https://github.com/docker/buildx/issues/1509
     docker buildx build \
         --cache-from=type=registry,ref=${CACHE_TAG} \
         --cache-to=type=registry,ref=${CACHE_TAG} \
         -f docker/Dockerfile.armhf \
         --platform ${PI_PLATFORM} \
-        -t ${IMAGE_NAME}:${TAG_PI} --push .
+        -t ${IMAGE_NAME}:${TAG_PI} \
+        --push \
+        --provenance=false \
+        .
 fi
 
 if [ $? -ne 0 ]; then
@@ -68,12 +75,10 @@ fi
 
 docker images
 
-docker push ${CACHE_IMAGE}
+docker push ${CACHE_IMAGE}:$TAG
 docker push ${CACHE_IMAGE}:$TAG_PLOT
 docker push ${CACHE_IMAGE}:$TAG_FREQAI
 docker push ${CACHE_IMAGE}:$TAG_FREQAI_RL
-docker push ${CACHE_IMAGE}:$TAG
-
 
 docker images
 
