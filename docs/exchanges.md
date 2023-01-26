@@ -263,6 +263,10 @@ On startup, freqtrade will set the position mode to "One-way Mode" for the whole
 
 As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.
 
+!!! Tip "Stoploss on Exchange"
+    Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+    On futures, Bybit supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
