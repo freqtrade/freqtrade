@@ -259,6 +259,7 @@ The configuration parameter `exchange.unknown_fee_rate` can be used to specify t
 
 Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.
 Users with unified accounts (there's no way back) can create a Sub-account which will start as "non-unified", and can therefore use isolated futures.
+On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors.
 
 As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.
 

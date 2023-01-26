@@ -3,10 +3,13 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import ccxt
+
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 from freqtrade.exchange.exchange_utils import timeframe_to_msecs
 
 
@@ -62,6 +65,26 @@ class Bybit(Exchange):
         return (
             main and market['settle'] == 'USDT'
         )
+
+    @retrier
+    def additional_exchange_init(self) -> None:
+        """
+        Additional exchange initialization logic.
+        .api will be available at this point.
+        Must be overridden in child methods if required.
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
+                position_mode = self._api.set_position_mode(False)
+                self._log_exchange_response('set_position_mode', position_mode)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
+                ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     async def _fetch_funding_rate_history(
         self,
