@@ -1,7 +1,22 @@
 from unittest.mock import MagicMock
 
+from freqtrade.enums.marginmode import MarginMode
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exchange.exchange_utils import timeframe_to_msecs
 from tests.conftest import get_mock_coro, get_patched_exchange
+from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+def test_additional_exchange_init_bybit(default_conf, mocker):
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    api_mock = MagicMock()
+    api_mock.set_position_mode = MagicMock(return_value={"dualSidePosition": False})
+    get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    assert api_mock.set_position_mode.call_count == 1
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'bybit',
+                           "additional_exchange_init", "set_position_mode")
 
 
 async def test_bybit_fetch_funding_rate(default_conf, mocker):
