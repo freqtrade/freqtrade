@@ -52,18 +52,18 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         """
         # For RL, there are no direct targets to set. This is filler (neutral)
         # until the agent sends an action.
-        df["&-action"] = 0
+        dataframe["&-action"] = 0
 ```
 
 Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
-    def feature_engineering_standard():
+    def feature_engineering_standard(self, dataframe, **kwargs):
         # The following features are necessary for RL models
-        informative[f"%-raw_close"] = informative["close"]
-        informative[f"%-raw_open"] = informative["open"]
-        informative[f"%-raw_high"] = informative["high"]
-        informative[f"%-raw_low"] = informative["low"]
+        dataframe[f"%-raw_close"] = dataframe["close"]
+        dataframe[f"%-raw_open"] = dataframe["open"]
+        dataframe[f"%-raw_high"] = dataframe["high"]
+        dataframe[f"%-raw_low"] = dataframe["low"]
 ```
 
 Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
