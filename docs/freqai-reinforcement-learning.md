@@ -34,7 +34,7 @@ Setting up and running a Reinforcement Learning model is the same as running a R
 freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --config config.json
 ```
 
-where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesnt require them. However, FreqAI requires a default (neutral) value to be set in the action column:
+where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:
 
 ```python
     def set_freqai_targets(self, dataframe, **kwargs):
@@ -242,7 +242,6 @@ FreqAI also provides a built in episodic summary logger called `self.tensorboard
 
 !!! Note
     The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)` would add 0.23 to `float_metric`. In this case you can also disable incrementing using `inc=False` parameter.
-
 
 ### Choosing a base environment
 
