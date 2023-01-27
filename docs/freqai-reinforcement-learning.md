@@ -34,7 +34,7 @@ Setting up and running a Reinforcement Learning model is the same as running a R
 freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --config config.json
 ```
 
-where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesnt require them. However, FreqAI requires a default (neutral) value to be set in the action column:
+where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:
 
 ```python
     def set_freqai_targets(self, dataframe, **kwargs):
@@ -52,18 +52,18 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         """
         # For RL, there are no direct targets to set. This is filler (neutral)
         # until the agent sends an action.
-        df["&-action"] = 0
+        dataframe["&-action"] = 0
 ```
 
 Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
-    def feature_engineering_standard():
+    def feature_engineering_standard(self, dataframe, **kwargs):
         # The following features are necessary for RL models
-        informative[f"%-raw_close"] = informative["close"]
-        informative[f"%-raw_open"] = informative["open"]
-        informative[f"%-raw_high"] = informative["high"]
-        informative[f"%-raw_low"] = informative["low"]
+        dataframe[f"%-raw_close"] = dataframe["close"]
+        dataframe[f"%-raw_open"] = dataframe["open"]
+        dataframe[f"%-raw_high"] = dataframe["high"]
+        dataframe[f"%-raw_low"] = dataframe["low"]
 ```
 
 Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
@@ -242,7 +242,6 @@ FreqAI also provides a built in episodic summary logger called `self.tensorboard
 
 !!! Note
     The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)` would add 0.23 to `float_metric`. In this case you can also disable incrementing using `inc=False` parameter.
-
 
 ### Choosing a base environment
 

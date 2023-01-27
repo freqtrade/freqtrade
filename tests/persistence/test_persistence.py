@@ -1868,7 +1868,10 @@ def test_get_exit_order_count(fee, is_short):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_order_from_ccxt(caplog):
+def test_update_order_from_ccxt(caplog, time_machine):
+    start = datetime(2023, 1, 1, 4, tzinfo=timezone.utc)
+    time_machine.move_to(start, tick=False)
+
     # Most basic order return (only has orderid)
     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ADA/USDT', 'buy', 20.01, 1234.6)
     assert isinstance(o, Order)
@@ -1917,7 +1920,9 @@ def test_update_order_from_ccxt(caplog):
     assert o.filled == 20.0
     assert o.remaining == 0.0
     assert not o.ft_is_open
-    assert o.order_filled_date is not None
+    assert o.order_filled_date == start
+    # Move time
+    time_machine.move_to(start + timedelta(hours=1), tick=False)
 
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
@@ -1930,6 +1935,12 @@ def test_update_order_from_ccxt(caplog):
 
     # Call regular update - shouldn't fail.
     Order.update_orders([o], {'id': '1234'})
+    assert o.order_filled_date == start
+
+    # Fill order again - shouldn't update filled date
+    ccxt_order.update({'id': '1234'})
+    Order.update_orders([o], ccxt_order)
+    assert o.order_filled_date == start
 
 
 @pytest.mark.usefixtures("init_persistence")
