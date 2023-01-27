@@ -28,7 +28,6 @@ class Bybit(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
-        "ccxt_futures_name": "linear",
         "ohlcv_has_history": False,
     }
     _ft_has_futures: Dict = {
