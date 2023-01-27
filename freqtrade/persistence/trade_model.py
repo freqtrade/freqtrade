@@ -146,7 +146,7 @@ class Order(_DECL_BASE):
                 # Assign funding fee up to this point
                 # (represents the funding fee since the last order)
                 self.funding_fee = self.trade.funding_fees
-            if (order.get('filled', 0.0) or 0.0) > 0:
+            if (order.get('filled', 0.0) or 0.0) > 0 and not self.order_filled_date:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
