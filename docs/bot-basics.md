@@ -75,3 +75,7 @@ This loop will be repeated again and again until the bot is stopped.
 
 !!! Note
     Both Backtesting and Hyperopt include exchange default Fees in the calculation. Custom fees can be passed to backtesting / hyperopt by specifying the `--fee` argument.
+
+!!! Warning "Callback call frequency"
+    Backtesting will call each callback at max. once per candle (`--timeframe-detail` modifies this behavior to once per detailed candle).
+    Most callbacks will be called once per iteration in live (usually every ~5s) - which can cause backtesting mismatches.

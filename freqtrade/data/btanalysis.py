@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
@@ -90,7 +90,8 @@ def get_latest_hyperopt_filename(directory: Union[Path, str]) -> str:
         return 'hyperopt_results.pickle'
 
 
-def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str = None) -> Path:
+def get_latest_hyperopt_file(
+        directory: Union[Path, str], predef_filename: Optional[str] = None) -> Path:
     """
     Get latest hyperopt export based on '.last_result.json'.
     :param directory: Directory to search for last result
@@ -193,7 +194,7 @@ def get_backtest_resultlist(dirname: Path):
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
-                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
+                                 min_backtest_date: Optional[datetime] = None) -> Dict[str, Any]:
     """
     Find existing backtest stats that match specified run IDs and load them.
     :param dirname: pathlib.Path object, or string pointing to the file.
@@ -332,7 +333,7 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
 
 def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
-                          max_open_trades: int) -> pd.DataFrame:
+                          max_open_trades: IntOrInf) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
     and then counting overlaps

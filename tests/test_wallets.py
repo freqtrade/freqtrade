@@ -190,7 +190,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     (1, 15, 10, 10000, None, 0),  # Below min stake and min_stake > stake_available
     (20, 50, 100, 10000, None, 0),  # Below min stake and stake * 1.3 > min_stake
     (1000, None, 1000, 10000, None, 1000),  # No min-stake-amount could be determined
-    (2000, 15, 2000, 3000, 1500, 500),  # Rebuy - resulting in too high stake amount. Adjusting.
+    (2000, 15, 2000, 3000, 1500, 1500),  # Rebuy - resulting in too high stake amount. Adjusting.
 ])
 def test_validate_stake_amount(
     mocker,

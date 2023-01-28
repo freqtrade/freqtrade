@@ -75,6 +75,25 @@ Binance has been split into 2, and users must use the correct ccxt exchange ID f
 * [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance`.
 * [binance.us](https://www.binance.us/) - US based users. Use exchange id: `binanceus`.
 
+### Binance RSA keys
+
+Freqtrade supports binance RSA API keys.
+
+We recommend to use them as environment variable.
+
+``` bash
+export FREQTRADE__EXCHANGE__SECRET="$(cat ./rsa_binance.private)"
+```
+
+They can however also be configured via configuration file. Since json doesn't support multi-line strings, you'll have to replace all newlines with `\n` to have a valid json file.
+
+``` json
+// ...
+ "key": "<someapikey>",
+ "secret": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBABACAFQA<...>s8KX8=\n-----END PRIVATE KEY-----"
+// ...
+```
+
 ### Binance Futures
 
 Binance has specific (unfortunately complex) [Futures Trading Quantitative Rules](https://www.binance.com/en/support/faq/4f462ebe6ff445d4a170be7d9e897272) which need to be followed, and which prohibit a too low stake-amount (among others) for too many orders.

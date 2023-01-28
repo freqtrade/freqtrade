@@ -14,6 +14,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, timeframe_to_minutes
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.util.binance_mig import migrate_binance_futures_data
 
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
                     )
+            migrate_binance_futures_data(config)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
@@ -145,6 +147,7 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     if ohlcv:
+        migrate_binance_futures_data(config)
         candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', ['spot'])]
         for candle_type in candle_types:
             convert_ohlcv_format(config,

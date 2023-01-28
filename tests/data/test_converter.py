@@ -294,8 +294,8 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
 
 @pytest.mark.parametrize('file_base,candletype', [
     (['XRP_ETH-5m', 'XRP_ETH-1m'], CandleType.SPOT),
-    (['UNITTEST_USDT-1h-mark', 'XRP_USDT-1h-mark'], CandleType.MARK),
-    (['XRP_USDT-1h-futures'], CandleType.FUTURES),
+    (['UNITTEST_USDT_USDT-1h-mark', 'XRP_USDT_USDT-1h-mark'], CandleType.MARK),
+    (['XRP_USDT_USDT-1h-futures'], CandleType.FUTURES),
 ])
 def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
     tmpdir1 = Path(tmpdir)
@@ -315,7 +315,10 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         files_new.append(file_new)
 
     default_conf['datadir'] = tmpdir1
-    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT', 'UNITTEST_USDT']
+    if candletype == CandleType.SPOT:
+        default_conf['pairs'] = ['XRP/ETH', 'XRP/USDT', 'UNITTEST/USDT']
+    else:
+        default_conf['pairs'] = ['XRP/ETH:ETH', 'XRP/USDT:USDT', 'UNITTEST/USDT:USDT']
     default_conf['timeframes'] = ['1m', '5m', '1h']
 
     assert not file_new.exists()

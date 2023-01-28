@@ -45,7 +45,6 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     default_conf['timerange'] = "20180110-20180112"
     default_conf['trade_source'] = "file"
     default_conf['timeframe'] = "5m"
-    default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = testdatadir / "backtest-result.json"
     supported_markets = ["TRX/BTC", "ADA/BTC"]
     ret = init_plotscript(default_conf, supported_markets)
@@ -394,7 +393,6 @@ def test_load_and_plot_trades(default_conf, mocker, caplog, testdatadir):
     patch_exchange(mocker)
 
     default_conf['trade_source'] = 'file'
-    default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = testdatadir / "backtest-result.json"
     default_conf['indicators1'] = ["sma5", "ema10"]
     default_conf['indicators2'] = ["macd"]
@@ -451,7 +449,6 @@ def test_start_plot_profit_error(mocker):
 def test_plot_profit(default_conf, mocker, testdatadir):
     patch_exchange(mocker)
     default_conf['trade_source'] = 'file'
-    default_conf['datadir'] = testdatadir
     default_conf['exportfilename'] = testdatadir / 'backtest-result_test_nofile.json'
     default_conf['pairs'] = ['ETH/BTC', 'LTC/BTC']
 

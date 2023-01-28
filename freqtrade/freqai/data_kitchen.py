@@ -5,7 +5,7 @@ import shutil
 from datetime import datetime, timezone
 from math import cos, sin
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -112,7 +112,7 @@ class FreqaiDataKitchen:
     def set_paths(
         self,
         pair: str,
-        trained_timestamp: int = None,
+        trained_timestamp: Optional[int] = None,
     ) -> None:
         """
         Set the paths to the data for the present coin/botloop

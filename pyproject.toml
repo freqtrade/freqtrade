@@ -31,7 +31,6 @@ asyncio_mode = "auto"
 [tool.mypy]
 ignore_missing_imports = true
 namespace_packages = false
-implicit_optional = true
 warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$'
@@ -40,6 +39,11 @@ exclude = [
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Telegram does not use implicit_optional = false in the current version.
+module = "telegram.*"
+implicit_optional = true
 
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]
@@ -52,6 +56,3 @@ exclude = [
   "build_helpers/*.py",
 ]
 ignore = ["freqtrade/vendor/**"]
-
-# Align pyright to mypy config
-strictParameterNoneValue = false

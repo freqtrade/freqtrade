@@ -30,8 +30,8 @@ class PairLocks():
             PairLocks.locks = []
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None, *,
-                  now: datetime = None, side: str = '*') -> PairLock:
+    def lock_pair(pair: str, until: datetime, reason: Optional[str] = None, *,
+                  now: Optional[datetime] = None, side: str = '*') -> PairLock:
         """
         Create PairLock from now to "until".
         Uses database by default, unless PairLocks.use_db is set to False,

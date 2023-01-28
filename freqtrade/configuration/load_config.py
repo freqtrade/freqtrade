@@ -6,7 +6,7 @@ import re
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import rapidjson
 
@@ -75,7 +75,8 @@ def load_config_file(path: str) -> Dict[str, Any]:
     return config
 
 
-def load_from_files(files: List[str], base_path: Path = None, level: int = 0) -> Dict[str, Any]:
+def load_from_files(
+        files: List[str], base_path: Optional[Path] = None, level: int = 0) -> Dict[str, Any]:
     """
     Recursively load configuration files if specified.
     Sub-files are assumed to be relative to the initial config.

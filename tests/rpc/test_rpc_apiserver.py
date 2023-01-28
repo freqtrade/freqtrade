@@ -1417,7 +1417,7 @@ def test_api_pair_history(botclient, ohlcv_history):
                                   "No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
 
-def test_api_plot_config(botclient):
+def test_api_plot_config(botclient, mocker):
     ftbot, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/plot_config")
@@ -1440,6 +1440,21 @@ def test_api_plot_config(botclient):
 
     assert isinstance(rc.json()['main_plot'], dict)
     assert isinstance(rc.json()['subplots'], dict)
+
+    rc = client_get(client, f"{BASE_URI}/plot_config?strategy=freqai_test_classifier")
+    assert_response(rc)
+    res = rc.json()
+    assert 'target_roi' in res['subplots']
+    assert 'do_predict' in res['subplots']
+
+    rc = client_get(client, f"{BASE_URI}/plot_config?strategy=HyperoptableStrategy")
+    assert_response(rc)
+    assert rc.json()['subplots'] == {}
+
+    mocker.patch('freqtrade.rpc.api_server.api_v1.get_rpc_optional', return_value=None)
+
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
 
 
 def test_api_strategies(botclient, tmpdir):
@@ -1553,13 +1568,13 @@ def test_list_available_pairs(botclient):
         client, f"{BASE_URI}/available_pairs?timeframe=1h")
     assert_response(rc)
     assert rc.json()['length'] == 1
-    assert rc.json()['pairs'] == ['XRP/USDT']
+    assert rc.json()['pairs'] == ['XRP/USDT:USDT']
 
     rc = client_get(
         client, f"{BASE_URI}/available_pairs?timeframe=1h&candletype=mark")
     assert_response(rc)
     assert rc.json()['length'] == 2
-    assert rc.json()['pairs'] == ['UNITTEST/USDT', 'XRP/USDT']
+    assert rc.json()['pairs'] == ['UNITTEST/USDT:USDT', 'XRP/USDT:USDT']
     assert len(rc.json()['pair_interval']) == 2
 
 

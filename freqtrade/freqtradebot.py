@@ -33,6 +33,7 @@ from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
+from freqtrade.util.binance_mig import migrate_binance_futures_names
 from freqtrade.wallets import Wallets
 
 
@@ -177,6 +178,8 @@ class FreqtradeBot(LoggingMixin):
         Called on startup and after reloading the bot - triggers notifications and
         performs startup tasks
         """
+        migrate_binance_futures_names(self.config)
+
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
         # Update older trades with precision and precision mode
         self.startup_backpopulate_precision()
@@ -1519,7 +1522,7 @@ class FreqtradeBot(LoggingMixin):
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
-            sub_trade_amt: float = None,
+            sub_trade_amt: Optional[float] = None,
     ) -> bool:
         """
         Executes a trade exit for the given trade and limit
@@ -1613,7 +1616,7 @@ class FreqtradeBot(LoggingMixin):
         return True
 
     def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
-                     sub_trade: bool = False, order: Order = None) -> None:
+                     sub_trade: bool = False, order: Optional[Order] = None) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
@@ -1726,8 +1729,9 @@ class FreqtradeBot(LoggingMixin):
 # Common update trade state methods
 #
 
-    def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
-                           stoploss_order: bool = False, send_msg: bool = True) -> bool:
+    def update_trade_state(
+            self, trade: Trade, order_id: str, action_order: Optional[Dict[str, Any]] = None,
+            stoploss_order: bool = False, send_msg: bool = True) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
