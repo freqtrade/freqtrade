@@ -775,6 +775,11 @@ class Backtesting:
                      trade: Optional[LocalTrade] = None,
                      requested_rate: Optional[float] = None,
                      requested_stake: Optional[float] = None) -> Optional[LocalTrade]:
+        """
+        :param trade: Trade to adjust - initial entry if None
+        :param requested_rate: Adjusted entry rate
+        :param requested_stake: Stake amount for adjusted orders (`adjust_entry_price`).
+        """
 
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
