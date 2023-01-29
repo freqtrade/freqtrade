@@ -62,6 +62,31 @@ EXCHANGES = {
             "selfTradePreventionMode": "NONE",
         }
     },
+    'binanceus': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+        'futures': False,
+        'sample_order': {
+            "symbol": "SOLUSDT",
+            "orderId": 3551312894,
+            "orderListId": -1,
+            "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
+            "transactTime": 1674493798550,
+            "price": "15.00000000",
+            "origQty": "1.00000000",
+            "executedQty": "0.00000000",
+            "cummulativeQuoteQty": "0.00000000",
+            "status": "NEW",
+            "timeInForce": "GTC",
+            "type": "LIMIT",
+            "side": "BUY",
+            "workingTime": 1674493798550,
+            "fills": [],
+            "selfTradePreventionMode": "NONE",
+        }
+    },
     'kraken': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
