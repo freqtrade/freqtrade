@@ -805,7 +805,7 @@ class Backtesting:
             return trade
         time_in_force = self.strategy.order_time_in_force['entry']
 
-        if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
+        if stake_amount and (not min_stake_amount or stake_amount >= min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
             amount_p = (stake_amount / propose_rate) * leverage
