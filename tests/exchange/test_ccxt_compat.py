@@ -43,7 +43,7 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
-        'sample_order': {
+        'sample_order': [{
             "symbol": "SOLUSDT",
             "orderId": 3551312894,
             "orderListId": -1,
@@ -60,7 +60,7 @@ EXCHANGES = {
             "workingTime": 1674493798550,
             "fills": [],
             "selfTradePreventionMode": "NONE",
-        }
+        }]
     },
     'binanceus': {
         'pair': 'BTC/USDT',
@@ -68,7 +68,7 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': False,
-        'sample_order': {
+        'sample_order': [{
             "symbol": "SOLUSDT",
             "orderId": 3551312894,
             "orderListId": -1,
@@ -85,7 +85,7 @@ EXCHANGES = {
             "workingTime": 1674493798550,
             "fills": [],
             "selfTradePreventionMode": "NONE",
-        }
+        }]
     },
     'kraken': {
         'pair': 'BTC/USDT',
@@ -102,6 +102,40 @@ EXCHANGES = {
         'timeframe': '5m',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
+        'sample_order': [
+            {'id': '63d6742d0adc5570001d2bbf7'},  # create order
+            {
+                'id': '63d6742d0adc5570001d2bbf7',
+                'symbol': 'NAKA-USDT',
+                'opType': 'DEAL',
+                'type': 'limit',
+                'side': 'buy',
+                'price': '30',
+                'size': '0.1',
+                'funds': '0',
+                'dealFunds': '0.032626',
+                'dealSize': '0.1',
+                'fee': '0.000065252',
+                'feeCurrency': 'USDT',
+                'stp': '',
+                'stop': '',
+                'stopTriggered': False,
+                'stopPrice': '0',
+                'timeInForce': 'GTC',
+                'postOnly': False,
+                'hidden': False,
+                'iceberg': False,
+                'visibleSize': '0',
+                'cancelAfter': 0,
+                'channel': 'API',
+                'clientOid': '0a053870-11bf-41e5-be61-b272a4cb62e1',
+                'remark': None,
+                'tags': 'partner:ccxt',
+                'isActive': False,
+                'cancelExist': False,
+                'createdAt': 1674493798550,
+                'tradeType': 'TRADE'
+            }],
     },
     'gateio': {
         'pair': 'BTC/USDT',
@@ -256,14 +290,18 @@ class TestCCXTExchange():
 
     def test_ccxt_order_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchange_name = exchange
-        if stuff := EXCHANGES[exchange_name].get('sample_order'):
-
-            po = exch._api.parse_order(stuff)
-            assert po['timestamp'] == 1674493798550
-            assert isinstance(po['timestamp'], int)
-            assert isinstance(po['price'], float)
-            assert isinstance(po['amount'], float)
-            assert isinstance(po['status'], str)
+        if orders := EXCHANGES[exchange_name].get('sample_order'):
+            for order in orders:
+                po = exch._api.parse_order(order)
+                assert isinstance(po['id'], str)
+                assert po['id'] is not None
+                if len(order.keys()) > 1:
+                    assert po['timestamp'] == 1674493798550
+                    assert isinstance(po['datetime'], str)
+                    assert isinstance(po['timestamp'], int)
+                    assert isinstance(po['price'], float)
+                    assert isinstance(po['amount'], float)
+                    assert isinstance(po['status'], str)
         else:
             pytest.skip(f"No sample order available for exchange {exchange_name}")
 
