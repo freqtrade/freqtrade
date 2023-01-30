@@ -280,26 +280,36 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
+        # %-raw_volume_gen_shift-2_ETH/USDT_1h
         # price data for model training and evaluation
         tf = self.config['timeframe']
-        ohlc_list = [f'%-{pair}raw_open_{tf}', f'%-{pair}raw_low_{tf}',
-                     f'%-{pair}raw_high_{tf}', f'%-{pair}raw_close_{tf}']
-        rename_dict = {f'%-{pair}raw_open_{tf}': 'open', f'%-{pair}raw_low_{tf}': 'low',
-                       f'%-{pair}raw_high_{tf}': ' high', f'%-{pair}raw_close_{tf}': 'close'}
+        rename_dict = {'%-raw_open': 'open', '%-raw_low': 'low',
+                       '%-raw_high': ' high', '%-raw_close': 'close'}
+        rename_dict_old = {f'%-{pair}raw_open_{tf}': 'open', f'%-{pair}raw_low_{tf}': 'low',
+                           f'%-{pair}raw_high_{tf}': ' high', f'%-{pair}raw_close_{tf}': 'close'}
 
-        prices_train = train_df.filter(ohlc_list, axis=1)
-        if prices_train.empty:
-            raise OperationalException('Reinforcement learning module didnt find the raw prices '
-                                       'assigned in populate_any_indicators. Please assign them '
-                                       'with:\n'
-                                       'informative[f"%-{pair}raw_close"] = informative["close"]\n'
-                                       'informative[f"%-{pair}raw_open"] = informative["open"]\n'
-                                       'informative[f"%-{pair}raw_high"] = informative["high"]\n'
-                                       'informative[f"%-{pair}raw_low"] = informative["low"]\n')
+        prices_train = train_df.filter(rename_dict.keys(), axis=1)
+        prices_train_old = train_df.filter(rename_dict_old.keys(), axis=1)
+        if prices_train.empty or not prices_train_old.empty:
+            if not prices_train_old.empty:
+                prices_train = prices_train_old
+                rename_dict = rename_dict_old
+            logger.warning('Reinforcement learning module didnt find the correct raw prices '
+                           'assigned in feature_engineering_standard(). '
+                           'Please assign them with:\n'
+                           'dataframe["%-raw_close"] = dataframe["close"]\n'
+                           'dataframe["%-raw_open"] = dataframe["open"]\n'
+                           'dataframe["%-raw_high"] = dataframe["high"]\n'
+                           'dataframe["%-raw_low"] = dataframe["low"]\n'
+                           'inside `feature_engineering_standard()')
+        elif prices_train.empty:
+            raise OperationalException("No prices found, please follow log warning "
+                                       "instructions to correct the strategy.")
+
         prices_train.rename(columns=rename_dict, inplace=True)
         prices_train.reset_index(drop=True)
 
-        prices_test = test_df.filter(ohlc_list, axis=1)
+        prices_test = test_df.filter(rename_dict.keys(), axis=1)
         prices_test.rename(columns=rename_dict, inplace=True)
         prices_test.reset_index(drop=True)
 

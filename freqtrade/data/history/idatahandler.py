@@ -374,6 +374,21 @@ class IDataHandler(ABC):
                 logger.warning(f"{pair}, {candle_type}, {timeframe}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
 
+    def rename_futures_data(
+            self, pair: str, new_pair: str, timeframe: str, candle_type: CandleType):
+        """
+        Temporary method to migrate data from old naming to new naming (BTC/USDT -> BTC/USDT:USDT)
+        Only used for binance to support the binance futures naming unification.
+        """
+
+        file_old = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        file_new = self._pair_data_filename(self._datadir, new_pair, timeframe, candle_type)
+        # print(file_old, file_new)
+        if file_new.exists():
+            logger.warning(f"{file_new} exists already, can't migrate {pair}.")
+            return
+        file_old.rename(file_new)
+
 
 def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     """
@@ -403,8 +418,8 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 
 
-def get_datahandler(datadir: Path, data_format: str = None,
-                    data_handler: IDataHandler = None) -> IDataHandler:
+def get_datahandler(datadir: Path, data_format: Optional[str] = None,
+                    data_handler: Optional[IDataHandler] = None) -> IDataHandler:
     """
     :param datadir: Folder to save data
     :param data_format: dataformat to use

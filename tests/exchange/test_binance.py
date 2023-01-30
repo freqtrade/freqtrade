@@ -557,7 +557,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
-    respair, restf, restype, res = await exchange._async_get_historic_ohlcv(
+    respair, restf, restype, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=False, candle_type=candle_type)
     assert respair == pair
     assert restf == '5m'
@@ -566,7 +566,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert exchange._api_async.fetch_ohlcv.call_count > 400
     # assert res == ohlcv
     exchange._api_async.fetch_ohlcv.reset_mock()
-    _, _, _, res = await exchange._async_get_historic_ohlcv(
+    _, _, _, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=True, candle_type=candle_type)
 
     # Called twice - one "init" call - and one to get the actual data.
@@ -575,25 +575,13 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
-@pytest.mark.parametrize("trading_mode,margin_mode,config", [
-    ("spot", "", {}),
-    ("margin", "cross", {"options": {"defaultType": "margin"}}),
-    ("futures", "isolated", {"options": {"defaultType": "future"}}),
-])
-def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = margin_mode
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange._ccxt_config == config
-
-
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
-    ("BNB/BUSD", 0.0, 0.025, 0),
-    ("BNB/USDT", 100.0, 0.0065, 0),
-    ("BTC/USDT", 170.30, 0.004, 0),
-    ("BNB/BUSD", 999999.9, 0.1, 27500.0),
-    ("BNB/USDT", 5000000.0, 0.15, 233035.0),
-    ("BTC/USDT", 600000000, 0.5, 1.997038E8),
+    ("BNB/BUSD:BUSD", 0.0, 0.025, 0),
+    ("BNB/USDT:USDT", 100.0, 0.0065, 0),
+    ("BTC/USDT:USDT", 170.30, 0.004, 0),
+    ("BNB/BUSD:BUSD", 999999.9, 0.1, 27500.0),
+    ("BNB/USDT:USDT", 5000000.0, 0.15, 233035.0),
+    ("BTC/USDT:USDT", 600000000, 0.5, 1.997038E8),
 ])
 def test_get_maintenance_ratio_and_amt_binance(
     default_conf,

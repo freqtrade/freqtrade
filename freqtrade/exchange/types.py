@@ -1,4 +1,6 @@
-from typing import Dict, Optional, TypedDict
+from typing import Dict, List, Optional, Tuple, TypedDict
+
+from freqtrade.enums import CandleType
 
 
 class Ticker(TypedDict):
@@ -14,3 +16,6 @@ class Ticker(TypedDict):
 
 
 Tickers = Dict[str, Ticker]
+
+# pair, timeframe, candleType, OHLCV, drop last?,
+OHLCVResponse = Tuple[str, str, CandleType, List, bool]

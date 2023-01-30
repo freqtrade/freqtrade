@@ -300,7 +300,11 @@ A backtesting result will look like that:
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Sortino                     | 1.88                |
+| Sharpe                      | 2.97                |
+| Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
+| Expectancy                  | -0.15               |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -400,7 +404,11 @@ It contains some useful key metrics about performance of your strategy on backte
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Sortino                     | 1.88                |
+| Sharpe                      | 2.97                |
+| Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
+| Expectancy                  | -0.15               |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -447,6 +455,9 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `CAGR %`: Compound annual growth rate.
+- `Sortino`: Annualized Sortino ratio.
+- `Sharpe`: Annualized Sharpe ratio.
+- `Calmar`: Annualized Calmar ratio.
 - `Profit factor`: profit / loss.
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.

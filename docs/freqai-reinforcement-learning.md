@@ -34,65 +34,36 @@ Setting up and running a Reinforcement Learning model is the same as running a R
 freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --config config.json
 ```
 
-where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `populate_any_indicators` as a typical Regressor:
+where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:
 
 ```python
-    def populate_any_indicators(
-        self, pair, df, tf, informative=None, set_generalized_indicators=False
-    ):
+    def set_freqai_targets(self, dataframe, **kwargs):
+        """
+        *Only functional with FreqAI enabled strategies*
+        Required function to set the targets for the model.
+        All targets must be prepended with `&` to be recognized by the FreqAI internals.
 
-        if informative is None:
-            informative = self.dp.get_pair_dataframe(pair, tf)
+        More details about feature engineering available:
 
-        # first loop is automatically duplicating indicators for time periods
-        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+        https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-            t = int(t)
-            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{pair}adx-period_{t}"] = ta.ADX(informative, window=t)
-
-        # The following raw price values are necessary for RL models
-        informative[f"%-{pair}raw_close"] = informative["close"]
-        informative[f"%-{pair}raw_open"] = informative["open"]
-        informative[f"%-{pair}raw_high"] = informative["high"]
-        informative[f"%-{pair}raw_low"] = informative["low"]
-
-        indicators = [col for col in informative if col.startswith("%")]
-        # This loop duplicates and shifts all indicators to add a sense of recency to data
-        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-            if n == 0:
-                continue
-            informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-            informative = pd.concat((informative, informative_shift), axis=1)
-
-        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-        skip_columns = [
-            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-        ]
-        df = df.drop(columns=skip_columns)
-
-        # Add generalized indicators here (because in live, it will call this
-        # function to populate indicators during training). Notice how we ensure not to
-        # add them multiple times
-        if set_generalized_indicators:
-
-            # For RL, there are no direct targets to set. This is filler (neutral)
-            # until the agent sends an action.
-            df["&-action"] = 0
-
-        return df
+        :param df: strategy dataframe which will receive the targets
+        usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
+        """
+        # For RL, there are no direct targets to set. This is filler (neutral)
+        # until the agent sends an action.
+        dataframe["&-action"] = 0
 ```
 
 Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
+    def feature_engineering_standard(self, dataframe, **kwargs):
         # The following features are necessary for RL models
-        informative[f"%-{pair}raw_close"] = informative["close"]
-        informative[f"%-{pair}raw_open"] = informative["open"]
-        informative[f"%-{pair}raw_high"] = informative["high"]
-        informative[f"%-{pair}raw_low"] = informative["low"]
+        dataframe[f"%-raw_close"] = dataframe["close"]
+        dataframe[f"%-raw_open"] = dataframe["open"]
+        dataframe[f"%-raw_high"] = dataframe["high"]
+        dataframe[f"%-raw_low"] = dataframe["low"]
 ```
 
 Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
@@ -271,7 +242,6 @@ FreqAI also provides a built in episodic summary logger called `self.tensorboard
 
 !!! Note
     The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)` would add 0.23 to `float_metric`. In this case you can also disable incrementing using `inc=False` parameter.
-
 
 ### Choosing a base environment
 

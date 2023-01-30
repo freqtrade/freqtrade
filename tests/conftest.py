@@ -241,7 +241,6 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
-    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 
@@ -510,7 +509,7 @@ def get_default_conf(testdatadir):
             "chat_id": "0",
             "notification_settings": {},
         },
-        "datadir": str(testdatadir),
+        "datadir": Path(testdatadir),
         "initial_state": "running",
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
@@ -2606,6 +2605,8 @@ def open_trade():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2642,6 +2643,8 @@ def open_trade_usdt():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2659,6 +2662,8 @@ def open_trade_usdt():
             ft_order_side='exit',
             ft_pair=trade.pair,
             ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789_exit',
             status="open",
             symbol=trade.pair,
@@ -3103,7 +3108,7 @@ def funding_rate_history_octohourly():
 @pytest.fixture(scope='function')
 def leverage_tiers():
     return {
-        "1000SHIB/USDT": [
+        "1000SHIB/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,
@@ -3154,7 +3159,7 @@ def leverage_tiers():
                 'maintAmt': 654500.0
             },
         ],
-        "1INCH/USDT": [
+        "1INCH/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3198,7 +3203,7 @@ def leverage_tiers():
                 'maintAmt': 386940.0
             },
         ],
-        "AAVE/USDT": [
+        "AAVE/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3242,7 +3247,7 @@ def leverage_tiers():
                 'maintAmt': 386950.0
             },
         ],
-        "ADA/BUSD": [
+        "ADA/BUSD:BUSD": [
             {
                 "minNotional": 0,
                 "maxNotional": 100000,
@@ -3286,7 +3291,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             },
         ],
-        'BNB/BUSD': [
+        'BNB/BUSD:BUSD': [
             {
                 "minNotional": 0,       # stake(before leverage) = 0
                 "maxNotional": 100000,  # max stake(before leverage) = 5000
@@ -3330,7 +3335,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             }
         ],
-        'BNB/USDT': [
+        'BNB/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 10000,  # max_stake = 133.33333333333334
@@ -3395,7 +3400,7 @@ def leverage_tiers():
                 "maintAmt": 6233035.0
             },
         ],
-        'BTC/USDT': [
+        'BTC/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 50000,  # max_stake = 400.0
@@ -3467,7 +3472,7 @@ def leverage_tiers():
                 "maintAmt": 1.997038E8
             },
         ],
-        "ZEC/USDT": [
+        "ZEC/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,

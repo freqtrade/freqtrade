@@ -5,7 +5,7 @@ Read the documentation to know what cli arguments you need.
 """
 import logging
 import sys
-from typing import Any, List
+from typing import Any, List, Optional
 
 from freqtrade.util.gc_setup import gc_set_threshold
 
@@ -23,7 +23,7 @@ from freqtrade.loggers import setup_logging_pre
 logger = logging.getLogger('freqtrade')
 
 
-def main(sysargv: List[str] = None) -> None:
+def main(sysargv: Optional[List[str]] = None) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None
