@@ -159,6 +159,16 @@ EXCHANGES = {
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
+    'bybit': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+        'futures_pair': 'BTC/USDT:USDT',
+        'futures': True,
+        'leverage_tiers_public': True,
+        'leverage_in_spot_market': True,
+    },
     'huobi': {
         'pair': 'ETH/BTC',
         'stake_currency': 'BTC',
@@ -235,6 +245,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
         class_mocker.patch('freqtrade.exchange.okx.Okx.additional_exchange_init')
         class_mocker.patch('freqtrade.exchange.binance.Binance.additional_exchange_init')
+        class_mocker.patch('freqtrade.exchange.bybit.Bybit.additional_exchange_init')
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.load_cached_leverage_tiers',
                            return_value=None)
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.cache_leverage_tiers')
@@ -616,23 +627,25 @@ class TestCCXTExchange():
             )
 
             liquidation_price = futures.dry_run_liquidation_price(
-                futures_pair,
-                40000,
-                False,
-                100,
-                100,
-                100,
+                pair=futures_pair,
+                open_rate=40000,
+                is_short=False,
+                amount=100,
+                stake_amount=100,
+                leverage=5,
+                wallet_balance=100,
             )
             assert (isinstance(liquidation_price, float))
             assert liquidation_price >= 0.0
 
             liquidation_price = futures.dry_run_liquidation_price(
-                futures_pair,
-                40000,
-                False,
-                100,
-                100,
-                100,
+                pair=futures_pair,
+                open_rate=40000,
+                is_short=False,
+                amount=100,
+                stake_amount=100,
+                leverage=5,
+                wallet_balance=100,
             )
             assert (isinstance(liquidation_price, float))
             assert liquidation_price >= 0.0

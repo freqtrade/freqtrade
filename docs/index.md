@@ -52,6 +52,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [OKX](https://okx.com/)
+- [X] [Bybit](https://bybit.com/)
 
 Please make sure to read the [exchange specific notes](exchanges.md), as well as the [trading with leverage](leverage.md) documentation before diving in.
 
