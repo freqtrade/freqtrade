@@ -775,6 +775,11 @@ class Backtesting:
                      trade: Optional[LocalTrade] = None,
                      requested_rate: Optional[float] = None,
                      requested_stake: Optional[float] = None) -> Optional[LocalTrade]:
+        """
+        :param trade: Trade to adjust - initial entry if None
+        :param requested_rate: Adjusted entry rate
+        :param requested_stake: Stake amount for adjusted orders (`adjust_entry_price`).
+        """
 
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
@@ -800,7 +805,7 @@ class Backtesting:
             return trade
         time_in_force = self.strategy.order_time_in_force['entry']
 
-        if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
+        if stake_amount and (not min_stake_amount or stake_amount >= min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
             amount_p = (stake_amount / propose_rate) * leverage
