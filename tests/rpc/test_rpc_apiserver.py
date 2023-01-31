@@ -725,17 +725,21 @@ def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short
     assert 'Invalid trade_id.' in rc.json()['error']
 
     create_mock_trades(fee, is_short=is_short)
-
-    trades = Trade.query.all()
     Trade.commit()
-    assert len(trades) > 2
-    trade = Trade.get_trades([Trade.id == 6]).first()
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
-                 return_value=trade.orders[-1].to_ccxt_object())
 
     rc = client_delete(client, f"{BASE_URI}/trades/5/open-order")
     assert_response(rc, 502)
     assert 'No open order for trade_id' in rc.json()['error']
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 side_effect=ExchangeError)
+    rc = client_delete(client, f"{BASE_URI}/trades/6/open-order")
+    assert_response(rc, 502)
+    assert 'Order not found.' in rc.json()['error']
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 return_value=trade.orders[-1].to_ccxt_object())
 
     rc = client_delete(client, f"{BASE_URI}/trades/6/open-order")
     assert_response(rc)
