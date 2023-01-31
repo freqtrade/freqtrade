@@ -822,10 +822,10 @@ class RPC:
             ).first()
             if not trade:
                 logger.warning('cancel_open_order: Invalid trade_id received.')
-                raise RPCException('Invalid trade_id')
+                raise RPCException('Invalid trade_id.')
             if not trade.open_order_id:
                 logger.warning('cancel_open_order: No open order for trade_id.')
-                raise RPCException('No open order for trade_id')
+                raise RPCException('No open order for trade_id.')
 
             try:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)

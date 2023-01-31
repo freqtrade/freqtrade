@@ -720,6 +720,10 @@ def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short
         cancel_stoploss_order=stoploss_mock,
     )
 
+    rc = client_delete(client, f"{BASE_URI}/trades/10/open-order")
+    assert_response(rc, 502)
+    assert 'Invalid trade_id.' in rc.json()['error']
+
     create_mock_trades(fee, is_short=is_short)
 
     trades = Trade.query.all()
