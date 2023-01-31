@@ -168,6 +168,23 @@ EXCHANGES = {
         'futures': True,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
+        'sample_order': [
+            {
+                "orderId": "1274754916287346280",
+                "orderLinkId": "1666798627015730",
+                "symbol": "SOLUSDT",
+                "createTime": "1674493798550",
+                "orderPrice": "15.5",
+                "orderQty": "1.1",
+                "orderType": "LIMIT",
+                "side": "BUY",
+                "status": "NEW",
+                "timeInForce": "GTC",
+                "accountId": "5555555",
+                "execQty": "0",
+                "orderCategory": "0"
+            }
+        ]
     },
     'huobi': {
         'pair': 'ETH/BTC',
