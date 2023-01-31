@@ -636,7 +636,6 @@ SCHEMA_TRADE_REQUIRED = [
 
 SCHEMA_BACKTEST_REQUIRED = [
     'exchange',
-    'max_open_trades',
     'stake_currency',
     'stake_amount',
     'dry_run_wallet',
@@ -646,6 +645,7 @@ SCHEMA_BACKTEST_REQUIRED = [
 SCHEMA_BACKTEST_REQUIRED_FINAL = SCHEMA_BACKTEST_REQUIRED + [
     'stoploss',
     'minimal_roi',
+    'max_open_trades'
 ]
 
 SCHEMA_MINIMAL_REQUIRED = [
@@ -681,3 +681,4 @@ MakerTaker = Literal['maker', 'taker']
 BidAsk = Literal['bid', 'ask']
 
 Config = Dict[str, Any]
+IntOrInf = float

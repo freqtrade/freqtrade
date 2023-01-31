@@ -141,6 +141,12 @@ def _do_group_table_output(bigdf, glist):
             # 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
             if g == "4":
                 group_mask = ['pair', 'enter_reason', 'exit_reason']
+
+            # 5: profit summaries grouped by exit_tag
+            if g == "5":
+                group_mask = ['exit_reason']
+                sortcols = ['exit_reason']
+
             if group_mask:
                 new = bigdf.groupby(group_mask).agg(agg_mask).reset_index()
                 new.columns = group_mask + agg_cols

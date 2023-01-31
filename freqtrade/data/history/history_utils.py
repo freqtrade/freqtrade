@@ -28,8 +28,8 @@ def load_pair_history(pair: str,
                       fill_up_missing: bool = True,
                       drop_incomplete: bool = False,
                       startup_candles: int = 0,
-                      data_format: str = None,
-                      data_handler: IDataHandler = None,
+                      data_format: Optional[str] = None,
+                      data_handler: Optional[IDataHandler] = None,
                       candle_type: CandleType = CandleType.SPOT
                       ) -> DataFrame:
     """
@@ -69,7 +69,7 @@ def load_data(datadir: Path,
               fail_without_data: bool = False,
               data_format: str = 'json',
               candle_type: CandleType = CandleType.SPOT,
-              user_futures_funding_rate: int = None,
+              user_futures_funding_rate: Optional[int] = None,
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -116,7 +116,7 @@ def refresh_data(*, datadir: Path,
                  timeframe: str,
                  pairs: List[str],
                  exchange: Exchange,
-                 data_format: str = None,
+                 data_format: Optional[str] = None,
                  timerange: Optional[TimeRange] = None,
                  candle_type: CandleType,
                  ) -> None:
@@ -189,7 +189,7 @@ def _download_pair_history(pair: str, *,
                            timeframe: str = '5m',
                            process: str = '',
                            new_pairs_days: int = 30,
-                           data_handler: IDataHandler = None,
+                           data_handler: Optional[IDataHandler] = None,
                            timerange: Optional[TimeRange] = None,
                            candle_type: CandleType,
                            erase: bool = False,
@@ -272,7 +272,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                 datadir: Path, trading_mode: str,
                                 timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
-                                data_format: str = None,
+                                data_format: Optional[str] = None,
                                 prepend: bool = False,
                                 ) -> List[str]:
     """

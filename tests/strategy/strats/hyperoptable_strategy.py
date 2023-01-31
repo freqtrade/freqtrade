@@ -34,6 +34,11 @@ class HyperoptableStrategy(StrategyTestV3):
     protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
+    # Invalid plot config ...
+    plot_config = {
+        "main_plot": {},
+    }
+
     @property
     def protections(self):
         prot = []

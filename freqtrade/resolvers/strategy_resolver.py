@@ -33,7 +33,7 @@ class StrategyResolver(IResolver):
     extra_path = "strategy_path"
 
     @staticmethod
-    def load_strategy(config: Config = None) -> IStrategy:
+    def load_strategy(config: Optional[Config] = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
@@ -76,6 +76,7 @@ class StrategyResolver(IResolver):
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
                       ("max_entry_position_adjustment",      -1),
+                      ("max_open_trades",                    -1)
                       ]
         for attribute, default in attributes:
             StrategyResolver._override_attribute_helper(strategy, config,
@@ -110,7 +111,11 @@ class StrategyResolver(IResolver):
             val = getattr(strategy, attribute)
             # None's cannot exist in the config, so do not copy them
             if val is not None:
-                config[attribute] = val
+                # max_open_trades set to -1 in the strategy will be copied as infinity in the config
+                if attribute == 'max_open_trades' and val == -1:
+                    config[attribute] = float('inf')
+                else:
+                    config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
         elif default is not None:
             setattr(strategy, attribute, default)
@@ -128,6 +133,8 @@ class StrategyResolver(IResolver):
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):
             strategy.stoploss = float(strategy.stoploss)
+        if hasattr(strategy, 'max_open_trades') and strategy.max_open_trades < 0:
+            strategy.max_open_trades = float('inf')
         return strategy
 
     @staticmethod

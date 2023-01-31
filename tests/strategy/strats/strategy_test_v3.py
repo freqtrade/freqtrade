@@ -30,6 +30,9 @@ class StrategyTestV3(IStrategy):
         "0": 0.04
     }
 
+    # Optimal max_open_trades for the strategy
+    max_open_trades = -1
+
     # Optimal stoploss designed for the strategy
     stoploss = -0.10
 

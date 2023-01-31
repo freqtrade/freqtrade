@@ -1605,7 +1605,7 @@ class Telegram(RPCHandler):
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,
-                  keyboard: List[List[InlineKeyboardButton]] = None,
+                  keyboard: Optional[List[List[InlineKeyboardButton]]] = None,
                   callback_path: str = "",
                   reload_able: bool = False,
                   query: Optional[CallbackQuery] = None) -> None:

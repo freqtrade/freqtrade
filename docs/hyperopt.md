@@ -50,7 +50,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--eps] [--dmmp] [--enable-protections]
                           [--dry-run-wallet DRY_RUN_WALLET]
                           [--timeframe-detail TIMEFRAME_DETAIL] [-e INT]
-                          [--spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]]
+                          [--spaces {all,buy,sell,roi,stoploss,trailing,protection,trades,default} [{all,buy,sell,roi,stoploss,trailing,protection,trades,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
                           [--hyperopt-loss NAME] [--disable-param-export]
@@ -96,7 +96,7 @@ optional arguments:
                         Specify detail timeframe for backtesting (`1m`, `5m`,
                         `30m`, `1h`, `1d`).
   -e INT, --epochs INT  Specify number of epochs (default: 100).
-  --spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]
+  --spaces {all,buy,sell,roi,stoploss,trailing,protection,trades,default} [{all,buy,sell,roi,stoploss,trailing,protection,trades,default} ...]
                         Specify which parameters to hyperopt. Space-separated
                         list.
   --print-all           Print all results, not only the best ones.
@@ -180,6 +180,7 @@ Rarely you may also need to create a [nested class](advanced-hyperopt.md#overrid
 * `generate_roi_table` - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)
 * `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
 * `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)
+* `max_open_trades_space` - for custom max_open_trades optimization (if you need the ranges for the max_open_trades parameter in the optimization hyperspace that differ from default)
 
 !!! Tip "Quickly optimize ROI, stoploss and trailing stoploss"
     You can quickly optimize the spaces `roi`, `stoploss` and `trailing` without changing anything in your strategy.
@@ -643,6 +644,7 @@ Legal values are:
 * `roi`: just optimize the minimal profit table for your strategy
 * `stoploss`: search for the best stoploss value
 * `trailing`: search for the best trailing stop values
+* `trades`: search for the best max open trades values
 * `protection`: search for the best protection parameters (read the [protections section](#optimizing-protections) on how to properly define these)
 * `default`: `all` except `trailing` and `protection`
 * space-separated list of any of the above values for example `--spaces roi stoploss`
@@ -916,5 +918,5 @@ Once the optimized strategy has been implemented into your strategy, you should 
 To achieve same the results (number of trades, their durations, profit, etc.) as during Hyperopt, please use the same configuration and parameters (timerange, timeframe, ...) used for hyperopt `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
 
 Should results not match, please double-check to make sure you transferred all conditions correctly.
-Pay special care to the stoploss (and trailing stoploss) parameters, as these are often set in configuration files, which override changes to the strategy.
-You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss` or `trailing_stop`).
+Pay special care to the stoploss, max_open_trades and trailing stoploss parameters, as these are often set in configuration files, which override changes to the strategy.
+You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss`, `max_open_trades` or `trailing_stop`).
