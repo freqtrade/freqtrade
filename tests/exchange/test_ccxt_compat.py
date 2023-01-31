@@ -49,8 +49,8 @@ EXCHANGES = {
             "orderListId": -1,
             "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
             "transactTime": 1674493798550,
-            "price": "15.00000000",
-            "origQty": "1.00000000",
+            "price": "15.50000000",
+            "origQty": "1.10000000",
             "executedQty": "0.00000000",
             "cummulativeQuoteQty": "0.00000000",
             "status": "NEW",
@@ -74,8 +74,8 @@ EXCHANGES = {
             "orderListId": -1,
             "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
             "transactTime": 1674493798550,
-            "price": "15.00000000",
-            "origQty": "1.00000000",
+            "price": "15.50000000",
+            "origQty": "1.10000000",
             "executedQty": "0.00000000",
             "cummulativeQuoteQty": "0.00000000",
             "status": "NEW",
@@ -106,12 +106,12 @@ EXCHANGES = {
             {'id': '63d6742d0adc5570001d2bbf7'},  # create order
             {
                 'id': '63d6742d0adc5570001d2bbf7',
-                'symbol': 'NAKA-USDT',
+                'symbol': 'SOL-USDT',
                 'opType': 'DEAL',
                 'type': 'limit',
                 'side': 'buy',
-                'price': '30',
-                'size': '0.1',
+                'price': '15.5',
+                'size': '1.1',
                 'funds': '0',
                 'dealFunds': '0.032626',
                 'dealSize': '0.1',
@@ -311,7 +311,10 @@ class TestCCXTExchange():
                     assert isinstance(po['datetime'], str)
                     assert isinstance(po['timestamp'], int)
                     assert isinstance(po['price'], float)
+                    assert po['price'] == 15.5
+                    assert po['symbol'] == 'SOL/USDT'
                     assert isinstance(po['amount'], float)
+                    assert po['amount'] == 1.1
                     assert isinstance(po['status'], str)
         else:
             pytest.skip(f"No sample order available for exchange {exchange_name}")
