@@ -232,6 +232,14 @@ class FtRestClient():
         """
         return self._delete(f"trades/{trade_id}")
 
+    def cancel_open_order(self, trade_id):
+        """Cancel open order for trade.
+
+        :param trade_id: Cancels open orders for this trade.
+        :return: json object
+        """
+        return self._delete(f"trades/{trade_id}/open-order")
+
     def whitelist(self):
         """Show the current whitelist.
 
