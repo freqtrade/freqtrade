@@ -99,7 +99,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
                    "['forcesell', 'forceexit', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
-                   "['trades'], ['delete'], ['performance'], "
+                   "['trades'], ['delete'], ['coo', 'cancel_open_order'], ['performance'], "
                    "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "

@@ -1472,6 +1472,10 @@ class Telegram(RPCHandler):
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
+            "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
+            "Only valid when the trade has open orders.`\n"
+            "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"
+
             "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
             "order and/or only displaying the base currency of each pairing.`\n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
