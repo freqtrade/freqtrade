@@ -173,6 +173,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
 | `/trades [limit]` | List all recently closed trades in a table format.
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `/cancel_open_order <trade_id> | /coo <trade_id>` | Cancel an open order for a trade.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
