@@ -3,7 +3,7 @@
 
 # Required for freqai-rl
 torch==1.13.1
-stable-baselines3==1.6.2
-sb3-contrib==1.6.2
+stable-baselines3==1.7.0
+sb3-contrib==1.7.0
 # Gym is forced to this version by stable-baselines3.
 gym==0.21
