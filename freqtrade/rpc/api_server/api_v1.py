@@ -41,7 +41,8 @@ logger = logging.getLogger(__name__)
 # 2.21: Add new_candle messagetype
 # 2.22: Add FreqAI to backtesting
 # 2.23: Allow plot config request in webserver mode
-API_VERSION = 2.23
+# 2.24: Add cancel_open_order endpoint
+API_VERSION = 2.24
 
 # Public API, requires no auth.
 router_public = APIRouter()
