@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 #encoding=utf8
 
+# This should be deleted as soon as a gym release with a fixed setuptools is made
+function check_is_new_setuptools_installed() {
+  stoolversion=$(${PYTHON} -m pip show setuptools | grep "Version:")
+  stoolversion=${stoolversion##* }
+  stoolversion=$(echo $stoolversion | grep -Eo "^[0-9]+")
+
+  if [ $stoolversion -gt 65 ]; then
+    echo "You are using a new version of setuptools. This is not supported by gym at the moment."
+    read -p "Do you want to downgrade setuptools to a version that is supported by gym? [y/N] "
+
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+      ${PYTHON} -m pip install setuptools==65.5.0
+      if [ $? -ne 0 ]; then
+        echo "Failed downgrading setuptools"
+        exit 1
+      fi
+    else
+      echo "Please downgrade setuptools to a version that is supported by gym."
+      exit 1
+    fi
+  fi
+}
+
 function echo_block() {
     echo "----------------------------"
     echo $1
@@ -60,7 +84,7 @@ function updateenv() {
     fi
     REQUIREMENTS_HYPEROPT=""
     REQUIREMENTS_PLOT=""
-     read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
+    read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS_PLOT="-r requirements-plot.txt"
@@ -278,6 +302,7 @@ function help() {
 
 # Verify if 3.8+ is installed
 check_installed_python
+check_is_new_setuptools_installed
 
 case $* in
 --install|-i)
