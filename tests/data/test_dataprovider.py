@@ -437,6 +437,7 @@ def test_dp__add_external_df(default_conf_usdt):
     # Add the same dataframe again - dataframe size shall not change.
     res = dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
+    assert isinstance(res[1], int)
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
     assert len(df) == 24
@@ -446,6 +447,7 @@ def test_dp__add_external_df(default_conf_usdt):
 
     res = dp._add_external_df('ETH/USDT', df2, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
+    assert isinstance(res[1], int)
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
     assert len(df) == 48
@@ -455,6 +457,7 @@ def test_dp__add_external_df(default_conf_usdt):
 
     res = dp._add_external_df('ETH/USDT', df3, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
+    assert isinstance(res[1], int)
     assert res[1] == 0
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
     # New length = 48 + 12 (since we have a 12 hour offset).
@@ -478,6 +481,7 @@ def test_dp__add_external_df(default_conf_usdt):
     res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
+    assert isinstance(res[1], int)
     assert res[1] == 36
     df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
     # New length = 61 + 1
@@ -488,4 +492,5 @@ def test_dp__add_external_df(default_conf_usdt):
     res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
+    assert isinstance(res[1], int)
     assert res[1] == 0
