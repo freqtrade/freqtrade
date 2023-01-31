@@ -261,7 +261,7 @@ class StrategyResolver(IResolver):
         )
 
         if strategy:
-
+            strategy.can_short = config["trading_mode"] == "futures" and strategy.can_short
             return StrategyResolver.validate_strategy(strategy)
 
         raise OperationalException(

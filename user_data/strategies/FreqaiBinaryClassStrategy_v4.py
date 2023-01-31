@@ -198,6 +198,16 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
                      "color": "#ffffff",
                     "type": "line"
                  }
+            },
+            "di+-": {
+                "di-": {
+                    "color": "#e5e95b",
+                    "type": "line"
+                },
+                "di+": {
+                    "color": "#cda122",
+                    "type": "line"
+                }
             }
         }
     }
@@ -209,6 +219,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
     use_exit_signal = True
     startup_candle_count: int = 300
     can_short = True
+    panic_market = False
 
     linear_roi_offset = DecimalParameter(
         0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
@@ -231,123 +242,184 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
                     continue  # avoid duplication
                 informative_pairs.append((pair, tf))
         return informative_pairs
-
-    def populate_any_indicators(
-        self, pair, df, tf, informative=None, set_generalized_indicators=False
-    ):
-        """
-        Function designed to automatically generate, name and merge features
-        from user indicated timeframes in the configuration file. User controls the indicators
-        passed to the training/prediction by prepending indicators with `'%-' + coin `
-        (see convention below). I.e. user should not prepend any supporting metrics
-        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
-        model.
-        :params:
-        :pair: pair to be used as informative
-        :df: strategy dataframe which will receive merges from informatives
-        :tf: timeframe of the dataframe which will modify the feature names
-        :informative: the dataframe associated with the informative pair
-        :coin: the name of the coin which will modify the feature names.
-        """
-
-        coin = pair.split('/')[0]
-
-        if informative is None:
-            informative = self.dp.get_pair_dataframe(pair, tf)
-
-        # first loop is automatically duplicating indicators for time periods
-        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
-
-            t = int(t)
-            informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-            informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            out = adx(informative["high"], informative["low"], informative["close"], window=t)
-            informative[f"%-{pair}adx-period_{t}"] = out["ADX_14"]
-            informative[f"%-{pair}diplus-period_{t}"] = out["DMP_14"]
-            informative[f"%-{pair}diminus-period_{t}"] = out["DMN_14"]
-
-            informative[f"{pair}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
-            #informative[f"{pair}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-            informative[f"%-{pair}close_over_20sma-period_{t}"] = (
-                informative["close"] / informative[f"{pair}20sma-period_{t}"]
+    
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int, **kwargs):
+        dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
+        dataframe["%-mfi-period"] = ta.MFI(dataframe, timeperiod=period)
+        out = adx(dataframe["high"], dataframe["low"], dataframe["close"], window=period)
+        dataframe["%-adx-period"] = out["ADX_14"]
+        dataframe["%-diplus-period"] = out["DMP_14"]
+        dataframe["%-diminus-period"] = out["DMN_14"]
+        dataframe["%-sma-period"] = ta.SMA(dataframe, timeperiod=period)
+        dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
+        dataframe[f"%-close_over_20sma-period"] = (
+                dataframe["close"] / dataframe["%-sma-period"]
             )
 
-            bollinger = qtpylib.bollinger_bands(
-                qtpylib.typical_price(informative), window=t, stds=2.2
-            )
-            informative[f"{pair}bb_lowerband-period_{t}"] = bollinger["lower"]
-            informative[f"{pair}bb_middleband-period_{t}"] = bollinger["mid"]
-            informative[f"{pair}bb_upperband-period_{t}"] = bollinger["upper"]
+        bollinger = qtpylib.bollinger_bands(
+            qtpylib.typical_price(dataframe), window=period, stds=2.2
+        )
+        dataframe["bb_lowerband-period"] = bollinger["lower"]
+        dataframe["bb_middleband-period"] = bollinger["mid"]
+        dataframe["bb_upperband-period"] = bollinger["upper"]
 
-            informative[f"%-{pair}bb_width-period_{t}"] = (
-                informative[f"{pair}bb_upperband-period_{t}"]
-                - informative[f"{pair}bb_lowerband-period_{t}"]
-            ) / informative[f"{pair}bb_middleband-period_{t}"]
-            informative[f"%-{pair}close-bb_lower-period_{t}"] = (
-                informative["close"] / informative[f"{pair}bb_lowerband-period_{t}"]
-            )
+        dataframe["%-bb_width-period"] = (
+            dataframe["bb_upperband-period"]
+            - dataframe["bb_lowerband-period"]
+        ) / dataframe["bb_middleband-period"]
+        dataframe["%-close-bb_lower-period"] = (
+            dataframe["close"] / dataframe["bb_lowerband-period"]
+        )
 
-            informative[f"%-{pair}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
-            macd = ta.MACD(informative, timeperiod=t)
-            informative[f"%-{pair}macd-period_{t}"] = macd["macd"]
+        dataframe["%-roc-period"] = ta.ROC(dataframe, timeperiod=period)
 
-            informative[f"%-{pair}relative_volume-period_{t}"] = (
-                informative["volume"] / informative["volume"].rolling(t).mean()
-            )
+        macd = ta.MACD(dataframe, timeperiod=period)
+        dataframe["-macd-period"] = macd["macd"]
 
-        informative[f"%-{pair}pct-change"] = informative["close"].pct_change()
-        informative[f"%-{pair}raw_volume"] = informative["volume"]
-        informative[f"%-{pair}raw_price"] = informative["close"]
+        dataframe["%-relative_volume-period"] = (
+            dataframe["volume"] / dataframe["volume"].rolling(period).mean()
+        )
 
-        indicators = [col for col in informative if col.startswith("%")]
-        # This loop duplicates and shifts all indicators to add a sense of recency to data
-        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-            if n == 0:
-                continue
-            informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-            informative = pd.concat((informative, informative_shift), axis=1)
+        return dataframe
+    
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs):
+        dataframe["%-pct-change"] = dataframe["close"].pct_change()
+        dataframe["%-raw_volume"] = dataframe["volume"]
+        dataframe["%-raw_price"] = dataframe["close"]
+        return dataframe
+    
+    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs):
+        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
+        return dataframe
+    
+    def set_freqai_targets(self, dataframe, **kwargs):
+        minmax = np.array(["neutral"] * len(dataframe))
+        min_labels, max_labels = find_labels(dataframe, alpha=-0.5)
+        minmax[min_labels == 1] = "min"
+        minmax[max_labels == 1] = "max"
+        dataframe["&s-minmax"] = np.array([str(x) for x in minmax]).astype(np.object0)
+        return dataframe
 
-        # find support levels
-        if tf == self.freqai_info["feature_parameters"]["include_timeframes"][-1]:
-            informative_6h = resample_to_interval(informative, "6h")
-            informative_6h["support_levels"] = find_support_levels(informative_6h)
-            df = merge_informative_pair(df, informative_6h, self.config["timeframe"], "6h", ffill=True)
+    # def populate_any_indicators(
+    #     self, pair, df, tf, informative=None, set_generalized_indicators=False
+    # ):
+    #     """
+    #     Function designed to automatically generate, name and merge features
+    #     from user indicated timeframes in the configuration file. User controls the indicators
+    #     passed to the training/prediction by prepending indicators with `'%-' + coin `
+    #     (see convention below). I.e. user should not prepend any supporting metrics
+    #     (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
+    #     model.
+    #     :params:
+    #     :pair: pair to be used as informative
+    #     :df: strategy dataframe which will receive merges from informatives
+    #     :tf: timeframe of the dataframe which will modify the feature names
+    #     :informative: the dataframe associated with the informative pair
+    #     :coin: the name of the coin which will modify the feature names.
+    #     """
 
-        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+    #     coin = pair.split('/')[0]
 
-        skip_columns = [
-            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-        ]
-        df = df.drop(columns=skip_columns)
+    #     if informative is None:
+    #         informative = self.dp.get_pair_dataframe(pair, tf)
 
-        # Add generalized indicators here (because in live, it will call this
-        # function to populate indicators during training). Notice how we ensure not to
-        # add them multiple times
-        if set_generalized_indicators:
-            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+    #     # first loop is automatically duplicating indicators for time periods
+    #     for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
-            # user adds targets here by prepending them with &- (see convention below)
-            # If user wishes to use multiple targets, a multioutput prediction model
-            # needs to be used such as templates/CatboostPredictionMultiModel.py
-            #df["&s-minima"] = FreqaiBinaryClassStrategy.get_min_labels(df)
-            #df["&s-maxima"] = FreqaiBinaryClassStrategy.get_max_labels(df)
-            minmax = np.array(["neutral"] * len(df))
-            min_labels, max_labels = find_labels(df, alpha=-0.5)
-            minmax[min_labels == 1] = "min"
-            minmax[max_labels == 1] = "max"
-            df["&s-minmax"] = np.array([str(x) for x in minmax]).astype(np.object0)
-        return df
+    #         t = int(t)
+    #         informative[f"%-{pair}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+    #         informative[f"%-{pair}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+    #         out = adx(informative["high"], informative["low"], informative["close"], window=t)
+    #         informative[f"%-{pair}adx-period_{t}"] = out["ADX_14"]
+    #         informative[f"%-{pair}diplus-period_{t}"] = out["DMP_14"]
+    #         informative[f"%-{pair}diminus-period_{t}"] = out["DMN_14"]
+
+    #         informative[f"{pair}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
+    #         #informative[f"{pair}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
+    #         informative[f"%-{pair}close_over_20sma-period_{t}"] = (
+    #             informative["close"] / informative[f"{pair}20sma-period_{t}"]
+    #         )
+
+    #         bollinger = qtpylib.bollinger_bands(
+    #             qtpylib.typical_price(informative), window=t, stds=2.2
+    #         )
+    #         informative[f"{pair}bb_lowerband-period_{t}"] = bollinger["lower"]
+    #         informative[f"{pair}bb_middleband-period_{t}"] = bollinger["mid"]
+    #         informative[f"{pair}bb_upperband-period_{t}"] = bollinger["upper"]
+
+    #         informative[f"%-{pair}bb_width-period_{t}"] = (
+    #             informative[f"{pair}bb_upperband-period_{t}"]
+    #             - informative[f"{pair}bb_lowerband-period_{t}"]
+    #         ) / informative[f"{pair}bb_middleband-period_{t}"]
+    #         informative[f"%-{pair}close-bb_lower-period_{t}"] = (
+    #             informative["close"] / informative[f"{pair}bb_lowerband-period_{t}"]
+    #         )
+
+    #         informative[f"%-{pair}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
+    #         macd = ta.MACD(informative, timeperiod=t)
+    #         informative[f"%-{pair}macd-period_{t}"] = macd["macd"]
+
+    #         informative[f"%-{pair}relative_volume-period_{t}"] = (
+    #             informative["volume"] / informative["volume"].rolling(t).mean()
+    #         )
+
+    #     informative[f"%-{pair}pct-change"] = informative["close"].pct_change()
+    #     informative[f"%-{pair}raw_volume"] = informative["volume"]
+    #     informative[f"%-{pair}raw_price"] = informative["close"]
+
+    #     indicators = [col for col in informative if col.startswith("%")]
+    #     # This loop duplicates and shifts all indicators to add a sense of recency to data
+    #     for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+    #         if n == 0:
+    #             continue
+    #         informative_shift = informative[indicators].shift(n)
+    #         informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+    #         informative = pd.concat((informative, informative_shift), axis=1)
+
+    #     # find support levels
+    #     if tf == self.freqai_info["feature_parameters"]["include_timeframes"][-1]:
+    #         informative_6h = resample_to_interval(informative, "6h")
+    #         informative_6h["support_levels"] = find_support_levels(informative_6h)
+    #         df = merge_informative_pair(df, informative_6h, self.config["timeframe"], "6h", ffill=True)
+
+    #     df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+
+    #     skip_columns = [
+    #         (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+    #     ]
+    #     df = df.drop(columns=skip_columns)
+
+    #     # Add generalized indicators here (because in live, it will call this
+    #     # function to populate indicators during training). Notice how we ensure not to
+    #     # add them multiple times
+    #     if set_generalized_indicators:
+    #         df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
+    #         df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+
+    #         # user adds targets here by prepending them with &- (see convention below)
+    #         # If user wishes to use multiple targets, a multioutput prediction model
+    #         # needs to be used such as templates/CatboostPredictionMultiModel.py
+    #         #df["&s-minima"] = FreqaiBinaryClassStrategy.get_min_labels(df)
+    #         #df["&s-maxima"] = FreqaiBinaryClassStrategy.get_max_labels(df)
+    #         minmax = np.array(["neutral"] * len(df))
+    #         min_labels, max_labels = find_labels(df, alpha=-0.5)
+    #         minmax[min_labels == 1] = "min"
+    #         minmax[max_labels == 1] = "max"
+    #         df["&s-minmax"] = np.array([str(x) for x in minmax]).astype(np.object0)
+    #     return df
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        self.freqai_info = self.config["freqai"]
+        # All indicators must be populated by feature_engineering_*() functions
 
-        # the model will return 4 values, its prediction, an indication of whether or not the
-        # prediction should be accepted, the target mean/std values from the labels used during
-        # each training period.
+        # the model will return all labels created by user in `feature_engineering_*`
+        # (& appended targets), an indication of whether or not the prediction should be accepted,
+        # the target mean/std values for each of the labels created by user in
+        # `set_freqai_targets()` for each training period.
+
         dataframe = self.freqai.start(dataframe, metadata, self)
+
         # dataframe["&s-minima"] = dataframe["&s-minima"].astype(np.float32)
         # dataframe["&s-maxima"] = dataframe["&s-maxima"].astype(np.float32)
         min_labels, max_labels = find_labels(dataframe, alpha=-0.5)
@@ -362,8 +434,15 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        hours_candle_stability = 4
-        if df["do_predict"].rolling(12 * hours_candle_stability).sum().iloc[-1] == 12 * hours_candle_stability:  # enter the market if last `hours_candle_stability` are stable
+
+        last_candles_are_stable = True
+        if self.panic_market:
+            hours_candle_stability = 4
+            # enter the market if last `hours_candle_stability` are stable
+            last_candles_are_stable = df["do_predict"].rolling(12 * hours_candle_stability).sum().iloc[-1] == 12 * hours_candle_stability
+
+        if last_candles_are_stable:
+            self.panic_market = False
             enter_long_conditions = [df["do_predict"] == 1, df["min"] >= self.entry_thr.value]
 
             if enter_long_conditions:
@@ -415,6 +494,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
         trade_candle = trade_candle.squeeze()
 
         if dataframe["do_predict"].iloc[-1] != 1:
+            self.panic_market = True
             return f"OOD_{trade.enter_tag}_Exit"
 
         time_alpha = (1 + current_profit / (self.minimal_roi[0] - self.stoploss))

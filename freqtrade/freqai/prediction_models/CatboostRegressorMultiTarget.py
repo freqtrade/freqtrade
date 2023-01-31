@@ -62,6 +62,7 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
             fit_params.append({
                     'eval_set': eval_sets[i],  'init_model': init_models[i],
                     'log_cout': sys.stdout, 'log_cerr': sys.stderr,
+                    'verbose_eval': 100,
                  })
 
         model = FreqaiMultiOutputRegressor(estimator=cbr)

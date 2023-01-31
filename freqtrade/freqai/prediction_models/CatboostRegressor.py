@@ -49,6 +49,7 @@ class CatboostRegressor(BaseRegressionModel):
         )
 
         model.fit(X=train_data, eval_set=test_data, init_model=init_model,
+                  verbose_eval=100,
                   log_cout=sys.stdout, log_cerr=sys.stderr)
 
         return model
