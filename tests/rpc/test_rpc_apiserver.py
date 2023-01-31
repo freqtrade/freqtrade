@@ -706,6 +706,38 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert_response(rc, 502)
 
 
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+
+    create_mock_trades(fee, is_short=is_short)
+
+    trades = Trade.query.all()
+    Trade.commit()
+    assert len(trades) > 2
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 return_value=trade.orders[-1].to_ccxt_object())
+
+    rc = client_delete(client, f"{BASE_URI}/trades/5/open-order")
+    assert_response(rc, 502)
+    assert 'No open order for trade_id' in rc.json()['error']
+
+    rc = client_delete(client, f"{BASE_URI}/trades/6/open-order")
+    assert_response(rc)
+    assert cancel_mock.call_count == 1
+
+
 def test_api_logs(botclient):
     ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/logs")
