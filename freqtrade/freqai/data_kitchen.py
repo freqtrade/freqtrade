@@ -884,25 +884,11 @@ class FreqaiDataKitchen:
         """
         Add noise to train features to reduce the risk of overfitting.
         """
-        da = self.freqai_config["feature_parameters"]["data_augment"]
-        X = self.data_dictionary['train_features']
-        y = self.data_dictionary['train_labels']
-        da_type = da.get("type", "std")
-        if da_type == "std":
-            # generate alpha values of 0-mean and 1-std
-            alpha = np.random.randn(*X.shape)
-            scale = da.get("vaue", 0.01)
-            Xaugmented = X +  alpha * scale * X.std(0)[None, :]
-            X = np.vstack((X, Xaugmented))
-            y = y.append(y)
-            self.data_dictionary['train_features'] = X
-            self.data_dictionary['train_labels'] = y
-        elif da_type == "constant":
-            mu = 0  # no shift
-            sigma = self.freqai_config["feature_parameters"]["data_augment"]["value"]
-            compute_df = self.data_dictionary['train_features']
-            noise = np.random.normal(mu, sigma, [compute_df.shape[0], compute_df.shape[1]])
-            self.data_dictionary['train_features'] += noise
+        mu = 0  # no shift
+        sigma = self.freqai_config["feature_parameters"]["noise_standard_deviation"]
+        compute_df = self.data_dictionary['train_features']
+        noise = np.random.normal(mu, sigma, [compute_df.shape[0], compute_df.shape[1]])
+        self.data_dictionary['train_features'] += noise
         return
 
     def find_features(self, dataframe: DataFrame) -> None:
