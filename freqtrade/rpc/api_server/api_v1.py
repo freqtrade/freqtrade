@@ -123,6 +123,12 @@ def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete(tradeid)
 
 
+@router.delete('/trades/{tradeid}/open-order', response_model=OpenTradeSchema,  tags=['trading'])
+def cancel_open_order(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_cancel_open_order(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
+
+
 # TODO: Missing response model
 @router.get('/edge', tags=['info'])
 def edge(rpc: RPC = Depends(get_rpc)):
