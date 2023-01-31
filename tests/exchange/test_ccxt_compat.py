@@ -323,16 +323,19 @@ class TestCCXTExchange():
                 po = exch._api.parse_order(order)
                 assert isinstance(po['id'], str)
                 assert po['id'] is not None
-                if len(order.keys()) > 1:
-                    assert po['timestamp'] == 1674493798550
-                    assert isinstance(po['datetime'], str)
-                    assert isinstance(po['timestamp'], int)
-                    assert isinstance(po['price'], float)
-                    assert po['price'] == 15.5
-                    assert po['symbol'] == 'SOL/USDT'
-                    assert isinstance(po['amount'], float)
-                    assert po['amount'] == 1.1
-                    assert isinstance(po['status'], str)
+                if len(order.keys()) < 5:
+                    # Kucoin case
+                    assert po['status'] == 'closed'
+                    continue
+                assert po['timestamp'] == 1674493798550
+                assert isinstance(po['datetime'], str)
+                assert isinstance(po['timestamp'], int)
+                assert isinstance(po['price'], float)
+                assert po['price'] == 15.5
+                assert po['symbol'] == 'SOL/USDT'
+                assert isinstance(po['amount'], float)
+                assert po['amount'] == 1.1
+                assert isinstance(po['status'], str)
         else:
             pytest.skip(f"No sample order available for exchange {exchange_name}")
 
