@@ -92,6 +92,7 @@ function updateenv() {
             fi
         fi
     fi
+    install_talib
 
     ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT} ${REQUIREMENTS_FREQAI} ${REQUIREMENTS_FREQAI_RL}
     if [ $? -ne 0 ]; then
@@ -169,21 +170,18 @@ function install_macos() {
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
     fi
-    install_talib
 }
 
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
     sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git curl $(echo lib${PYTHON}-dev ${PYTHON}-venv)
-    install_talib
 }
 
 # Install bot RedHat_CentOS
 function install_redhat() {
     sudo yum update
     sudo yum install -y gcc gcc-c++ make autoconf libtool pkg-config wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
-    install_talib
 }
 
 # Upgrade the bot
