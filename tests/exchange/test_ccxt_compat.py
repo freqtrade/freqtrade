@@ -49,8 +49,8 @@ EXCHANGES = {
             "orderListId": -1,
             "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
             "transactTime": 1674493798550,
-            "price": "15.00000000",
-            "origQty": "1.00000000",
+            "price": "15.50000000",
+            "origQty": "1.10000000",
             "executedQty": "0.00000000",
             "cummulativeQuoteQty": "0.00000000",
             "status": "NEW",
@@ -74,8 +74,8 @@ EXCHANGES = {
             "orderListId": -1,
             "clientOrderId": "x-R4DD3S8297c73a11ccb9dc8f2811ba",
             "transactTime": 1674493798550,
-            "price": "15.00000000",
-            "origQty": "1.00000000",
+            "price": "15.50000000",
+            "origQty": "1.10000000",
             "executedQty": "0.00000000",
             "cummulativeQuoteQty": "0.00000000",
             "status": "NEW",
@@ -106,12 +106,12 @@ EXCHANGES = {
             {'id': '63d6742d0adc5570001d2bbf7'},  # create order
             {
                 'id': '63d6742d0adc5570001d2bbf7',
-                'symbol': 'NAKA-USDT',
+                'symbol': 'SOL-USDT',
                 'opType': 'DEAL',
                 'type': 'limit',
                 'side': 'buy',
-                'price': '30',
-                'size': '0.1',
+                'price': '15.5',
+                'size': '1.1',
                 'funds': '0',
                 'dealFunds': '0.032626',
                 'dealSize': '0.1',
@@ -168,6 +168,23 @@ EXCHANGES = {
         'futures': True,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
+        'sample_order': [
+            {
+                "orderId": "1274754916287346280",
+                "orderLinkId": "1666798627015730",
+                "symbol": "SOLUSDT",
+                "createTime": "1674493798550",
+                "orderPrice": "15.5",
+                "orderQty": "1.1",
+                "orderType": "LIMIT",
+                "side": "BUY",
+                "status": "NEW",
+                "timeInForce": "GTC",
+                "accountId": "5555555",
+                "execQty": "0",
+                "orderCategory": "0"
+            }
+        ]
     },
     'huobi': {
         'pair': 'ETH/BTC',
@@ -306,13 +323,19 @@ class TestCCXTExchange():
                 po = exch._api.parse_order(order)
                 assert isinstance(po['id'], str)
                 assert po['id'] is not None
-                if len(order.keys()) > 1:
-                    assert po['timestamp'] == 1674493798550
-                    assert isinstance(po['datetime'], str)
-                    assert isinstance(po['timestamp'], int)
-                    assert isinstance(po['price'], float)
-                    assert isinstance(po['amount'], float)
-                    assert isinstance(po['status'], str)
+                if len(order.keys()) < 5:
+                    # Kucoin case
+                    assert po['status'] == 'closed'
+                    continue
+                assert po['timestamp'] == 1674493798550
+                assert isinstance(po['datetime'], str)
+                assert isinstance(po['timestamp'], int)
+                assert isinstance(po['price'], float)
+                assert po['price'] == 15.5
+                assert po['symbol'] == 'SOL/USDT'
+                assert isinstance(po['amount'], float)
+                assert po['amount'] == 1.1
+                assert isinstance(po['status'], str)
         else:
             pytest.skip(f"No sample order available for exchange {exchange_name}")
 

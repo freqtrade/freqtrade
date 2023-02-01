@@ -172,7 +172,7 @@ class Order(_DECL_BASE):
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
         resp = {
-            'amount': self.amount,
+            'amount': self.safe_amount,
             'safe_price': self.safe_price,
             'ft_order_side': self.ft_order_side,
             'order_filled_timestamp': int(self.order_filled_date.replace(

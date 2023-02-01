@@ -750,13 +750,15 @@ class FreqtradeBot(LoggingMixin):
                                self.exchange.name, order['filled'], order['amount'],
                                order['remaining']
                                )
-                amount = safe_value_fallback(order, 'filled', 'amount')
-                enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+                amount = safe_value_fallback(order, 'filled', 'amount', amount)
+                enter_limit_filled_price = safe_value_fallback(
+                    order, 'average', 'price', enter_limit_filled_price)
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
-            amount = safe_value_fallback(order, 'filled', 'amount')
-            enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+            amount = safe_value_fallback(order, 'filled', 'amount', amount)
+            enter_limit_filled_price = safe_value_fallback(
+                order, 'average', 'price', enter_limit_requested)
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
