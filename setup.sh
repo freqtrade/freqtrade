@@ -50,7 +50,7 @@ function updateenv() {
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
     # Setuptools 65.5.0 is the last version that can install gym==0.21.0
-    ${PYTHON} -m pip install --upgrade pip wheel setuptools==65.5.0
+    ${PYTHON} -m pip install --upgrade pip wheel setuptools==65.5.1
     read -p "Do you want to install dependencies for dev [y/N]? "
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
