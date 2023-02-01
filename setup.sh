@@ -51,45 +51,45 @@ function updateenv() {
     echo "pip install in-progress. Please wait..."
     # Setuptools 65.5.0 is the last version that can install gym==0.21.0
     ${PYTHON} -m pip install --upgrade pip wheel setuptools==65.5.1
-    read -p "Do you want to install dependencies for dev [y/N]? "
+    REQUIREMENTS_HYPEROPT=""
+    REQUIREMENTS_PLOT=""
+    REQUIREMENTS_FREQAI=""
+    REQUIREMENTS_FREQAI_RL=""
+    REQUIREMENTS=requirements.txt
+
+    read -p "Do you want to install dependencies for development (Performs a full install with all dependencies) [y/N]? "
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
     else
-        REQUIREMENTS=requirements.txt
-    fi
-    REQUIREMENTS_HYPEROPT=""
-    REQUIREMENTS_PLOT=""
-    read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        REQUIREMENTS_PLOT="-r requirements-plot.txt"
-    fi
-    if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
-        echo "Detected Raspberry, installing cython, skipping hyperopt installation."
-        ${PYTHON} -m pip install --upgrade cython
-    else
-        # Is not Raspberry
-        read -p "Do you want to install hyperopt dependencies [y/N]? "
+        # requirements-dev.txt includes all the below requirements already, so further questions are pointless.
+        read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
-            REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+            REQUIREMENTS_PLOT="-r requirements-plot.txt"
         fi
-    fi
+        if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
+            echo "Detected Raspberry, installing cython, skipping hyperopt installation."
+            ${PYTHON} -m pip install --upgrade cython
+        else
+            # Is not Raspberry
+            read -p "Do you want to install hyperopt dependencies [y/N]? "
+            if [[ $REPLY =~ ^[Yy]$ ]]
+            then
+                REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+            fi
+        fi
 
-    REQUIREMENTS_FREQAI=""
-    REQUIREMENTS_FREQAI_RL=""
-    read -p "Do you want to install dependencies for freqai [y/N]? "
-    dev=$REPLY
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
-        read -p "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]? "
-        dev=$REPLY
+        read -p "Do you want to install dependencies for freqai [y/N]? "
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
-            REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"
+            REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
+            read -p "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]? "
+            if [[ $REPLY =~ ^[Yy]$ ]]
+            then
+                REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"
+            fi
         fi
     fi
 
