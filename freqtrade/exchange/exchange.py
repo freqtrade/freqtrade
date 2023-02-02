@@ -1833,7 +1833,7 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, candle_type, since) for since in
-            range(since_ms, until_ms or (arrow.utcnow().int_timestamp * 1000), one_call)]
+            range(since_ms if since_ms else 0, until_ms if until_ms else (arrow.utcnow().int_timestamp * 1000), one_call)]
 
         data: List = []
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
