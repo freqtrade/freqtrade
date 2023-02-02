@@ -190,16 +190,17 @@ function update() {
     updateenv
 }
 
-# Reset Develop or Stable branch
 function check_git_changes() {
     if [ -z "$(git status --porcelain)" ]; then
         echo "No changes in git directory"
-        return 0
+        return 1
     else
         echo "Changes in git directory"
-        return 1
+        return 0
     fi
 }
+
+# Reset Develop or Stable branch
 function reset() {
     echo_block "Resetting branch and virtual env"
 
