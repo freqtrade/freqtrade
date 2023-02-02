@@ -59,7 +59,7 @@ class FreqaiDataDrawer:
     Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
-    def __init__(self, full_path: Path, config: Config, follow_mode: bool = False):
+    def __init__(self, full_path: Path, config: Config):
 
         self.config = config
         self.freqai_info = config.get("freqai", {})
@@ -84,9 +84,6 @@ class FreqaiDataDrawer:
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
         self.global_metadata_path = Path(self.full_path / "global_metadata.json")
         self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
-        self.follow_mode = follow_mode
-        if follow_mode:
-            self.create_follower_dict()
         self.load_drawer_from_disk()
         self.load_historic_predictions_from_disk()
         self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
@@ -149,13 +146,8 @@ class FreqaiDataDrawer:
         if exists:
             with open(self.pair_dictionary_path, "r") as fp:
                 self.pair_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
-        elif not self.follow_mode:
-            logger.info("Could not find existing datadrawer, starting from scratch")
         else:
-            logger.warning(
-                f"Follower could not find pair_dictionary at {self.full_path} "
-                "sending null values back to strategy"
-            )
+            logger.info("Could not find existing datadrawer, starting from scratch")
 
     def load_metric_tracker_from_disk(self):
         """
@@ -193,13 +185,8 @@ class FreqaiDataDrawer:
                     self.historic_predictions = cloudpickle.load(fp)
                 logger.warning('FreqAI successfully loaded the backup historical predictions file.')
 
-        elif not self.follow_mode:
-            logger.info("Could not find existing historic_predictions, starting from scratch")
         else:
-            logger.warning(
-                f"Follower could not find historic predictions at {self.full_path} "
-                "sending null values back to strategy"
-            )
+            logger.info("Could not find existing historic_predictions, starting from scratch")
 
         return exists
 
@@ -248,23 +235,6 @@ class FreqaiDataDrawer:
                 rapidjson.dump(metadata, fp, default=self.np_encoder,
                                number_mode=rapidjson.NM_NATIVE)
 
-    def create_follower_dict(self):
-        """
-        Create or dictionary for each follower to maintain unique persistent prediction targets
-        """
-
-        whitelist_pairs = self.config.get("exchange", {}).get("pair_whitelist")
-
-        exists = self.follower_dict_path.is_file()
-
-        if exists:
-            logger.info("Found an existing follower dictionary")
-
-        for pair in whitelist_pairs:
-            self.follower_dict[pair] = {}
-
-        self.save_follower_dict_to_disk()
-
     def np_encoder(self, object):
         if isinstance(object, np.generic):
             return object.item()
@@ -282,26 +252,16 @@ class FreqaiDataDrawer:
         """
 
         pair_dict = self.pair_dict.get(pair)
-        data_path_set = self.pair_dict.get(pair, self.empty_pair_dict).get("data_path", "")
+        # data_path_set = self.pair_dict.get(pair, self.empty_pair_dict).get("data_path", "")
         return_null_array = False
 
         if pair_dict:
             model_filename = pair_dict["model_filename"]
             trained_timestamp = pair_dict["trained_timestamp"]
-        elif not self.follow_mode:
+        else:
             self.pair_dict[pair] = self.empty_pair_dict.copy()
             model_filename = ""
             trained_timestamp = 0
-
-        if not data_path_set and self.follow_mode:
-            logger.warning(
-                f"Follower could not find current pair {pair} in "
-                f"pair_dictionary at path {self.full_path}, sending null values "
-                "back to strategy."
-            )
-            trained_timestamp = 0
-            model_filename = ''
-            return_null_array = True
 
         return model_filename, trained_timestamp, return_null_array
 
@@ -311,7 +271,6 @@ class FreqaiDataDrawer:
             return
         else:
             self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
-
             return
 
     def set_initial_return_values(self, pair: str, pred_df: DataFrame) -> None:
