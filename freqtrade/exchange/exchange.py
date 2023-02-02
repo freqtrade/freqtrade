@@ -2731,7 +2731,7 @@ class Exchange:
                 pos = positions[0]
                 isolated_liq = pos['liquidationPrice']
 
-        if isolated_liq:
+        if isolated_liq is not None:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
             isolated_liq = (
                 isolated_liq - buffer_amount
