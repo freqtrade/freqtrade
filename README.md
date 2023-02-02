@@ -167,7 +167,7 @@ quickly as possible.
 
 For every [issue](https://github.com/freqtrade/freqtrade/issues/new/choose) created, kindly follow up and mark satisfaction or reminder to close issue when equilibrium ground is reached.
 
---Maintain github's community policy--
+--Maintain github's [community policy](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct)--
 
 ### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
 
