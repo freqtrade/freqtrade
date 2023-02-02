@@ -1628,7 +1628,7 @@ class FreqtradeBot(LoggingMixin):
 
         # second condition is for mypy only; order will always be passed during sub trade
         if sub_trade and order is not None:
-            amount = order.safe_filled if fill else order.amount
+            amount = order.safe_filled if fill else order.safe_amount
             order_rate: float = order.safe_price
 
             profit = trade.calc_profit(rate=order_rate, amount=amount, open_rate=trade.open_rate)
