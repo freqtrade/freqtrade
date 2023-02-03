@@ -190,26 +190,37 @@ function update() {
     updateenv
 }
 
+function check_git_changes() {
+    if [ -z "$(git status --porcelain)" ]; then
+        echo "No changes in git directory"
+        return 1
+    else
+        echo "Changes in git directory"
+        return 0
+    fi
+}
+
 # Reset Develop or Stable branch
 function reset() {
     echo_block "Resetting branch and virtual env"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
+        if check_git_changes; then
+            read -p "Keep your local changes? (Otherwise will remove all changes you made!) [Y/n]? "
+            if [[ $REPLY =~ ^[Nn]$ ]]; then
 
-        read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+                git fetch -a
 
-            git fetch -a
-
-            if [ "1" == $(git branch -vv | grep -c "* develop") ]
-            then
-                echo "- Hard resetting of 'develop' branch."
-                git reset --hard origin/develop
-            elif [ "1" == $(git branch -vv | grep -c "* stable") ]
-            then
-                echo "- Hard resetting of 'stable' branch."
-                git reset --hard origin/stable
+                if [ "1" == $(git branch -vv | grep -c "* develop") ]
+                then
+                    echo "- Hard resetting of 'develop' branch."
+                    git reset --hard origin/develop
+                elif [ "1" == $(git branch -vv | grep -c "* stable") ]
+                then
+                    echo "- Hard resetting of 'stable' branch."
+                    git reset --hard origin/stable
+                fi
             fi
         fi
     else
