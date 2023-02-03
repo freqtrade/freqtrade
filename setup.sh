@@ -221,8 +221,6 @@ function reset() {
                     echo "- Hard resetting of 'stable' branch."
                     git reset --hard origin/stable
                 fi
-            else
-                echo "Reset ignored because you are not on 'stable' or 'develop'."
             fi
         fi
     else
