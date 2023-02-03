@@ -66,12 +66,11 @@ class IFreqaiModel(ABC):
         self.retrain = False
         self.first = True
         self.set_full_path()
-        self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
 
-        self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
+        self.dd = FreqaiDataDrawer(Path(self.full_path), self.config)
         # set current candle to arbitrary historical date
         self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=timezone.utc)
         self.dd.current_candle = self.current_candle
@@ -153,7 +152,7 @@ class IFreqaiModel(ABC):
         # (backtest window, i.e. window immediately following the training window).
         # FreqAI slides the window and sequentially builds the backtesting results before returning
         # the concatenated results for the full backtesting period back to the strategy.
-        elif not self.follow_mode:
+        else:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             if not self.config.get("freqai_backtest_live_models", False):
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
@@ -379,18 +378,9 @@ class IFreqaiModel(ABC):
         :returns:
         dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
-        # update follower
-        if self.follow_mode:
-            self.dd.update_follower_metadata()
 
         # get the model metadata associated with the current pair
         (_, trained_timestamp, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
-
-        # if the metadata doesn't exist, the follower returns null arrays to strategy
-        if self.follow_mode and return_null_array:
-            logger.info("Returning null array from follower to strategy")
-            self.dd.return_null_values_to_strategy(dataframe, dk)
-            return dk
 
         # append the historic data once per round
         if self.dd.historic_data:
@@ -398,27 +388,18 @@ class IFreqaiModel(ABC):
             logger.debug(f'Updating historic data on pair {metadata["pair"]}')
             self.track_current_candle()
 
-        if not self.follow_mode:
+        (_, new_trained_timerange, data_load_timerange) = dk.check_if_new_training_required(
+            trained_timestamp
+        )
+        dk.set_paths(metadata["pair"], new_trained_timerange.stopts)
 
-            (_, new_trained_timerange, data_load_timerange) = dk.check_if_new_training_required(
-                trained_timestamp
-            )
-            dk.set_paths(metadata["pair"], new_trained_timerange.stopts)
+        # load candle history into memory if it is not yet.
+        if not self.dd.historic_data:
+            self.dd.load_all_pair_histories(data_load_timerange, dk)
 
-            # load candle history into memory if it is not yet.
-            if not self.dd.historic_data:
-                self.dd.load_all_pair_histories(data_load_timerange, dk)
-
-            if not self.scanning:
-                self.scanning = True
-                self.start_scanning(strategy)
-
-        elif self.follow_mode:
-            dk.set_paths(metadata["pair"], trained_timestamp)
-            logger.info(
-                "FreqAI instance set to follow_mode, finding existing pair "
-                f"using { self.identifier }"
-            )
+        if not self.scanning:
+            self.scanning = True
+            self.start_scanning(strategy)
 
         # load the model and associated data into the data kitchen
         self.model = self.dd.load_data(metadata["pair"], dk)
