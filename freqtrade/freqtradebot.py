@@ -344,7 +344,15 @@ class FreqtradeBot(LoggingMixin):
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
-
+                if not order.trade:
+                    # This should not happen, but it does if trades were deleted manually.
+                    # This can only incur on sqlite, which doesn't enforce foreign constraints.
+                    logger.warning(
+                        f"Order {order.order_id} has no trade attached. "
+                        "This may suggest a database corruption. "
+                        f"The expected trade ID is {order.ft_trade_id}. Ignoring this order."
+                    )
+                    continue
                 self.update_trade_state(order.trade, order.order_id, fo,
                                         stoploss_order=(order.ft_order_side == 'stoploss'))
 
