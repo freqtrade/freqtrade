@@ -46,7 +46,7 @@ class FreqaiExampleStrategy(IStrategy):
     std_dev_multiplier_sell = CategoricalParameter(
         [0.75, 1, 1.25, 1.5, 1.75], space="sell", default=1.25, optimize=True)
 
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -58,9 +58,9 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
-        Access metadata such as the current pair/timeframe/period with:
+        Access metadata such as the current pair/timeframe with:
 
-        `metadata["pair"]` `metadata["tf"]` `metadata["period"]`
+        `metadata["pair"]` `metadata["tf"]`
 
         More details on how these config defined parameters accelerate feature engineering
         in the documentation at:
@@ -103,7 +103,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -138,7 +138,7 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -167,7 +167,7 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.

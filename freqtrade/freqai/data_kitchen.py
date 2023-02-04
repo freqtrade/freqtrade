@@ -1253,13 +1253,11 @@ class FreqaiDataKitchen:
             informative_copy = informative_df.copy()
 
             for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
-                metadata["period"] = t
                 df_features = strategy.feature_engineering_expand_all(
                     informative_copy.copy(), t, metadata=metadata)
                 suffix = f"{t}"
                 informative_df = self.merge_features(informative_df, df_features, tf, tf, suffix)
 
-            metadata.pop("period")
             generic_df = strategy.feature_engineering_expand_basic(
                 informative_copy.copy(), metadata=metadata)
             suffix = "gen"

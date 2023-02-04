@@ -16,7 +16,7 @@ Meanwhile, high level feature engineering is handled within `"feature_parameters
 It is advisable to start from the template `feature_engineering_*` functions in the source provided example strategy (found in `templates/FreqaiExampleStrategy.py`) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:
 
 ```python
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -66,7 +66,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -94,7 +94,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -119,7 +119,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -183,7 +183,7 @@ In total, the number of features the user of the presented example strat has cre
  All `feature_engineering_*` and `set_freqai_targets()` functions are passed a `metadata` dictionary which contains information about the `pair`, `tf` (timeframe), and `period` that FreqAI is automating for feature building. As such, a user can use `metadata` inside `feature_engineering_*` functions as criteria for blocking/reserving features for certain timeframes, periods, pairs etc.
 
  ```py
-def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
  if metadata["tf"] == "1h":
     dataframe["%-roc-period"] = ta.ROC(dataframe, timeperiod=period)
 ```

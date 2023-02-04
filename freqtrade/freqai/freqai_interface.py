@@ -324,9 +324,11 @@ class IFreqaiModel(ABC):
                     populate_indicators = False
 
                 dataframe_base_train = dataframe.loc[dataframe["date"] < tr_train.stopdt, :]
-                dataframe_base_train = strategy.set_freqai_targets(dataframe_base_train)
+                dataframe_base_train = strategy.set_freqai_targets(
+                    dataframe_base_train, metadata=metadata)
                 dataframe_base_backtest = dataframe.loc[dataframe["date"] < tr_backtest.stopdt, :]
-                dataframe_base_backtest = strategy.set_freqai_targets(dataframe_base_backtest)
+                dataframe_base_backtest = strategy.set_freqai_targets(
+                    dataframe_base_backtest, metadata=metadata)
 
                 dataframe_train = dk.slice_dataframe(tr_train, dataframe_base_train)
                 dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe_base_backtest)
