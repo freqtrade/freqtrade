@@ -606,6 +606,16 @@ class Exchange:
             raise OperationalException(
                 f'On exchange stoploss is not supported for {self.name}.'
             )
+        if self.trading_mode == TradingMode.FUTURES:
+            price_mapping = self._ft_has.get('stop_price_type_value_mapping', {}).keys()
+            if (
+                order_types.get("stoploss_on_exchange", False) is True
+                and 'stoploss_price_type' in order_types
+                and order_types['stoploss_price_type'] not in price_mapping
+            ):
+                raise OperationalException(
+                    f'On exchange stoploss price type is not supported for {self.name}.'
+                )
 
     def validate_pricing(self, pricing: Dict) -> None:
         if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
