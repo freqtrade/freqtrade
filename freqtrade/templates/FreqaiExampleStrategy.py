@@ -58,6 +58,10 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair/timeframe/period with:
+
+        `metadata["pair"]` `metadata["tf"]` `metadata["period"]`
+
         More details on how these config defined parameters accelerate feature engineering
         in the documentation at:
 
@@ -114,6 +118,10 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair/timeframe with:
+
+        `metadata["pair"]` `metadata["tf"]`
+
         More details on how these config defined parameters accelerate feature engineering
         in the documentation at:
 
@@ -144,6 +152,10 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
+
         More details about feature engineering available:
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
@@ -160,6 +172,10 @@ class FreqaiExampleStrategy(IStrategy):
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
         All targets must be prepended with `&` to be recognized by the FreqAI internals.
+
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
 
         More details about feature engineering available:
 
