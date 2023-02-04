@@ -1060,6 +1060,44 @@ def test_validate_ordertypes(default_conf, mocker):
         Exchange(default_conf)
 
 
+@pytest.mark.parametrize('exchange_name,stopadv, expected', [
+    ('binance', 'last', True),
+    ('binance', 'mark', True),
+    ('binance', 'index', False),
+    ('bybit', 'last', True),
+    ('bybit', 'mark', True),
+    ('bybit', 'index', True),
+    # ('okx', 'last', True),
+    # ('okx', 'mark', True),
+    # ('okx', 'index', True),
+    ])
+def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, stopadv, expected):
+
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    type(api_mock).has = PropertyMock(return_value={'createMarketOrder': True})
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
+    default_conf['order_types'] = {
+        'entry': 'limit',
+        'exit': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
+        'stoploss_price_type': stopadv,
+    }
+    if expected:
+        ExchangeResolver.load_exchange(exchange_name, default_conf)
+    else:
+        with pytest.raises(OperationalException,
+                           match=r'On exchange stoploss price type is not supported for .*'):
+            ExchangeResolver.load_exchange(exchange_name, default_conf)
+
+
 def test_validate_order_types_not_in_config(default_conf, mocker):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
