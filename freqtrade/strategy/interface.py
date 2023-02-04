@@ -636,6 +636,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param df: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
         return dataframe
@@ -663,6 +664,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
@@ -687,6 +689,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         return dataframe
@@ -702,6 +705,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
         :param df: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         return dataframe

@@ -34,6 +34,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
 
         :param df: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
 
@@ -86,6 +87,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
@@ -113,6 +115,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
@@ -130,6 +133,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         `metadata["pair"]`
 
         :param df: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         dataframe["&-s_close"] = (
