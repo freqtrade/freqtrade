@@ -12,7 +12,7 @@ dependencies:
     - py-find-1st
     - aiohttp
     - SQLAlchemy
-    - python-telegram-bot
+    - python-telegram-bot<20.0.0
     - arrow
     - cachetools
     - requests
