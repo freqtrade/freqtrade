@@ -1247,17 +1247,19 @@ class FreqaiDataKitchen:
         tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
 
         for tf in tfs:
+            metadata = {"pair": pair, "tf": tf}
             informative_df = self.get_pair_data_for_features(
                 pair, tf, strategy, corr_dataframes, base_dataframes, is_corr_pairs)
             informative_copy = informative_df.copy()
 
             for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
                 df_features = strategy.feature_engineering_expand_all(
-                    informative_copy.copy(), t)
+                    informative_copy.copy(), t, metadata=metadata)
                 suffix = f"{t}"
                 informative_df = self.merge_features(informative_df, df_features, tf, tf, suffix)
 
-            generic_df = strategy.feature_engineering_expand_basic(informative_copy.copy())
+            generic_df = strategy.feature_engineering_expand_basic(
+                informative_copy.copy(), metadata=metadata)
             suffix = "gen"
 
             informative_df = self.merge_features(informative_df, generic_df, tf, tf, suffix)
@@ -1326,8 +1328,8 @@ class FreqaiDataKitchen:
                 "include_corr_pairlist", [])
             dataframe = self.populate_features(dataframe.copy(), pair, strategy,
                                                corr_dataframes, base_dataframes)
-
-            dataframe = strategy.feature_engineering_standard(dataframe.copy())
+            metadata = {"pair": pair}
+            dataframe = strategy.feature_engineering_standard(dataframe.copy(), metadata=metadata)
             # ensure corr pairs are always last
             for corr_pair in corr_pairs:
                 if pair == corr_pair:
@@ -1336,7 +1338,7 @@ class FreqaiDataKitchen:
                     dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
                                                        corr_dataframes, base_dataframes, True)
 
-            dataframe = strategy.set_freqai_targets(dataframe.copy())
+            dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
 
             self.get_unique_classes_from_labels(dataframe)
 

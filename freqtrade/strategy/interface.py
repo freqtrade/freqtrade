@@ -614,8 +614,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return df
 
-    def feature_engineering_expand_all(self, dataframe: DataFrame,
-                                       period: int, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
+                                       metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -634,13 +634,14 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -662,13 +663,14 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
         return dataframe
 
-    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -686,12 +688,13 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -701,7 +704,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the targets
+        :param dataframe: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         return dataframe
