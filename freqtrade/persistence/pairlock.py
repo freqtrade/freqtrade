@@ -21,9 +21,9 @@ class PairLock(_DECL_BASE):
     side = Column(String(25), nullable=False, default="*")
     reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
-    lock_time = Column(DateTime, nullable=False)
+    lock_time = Column(DateTime(), nullable=False)
     # Time until the pair is locked (end time)
-    lock_end_time = Column(DateTime, nullable=False, index=True)
+    lock_end_time = Column(DateTime(), nullable=False, index=True)
 
     active = Column(Boolean, nullable=False, default=True, index=True)
 

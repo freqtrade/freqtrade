@@ -46,31 +46,31 @@ class Order(_DECL_BASE):
     trade = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
-    ft_order_side: str = Column(String(25), nullable=False)
-    ft_pair: str = Column(String(25), nullable=False)
+    ft_order_side = Column(String(25), nullable=False)
+    ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-    ft_amount = Column(Float, nullable=False)
-    ft_price = Column(Float, nullable=False)
+    ft_amount = Column(Float(), nullable=False)
+    ft_price = Column(Float(), nullable=False)
 
-    order_id: str = Column(String(255), nullable=False, index=True)
+    order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
-    order_type: str = Column(String(50), nullable=True)
+    order_type = Column(String(50), nullable=True)
     side = Column(String(25), nullable=True)
-    price = Column(Float, nullable=True)
-    average = Column(Float, nullable=True)
-    amount = Column(Float, nullable=True)
-    filled = Column(Float, nullable=True)
-    remaining = Column(Float, nullable=True)
-    cost = Column(Float, nullable=True)
-    stop_price = Column(Float, nullable=True)
-    order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
-    order_filled_date = Column(DateTime, nullable=True)
-    order_update_date = Column(DateTime, nullable=True)
+    price = Column(Float(), nullable=True)
+    average = Column(Float(), nullable=True)
+    amount = Column(Float(), nullable=True)
+    filled = Column(Float(), nullable=True)
+    remaining = Column(Float(), nullable=True)
+    cost = Column(Float(), nullable=True)
+    stop_price = Column(Float(), nullable=True)
+    order_date = Column(DateTime(), nullable=True, default=datetime.utcnow)
+    order_filled_date = Column(DateTime(), nullable=True)
+    order_update_date = Column(DateTime(), nullable=True)
 
-    funding_fee = Column(Float, nullable=True)
+    funding_fee = Column(Float(), nullable=True)
 
-    ft_fee_base = Column(Float, nullable=True)
+    ft_fee_base = Column(Float(), nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
@@ -1177,44 +1177,44 @@ class Trade(_DECL_BASE, LocalTrade):
     base_currency = Column(String(25), nullable=True)
     stake_currency = Column(String(25), nullable=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
-    fee_open = Column(Float, nullable=False, default=0.0)
-    fee_open_cost = Column(Float, nullable=True)
+    fee_open = Column(Float(), nullable=False, default=0.0)
+    fee_open_cost = Column(Float(), nullable=True)
     fee_open_currency = Column(String(25), nullable=True)
-    fee_close = Column(Float, nullable=False, default=0.0)
-    fee_close_cost = Column(Float, nullable=True)
+    fee_close = Column(Float(), nullable=False, default=0.0)
+    fee_close_cost = Column(Float(), nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
-    open_rate: float = Column(Float)
-    open_rate_requested = Column(Float)
+    open_rate: float = Column(Float())
+    open_rate_requested = Column(Float())
     # open_trade_value - calculated via _calc_open_trade_value
-    open_trade_value = Column(Float)
-    close_rate: Optional[float] = Column(Float)
-    close_rate_requested = Column(Float)
-    realized_profit = Column(Float, default=0.0)
-    close_profit = Column(Float)
-    close_profit_abs = Column(Float)
-    stake_amount = Column(Float, nullable=False)
-    max_stake_amount = Column(Float)
-    amount = Column(Float)
-    amount_requested = Column(Float)
-    open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
-    close_date = Column(DateTime)
+    open_trade_value = Column(Float())
+    close_rate: Optional[float] = Column(Float())
+    close_rate_requested = Column(Float())
+    realized_profit = Column(Float(), default=0.0)
+    close_profit = Column(Float())
+    close_profit_abs = Column(Float())
+    stake_amount = Column(Float(), nullable=False)
+    max_stake_amount = Column(Float())
+    amount = Column(Float())
+    amount_requested = Column(Float())
+    open_date = Column(DateTime(), nullable=False, default=datetime.utcnow)
+    close_date = Column(DateTime())
     open_order_id = Column(String(255))
     # absolute value of the stop loss
-    stop_loss = Column(Float, nullable=True, default=0.0)
+    stop_loss = Column(Float(), nullable=True, default=0.0)
     # percentage value of the stop loss
-    stop_loss_pct = Column(Float, nullable=True)
+    stop_loss_pct = Column(Float(), nullable=True)
     # absolute value of the initial stop loss
-    initial_stop_loss = Column(Float, nullable=True, default=0.0)
+    initial_stop_loss = Column(Float(), nullable=True, default=0.0)
     # percentage value of the initial stop loss
-    initial_stop_loss_pct = Column(Float, nullable=True)
+    initial_stop_loss_pct = Column(Float(), nullable=True)
     # stoploss order id which is on exchange
     stoploss_order_id = Column(String(255), nullable=True, index=True)
     # last update time of the stoploss order on exchange
-    stoploss_last_update = Column(DateTime, nullable=True)
+    stoploss_last_update = Column(DateTime(), nullable=True)
     # absolute value of the highest reached price
-    max_rate = Column(Float, nullable=True, default=0.0)
+    max_rate = Column(Float(), nullable=True, default=0.0)
     # Lowest price reached
-    min_rate = Column(Float, nullable=True)
+    min_rate = Column(Float(), nullable=True)
     exit_reason = Column(String(100), nullable=True)
     exit_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
@@ -1222,21 +1222,21 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     trading_mode = Column(Enum(TradingMode), nullable=True)
-    amount_precision = Column(Float, nullable=True)
-    price_precision = Column(Float, nullable=True)
+    amount_precision = Column(Float(), nullable=True)
+    price_precision = Column(Float(), nullable=True)
     precision_mode = Column(Integer, nullable=True)
-    contract_size = Column(Float, nullable=True)
+    contract_size = Column(Float(), nullable=True)
 
     # Leverage trading properties
-    leverage = Column(Float, nullable=True, default=1.0)
+    leverage = Column(Float(), nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=False, default=False)
-    liquidation_price = Column(Float, nullable=True)
+    liquidation_price = Column(Float(), nullable=True)
 
     # Margin Trading Properties
-    interest_rate = Column(Float, nullable=False, default=0.0)
+    interest_rate = Column(Float(), nullable=False, default=0.0)
 
     # Futures properties
-    funding_fees = Column(Float, nullable=True, default=None)
+    funding_fees = Column(Float(), nullable=True, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
