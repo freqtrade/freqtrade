@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pycqa/flake8
-    rev: "4.0.1"
+    rev: "6.0.0"
     hooks:
       - id: flake8
         # stages: [push]
@@ -21,14 +21,14 @@ repos:
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort
-    rev: "5.10.1"
+    rev: "5.12.0"
     hooks:
       - id: isort
         name: isort (python)
         # stages: [push]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.4.0
+    rev: v4.4.0
     hooks:
       - id: end-of-file-fixer
         exclude: |
