@@ -177,8 +177,7 @@ class FtRestClient():
         return self._get("version")
 
     def show_config(self):
-        """
-        Returns part of the configuration, relevant for trading operations.
+        """ Returns part of the configuration, relevant for trading operations.
         :return: json object containing the version
         """
         return self._get("show_config")
@@ -231,6 +230,14 @@ class FtRestClient():
         :return: json object
         """
         return self._delete(f"trades/{trade_id}")
+
+    def cancel_open_order(self, trade_id):
+        """Cancel open order for trade.
+
+        :param trade_id: Cancels open orders for this trade.
+        :return: json object
+        """
+        return self._delete(f"trades/{trade_id}/open-order")
 
     def whitelist(self):
         """Show the current whitelist.

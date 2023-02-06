@@ -174,6 +174,7 @@ class Telegram(RPCHandler):
                 self._force_enter, order_side=SignalDirection.SHORT)),
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
+            CommandHandler(['coo', 'cancel_open_order'], self._cancel_open_order),
             CommandHandler('performance', self._performance),
             CommandHandler(['buys', 'entries'], self._enter_tag_performance),
             CommandHandler(['sells', 'exits'], self._exit_reason_performance),
@@ -1144,10 +1145,25 @@ class Telegram(RPCHandler):
             raise RPCException("Trade-id not set.")
         trade_id = int(context.args[0])
         msg = self._rpc._rpc_delete(trade_id)
-        self._send_msg((
+        self._send_msg(
             f"`{msg['result_msg']}`\n"
             'Please make sure to take care of this asset on the exchange manually.'
-        ))
+        )
+
+    @authorized_only
+    def _cancel_open_order(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /cancel_open_order <id>.
+        Cancel open order for tradeid
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        if not context.args or len(context.args) == 0:
+            raise RPCException("Trade-id not set.")
+        trade_id = int(context.args[0])
+        self._rpc._rpc_cancel_open_order(trade_id)
+        self._send_msg('Open order canceled.')
 
     @authorized_only
     def _performance(self, update: Update, context: CallbackContext) -> None:
@@ -1456,6 +1472,10 @@ class Telegram(RPCHandler):
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
+            "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
+            "Only valid when the trade has open orders.`\n"
+            "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"
+
             "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
             "order and/or only displaying the base currency of each pairing.`\n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "

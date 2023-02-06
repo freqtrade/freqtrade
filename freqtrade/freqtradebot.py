@@ -363,7 +363,7 @@ class FreqtradeBot(LoggingMixin):
                         "Order is older than 5 days. Assuming order was fully cancelled.")
                     fo = order.to_ccxt_object()
                     fo['status'] = 'canceled'
-                    self.handle_timedout_order(fo, order.trade)
+                    self.handle_cancel_order(fo, order.trade, constants.CANCEL_REASON['TIMEOUT'])
 
             except ExchangeError as e:
 
@@ -1263,11 +1263,11 @@ class FreqtradeBot(LoggingMixin):
             if not_closed:
                 if fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
                    trade, order_obj, datetime.now(timezone.utc))):
-                    self.handle_timedout_order(order, trade)
+                    self.handle_cancel_order(order, trade, constants.CANCEL_REASON['TIMEOUT'])
                 else:
                     self.replace_order(order, order_obj, trade)
 
-    def handle_timedout_order(self, order: Dict, trade: Trade) -> None:
+    def handle_cancel_order(self, order: Dict, trade: Trade, reason: str) -> None:
         """
         Check if current analyzed order timed out and cancel if necessary.
         :param order: Order dict grabbed with exchange.fetch_order()
@@ -1275,10 +1275,10 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         if order['side'] == trade.entry_side:
-            self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+            self.handle_cancel_enter(trade, order, reason)
         else:
             canceled = self.handle_cancel_exit(
-                trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                trade, order, reason)
             canceled_count = trade.get_exit_order_count()
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
             if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:

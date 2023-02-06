@@ -41,7 +41,8 @@ logger = logging.getLogger(__name__)
 # 2.21: Add new_candle messagetype
 # 2.22: Add FreqAI to backtesting
 # 2.23: Allow plot config request in webserver mode
-API_VERSION = 2.23
+# 2.24: Add cancel_open_order endpoint
+API_VERSION = 2.24
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -121,6 +122,12 @@ def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
 def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete(tradeid)
+
+
+@router.delete('/trades/{tradeid}/open-order', response_model=OpenTradeSchema,  tags=['trading'])
+def cancel_open_order(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_cancel_open_order(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
 
 
 # TODO: Missing response model
