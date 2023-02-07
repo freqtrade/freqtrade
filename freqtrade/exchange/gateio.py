@@ -56,8 +56,7 @@ class Gateio(Exchange):
             if any(v == 'market' for k, v in order_types.items()):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
-        else:
-            super().validate_ordertypes(order_types)
+        super().validate_stop_ordertypes(order_types)
 
     def _get_params(
             self,

@@ -600,7 +600,12 @@ class Exchange:
             if not self.exchange_has('createMarketOrder'):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+        self.validate_stop_ordertypes(order_types)
 
+    def validate_stop_ordertypes(self, order_types: Dict) -> None:
+        """
+        Validate stoploss order types
+        """
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
             raise OperationalException(
