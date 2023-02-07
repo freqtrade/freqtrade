@@ -7,6 +7,7 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from math import floor
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
@@ -2494,7 +2495,9 @@ class Exchange:
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
             # Some exchanges only support one margin_mode type
             return
-
+        if self._ft_has.get('floor_leverage', False) is True:
+            # Rounding for binance ...
+            leverage = floor(leverage)
         try:
             res = self._api.set_leverage(symbol=pair, leverage=leverage)
             self._log_exchange_response('set_leverage', res)

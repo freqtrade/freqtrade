@@ -32,6 +32,7 @@ class Binance(Exchange):
     _ft_has_futures: Dict = {
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "tickers_have_price": False,
+        "floor_leverage": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -80,33 +81,6 @@ class Binance(Exchange):
                 f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
                 ) from e
 
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    @retrier
-    def _set_leverage(
-        self,
-        leverage: float,
-        pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None,
-        accept_fail: bool = False,
-    ):
-        """
-        Set's the leverage before making a trade, in order to not
-        have the same leverage on every trade
-        """
-        trading_mode = trading_mode or self.trading_mode
-
-        if self._config['dry_run'] or trading_mode != TradingMode.FUTURES:
-            return
-
-        try:
-            self._api.set_leverage(symbol=pair, leverage=round(leverage))
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
