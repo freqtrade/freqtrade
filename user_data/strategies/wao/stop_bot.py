@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 from execution.config import Config
-from execution.broker.binance_future_broker import Binance_Future_Broker
+from execution.broker.binance_future_ccxt_broker import Binance_Future_Ccxt_broker
 from execution.broker.binance_spot_broker import Binance_Spot_Broker
 from execution.notifier import Notifier
 
@@ -20,7 +20,7 @@ else:
     notifier = Notifier(is_test_mode)
 
     if Config.IS_BINANCE_FUTURE_MODE:
-        broker = Binance_Future_Broker(notifier)
+        broker = Binance_Future_Ccxt_broker(notifier)
     else:
         broker = Binance_Spot_Broker(notifier)
 
