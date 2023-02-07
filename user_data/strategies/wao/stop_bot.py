@@ -18,6 +18,7 @@ else:
     reason = str(sys.argv[4]).replace("_", "#") + " " + Config.COIN
 
     notifier = Notifier(is_test_mode)
+    print("stop_bot: is_test_mode="+str(is_test_mode) +  ", brain="+ Config.BRAIN + ", coin="+ Config.COIN + ", reason=" + str(reason))
 
     if Config.IS_BINANCE_FUTURE_MODE:
         broker = Binance_Future_Ccxt_broker(notifier)
