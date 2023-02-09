@@ -5028,7 +5028,7 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert log_has_re(r"Error updating Order .*", caplog)
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
-    hto_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_timedout_order')
+    hto_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_order')
     # Orders which are no longer found after X days should be assumed as canceled.
     freqtrade.startup_update_open_orders()
     assert log_has_re(r"Order is older than \d days.*", caplog)

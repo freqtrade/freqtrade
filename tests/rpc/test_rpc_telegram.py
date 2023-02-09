@@ -99,7 +99,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
                    "['forcesell', 'forceexit', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
-                   "['trades'], ['delete'], ['performance'], "
+                   "['trades'], ['delete'], ['coo', 'cancel_open_order'], ['performance'], "
                    "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
@@ -1676,6 +1676,40 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short):
     msg_mock.call_count == 1
     assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
     assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
+
+
+@pytest.mark.parametrize('is_short', [True, False])
+def test_telegram_delete_open_order(mocker, update, default_conf, fee, is_short, ticker):
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+    )
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    context = MagicMock()
+    context.args = []
+
+    telegram._cancel_open_order(update=update, context=context)
+    assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee, is_short=is_short)
+
+    context = MagicMock()
+    context.args = [5]
+    telegram._cancel_open_order(update=update, context=context)
+    assert "No open order for trade_id" in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 return_value=trade.orders[-1].to_ccxt_object())
+    context = MagicMock()
+    context.args = [6]
+    telegram._cancel_open_order(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert "Open order canceled." in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:
