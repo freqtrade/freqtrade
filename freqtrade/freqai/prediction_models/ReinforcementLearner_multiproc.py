@@ -34,7 +34,7 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
-        env_info = self.pack_env_dict()
+        env_info = self.pack_env_dict(dk.pair)
 
         env_id = "train_env"
         self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1,
