@@ -27,7 +27,7 @@ from tests.conftest import (generate_test_data_raw, get_mock_coro, get_patched_e
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gateio']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -1783,7 +1783,7 @@ def test_fetch_trading_fees(default_conf, mocker):
             'maker': 0.0,
             'taker': 0.0005}
     }
-    exchange_name = 'gateio'
+    exchange_name = 'gate'
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
@@ -3147,24 +3147,24 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
 def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', return_value={'for': 123})
-    mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', return_value={'for': 123})
+    mocker.patch('freqtrade.exchange.Gate.fetch_stoploss_order', return_value={'for': 123})
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     res = {'fee': {}, 'status': 'canceled', 'amount': 1234}
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value=res)
-    mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value=res)
+    mocker.patch('freqtrade.exchange.Gate.cancel_stoploss_order', return_value=res)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == res
 
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value='canceled')
-    mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value='canceled')
+    mocker.patch('freqtrade.exchange.Gate.cancel_stoploss_order', return_value='canceled')
     # Fall back to fetch_stoploss_order
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == {'for': 123}
 
     exc = InvalidOrderException("")
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', side_effect=exc)
-    mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', side_effect=exc)
+    mocker.patch('freqtrade.exchange.Gate.fetch_stoploss_order', side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co['amount'] == 555
     assert co == {'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
@@ -3172,7 +3172,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     with pytest.raises(InvalidOrderException):
         exc = InvalidOrderException("Did not find order")
         mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', side_effect=exc)
-        mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', side_effect=exc)
+        mocker.patch('freqtrade.exchange.Gate.cancel_stoploss_order', side_effect=exc)
         exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
@@ -3952,14 +3952,14 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("bittrex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("bittrex", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("bittrex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
-    ("gateio", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("gate", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("okx", TradingMode.SPOT, None, False),
     ("okx", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("okx", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("okx", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
-    ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    ("gate", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
@@ -3967,16 +3967,16 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("kraken", TradingMode.FUTURES, MarginMode.CROSS, True),
-    ("gateio", TradingMode.MARGIN, MarginMode.CROSS, True),
-    ("gateio", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("gate", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("gate", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     # * Uncomment once implemented
     # ("binance", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("binance", TradingMode.FUTURES, MarginMode.CROSS, False),
     # ("kraken", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("kraken", TradingMode.FUTURES, MarginMode.CROSS, False),
-    # ("gateio", TradingMode.MARGIN, MarginMode.CROSS, False),
-    # ("gateio", TradingMode.FUTURES, MarginMode.CROSS, False),
+    # ("gate", TradingMode.MARGIN, MarginMode.CROSS, False),
+    # ("gate", TradingMode.FUTURES, MarginMode.CROSS, False),
 ])
 def test_validate_trading_mode_and_margin_mode(
     default_conf,
@@ -4001,7 +4001,7 @@ def test_validate_trading_mode_and_margin_mode(
     ("binance", "futures", {"options": {"defaultType": "swap"}}),
     ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "swap"}}),
-    ("gateio", "futures", {"options": {"defaultType": "swap"}}),
+    ("gate", "futures", {"options": {"defaultType": "swap"}}),
     ("hitbtc", "futures", {"options": {"defaultType": "swap"}}),
     ("kraken", "futures", {"options": {"defaultType": "swap"}}),
     ("kucoin", "futures", {"options": {"defaultType": "swap"}}),
@@ -4032,7 +4032,7 @@ def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value,
     default_conf['margin_mode'] = 'isolated'
     api_mock = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gate")
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 
@@ -4177,10 +4177,10 @@ def test_combine_funding_and_mark(
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0012443999999999999),
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 12:00:00", 30.0,  0.0045759),
     # ('kraken', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0008289),
-    ('gateio', 0, 2, "2021-09-01 00:10:00", "2021-09-01 04:00:00",  30.0, 0.0),
-    ('gateio', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999),
-    ('gateio', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999),
-    ('gateio', 1, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
+    ('gate', 0, 2, "2021-09-01 00:10:00", "2021-09-01 04:00:00",  30.0, 0.0),
+    ('gate', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999),
+    ('gate', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999),
+    ('gate', 1, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', 0,  2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235),
     # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
@@ -4238,7 +4238,7 @@ def test__fetch_and_calculate_funding_fees(
     d2 = datetime.strptime(f"{d2} +0000", '%Y-%m-%d %H:%M:%S %z')
     funding_rate_history = {
         'binance': funding_rate_history_octohourly,
-        'gateio': funding_rate_history_octohourly,
+        'gate': funding_rate_history_octohourly,
     }[exchange][rate_start:rate_end]
     api_mock = MagicMock()
     api_mock.fetch_funding_rate_history = get_mock_coro(return_value=funding_rate_history)
@@ -4267,7 +4267,7 @@ def test__fetch_and_calculate_funding_fees(
 
 @pytest.mark.parametrize('exchange,expected_fees', [
     ('binance', -0.0009140999999999999),
-    ('gateio', -0.0009140999999999999),
+    ('gate', -0.0009140999999999999),
 ])
 def test__fetch_and_calculate_funding_fees_datetime_called(
     mocker,
@@ -4408,7 +4408,7 @@ def test__order_contracts_to_amount(
             'info': {},
         },
         {
-            # Realistic stoploss order on gateio.
+            # Realistic stoploss order on gate.
             'id': '123456380',
             'clientOrderId': '12345638203',
             'timestamp': None,
@@ -5006,7 +5006,7 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
         exchange.get_max_leverage("BTC/USDT:USDT", 1000000000.01)
 
 
-@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gateio', 'okx'])
+@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gate', 'okx'])
 def test__get_params(mocker, default_conf, exchange_name):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
@@ -5161,8 +5161,8 @@ def test_get_liquidation_price1(mocker, default_conf):
     "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
         (False, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
         (True, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
-        (False, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
-        (True, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'gate', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'gate', '', 5.0,  10.0, 1.0, None),
         (False, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
         (True, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
         # Binance, short
@@ -5175,15 +5175,15 @@ def test_get_liquidation_price1(mocker, default_conf):
         (False, 'futures', 'binance', 'isolated', 5, 8, 1.0, 6.454545454545454),
         (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.723905723905723),
         (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 8.063973063973064),
-        # Gateio/okx, short
-        (True, 'futures', 'gateio', 'isolated', 5, 10, 1.0, 11.87413417771621),
-        (True, 'futures', 'gateio', 'isolated', 5, 10, 2.0, 11.87413417771621),
-        (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.193482419684678),
-        (True, 'futures', 'gateio', 'isolated', 5, 8, 1.0, 9.499307342172967),
+        # Gate/okx, short
+        (True, 'futures', 'gate', 'isolated', 5, 10, 1.0, 11.87413417771621),
+        (True, 'futures', 'gate', 'isolated', 5, 10, 2.0, 11.87413417771621),
+        (True, 'futures', 'gate', 'isolated', 3, 10, 1.0, 13.193482419684678),
+        (True, 'futures', 'gate', 'isolated', 5, 8, 1.0, 9.499307342172967),
         (True, 'futures', 'okx', 'isolated', 3, 10, 1.0, 13.193482419684678),
-        # Gateio/okx, long
-        (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
-        (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
+        # Gate/okx, long
+        (False, 'futures', 'gate', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
+        (False, 'futures', 'gate', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
         (False, 'futures', 'okx', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
         # bybit, long
         (False, 'futures', 'bybit', 'isolated', 1.0, 10.0, 1.0, 0.1),
@@ -5240,7 +5240,7 @@ def test_get_liquidation_price(
     leverage = 5, open_rate = 10, amount = 0.6
         ((1.6 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 7.39057239057239
 
-    Gateio/Okx, Short
+    Gate/Okx, Short
     leverage = 5, open_rate = 10, amount = 1.0
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
@@ -5251,7 +5251,7 @@ def test_get_liquidation_price(
     leverage = 5, open_rate = 8, amount = 1.0
         (8 + (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 9.499307342172967
 
-    Gateio/Okx, Long
+    Gate/Okx, Long
     leverage = 5, open_rate = 10, amount = 1.0
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
@@ -5266,7 +5266,7 @@ def test_get_liquidation_price(
     default_conf_usdt['trading_mode'] = trading_mode
     default_conf_usdt['exchange']['name'] = exchange_name
     default_conf_usdt['margin_mode'] = margin_mode
-    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
+    mocker.patch('freqtrade.exchange.Gate.validate_ordertypes')
     exchange = get_patched_exchange(mocker, default_conf_usdt, id=exchange_name)
 
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))

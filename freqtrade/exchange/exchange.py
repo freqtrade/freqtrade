@@ -2780,7 +2780,7 @@ class Exchange:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
-         gateio: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
+         gate: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
          > Liquidation Price = (Entry Price ± Margin / Contract Multiplier / Size) /
                                 [ 1 ± (Maintenance Margin Ratio + Taker Rate)]
             Wherein, "+" or "-" depends on whether the contract goes long or short:
@@ -2801,7 +2801,7 @@ class Exchange:
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
 
-        # * Not required by Gateio or OKX
+        # * Not required by Gate or OKX
         :param mm_ex_1:
         :param upnl_ex_1:
         """

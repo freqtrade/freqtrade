@@ -17,7 +17,7 @@ from freqtrade.exchange.exchange_utils import (amount_to_contract_precision, amo
                                                timeframe_to_next_date, timeframe_to_prev_date,
                                                timeframe_to_seconds, validate_exchange,
                                                validate_exchanges)
-from freqtrade.exchange.gateio import Gateio
+from freqtrade.exchange.gate import Gate
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.huobi import Huobi
 from freqtrade.exchange.kraken import Kraken
