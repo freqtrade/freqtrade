@@ -52,6 +52,17 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
+### stoploss_price_type
+
+!!! Warning "Only applies to futures"
+    `stoploss_price_type` only applies to futures markets (on exchanges where it's available).
+    Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
+
+Stoploss on exchange on futures markets can trigger on different price types.
+The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".
+
+Acceptable values for this setting are `"last"`, `"mark"` and `"index"` - which freqtrade will transfer automatically to the corresponding API type, and place the [stoploss on exchange](#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio) order correspondingly.
+
 ### force_exit
 
 `force_exit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.

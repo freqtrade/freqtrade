@@ -5,7 +5,7 @@ bot constants
 """
 from typing import Any, Dict, List, Literal, Tuple
 
-from freqtrade.enums import CandleType, RPCMessageType
+from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 
 DEFAULT_CONFIG = 'config.json'
@@ -25,6 +25,7 @@ PRICING_SIDES = ['ask', 'bid', 'same', 'other']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 _ORDERTIF_POSSIBILITIES = ['GTC', 'FOK', 'IOC', 'PO']
 ORDERTIF_POSSIBILITIES = _ORDERTIF_POSSIBILITIES + [t.lower() for t in _ORDERTIF_POSSIBILITIES]
+STOPLOSS_PRICE_TYPES = [p for p in PriceType]
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
@@ -229,6 +230,7 @@ CONF_SCHEMA = {
                     'default': 'market'},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
+                'stoploss_price_type': {'type': 'string', 'enum': STOPLOSS_PRICE_TYPES},
                 'stoploss_on_exchange_interval': {'type': 'number'},
                 'stoploss_on_exchange_limit_ratio': {'type': 'number', 'minimum': 0.0,
                                                      'maximum': 1.0}

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
-from freqtrade.enums import CandleType, MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
@@ -33,6 +33,11 @@ class Binance(Exchange):
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "tickers_have_price": False,
         "floor_leverage": True,
+        "stop_price_type_field": "workingType",
+        "stop_price_type_value_mapping": {
+            PriceType.LAST: "CONTRACT_PRICE",
+            PriceType.MARK: "MARK_PRICE",
+        },
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

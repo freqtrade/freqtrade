@@ -50,7 +50,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     api_mock.create_order.reset_mock()
-    order_types = {'stoploss': 'limit'}
+    order_types = {'stoploss': 'limit', 'stoploss_price_type': 'mark'}
     if limitratio is not None:
         order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
 
@@ -75,7 +75,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     if trademode == TradingMode.SPOT:
         params_dict = {'stopPrice': 220}
     else:
-        params_dict = {'stopPrice': 220, 'reduceOnly': True}
+        params_dict = {'stopPrice': 220, 'reduceOnly': True, 'workingType': 'MARK_PRICE'}
     assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling

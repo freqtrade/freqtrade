@@ -34,6 +34,13 @@ class Gateio(Exchange):
         "needs_trading_fees": True,
         "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
+        # TODO: Reenable once https://github.com/ccxt/ccxt/issues/16749 is available
+        # "stop_price_type_field": "price_type",
+        # "stop_price_type_value_mapping": {
+        #     PriceType.LAST: 0,
+        #     PriceType.MARK: 1,
+        #     PriceType.INDEX: 2,
+        # },
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -49,6 +56,7 @@ class Gateio(Exchange):
             if any(v == 'market' for k, v in order_types.items()):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+        super().validate_stop_ordertypes(order_types)
 
     def _get_params(
             self,

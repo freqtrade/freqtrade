@@ -18,8 +18,8 @@ def test_validate_order_types_gateio(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
-    mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
-    exch = ExchangeResolver.load_exchange('gateio', default_conf, True)
+    mocker.patch('freqtrade.exchange.Exchange.name', 'Gate')
+    exch = ExchangeResolver.load_exchange('gate', default_conf, True)
     assert isinstance(exch, Gateio)
 
     default_conf['order_types'] = {
