@@ -143,7 +143,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
-        env_info = self.pack_env_dict()
+        env_info = self.pack_env_dict(dk.pair)
 
         self.train_env = self.MyRLEnv(df=train_df,
                                       prices=prices_train,
@@ -158,7 +158,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         actions = self.train_env.get_actions()
         self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
 
-    def pack_env_dict(self) -> Dict[str, Any]:
+    def pack_env_dict(self, pair: str) -> Dict[str, Any]:
         """
         Create dictionary of environment arguments
         """
@@ -166,7 +166,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                     "reward_kwargs": self.reward_params,
                     "config": self.config,
                     "live": self.live,
-                    "can_short": self.can_short}
+                    "can_short": self.can_short,
+                    "pair": pair}
         if self.data_provider:
             env_info["fee"] = self.data_provider._exchange \
                 .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore
@@ -363,10 +364,19 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             pnl = self.get_unrealized_profit()
             factor = 100.
 
+            # you can use feature values from dataframe
+            rsi_now = self.df[f"%-rsi-period-10_shift-1_{self.pair}_"
+                              f"{self.config['timeframe']}"].iloc[self._current_tick]
+
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
                     and self._position == Positions.Neutral):
-                return 25
+                if rsi_now < 40:
+                    factor = 40 / rsi_now
+                else:
+                    factor = 1
+                return 25 * factor
+
             # discourage agent from not entering trades
             if action == Actions.Neutral.value and self._position == Positions.Neutral:
                 return -1
