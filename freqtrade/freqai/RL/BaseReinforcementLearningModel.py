@@ -1,3 +1,4 @@
+import copy
 import importlib
 import logging
 from abc import abstractmethod
@@ -50,6 +51,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.eval_callback: Optional[EvalCallback] = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
+        self.df_raw: DataFrame = DataFrame()
         self.continual_learning = self.freqai_info.get('continual_learning', False)
         if self.model_type in SB3_MODELS:
             import_str = 'stable_baselines3'
@@ -107,6 +109,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         data_dictionary: Dict[str, Any] = dk.make_train_test_datasets(
             features_filtered, labels_filtered)
+        self.df_raw = copy.deepcopy(data_dictionary["train_features"])
         dk.fit_labels()  # FIXME useless for now, but just satiating append methods
 
         # normalize all data based on train_dataset only
@@ -167,7 +170,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                     "config": self.config,
                     "live": self.live,
                     "can_short": self.can_short,
-                    "pair": pair}
+                    "pair": pair,
+                    "df_raw": self.df_raw}
         if self.data_provider:
             env_info["fee"] = self.data_provider._exchange \
                 .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore
@@ -365,8 +369,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             factor = 100.
 
             # you can use feature values from dataframe
-            rsi_now = self.df[f"%-rsi-period-10_shift-1_{self.pair}_"
-                              f"{self.config['timeframe']}"].iloc[self._current_tick]
+            rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
+                                        f"{self.config['timeframe']}"].iloc[self._current_tick]
 
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)

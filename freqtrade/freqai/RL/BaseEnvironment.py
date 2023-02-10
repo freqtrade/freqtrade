@@ -45,7 +45,8 @@ class BaseEnvironment(gym.Env):
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
-                 fee: float = 0.0015, can_short: bool = False, pair: str = ""):
+                 fee: float = 0.0015, can_short: bool = False, pair: str = "",
+                 df_raw: DataFrame = DataFrame()):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -67,6 +68,7 @@ class BaseEnvironment(gym.Env):
         self.max_drawdown: float = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
         self.compound_trades: bool = config['stake_amount'] == 'unlimited'
         self.pair: str = pair
+        self.raw_features: DataFrame = df_raw
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
         else:
@@ -94,8 +96,7 @@ class BaseEnvironment(gym.Env):
         :param reward_kwargs: extra config settings assigned by user in `rl_config`
         :param starting_point: start at edge of window or not
         """
-        self.df: DataFrame = df
-        self.signal_features: DataFrame = self.df
+        self.signal_features: DataFrame = df
         self.prices: DataFrame = prices
         self.window_size: int = window_size
         self.starting_point: bool = starting_point

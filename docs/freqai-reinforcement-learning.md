@@ -177,7 +177,7 @@ As you begin to modify the strategy and the prediction model, you will quickly r
                 factor = 100
 
             # you can use feature values from dataframe
-            rsi_now = self.df[f"%-rsi-period-10_shift-1_{self.pair}_"
+            rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
                               f"{self.config['timeframe']}"].iloc[self._current_tick]
 
             # reward agent for entering trades
