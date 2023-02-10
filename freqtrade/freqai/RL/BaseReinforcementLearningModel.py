@@ -348,7 +348,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         sets a custom reward based on profit and trade duration.
         """
 
-        def calculate_reward(self, action: int) -> float:
+        def calculate_reward(self, action: int) -> float:  # noqa: C901
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
