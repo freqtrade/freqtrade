@@ -1070,9 +1070,9 @@ def test_validate_ordertypes(default_conf, mocker):
     # ('okx', 'last', True),
     # ('okx', 'mark', True),
     # ('okx', 'index', True),
-    ('gate', 'last', False),
-    ('gate', 'mark', False),
-    ('gate', 'index', False),
+    ('gate', 'last', True),
+    ('gate', 'mark', True),
+    ('gate', 'index', True),
     ])
 def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, stopadv, expected):
 

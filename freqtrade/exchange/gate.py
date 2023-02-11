@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.constants import BuySell
-from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums import MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import safe_value_fallback2
@@ -34,13 +34,12 @@ class Gate(Exchange):
         "needs_trading_fees": True,
         "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
-        # TODO: Reenable once https://github.com/ccxt/ccxt/issues/16749 is available
-        # "stop_price_type_field": "price_type",
-        # "stop_price_type_value_mapping": {
-        #     PriceType.LAST: 0,
-        #     PriceType.MARK: 1,
-        #     PriceType.INDEX: 2,
-        # },
+        "stop_price_type_field": "price_type",
+        "stop_price_type_value_mapping": {
+            PriceType.LAST: 0,
+            PriceType.MARK: 1,
+            PriceType.INDEX: 2,
+        },
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
