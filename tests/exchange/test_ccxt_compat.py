@@ -336,7 +336,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         yield exchange, request.param
 
 
-# @pytest.mark.longrun
+@pytest.mark.longrun
 class TestCCXTExchange():
 
     def test_load_markets(self, exchange: EXCHANGE_FIXTURE_TYPE):
