@@ -666,7 +666,7 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 ### Using proxy with Freqtrade
 
 To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
-This will have the proxy settings applied to everything (telegram, coingecko, ...) except exchange requests.
+This will have the proxy settings applied to everything (telegram, coingecko, ...) **except** for exchange requests.
 
 ``` bash
 export HTTP_PROXY="http://addr:port"
@@ -682,11 +682,12 @@ To use a proxy for exchange connections - you will have to define the proxies as
 { 
   "exchange": {
     "ccxt_config": {
-    "aiohttp_proxy": "http://addr:port",
-    "proxies": {
-      "http": "http://addr:port",
-      "https": "http://addr:port"
-    },
+      "aiohttp_proxy": "http://addr:port",
+      "proxies": {
+        "http": "http://addr:port",
+        "https": "http://addr:port"
+      },
+    }
   }
 }
 ```
