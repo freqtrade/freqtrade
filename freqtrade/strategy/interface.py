@@ -12,7 +12,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RunMode, SignalDirection,
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection,  RunMode, SignalDirection,
                              SignalTagType, SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
@@ -121,6 +121,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
+
+    # A self set parameter that represents the market direction. filled from configuration
+    market_direction: MarketDirection = MarketDirection.NONE
 
     def __init__(self, config: Config) -> None:
         self.config = config
