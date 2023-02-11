@@ -234,7 +234,7 @@ This will perform PCA on the features and reduce their dimensionality so that th
 
 ## Inlier metric
 
-The `inlier_metric` is a metric aimed at quantifying how similar a the features of a data point are to the most recent historic data points. 
+The `inlier_metric` is a metric aimed at quantifying how similar the features of a data point are to the most recent historical data points. 
 
 You define the lookback window by setting `inlier_metric_window` and FreqAI computes the distance between the present time point and each of the previous `inlier_metric_window` lookback points. A Weibull function is fit to each of the lookback distributions and its cumulative distribution function (CDF) is used to produce a quantile for each lookback point. The `inlier_metric` is then computed for each time point as the average of the corresponding lookback quantiles. The figure below explains the concept for an `inlier_metric_window` of 5.
 
