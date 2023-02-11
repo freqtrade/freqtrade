@@ -57,6 +57,7 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 !!! Warning "Only applies to futures"
     `stoploss_price_type` only applies to futures markets (on exchanges where it's available).
     Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
+    Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.
 
 Stoploss on exchange on futures markets can trigger on different price types.
 The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".
