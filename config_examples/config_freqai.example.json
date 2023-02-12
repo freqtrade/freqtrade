@@ -21,8 +21,8 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "1INCH/USDT",
-            "ALGO/USDT"
+            "1INCH/USDT:USDT",
+            "ALGO/USDT:USDT"
         ],
         "pair_blacklist": []
     },
@@ -60,8 +60,8 @@
                 "1h"
             ],
             "include_corr_pairlist": [
-                "BTC/USDT",
-                "ETH/USDT"
+                "BTC/USDT:USDT",
+                "ETH/USDT:USDT"
             ],
             "label_period_candles": 20,
             "include_shifted_candles": 2,

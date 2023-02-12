@@ -197,7 +197,7 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
 def calculate_expectancy(trades: pd.DataFrame) -> float:
     """
     Calculate expectancy
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :return: expectancy
     """
     if len(trades) == 0:

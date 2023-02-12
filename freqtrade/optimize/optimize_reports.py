@@ -8,7 +8,7 @@ from pandas import DataFrame, to_datetime
 from tabulate import tabulate
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT,
-                                 Config)
+                                 Config, IntOrInf)
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
@@ -191,7 +191,7 @@ def generate_tag_metrics(tag_type: str,
         return []
 
 
-def generate_exit_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
+def generate_exit_reason_stats(max_open_trades: IntOrInf, results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param max_open_trades: Max_open_trades parameter

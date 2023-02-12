@@ -80,6 +80,7 @@ from freqtrade.resolvers import StrategyResolver
 from freqtrade.data.dataprovider import DataProvider
 strategy = StrategyResolver.load_strategy(config)
 strategy.dp = DataProvider(config, None, None)
+strategy.ft_bot_start()
 
 # Generate buy/sell signals using strategy
 df = strategy.analyze_ticker(candles, {'pair': pair})

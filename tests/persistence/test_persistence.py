@@ -1868,13 +1868,18 @@ def test_get_exit_order_count(fee, is_short):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_order_from_ccxt(caplog):
+def test_update_order_from_ccxt(caplog, time_machine):
+    start = datetime(2023, 1, 1, 4, tzinfo=timezone.utc)
+    time_machine.move_to(start, tick=False)
+
     # Most basic order return (only has orderid)
-    o = Order.parse_from_ccxt_object({'id': '1234'}, 'ADA/USDT', 'buy')
+    o = Order.parse_from_ccxt_object({'id': '1234'}, 'ADA/USDT', 'buy', 20.01, 1234.6)
     assert isinstance(o, Order)
     assert o.ft_pair == 'ADA/USDT'
     assert o.ft_order_side == 'buy'
     assert o.order_id == '1234'
+    assert o.ft_price == 1234.6
+    assert o.ft_amount == 20.01
     assert o.ft_is_open
     ccxt_order = {
         'id': '1234',
@@ -1888,13 +1893,15 @@ def test_update_order_from_ccxt(caplog):
         'status': 'open',
         'timestamp': 1599394315123
     }
-    o = Order.parse_from_ccxt_object(ccxt_order, 'ADA/USDT', 'buy')
+    o = Order.parse_from_ccxt_object(ccxt_order, 'ADA/USDT', 'buy', 20.01, 1234.6)
     assert isinstance(o, Order)
     assert o.ft_pair == 'ADA/USDT'
     assert o.ft_order_side == 'buy'
     assert o.order_id == '1234'
     assert o.order_type == 'limit'
     assert o.price == 1234.5
+    assert o.ft_price == 1234.6
+    assert o.ft_amount == 20.01
     assert o.filled == 9
     assert o.remaining == 11
     assert o.order_date is not None
@@ -1913,7 +1920,9 @@ def test_update_order_from_ccxt(caplog):
     assert o.filled == 20.0
     assert o.remaining == 0.0
     assert not o.ft_is_open
-    assert o.order_filled_date is not None
+    assert o.order_filled_date == start
+    # Move time
+    time_machine.move_to(start + timedelta(hours=1), tick=False)
 
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
@@ -1926,6 +1935,12 @@ def test_update_order_from_ccxt(caplog):
 
     # Call regular update - shouldn't fail.
     Order.update_orders([o], {'id': '1234'})
+    assert o.order_filled_date == start
+
+    # Fill order again - shouldn't update filled date
+    ccxt_order.update({'id': '1234'})
+    Order.update_orders([o], ccxt_order)
+    assert o.order_filled_date == start
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2539,6 +2554,8 @@ def test_recalc_trade_from_orders_dca(data) -> None:
             ft_pair=trade.pair,
             order_id=f"order_{order[0]}_{idx}",
             ft_is_open=False,
+            ft_amount=amount,
+            ft_price=price,
             status="closed",
             symbol=trade.pair,
             order_type="market",

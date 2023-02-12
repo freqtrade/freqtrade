@@ -919,6 +919,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["use_exit_signal"] = data.use_exit_signal
+    default_conf["max_open_trades"] = 10
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
@@ -951,7 +952,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         processed=data_processed,
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
 
     results = result['results']

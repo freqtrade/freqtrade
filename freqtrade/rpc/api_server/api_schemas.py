@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
 
 
@@ -165,9 +165,10 @@ class ShowConfig(BaseModel):
     stake_amount: str
     available_capital: Optional[float]
     stake_currency_decimals: int
-    max_open_trades: int
+    max_open_trades: IntOrInf
     minimal_roi: Dict[str, Any]
     stoploss: Optional[float]
+    stoploss_on_exchange: bool
     trailing_stop: Optional[bool]
     trailing_stop_positive: Optional[float]
     trailing_stop_positive_offset: Optional[float]
@@ -422,7 +423,7 @@ class BacktestRequest(BaseModel):
     timeframe: Optional[str]
     timeframe_detail: Optional[str]
     timerange: Optional[str]
-    max_open_trades: Optional[int]
+    max_open_trades: Optional[IntOrInf]
     stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]

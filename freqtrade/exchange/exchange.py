@@ -3,11 +3,11 @@
 Cryptocurrency Exchanges support
 """
 import asyncio
-import http
 import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from math import floor
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
@@ -24,6 +24,7 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHAN
                                  PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
+from freqtrade.enums.pricetype import PriceType
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -36,19 +37,13 @@ from freqtrade.exchange.exchange_utils import (CcxtModuleType, amount_to_contrac
                                                price_to_precision, timeframe_to_minutes,
                                                timeframe_to_msecs, timeframe_to_next_date,
                                                timeframe_to_prev_date, timeframe_to_seconds)
-from freqtrade.exchange.types import Ticker, Tickers
+from freqtrade.exchange.types import OHLCVResponse, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 logger = logging.getLogger(__name__)
-
-
-# Workaround for adding samesite support to pre 3.8 python
-# Only applies to python3.7, and only on certain exchanges (kraken)
-# Replicates the fix from starlette (which is actually causing this problem)
-http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Exchange:
@@ -474,7 +469,7 @@ class Exchange:
         try:
             if self._api_async:
                 self.loop.run_until_complete(
-                    self._api_async.load_markets(reload=reload))
+                    self._api_async.load_markets(reload=reload, params={}))
 
         except (asyncio.TimeoutError, ccxt.BaseError) as e:
             logger.warning('Could not load async markets. Reason: %s', e)
@@ -483,7 +478,7 @@ class Exchange:
     def _load_markets(self) -> None:
         """ Initialize markets both sync and async """
         try:
-            self._markets = self._api.load_markets()
+            self._markets = self._api.load_markets(params={})
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
             if self._ft_has['needs_trading_fees']:
@@ -501,7 +496,7 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._markets = self._api.load_markets(reload=True)
+            self._markets = self._api.load_markets(reload=True, params={})
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
@@ -606,12 +601,27 @@ class Exchange:
             if not self.exchange_has('createMarketOrder'):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+        self.validate_stop_ordertypes(order_types)
 
+    def validate_stop_ordertypes(self, order_types: Dict) -> None:
+        """
+        Validate stoploss order types
+        """
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
             raise OperationalException(
                 f'On exchange stoploss is not supported for {self.name}.'
             )
+        if self.trading_mode == TradingMode.FUTURES:
+            price_mapping = self._ft_has.get('stop_price_type_value_mapping', {}).keys()
+            if (
+                order_types.get("stoploss_on_exchange", False) is True
+                and 'stoploss_price_type' in order_types
+                and order_types['stoploss_price_type'] not in price_mapping
+            ):
+                raise OperationalException(
+                    f'On exchange stoploss price type is not supported for {self.name}.'
+                )
 
     def validate_pricing(self, pricing: Dict) -> None:
         if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
@@ -682,7 +692,7 @@ class Exchange:
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
 
-    def get_option(self, param: str, default: Any = None) -> Any:
+    def get_option(self, param: str, default: Optional[Any] = None) -> Any:
         """
         Get parameter value from _ft_has
         """
@@ -1167,6 +1177,10 @@ class Exchange:
                                            stop_price=stop_price_norm)
             if self.trading_mode == TradingMode.FUTURES:
                 params['reduceOnly'] = True
+                if 'stoploss_price_type' in order_types and 'stop_price_type_field' in self._ft_has:
+                    price_type = self._ft_has['stop_price_type_value_mapping'][
+                        order_types.get('stoploss_price_type', PriceType.LAST)]
+                    params[self._ft_has['stop_price_type_field']] = price_type
 
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
@@ -1357,7 +1371,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self, pair: str = None) -> List[Dict]:
+    def fetch_positions(self, pair: Optional[str] = None) -> List[Dict]:
         """
         Fetch positions from the exchange.
         If no pair is given, all positions are returned.
@@ -1705,7 +1719,7 @@ class Exchange:
                 return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
-                self._api.load_markets()
+                self._api.load_markets(params={})
 
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
@@ -1801,7 +1815,7 @@ class Exchange:
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int, candle_type: CandleType,
                            is_new_pair: bool = False,
-                           until_ms: int = None) -> List:
+                           until_ms: Optional[int] = None) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1813,32 +1827,18 @@ class Exchange:
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List with candle (OHLCV) data
         """
-        pair, _, _, data = self.loop.run_until_complete(
+        pair, _, _, data, _ = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, until_ms=until_ms,
                                            is_new_pair=is_new_pair, candle_type=candle_type))
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
         return data
 
-    def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
-                                 since_ms: int, candle_type: CandleType) -> DataFrame:
-        """
-        Minimal wrapper around get_historic_ohlcv - converting the result into a dataframe
-        :param pair: Pair to download
-        :param timeframe: Timeframe to get data for
-        :param since_ms: Timestamp in milliseconds to get history from
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :return: OHLCV DataFrame
-        """
-        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms, candle_type=candle_type)
-        return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
-                                  drop_incomplete=self._ohlcv_partial_candle)
-
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
                                         until_ms: Optional[int] = None
-                                        ) -> Tuple[str, str, str, List]:
+                                        ) -> OHLCVResponse:
         """
         Download historic ohlcv
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
@@ -1869,15 +1869,16 @@ class Exchange:
                     continue
                 else:
                     # Deconstruct tuple if it's not an exception
-                    p, _, c, new_data = res
+                    p, _, c, new_data, _ = res
                     if p == pair and c == candle_type:
                         data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        return pair, timeframe, candle_type, data
+        return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
-    def _build_coroutine(self, pair: str, timeframe: str, candle_type: CandleType,
-                         since_ms: Optional[int], cache: bool) -> Coroutine:
+    def _build_coroutine(
+            self, pair: str, timeframe: str, candle_type: CandleType,
+            since_ms: Optional[int], cache: bool) -> Coroutine[Any, Any, OHLCVResponse]:
         not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
@@ -1914,7 +1915,7 @@ class Exchange:
         """
         Build Coroutines to execute as part of refresh_latest_ohlcv
         """
-        input_coroutines = []
+        input_coroutines: List[Coroutine[Any, Any, OHLCVResponse]] = []
         cached_pairs = []
         for pair, timeframe, candle_type in set(pair_list):
             if (timeframe not in self.timeframes
@@ -1978,7 +1979,6 @@ class Exchange:
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-        drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
 
         # Gather coroutines to run
         input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
@@ -1996,8 +1996,9 @@ class Exchange:
                 if isinstance(res, Exception):
                     logger.warning(f"Async code raised an exception: {repr(res)}")
                     continue
-                # Deconstruct tuple (has 4 elements)
-                pair, timeframe, c_type, ticks = res
+                # Deconstruct tuple (has 5 elements)
+                pair, timeframe, c_type, ticks, drop_hint = res
+                drop_incomplete = drop_hint if drop_incomplete is None else drop_incomplete
                 ohlcv_df = self._process_ohlcv_df(
                     pair, timeframe, c_type, ticks, cache, drop_incomplete)
 
@@ -2025,7 +2026,7 @@ class Exchange:
         timeframe: str,
         candle_type: CandleType,
         since_ms: Optional[int] = None,
-    ) -> Tuple[str, str, str, List]:
+    ) -> OHLCVResponse:
         """
         Asynchronously get candle history data using fetch_ohlcv
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
@@ -2065,9 +2066,9 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, timeframe, candle_type, []
+                return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
             logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
-            return pair, timeframe, candle_type, data
+            return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -2504,7 +2505,8 @@ class Exchange:
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
+        trading_mode: Optional[TradingMode] = None,
+        accept_fail: bool = False,
     ):
         """
         Set's the leverage before making a trade, in order to not
@@ -2513,12 +2515,18 @@ class Exchange:
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
             # Some exchanges only support one margin_mode type
             return
-
+        if self._ft_has.get('floor_leverage', False) is True:
+            # Rounding for binance ...
+            leverage = floor(leverage)
         try:
             res = self._api.set_leverage(symbol=pair, leverage=leverage)
             self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.BadRequest as e:
+            if not accept_fail:
+                raise TemporaryError(
+                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
@@ -2540,7 +2548,8 @@ class Exchange:
         return open_date.minute > 0 or open_date.second > 0
 
     @retrier
-    def set_margin_mode(self, pair: str, margin_mode: MarginMode, params: dict = {}):
+    def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False,
+                        params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
@@ -2554,6 +2563,10 @@ class Exchange:
             self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.BadRequest as e:
+            if not accept_fail:
+                raise TemporaryError(
+                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
@@ -2687,7 +2700,7 @@ class Exchange:
         :param amount: Trade amount
         :param open_date: Open date of the trade
         :return: funding fee since open_date
-        :raies: ExchangeError if something goes wrong.
+        :raises: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:
@@ -2707,6 +2720,7 @@ class Exchange:
         is_short: bool,
         amount: float,  # Absolute value of position size
         stake_amount: float,
+        leverage: float,
         wallet_balance: float,
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
@@ -2728,6 +2742,7 @@ class Exchange:
                 open_rate=open_rate,
                 is_short=is_short,
                 amount=amount,
+                leverage=leverage,
                 stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
                 mm_ex_1=mm_ex_1,
@@ -2739,7 +2754,7 @@ class Exchange:
                 pos = positions[0]
                 isolated_liq = pos['liquidationPrice']
 
-        if isolated_liq:
+        if isolated_liq is not None:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
             isolated_liq = (
                 isolated_liq - buffer_amount
@@ -2757,6 +2772,7 @@ class Exchange:
         is_short: bool,
         amount: float,
         stake_amount: float,
+        leverage: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
@@ -2764,7 +2780,7 @@ class Exchange:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
-         gateio: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
+         gate: https://www.gate.io/help/futures/futures/27724/liquidation-price-bankruptcy-price
          > Liquidation Price = (Entry Price ± Margin / Contract Multiplier / Size) /
                                 [ 1 ± (Maintenance Margin Ratio + Taker Rate)]
             Wherein, "+" or "-" depends on whether the contract goes long or short:
@@ -2778,13 +2794,14 @@ class Exchange:
         :param is_short: True if the trade is a short, false otherwise
         :param amount: Absolute value of position size incl. leverage (in base currency)
         :param stake_amount: Stake amount - Collateral in settle currency.
+        :param leverage: Leverage used for this position.
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param margin_mode: Either ISOLATED or CROSS
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
 
-        # * Not required by Gateio or OKX
+        # * Not required by Gate or OKX
         :param mm_ex_1:
         :param upnl_ex_1:
         """

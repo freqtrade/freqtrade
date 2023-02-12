@@ -737,20 +737,22 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
 @pytest.mark.parametrize("is_short,trading_mode,exchange_name,margin_mode,liq_buffer,liq_price", [
     (False, 'spot', 'binance', None, 0.0, None),
     (True, 'spot', 'binance', None, 0.0, None),
-    (False, 'spot', 'gateio', None, 0.0, None),
-    (True, 'spot', 'gateio', None, 0.0, None),
+    (False, 'spot', 'gate', None, 0.0, None),
+    (True, 'spot', 'gate', None, 0.0, None),
     (False, 'spot', 'okx', None, 0.0, None),
     (True, 'spot', 'okx', None, 0.0, None),
     (True, 'futures', 'binance', 'isolated', 0.0, 11.88151815181518),
     (False, 'futures', 'binance', 'isolated', 0.0, 8.080471380471382),
-    (True, 'futures', 'gateio', 'isolated', 0.0, 11.87413417771621),
-    (False, 'futures', 'gateio', 'isolated', 0.0, 8.085708510208207),
+    (True, 'futures', 'gate', 'isolated', 0.0, 11.87413417771621),
+    (False, 'futures', 'gate', 'isolated', 0.0, 8.085708510208207),
     (True, 'futures', 'binance', 'isolated', 0.05, 11.7874422442244),
     (False, 'futures', 'binance', 'isolated', 0.05, 8.17644781144781),
-    (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
-    (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
+    (True, 'futures', 'gate', 'isolated', 0.05, 11.7804274688304),
+    (False, 'futures', 'gate', 'isolated', 0.05, 8.181423084697796),
     (True, 'futures', 'okx', 'isolated', 0.0, 11.87413417771621),
     (False, 'futures', 'okx', 'isolated', 0.0, 8.085708510208207),
+    (True, 'futures', 'bybit', 'isolated', 0.0, 11.9),
+    (False, 'futures', 'bybit', 'isolated', 0.0, 8.1),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
@@ -766,11 +768,11 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
         ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
 
-    exchange_name = gateio/okx, is_short = true
+    exchange_name = gate/okx, is_short = true
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
 
-    exchange_name = gateio/okx, is_short = false
+    exchange_name = gate/okx, is_short = false
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
@@ -783,7 +785,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     default_conf_usdt['exchange']['name'] = exchange_name
     if margin_mode:
         default_conf_usdt['margin_mode'] = margin_mode
-    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
+    mocker.patch('freqtrade.exchange.Gate.validate_ordertypes')
     patch_RPCManager(mocker)
     patch_exchange(mocker, id=exchange_name)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -1168,6 +1170,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         order_id='100',
         ft_pair=trade.pair,
         ft_is_open=True,
+        ft_amount=trade.amount,
+        ft_price=0.0,
     ))
     assert trade
 
@@ -4615,6 +4619,7 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
         'amount': amount,
         'status': 'open',
         'side': 'buy',
+        'price': 0.245441,
     }
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order_obj = Order.parse_from_ccxt_object(order, 'LTC/ETH', 'buy')
@@ -5023,7 +5028,7 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert log_has_re(r"Error updating Order .*", caplog)
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
-    hto_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_timedout_order')
+    hto_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_order')
     # Orders which are no longer found after X days should be assumed as canceled.
     freqtrade.startup_update_open_orders()
     assert log_has_re(r"Order is older than \d days.*", caplog)

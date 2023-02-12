@@ -82,7 +82,7 @@ def test_compute_distances(mocker, freqai_conf):
     freqai = make_data_dictionary(mocker, freqai_conf)
     freqai_conf['freqai']['feature_parameters'].update({"DI_threshold": 1})
     avg_mean_dist = freqai.dk.compute_distances()
-    assert round(avg_mean_dist, 2) == 1.99
+    assert round(avg_mean_dist, 2) == 1.98
 
 
 def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, caplog):
@@ -90,7 +90,7 @@ def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, 
     freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 0.1})
     freqai.dk.use_SVM_to_remove_outliers(predict=False)
     assert log_has_re(
-        "SVM detected 7.36%",
+        "SVM detected 7.83%",
         caplog,
     )
 

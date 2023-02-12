@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
@@ -205,7 +205,7 @@ def safe_value_fallback2(dict1: dictMap, dict2: dictMap, key1: str, key2: str, d
     return default_value
 
 
-def plural(num: float, singular: str, plural: str = None) -> str:
+def plural(num: float, singular: str, plural: Optional[str] = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + 's'
 
 
@@ -269,6 +269,8 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     def default(z):
         if isinstance(z, pd.Timestamp):
             return z.timestamp() * 1e3
+        if z is pd.NaT:
+            return 'NaT'
         raise TypeError
 
     return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')

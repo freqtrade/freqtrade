@@ -40,6 +40,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [OKX](https://okx.com/)
+- [X] [Bybit](https://bybit.com/)
 
 Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 
@@ -163,6 +164,10 @@ first. If it hasn't been reported, please
 [create a new issue](https://github.com/freqtrade/freqtrade/issues/new/choose) and
 ensure you follow the template guide so that the team can assist you as
 quickly as possible.
+
+For every [issue](https://github.com/freqtrade/freqtrade/issues/new/choose) created, kindly follow up and mark satisfaction or reminder to close issue when equilibrium ground is reached.
+
+--Maintain github's [community policy](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct)--
 
 ### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
 
