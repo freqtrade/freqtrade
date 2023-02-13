@@ -5,6 +5,7 @@ from typing import Any, Callable, TypeVar, cast
 from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import Trade
 
+
 logger = logging.getLogger(__name__)
 
 
