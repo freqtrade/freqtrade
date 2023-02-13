@@ -838,10 +838,10 @@ def test_strategy_safe_wrapper(value):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_strategy_safe_wrapper_trade_copy(fee):
+def test_strategy_safe_wrapper_trade_mutate_warning(fee, caplog):
     create_mock_trades(fee)
 
-    def working_method(trade):
+    def working_method_mutate(trade):
         assert len(trade.orders) > 0
         assert trade.orders
         trade.orders = []
@@ -851,12 +851,25 @@ def test_strategy_safe_wrapper_trade_copy(fee):
     trade = Trade.get_open_trades()[0]
     # Don't assert anything before strategy_wrapper.
     # This ensures that relationship loading works correctly.
-    ret = strategy_safe_wrapper(working_method, message='DeadBeef')(trade=trade)
+    ret = strategy_safe_wrapper(working_method_mutate, message='DeadBeef')(trade=trade)
     assert isinstance(ret, Trade)
-    assert id(trade) != id(ret)
-    # Did not modify the original order
-    assert len(trade.orders) > 0
-    assert len(ret.orders) == 0
+    assert id(trade) == id(ret)
+    assert len(trade.orders) == 0
+    assert log_has_re(
+        r"The `trade` parameter have changed in the function .*, this may "
+        r"lead to unexpected behavior\.",
+        caplog)
+
+    caplog.clear()
+
+    def working_method(trade):
+        return trade
+
+    strategy_safe_wrapper(working_method, message='DeadBeef')(trade=trade)
+    assert not log_has_re(
+        r"The `trade` parameter have changed in the function .*, this may "
+        r"lead to unexpected behavior\.",
+        caplog)
 
 
 def test_hyperopt_parameters():

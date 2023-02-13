@@ -1,10 +1,9 @@
 import logging
-from copy import deepcopy
 from functools import wraps
 from typing import Any, Callable, TypeVar, cast
 
 from freqtrade.exceptions import StrategyError
-
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,16 @@ def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_
         try:
             if 'trade' in kwargs:
                 # Protect accidental modifications from within the strategy
-                kwargs['trade'] = deepcopy(kwargs['trade'])
+                trade = kwargs['trade']
+                if isinstance(trade, Trade):
+                    if trade in Trade.query.session.dirty:
+                        Trade.commit()
+                    return_vals = f(*args, **kwargs)
+                    if trade in Trade.query.session.dirty:
+                        logger.warning(f"The `trade` parameter have changed "
+                                       f"in the function `{f.__name__}`, this may "
+                                       f"lead to unexpected behavior.")
+                    return return_vals
             return f(*args, **kwargs)
         except ValueError as error:
             logger.warning(

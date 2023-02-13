@@ -4,6 +4,7 @@
 import logging
 import time
 from copy import deepcopy
+from datetime import datetime
 from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
@@ -1806,7 +1807,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
-    trade.stoploss_last_update = arrow.utcnow()
+    trade.stoploss_last_update = datetime.utcnow()
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': 100,
@@ -1957,7 +1958,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
         fee_open=0.001,
         fee_close=0.001,
         open_rate=0.01,
-        open_date=arrow.utcnow().datetime,
+        open_date=datetime.utcnow(),
         amount=11,
         exchange="binance",
         is_short=is_short,
@@ -3286,7 +3287,6 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     )
     assert rpc_mock.call_count == 0
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
-    assert id(freqtrade.strategy.confirm_trade_exit.call_args_list[0][1]['trade']) != id(trade)
     assert freqtrade.strategy.confirm_trade_exit.call_args_list[0][1]['trade'].id == trade.id
 
     # Repatch with true
@@ -6114,3 +6114,34 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-10)
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"LIMIT_SELL has been fulfilled.*", caplog)
+
+
+def test_trade_mutated_warning(mocker, default_conf_usdt, fee,
+                               caplog) -> None:
+    default_conf_usdt.update({
+        "position_adjustment_enable": True,
+        "max_entry_position_adjustment": 0,
+    })
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    buy_rate_mock = MagicMock(return_value=10)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=buy_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 10,
+            'ask': 12,
+            'last': 11
+        }),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+    create_mock_trades(fee)
+
+    def adjust_pos_with_trade_mutate(trade: Trade, *args, **kargs):
+        trade.amount = 321
+        return 10
+
+    freqtrade.strategy.adjust_trade_position = adjust_pos_with_trade_mutate
+    freqtrade.process_open_trade_positions()
+    assert log_has_re(r"The `trade` parameter have changed in the function .*, "
+                      r"this may lead to unexpected behavior\.", caplog)
