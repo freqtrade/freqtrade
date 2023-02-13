@@ -3902,7 +3902,7 @@ def test_exit_profit_only(
     if exit_type == ExitType.EXIT_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
-        freqtrade.strategy.stop_loss_reached = MagicMock(return_value=ExitCheckTuple(
+        freqtrade.strategy.ft_stoploss_reached = MagicMock(return_value=ExitCheckTuple(
             exit_type=ExitType.NONE))
     freqtrade.enter_positions()
 
