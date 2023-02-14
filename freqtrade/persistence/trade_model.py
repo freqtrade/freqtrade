@@ -45,34 +45,34 @@ class Order(_DECL_BASE):
     id = Column(Integer, primary_key=True)
     ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
 
-    trade = relationship("Trade", back_populates="orders")
+    trade: List["Trade"] = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
-    ft_order_side = Column(String(25), nullable=False)
-    ft_pair = Column(String(25), nullable=False)
-    ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-    ft_amount = Column(Float(), nullable=False)
-    ft_price = Column(Float(), nullable=False)
+    ft_order_side: str = Column(String(25), nullable=False)
+    ft_pair: str = Column(String(25), nullable=False)
+    ft_is_open: bool = Column(Boolean, nullable=False, default=True, index=True)
+    ft_amount: float = Column(Float(), nullable=False)
+    ft_price: float = Column(Float(), nullable=False)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
-    order_type = Column(String(50), nullable=True)
+    # TODO: type: order_type type is Optional[str]
+    order_type: str = Column(String(50), nullable=True)
     side = Column(String(25), nullable=True)
-    price = Column(Float(), nullable=True)
-    average = Column(Float(), nullable=True)
-    amount = Column(Float(), nullable=True)
-    filled = Column(Float(), nullable=True)
-    remaining = Column(Float(), nullable=True)
-    cost = Column(Float(), nullable=True)
-    stop_price = Column(Float(), nullable=True)
-    order_date = Column(DateTime(), nullable=True, default=datetime.utcnow)
+    price: Optional[float] = Column(Float(), nullable=True)
+    average: Optional[float] = Column(Float(), nullable=True)
+    amount: Optional[float] = Column(Float(), nullable=True)
+    filled: Optional[float] = Column(Float(), nullable=True)
+    remaining: Optional[float] = Column(Float(), nullable=True)
+    cost: Optional[float] = Column(Float(), nullable=True)
+    stop_price: Optional[float] = Column(Float(), nullable=True)
+    order_date: datetime = Column(DateTime(), nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime(), nullable=True)
     order_update_date = Column(DateTime(), nullable=True)
+    funding_fee: Optional[float] = Column(Float(), nullable=True)
 
-    funding_fee = Column(Float(), nullable=True)
-
-    ft_fee_base = Column(Float(), nullable=True)
+    ft_fee_base: Optional[float] = Column(Float(), nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
@@ -1175,13 +1175,13 @@ class Trade(_DECL_BASE, LocalTrade):
 
     use_db: bool = True
 
-    id = Column(Integer, primary_key=True)
+    id: int = Column(Integer, primary_key=True)
 
-    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan",
-                          lazy="selectin", innerjoin=True)
+    orders: List[Order] = relationship("Order", order_by="Order.id", cascade="all, delete-orphan",
+                                       lazy="selectin", innerjoin=True)
 
-    exchange = Column(String(25), nullable=False)
-    pair = Column(String(25), nullable=False, index=True)
+    exchange: str = Column(String(25), nullable=False)
+    pair: str = Column(String(25), nullable=False, index=True)
     base_currency = Column(String(25), nullable=True)
     stake_currency = Column(String(25), nullable=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
@@ -1192,21 +1192,23 @@ class Trade(_DECL_BASE, LocalTrade):
     fee_close_cost = Column(Float(), nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
     open_rate: float = Column(Float())
-    open_rate_requested = Column(Float())
+    open_rate_requested: float = Column(Float())
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = Column(Float())
     close_rate: Optional[float] = Column(Float())
-    close_rate_requested = Column(Float())
-    realized_profit = Column(Float(), default=0.0)
+    close_rate_requested: Optional[float] = Column(Float())
+    # TODO: is the below type really correct?
+    realized_profit: float = Column(Float(), default=0.0)
     close_profit = Column(Float())
-    close_profit_abs = Column(Float())
-    stake_amount = Column(Float(), nullable=False)
-    max_stake_amount = Column(Float())
-    amount = Column(Float())
-    amount_requested = Column(Float())
+    close_profit_abs: Optional[float] = Column(Float())
+    stake_amount: float = Column(Float(), nullable=False)
+    max_stake_amount: Optional[float] = Column(Float())
+    amount: float = Column(Float())
+    amount_requested: Optional[float] = Column(Float())
     open_date = Column(DateTime(), nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime())
-    open_order_id = Column(String(255))
+    # TODO: open_order_id type should be Optional[str]
+    open_order_id: str = Column(String(255))
     # absolute value of the stop loss
     stop_loss = Column(Float(), nullable=True, default=0.0)
     # percentage value of the stop loss
@@ -1236,15 +1238,15 @@ class Trade(_DECL_BASE, LocalTrade):
     contract_size = Column(Float(), nullable=True)
 
     # Leverage trading properties
-    leverage = Column(Float(), nullable=True, default=1.0)
-    is_short = Column(Boolean, nullable=False, default=False)
+    leverage: float = Column(Float(), nullable=True, default=1.0)
+    is_short: bool = Column(Boolean, nullable=False, default=False)
     liquidation_price = Column(Float(), nullable=True)
 
     # Margin Trading Properties
     interest_rate = Column(Float(), nullable=False, default=0.0)
 
     # Futures properties
-    funding_fees = Column(Float(), nullable=True, default=None)
+    funding_fees: Optional[float] = Column(Float(), nullable=True, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
