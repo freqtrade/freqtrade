@@ -633,7 +633,7 @@ class FreqtradeBot(LoggingMixin):
                 return
 
             remaining = (trade.amount - amount) * current_exit_rate
-            if remaining < min_exit_stake:
+            if min_exit_stake and remaining < min_exit_stake:
                 logger.info(f"Remaining amount of {remaining} would be smaller "
                             f"than the minimum of {min_exit_stake}.")
                 return
@@ -1694,7 +1694,7 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Order_obj not found for {order_id}. This should not have happened.")
 
-        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_rate: float = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
