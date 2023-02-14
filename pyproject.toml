@@ -35,6 +35,9 @@ warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$'
 ]
+plugins = [
+  "sqlalchemy.ext.mypy.plugin"
+]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
