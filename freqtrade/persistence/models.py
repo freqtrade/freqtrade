@@ -2,6 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
+from typing import Any, Dict
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import NoSuchModuleError
@@ -29,7 +30,7 @@ def init_db(db_url: str) -> None:
     :param db_url: Database to use
     :return: None
     """
-    kwargs = {}
+    kwargs: Dict[str, Any] = {}
 
     if db_url == 'sqlite:///':
         raise OperationalException(
