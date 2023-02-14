@@ -36,6 +36,8 @@ class Order(_DECL_BASE):
     Mirrors CCXT Order structure
     """
     __tablename__ = 'orders'
+    # TODO: Properly type query.
+    query: Any
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
@@ -1167,6 +1169,9 @@ class Trade(_DECL_BASE, LocalTrade):
     Note: Fields must be aligned with LocalTrade class
     """
     __tablename__ = 'trades'
+    # TODO: Type query type throughout.
+    query: Any
+    _session: Any = None
 
     use_db: bool = True
 

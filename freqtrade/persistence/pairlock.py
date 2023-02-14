@@ -13,6 +13,8 @@ class PairLock(_DECL_BASE):
     Pair Locks database model.
     """
     __tablename__ = 'pairlocks'
+    # TODO: Properly type query.
+    query: Any
 
     id = Column(Integer, primary_key=True)
 
