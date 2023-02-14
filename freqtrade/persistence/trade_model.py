@@ -1386,7 +1386,7 @@ class Trade(_DECL_BASE, LocalTrade):
         Returns List of dicts containing all Trades, including profit and trade count
         NOTE: Not supported in Backtesting.
         """
-        filters = [Trade.is_open.is_(False)]
+        filters: List = [Trade.is_open.is_(False)]
         if minutes:
             start_date = datetime.now(timezone.utc) - timedelta(minutes=minutes)
             filters.append(Trade.close_date >= start_date)
@@ -1419,7 +1419,7 @@ class Trade(_DECL_BASE, LocalTrade):
         NOTE: Not supported in Backtesting.
         """
 
-        filters = [Trade.is_open.is_(False)]
+        filters: List = [Trade.is_open.is_(False)]
         if (pair is not None):
             filters.append(Trade.pair == pair)
 
@@ -1452,7 +1452,7 @@ class Trade(_DECL_BASE, LocalTrade):
         NOTE: Not supported in Backtesting.
         """
 
-        filters = [Trade.is_open.is_(False)]
+        filters: List = [Trade.is_open.is_(False)]
         if (pair is not None):
             filters.append(Trade.pair == pair)
 
@@ -1485,7 +1485,7 @@ class Trade(_DECL_BASE, LocalTrade):
         NOTE: Not supported in Backtesting.
         """
 
-        filters = [Trade.is_open.is_(False)]
+        filters: List = [Trade.is_open.is_(False)]
         if (pair is not None):
             filters.append(Trade.pair == pair)
 
