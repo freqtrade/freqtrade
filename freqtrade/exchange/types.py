@@ -19,9 +19,9 @@ class OrderBook(TypedDict):
     symbol: str
     bids: List[Tuple[float, float]]
     asks: List[Tuple[float, float]]
-    timestamp: int
-    datetime: str
-    nonce: int
+    timestamp: Optional[int]
+    datetime: Optional[str]
+    nonce: Optional[int]
 
 
 Tickers = Dict[str, Ticker]
