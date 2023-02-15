@@ -681,6 +681,7 @@ EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
 BidAsk = Literal['bid', 'ask']
+OBLiteral = Literal['asks', 'bids']
 
 Config = Dict[str, Any]
 IntOrInf = float
