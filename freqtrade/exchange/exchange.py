@@ -860,10 +860,13 @@ class Exchange:
             dry_order["stopPrice"] = dry_order["price"]
             # Workaround to avoid filling stoploss orders immediately
             dry_order["ft_order_type"] = "stoploss"
+        orderbook: Optional[OrderBook] = None
+        if self.exchange_has('fetchL2OrderBook'):
+            orderbook = self.fetch_l2_order_book(pair, 20)
 
         if dry_order["type"] == "market" and not dry_order.get("ft_order_type"):
             # Update market order pricing
-            average = self.get_dry_market_fill_price(pair, side, amount, rate)
+            average = self.get_dry_market_fill_price(pair, side, amount, rate, orderbook)
             dry_order.update({
                 'average': average,
                 'filled': _amount,
@@ -873,7 +876,7 @@ class Exchange:
             # market orders will always incurr taker fees
             dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
-        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True)
+        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True, ob=orderbook)
 
         self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
@@ -895,12 +898,15 @@ class Exchange:
         })
         return dry_order
 
-    def get_dry_market_fill_price(self, pair: str, side: str, amount: float, rate: float) -> float:
+    def get_dry_market_fill_price(
+            self, pair: str, side: str, amount: float, rate: float,
+            ob: Optional[OrderBook]) -> float:
         """
         Get the market order fill price based on orderbook interpolation
         """
         if self.exchange_has('fetchL2OrderBook'):
-            ob = self.fetch_l2_order_book(pair, 20)
+            if not ob:
+                ob = self.fetch_l2_order_book(pair, 20)
             ob_type: OBLiteral = 'asks' if side == 'buy' else 'bids'
             slippage = 0.05
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
@@ -936,10 +942,12 @@ class Exchange:
 
         return rate
 
-    def _is_dry_limit_order_filled(self, pair: str, side: str, limit: float) -> bool:
+    def _is_dry_limit_order_filled(
+            self, pair: str, side: str, limit: float, ob: Optional[OrderBook] = None) -> bool:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
-        ob = self.fetch_l2_order_book(pair, 1)
+        if not ob:
+            ob = self.fetch_l2_order_book(pair, 1)
         try:
             if side == 'buy':
                 price = ob['asks'][0][0]
@@ -957,7 +965,8 @@ class Exchange:
         return False
 
     def check_dry_limit_order_filled(
-            self, order: Dict[str, Any], immediate: bool = False) -> Dict[str, Any]:
+            self, order: Dict[str, Any], immediate: bool = False,
+            ob: Optional[OrderBook] = None) -> Dict[str, Any]:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
@@ -965,7 +974,7 @@ class Exchange:
                 and order['type'] in ["limit"]
                 and not order.get('ft_order_type')):
             pair = order['symbol']
-            if self._is_dry_limit_order_filled(pair, order['side'], order['price']):
+            if self._is_dry_limit_order_filled(pair, order['side'], order['price'], ob):
                 order.update({
                     'status': 'closed',
                     'filled': order['amount'],
