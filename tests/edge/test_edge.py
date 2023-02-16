@@ -139,7 +139,7 @@ def test_adjust(mocker, edge_conf):
     assert (edge.adjust(pairs) == ['E/F', 'C/D'])
 
 
-def test_stoploss(mocker, edge_conf):
+def test_edge_get_stoploss(mocker, edge_conf):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
@@ -150,10 +150,10 @@ def test_stoploss(mocker, edge_conf):
         }
     ))
 
-    assert edge.stoploss('E/F') == -0.01
+    assert edge.get_stoploss('E/F') == -0.01
 
 
-def test_nonexisting_stoploss(mocker, edge_conf):
+def test_nonexisting_get_stoploss(mocker, edge_conf):
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
@@ -162,7 +162,7 @@ def test_nonexisting_stoploss(mocker, edge_conf):
         }
     ))
 
-    assert edge.stoploss('N/O') == -0.1
+    assert edge.get_stoploss('N/O') == -0.1
 
 
 def test_edge_stake_amount(mocker, edge_conf):

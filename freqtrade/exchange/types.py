@@ -15,6 +15,15 @@ class Ticker(TypedDict):
     # Several more - only listing required.
 
 
+class OrderBook(TypedDict):
+    symbol: str
+    bids: List[Tuple[float, float]]
+    asks: List[Tuple[float, float]]
+    timestamp: Optional[int]
+    datetime: Optional[str]
+    nonce: Optional[int]
+
+
 Tickers = Dict[str, Ticker]
 
 # pair, timeframe, candleType, OHLCV, drop last?,

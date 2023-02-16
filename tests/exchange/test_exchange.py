@@ -3380,7 +3380,7 @@ def test_get_fee(default_conf, mocker, exchange_name):
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -5318,7 +5318,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     exchange.get_contract_size = MagicMock(return_value=contract_size)
 
     api_mock.create_order.reset_mock()
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=100,
         stop_price=220,
