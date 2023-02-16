@@ -12,3 +12,4 @@ from freqtrade.enums.runmode import NON_UTIL_MODES, OPTIMIZE_MODES, TRADING_MODE
 from freqtrade.enums.signaltype import SignalDirection, SignalTagType, SignalType
 from freqtrade.enums.state import State
 from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums.marketstatetype import MarketDirection
