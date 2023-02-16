@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String, or_
-from sqlalchemy.orm import Query, mapped_column
+from sqlalchemy import String, or_
+from sqlalchemy.orm import Mapped, Query, mapped_column
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence.base import ModelBase
@@ -16,20 +16,20 @@ class PairLock(ModelBase):
     # TODO: Properly type query.
     query: Any
 
-    id = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
-    pair = mapped_column(String(25), nullable=False, index=True)
+    pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     # lock direction - long, short or * (for both)
-    side = mapped_column(String(25), nullable=False, default="*")
-    reason = mapped_column(String(255), nullable=True)
+    side: Mapped[str] = mapped_column(String(25), nullable=False, default="*")
+    reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     # Time the pair was locked (start time)
-    lock_time: datetime = mapped_column(DateTime(), nullable=False)
+    lock_time: Mapped[datetime] = mapped_column(nullable=False)
     # Time until the pair is locked (end time)
-    lock_end_time: datetime = mapped_column(DateTime(), nullable=False, index=True)
+    lock_end_time: Mapped[datetime] = mapped_column(nullable=False, index=True)
 
-    active = mapped_column(Boolean, nullable=False, default=True, index=True)
+    active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (
