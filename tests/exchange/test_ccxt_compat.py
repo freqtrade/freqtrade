@@ -534,8 +534,7 @@ class TestCCXTExchange():
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exc, exchangename = exchange
-        if exchangename in ('binanceus', 'bittrex'):
-            # TODO: reenable binanceus test once downtime "ages out" (2023-02-06)
+        if exchangename in ('bittrex'):
             # For some weired reason, this test returns random lengths for bittrex.
             pytest.skip("Exchange doesn't provide stable ohlcv history")
 
