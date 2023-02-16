@@ -7,9 +7,9 @@ from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, DateTime, Enum, Float, ForeignKey, Integer, String,
                         UniqueConstraint, desc, func)
-from sqlalchemy.orm import Query, lazyload, relationship
+from sqlalchemy.orm import Query, lazyload, mapped_column, relationship
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
                                  BuySell, LongShort)
@@ -42,37 +42,37 @@ class Order(ModelBase):
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
 
-    id = Column(Integer, primary_key=True)
-    ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True)
+    id = mapped_column(Integer, primary_key=True)
+    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
     trade: List["Trade"] = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
-    ft_order_side: str = Column(String(25), nullable=False)
-    ft_pair: str = Column(String(25), nullable=False)
-    ft_is_open: bool = Column(Boolean, nullable=False, default=True, index=True)
-    ft_amount: float = Column(Float(), nullable=False)
-    ft_price: float = Column(Float(), nullable=False)
+    ft_order_side: str = mapped_column(String(25), nullable=False)
+    ft_pair: str = mapped_column(String(25), nullable=False)
+    ft_is_open: bool = mapped_column(Boolean, nullable=False, default=True, index=True)
+    ft_amount: float = mapped_column(Float(), nullable=False)
+    ft_price: float = mapped_column(Float(), nullable=False)
 
-    order_id = Column(String(255), nullable=False, index=True)
-    status = Column(String(255), nullable=True)
-    symbol = Column(String(25), nullable=True)
+    order_id = mapped_column(String(255), nullable=False, index=True)
+    status = mapped_column(String(255), nullable=True)
+    symbol = mapped_column(String(25), nullable=True)
     # TODO: type: order_type type is Optional[str]
-    order_type: str = Column(String(50), nullable=True)
-    side = Column(String(25), nullable=True)
-    price: Optional[float] = Column(Float(), nullable=True)
-    average: Optional[float] = Column(Float(), nullable=True)
-    amount: Optional[float] = Column(Float(), nullable=True)
-    filled: Optional[float] = Column(Float(), nullable=True)
-    remaining: Optional[float] = Column(Float(), nullable=True)
-    cost: Optional[float] = Column(Float(), nullable=True)
-    stop_price: Optional[float] = Column(Float(), nullable=True)
-    order_date: datetime = Column(DateTime(), nullable=True, default=datetime.utcnow)
-    order_filled_date = Column(DateTime(), nullable=True)
-    order_update_date = Column(DateTime(), nullable=True)
-    funding_fee: Optional[float] = Column(Float(), nullable=True)
+    order_type: str = mapped_column(String(50), nullable=True)
+    side = mapped_column(String(25), nullable=True)
+    price: Optional[float] = mapped_column(Float(), nullable=True)
+    average: Optional[float] = mapped_column(Float(), nullable=True)
+    amount: Optional[float] = mapped_column(Float(), nullable=True)
+    filled: Optional[float] = mapped_column(Float(), nullable=True)
+    remaining: Optional[float] = mapped_column(Float(), nullable=True)
+    cost: Optional[float] = mapped_column(Float(), nullable=True)
+    stop_price: Optional[float] = mapped_column(Float(), nullable=True)
+    order_date: datetime = mapped_column(DateTime(), nullable=True, default=datetime.utcnow)
+    order_filled_date = mapped_column(DateTime(), nullable=True)
+    order_update_date = mapped_column(DateTime(), nullable=True)
+    funding_fee: Optional[float] = mapped_column(Float(), nullable=True)
 
-    ft_fee_base: Optional[float] = Column(Float(), nullable=True)
+    ft_fee_base: Optional[float] = mapped_column(Float(), nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
@@ -1175,78 +1175,78 @@ class Trade(ModelBase, LocalTrade):
 
     use_db: bool = True
 
-    id: int = Column(Integer, primary_key=True)
+    id: int = mapped_column(Integer, primary_key=True)
 
     orders: List[Order] = relationship("Order", order_by="Order.id", cascade="all, delete-orphan",
                                        lazy="selectin", innerjoin=True)
 
-    exchange: str = Column(String(25), nullable=False)
-    pair: str = Column(String(25), nullable=False, index=True)
-    base_currency = Column(String(25), nullable=True)
-    stake_currency = Column(String(25), nullable=True)
-    is_open = Column(Boolean, nullable=False, default=True, index=True)
-    fee_open = Column(Float(), nullable=False, default=0.0)
-    fee_open_cost = Column(Float(), nullable=True)
-    fee_open_currency = Column(String(25), nullable=True)
-    fee_close = Column(Float(), nullable=False, default=0.0)
-    fee_close_cost = Column(Float(), nullable=True)
-    fee_close_currency = Column(String(25), nullable=True)
-    open_rate: float = Column(Float())
-    open_rate_requested: float = Column(Float())
+    exchange: str = mapped_column(String(25), nullable=False)
+    pair: str = mapped_column(String(25), nullable=False, index=True)
+    base_currency = mapped_column(String(25), nullable=True)
+    stake_currency = mapped_column(String(25), nullable=True)
+    is_open = mapped_column(Boolean, nullable=False, default=True, index=True)
+    fee_open = mapped_column(Float(), nullable=False, default=0.0)
+    fee_open_cost = mapped_column(Float(), nullable=True)
+    fee_open_currency = mapped_column(String(25), nullable=True)
+    fee_close = mapped_column(Float(), nullable=False, default=0.0)
+    fee_close_cost = mapped_column(Float(), nullable=True)
+    fee_close_currency = mapped_column(String(25), nullable=True)
+    open_rate: float = mapped_column(Float())
+    open_rate_requested: float = mapped_column(Float())
     # open_trade_value - calculated via _calc_open_trade_value
-    open_trade_value = Column(Float())
-    close_rate: Optional[float] = Column(Float())
-    close_rate_requested: Optional[float] = Column(Float())
+    open_trade_value = mapped_column(Float())
+    close_rate: Optional[float] = mapped_column(Float())
+    close_rate_requested: Optional[float] = mapped_column(Float())
     # TODO: is the below type really correct?
-    realized_profit: float = Column(Float(), default=0.0)
-    close_profit = Column(Float())
-    close_profit_abs: Optional[float] = Column(Float())
-    stake_amount: float = Column(Float(), nullable=False)
-    max_stake_amount: Optional[float] = Column(Float())
-    amount: float = Column(Float())
-    amount_requested: Optional[float] = Column(Float())
-    open_date = Column(DateTime(), nullable=False, default=datetime.utcnow)
-    close_date = Column(DateTime())
+    realized_profit: float = mapped_column(Float(), default=0.0)
+    close_profit = mapped_column(Float())
+    close_profit_abs: Optional[float] = mapped_column(Float())
+    stake_amount: float = mapped_column(Float(), nullable=False)
+    max_stake_amount: Optional[float] = mapped_column(Float())
+    amount: float = mapped_column(Float())
+    amount_requested: Optional[float] = mapped_column(Float())
+    open_date = mapped_column(DateTime(), nullable=False, default=datetime.utcnow)
+    close_date = mapped_column(DateTime())
     # TODO: open_order_id type should be Optional[str]
-    open_order_id: str = Column(String(255))
+    open_order_id: str = mapped_column(String(255))
     # absolute value of the stop loss
-    stop_loss = Column(Float(), nullable=True, default=0.0)
+    stop_loss = mapped_column(Float(), nullable=True, default=0.0)
     # percentage value of the stop loss
-    stop_loss_pct = Column(Float(), nullable=True)
+    stop_loss_pct = mapped_column(Float(), nullable=True)
     # absolute value of the initial stop loss
-    initial_stop_loss = Column(Float(), nullable=True, default=0.0)
+    initial_stop_loss = mapped_column(Float(), nullable=True, default=0.0)
     # percentage value of the initial stop loss
-    initial_stop_loss_pct = Column(Float(), nullable=True)
+    initial_stop_loss_pct = mapped_column(Float(), nullable=True)
     # stoploss order id which is on exchange
-    stoploss_order_id = Column(String(255), nullable=True, index=True)
+    stoploss_order_id = mapped_column(String(255), nullable=True, index=True)
     # last update time of the stoploss order on exchange
-    stoploss_last_update = Column(DateTime(), nullable=True)
+    stoploss_last_update = mapped_column(DateTime(), nullable=True)
     # absolute value of the highest reached price
-    max_rate = Column(Float(), nullable=True, default=0.0)
+    max_rate = mapped_column(Float(), nullable=True, default=0.0)
     # Lowest price reached
-    min_rate = Column(Float(), nullable=True)
-    exit_reason = Column(String(100), nullable=True)
-    exit_order_status = Column(String(100), nullable=True)
-    strategy = Column(String(100), nullable=True)
-    enter_tag = Column(String(100), nullable=True)
-    timeframe = Column(Integer, nullable=True)
+    min_rate = mapped_column(Float(), nullable=True)
+    exit_reason = mapped_column(String(100), nullable=True)
+    exit_order_status = mapped_column(String(100), nullable=True)
+    strategy = mapped_column(String(100), nullable=True)
+    enter_tag = mapped_column(String(100), nullable=True)
+    timeframe = mapped_column(Integer, nullable=True)
 
-    trading_mode = Column(Enum(TradingMode), nullable=True)
-    amount_precision = Column(Float(), nullable=True)
-    price_precision = Column(Float(), nullable=True)
-    precision_mode = Column(Integer, nullable=True)
-    contract_size = Column(Float(), nullable=True)
+    trading_mode = mapped_column(Enum(TradingMode), nullable=True)
+    amount_precision = mapped_column(Float(), nullable=True)
+    price_precision = mapped_column(Float(), nullable=True)
+    precision_mode = mapped_column(Integer, nullable=True)
+    contract_size = mapped_column(Float(), nullable=True)
 
     # Leverage trading properties
-    leverage: float = Column(Float(), nullable=True, default=1.0)
-    is_short: bool = Column(Boolean, nullable=False, default=False)
-    liquidation_price = Column(Float(), nullable=True)
+    leverage: float = mapped_column(Float(), nullable=True, default=1.0)
+    is_short: bool = mapped_column(Boolean, nullable=False, default=False)
+    liquidation_price = mapped_column(Float(), nullable=True)
 
     # Margin Trading Properties
-    interest_rate = Column(Float(), nullable=False, default=0.0)
+    interest_rate = mapped_column(Float(), nullable=False, default=0.0)
 
     # Futures properties
-    funding_fees: Optional[float] = Column(Float(), nullable=True, default=None)
+    funding_fees: Optional[float] = mapped_column(Float(), nullable=True, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
