@@ -506,7 +506,7 @@ class RPC:
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
-                               for trade in trades if not trade.is_open])
+                               for trade in trades if not trade.is_open and trade.close_date])
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:

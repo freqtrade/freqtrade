@@ -1183,8 +1183,8 @@ class Trade(ModelBase, LocalTrade):
 
     exchange: Mapped[str] = mapped_column(String(25), nullable=False)
     pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
-    base_currency = mapped_column(String(25), nullable=True)
-    stake_currency = mapped_column(String(25), nullable=True)
+    base_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
+    stake_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
     is_open: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
     fee_open: Mapped[float] = mapped_column(Float(), nullable=False, default=0.0)
     fee_open_cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
@@ -1209,7 +1209,7 @@ class Trade(ModelBase, LocalTrade):
     close_date: Mapped[Optional[datetime]] = mapped_column()
     open_order_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     # absolute value of the stop loss
-    stop_loss: Mapped[Optional[float]] = mapped_column(Float(), nullable=True, default=0.0)
+    stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)
     # percentage value of the stop loss
     stop_loss_pct: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     # absolute value of the initial stop loss
@@ -1230,14 +1230,14 @@ class Trade(ModelBase, LocalTrade):
     enter_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     timeframe: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-    trading_mode = mapped_column(Enum(TradingMode), nullable=True)
+    trading_mode: Mapped[TradingMode] = mapped_column(Enum(TradingMode), nullable=True)
     amount_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     price_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     precision_mode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     contract_size: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
     # Leverage trading properties
-    leverage: Mapped[Optional[float]] = mapped_column(Float(), nullable=True, default=1.0)
+    leverage: Mapped[float] = mapped_column(Float(), nullable=True, default=1.0)
     is_short: Mapped[bool] = mapped_column(nullable=False, default=False)
     liquidation_price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
