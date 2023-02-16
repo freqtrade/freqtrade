@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, DateTime, Enum, Float, ForeignKey, Integer, String,
                         UniqueConstraint, desc, func)
-from sqlalchemy.orm import Query, lazyload, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Query, lazyload, mapped_column, relationship
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
                                  BuySell, LongShort)
@@ -42,37 +42,37 @@ class Order(ModelBase):
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
 
-    id = mapped_column(Integer, primary_key=True)
-    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ft_trade_id: Mapped[int] = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
-    trade: List["Trade"] = relationship("Trade", back_populates="orders")
+    trade: Mapped[List["Trade"]] = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
-    ft_order_side: str = mapped_column(String(25), nullable=False)
-    ft_pair: str = mapped_column(String(25), nullable=False)
-    ft_is_open: bool = mapped_column(Boolean, nullable=False, default=True, index=True)
-    ft_amount: float = mapped_column(Float(), nullable=False)
-    ft_price: float = mapped_column(Float(), nullable=False)
+    ft_order_side: Mapped[str] = mapped_column(String(25), nullable=False)
+    ft_pair: Mapped[str] = mapped_column(String(25), nullable=False)
+    ft_is_open: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
+    ft_amount: Mapped[float] = mapped_column(Float(), nullable=False)
+    ft_price: Mapped[float] = mapped_column(Float(), nullable=False)
 
-    order_id = mapped_column(String(255), nullable=False, index=True)
-    status = mapped_column(String(255), nullable=True)
-    symbol = mapped_column(String(25), nullable=True)
+    order_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    status: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    symbol: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
     # TODO: type: order_type type is Optional[str]
-    order_type: str = mapped_column(String(50), nullable=True)
-    side = mapped_column(String(25), nullable=True)
-    price: Optional[float] = mapped_column(Float(), nullable=True)
-    average: Optional[float] = mapped_column(Float(), nullable=True)
-    amount: Optional[float] = mapped_column(Float(), nullable=True)
-    filled: Optional[float] = mapped_column(Float(), nullable=True)
-    remaining: Optional[float] = mapped_column(Float(), nullable=True)
-    cost: Optional[float] = mapped_column(Float(), nullable=True)
-    stop_price: Optional[float] = mapped_column(Float(), nullable=True)
-    order_date: datetime = mapped_column(DateTime(), nullable=True, default=datetime.utcnow)
-    order_filled_date = mapped_column(DateTime(), nullable=True)
-    order_update_date = mapped_column(DateTime(), nullable=True)
-    funding_fee: Optional[float] = mapped_column(Float(), nullable=True)
+    order_type: Mapped[str] = mapped_column(String(50), nullable=True)
+    side: Mapped[str] = mapped_column(String(25), nullable=True)
+    price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    average: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    amount: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    filled: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    remaining: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    stop_price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    order_date: Mapped[datetime] = mapped_column(nullable=True, default=datetime.utcnow)
+    order_filled_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    order_update_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    funding_fee: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
-    ft_fee_base: Optional[float] = mapped_column(Float(), nullable=True)
+    ft_fee_base: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
