@@ -1,7 +1,6 @@
 
-from typing import Any
-
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 
-_DECL_BASE: Any = declarative_base()
+class ModelBase(DeclarativeBase):
+    pass

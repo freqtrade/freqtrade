@@ -5,10 +5,10 @@ from sqlalchemy import Boolean, Column, DateTime, Integer, String, or_
 from sqlalchemy.orm import Query
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.base import ModelBase
 
 
-class PairLock(_DECL_BASE):
+class PairLock(ModelBase):
     """
     Pair Locks database model.
     """

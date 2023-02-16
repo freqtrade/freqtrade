@@ -17,14 +17,14 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import amount_to_contract_precision, price_to_precision
 from freqtrade.leverage import interest
-from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.base import ModelBase
 from freqtrade.util import FtPrecise
 
 
 logger = logging.getLogger(__name__)
 
 
-class Order(_DECL_BASE):
+class Order(ModelBase):
     """
     Order database model
     Keeps a record of all orders placed on the exchange
@@ -1161,7 +1161,7 @@ class LocalTrade():
                 logger.info(f"New stoploss: {trade.stop_loss}.")
 
 
-class Trade(_DECL_BASE, LocalTrade):
+class Trade(ModelBase, LocalTrade):
     """
     Trade database model.
     Also handles updating and querying trades
