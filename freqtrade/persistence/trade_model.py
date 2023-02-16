@@ -1175,7 +1175,7 @@ class Trade(ModelBase, LocalTrade):
     __tablename__ = 'trades'
     # TODO: Type query type throughout.
     query: Any
-    _session: Any = None
+    session: Any = None
 
     use_db: bool = True
 
