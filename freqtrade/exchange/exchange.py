@@ -942,8 +942,8 @@ class Exchange:
 
         return rate
 
-    def _is_dry_limit_order_filled(self, pair: str, side: str, limit: float,
-                                   orderbook: Optional[OrderBook] = None) -> bool:
+    def _dry_is_price_crossed(self, pair: str, side: str, limit: float,
+                              orderbook: Optional[OrderBook] = None) -> bool:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
         if not orderbook:
@@ -951,12 +951,10 @@ class Exchange:
         try:
             if side == 'buy':
                 price = orderbook['asks'][0][0]
-                logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
                 if limit >= price:
                     return True
             else:
                 price = orderbook['bids'][0][0]
-                logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
                 if limit <= price:
                     return True
         except IndexError:
@@ -974,7 +972,7 @@ class Exchange:
                 and order['type'] in ["limit"]
                 and not order.get('ft_order_type')):
             pair = order['symbol']
-            if self._is_dry_limit_order_filled(pair, order['side'], order['price'], orderbook):
+            if self._dry_is_price_crossed(pair, order['side'], order['price'], orderbook):
                 order.update({
                     'status': 'closed',
                     'filled': order['amount'],

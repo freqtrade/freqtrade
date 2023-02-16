@@ -1223,7 +1223,7 @@ def test_create_dry_run_order_fees(
         'freqtrade.exchange.Exchange.get_fee',
         side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
     )
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed',
                  return_value=price_side == 'other')
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -1241,7 +1241,7 @@ def test_create_dry_run_order_fees(
     else:
         assert order['fee'] is None
 
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed',
                  return_value=price_side != 'other')
 
     order1 = exchange.fetch_dry_run_order(order['id'])
@@ -3018,7 +3018,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 

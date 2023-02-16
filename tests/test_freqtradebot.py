@@ -272,7 +272,7 @@ def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
@@ -307,7 +307,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
 
     # Save state of current whitelist
@@ -3257,7 +3257,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3340,7 +3340,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3409,7 +3409,7 @@ def test_execute_trade_exit_custom_exit_price(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     config = deepcopy(default_conf_usdt)
     config['custom_price_max_distance_ratio'] = 0.1
@@ -3490,7 +3490,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3609,7 +3609,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
         price_to_precision=lambda s, x, y: y,
         create_stoploss=stoploss,
         cancel_stoploss_order=cancel_order,
-        _is_dry_limit_order_filled=MagicMock(side_effect=[True, False]),
+        _dry_is_price_crossed=MagicMock(side_effect=[True, False]),
     )
 
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3658,7 +3658,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
-        _is_dry_limit_order_filled=MagicMock(side_effect=[False, True]),
+        _dry_is_price_crossed=MagicMock(side_effect=[False, True]),
     )
 
     stoploss = MagicMock(return_value={
@@ -3753,7 +3753,7 @@ def test_execute_trade_exit_market_order(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
         get_funding_fees=MagicMock(side_effect=ExchangeError()),
     )
     patch_whitelist(mocker, default_conf_usdt)
@@ -3771,7 +3771,7 @@ def test_execute_trade_exit_market_order(
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt_sell_up,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     freqtrade.config['order_types']['exit'] = 'market'
 
@@ -4283,7 +4283,7 @@ def test_disable_ignore_roi_if_entry_signal(default_conf_usdt, limit_order, limi
             {'id': 1234553383}
         ]),
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(return_value=False),
     )
     default_conf_usdt['exit_pricing'] = {
         'ignore_roi_if_entry_signal': False
