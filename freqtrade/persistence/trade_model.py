@@ -1065,6 +1065,10 @@ class LocalTrade():
         """ DEPRECATED! Please use exit_reason instead."""
         return self.exit_reason
 
+    @property
+    def safe_close_rate(self) -> float:
+        return self.close_rate or self.close_rate_requested or 0.0
+
     @staticmethod
     def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
                          open_date: Optional[datetime] = None,

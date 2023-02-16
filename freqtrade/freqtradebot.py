@@ -1639,7 +1639,7 @@ class FreqtradeBot(LoggingMixin):
             profit = trade.calc_profit(rate=order_rate, amount=amount, open_rate=trade.open_rate)
             profit_ratio = trade.calc_profit_ratio(order_rate, amount, trade.open_rate)
         else:
-            order_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+            order_rate = trade.safe_close_rate
             profit = trade.calc_profit(rate=order_rate) + (0.0 if fill else trade.realized_profit)
             profit_ratio = trade.calc_profit_ratio(order_rate)
             amount = trade.amount
@@ -1694,7 +1694,7 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Order_obj not found for {order_id}. This should not have happened.")
 
-        profit_rate: float = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_rate: float = trade.safe_close_rate
         profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
