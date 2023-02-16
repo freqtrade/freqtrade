@@ -320,6 +320,22 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         return prices_train, prices_test
 
+    def model_exists(self, dk: FreqaiDataKitchen) -> bool:
+        """
+        Given a pair and path, check if a model already exists
+        :param pair: pair e.g. BTC/USD
+        :param path: path to model
+        :return:
+        :boolean: whether the model file exists or not.
+        """
+        path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model.zip")
+        file_exists = path_to_modelfile.is_file()
+        if file_exists:
+            logger.info("Found model at %s", dk.data_path / dk.model_filename)
+        else:
+            logger.info("Could not find model at %s", dk.data_path / dk.model_filename)
+        return file_exists
+
     def load_model_from_disk(self, dk: FreqaiDataKitchen) -> Any:
         """
         Can be used by user if they are trying to limit_ram_usage *and*
