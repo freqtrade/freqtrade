@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
 
 
@@ -165,9 +165,10 @@ class ShowConfig(BaseModel):
     stake_amount: str
     available_capital: Optional[float]
     stake_currency_decimals: int
-    max_open_trades: int
+    max_open_trades: IntOrInf
     minimal_roi: Dict[str, Any]
     stoploss: Optional[float]
+    stoploss_on_exchange: bool
     trailing_stop: Optional[bool]
     trailing_stop_positive: Optional[float]
     trailing_stop_positive_offset: Optional[float]
@@ -217,8 +218,8 @@ class TradeSchema(BaseModel):
     amount: float
     amount_requested: float
     stake_amount: float
+    max_stake_amount: Optional[float]
     strategy: str
-    buy_tag: Optional[str]  # Deprecated
     enter_tag: Optional[str]
     timeframe: int
     fee_open: Optional[float]
@@ -243,7 +244,6 @@ class TradeSchema(BaseModel):
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
-    sell_reason: Optional[str]  # Deprecated
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
@@ -372,6 +372,10 @@ class StrategyListResponse(BaseModel):
     strategies: List[str]
 
 
+class FreqAIModelListResponse(BaseModel):
+    freqaimodels: List[str]
+
+
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
@@ -410,15 +414,22 @@ class PairHistory(BaseModel):
         }
 
 
+class BacktestFreqAIInputs(BaseModel):
+    identifier: str
+
+
 class BacktestRequest(BaseModel):
     strategy: str
     timeframe: Optional[str]
     timeframe_detail: Optional[str]
     timerange: Optional[str]
-    max_open_trades: Optional[int]
+    max_open_trades: Optional[IntOrInf]
     stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
+    backtest_cache: Optional[str]
+    freqaimodel: Optional[str]
+    freqai: Optional[BacktestFreqAIInputs]
 
 
 class BacktestResponse(BaseModel):

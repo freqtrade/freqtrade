@@ -97,8 +97,8 @@ class Kraken(Exchange):
                 ))
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float,
-                 order_types: Dict, side: BuySell, leverage: float) -> Dict:
+    def create_stoploss(self, pair: str, amount: float, stop_price: float,
+                        order_types: Dict, side: BuySell, leverage: float) -> Dict:
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
@@ -158,7 +158,8 @@ class Kraken(Exchange):
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
+        trading_mode: Optional[TradingMode] = None,
+        accept_fail: bool = False,
     ):
         """
         Kraken set's the leverage as an option in the order object, so we need to

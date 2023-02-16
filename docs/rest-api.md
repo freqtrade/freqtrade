@@ -163,7 +163,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `strategy <strategy>` | Get specific Strategy content. **Alpha**
 | `available_pairs` | List available backtest data. **Alpha**
 | `version` | Show version.
-| `sysinfo` | Show informations about the system load.
+| `sysinfo` | Show information about the system load.
 | `health` | Show bot health (last bot loop).
 
 !!! Warning "Alpha status"
@@ -191,6 +191,11 @@ blacklist
 	Show the current blacklist.
 
         :param add: List of coins to add (example: "BNB/BTC")
+
+cancel_open_order
+	Cancel open order for trade.
+
+        :param trade_id: Cancels open orders for this trade.
 
 count
 	Return the amount of open trades.
@@ -274,7 +279,6 @@ reload_config
 	Reload configuration.
 
 show_config
-
         Returns part of the configuration, relevant for trading operations.
 
 start
@@ -319,6 +323,7 @@ version
 
 whitelist
 	Show the current whitelist.
+
 
 ```
 

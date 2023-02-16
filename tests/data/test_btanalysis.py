@@ -12,9 +12,11 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelis
                                        get_latest_hyperopt_file, load_backtest_data,
                                        load_backtest_metadata, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from freqtrade.data.metrics import (calculate_cagr, calculate_csum, calculate_market_change,
-                                    calculate_max_drawdown, calculate_underwater,
-                                    combine_dataframes_with_mean, create_cum_profit)
+from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
+                                    calculate_expectancy, calculate_market_change,
+                                    calculate_max_drawdown, calculate_sharpe, calculate_sortino,
+                                    calculate_underwater, combine_dataframes_with_mean,
+                                    create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -30,10 +32,10 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
 
     testdir_bt = testdatadir / "backtest_results"
     res = get_latest_backtest_filename(testdir_bt)
-    assert res == 'backtest-result_new.json'
+    assert res == 'backtest-result.json'
 
     res = get_latest_backtest_filename(str(testdir_bt))
-    assert res == 'backtest-result_new.json'
+    assert res == 'backtest-result.json'
 
     mocker.patch("freqtrade.data.btanalysis.json_load", return_value={})
 
@@ -81,7 +83,7 @@ def test_load_backtest_data_old_format(testdatadir, mocker):
 
 def test_load_backtest_data_new_format(testdatadir):
 
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
     assert set(bt_data.columns) == set(BT_DATA_COLUMNS)
@@ -182,7 +184,7 @@ def test_extract_trades_of_period(testdatadir):
 
 
 def test_analyze_trade_parallelism(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
 
     res = analyze_trade_parallelism(bt_data, "5m")
@@ -256,7 +258,7 @@ def test_combine_dataframes_with_mean_no_data(testdatadir):
 
 
 def test_create_cum_profit(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
@@ -268,11 +270,11 @@ def test_create_cum_profit(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 8.723007518796964e-06
+    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 9.0225563e-05
 
 
 def test_create_cum_profit1(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
     bt_data['close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
@@ -286,7 +288,7 @@ def test_create_cum_profit1(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 8.723007518796964e-06
+    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 9.0225563e-05
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],
@@ -294,18 +296,18 @@ def test_create_cum_profit1(testdatadir):
 
 
 def test_calculate_max_drawdown(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
         bt_data, value_col="profit_abs")
     assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.12071099
+    assert pytest.approx(drawdown) == 0.29753914
     assert isinstance(hdate, Timestamp)
     assert isinstance(lowdate, Timestamp)
     assert isinstance(hval, float)
     assert isinstance(lval, float)
-    assert hdate == Timestamp('2018-01-25 01:30:00', tz='UTC')
-    assert lowdate == Timestamp('2018-01-25 03:50:00', tz='UTC')
+    assert hdate == Timestamp('2018-01-16 19:30:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-16 22:25:00', tz='UTC')
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)
@@ -318,14 +320,15 @@ def test_calculate_max_drawdown(testdatadir):
 
 
 def test_calculate_csum(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     csum_min, csum_max = calculate_csum(bt_data)
 
     assert isinstance(csum_min, float)
     assert isinstance(csum_max, float)
-    assert csum_min < 0.01
-    assert csum_max > 0.02
+    assert csum_min < csum_max
+    assert csum_min < 0.0001
+    assert csum_max > 0.0002
     csum_min1, csum_max1 = calculate_csum(bt_data, 5)
 
     assert csum_min1 == csum_min + 5
@@ -333,6 +336,69 @@ def test_calculate_csum(testdatadir):
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
+
+
+def test_calculate_expectancy(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    expectancy = calculate_expectancy(DataFrame())
+    assert expectancy == 0.0
+
+    expectancy = calculate_expectancy(bt_data)
+    assert isinstance(expectancy, float)
+    assert pytest.approx(expectancy) == 0.07151374226574791
+
+
+def test_calculate_sortino(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    sortino = calculate_sortino(DataFrame(), None, None, 0)
+    assert sortino == 0.0
+
+    sortino = calculate_sortino(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(sortino, float)
+    assert pytest.approx(sortino) == 35.17722
+
+
+def test_calculate_sharpe(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    sharpe = calculate_sharpe(DataFrame(), None, None, 0)
+    assert sharpe == 0.0
+
+    sharpe = calculate_sharpe(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(sharpe, float)
+    assert pytest.approx(sharpe) == 44.5078669
+
+
+def test_calculate_calmar(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    calmar = calculate_calmar(DataFrame(), None, None, 0)
+    assert calmar == 0.0
+
+    calmar = calculate_calmar(
+        bt_data,
+        bt_data['open_date'].min(),
+        bt_data['close_date'].max(),
+        0.01,
+        )
+    assert isinstance(calmar, float)
+    assert pytest.approx(calmar) == 559.040508
 
 
 @pytest.mark.parametrize('start,end,days, expected', [

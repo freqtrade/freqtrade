@@ -58,6 +58,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -69,6 +70,7 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
     mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
@@ -80,6 +82,7 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
@@ -238,6 +241,7 @@ def test_print_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     # Delete non-json elements from default_conf
     del conf1['user_data_dir']
+    conf1['datadir'] = str(conf1['datadir'])
     config_files = [conf1]
 
     configsmock = MagicMock(side_effect=config_files)

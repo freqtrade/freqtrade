@@ -48,8 +48,8 @@ def hyperopt_results():
     return pd.DataFrame(
         {
             'pair': ['ETH/USDT', 'ETH/USDT', 'ETH/USDT', 'ETH/USDT'],
-            'profit_ratio': [-0.1, 0.2, -0.1, 0.3],
-            'profit_abs': [-0.2, 0.4, -0.2, 0.6],
+            'profit_ratio': [-0.1, 0.2, -0.12, 0.3],
+            'profit_abs': [-0.2, 0.4, -0.21, 0.6],
             'trade_duration': [10, 30, 10, 10],
             'amount': [0.1, 0.1, 0.1, 0.1],
             'exit_reason': [ExitType.STOP_LOSS, ExitType.ROI, ExitType.STOP_LOSS, ExitType.ROI],

@@ -148,6 +148,19 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
+        # homebrew fails to update python due to unlinking failures
+        # https://github.com/actions/runner-images/issues/6817
+        rm /usr/local/bin/2to3 || true
+        rm /usr/local/bin/2to3-3.11 || true
+        rm /usr/local/bin/idle3 || true
+        rm /usr/local/bin/idle3.11 || true
+        rm /usr/local/bin/pydoc3 || true
+        rm /usr/local/bin/pydoc3.11 || true
+        rm /usr/local/bin/python3 || true
+        rm /usr/local/bin/python3.11 || true
+        rm /usr/local/bin/python3-config || true
+        rm /usr/local/bin/python3.11-config || true
+
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
@@ -347,6 +360,8 @@ jobs:
         pip install -e .
 
     - name: Tests incl. ccxt compatibility tests
+      env:
+        CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
 

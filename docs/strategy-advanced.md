@@ -80,7 +80,7 @@ class AwesomeStrategy(IStrategy):
 ## Enter Tag
 
 When your strategy has multiple buy signals, you can name the signal that triggered.
-Then you can access you buy signal on `custom_exit`
+Then you can access your buy signal on `custom_exit`
 
 ```python
 def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

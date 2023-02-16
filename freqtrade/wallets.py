@@ -291,17 +291,22 @@ class Wallets:
         return self._check_available_stake_amount(stake_amount, available_amount)
 
     def validate_stake_amount(self, pair: str, stake_amount: Optional[float],
-                              min_stake_amount: Optional[float], max_stake_amount: float):
+                              min_stake_amount: Optional[float], max_stake_amount: float,
+                              trade_amount: Optional[float]):
         if not stake_amount:
             logger.debug(f"Stake amount is {stake_amount}, ignoring possible trade for {pair}.")
             return 0
 
-        max_stake_amount = min(max_stake_amount, self.get_available_stake_amount())
+        max_allowed_stake = min(max_stake_amount, self.get_available_stake_amount())
+        if trade_amount:
+            # if in a trade, then the resulting trade size cannot go beyond the max stake
+            # Otherwise we could no longer exit.
+            max_allowed_stake = min(max_allowed_stake, max_stake_amount - trade_amount)
 
-        if min_stake_amount is not None and min_stake_amount > max_stake_amount:
+        if min_stake_amount is not None and min_stake_amount > max_allowed_stake:
             if self._log:
                 logger.warning("Minimum stake amount > available balance. "
-                               f"{min_stake_amount} > {max_stake_amount}")
+                               f"{min_stake_amount} > {max_allowed_stake}")
             return 0
         if min_stake_amount is not None and stake_amount < min_stake_amount:
             if self._log:
@@ -320,11 +325,11 @@ class Wallets:
                 return 0
             stake_amount = min_stake_amount
 
-        if stake_amount > max_stake_amount:
+        if stake_amount > max_allowed_stake:
             if self._log:
                 logger.info(
                     f"Stake amount for pair {pair} is too big "
-                    f"({stake_amount} > {max_stake_amount}), adjusting to {max_stake_amount}."
+                    f"({stake_amount} > {max_allowed_stake}), adjusting to {max_allowed_stake}."
                 )
-            stake_amount = max_stake_amount
+            stake_amount = max_allowed_stake
         return stake_amount

@@ -195,12 +195,12 @@ def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
     exchange = get_patched_exchange(mocker, default_conf, id="okx")
     exchange._leverage_tiers = leverage_tiers
 
-    assert exchange.get_max_pair_stake_amount('BNB/BUSD', 1.0) == 30000000
-    assert exchange.get_max_pair_stake_amount('BNB/USDT', 1.0) == 50000000
-    assert exchange.get_max_pair_stake_amount('BTC/USDT', 1.0) == 1000000000
-    assert exchange.get_max_pair_stake_amount('BTC/USDT', 1.0, 10.0) == 100000000
+    assert exchange.get_max_pair_stake_amount('BNB/BUSD:BUSD', 1.0) == 30000000
+    assert exchange.get_max_pair_stake_amount('BNB/USDT:USDT', 1.0) == 50000000
+    assert exchange.get_max_pair_stake_amount('BTC/USDT:USDT', 1.0) == 1000000000
+    assert exchange.get_max_pair_stake_amount('BTC/USDT:USDT', 1.0, 10.0) == 100000000
 
-    assert exchange.get_max_pair_stake_amount('TTT/USDT', 1.0) == float('inf')  # Not in tiers
+    assert exchange.get_max_pair_stake_amount('TTT/USDT:USDT', 1.0) == float('inf')  # Not in tiers
 
 
 @pytest.mark.parametrize('mode,side,reduceonly,result', [
