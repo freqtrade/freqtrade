@@ -171,7 +171,7 @@ class FreqaiDataKitchen:
             train_labels = labels
             train_weights = weights
 
-        if feat_dict.get("shuffle_after_split", False):
+        if feat_dict["shuffle_after_split"]:
             rint1 = random.randint(0, 100)
             rint2 = random.randint(0, 100)
             train_features = train_features.sample(
