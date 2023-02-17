@@ -363,7 +363,7 @@ from pathlib import Path
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
     'secret': '<secret>'
-    'options': {'defaultType': 'future'}
+    'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()
 

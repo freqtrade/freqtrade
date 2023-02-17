@@ -1083,10 +1083,10 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=current_time,
-                                              current_profit=current_profit,
-                                              force_stoploss=force_stoploss, low=low, high=high)
+        stoplossflag = self.ft_stoploss_reached(current_rate=current_rate, trade=trade,
+                                                current_time=current_time,
+                                                current_profit=current_profit,
+                                                force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting exits
         current_rate = (low if trade.is_short else high) or rate
@@ -1153,13 +1153,12 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return exits
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade,
-                          current_time: datetime, current_profit: float,
-                          force_stoploss: float, low: Optional[float] = None,
-                          high: Optional[float] = None) -> ExitCheckTuple:
+    def ft_stoploss_adjust(self, current_rate: float, trade: Trade,
+                           current_time: datetime, current_profit: float,
+                           force_stoploss: float, low: Optional[float] = None,
+                           high: Optional[float] = None) -> None:
         """
-        Based on current profit of the trade and configured (trailing) stoploss,
-        decides to exit or not
+        Adjust stop-loss dynamically if configured to do so.
         :param current_profit: current profit as ratio
         :param low: Low value of this candle, only set in backtesting
         :param high: High value of this candle, only set in backtesting
@@ -1204,6 +1203,20 @@ class IStrategy(ABC, HyperStrategyMixin):
                                  f"offset: {sl_offset:.4g} profit: {bound_profit:.2%}")
 
                 trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
+
+    def ft_stoploss_reached(self, current_rate: float, trade: Trade,
+                            current_time: datetime, current_profit: float,
+                            force_stoploss: float, low: Optional[float] = None,
+                            high: Optional[float] = None) -> ExitCheckTuple:
+        """
+        Based on current profit of the trade and configured (trailing) stoploss,
+        decides to exit or not
+        :param current_profit: current profit as ratio
+        :param low: Low value of this candle, only set in backtesting
+        :param high: High value of this candle, only set in backtesting
+        """
+        self.ft_stoploss_adjust(current_rate, trade, current_time, current_profit,
+                                force_stoploss, low, high)
 
         sl_higher_long = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
         sl_lower_short = (trade.stop_loss <= (high or current_rate) and trade.is_short)

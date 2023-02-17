@@ -1078,7 +1078,7 @@ class FreqtradeBot(LoggingMixin):
             datetime.now(timezone.utc),
             enter=enter,
             exit_=exit_,
-            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+            force_stoploss=self.edge.get_stoploss(trade.pair) if self.edge else 0
         )
         for should_exit in exits:
             if should_exit.exit_flag:
@@ -1098,7 +1098,7 @@ class FreqtradeBot(LoggingMixin):
         :return: True if the order succeeded, and False in case of problems.
         """
         try:
-            stoploss_order = self.exchange.stoploss(
+            stoploss_order = self.exchange.create_stoploss(
                 pair=trade.pair,
                 amount=trade.amount,
                 stop_price=stop_price,
@@ -1172,7 +1172,7 @@ class FreqtradeBot(LoggingMixin):
         if not stoploss_order:
             stop_price = trade.stoploss_or_liquidation
             if self.edge:
-                stoploss = self.edge.stoploss(pair=trade.pair)
+                stoploss = self.edge.get_stoploss(pair=trade.pair)
                 stop_price = (
                     trade.open_rate * (1 - stoploss) if trade.is_short
                     else trade.open_rate * (1 + stoploss)

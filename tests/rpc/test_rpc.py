@@ -112,7 +112,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(side_effect=[False, True]),
+        _dry_is_price_crossed=MagicMock(side_effect=[False, True]),
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
@@ -226,7 +226,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=False)
     freqtradebot.enter_positions()
 
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
@@ -237,7 +237,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '0.00' == result[0][3]
     assert isnan(fiat_profit_sum)
 
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
     freqtradebot.process()
 
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
@@ -688,7 +688,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
                 'filled': 0.0,
             }
         ),
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
         get_fee=fee,
     )
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=1000)
@@ -726,7 +726,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
     mocker.patch(
-        'freqtrade.exchange.Exchange._is_dry_limit_order_filled', MagicMock(return_value=False))
+        'freqtrade.exchange.Exchange._dry_is_price_crossed', MagicMock(return_value=False))
     freqtradebot.enter_positions()
     # make an limit-buy open trade
     trade = Trade.query.filter(Trade.id == '3').first()

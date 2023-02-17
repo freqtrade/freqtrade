@@ -1223,7 +1223,7 @@ def test_create_dry_run_order_fees(
         'freqtrade.exchange.Exchange.get_fee',
         side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
     )
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed',
                  return_value=price_side == 'other')
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -1241,25 +1241,27 @@ def test_create_dry_run_order_fees(
     else:
         assert order['fee'] is None
 
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed',
                  return_value=price_side != 'other')
 
     order1 = exchange.fetch_dry_run_order(order['id'])
     assert order1['fee']['rate'] == fee
 
 
-@pytest.mark.parametrize("side,price,filled", [
+@pytest.mark.parametrize("side,price,filled,converted", [
     # order_book_l2_usd spread:
     # best ask: 25.566
     # best bid: 25.563
-    ("buy", 25.563, False),
-    ("buy", 25.566, True),
-    ("sell", 25.566, False),
-    ("sell", 25.563, True),
+    ("buy", 25.563, False, False),
+    ("buy", 25.566, True, False),
+    ("sell", 25.566, False, False),
+    ("sell", 25.563, True, False),
+    ("buy", 29.563, True, True),
+    ("sell", 21.563, True, True),
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, filled,
-                                         exchange_name, order_book_l2_usd):
+def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, filled, caplog,
+                                         exchange_name, order_book_l2_usd, converted):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -1279,9 +1281,16 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
-    assert order["type"] == "limit"
+    if not converted:
+        assert order["average"] == price
+        assert order["type"] == "limit"
+    else:
+        # Converted to market order
+        assert order["type"] == "market"
+        assert 25.5 < order["average"] < 25.6
+        assert log_has_re(r"Converted .* to market order.*", caplog)
+
     assert order["symbol"] == "LTC/USDT"
-    assert order["average"] == price
     assert order['status'] == 'open' if not filled else 'closed'
     order_book_l2_usd.reset_mock()
 
@@ -3018,7 +3027,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
@@ -3380,7 +3389,7 @@ def test_get_fee(default_conf, mocker, exchange_name):
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -5318,7 +5327,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     exchange.get_contract_size = MagicMock(return_value=contract_size)
 
     api_mock.create_order.reset_mock()
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=100,
         stop_price=220,

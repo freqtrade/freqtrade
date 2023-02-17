@@ -313,7 +313,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
     status_table = MagicMock()
     mocker.patch.multiple(
@@ -930,7 +930,7 @@ def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -999,7 +999,7 @@ def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -1070,7 +1070,7 @@ def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
     default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
@@ -1155,7 +1155,7 @@ def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
     femock = mocker.patch('freqtrade.rpc.rpc.RPC._rpc_force_exit')
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)

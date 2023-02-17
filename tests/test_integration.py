@@ -56,7 +56,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
         [ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]]
     )
     cancel_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
+    mocker.patch('freqtrade.exchange.Binance.create_stoploss', stoploss)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -367,7 +367,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
     )
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=False)
     mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
     mocker.patch("freqtrade.exchange.Exchange.get_funding_fees", return_value=0)
     mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt", return_value=(0, 0))
@@ -413,7 +413,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert trade.initial_stop_loss_pct is None
 
     # Fill order
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
@@ -428,7 +428,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # 2nd order - not filling
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=120)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=False)
 
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -452,7 +452,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # Fill DCA order
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=None)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
     freqtrade.strategy.adjust_entry_price = MagicMock(side_effect=ValueError)
 
     freqtrade.process()
