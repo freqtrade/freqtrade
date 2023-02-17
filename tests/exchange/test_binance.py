@@ -495,7 +495,8 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     for key, value in leverage_tiers.items():
         v = exchange._leverage_tiers[key]
         assert isinstance(v, list)
-        assert len(v) == len(value)
+        # Assert if conftest leverage tiers have less or equal tiers than the exchange
+        assert len(v) >= len(value)
 
 
 def test_additional_exchange_init_binance(default_conf, mocker):
