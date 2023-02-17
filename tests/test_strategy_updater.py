@@ -65,7 +65,23 @@ sell_reason == 'sell_signal'
 sell_reason == 'force_sell'
 sell_reason == 'emergency_sell'
 """)
+    modified_code9 = instance_strategy_updater.update_code("""
+# This is the 1st comment
+import talib.abstract as ta
+# This is the 2nd comment
+import freqtrade.vendor.qtpylib.indicators as qtpylib
 
+
+class someStrategy(IStrategy):
+    # This is the 3rd comment
+    # This attribute will be overridden if the config file contains "minimal_roi"
+    minimal_roi = {
+        "0": 0.50
+    }
+
+    # This is the 4th comment
+    stoploss = -0.1
+""")
     # currently still missing:
     # Webhook terminology, Telegram notification settings, Strategy/Config settings
 
@@ -108,3 +124,7 @@ sell_reason == 'emergency_sell'
     assert "exit_reason" in modified_code8
     assert "force_exit" in modified_code8
     assert "emergency_exit" in modified_code8
+
+    assert "This is the 1st comment" in modified_code9
+    assert "This is the 2nd comment" in modified_code9
+    assert "This is the 3rd comment" in modified_code9

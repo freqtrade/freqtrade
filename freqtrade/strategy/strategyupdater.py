@@ -1,9 +1,8 @@
-import ast
 import os
 import shutil
 from pathlib import Path
 
-import astor
+import ast_comments
 
 
 class StrategyUpdater:
@@ -76,7 +75,7 @@ class StrategyUpdater:
     # define the function to update the code
     def update_code(self, code):
         # parse the code into an AST
-        tree = ast.parse(code)
+        tree = ast_comments.parse(code)
 
         # use the AST to update the code
         updated_code = self.modify_ast(tree)
@@ -90,38 +89,43 @@ class StrategyUpdater:
         NameUpdater().visit(tree)
 
         # first fix the comments, so it understands "\n" properly inside multi line comments.
-        ast.fix_missing_locations(tree)
-        ast.increment_lineno(tree, n=1)
+        ast_comments.fix_missing_locations(tree)
+        ast_comments.increment_lineno(tree, n=1)
 
         # generate the new code from the updated AST
         # without indent {} parameters would just be written straight one after the other.
-        return astor.to_source(tree)
+
+        # ast_comments would be amazing since this is the only solution that carries over comments,
+        # but it does currently not have an unparse function, hopefully in the future ... !
+        # return ast_comments.unparse(tree)
+
+        return ast_comments.unparse(tree)
 
 
 # Here we go through each respective node, slice, elt, key ... to replace outdated entries.
-class NameUpdater(ast.NodeTransformer):
+class NameUpdater(ast_comments.NodeTransformer):
     def generic_visit(self, node):
 
         # space is not yet transferred from buy/sell to entry/exit and thereby has to be skipped.
-        if isinstance(node, ast.keyword):
+        if isinstance(node, ast_comments.keyword):
             if node.arg == "space":
                 return node
 
         # from here on this is the original function.
-        for field, old_value in ast.iter_fields(node):
+        for field, old_value in ast_comments.iter_fields(node):
             if isinstance(old_value, list):
                 new_values = []
                 for value in old_value:
-                    if isinstance(value, ast.AST):
+                    if isinstance(value, ast_comments.AST):
                         value = self.visit(value)
                         if value is None:
                             continue
-                        elif not isinstance(value, ast.AST):
+                        elif not isinstance(value, ast_comments.AST):
                             new_values.extend(value)
                             continue
                     new_values.append(value)
                 old_value[:] = new_values
-            elif isinstance(old_value, ast.AST):
+            elif isinstance(old_value, ast_comments.AST):
                 new_node = self.visit(old_value)
                 if new_node is None:
                     delattr(node, field)
@@ -163,8 +167,8 @@ class NameUpdater(ast.NodeTransformer):
         #        node.module = "freqtrade.strategy"
         return node
 
-    def visit_If(self, node: ast.If):
-        for child in ast.iter_child_nodes(node):
+    def visit_If(self, node: ast_comments.If):
+        for child in ast_comments.iter_child_nodes(node):
             self.visit(child)
         return node
 
@@ -175,7 +179,7 @@ class NameUpdater(ast.NodeTransformer):
 
     def visit_Attribute(self, node):
         if (
-                isinstance(node.value, ast.Name)
+                isinstance(node.value, ast_comments.Name)
                 and node.value.id == 'trades'
                 and node.attr == 'nr_of_successful_buys'
         ):
@@ -184,33 +188,33 @@ class NameUpdater(ast.NodeTransformer):
 
     def visit_ClassDef(self, node):
         # check if the class is derived from IStrategy
-        if any(isinstance(base, ast.Name) and
+        if any(isinstance(base, ast_comments.Name) and
                base.id == 'IStrategy' for base in node.bases):
             # check if the INTERFACE_VERSION variable exists
             has_interface_version = any(
-                isinstance(child, ast.Assign) and
-                isinstance(child.targets[0], ast.Name) and
+                isinstance(child, ast_comments.Assign) and
+                isinstance(child.targets[0], ast_comments.Name) and
                 child.targets[0].id == 'INTERFACE_VERSION'
                 for child in node.body
             )
 
             # if the INTERFACE_VERSION variable does not exist, add it as the first child
             if not has_interface_version:
-                node.body.insert(0, ast.parse('INTERFACE_VERSION = 3').body[0])
+                node.body.insert(0, ast_comments.parse('INTERFACE_VERSION = 3').body[0])
             # otherwise, update its value to 3
             else:
                 for child in node.body:
                     if (
-                            isinstance(child, ast.Assign)
-                            and isinstance(child.targets[0], ast.Name)
+                            isinstance(child, ast_comments.Assign)
+                            and isinstance(child.targets[0], ast_comments.Name)
                             and child.targets[0].id == 'INTERFACE_VERSION'
                     ):
-                        child.value = ast.parse('3').body[0].value
+                        child.value = ast_comments.parse('3').body[0].value
         self.generic_visit(node)
         return node
 
     def visit_Subscript(self, node):
-        if isinstance(node.slice, ast.Constant):
+        if isinstance(node.slice, ast_comments.Constant):
             if node.slice.value in StrategyUpdater.rename_dict:
                 # Replace the slice attributes with the values from rename_dict
                 node.slice.value = StrategyUpdater.rename_dict[node.slice.value]
@@ -232,12 +236,12 @@ class NameUpdater(ast.NodeTransformer):
 
     # sub function again needed since the structure itself is highly flexible ...
     def visit_elt(self, elt):
-        if isinstance(elt, ast.Constant) and elt.value in StrategyUpdater.rename_dict:
+        if isinstance(elt, ast_comments.Constant) and elt.value in StrategyUpdater.rename_dict:
             elt.value = StrategyUpdater.rename_dict[elt.value]
         if hasattr(elt, "elts"):
             self.visit_elts(elt.elts)
         if hasattr(elt, "args"):
-            if isinstance(elt.args, ast.arguments):
+            if isinstance(elt.args, ast_comments.arguments):
                 self.visit_elts(elt.args)
             else:
                 for arg in elt.args:
