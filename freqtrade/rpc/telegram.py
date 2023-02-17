@@ -1689,7 +1689,15 @@ class Telegram(RPCHandler):
         :return: None
         """
         if context.args and len(context.args) == 1:
-            market_dir = MarketDirection.string_to_enum(context.args[0])
-            if market_dir:
-                self._rpc._freqtrade.strategy.market_direction = market_dir
-
+            new_market_dir = context.args[0]
+            match new_market_dir:
+                case "long":
+                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.LONG
+                case "short":
+                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.SHORT
+                case "even":
+                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.EVEN
+                case "none":
+                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.NONE
+                case _:
+                    raise RPCException("Invalid market direction provided")
