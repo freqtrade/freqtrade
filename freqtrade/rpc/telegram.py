@@ -129,7 +129,7 @@ class Telegram(RPCHandler):
             r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
             r'/forcebuy$', r'/forcelong$', r'/forceshort$',
             r'/forcesell$', r'/forceexit$',
-            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir$'
+            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir \d+$'
         ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -1690,14 +1690,15 @@ class Telegram(RPCHandler):
         """
         if context.args and len(context.args) == 1:
             new_market_dir = context.args[0]
-            match new_market_dir:
-                case "long":
-                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.LONG
-                case "short":
-                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.SHORT
-                case "even":
-                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.EVEN
-                case "none":
-                    self._rpc._freqtrade.strategy.market_direction = MarketDirection.NONE
-                case _:
-                    raise RPCException("Invalid market direction provided")
+            if new_market_dir == "long":
+                self._rpc._update_market_direction(MarketDirection.LONG)
+            elif new_market_dir == "short":
+                self._rpc._update_market_direction(MarketDirection.SHORT)
+            elif new_market_dir == "even":
+                self._rpc._update_market_direction(MarketDirection.EVEN)
+            elif new_market_dir == "none":
+                self._rpc._update_market_direction(MarketDirection.NONE)
+            else:
+                raise RPCException("Invalid market direction provided")
+        else:
+            raise RPCException("Invalid usage of command /marketdir.")
