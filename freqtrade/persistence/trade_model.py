@@ -151,7 +151,7 @@ class Order(_DECL_BASE):
         self.order_update_date = datetime.now(timezone.utc)
 
     def to_ccxt_object(self) -> Dict[str, Any]:
-        return {
+        order = {
             'id': self.order_id,
             'symbol': self.ft_pair,
             'price': self.price,
@@ -169,6 +169,9 @@ class Order(_DECL_BASE):
             'fee': None,
             'info': {},
         }
+        if self.ft_order_side == 'stoploss':
+            order['ft_order_type'] = 'stoploss'
+        return order
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
         resp = {
