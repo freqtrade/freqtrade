@@ -103,7 +103,7 @@ def setup_logging(config: Config) -> None:
             logging.root.addHandler(handler_sl)
         elif s[0] == 'journald':  # pragma: no cover
             try:
-                from systemd.journal import JournaldLogHandler
+                from cysystemd.journal import JournaldLogHandler
             except ImportError:
                 raise OperationalException("You need the systemd python package be installed in "
                                            "order to use logging to journald.")
