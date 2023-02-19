@@ -5,10 +5,9 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from math import isclose
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
-from sqlalchemy import (Boolean, DateTime, Enum, Float, ForeignKey, Integer, String,
-                        UniqueConstraint, desc, func)
+from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func
 from sqlalchemy.orm import Mapped, Query, lazyload, mapped_column, relationship
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
@@ -37,7 +36,7 @@ class Order(ModelBase):
     """
     __tablename__ = 'orders'
     # TODO: Properly type query.
-    query: Any
+    query: ClassVar[Any]
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
@@ -1174,8 +1173,8 @@ class Trade(ModelBase, LocalTrade):
     """
     __tablename__ = 'trades'
     # TODO: Type query type throughout.
-    query: Any
-    session: Any = None
+    query: ClassVar[Any]
+    session: ClassVar[Any] = None
 
     use_db: bool = True
 
@@ -1197,11 +1196,11 @@ class Trade(ModelBase, LocalTrade):
     fee_close_cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     fee_close_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
     open_rate: Mapped[float] = mapped_column(Float())
-    open_rate_requested: float = mapped_column(Float())
+    open_rate_requested: Mapped[float] = mapped_column(Float())
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = mapped_column(Float())
-    close_rate: Optional[float] = mapped_column(Float())
-    close_rate_requested: Optional[float] = mapped_column(Float())
+    close_rate: Mapped[Optional[float]] = mapped_column(Float())
+    close_rate_requested: Mapped[Optional[float]] = mapped_column(Float())
     realized_profit: Mapped[float] = mapped_column(Float(), default=0.0)
     close_profit: Mapped[Optional[float]] = mapped_column(Float())
     close_profit_abs: Mapped[Optional[float]] = mapped_column(Float())

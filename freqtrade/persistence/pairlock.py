@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from sqlalchemy import String, or_
 from sqlalchemy.orm import Mapped, Query, mapped_column
@@ -14,7 +14,7 @@ class PairLock(ModelBase):
     """
     __tablename__ = 'pairlocks'
     # TODO: Properly type query.
-    query: Any
+    query: ClassVar[Any]
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
