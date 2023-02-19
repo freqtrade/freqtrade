@@ -21,7 +21,7 @@ spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURE
 def test_init_create_session(default_conf):
     # Check if init create a session
     init_db(default_conf['db_url'])
-    assert hasattr(Trade, '_session')
+    assert hasattr(Trade, 'session')
     assert 'scoped_session' in type(Trade.session).__name__
 
 

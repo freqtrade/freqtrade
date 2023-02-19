@@ -1196,7 +1196,7 @@ class Trade(ModelBase, LocalTrade):
     fee_close_cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     fee_close_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
     open_rate: Mapped[float] = mapped_column(Float())
-    open_rate_requested: Mapped[float] = mapped_column(Float())
+    open_rate_requested: Mapped[float] = mapped_column(Float(), nullable=True)
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = mapped_column(Float())
     close_rate: Mapped[Optional[float]] = mapped_column(Float())
