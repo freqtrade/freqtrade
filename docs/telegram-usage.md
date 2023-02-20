@@ -152,7 +152,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`, `/marketdir`
 
 ## Telegram commands
 
@@ -179,6 +179,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
+| `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction.
 | **Modify Trade states** |
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
@@ -416,3 +417,9 @@ ARDR/ETH   0.366667      0.143059       -0.01
 ### /version
 
 > **Version:** `0.14.3`
+
+### /marketdir
+
+Updates the user managed variable that represents the current market direction. This variable is not set
+to any market direction on bot startup and must be set by the user. For example `/marketdir long`
+would set the variable to be `long`.

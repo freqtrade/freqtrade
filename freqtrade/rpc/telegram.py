@@ -129,7 +129,7 @@ class Telegram(RPCHandler):
             r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
             r'/forcebuy$', r'/forcelong$', r'/forceshort$',
             r'/forcesell$', r'/forceexit$',
-            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir \d+$'
+            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir (long|short|even|none)$'
         ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -1495,6 +1495,8 @@ class Telegram(RPCHandler):
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
             "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
+            "*/marketdir [long | short | even | none]:* `Updates the user managed variable"
+            " that represents the current market direction` \n"
 
             "_Statistics_\n"
             "------------\n"
