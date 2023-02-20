@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import NoSuchModuleError
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
+SessionType = scoped_session[Session]
 
 
 def init_db(db_url: str) -> None:

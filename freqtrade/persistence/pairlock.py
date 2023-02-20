@@ -3,9 +3,11 @@ from typing import Any, ClassVar, Dict, Optional
 
 from sqlalchemy import String, or_
 from sqlalchemy.orm import Mapped, Query, mapped_column
+from sqlalchemy.orm.scoping import _QueryDescriptorType
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence.base import ModelBase
+from freqtrade.persistence.models import SessionType
 
 
 class PairLock(ModelBase):
@@ -13,8 +15,8 @@ class PairLock(ModelBase):
     Pair Locks database model.
     """
     __tablename__ = 'pairlocks'
-    # TODO: Properly type query.
-    query: ClassVar[Any]
+    query: ClassVar[_QueryDescriptorType]
+    session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

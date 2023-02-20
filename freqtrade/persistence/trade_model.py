@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func
 from sqlalchemy.orm import Mapped, Query, lazyload, mapped_column, relationship
+from sqlalchemy.orm.scoping import _QueryDescriptorType
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
                                  BuySell, LongShort)
@@ -17,6 +18,7 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import amount_to_contract_precision, price_to_precision
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import ModelBase
+from freqtrade.persistence.models import SessionType
 from freqtrade.util import FtPrecise
 
 
@@ -35,8 +37,9 @@ class Order(ModelBase):
     Mirrors CCXT Order structure
     """
     __tablename__ = 'orders'
-    # TODO: Properly type query.
-    query: ClassVar[Any]
+    query: ClassVar[_QueryDescriptorType]
+    session: ClassVar[SessionType]
+
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_pair', 'order_id', name="_order_pair_order_id"),)
@@ -1172,9 +1175,8 @@ class Trade(ModelBase, LocalTrade):
     Note: Fields must be aligned with LocalTrade class
     """
     __tablename__ = 'trades'
-    # TODO: Type query type throughout.
-    query: ClassVar[Any]
-    session: ClassVar[Any] = None
+    query: ClassVar[_QueryDescriptorType]
+    session: ClassVar[SessionType] = None
 
     use_db: bool = True
 
