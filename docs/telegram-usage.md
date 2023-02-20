@@ -421,5 +421,5 @@ ARDR/ETH   0.366667      0.143059       -0.01
 ### /marketdir
 
 Updates the user managed variable that represents the current market direction. This variable is not set
-to any market direction on bot startup and must be set by the user. For example `/marketdir long`
+to any valid market direction on bot startup and must be set by the user. As an example `/marketdir long`
 would set the variable to be `long`.
