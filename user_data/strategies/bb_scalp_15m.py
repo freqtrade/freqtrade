@@ -17,7 +17,7 @@ class bb_scalp_15m(WAOStrategy):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
         if self.coin == 'BTC' or self.coin == 'ADA':
             BrainConfig.BRAIN = "Freq_bb_15m_ada_btc"
-        super().__init__(config, 4, 0.14)
+        super().__init__(config, 3.5, 0.14)
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
