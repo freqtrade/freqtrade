@@ -7,8 +7,8 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-       "entry": 10,
-        "exit": 30,
+        "entry": 210,
+        "exit": 210,
         "unit": "minutes"
     },
     "entry_pricing": {
