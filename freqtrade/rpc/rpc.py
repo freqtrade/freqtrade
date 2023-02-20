@@ -189,8 +189,8 @@ class RPC:
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
-                    current_profit = trade.close_profit
-                    current_profit_abs = trade.close_profit_abs
+                    current_profit = trade.close_profit or 0.0
+                    current_profit_abs = trade.close_profit_abs or 0.0
                 total_profit_abs = trade.realized_profit + current_profit_abs
 
                 # Calculate fiat profit
@@ -449,11 +449,11 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_ratio = trade.close_profit
-                profit_abs = trade.close_profit_abs
+                profit_ratio = trade.close_profit or 0.0
+                profit_abs = trade.close_profit_abs or 0.0
                 profit_closed_coin.append(profit_abs)
                 profit_closed_ratio.append(profit_ratio)
-                if trade.close_profit >= 0:
+                if profit_ratio >= 0:
                     winning_trades += 1
                     winning_profit += profit_abs
                 else:
