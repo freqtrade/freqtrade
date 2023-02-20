@@ -1314,7 +1314,7 @@ class FreqtradeBot(LoggingMixin):
                                                          default_retval=order_obj.price)(
                 trade=trade, order=order_obj, pair=trade.pair,
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
-                current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
+                current_order_rate=order_obj.safe_price, entry_tag=trade.enter_tag,
                 side=trade.entry_side)
 
             replacing = True
@@ -1345,6 +1345,8 @@ class FreqtradeBot(LoggingMixin):
         """
 
         for trade in Trade.get_open_order_trades():
+            if not trade.open_order_id:
+                continue
             try:
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (ExchangeError):
@@ -1369,6 +1371,9 @@ class FreqtradeBot(LoggingMixin):
         """
         was_trade_fully_canceled = False
         side = trade.entry_side.capitalize()
+        if not trade.open_order_id:
+            logger.warning(f"No open order for {trade}.")
+            return False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
@@ -1455,7 +1460,7 @@ class FreqtradeBot(LoggingMixin):
                     return False
 
             try:
-                co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                co = self.exchange.cancel_order_with_result(order['id'], trade.pair,
                                                             trade.amount)
             except InvalidOrderException:
                 logger.exception(

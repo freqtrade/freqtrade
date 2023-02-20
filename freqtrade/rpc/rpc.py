@@ -410,7 +410,7 @@ class RPC:
             exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
-        dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
+        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
         for trade in trades:
             if trade.close_date is not None and trade.open_date is not None:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
