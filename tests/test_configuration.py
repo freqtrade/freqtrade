@@ -719,7 +719,7 @@ def test_set_loggers_journald_importerror(import_fails):
               'logfile': 'journald',
               }
     with pytest.raises(OperationalException,
-                       match=r'You need the systemd python package.*'):
+                       match=r'You need the cysystemd python package.*'):
         setup_logging(config)
     logger.handlers = orig_handlers
 
