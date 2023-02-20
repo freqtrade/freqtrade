@@ -373,13 +373,13 @@ class RPC:
 
     def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
         """ Returns the X last trades """
-        order_by = Trade.id if order_by_id else Trade.close_date.desc()
+        order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
                 order_by).limit(limit).offset(offset)
         else:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc()).all()
+                Trade.close_date.desc())
 
         output = [trade.to_json() for trade in trades]
 
@@ -401,7 +401,7 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
+        trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Sell reason
         exit_reasons = {}
         for trade in trades:
@@ -785,7 +785,8 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Optional[Trade] = Trade.get_trades(
+            [Trade.is_open.is_(True), Trade.pair == pair]).first()
         is_short = (order_side == SignalDirection.SHORT)
         if trade:
             is_short = trade.is_short

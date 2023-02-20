@@ -1055,10 +1055,14 @@ class Telegram(RPCHandler):
                     query.answer()
                     query.edit_message_text(text="Force exit canceled.")
                     return
-                trade: Trade = Trade.get_trades(trade_filter=Trade.id == trade_id).first()
+                trade: Optional[Trade] = Trade.get_trades(trade_filter=Trade.id == trade_id).first()
                 query.answer()
-                query.edit_message_text(text=f"Manually exiting Trade #{trade_id}, {trade.pair}")
-                self._force_exit_action(trade_id)
+                if trade:
+                    query.edit_message_text(
+                        text=f"Manually exiting Trade #{trade_id}, {trade.pair}")
+                    self._force_exit_action(trade_id)
+                else:
+                    query.edit_message_text(text=f"Trade {trade_id} not found.")
 
     def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':

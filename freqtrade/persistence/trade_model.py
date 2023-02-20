@@ -1305,7 +1305,7 @@ class Trade(ModelBase, LocalTrade):
             )
 
     @staticmethod
-    def get_trades(trade_filter=None, include_orders: bool = True) -> Query:
+    def get_trades(trade_filter=None, include_orders: bool = True) -> Query['Trade']:
         """
         Helper function to query Trades using filters.
         NOTE: Not supported in Backtesting.
