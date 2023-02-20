@@ -9,7 +9,7 @@
 coveralls==3.3.1
 flake8==6.0.0
 flake8-tidy-imports==4.8.0
-mypy==1.0.0
+mypy==1.0.1
 pre-commit==3.0.4
 pytest==7.2.1
 pytest-asyncio==0.20.3
