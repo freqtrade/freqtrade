@@ -248,10 +248,9 @@ The Edge module is mostly a result of brainstorming of [@mishaker](https://githu
 You can find further info on expectancy, win rate, risk management and position size in the following sources:
 
 - https://www.tradeciety.com/ultimate-math-guide-for-traders/
-- http://www.vantharp.com/tharp-concepts/expectancy.asp
 - https://samuraitradingacademy.com/trading-expectancy/
 - https://www.learningmarkets.com/determining-expectancy-in-your-trading/
-- http://www.lonestocktrader.com/make-money-trading-positive-expectancy/
+- https://www.lonestocktrader.com/make-money-trading-positive-expectancy/
 - https://www.babypips.com/trading/trade-expectancy-matter
 
 ## Official channels
