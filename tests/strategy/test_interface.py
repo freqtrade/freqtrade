@@ -291,18 +291,6 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
     assert len(processed['UNITTEST/BTC']) == 103
 
 
-def test_populate_any_indicators(default_conf, testdatadir) -> None:
-    strategy = StrategyResolver.load_strategy(default_conf)
-
-    timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
-                     fill_up_missing=True)
-    processed = strategy.populate_any_indicators('UNITTEST/BTC', data, '5m')
-    assert processed == data
-    assert id(processed) == id(data)
-    assert len(processed['UNITTEST/BTC']) == 103
-
-
 def test_freqai_not_initialized(default_conf) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
     strategy.ft_bot_start()

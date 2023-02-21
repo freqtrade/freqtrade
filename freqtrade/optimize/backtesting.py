@@ -93,7 +93,7 @@ class Backtesting:
         if self.config.get('strategy_list'):
             if self.config.get('freqai', {}).get('enabled', False):
                 logger.warning("Using --strategy-list with FreqAI REQUIRES all strategies "
-                               "to have identical populate_any_indicators.")
+                               "to have identical feature_engineering_* functions.")
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
