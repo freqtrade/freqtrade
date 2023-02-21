@@ -2,7 +2,7 @@
 
 ## Supported Markets
 
-Freqtrade supports spot trading only.
+Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
 
 ### Can my bot open short positions?
 
