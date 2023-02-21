@@ -253,3 +253,22 @@ You can find further info on expectancy, win rate, risk management and position 
 - https://www.learningmarkets.com/determining-expectancy-in-your-trading/
 - http://www.lonestocktrader.com/make-money-trading-positive-expectancy/
 - https://www.babypips.com/trading/trade-expectancy-matter
+
+## Official channels
+
+Freqtrade is using exclusively the following official channels:
+
+* [Freqtrade discord server](https://discord.gg/p7nuUNVfP7)
+* [Freqtrade documentation (https://freqtrade.io)](https://freqtrade.io)
+* [Freqtrade github organization](https://github.com/freqtrade)
+
+Nobody affiliated with the freqtrade project will ask you about your exchange keys or anything else exposing your funds to exploitation.
+Should you be asked to expose your exchange keys or send funds to some random wallet, then please don't follow these instructions.
+
+Failing to follow these guidelines will not be responsibility of freqtrade.
+
+## "Freqtrade token"
+
+Freqtrade does not have a Crypto token offering.
+
+Token offerings you find on the internet referring Freqtrade, FreqAI or freqUI must be considered to be a scam, trying to exploit freqtrade's popularity for their own, nefarious gains.
