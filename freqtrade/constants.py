@@ -569,7 +569,8 @@ CONF_SCHEMA = {
                                            "nu": {"type": "number", "default": 0.1}
                                            },
                                        },
-                        "shuffle_after_split": {"type": "boolean", "default": False}
+                        "shuffle_after_split": {"type": "boolean", "default": False},
+                        "buffer_train_data_candles": {"type": "integer", "default": 0}
                     },
                     "required": ["include_timeframes", "include_corr_pairlist", ]
                 },

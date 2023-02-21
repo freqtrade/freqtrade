@@ -46,7 +46,8 @@ def freqai_conf(default_conf, tmpdir):
                     "use_SVM_to_remove_outliers": True,
                     "stratify_training_data": 0,
                     "indicator_periods_candles": [10],
-                    "shuffle_after_split": False
+                    "shuffle_after_split": False,
+                    "buffer_train_data_candles": 0
                 },
                 "data_split_parameters": {"test_size": 0.33, "shuffle": False},
                 "model_training_parameters": {"n_estimators": 100},

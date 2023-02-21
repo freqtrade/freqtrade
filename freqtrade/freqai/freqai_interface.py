@@ -330,6 +330,8 @@ class IFreqaiModel(ABC):
                 dataframe_base_backtest = strategy.set_freqai_targets(
                     dataframe_base_backtest, metadata=metadata)
 
+                tr_train = dk.buffer_timerange(tr_train)
+
                 dataframe_train = dk.slice_dataframe(tr_train, dataframe_base_train)
                 dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe_base_backtest)
 
@@ -613,6 +615,8 @@ class IFreqaiModel(ABC):
         unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
             strategy, corr_dataframes, base_dataframes, pair
         )
+
+        new_trained_timerange = dk.buffer_timerange(new_trained_timerange)
 
         unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
