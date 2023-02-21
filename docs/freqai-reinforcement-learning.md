@@ -176,18 +176,19 @@ As you begin to modify the strategy and the prediction model, you will quickly r
 
                 factor = 100
 
-            # you can use feature values from dataframe
-            rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
-                              f"{self.config['timeframe']}"].iloc[self._current_tick]
+                # you can use feature values from dataframe
+                # Assumes the shifted RSI indicator has been generated in the strategy.
+                rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
+                                f"{self.config['timeframe']}"].iloc[self._current_tick]
 
-            # reward agent for entering trades
-            if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
-                    and self._position == Positions.Neutral):
-                if rsi_now < 40:
-                    factor = 40 / rsi_now
-                else:
-                    factor = 1
-                return 25 * factor
+                # reward agent for entering trades
+                if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
+                        and self._position == Positions.Neutral):
+                    if rsi_now < 40:
+                        factor = 40 / rsi_now
+                    else:
+                        factor = 1
+                    return 25 * factor
 
                 # discourage agent from not entering trades
                 if action == Actions.Neutral.value and self._position == Positions.Neutral:
