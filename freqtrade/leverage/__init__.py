@@ -1,2 +1,1 @@
-# flake8: noqa: F401
-from freqtrade.leverage.interest import interest
+from freqtrade.leverage.interest import interest  # noqa: F401
