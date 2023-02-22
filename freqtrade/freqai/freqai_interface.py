@@ -569,7 +569,7 @@ class IFreqaiModel(ABC):
             file_type = ".h5"
         elif 'stable_baselines' in self.dd.model_type or 'sb3_contrib' == self.dd.model_type:
             file_type = ".zip"
-        path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model.{file_type}")
+        path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model{file_type}")
         file_exists = path_to_modelfile.is_file()
         if file_exists:
             logger.info("Found model at %s", dk.data_path / dk.model_filename)
