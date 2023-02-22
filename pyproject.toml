@@ -56,3 +56,17 @@ exclude = [
   "build_helpers/*.py",
 ]
 ignore = ["freqtrade/vendor/**"]
+
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env"]
+extend-select = [
+  "TID",
+  "EXE",
+  "YTT",
+  # "DTZ",
+  # "RSE",
+  # "TCH",
+  # "PTH",
+]

@@ -98,6 +98,10 @@ jobs:
       run: |
         isort --check .
 
+    - name: Ruff - linting
+      run: |
+        ruff check .
+
     - name: Mypy
       run: |
         mypy freqtrade scripts tests
@@ -194,6 +198,10 @@ jobs:
       run: |
         isort --check .
 
+    - name: Ruff - linting
+      run: |
+        ruff check .
+
     - name: Mypy
       run: |
         mypy freqtrade scripts
@@ -251,6 +259,10 @@ jobs:
     - name: Flake8
       run: |
         flake8
+
+    - name: Ruff - linting
+      run: |
+        ruff check .
 
     - name: Mypy
       run: |
