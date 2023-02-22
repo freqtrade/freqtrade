@@ -90,10 +90,6 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
@@ -190,10 +186,6 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
@@ -255,10 +247,6 @@ jobs:
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
-
-    - name: Flake8
-      run: |
-        flake8
 
     - name: Ruff - linting
       run: |

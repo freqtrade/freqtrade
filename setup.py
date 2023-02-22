@@ -32,8 +32,6 @@ hdf5 = [
 
 develop = [
     'coveralls',
-    'flake8',
-    'flake8-tidy-imports',
     'mypy',
     'pytest',
     'pytest-asyncio',
