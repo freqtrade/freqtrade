@@ -60,30 +60,31 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
         asyncio.set_event_loop(asyncio.new_event_loop())
         try:
             # Reload strategy
-            lastconfig = ApiServer._bt_last_config
+            lastconfig = ApiServer._bt['last_config']
             strat = StrategyResolver.load_strategy(btconfig)
             validate_config_consistency(btconfig)
 
             if (
-                not ApiServer._bt
+                not ApiServer._bt['bt']
                 or lastconfig.get('timeframe') != strat.timeframe
                 or lastconfig.get('timeframe_detail') != btconfig.get('timeframe_detail')
                 or lastconfig.get('timerange') != btconfig['timerange']
             ):
                 from freqtrade.optimize.backtesting import Backtesting
-                ApiServer._bt = Backtesting(btconfig)
-                ApiServer._bt.load_bt_data_detail()
+                ApiServer._bt['bt'] = Backtesting(btconfig)
+                ApiServer._bt['bt'].load_bt_data_detail()
             else:
-                ApiServer._bt.config = btconfig
-                ApiServer._bt.init_backtest()
+                ApiServer._bt['bt'].config = btconfig
+                ApiServer._bt['bt'].init_backtest()
             # Only reload data if timeframe changed.
             if (
-                not ApiServer._bt_data
-                or not ApiServer._bt_timerange
+                not ApiServer._bt['data']
+                or not ApiServer._bt['timerange']
                 or lastconfig.get('timeframe') != strat.timeframe
                 or lastconfig.get('timerange') != btconfig['timerange']
             ):
-                ApiServer._bt_data, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
+                ApiServer._bt['data'], ApiServer._bt['timerange'] = ApiServer._bt[
+                    'bt'].load_bt_data()
 
             lastconfig['timerange'] = btconfig['timerange']
             lastconfig['timeframe'] = strat.timeframe
@@ -91,27 +92,27 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             lastconfig['enable_protections'] = btconfig.get('enable_protections')
             lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
 
-            ApiServer._bt.enable_protections = btconfig.get('enable_protections', False)
-            ApiServer._bt.strategylist = [strat]
-            ApiServer._bt.results = {}
-            ApiServer._bt.load_prior_backtest()
+            ApiServer._bt['bt'].enable_protections = btconfig.get('enable_protections', False)
+            ApiServer._bt['bt'].strategylist = [strat]
+            ApiServer._bt['bt'].results = {}
+            ApiServer._bt['bt'].load_prior_backtest()
 
-            ApiServer._bt.abort = False
-            if (ApiServer._bt.results and
-                    strat.get_strategy_name() in ApiServer._bt.results['strategy']):
+            ApiServer._bt['bt'].abort = False
+            if (ApiServer._bt['bt'].results and
+                    strat.get_strategy_name() in ApiServer._bt['bt'].results['strategy']):
                 # When previous result hash matches - reuse that result and skip backtesting.
                 logger.info(f'Reusing result of previous backtest for {strat.get_strategy_name()}')
             else:
-                min_date, max_date = ApiServer._bt.backtest_one_strategy(
-                    strat, ApiServer._bt_data, ApiServer._bt_timerange)
+                min_date, max_date = ApiServer._bt['bt'].backtest_one_strategy(
+                    strat, ApiServer._bt['data'], ApiServer._bt['timerange'])
 
-                ApiServer._bt.results = generate_backtest_stats(
-                    ApiServer._bt_data, ApiServer._bt.all_results,
+                ApiServer._bt['bt'].results = generate_backtest_stats(
+                    ApiServer._bt['data'], ApiServer._bt['bt'].all_results,
                     min_date=min_date, max_date=max_date)
 
             if btconfig.get('export', 'none') == 'trades':
                 store_backtest_stats(
-                    btconfig['exportfilename'], ApiServer._bt.results,
+                    btconfig['exportfilename'], ApiServer._bt['bt'].results,
                     datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     )
 
@@ -146,13 +147,13 @@ def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
         return {
             "status": "running",
             "running": True,
-            "step": ApiServer._bt.progress.action if ApiServer._bt else str(BacktestState.STARTUP),
-            "progress": ApiServer._bt.progress.progress if ApiServer._bt else 0,
+            "step": ApiServer._bt['bt'].progress.action if ApiServer._bt['bt'] else str(BacktestState.STARTUP),
+            "progress": ApiServer._bt['bt'].progress.progress if ApiServer._bt['bt'] else 0,
             "trade_count": len(LocalTrade.trades),
             "status_msg": "Backtest running",
         }
 
-    if not ApiServer._bt:
+    if not ApiServer._bt['bt']:
         return {
             "status": "not_started",
             "running": False,
@@ -167,7 +168,7 @@ def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
         "status_msg": "Backtest ended",
         "step": "finished",
         "progress": 1,
-        "backtest_result": ApiServer._bt.results,
+        "backtest_result": ApiServer._bt['bt'].results,
     }
 
 
@@ -182,12 +183,12 @@ def api_delete_backtest(ws_mode=Depends(is_webserver_mode)):
             "progress": 0,
             "status_msg": "Backtest running",
         }
-    if ApiServer._bt:
-        ApiServer._bt.cleanup()
-        del ApiServer._bt
-        ApiServer._bt = None
-        del ApiServer._bt_data
-        ApiServer._bt_data = None
+    if ApiServer._bt['bt']:
+        ApiServer._bt['bt'].cleanup()
+        del ApiServer._bt['bt']
+        ApiServer._bt['bt'] = None
+        del ApiServer._bt['data']
+        ApiServer._bt['data'] = None
         logger.info("Backtesting reset")
     return {
         "status": "reset",
@@ -208,7 +209,7 @@ def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
             "progress": 0,
             "status_msg": "Backtest ended",
         }
-    ApiServer._bt.abort = True
+    ApiServer._bt['bt'].abort = True
     return {
         "status": "stopping",
         "running": False,
@@ -225,7 +226,8 @@ def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserve
 
 
 @router.get('/backtest/history/result', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config),
+                                ws_mode=Depends(is_webserver_mode)):
     # Get backtest result history, read from metadata files
     fn = config['user_data_dir'] / 'backtest_results' / filename
     results: Dict[str, Any] = {
