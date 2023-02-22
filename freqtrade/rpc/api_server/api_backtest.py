@@ -10,7 +10,7 @@ from fastapi.exceptions import HTTPException
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
 from freqtrade.enums import BacktestState
-from freqtrade.exceptions import DependencyException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
                                                   BacktestResponse)
@@ -117,8 +117,8 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
 
             logger.info("Backtest finished.")
 
-        except DependencyException as e:
-            logger.info(f"Backtesting caused an error: {e}")
+        except (OperationalException, DependencyException) as e:
+            logger.exception(f"Backtesting caused an error: {e}")
             pass
         finally:
             ApiServer._bgtask_running = False
