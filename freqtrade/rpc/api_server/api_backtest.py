@@ -118,7 +118,7 @@ async def api_start_backtest(  # noqa: C901
 
             logger.info("Backtest finished.")
 
-        except (OperationalException, DependencyException) as e:
+        except (Exception, OperationalException, DependencyException) as e:
             logger.exception(f"Backtesting caused an error: {e}")
             pass
         finally:
