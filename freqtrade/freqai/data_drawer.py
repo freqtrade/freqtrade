@@ -366,6 +366,12 @@ class FreqaiDataDrawer:
 
     def purge_old_models(self) -> None:
 
+        num_keep = self.freqai_info["purge_old_models"]
+        if not num_keep:
+            return
+        elif type(num_keep) == bool:
+            num_keep = 2
+
         model_folders = [x for x in self.full_path.iterdir() if x.is_dir()]
 
         pattern = re.compile(r"sub-train-(\w+)_(\d{10})")
@@ -388,11 +394,11 @@ class FreqaiDataDrawer:
                 delete_dict[coin]["timestamps"][int(timestamp)] = dir
 
         for coin in delete_dict:
-            if delete_dict[coin]["num_folders"] > 2:
+            if delete_dict[coin]["num_folders"] > num_keep:
                 sorted_dict = collections.OrderedDict(
                     sorted(delete_dict[coin]["timestamps"].items())
                 )
-                num_delete = len(sorted_dict) - 2
+                num_delete = len(sorted_dict) - num_keep
                 deleted = 0
                 for k, v in sorted_dict.items():
                     if deleted >= num_delete:

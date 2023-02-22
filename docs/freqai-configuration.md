@@ -9,7 +9,7 @@ FreqAI is configured through the typical [Freqtrade config file](configuration.m
 ```json
     "freqai": {
         "enabled": true,
-        "purge_old_models": true,
+        "purge_old_models": 2,
         "train_period_days": 30,
         "backtest_period_days": 7,
         "identifier" : "unique-id",

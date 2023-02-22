@@ -27,7 +27,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
     "freqai": {
         "enabled": true,
-        "purge_old_models": true,
+        "purge_old_models": 2,
         "train_period_days": 15,
         "identifier": "uniqe-id",
         "feature_parameters": {

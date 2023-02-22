@@ -629,8 +629,7 @@ class IFreqaiModel(ABC):
         if self.plot_features:
             plot_feature_importance(model, pair, dk, self.plot_features)
 
-        if self.freqai_info.get("purge_old_models", False):
-            self.dd.purge_old_models()
+        self.dd.purge_old_models()
 
     def set_initial_historic_predictions(
         self, pred_df: DataFrame, dk: FreqaiDataKitchen, pair: str, strat_df: DataFrame
