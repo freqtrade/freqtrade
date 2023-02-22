@@ -309,7 +309,7 @@ def exchange(request, exchange_conf):
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange_futures(request, exchange_conf, class_mocker):
-    if not EXCHANGES[request.param].get('futures') is True:
+    if EXCHANGES[request.param].get('futures') is not True:
         yield None, request.param
     else:
         exchange_conf = set_test_proxy(
