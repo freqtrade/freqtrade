@@ -41,6 +41,7 @@ class ApiServer(RPCHandler):
         'data': None,
         'timerange': None,
         'last_config': {},
+        'bt_error': None,
     }
     _has_rpc: bool = False
     _bgtask_running: bool = False

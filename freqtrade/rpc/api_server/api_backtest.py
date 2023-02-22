@@ -29,6 +29,7 @@ router = APIRouter()
 async def api_start_backtest(  # noqa: C901
         bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
         config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+    ApiServer._bt['bt_error'] = None
     """Start backtesting if not done so already"""
     if ApiServer._bgtask_running:
         raise RPCException('Bot Background task already running')
@@ -120,6 +121,7 @@ async def api_start_backtest(  # noqa: C901
 
         except (Exception, OperationalException, DependencyException) as e:
             logger.exception(f"Backtesting caused an error: {e}")
+            ApiServer._bt['bt_error'] = str(e)
             pass
         finally:
             ApiServer._bgtask_running = False
@@ -161,6 +163,14 @@ def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
             "step": "",
             "progress": 0,
             "status_msg": "Backtest not yet executed"
+        }
+    if ApiServer._bt['bt_error']:
+        return {
+            "status": "error",
+            "running": False,
+            "step": "",
+            "progress": 0,
+            "status_msg": f"Backtest failed with {ApiServer._bt['bt_error']}"
         }
 
     return {
