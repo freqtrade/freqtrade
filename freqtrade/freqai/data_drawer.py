@@ -72,12 +72,7 @@ class FreqaiDataDrawer:
         self.model_return_values: Dict[str, DataFrame] = {}
         self.historic_data: Dict[str, Dict[str, DataFrame]] = {}
         self.historic_predictions: Dict[str, DataFrame] = {}
-        self.follower_dict: Dict[str, pair_info] = {}
         self.full_path = full_path
-        self.follower_name: str = self.config.get("bot_name", "follower1")
-        self.follower_dict_path = Path(
-            self.full_path / f"follower_dictionary-{self.follower_name}.json"
-        )
         self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
         self.historic_predictions_bkp_path = Path(
             self.full_path / "historic_predictions.backup.pkl")
@@ -218,14 +213,6 @@ class FreqaiDataDrawer:
                 rapidjson.dump(self.pair_dict, fp, default=self.np_encoder,
                                number_mode=rapidjson.NM_NATIVE)
 
-    def save_follower_dict_to_disk(self):
-        """
-        Save follower dictionary to disk (used by strategy for persistent prediction targets)
-        """
-        with open(self.follower_dict_path, "w") as fp:
-            rapidjson.dump(self.follower_dict, fp, default=self.np_encoder,
-                           number_mode=rapidjson.NM_NATIVE)
-
     def save_global_metadata_to_disk(self, metadata: Dict[str, Any]):
         """
         Save global metadata json to disk
@@ -239,7 +226,7 @@ class FreqaiDataDrawer:
         if isinstance(object, np.generic):
             return object.item()
 
-    def get_pair_dict_info(self, pair: str) -> Tuple[str, int, bool]:
+    def get_pair_dict_info(self, pair: str) -> Tuple[str, int]:
         """
         Locate and load existing model metadata from persistent storage. If not located,
         create a new one and append the current pair to it and prepare it for its first
@@ -248,12 +235,9 @@ class FreqaiDataDrawer:
         :return:
             model_filename: str = unique filename used for loading persistent objects from disk
             trained_timestamp: int = the last time the coin was trained
-            return_null_array: bool = Follower could not find pair metadata
         """
 
         pair_dict = self.pair_dict.get(pair)
-        # data_path_set = self.pair_dict.get(pair, self.empty_pair_dict).get("data_path", "")
-        return_null_array = False
 
         if pair_dict:
             model_filename = pair_dict["model_filename"]
@@ -263,7 +247,7 @@ class FreqaiDataDrawer:
             model_filename = ""
             trained_timestamp = 0
 
-        return model_filename, trained_timestamp, return_null_array
+        return model_filename, trained_timestamp
 
     def set_pair_dict_info(self, metadata: dict) -> None:
         pair_in_dict = self.pair_dict.get(metadata["pair"])
@@ -416,12 +400,6 @@ class FreqaiDataDrawer:
                     logger.info(f"Freqai purging old model file {v}")
                     shutil.rmtree(v)
                     deleted += 1
-
-    def update_follower_metadata(self):
-        # follower needs to load from disk to get any changes made by leader to pair_dict
-        self.load_drawer_from_disk()
-        if self.config.get("freqai", {}).get("purge_old_models", False):
-            self.purge_old_models()
 
     def save_metadata(self, dk: FreqaiDataKitchen) -> None:
         """

@@ -227,7 +227,7 @@ class IFreqaiModel(ABC):
                 logger.warning(f'{pair} not in current whitelist, removing from train queue.')
                 continue
 
-            (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
+            (_, trained_timestamp) = self.dd.get_pair_dict_info(pair)
 
             dk = FreqaiDataKitchen(self.config, self.live, pair)
             (
@@ -285,7 +285,7 @@ class IFreqaiModel(ABC):
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            (_, _, _) = self.dd.get_pair_dict_info(pair)
+            (_, _) = self.dd.get_pair_dict_info(pair)
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             self.training_timerange = tr_train
@@ -382,7 +382,7 @@ class IFreqaiModel(ABC):
         """
 
         # get the model metadata associated with the current pair
-        (_, trained_timestamp, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
+        (_, trained_timestamp) = self.dd.get_pair_dict_info(metadata["pair"])
 
         # append the historic data once per round
         if self.dd.historic_data:
