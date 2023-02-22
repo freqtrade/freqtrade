@@ -1737,9 +1737,15 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     data['stake_amount'] = 101
 
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-                 side_effect=DependencyException())
+                 side_effect=DependencyException('DeadBeef'))
     rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert log_has("Backtesting caused an error: ", caplog)
+    assert log_has("Backtesting caused an error: DeadBeef", caplog)
+
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'error'
+    assert 'Backtest failed' in result['status_msg']
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")
