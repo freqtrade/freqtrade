@@ -26,9 +26,9 @@ router = APIRouter()
 
 
 @router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-# flake8: noqa: C901
-async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
-                             config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+async def api_start_backtest(  # noqa: C901
+        bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
+        config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
     """Start backtesting if not done so already"""
     if ApiServer._bgtask_running:
         raise RPCException('Bot Background task already running')
@@ -147,7 +147,8 @@ def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
         return {
             "status": "running",
             "running": True,
-            "step": ApiServer._bt['bt'].progress.action if ApiServer._bt['bt'] else str(BacktestState.STARTUP),
+            "step": (ApiServer._bt['bt'].progress.action if ApiServer._bt['bt']
+                     else str(BacktestState.STARTUP)),
             "progress": ApiServer._bt['bt'].progress.progress if ApiServer._bt['bt'] else 0,
             "trade_count": len(LocalTrade.trades),
             "status_msg": "Backtest running",
@@ -219,13 +220,15 @@ def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
     }
 
 
-@router.get('/backtest/history', response_model=List[BacktestHistoryEntry], tags=['webserver', 'backtest'])
+@router.get('/backtest/history', response_model=List[BacktestHistoryEntry],
+            tags=['webserver', 'backtest'])
 def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
     # Get backtest result history, read from metadata files
     return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
 
 
-@router.get('/backtest/history/result', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+@router.get('/backtest/history/result', response_model=BacktestResponse,
+            tags=['webserver', 'backtest'])
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config),
                                 ws_mode=Depends(is_webserver_mode)):
     # Get backtest result history, read from metadata files
