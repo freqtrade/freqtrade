@@ -62,6 +62,10 @@ function updateenv() {
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
+        REQUIREMENTS_PLOT="-r requirements-plot.txt"
+        REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+        REQUIREMENTS_FREQAI="-r requirements-freqai.txt"
+        REQUIREMENTS_FREQAI_RL="-r requirements-freqai-rl.txt"
     else
         # requirements-dev.txt includes all the below requirements already, so further questions are pointless.
         read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
