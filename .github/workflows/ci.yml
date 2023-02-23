@@ -94,9 +94,9 @@ jobs:
       run: |
         isort --check .
 
-    - name: Ruff - linting
+    - name: Run Ruff
       run: |
-        ruff check .
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -190,9 +190,9 @@ jobs:
       run: |
         isort --check .
 
-    - name: Ruff - linting
+    - name: Run Ruff
       run: |
-        ruff check .
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -248,9 +248,9 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Ruff - linting
+    - name: Run Ruff
       run: |
-        ruff check .
+        ruff check --format=github .
 
     - name: Mypy
       run: |
