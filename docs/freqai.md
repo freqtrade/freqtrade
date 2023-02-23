@@ -6,6 +6,9 @@
 
 FreqAI is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input signals. In general, FreqAI aims to be a sandbox for easily deploying robust machine learning libraries on real-time data ([details](#freqai-position-in-open-source-machine-learning-landscape)).
 
+!!! Note
+    FreqAI is, and always will be, a not-for-profit, open-source project. FreqAI does *not* have a crypto token, FreqAI does *not* sell signals, and FreqAI does not have a domain besides the present [freqtrade documentation](https://www.freqtrade.io/en/latest/freqai/.
+
 Features include:
 
 * **Self-adaptive retraining** - Retrain models during [live deployments](freqai-running.md#live-deployments) to self-adapt to the market in a supervised manner
