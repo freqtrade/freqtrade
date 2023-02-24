@@ -2215,7 +2215,7 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res[pair1]) == 99
     assert len(res[pair2]) == 99
     assert exchange._klines
-    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0] // 1000
     exchange._api_async.fetch_ohlcv.reset_mock()
 
     # Returned from cache
@@ -2224,7 +2224,7 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res) == 2
     assert len(res[pair1]) == 99
     assert len(res[pair2]) == 99
-    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0] // 1000
 
     # Move time 1 candle further but result didn't change yet
     time_machine.move_to(start + timedelta(hours=101))
@@ -2234,7 +2234,7 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res[pair1]) == 99
     assert len(res[pair2]) == 99
     assert res[pair2].at[0, 'open']
-    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0] // 1000
     refresh_pior = exchange._pairs_last_refresh_time[pair1]
 
     # New candle on exchange - return 100 candles - but skip one candle so we actually get 2 candles
@@ -2252,8 +2252,8 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, 'open']
     assert refresh_pior != exchange._pairs_last_refresh_time[pair1]
 
-    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
-    assert exchange._pairs_last_refresh_time[pair2] == ohlcv[-1][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair2] == ohlcv[-2][0] // 1000
     exchange._api_async.fetch_ohlcv.reset_mock()
 
     # Retry same call - from cache
