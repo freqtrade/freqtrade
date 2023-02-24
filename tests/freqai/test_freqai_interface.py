@@ -27,19 +27,19 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle', [
-    ('LightGBMRegressor', True, False, True, True, False),
-    ('XGBoostRegressor', False, True, False, True, False),
-    ('XGBoostRFRegressor', False, False, False, True, False),
-    ('CatboostRegressor', False, False, False, True, True),
-    ('ReinforcementLearner', False, True, False, True, False),
-    ('ReinforcementLearner_multiproc', False, False, False, True, False),
-    ('ReinforcementLearner_test_3ac', False, False, False, False, False),
-    ('ReinforcementLearner_test_3ac', False, False, False, True, False),
-    ('ReinforcementLearner_test_4ac', False, False, False, True, False)
+@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
+    ('LightGBMRegressor', True, False, True, True, False, 0),
+    ('XGBoostRegressor', False, True, False, True, False, 10),
+    ('XGBoostRFRegressor', False, False, False, True, False, 0),
+    ('CatboostRegressor', False, False, False, True, True, 0),
+    ('ReinforcementLearner', False, True, False, True, False, 0),
+    ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
-                                               dbscan, float32, can_short, shuffle):
+                                               dbscan, float32, can_short, shuffle, buffer):
 
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
@@ -55,6 +55,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
     freqai_conf.update({"reduce_df_footprint": float32})
     freqai_conf['freqai']['feature_parameters'].update({"shuffle_after_split": shuffle})
+    freqai_conf['freqai']['feature_parameters'].update({"buffer_train_data_candles": buffer})
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
