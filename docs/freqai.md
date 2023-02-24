@@ -22,7 +22,7 @@ Features include:
 * **Automatic data download** - Compute timeranges for data downloads and update historic data (in live deployments)
 * **Cleaning of incoming data** - Handle NaNs safely before training and model inferencing
 * **Dimensionality reduction** - Reduce the size of the training data via [Principal Component Analysis](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis)
-* **Deploying bot fleets** - Set one bot to train models while a fleet of [follower bots](freqai-running.md#setting-up-a-follower) inference the models and handle trades
+* **Deploying bot fleets** - Set one bot to train models while a fleet of [consumers](producer-consumer.md) use signals.
 
 ## Quick start
 

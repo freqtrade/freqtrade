@@ -27,7 +27,7 @@ def freqai_conf(default_conf, tmpdir):
             "timerange": "20180110-20180115",
             "freqai": {
                 "enabled": True,
-                "purge_old_models": True,
+                "purge_old_models": 2,
                 "train_period_days": 2,
                 "backtest_period_days": 10,
                 "live_retrain_hours": 0,
