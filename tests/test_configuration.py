@@ -73,7 +73,8 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
-    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch('freqtrade.configuration.load_config.Path.open',
+                 mocker.mock_open(read_data=filedata))
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
     with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
