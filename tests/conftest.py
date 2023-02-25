@@ -145,22 +145,23 @@ def patch_exchange(
     mock_markets=True,
     mock_supported_modes=True
 ) -> None:
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+    mocker.patch('freqtrade.exchange.exchange.Exchange._load_async_markets',
+                 MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_config', MagicMock())
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.exchange.Exchange.id', PropertyMock(return_value=id))
+    mocker.patch('freqtrade.exchange.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    mocker.patch('freqtrade.exchange.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
 
     if mock_markets:
         if isinstance(mock_markets, bool):
             mock_markets = get_markets()
-        mocker.patch('freqtrade.exchange.Exchange.markets',
+        mocker.patch('freqtrade.exchange.exchange.Exchange.markets',
                      PropertyMock(return_value=mock_markets))
 
     if mock_supported_modes:
         mocker.patch(
-            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_margin_pairs',
+            f'freqtrade.exchange.{id}.{id.capitalize()}._supported_trading_mode_margin_pairs',
             PropertyMock(return_value=[
                 (TradingMode.MARGIN, MarginMode.CROSS),
                 (TradingMode.MARGIN, MarginMode.ISOLATED),
@@ -170,10 +171,11 @@ def patch_exchange(
         )
 
     if api_mock:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+        mocker.patch('freqtrade.exchange.exchange.Exchange._init_ccxt',
+                     MagicMock(return_value=api_mock))
     else:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
-        mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+        mocker.patch('freqtrade.exchange.exchange.Exchange._init_ccxt', MagicMock())
+        mocker.patch('freqtrade.exchange.exchange.Exchange.timeframes', PropertyMock(
                 return_value=['5m', '15m', '1h', '1d']))
 
 
