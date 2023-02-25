@@ -191,7 +191,7 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
 
     test_data = None
     test_filename = testdatadir.joinpath('UNITTEST_BTC-1m.json')
-    with open(test_filename, "rt") as file:
+    with test_filename.open("rt") as file:
         test_data = json.load(file)
 
     test_data_df = ohlcv_to_dataframe(test_data, '1m', 'UNITTEST/BTC',

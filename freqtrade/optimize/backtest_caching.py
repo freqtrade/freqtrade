@@ -29,7 +29,7 @@ def get_strategy_run_id(strategy) -> str:
     # Include _ft_params_from_file - so changing parameter files cause cache eviction
     digest.update(rapidjson.dumps(
         strategy._ft_params_from_file, default=str, number_mode=rapidjson.NM_NAN).encode('utf-8'))
-    with open(strategy.__file__, 'rb') as fp:
+    with Path(strategy.__file__).open('rb') as fp:
         digest.update(fp.read())
     return digest.hexdigest().lower()
 
