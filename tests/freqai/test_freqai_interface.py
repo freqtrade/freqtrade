@@ -1,5 +1,6 @@
 import platform
 import shutil
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -15,6 +16,10 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
+
+
+def is_py11() -> bool:
+    return sys.version_info >= (3, 11)
 
 
 def is_arm() -> bool:
@@ -41,7 +46,7 @@ def is_mac() -> bool:
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
 
-    if is_arm() and model == 'CatboostRegressor':
+    if (is_arm() or is_py11()) and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
     if is_mac() and not is_arm() and 'Reinforcement' in model:
@@ -117,7 +122,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
-    if is_arm() and 'Catboost' in model:
+    if (is_arm() or is_py11()) and 'Catboost' in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -159,7 +164,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
-    if is_arm() and model == 'CatboostClassifier':
+    if (is_arm() or is_py11()) and model == 'CatboostClassifier':
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"freqaimodel": model})
@@ -208,7 +213,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
-    if is_arm() and "Catboost" in model:
+    if (is_arm() or is_py11()) and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     if is_mac() and 'Reinforcement' in model:
