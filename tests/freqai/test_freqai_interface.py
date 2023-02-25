@@ -51,7 +51,8 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
 
     if is_mac() and not is_arm() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-
+    if is_py11() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -218,6 +219,8 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
     if is_mac() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    if is_py11() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
     Trade.use_db = False
 
     freqai_conf.update({"freqaimodel": model})
@@ -514,6 +517,8 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    if is_py11():
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})
