@@ -356,6 +356,14 @@ def test_exception_send_msg(default_conf, mocker, caplog):
             }
         webhook.send_msg(msg)
 
+    # Test no failure for not implemented but known messagetypes
+    for e in RPCMessageType:
+        msg = {
+            'type': e,
+            'status': 'whatever'
+            }
+        webhook.send_msg(msg)
+
 
 def test__send_msg(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
