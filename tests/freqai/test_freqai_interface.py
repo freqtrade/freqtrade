@@ -32,6 +32,17 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+def can_run_model(model: str) -> None:
+    if (is_arm() or is_py11()) and "Catboost" in model:
+        pytest.skip("CatBoost is not supported on ARM")
+
+    if is_mac() and not is_arm() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+
+    if is_py11() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+
+
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
     ('LightGBMRegressor', True, False, True, True, False, 0),
     ('XGBoostRegressor', False, True, False, True, False, 10),
@@ -46,13 +57,7 @@ def is_mac() -> bool:
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
 
-    if (is_arm() or is_py11()) and model == 'CatboostRegressor':
-        pytest.skip("CatBoost is not supported on ARM")
-
-    if is_mac() and not is_arm() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-    if is_py11() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+    can_run_model(model)
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -212,15 +217,11 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
+    can_run_model(model)
+
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
-    if (is_arm() or is_py11()) and "Catboost" in model:
-        pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-    if is_py11() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
     Trade.use_db = False
 
     freqai_conf.update({"freqaimodel": model})
