@@ -41,7 +41,6 @@ dependencies:
     # 2/4 req dev
 
     - coveralls
-    - flake8
     - mypy
     - pytest
     - pytest-asyncio
@@ -70,6 +69,6 @@ dependencies:
         - tables
         - pytest-random-order
         - ccxt
-        - flake8-tidy-imports
+        - ruff
         - -e .
     # - python-rapidjso

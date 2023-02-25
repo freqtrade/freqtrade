@@ -56,3 +56,17 @@ exclude = [
   "build_helpers/*.py",
 ]
 ignore = ["freqtrade/vendor/**"]
+
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env"]
+extend-select = [
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  "YTT",    # flake8-2020
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  # "PTH",  # flake8-use-pathlib
+]
