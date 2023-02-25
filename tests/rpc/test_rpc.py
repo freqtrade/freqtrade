@@ -12,8 +12,8 @@ from freqtrade.persistence import Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_patched_freqtradebot,
-                            patch_get_signal)
+from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
+                            get_patched_freqtradebot, patch_get_signal)
 
 
 def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
@@ -169,7 +169,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     response = deepcopy(gen_response)
     assert results[0] == response
 
-    mocker.patch('freqtrade.exchange.Exchange.get_rate',
+    mocker.patch(f'{EXMS}.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['profit_ratio'])
@@ -209,7 +209,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
-    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=False)
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
     freqtradebot.enter_positions()
 
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
@@ -220,7 +220,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '0.00' == result[0][3]
     assert isnan(fiat_profit_sum)
 
-    mocker.patch('freqtrade.exchange.Exchange._dry_is_price_crossed', return_value=True)
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
     freqtradebot.process()
 
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
@@ -231,7 +231,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.41%' == result[0][3]
     assert isnan(fiat_profit_sum)
 
-    # Test with fiatconvert
+    # Test with fiat convert
     rpc._fiat_converter = CryptoToFiatConverter()
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
@@ -251,7 +251,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     # 3 on top of the initial one.
     assert result[0][4] == '1/4'
 
-    mocker.patch('freqtrade.exchange.Exchange.get_rate',
+    mocker.patch(f'{EXMS}.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
@@ -367,15 +367,13 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     assert stoploss_mock.call_count == 1
     assert res['cancel_order_count'] == 2
 
-    stoploss_mock = mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
-                                 side_effect=InvalidOrderException)
+    stoploss_mock = mocker.patch(f'{EXMS}.cancel_stoploss_order', side_effect=InvalidOrderException)
 
     res = rpc._rpc_delete('3')
     assert stoploss_mock.call_count == 1
     stoploss_mock.reset_mock()
 
-    cancel_mock = mocker.patch('freqtrade.exchange.Exchange.cancel_order',
-                               side_effect=InvalidOrderException)
+    cancel_mock = mocker.patch(f'{EXMS}.cancel_order', side_effect=InvalidOrderException)
 
     res = rpc._rpc_delete('4')
     assert cancel_mock.call_count == 1
@@ -423,7 +421,7 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert stats['best_rate'] == 10.0
 
     # Test non-available pair
-    mocker.patch('freqtrade.exchange.Exchange.get_rate',
+    mocker.patch(f'{EXMS}.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'XRP/USDT' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 7
@@ -708,15 +706,14 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
-    mocker.patch(
-        'freqtrade.exchange.Exchange._dry_is_price_crossed', MagicMock(return_value=False))
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', MagicMock(return_value=False))
     freqtradebot.enter_positions()
     # make an limit-buy open trade
     trade = Trade.query.filter(Trade.id == '3').first()
     filled_amount = trade.amount / 2
     # Fetch order - it's open first, and closed after cancel_order is called.
     mocker.patch(
-        'freqtrade.exchange.Exchange.fetch_order',
+        f'{EXMS}.fetch_order',
         side_effect=[{
             'id': trade.orders[0].order_id,
             'status': 'open',
@@ -738,7 +735,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert pytest.approx(trade.amount) == filled_amount
 
     mocker.patch(
-        'freqtrade.exchange.Exchange.fetch_order',
+        f'{EXMS}.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -752,7 +749,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
     mocker.patch(
-        'freqtrade.exchange.Exchange.fetch_order',
+        f'{EXMS}.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -770,7 +767,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
 
     # make an limit-sell open trade
     mocker.patch(
-        'freqtrade.exchange.Exchange.fetch_order',
+        f'{EXMS}.fetch_order',
         return_value={
             'status': 'open',
             'type': 'limit',
@@ -1138,7 +1135,7 @@ def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     default_conf['pairlists'] = [{'method': 'VolumePairList',
                                   'number_assets': 4,
                                   }]
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)

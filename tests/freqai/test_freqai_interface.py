@@ -13,7 +13,7 @@ from freqtrade.freqai.utils import download_all_data_for_training, get_required_
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
-from tests.conftest import create_mock_trades, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
 
 
@@ -520,7 +520,7 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
-    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     strategy.dp = DataProvider(freqai_conf, exchange)
 
     if not dp_exists:
