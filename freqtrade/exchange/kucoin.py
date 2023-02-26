@@ -64,6 +64,7 @@ class Kucoin(Exchange):
         # ccxt returns status = 'closed' at the moment - which is information ccxt invented.
         # Since we rely on status heavily, we must set it to 'open' here.
         # ref: https://github.com/ccxt/ccxt/pull/16674, (https://github.com/ccxt/ccxt/pull/16553)
-        res['type'] = ordertype
-        res['status'] = 'open'
+        if not self._config['dry_run']:
+            res['type'] = ordertype
+            res['status'] = 'open'
         return res

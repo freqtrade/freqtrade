@@ -27,7 +27,7 @@ from tests.conftest import (generate_test_data_raw, get_mock_coro, get_patched_e
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'bybit']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -1269,7 +1269,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
                           fetch_l2_order_book=order_book_l2_usd,
                           )
 
-    order = exchange.create_dry_run_order(
+    order = exchange.create_order(
         pair='LTC/USDT',
         ordertype='limit',
         side=side,
@@ -1332,7 +1332,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
                           fetch_l2_order_book=order_book_l2_usd,
                           )
 
-    order = exchange.create_dry_run_order(
+    order = exchange.create_order(
         pair='LTC/USDT',
         ordertype='market',
         side=side,
@@ -1425,9 +1425,10 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     assert order['amount'] == 0.01
 
 
-def test_buy_dry_run(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_buy_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     order = exchange.create_order(pair='ETH/BTC', ordertype='limit', side="buy",
                                   amount=1, rate=200, leverage=1.0,
