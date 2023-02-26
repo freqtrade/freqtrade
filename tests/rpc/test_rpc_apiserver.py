@@ -2,6 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 import logging
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1794,6 +1795,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     assert result2['backtest_result']['strategy'][strategy]
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Throws OSError on Windows")
 def test_health(botclient):
     ftbot, client = botclient
 

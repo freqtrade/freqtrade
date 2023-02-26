@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
-
+import sys
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -1247,6 +1247,7 @@ def test_rpc_edge_enabled(mocker, edge_conf) -> None:
     assert ret[0]['Stoploss'] == -0.02
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Throws OSError on Windows")
 def test_rpc_health(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 

@@ -1,5 +1,6 @@
 import platform
 import shutil
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -16,6 +17,9 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
 
+if sys.platform.startswith("win"):
+    pytest.skip("Skipping these tests as it depends on stable-baselines3==1.7.0 which doesn't support Windows",
+                allow_module_level=True)
 
 def is_arm() -> bool:
     machine = platform.machine()
