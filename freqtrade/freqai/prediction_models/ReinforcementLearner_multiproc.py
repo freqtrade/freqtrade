@@ -34,6 +34,11 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
+        if self.train_env:
+            self.train_env.close()
+        if self.eval_env:
+            self.eval_env.close()
+
         env_info = self.pack_env_dict(dk.pair)
 
         env_id = "train_env"
