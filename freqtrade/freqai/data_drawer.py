@@ -570,12 +570,12 @@ class FreqaiDataDrawer:
 
             for pair in dk.all_pairs:
                 for tf in feat_params.get("include_timeframes"):
-
+                    hist_df = history_data[pair][tf]
                     # check if newest candle is already appended
                     df_dp = strategy.dp.get_pair_dataframe(pair, tf)
                     if len(df_dp.index) == 0:
                         continue
-                    if str(history_data[pair][tf].iloc[-1]["date"]) == str(
+                    if str(hist_df.iloc[-1]["date"]) == str(
                         df_dp.iloc[-1:]["date"].iloc[-1]
                     ):
                         continue
@@ -583,21 +583,30 @@ class FreqaiDataDrawer:
                     try:
                         index = (
                             df_dp.loc[
-                                df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]
+                                df_dp["date"] == hist_df.iloc[-1]["date"]
                             ].index[0]
                             + 1
                         )
                     except IndexError:
-                        logger.warning(
-                            f"Unable to update pair history for {pair}. "
-                            "If this does not resolve itself after 1 additional candle, "
-                            "please report the error to #freqai discord channel"
-                        )
-                        return
+                        if hist_df.iloc[-1]['date'] < df_dp['date'].iloc[0]:
+                            raise OperationalException("In memory historical data is older than "
+                                                       f"oldest DataProvider candle for {pair} on "
+                                                       f"timeframe {tf}")
+                        else:
+                            index = -1
+                            logger.warning(
+                                f"No common dates in historical data and dataprovider for {pair}. "
+                                f"Appending latest dataprovider candle to historical data "
+                                "but please be aware that there is likely a gap in the historical "
+                                "data. \n"
+                                f"Historical data ends at {hist_df.iloc[-1]['date']} "
+                                f"while dataprovider starts at {df_dp['date'].iloc[0]} and"
+                                f"ends at {df_dp['date'].iloc[0]}."
+                            )
 
                     history_data[pair][tf] = pd.concat(
                         [
-                            history_data[pair][tf],
+                            hist_df,
                             df_dp.iloc[index:],
                         ],
                         ignore_index=True,
