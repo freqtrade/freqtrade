@@ -27,6 +27,12 @@ repos:
         name: isort (python)
         # stages: [push]
 
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.0.251'
+    hooks:
+      - id: ruff
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

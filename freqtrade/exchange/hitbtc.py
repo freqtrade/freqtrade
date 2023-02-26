@@ -19,5 +19,4 @@ class Hitbtc(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
-        "ohlcv_params": {"sort": "DESC"}
     }

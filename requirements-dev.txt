@@ -7,8 +7,7 @@
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
-flake8==6.0.0
-flake8-tidy-imports==4.8.0
+ruff==0.0.251
 mypy==1.0.1
 pre-commit==3.0.4
 pytest==7.2.1
