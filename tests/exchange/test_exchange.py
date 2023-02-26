@@ -27,7 +27,7 @@ from tests.conftest import (generate_test_data_raw, get_mock_coro, get_patched_e
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'bybit']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -5015,7 +5015,7 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
         exchange.get_max_leverage("BTC/USDT:USDT", 1000000000.01)
 
 
-@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gate', 'okx'])
+@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gate', 'okx', 'bybit'])
 def test__get_params(mocker, default_conf, exchange_name):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
@@ -5035,6 +5035,9 @@ def test__get_params(mocker, default_conf, exchange_name):
     if exchange_name == 'okx':
         params2['tdMode'] = 'isolated'
         params2['posSide'] = 'net'
+
+    if exchange_name == 'bybit':
+        params2['position_idx'] = 0
 
     assert exchange._get_params(
         side="buy",
