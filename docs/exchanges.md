@@ -243,8 +243,8 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
     OKX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
 
 !!! Warning "Futures"
-    OKX Futures has the concept of "position mode" - which can be Net or long/short (hedge mode).
-    Freqtrade supports both modes (we recommend to use net mode) - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
+    OKX Futures has the concept of "position mode" - which can be "Buy/Sell" or long/short (hedge mode).
+    Freqtrade supports both modes (we recommend to use Buy/Sell mode) - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
     OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
 
 ## Gate.io
@@ -254,6 +254,18 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
 
 Gate.io allows the use of `POINT` to pay for fees. As this is not a tradable currency (no regular market available), automatic fee calculations will fail (and default to a fee of 0).
 The configuration parameter `exchange.unknown_fee_rate` can be used to specify the exchange rate between Point and the stake currency. Obviously, changing the stake-currency will also require changes to this value.
+
+## Bybit
+
+Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.
+Users with unified accounts (there's no way back) can create a Sub-account which will start as "non-unified", and can therefore use isolated futures.
+On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors.
+
+As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.
+
+!!! Tip "Stoploss on Exchange"
+    Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+    On futures, Bybit supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
 
 ## All exchanges
 

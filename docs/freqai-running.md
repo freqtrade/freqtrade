@@ -120,7 +120,7 @@ In the presented example config, the user will only allow predictions on models 
 
 Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the `model_training_parameters` dictionary in the config. The example config (found in `config_examples/config_freqai.example.json`) shows some of the example parameters associated with `Catboost` and `LightGBM`, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.
 
-Data split parameters are defined in `data_split_parameters` which can be any parameters associated with Scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [Scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
+Data split parameters are defined in `data_split_parameters` which can be any parameters associated with scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
 
 The FreqAI specific parameter `label_period_candles` defines the offset (number of candles into the future) used for the `labels`. In the presented [example config](freqai-configuration.md#setting-up-the-configuration-file), the user is asking for `labels` that are 24 candles in the future.
 
@@ -165,20 +165,3 @@ tensorboard --logdir user_data/models/unique-id
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
-
-## Setting up a follower
-
-You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:
-
-```json
-    "freqai": {
-        "enabled": true,
-        "follow_mode": true,
-        "identifier": "example",
-        "feature_parameters": {
-        // leader bots feature_parameters inserted here 
-        },
-    }
-```
-
-In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models. The user will also need to duplicate the `feature_parameters` parameters from from the leaders freqai configuration file into the freqai section of the followers config. 

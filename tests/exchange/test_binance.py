@@ -20,7 +20,7 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     (0.99, 220 * 1.01, "buy"),
     (0.98, 220 * 1.02, "buy"),
 ])
-def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
+def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'stop_loss_limit' if trademode == TradingMode.SPOT else 'stop'
@@ -40,7 +40,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
     with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
@@ -50,11 +50,11 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     api_mock.create_order.reset_mock()
-    order_types = {'stoploss': 'limit'}
+    order_types = {'stoploss': 'limit', 'stoploss_price_type': 'mark'}
     if limitratio is not None:
         order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
 
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -75,14 +75,14 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     if trademode == TradingMode.SPOT:
         params_dict = {'stopPrice': 220}
     else:
-        params_dict = {'stopPrice': 220, 'reduceOnly': True}
+        params_dict = {'stopPrice': 220, 'reduceOnly': True, 'workingType': 'MARK_PRICE'}
     assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -94,7 +94,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -104,12 +104,12 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "binance",
-                           "stoploss", "create_order", retries=1,
+                           "create_stoploss", "create_order", retries=1,
                            pair='ETH/BTC', amount=1, stop_price=220, order_types={},
                            side=side, leverage=1.0)
 
 
-def test_stoploss_order_dry_run_binance(default_conf, mocker):
+def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
@@ -119,7 +119,7 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
     with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
@@ -130,7 +130,7 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -495,7 +495,8 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     for key, value in leverage_tiers.items():
         v = exchange._leverage_tiers[key]
         assert isinstance(v, list)
-        assert len(v) == len(value)
+        # Assert if conftest leverage tiers have less or equal tiers than the exchange
+        assert len(v) >= len(value)
 
 
 def test_additional_exchange_init_binance(default_conf, mocker):
@@ -522,8 +523,15 @@ def test__set_leverage_binance(mocker, default_conf):
     api_mock.set_leverage = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
     default_conf['dry_run'] = False
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._set_leverage(3.0, trading_mode=TradingMode.MARGIN)
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange._set_leverage(3.2, 'BTC/USDT:USDT')
+    assert api_mock.set_leverage.call_count == 1
+    # Leverage is rounded to 3.
+    assert api_mock.set_leverage.call_args_list[0][1]['leverage'] == 3
+    assert api_mock.set_leverage.call_args_list[0][1]['symbol'] == 'BTC/USDT:USDT'
 
     ccxt_exceptionhandlers(
         mocker,

@@ -701,15 +701,16 @@ def test_set_loggers_journald(mocker):
               'logfile': 'journald',
               }
 
+    setup_logging_pre()
     setup_logging(config)
-    assert len(logger.handlers) == 2
+    assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 
 
-def test_set_loggers_journald_importerror(mocker, import_fails):
+def test_set_loggers_journald_importerror(import_fails):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
@@ -718,7 +719,7 @@ def test_set_loggers_journald_importerror(mocker, import_fails):
               'logfile': 'journald',
               }
     with pytest.raises(OperationalException,
-                       match=r'You need the systemd python package.*'):
+                       match=r'You need the cysystemd python package.*'):
         setup_logging(config)
     logger.handlers = orig_handlers
 

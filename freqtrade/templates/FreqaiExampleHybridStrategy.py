@@ -1,12 +1,13 @@
 import logging
+from typing import Dict
 
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa
+import pandas as pd  # noqa
 import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.strategy import IntParameter, IStrategy, merge_informative_pair
+from freqtrade.strategy import IntParameter, IStrategy, merge_informative_pair  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
     "freqai": {
         "enabled": true,
-        "purge_old_models": true,
+        "purge_old_models": 2,
         "train_period_days": 15,
         "identifier": "uniqe-id",
         "feature_parameters": {
@@ -95,7 +96,8 @@ class FreqaiExampleHybridStrategy(IStrategy):
     short_rsi = IntParameter(low=51, high=100, default=70, space='sell', optimize=True, load=True)
     exit_short_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
 
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
+                                       metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -114,8 +116,9 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
 
@@ -148,7 +151,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -170,7 +173,8 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
@@ -179,7 +183,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -197,14 +201,15 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -214,16 +219,16 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the targets
+        :param dataframe: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-50) >
-                                        dataframe["close"], 'up', 'down')
+                                              dataframe["close"], 'up', 'down')
 
         return dataframe
 
-    # flake8: noqa: C901
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:  # noqa: C901
 
         # User creates their own custom strat here. Present example is a supertrend
         # based strategy.

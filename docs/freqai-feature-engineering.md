@@ -8,7 +8,7 @@ Low level feature engineering is performed in the user strategy within a set of 
 |---------------|-------------|
 | `feature_engineering__expand_all()` | This optional function will automatically expand the defined features on the config defined `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.
 | `feature_engineering__expand_basic()` | This optional function will automatically expand the defined features on the config defined `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`. Note: this function does *not* expand across `include_periods_candles`.
-| `feature_engineering_standard()` | This optional function will be called once with the dataframe of the base timeframe. This is the final function to be called, which means that the dataframe entering this function will contain all the features and columns from the base asset created by the other `feature_engineering_expand` functions. This function is a good place to do custom exotic feature extractions (e.g. tsfresh). This function is also a good place for any feature that should not be auto-expanded upon (e.g. day of the week).
+| `feature_engineering_standard()` | This optional function will be called once with the dataframe of the base timeframe. This is the final function to be called, which means that the dataframe entering this function will contain all the features and columns from the base asset created by the other `feature_engineering_expand` functions. This function is a good place to do custom exotic feature extractions (e.g. tsfresh). This function is also a good place for any feature that should not be auto-expanded upon (e.g., day of the week).
 | `set_freqai_targets()` | Required function to set the targets for the model. All targets must be prepended with `&` to be recognized by the FreqAI internals.
 
 Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
@@ -16,7 +16,7 @@ Meanwhile, high level feature engineering is handled within `"feature_parameters
 It is advisable to start from the template `feature_engineering_*` functions in the source provided example strategy (found in `templates/FreqaiExampleStrategy.py`) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:
 
 ```python
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -28,8 +28,13 @@ It is advisable to start from the template `feature_engineering_*` functions in 
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair/timeframe/period with:
+
+        `metadata["pair"]` `metadata["tf"]`  `metadata["period"]`
+
         :param df: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
 
@@ -62,7 +67,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -75,9 +80,14 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         Features defined here will *not* be automatically duplicated on user defined
         `indicator_periods_candles`
 
+        Access metadata such as the current pair/timeframe with:
+
+        `metadata["pair"]` `metadata["tf"]`
+
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
@@ -86,7 +96,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -98,22 +108,32 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         This function is a good place for any feature that should not be auto-expanded upon
         (e.g. day of the week).
 
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
+
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
         :param df: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe, metadata, **kwargs):
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
         All targets must be prepended with `&` to be recognized by the FreqAI internals.
 
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
+
         :param df: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         dataframe["&-s_close"] = (
@@ -161,6 +181,19 @@ You can ask for each of the defined features to be included also for informative
 In total, the number of features the user of the presented example strat has created is: length of `include_timeframes` * no. features in `feature_engineering_expand_*()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
  $= 3 * 3 * 3 * 2 * 2 = 108$.
 
+
+ ### Gain finer control over `feature_engineering_*` functions with `metadata`
+
+ All `feature_engineering_*` and `set_freqai_targets()` functions are passed a `metadata` dictionary which contains information about the `pair`, `tf` (timeframe), and `period` that FreqAI is automating for feature building. As such, a user can use `metadata` inside `feature_engineering_*` functions as criteria for blocking/reserving features for certain timeframes, periods, pairs etc.
+
+ ```py
+def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
+ if metadata["tf"] == "1h":
+    dataframe["%-roc-period"] = ta.ROC(dataframe, timeperiod=period)
+```
+
+This will block `ta.ROC()` from being added to any timeframes other than `"1h"`.
+
 ### Returning additional info from training
 
 Important metrics can be returned to the strategy at the end of each model training by assigning them to `dk.data['extra_returns_per_train']['my_new_value'] = XYZ` inside the custom prediction model class. 
@@ -201,7 +234,7 @@ This will perform PCA on the features and reduce their dimensionality so that th
 
 ## Inlier metric
 
-The `inlier_metric` is a metric aimed at quantifying how similar a the features of a data point are to the most recent historic data points. 
+The `inlier_metric` is a metric aimed at quantifying how similar the features of a data point are to the most recent historical data points. 
 
 You define the lookback window by setting `inlier_metric_window` and FreqAI computes the distance between the present time point and each of the previous `inlier_metric_window` lookback points. A Weibull function is fit to each of the lookback distributions and its cumulative distribution function (CDF) is used to produce a quantile for each lookback point. The `inlier_metric` is then computed for each time point as the average of the corresponding lookback quantiles. The figure below explains the concept for an `inlier_metric_window` of 5.
 

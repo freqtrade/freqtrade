@@ -706,6 +706,46 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert_response(rc, 502)
 
 
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+
+    rc = client_delete(client, f"{BASE_URI}/trades/10/open-order")
+    assert_response(rc, 502)
+    assert 'Invalid trade_id.' in rc.json()['error']
+
+    create_mock_trades(fee, is_short=is_short)
+    Trade.commit()
+
+    rc = client_delete(client, f"{BASE_URI}/trades/5/open-order")
+    assert_response(rc, 502)
+    assert 'No open order for trade_id' in rc.json()['error']
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 side_effect=ExchangeError)
+    rc = client_delete(client, f"{BASE_URI}/trades/6/open-order")
+    assert_response(rc, 502)
+    assert 'Order not found.' in rc.json()['error']
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 return_value=trade.orders[-1].to_ccxt_object())
+
+    rc = client_delete(client, f"{BASE_URI}/trades/6/open-order")
+    assert_response(rc)
+    assert cancel_mock.call_count == 1
+
+
 def test_api_logs(botclient):
     ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/logs")
@@ -1240,7 +1280,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
         fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets),
-        _is_dry_limit_order_filled=MagicMock(return_value=True),
+        _dry_is_price_crossed=MagicMock(return_value=True),
     )
     patch_get_signal(ftbot)
 
@@ -1697,9 +1737,15 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     data['stake_amount'] = 101
 
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-                 side_effect=DependencyException())
+                 side_effect=DependencyException('DeadBeef'))
     rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert log_has("Backtesting caused an error: ", caplog)
+    assert log_has("Backtesting caused an error: DeadBeef", caplog)
+
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'error'
+    assert 'Backtest failed' in result['status_msg']
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")

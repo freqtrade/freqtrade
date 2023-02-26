@@ -24,7 +24,7 @@ The framework is built on stable_baselines3 (torch) and OpenAI gym for the base 
 
 ### Important considerations
 
-As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL training environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks like `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free-will to learn the policy (read: stoploss, take profit, etc.) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
+As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is *NOT*. In fact, the RL training environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks like `custom_exit`, `custom_stoploss`, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free will to learn the policy (read: stoploss, take profit, etc.) which is enforced by the `calculate_reward()`. Thus, it is important to consider that the agent training environment is not identical to the real world.
 
 ## Running Reinforcement Learning
 
@@ -175,10 +175,21 @@ As you begin to modify the strategy and the prediction model, you will quickly r
                 pnl = self.get_unrealized_profit()
 
                 factor = 100
+
+                # you can use feature values from dataframe
+                # Assumes the shifted RSI indicator has been generated in the strategy.
+                rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
+                                f"{self.config['timeframe']}"].iloc[self._current_tick]
+
                 # reward agent for entering trades
-                if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
-                        and self._position == Positions.Neutral:
-                    return 25
+                if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
+                        and self._position == Positions.Neutral):
+                    if rsi_now < 40:
+                        factor = 40 / rsi_now
+                    else:
+                        factor = 1
+                    return 25 * factor
+
                 # discourage agent from not entering trades
                 if action == Actions.Neutral.value and self._position == Positions.Neutral:
                     return -1

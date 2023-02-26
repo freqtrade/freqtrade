@@ -12,7 +12,7 @@ dependencies:
     - py-find-1st
     - aiohttp
     - SQLAlchemy
-    - python-telegram-bot
+    - python-telegram-bot<20.0.0
     - arrow
     - cachetools
     - requests
@@ -54,7 +54,7 @@ dependencies:
     # 3/4 req hyperopt
 
     - scipy
-    - scikit-learn
+    - scikit-learn<1.2.0
     - filelock
     - scikit-optimize
     - progressbar2

@@ -27,19 +27,20 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32, can_short', [
-    ('LightGBMRegressor', True, False, True, True),
-    ('XGBoostRegressor', False, True, False, True),
-    ('XGBoostRFRegressor', False, False, False, True),
-    ('CatboostRegressor', False, False, False, True),
-    ('ReinforcementLearner', False, True, False, True),
-    ('ReinforcementLearner_multiproc', False, False, False, True),
-    ('ReinforcementLearner_test_3ac', False, False, False, False),
-    ('ReinforcementLearner_test_3ac', False, False, False, True),
-    ('ReinforcementLearner_test_4ac', False, False, False, True)
+@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
+    ('LightGBMRegressor', True, False, True, True, False, 0),
+    ('XGBoostRegressor', False, True, False, True, False, 10),
+    ('XGBoostRFRegressor', False, False, False, True, False, 0),
+    ('CatboostRegressor', False, False, False, True, True, 0),
+    ('ReinforcementLearner', False, True, False, True, False, 0),
+    ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
-                                               dbscan, float32, can_short):
+                                               dbscan, float32, can_short, shuffle, buffer):
+
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
@@ -53,6 +54,8 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
     freqai_conf.update({"reduce_df_footprint": float32})
+    freqai_conf['freqai']['feature_parameters'].update({"shuffle_after_split": shuffle})
+    freqai_conf['freqai']['feature_parameters'].update({"buffer_train_data_candles": buffer})
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
@@ -373,57 +376,6 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     freqai.backtesting_fit_live_predictions(freqai.dk)
     assert "&-s_close_mean" in freqai.dk.full_df.columns
     assert "&-s_close_std" in freqai.dk.full_df.columns
-    shutil.rmtree(Path(freqai.dk.full_path))
-
-
-def test_follow_mode(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180110-20180130"})
-
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-
-    metadata = {"pair": "ADA/BTC"}
-    freqai.dd.set_pair_dict_info(metadata)
-
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
-
-    freqai.extract_data_and_train_model(
-        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
-
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
-
-    # start the follower and ask it to predict on existing files
-
-    freqai_conf.get("freqai", {}).update({"follow_mode": "true"})
-
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.live)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-
-    df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
-
-    freqai.dk.pair = "ADA/BTC"
-    freqai.start_live(df, metadata, strategy, freqai.dk)
-
-    assert len(freqai.dk.return_dataframe.index) == 5702
-
     shutil.rmtree(Path(freqai.dk.full_path))
 
 

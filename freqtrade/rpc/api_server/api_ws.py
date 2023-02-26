@@ -90,7 +90,7 @@ async def _process_consumer_request(
 
     elif type == RPCRequestType.ANALYZED_DF:
         # Limit the amount of candles per dataframe to 'limit' or 1500
-        limit = min(data.get('limit', 1500), 1500) if data else None
+        limit = int(min(data.get('limit', 1500), 1500)) if data else None
         pair = data.get('pair', None) if data else None
 
         # For every pair in the generator, send a separate message

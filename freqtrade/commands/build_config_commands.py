@@ -108,7 +108,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "binance",
                 "binanceus",
                 "bittrex",
-                "gateio",
+                "gate",
                 "huobi",
                 "kraken",
                 "kucoin",
@@ -123,7 +123,7 @@ def ask_user_config() -> Dict[str, Any]:
             "message": "Do you want to trade Perpetual Swaps (perpetual futures)?",
             "default": False,
             "filter": lambda val: 'futures' if val else 'spot',
-            "when": lambda x: x["exchange_name"] in ['binance', 'gateio', 'okx'],
+            "when": lambda x: x["exchange_name"] in ['binance', 'gate', 'okx'],
         },
         {
             "type": "autocomplete",
