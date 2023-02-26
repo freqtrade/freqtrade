@@ -661,7 +661,7 @@ class FreqaiDataDrawer:
                                 f"ends at {df_dp['date'].iloc[0]}."
                             )
 
-                    hist_df = pd.concat(
+                    history_data[pair][tf] = pd.concat(
                         [
                             hist_df,
                             df_dp.iloc[index:],
