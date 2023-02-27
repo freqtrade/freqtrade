@@ -469,26 +469,27 @@ class Telegram(RPCHandler):
         lines_detail: List[str] = []
         if len(filled_orders) > 0:
             first_avg = filled_orders[0]["safe_price"]
-
-        for x, order in enumerate(filled_orders):
+        order_nr = 0
+        for order in filled_orders:
             lines: List[str] = []
             if order['is_open'] is True:
                 continue
+            order_nr += 1
             wording = 'Entry' if order['ft_is_entry'] else 'Exit'
 
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["filled"] or order["amount"]
             cur_entry_average = order["safe_price"]
             lines.append("  ")
-            if x == 0:
-                lines.append(f"*{wording} #{x+1}:*")
+            if order_nr == 1:
+                lines.append(f"*{wording} #{order_nr}:*")
                 lines.append(
                     f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
                 lines.append(f"*Average Price:* {cur_entry_average}")
             else:
                 sumA = 0
                 sumB = 0
-                for y in range(x):
+                for y in range(order_nr):
                     amount = filled_orders[y]["filled"] or filled_orders[y]["amount"]
                     sumA += amount * filled_orders[y]["safe_price"]
                     sumB += amount
@@ -499,7 +500,7 @@ class Telegram(RPCHandler):
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                lines.append(f"*{wording} #{x+1}:* at {minus_on_entry:.2%} avg profit")
+                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
@@ -518,6 +519,7 @@ class Telegram(RPCHandler):
                 # lines.append(
                 # f"({days}d {hours}h {minutes}m {seconds}s from previous {wording.lower()})")
             lines_detail.append("\n".join(lines))
+
         return lines_detail
 
     @authorized_only
