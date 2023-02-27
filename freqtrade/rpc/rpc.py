@@ -89,7 +89,7 @@ class RPC:
     # Bind _fiat_converter if needed
     _fiat_converter: Optional[CryptoToFiatConverter] = None
 
-    def __init__(self, freqtrade: "FreqtradeBot") -> None:
+    def __init__(self, freqtrade) -> None:
         """
         Initializes all enabled rpc modules
         :param freqtrade: Instance of a freqtrade bot
