@@ -487,13 +487,17 @@ class Telegram(RPCHandler):
                     f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
                 lines.append(f"*Average Price:* {cur_entry_average}")
             else:
-                sumA = 0
-                sumB = 0
+                sum_stake = 0
+                sum_amount = 0
                 for y in range(order_nr):
-                    amount = filled_orders[y]["filled"] or filled_orders[y]["amount"]
-                    sumA += amount * filled_orders[y]["safe_price"]
-                    sumB += amount
-                prev_avg_price = sumA / sumB
+                    loc_order = filled_orders[y]
+                    if loc_order['is_open'] is True:
+                        # Skip open orders (e.g. stop orders)
+                        continue
+                    amount = loc_order["filled"] or loc_order["amount"]
+                    sum_stake += amount * loc_order["safe_price"]
+                    sum_amount += amount
+                prev_avg_price = sum_stake / sum_amount
                 # TODO: This calculation ignores fees.
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
                 minus_on_entry = 0
