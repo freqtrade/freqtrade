@@ -244,6 +244,7 @@ class TradeSchema(BaseModel):
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
+    realized_profit: float
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
