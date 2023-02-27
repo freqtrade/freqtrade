@@ -202,6 +202,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'close_profit_ratio': None,
             'profit': -0.0059,
             'profit_ratio': -0.0059,
+            'profit_abs': -0.225,
             'initial_stop_loss_abs': 1.098e-05,
             'stop_loss_abs': 1.099e-05,
             'exit_order_status': None,
