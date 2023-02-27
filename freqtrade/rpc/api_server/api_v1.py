@@ -346,4 +346,4 @@ def sysinfo():
 
 @router.get('/health', response_model=Health, tags=['info'])
 def health(rpc: RPC = Depends(get_rpc)):
-    return rpc._health()
+    return rpc.health()

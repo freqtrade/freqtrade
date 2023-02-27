@@ -456,5 +456,5 @@ class SysInfo(BaseModel):
 
 
 class Health(BaseModel):
-    last_process: datetime
-    last_process_ts: int
+    last_process: Optional[datetime]
+    last_process_ts: Optional[int]
