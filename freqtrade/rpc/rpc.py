@@ -1206,5 +1206,8 @@ class RPC:
             'last_process_ts': int(last_p.timestamp()),
         }
 
-    def _update_market_direction(self, direction: MarketDirection):
+    def _update_market_direction(self, direction: MarketDirection) -> None:
         self._freqtrade.strategy.market_direction = direction
+
+    def _get_market_direction(self) -> MarketDirection:
+        return self._freqtrade.strategy.market_direction

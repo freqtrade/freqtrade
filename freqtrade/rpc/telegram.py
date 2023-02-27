@@ -129,7 +129,8 @@ class Telegram(RPCHandler):
             r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
             r'/forcebuy$', r'/forcelong$', r'/forceshort$',
             r'/forcesell$', r'/forceexit$',
-            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir (long|short|even|none)$'
+            r'/edge$', r'/health$', r'/help$', r'/version$', r'/marketdir (long|short|even|none)$',
+            r'/marketdir$'
         ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -1495,8 +1496,9 @@ class Telegram(RPCHandler):
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
             "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
-            "*/marketdir [long | short | even | none]:* `Updates the user managed variable"
-            " that represents the current market direction` \n"
+            "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
+            "that represents the current market direction. If no direction is provided `"
+            "`the currently set market direction will be output.` \n"
 
             "_Statistics_\n"
             "------------\n"
@@ -1691,16 +1693,28 @@ class Telegram(RPCHandler):
         :return: None
         """
         if context.args and len(context.args) == 1:
-            new_market_dir = context.args[0]
-            if new_market_dir == "long":
-                self._rpc._update_market_direction(MarketDirection.LONG)
-            elif new_market_dir == "short":
-                self._rpc._update_market_direction(MarketDirection.SHORT)
-            elif new_market_dir == "even":
-                self._rpc._update_market_direction(MarketDirection.EVEN)
-            elif new_market_dir == "none":
-                self._rpc._update_market_direction(MarketDirection.NONE)
+            new_market_dir_arg = context.args[0]
+            old_market_dir = self._rpc._get_market_direction()
+            new_market_dir = None
+            if new_market_dir_arg == "long":
+                new_market_dir = MarketDirection.LONG
+            elif new_market_dir_arg == "short":
+                new_market_dir = MarketDirection.SHORT
+            elif new_market_dir_arg == "even":
+                new_market_dir = MarketDirection.EVEN
+            elif new_market_dir_arg == "none":
+                new_market_dir = MarketDirection.NONE
+
+            if new_market_dir is not None:
+                self._rpc._update_market_direction(new_market_dir)
+                self._send_msg("Successfully updated market direction"
+                               f" from *{old_market_dir}* to *{new_market_dir}*.")
             else:
-                raise RPCException("Invalid market direction provided")
+                raise RPCException("Invalid market direction provided. \n"
+                                   "Valid market directions: *long, short, even, none*")
+        elif context.args is not None and len(context.args) == 0:
+            old_market_dir = self._rpc._get_market_direction()
+            self._send_msg(f"Currently set market direction: *{old_market_dir}*")
         else:
-            raise RPCException("Invalid usage of command /marketdir.")
+            raise RPCException("Invalid usage of command /marketdir. \n"
+                               "Usage: */marketdir [short |  long | even | none]*")

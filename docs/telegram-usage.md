@@ -179,7 +179,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
-| `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction.
+| `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction. If no direction is provided, the currently set direction will be displayed.
 | **Modify Trade states** |
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
@@ -420,6 +420,12 @@ ARDR/ETH   0.366667      0.143059       -0.01
 
 ### /marketdir
 
-Updates the user managed variable that represents the current market direction. This variable is not set
-to any valid market direction on bot startup and must be set by the user. As an example `/marketdir long`
-would set the variable to be `long`.
+If a market direction is provided the command updates the user managed variable that represents the current market direction.
+This variable is not set to any valid market direction on bot startup and must be set by the user. The example below is for `/marketdir long`:
+```
+Successfully updated marketdirection from none to long.
+```
+If no market direction is provided the command outputs the currently set market directions. The example below is for `/marketdir`:
+```
+Currently set marketdirection: even
+```
