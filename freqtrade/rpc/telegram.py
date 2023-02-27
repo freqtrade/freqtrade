@@ -508,8 +508,8 @@ class Telegram(RPCHandler):
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
-                lines.append(
-                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                lines.append(f"*Amount:* {cur_entry_amount} "
+                             f"({round_coin_value(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
                 lines.append(f"*Order filled:* {order['order_filled_date']}")
@@ -560,13 +560,14 @@ class Telegram(RPCHandler):
             r['open_date_hum'] = arrow.get(r['open_date']).humanize()
             r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
             r['exit_reason'] = r.get('exit_reason', "")
+            r['rounded_stake_amount'] = round_coin_value(r['stake_amount'], r['quote_currency'])
             lines = [
                 "*Trade ID:* `{trade_id}`" +
                 (" `(since {open_date_hum})`" if r['is_open'] else ""),
                 "*Current Pair:* {pair}",
                 "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
                 "*Leverage:* `{leverage}`" if r.get('leverage') else "",
-                "*Amount:* `{amount} ({stake_amount} {quote_currency})`",
+                "*Amount:* `{amount} ({rounded_stake_amount})`",
                 "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                 "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
             ]
