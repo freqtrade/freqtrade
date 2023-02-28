@@ -1,6 +1,3 @@
-# pragma pylint: disable=missing-docstring, C0103
-# pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
-
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -535,7 +532,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     rpc._fiat_converter = CryptoToFiatConverter()
 
     result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
-    assert pytest.approx(result['total']) ==  30.30909624
+    assert pytest.approx(result['total']) == 30.30909624
     assert pytest.approx(result['value']) == 454636.44360691
     assert tickers.call_count == 1
     assert tickers.call_args_list[0][1]['cached'] is True
