@@ -154,7 +154,7 @@ class Order(ModelBase):
         self.order_update_date = datetime.now(timezone.utc)
 
     def to_ccxt_object(self) -> Dict[str, Any]:
-        order = {
+        order: Dict[str, Any] = {
             'id': self.order_id,
             'symbol': self.ft_pair,
             'price': self.price,
@@ -1062,7 +1062,7 @@ class LocalTrade():
         return len(self.select_filled_orders('sell'))
 
     @property
-    def sell_reason(self) -> str:
+    def sell_reason(self) -> Optional[str]:
         """ DEPRECATED! Please use exit_reason instead."""
         return self.exit_reason
 
@@ -1276,7 +1276,7 @@ class Trade(ModelBase, LocalTrade):
     def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
                          open_date: Optional[datetime] = None,
                          close_date: Optional[datetime] = None,
-                         ) -> List['LocalTrade']:
+                         ) -> List['LocalTrade', 'Trade']:
         """
         Helper function to query Trades.j
         Returns a List of trades, filtered on the parameters given.
