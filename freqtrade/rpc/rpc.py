@@ -19,8 +19,8 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
-                             TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
+                             State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -1205,3 +1205,9 @@ class RPC:
             'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
             'last_process_ts': int(last_p.timestamp()),
         }
+
+    def _update_market_direction(self, direction: MarketDirection) -> None:
+        self._freqtrade.strategy.market_direction = direction
+
+    def _get_market_direction(self) -> MarketDirection:
+        return self._freqtrade.strategy.market_direction
