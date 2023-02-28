@@ -422,10 +422,18 @@ ARDR/ETH   0.366667      0.143059       -0.01
 
 If a market direction is provided the command updates the user managed variable that represents the current market direction.
 This variable is not set to any valid market direction on bot startup and must be set by the user. The example below is for `/marketdir long`:
+
 ```
 Successfully updated marketdirection from none to long.
 ```
+
 If no market direction is provided the command outputs the currently set market directions. The example below is for `/marketdir`:
+
 ```
 Currently set marketdirection: even
 ```
+
+You can use the market direction in your strategy via `self.market_direction`.
+
+!!! Warning "Bot restarts"
+    Please note that the market direction is not persisted, and will be reset after a bot restart/reload.
