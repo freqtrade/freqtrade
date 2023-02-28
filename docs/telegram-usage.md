@@ -437,3 +437,7 @@ You can use the market direction in your strategy via `self.market_direction`.
 
 !!! Warning "Bot restarts"
     Please note that the market direction is not persisted, and will be reset after a bot restart/reload.
+
+!!! Danger "Backtesting"
+    As this value/variable is intended to be changed manually in dry/live trading.
+    Strategies using `market_direction` will probably not produce reliable, reproducible results (changes to this variable will not be reflected for backtesting). Use at your own risk.
