@@ -571,8 +571,8 @@ class Telegram(RPCHandler):
                 "*Trade ID:* `{trade_id}`" +
                 (" `(since {open_date_hum})`" if r['is_open'] else ""),
                 "*Current Pair:* {pair}",
-                "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
-                "*Leverage:* `{leverage}`" if r.get('leverage') else "",
+                f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}"
+                + " ` ({leverage}x)`" if r.get('leverage') else "",
                 "*Amount:* `{amount} ({stake_amount_r})`",
                 "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                 "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
