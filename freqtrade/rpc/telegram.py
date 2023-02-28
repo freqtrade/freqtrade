@@ -565,8 +565,8 @@ class Telegram(RPCHandler):
             r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
             r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
             r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
-            r['combined_profit_abs_r'] = round_coin_value(
-                r['combined_profit_abs'], r['quote_currency'])
+            r['total_profit_abs_r'] = round_coin_value(
+                r['total_profit_abs'], r['quote_currency'])
             lines = [
                 "*Trade ID:* `{trade_id}`" +
                 (" `(since {open_date_hum})`" if r['is_open'] else ""),
@@ -595,7 +595,7 @@ class Telegram(RPCHandler):
             if r['is_open']:
                 if r.get('realized_profit'):
                     lines.append("*Realized Profit:* `{realized_profit_r}`")
-                    lines.append("*Total Profit:* `{combined_profit_abs_r}` ")
+                    lines.append("*Total Profit:* `{total_profit_abs_r}` ")
 
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                         and r['initial_stop_loss_ratio'] is not None):
