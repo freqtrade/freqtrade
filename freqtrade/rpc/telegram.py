@@ -1540,7 +1540,7 @@ class Telegram(RPCHandler):
         Handler for /health
         Shows the last process timestamp
         """
-        health = self._rpc._health()
+        health = self._rpc.health()
         message = f"Last process: `{health['last_process_loc']}`"
         self._send_msg(message)
 

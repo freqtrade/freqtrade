@@ -1198,12 +1198,19 @@ class RPC:
             "ram_pct": psutil.virtual_memory().percent
         }
 
-    def _health(self) -> Dict[str, Union[str, int]]:
+    def health(self) -> Dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
+        if last_p is None:
+            return {
+                "last_process": None,
+                "last_process_loc": None,
+                "last_process_ts": None,
+            }
+
         return {
-            'last_process': str(last_p),
-            'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
-            'last_process_ts': int(last_p.timestamp()),
+            "last_process": str(last_p),
+            "last_process_loc": last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            "last_process_ts": int(last_p.timestamp()),
         }
 
     def _update_market_direction(self, direction: MarketDirection) -> None:
