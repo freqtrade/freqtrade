@@ -6,8 +6,7 @@ from sqlalchemy.orm import Mapped, Query, mapped_column
 from sqlalchemy.orm.scoping import _QueryDescriptorType
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.persistence.base import ModelBase
-from freqtrade.persistence.models import SessionType
+from freqtrade.persistence.base import ModelBase, SessionType
 
 
 class PairLock(ModelBase):

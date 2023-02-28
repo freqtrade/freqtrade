@@ -17,8 +17,7 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import amount_to_contract_precision, price_to_precision
 from freqtrade.leverage import interest
-from freqtrade.persistence.base import ModelBase
-from freqtrade.persistence.models import SessionType
+from freqtrade.persistence.base import ModelBase, SessionType
 from freqtrade.util import FtPrecise
 
 
