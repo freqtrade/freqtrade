@@ -841,7 +841,7 @@ class FreqtradeBot(LoggingMixin):
 
     def cancel_stoploss_on_exchange(self, trade: Trade) -> Trade:
         # First cancelling stoploss on exchange ...
-        if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
+        if trade.stoploss_order_id:
             try:
                 logger.info(f"Canceling stoploss on exchange for {trade}")
                 co = self.exchange.cancel_stoploss_order_with_result(
