@@ -169,6 +169,7 @@ class RPC:
             for trade in trades:
                 order: Optional[Order] = None
                 current_profit_fiat: Optional[float] = None
+                combined_profit_fiat: Optional[float] = None
                 if trade.open_order_id:
                     order = trade.select_order_by_order_id(trade.open_order_id)
                 # calculate profit and send message to user
@@ -190,11 +191,17 @@ class RPC:
                     current_rate = trade.close_rate
                     current_profit = trade.close_profit
                     current_profit_abs = trade.close_profit_abs
+                combined_profit_abs = trade.realized_profit + current_profit_abs
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
                     current_profit_fiat = self._fiat_converter.convert_amount(
                         current_profit_abs,
+                        self._freqtrade.config['stake_currency'],
+                        self._freqtrade.config['fiat_display_currency']
+                    )
+                    combined_profit_fiat = self._fiat_converter.convert_amount(
+                        combined_profit_abs,
                         self._freqtrade.config['stake_currency'],
                         self._freqtrade.config['fiat_display_currency']
                     )
@@ -215,6 +222,8 @@ class RPC:
                     profit_abs=current_profit_abs,
                     profit_fiat=current_profit_fiat,
 
+                    combined_profit_abs=combined_profit_abs,
+                    combined_profit_fiat=combined_profit_fiat,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),

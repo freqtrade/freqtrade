@@ -76,6 +76,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10376381,
         'open_order': None,
         'realized_profit': 0.0,
+        'combined_profit_abs': -4.09e-06,
+        'combined_profit_fiat': ANY,
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
@@ -119,6 +121,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': 0.0,
         'profit_pct': 0.0,
         'profit_abs': 0.0,
+        'combined_profit_abs': 0.0,
         'stop_loss_abs': 0.0,
         'stop_loss_pct': None,
         'stop_loss_ratio': None,
@@ -180,6 +183,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': ANY,
         'profit_pct': ANY,
         'profit_abs': ANY,
+        'combined_profit_abs': ANY,
         'current_rate': ANY,
     })
     assert results[0] == response_norate

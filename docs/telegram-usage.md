@@ -243,7 +243,7 @@ Enter Tag is configurable via Strategy.
 > **Enter Tag:** Awesome Long Signal
 > **Open Rate:** `0.00007489`
 > **Current Rate:** `0.00007489`
-> **Current Profit:** `12.95%`
+> **Unrealized Profit:** `12.95%`
 > **Stoploss:** `0.00007389 (-0.02%)`
 
 ### /status table

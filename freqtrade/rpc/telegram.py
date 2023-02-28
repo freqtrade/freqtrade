@@ -562,15 +562,18 @@ class Telegram(RPCHandler):
             r['open_date_hum'] = arrow.get(r['open_date']).humanize()
             r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
             r['exit_reason'] = r.get('exit_reason', "")
-            r['rounded_stake_amount'] = round_coin_value(r['stake_amount'], r['quote_currency'])
-            r['rounded_profit_abs'] = round_coin_value(r['profit_abs'], r['quote_currency'])
+            r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
+            r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
+            r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
+            r['combined_profit_abs_r'] = round_coin_value(
+                r['combined_profit_abs'], r['quote_currency'])
             lines = [
                 "*Trade ID:* `{trade_id}`" +
                 (" `(since {open_date_hum})`" if r['is_open'] else ""),
                 "*Current Pair:* {pair}",
                 "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
                 "*Leverage:* `{leverage}`" if r.get('leverage') else "",
-                "*Amount:* `{amount} ({rounded_stake_amount})`",
+                "*Amount:* `{amount} ({stake_amount_r})`",
                 "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                 "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
             ]
@@ -585,13 +588,15 @@ class Telegram(RPCHandler):
                 "*Open Date:* `{open_date}`",
                 "*Close Date:* `{close_date}`" if r['close_date'] else "",
                 "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
-                ("*Current Profit:* " if r['is_open'] else "*Close Profit: *")
-                + "`{profit_ratio:.2%}` `({rounded_profit_abs})`",
+                ("*Unrealized Profit:* " if r['is_open'] else "*Close Profit: *")
+                + "`{profit_ratio:.2%}` `({profit_abs_r})`",
             ])
 
             if r['is_open']:
                 if r.get('realized_profit'):
-                    lines.append("*Realized Profit:* `{realized_profit:.8f}`")
+                    lines.append("*Realized Profit:* `{realized_profit_r}`")
+                    lines.append("*Total Profit:* `{combined_profit_abs_r}` ")
+
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                         and r['initial_stop_loss_ratio'] is not None):
                     # Adding initial stoploss only if it is different from stoploss
