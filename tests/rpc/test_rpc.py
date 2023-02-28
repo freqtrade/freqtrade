@@ -68,9 +68,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'close_profit': None,
         'close_profit_pct': None,
         'close_profit_abs': None,
-        'current_profit': -0.00408133,
-        'current_profit_pct': -0.41,
-        'current_profit_abs': -4.09e-06,
         'profit_ratio': -0.00408133,
         'profit_pct': -0.41,
         'profit_abs': -4.09e-06,
@@ -134,9 +131,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': 0.0,
         'profit_pct': 0.0,
         'profit_abs': 0.0,
-        'current_profit': 0.0,
-        'current_profit_pct': 0.0,
-        'current_profit_abs': 0.0,
         'stop_loss_abs': 0.0,
         'stop_loss_pct': None,
         'stop_loss_ratio': None,
@@ -187,7 +181,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
-    assert isnan(results[0]['current_profit'])
+    assert isnan(results[0]['profit_ratio'])
     assert isnan(results[0]['current_rate'])
     response_norate = deepcopy(gen_response)
     # Update elements that are NaN when no rate is available.
@@ -198,9 +192,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': ANY,
         'profit_pct': ANY,
         'profit_abs': ANY,
-        'current_profit_abs': ANY,
-        'current_profit': ANY,
-        'current_profit_pct': ANY,
         'current_rate': ANY,
     })
     assert results[0] == response_norate

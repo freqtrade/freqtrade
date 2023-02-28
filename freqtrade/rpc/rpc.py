@@ -210,9 +210,6 @@ class RPC:
                 trade_dict.update(dict(
                     close_profit=trade.close_profit if not trade.is_open else None,
                     current_rate=current_rate,
-                    current_profit=current_profit,  # Deprecated
-                    current_profit_pct=round(current_profit * 100, 2),  # Deprecated
-                    current_profit_abs=current_profit_abs,  # Deprecated
                     profit_ratio=current_profit,
                     profit_pct=round(current_profit * 100, 2),
                     profit_abs=current_profit_abs,

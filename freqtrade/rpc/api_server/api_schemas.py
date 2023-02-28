@@ -282,9 +282,6 @@ class OpenTradeSchema(TradeSchema):
     stoploss_current_dist_ratio: Optional[float]
     stoploss_entry_dist: Optional[float]
     stoploss_entry_dist_ratio: Optional[float]
-    current_profit: float
-    current_profit_abs: float
-    current_profit_pct: float
     current_rate: float
     open_order: Optional[str]
 
