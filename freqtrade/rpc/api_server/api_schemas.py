@@ -228,25 +228,32 @@ class TradeSchema(BaseModel):
     fee_close: Optional[float]
     fee_close_cost: Optional[float]
     fee_close_currency: Optional[str]
+
     open_date: str
     open_timestamp: int
     open_rate: float
     open_rate_requested: Optional[float]
     open_trade_value: float
+
     close_date: Optional[str]
     close_timestamp: Optional[int]
     close_rate: Optional[float]
     close_rate_requested: Optional[float]
+
     close_profit: Optional[float]
     close_profit_pct: Optional[float]
     close_profit_abs: Optional[float]
+
     profit_ratio: Optional[float]
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
+
     realized_profit: float
+
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
+
     stop_loss_abs: Optional[float]
     stop_loss_ratio: Optional[float]
     stop_loss_pct: Optional[float]
@@ -256,6 +263,7 @@ class TradeSchema(BaseModel):
     initial_stop_loss_abs: Optional[float]
     initial_stop_loss_ratio: Optional[float]
     initial_stop_loss_pct: Optional[float]
+
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
