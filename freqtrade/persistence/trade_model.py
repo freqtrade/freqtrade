@@ -595,7 +595,7 @@ class LocalTrade():
 
         self.stop_loss_pct = -1 * abs(percent)
 
-    def adjust_stop_loss(self, current_price: float, stoploss: float,
+    def adjust_stop_loss(self, current_price: float, stoploss: Optional[float],
                          initial: bool = False, refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
@@ -604,7 +604,7 @@ class LocalTrade():
         :param initial: Called to initiate stop_loss.
             Skips everything if self.stop_loss is already set.
         """
-        if initial and not (self.stop_loss is None or self.stop_loss == 0):
+        if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
         refresh = True if refresh and self.nr_of_successful_entries == 1 else False
