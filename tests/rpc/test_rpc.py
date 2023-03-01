@@ -96,7 +96,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     }
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         get_fee=fee,
         _dry_is_price_crossed=MagicMock(side_effect=[False, True]),
@@ -197,7 +197,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         get_fee=fee,
     )
@@ -264,7 +264,7 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
                               limit_buy_order, limit_sell_order, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
@@ -305,7 +305,7 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
 def test_rpc_trade_history(mocker, default_conf, markets, fee, is_short):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=markets)
     )
 
@@ -333,7 +333,7 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     stoploss_mock = MagicMock()
     cancel_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=markets),
         cancel_order=cancel_mock,
         cancel_stoploss_order=stoploss_mock,
@@ -384,7 +384,7 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=1.1)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         get_fee=fee,
     )
@@ -455,7 +455,7 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=mock_balance),
         get_tickers=MagicMock(side_effect=TemporaryError('Could not load ticker due to xxx'))
     )
@@ -518,7 +518,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         validate_trading_mode_and_margin_mode=MagicMock(),
         get_balances=MagicMock(return_value=mock_balance),
         fetch_positions=MagicMock(return_value=mock_pos),
@@ -595,7 +595,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
 def test_rpc_start(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=MagicMock()
     )
 
@@ -616,7 +616,7 @@ def test_rpc_start(mocker, default_conf) -> None:
 def test_rpc_stop(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=MagicMock()
     )
 
@@ -638,7 +638,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
 def test_rpc_stopentry(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=MagicMock()
     )
 
@@ -658,7 +658,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
 
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         cancel_order=cancel_order_mock,
         fetch_order=MagicMock(
@@ -787,7 +787,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
@@ -810,7 +810,7 @@ def test_enter_tag_performance_handle(default_conf, ticker, fee, mocker) -> None
 
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
@@ -842,7 +842,7 @@ def test_enter_tag_performance_handle(default_conf, ticker, fee, mocker) -> None
 def test_enter_tag_performance_handle_2(mocker, default_conf, markets, fee):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=markets)
     )
 
@@ -871,7 +871,7 @@ def test_enter_tag_performance_handle_2(mocker, default_conf, markets, fee):
 def test_exit_reason_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
@@ -898,7 +898,7 @@ def test_exit_reason_performance_handle(default_conf_usdt, ticker, fee, mocker) 
 def test_exit_reason_performance_handle_2(mocker, default_conf, markets, fee):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=markets)
     )
 
@@ -927,7 +927,7 @@ def test_exit_reason_performance_handle_2(mocker, default_conf, markets, fee):
 def test_mix_tag_performance_handle(default_conf, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
@@ -951,7 +951,7 @@ def test_mix_tag_performance_handle(default_conf, ticker, fee, mocker) -> None:
 def test_mix_tag_performance_handle_2(mocker, default_conf, markets, fee):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=markets)
     )
 
@@ -981,7 +981,7 @@ def test_mix_tag_performance_handle_2(mocker, default_conf, markets, fee):
 def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
@@ -1006,7 +1006,7 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,

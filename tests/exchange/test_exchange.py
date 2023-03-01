@@ -1234,7 +1234,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
                                          exchange_name, order_book_l2_usd, converted):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           exchange_has=MagicMock(return_value=True),
                           fetch_l2_order_book=order_book_l2_usd,
                           )
@@ -1296,7 +1296,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
                                           exchange_name, order_book_l2_usd):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           exchange_has=MagicMock(return_value=True),
                           fetch_l2_order_book=order_book_l2_usd,
                           )
@@ -3238,7 +3238,7 @@ def test_fetch_order_or_stoploss_order(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
     fetch_order_mock = MagicMock()
     fetch_stoploss_order_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           fetch_order=fetch_order_mock,
                           fetch_stoploss_order=fetch_stoploss_order_mock,
                           )
@@ -3367,7 +3367,7 @@ def test_stoploss_order_unsupported_exchange(default_conf, mocker):
 
 
 def test_merge_ft_has_dict(default_conf, mocker):
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           _init_ccxt=MagicMock(return_value=MagicMock()),
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
@@ -3402,7 +3402,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
 
 
 def test_get_valid_pair_combination(default_conf, mocker, markets):
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           _init_ccxt=MagicMock(return_value=MagicMock()),
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
@@ -3494,7 +3494,7 @@ def test_get_markets(default_conf, mocker, markets_static,
                      spot_only, futures_only, expected_keys,
                      test_comment  # Here for debugging purposes (Not used within method)
                      ):
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           _init_ccxt=MagicMock(return_value=MagicMock()),
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
@@ -5071,7 +5071,7 @@ def test_get_liquidation_price1(mocker, default_conf):
     ]
     api_mock.fetch_positions = MagicMock(return_value=positions)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
     )
     default_conf['dry_run'] = False
