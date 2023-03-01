@@ -146,8 +146,8 @@ def test_kucoin_create_order(default_conf, mocker, side, ordertype, rate):
         'amount': 1
     })
     default_conf['dry_run'] = False
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id='kucoin')
     exchange._set_leverage = MagicMock()
     exchange.set_margin_mode = MagicMock()
