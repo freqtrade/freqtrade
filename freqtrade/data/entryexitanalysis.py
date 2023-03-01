@@ -24,9 +24,9 @@ def _load_signal_candles(backtest_dir: Path):
         scpf = Path(backtest_dir.parent / f"{backtest_dir.stem}_signals.pkl")
 
     try:
-        scp = open(scpf, "rb")
-        signal_candles = joblib.load(scp)
-        logger.info(f"Loaded signal candles: {str(scpf)}")
+        with scpf.open("rb") as scp:
+            signal_candles = joblib.load(scp)
+            logger.info(f"Loaded signal candles: {str(scpf)}")
     except Exception as e:
         logger.error("Cannot load signal candles from pickled results: ", e)
 

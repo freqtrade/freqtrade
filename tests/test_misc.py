@@ -46,7 +46,7 @@ def test_shorten_date() -> None:
 
 
 def test_file_dump_json(mocker) -> None:
-    file_open = mocker.patch('freqtrade.misc.open', MagicMock())
+    file_open = mocker.patch('freqtrade.misc.Path.open', MagicMock())
     json_dump = mocker.patch('rapidjson.dump', MagicMock())
     file_dump_json(Path('somefile'), [1, 2, 3])
     assert file_open.call_count == 1

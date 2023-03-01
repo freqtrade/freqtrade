@@ -59,7 +59,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 def test_load_config_file(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
     default_conf['datadir'] = str(default_conf['datadir'])
-    file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
+    file_mock = mocker.patch('freqtrade.configuration.load_config.Path.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
@@ -73,7 +73,8 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
-    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch('freqtrade.configuration.load_config.Path.open',
+                 mocker.mock_open(read_data=filedata))
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
     with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
@@ -272,7 +273,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
 def test_load_config_file_exception(mocker) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.open',
+        'freqtrade.configuration.configuration.Path.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
 
