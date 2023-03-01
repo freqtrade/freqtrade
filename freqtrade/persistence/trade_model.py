@@ -643,7 +643,7 @@ class LocalTrade():
             f"initial_stop_loss={self.initial_stop_loss:.8f}, "
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
-            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
+            f"{float(self.stop_loss) - float(self.initial_stop_loss or 0.0):.8f}.")
 
     def update_trade(self, order: Order) -> None:
         """
