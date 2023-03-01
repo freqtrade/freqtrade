@@ -10,7 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.persistence.base import ModelBase, SessionType
+from freqtrade.persistence.base import ModelBase
 from freqtrade.persistence.migrations import check_migrate
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Order, Trade
