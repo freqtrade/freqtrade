@@ -440,7 +440,8 @@ class Backtesting:
                               side_1 * abs(self.strategy.trailing_stop_positive / leverage)))
             else:
                 # Worst case: price ticks tiny bit above open and dives down.
-                stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(trade.stop_loss_pct / leverage))
+                stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(
+                    (trade.stop_loss_pct or 0.0) / leverage))
                 if is_short:
                     assert stop_rate > row[LOW_IDX]
                 else:
@@ -472,7 +473,7 @@ class Backtesting:
             # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
             roi_rate = trade.open_rate * roi / leverage
             open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
-            close_rate = -(roi_rate + open_fee_rate) / (trade.fee_close - side_1 * 1)
+            close_rate = -(roi_rate + open_fee_rate) / ((trade.fee_close or 0.0) - side_1 * 1)
             if is_short:
                 is_new_roi = row[OPEN_IDX] < close_rate
             else:
