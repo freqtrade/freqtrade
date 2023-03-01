@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from math import isclose
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func
 from sqlalchemy.orm import Mapped, Query, lazyload, mapped_column, relationship
@@ -1131,7 +1131,7 @@ class LocalTrade():
     @staticmethod
     def get_open_trades() -> List[Any]:
         """
-        Query trades from persistence layer
+        Retrieve open trades
         """
         return Trade.get_trades_proxy(is_open=True)
 
@@ -1276,7 +1276,7 @@ class Trade(ModelBase, LocalTrade):
     def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
                          open_date: Optional[datetime] = None,
                          close_date: Optional[datetime] = None,
-                         ) -> List['LocalTrade', 'Trade']:
+                         ) -> List['LocalTrade']:
         """
         Helper function to query Trades.j
         Returns a List of trades, filtered on the parameters given.
@@ -1295,7 +1295,7 @@ class Trade(ModelBase, LocalTrade):
                 trade_filter.append(Trade.close_date > close_date)
             if is_open is not None:
                 trade_filter.append(Trade.is_open.is_(is_open))
-            return Trade.get_trades(trade_filter).all()
+            return cast(List[LocalTrade], Trade.get_trades(trade_filter).all())
         else:
             return LocalTrade.get_trades_proxy(
                 pair=pair, is_open=is_open,
