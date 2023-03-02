@@ -37,7 +37,7 @@ class Order(ModelBase):
     """
     __tablename__ = 'orders'
     query: ClassVar[_QueryDescriptorType]
-    session: ClassVar[SessionType]
+    _session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
@@ -1179,7 +1179,7 @@ class Trade(ModelBase, LocalTrade):
     """
     __tablename__ = 'trades'
     query: ClassVar[_QueryDescriptorType]
-    session: ClassVar[SessionType]
+    _session: ClassVar[SessionType]
 
     use_db: bool = True
 
