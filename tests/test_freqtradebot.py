@@ -786,7 +786,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     default_conf_usdt['exchange']['name'] = exchange_name
     if margin_mode:
         default_conf_usdt['margin_mode'] = margin_mode
-    mocker.patch('freqtrade.exchange.Gate.validate_ordertypes')
+    mocker.patch('freqtrade.exchange.gate.Gate.validate_ordertypes')
     patch_RPCManager(mocker)
     patch_exchange(mocker, id=exchange_name)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -814,7 +814,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_max_leverage=MagicMock(return_value=10),
     )
     mocker.patch.multiple(
-        'freqtrade.exchange.Okx',
+        'freqtrade.exchange.okx.Okx',
         get_max_pair_stake_amount=MagicMock(return_value=500000),
     )
     pair = 'ETH/USDT'
