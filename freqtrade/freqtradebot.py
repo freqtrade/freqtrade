@@ -633,7 +633,7 @@ class FreqtradeBot(LoggingMixin):
                 return
 
             remaining = (trade.amount - amount) * current_exit_rate
-            if remaining < min_exit_stake:
+            if min_exit_stake and remaining < min_exit_stake:
                 logger.info(f"Remaining amount of {remaining} would be smaller "
                             f"than the minimum of {min_exit_stake}.")
                 return
@@ -1314,7 +1314,7 @@ class FreqtradeBot(LoggingMixin):
                                                          default_retval=order_obj.price)(
                 trade=trade, order=order_obj, pair=trade.pair,
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
-                current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
+                current_order_rate=order_obj.safe_price, entry_tag=trade.enter_tag,
                 side=trade.entry_side)
 
             replacing = True
@@ -1330,7 +1330,8 @@ class FreqtradeBot(LoggingMixin):
                     # place new order only if new price is supplied
                     self.execute_entry(
                         pair=trade.pair,
-                        stake_amount=(order_obj.remaining * order_obj.price / trade.leverage),
+                        stake_amount=(
+                            order_obj.safe_remaining * order_obj.safe_price / trade.leverage),
                         price=adjusted_entry_price,
                         trade=trade,
                         is_short=trade.is_short,
@@ -1344,6 +1345,8 @@ class FreqtradeBot(LoggingMixin):
         """
 
         for trade in Trade.get_open_order_trades():
+            if not trade.open_order_id:
+                continue
             try:
                 order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
             except (ExchangeError):
@@ -1368,6 +1371,9 @@ class FreqtradeBot(LoggingMixin):
         """
         was_trade_fully_canceled = False
         side = trade.entry_side.capitalize()
+        if not trade.open_order_id:
+            logger.warning(f"No open order for {trade}.")
+            return False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
@@ -1454,7 +1460,7 @@ class FreqtradeBot(LoggingMixin):
                     return False
 
             try:
-                co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                co = self.exchange.cancel_order_with_result(order['id'], trade.pair,
                                                             trade.amount)
             except InvalidOrderException:
                 logger.exception(
@@ -1639,7 +1645,7 @@ class FreqtradeBot(LoggingMixin):
             profit = trade.calc_profit(rate=order_rate, amount=amount, open_rate=trade.open_rate)
             profit_ratio = trade.calc_profit_ratio(order_rate, amount, trade.open_rate)
         else:
-            order_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+            order_rate = trade.safe_close_rate
             profit = trade.calc_profit(rate=order_rate) + (0.0 if fill else trade.realized_profit)
             profit_ratio = trade.calc_profit_ratio(order_rate)
             amount = trade.amount
@@ -1694,7 +1700,7 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Order_obj not found for {order_id}. This should not have happened.")
 
-        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_rate: float = trade.safe_close_rate
         profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
@@ -1737,7 +1743,8 @@ class FreqtradeBot(LoggingMixin):
 #
 
     def update_trade_state(
-            self, trade: Trade, order_id: str, action_order: Optional[Dict[str, Any]] = None,
+            self, trade: Trade, order_id: Optional[str],
+            action_order: Optional[Dict[str, Any]] = None,
             stoploss_order: bool = False, send_msg: bool = True) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary

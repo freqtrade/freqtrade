@@ -2440,6 +2440,7 @@ def test_select_filled_orders(fee):
 def test_order_to_ccxt(limit_buy_order_open):
 
     order = Order.parse_from_ccxt_object(limit_buy_order_open, 'mocked', 'buy')
+    order.ft_trade_id = 1
     order.query.session.add(order)
     Order.query.session.commit()
 

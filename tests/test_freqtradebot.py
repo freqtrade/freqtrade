@@ -3036,6 +3036,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     # Order remained open for some reason (cancel failed)
     cancel_buy_order['status'] = 'open'
     cancel_order_mock = MagicMock(return_value=cancel_buy_order)
+    trade.open_order_id = 'some_open_order'
     mocker.patch(f'{EXMS}.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
@@ -3231,6 +3232,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     trade = MagicMock()
     reason = CANCEL_REASON['TIMEOUT']
     order = {'remaining': 1,
+             'id': '125',
              'amount': 1,
              'status': "open"}
     assert not freqtrade.handle_cancel_exit(trade, order, reason)

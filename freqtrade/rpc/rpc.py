@@ -189,8 +189,8 @@ class RPC:
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
-                    current_profit = trade.close_profit
-                    current_profit_abs = trade.close_profit_abs
+                    current_profit = trade.close_profit or 0.0
+                    current_profit_abs = trade.close_profit_abs or 0.0
                 total_profit_abs = trade.realized_profit + current_profit_abs
 
                 # Calculate fiat profit
@@ -373,13 +373,13 @@ class RPC:
 
     def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
         """ Returns the X last trades """
-        order_by = Trade.id if order_by_id else Trade.close_date.desc()
+        order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
                 order_by).limit(limit).offset(offset)
         else:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc()).all()
+                Trade.close_date.desc())
 
         output = [trade.to_json() for trade in trades]
 
@@ -401,7 +401,7 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
+        trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Sell reason
         exit_reasons = {}
         for trade in trades:
@@ -410,7 +410,7 @@ class RPC:
             exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
-        dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
+        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
         for trade in trades:
             if trade.close_date is not None and trade.open_date is not None:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
@@ -449,11 +449,11 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_ratio = trade.close_profit
-                profit_abs = trade.close_profit_abs
+                profit_ratio = trade.close_profit or 0.0
+                profit_abs = trade.close_profit_abs or 0.0
                 profit_closed_coin.append(profit_abs)
                 profit_closed_ratio.append(profit_ratio)
-                if trade.close_profit >= 0:
+                if profit_ratio >= 0:
                     winning_trades += 1
                     winning_profit += profit_abs
                 else:
@@ -506,7 +506,7 @@ class RPC:
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
-                               for trade in trades if not trade.is_open])
+                               for trade in trades if not trade.is_open and trade.close_date])
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:
@@ -785,7 +785,8 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Optional[Trade] = Trade.get_trades(
+            [Trade.is_open.is_(True), Trade.pair == pair]).first()
         is_short = (order_side == SignalDirection.SHORT)
         if trade:
             is_short = trade.is_short
