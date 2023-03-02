@@ -100,6 +100,10 @@ class Order(ModelBase):
         return self.filled if self.filled is not None else self.amount or 0.0
 
     @property
+    def safe_cost(self) -> float:
+        return self.cost or 0.0
+
+    @property
     def safe_remaining(self) -> float:
         return (
             self.remaining if self.remaining is not None else
