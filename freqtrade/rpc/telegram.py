@@ -561,6 +561,8 @@ class Telegram(RPCHandler):
         for r in results:
             r['open_date_hum'] = arrow.get(r['open_date']).humanize()
             r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
+            r['num_exits'] = len([o for o in r['orders'] if not o['ft_is_entry']
+                                 and not o['ft_order_side'] == 'stoploss'])
             r['exit_reason'] = r.get('exit_reason', "")
             r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
             r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
@@ -581,6 +583,7 @@ class Telegram(RPCHandler):
             if position_adjust:
                 max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
                 lines.append("*Number of Entries:* `{num_entries}`" + max_buy_str)
+                lines.append("*Number of Exits:* `{num_exits}`")
 
             lines.extend([
                 "*Open Rate:* `{open_rate:.8f}`",
