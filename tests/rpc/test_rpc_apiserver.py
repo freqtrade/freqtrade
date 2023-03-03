@@ -1179,7 +1179,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
     ftbot.config['force_entry_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
-    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
+    mocker.patch("freqtrade.rpc.rpc.RPC._rpc_force_entry", fbuy_mock)
     rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data={"pair": "ETH/BTC"})
     assert_response(rc)
@@ -1205,7 +1205,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         strategy=CURRENT_TEST_STRATEGY,
         trading_mode=TradingMode.SPOT
     ))
-    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
+    mocker.patch("freqtrade.rpc.rpc.RPC._rpc_force_entry", fbuy_mock)
 
     rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data={"pair": "ETH/BTC"})
