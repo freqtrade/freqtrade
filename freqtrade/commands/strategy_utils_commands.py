@@ -25,7 +25,7 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
         config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
 
     filtered_strategy_objs = []
-    if hasattr(args, "strategy_list"):
+    if 'strategy_list' in args:
         for args_strategy in args['strategy_list']:
             for strategy_obj in strategy_objs:
                 if (strategy_obj['name'] == args_strategy
