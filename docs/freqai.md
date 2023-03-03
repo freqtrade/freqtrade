@@ -6,6 +6,9 @@
 
 FreqAI is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input signals. In general, FreqAI aims to be a sandbox for easily deploying robust machine learning libraries on real-time data ([details](#freqai-position-in-open-source-machine-learning-landscape)).
 
+!!! Note
+    FreqAI is, and always will be, a not-for-profit, open-source project. FreqAI does *not* have a crypto token, FreqAI does *not* sell signals, and FreqAI does not have a domain besides the present [freqtrade documentation](https://www.freqtrade.io/en/latest/freqai/).
+
 Features include:
 
 * **Self-adaptive retraining** - Retrain models during [live deployments](freqai-running.md#live-deployments) to self-adapt to the market in a supervised manner
@@ -19,7 +22,7 @@ Features include:
 * **Automatic data download** - Compute timeranges for data downloads and update historic data (in live deployments)
 * **Cleaning of incoming data** - Handle NaNs safely before training and model inferencing
 * **Dimensionality reduction** - Reduce the size of the training data via [Principal Component Analysis](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis)
-* **Deploying bot fleets** - Set one bot to train models while a fleet of [follower bots](freqai-running.md#setting-up-a-follower) inference the models and handle trades
+* **Deploying bot fleets** - Set one bot to train models while a fleet of [consumers](producer-consumer.md) use signals.
 
 ## Quick start
 
@@ -67,6 +70,10 @@ pip install -r requirements-freqai.txt
 
 !!! Note
     Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since it does not provide wheels for this platform.
+
+!!! Note "python 3.11"
+    Some dependencies (Catboost, Torch) currently don't support python 3.11. Freqtrade therefore only supports python 3.10 for these models/dependencies.
+    Tests involving these dependencies are skipped on 3.11.
 
 ### Usage with docker
 

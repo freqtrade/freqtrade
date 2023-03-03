@@ -19,8 +19,8 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
-                             TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
+                             State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -169,6 +169,7 @@ class RPC:
             for trade in trades:
                 order: Optional[Order] = None
                 current_profit_fiat: Optional[float] = None
+                total_profit_fiat: Optional[float] = None
                 if trade.open_order_id:
                     order = trade.select_order_by_order_id(trade.open_order_id)
                 # calculate profit and send message to user
@@ -188,13 +189,19 @@ class RPC:
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
-                    current_profit = trade.close_profit
-                    current_profit_abs = trade.close_profit_abs
+                    current_profit = trade.close_profit or 0.0
+                    current_profit_abs = trade.close_profit_abs or 0.0
+                total_profit_abs = trade.realized_profit + current_profit_abs
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
                     current_profit_fiat = self._fiat_converter.convert_amount(
                         current_profit_abs,
+                        self._freqtrade.config['stake_currency'],
+                        self._freqtrade.config['fiat_display_currency']
+                    )
+                    total_profit_fiat = self._fiat_converter.convert_amount(
+                        total_profit_abs,
                         self._freqtrade.config['stake_currency'],
                         self._freqtrade.config['fiat_display_currency']
                     )
@@ -210,14 +217,13 @@ class RPC:
                 trade_dict.update(dict(
                     close_profit=trade.close_profit if not trade.is_open else None,
                     current_rate=current_rate,
-                    current_profit=current_profit,  # Deprecated
-                    current_profit_pct=round(current_profit * 100, 2),  # Deprecated
-                    current_profit_abs=current_profit_abs,  # Deprecated
                     profit_ratio=current_profit,
                     profit_pct=round(current_profit * 100, 2),
                     profit_abs=current_profit_abs,
                     profit_fiat=current_profit_fiat,
 
+                    total_profit_abs=total_profit_abs,
+                    total_profit_fiat=total_profit_fiat,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
@@ -367,13 +373,13 @@ class RPC:
 
     def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
         """ Returns the X last trades """
-        order_by = Trade.id if order_by_id else Trade.close_date.desc()
+        order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
                 order_by).limit(limit).offset(offset)
         else:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc()).all()
+                Trade.close_date.desc())
 
         output = [trade.to_json() for trade in trades]
 
@@ -395,7 +401,7 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
+        trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Sell reason
         exit_reasons = {}
         for trade in trades:
@@ -404,7 +410,7 @@ class RPC:
             exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
-        dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
+        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
         for trade in trades:
             if trade.close_date is not None and trade.open_date is not None:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
@@ -443,11 +449,11 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_ratio = trade.close_profit
-                profit_abs = trade.close_profit_abs
+                profit_ratio = trade.close_profit or 0.0
+                profit_abs = trade.close_profit_abs or 0.0
                 profit_closed_coin.append(profit_abs)
                 profit_closed_ratio.append(profit_ratio)
-                if trade.close_profit >= 0:
+                if profit_ratio >= 0:
                     winning_trades += 1
                     winning_profit += profit_abs
                 else:
@@ -500,7 +506,7 @@ class RPC:
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
-                               for trade in trades if not trade.is_open])
+                               for trade in trades if not trade.is_open and trade.close_date])
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:
@@ -779,7 +785,8 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Optional[Trade] = Trade.get_trades(
+            [Trade.is_open.is_(True), Trade.pair == pair]).first()
         is_short = (order_side == SignalDirection.SHORT)
         if trade:
             is_short = trade.is_short
@@ -1198,10 +1205,23 @@ class RPC:
             "ram_pct": psutil.virtual_memory().percent
         }
 
-    def _health(self) -> Dict[str, Union[str, int]]:
+    def health(self) -> Dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
+        if last_p is None:
+            return {
+                "last_process": None,
+                "last_process_loc": None,
+                "last_process_ts": None,
+            }
+
         return {
-            'last_process': str(last_p),
-            'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
-            'last_process_ts': int(last_p.timestamp()),
+            "last_process": str(last_p),
+            "last_process_loc": last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            "last_process_ts": int(last_p.timestamp()),
         }
+
+    def _update_market_direction(self, direction: MarketDirection) -> None:
+        self._freqtrade.strategy.market_direction = direction
+
+    def _get_market_direction(self) -> MarketDirection:
+        return self._freqtrade.strategy.market_direction

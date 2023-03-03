@@ -255,7 +255,7 @@ def test_write_read_backtest_candles(tmpdir):
 
     # test directory exporting
     stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict, '2022_01_01_15_05_13')
-    scp = open(stored_file, "rb")
+    scp = stored_file.open("rb")
     pickled_signal_candles = joblib.load(scp)
     scp.close()
 
@@ -269,7 +269,7 @@ def test_write_read_backtest_candles(tmpdir):
     # test file exporting
     filename = Path(tmpdir / 'testresult')
     stored_file = store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
-    scp = open(stored_file, "rb")
+    scp = stored_file.open("rb")
     pickled_signal_candles = joblib.load(scp)
     scp.close()
 

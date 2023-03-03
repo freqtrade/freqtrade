@@ -20,7 +20,7 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IntParameter
-from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, get_markets, log_has, log_has_re,
+from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, get_markets, log_has, log_has_re,
                             patch_exchange, patched_configuration_load_config_file)
 
 
@@ -859,7 +859,7 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, space) -> None:
 
 def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     hyperopt_conf.update({
@@ -897,10 +897,10 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
 
 
 def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, fee) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch('freqtrade.exchange.Exchange._load_markets')
-    mocker.patch('freqtrade.exchange.Exchange.markets',
+    mocker.patch(f'{EXMS}.validate_config', MagicMock())
+    mocker.patch(f'{EXMS}.get_fee', fee)
+    mocker.patch(f'{EXMS}._load_markets')
+    mocker.patch(f'{EXMS}.markets',
                  PropertyMock(return_value=get_markets()))
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
@@ -938,7 +938,7 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, 
 
 def test_in_strategy_auto_hyperopt_per_epoch(mocker, hyperopt_conf, tmpdir, fee) -> None:
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
 
     hyperopt_conf.update({
@@ -996,7 +996,7 @@ def test_stake_amount_unlimited_max_open_trades(mocker, hyperopt_conf, tmpdir, f
     # This test is to ensure that unlimited max_open_trades are ignored for the backtesting
     # if we have an unlimited stake amount
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
@@ -1024,7 +1024,7 @@ def test_max_open_trades_dump(mocker, hyperopt_conf, tmpdir, fee, capsys) -> Non
     # This test is to ensure that after hyperopting, max_open_trades is never
     # saved as inf in the output json params
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
@@ -1070,7 +1070,7 @@ def test_max_open_trades_consistency(mocker, hyperopt_conf, tmpdir, fee) -> None
     # This test is to ensure that max_open_trades is the same across all functions needing it
     # after it has been changed from the hyperopt
     patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', return_value=0)
+    mocker.patch(f'{EXMS}.get_fee', return_value=0)
 
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     hyperopt_conf.update({

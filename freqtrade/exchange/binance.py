@@ -195,7 +195,7 @@ class Binance(Exchange):
                 leverage_tiers_path = (
                     Path(__file__).parent / 'binance_leverage_tiers.json'
                 )
-                with open(leverage_tiers_path) as json_file:
+                with leverage_tiers_path.open() as json_file:
                     return json_load(json_file)
             else:
                 try:

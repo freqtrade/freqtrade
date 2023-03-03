@@ -1,13 +1,13 @@
 import logging
 from typing import Dict
 
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa
+import pandas as pd  # noqa
 import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.strategy import IntParameter, IStrategy, merge_informative_pair
+from freqtrade.strategy import IntParameter, IStrategy, merge_informative_pair  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
     "freqai": {
         "enabled": true,
-        "purge_old_models": true,
+        "purge_old_models": 2,
         "train_period_days": 15,
         "identifier": "uniqe-id",
         "feature_parameters": {
@@ -224,12 +224,11 @@ class FreqaiExampleHybridStrategy(IStrategy):
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-50) >
-                                        dataframe["close"], 'up', 'down')
+                                              dataframe["close"], 'up', 'down')
 
         return dataframe
 
-    # flake8: noqa: C901
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:  # noqa: C901
 
         # User creates their own custom strat here. Present example is a supertrend
         # based strategy.

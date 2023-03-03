@@ -1,33 +1,36 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, or_
-from sqlalchemy.orm import Query
+from sqlalchemy import String, or_
+from sqlalchemy.orm import Mapped, Query, mapped_column
+from sqlalchemy.orm.scoping import _QueryDescriptorType
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.base import ModelBase, SessionType
 
 
-class PairLock(_DECL_BASE):
+class PairLock(ModelBase):
     """
     Pair Locks database model.
     """
     __tablename__ = 'pairlocks'
+    query: ClassVar[_QueryDescriptorType]
+    _session: ClassVar[SessionType]
 
-    id = Column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
-    pair = Column(String(25), nullable=False, index=True)
+    pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     # lock direction - long, short or * (for both)
-    side = Column(String(25), nullable=False, default="*")
-    reason = Column(String(255), nullable=True)
+    side: Mapped[str] = mapped_column(String(25), nullable=False, default="*")
+    reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     # Time the pair was locked (start time)
-    lock_time = Column(DateTime(), nullable=False)
+    lock_time: Mapped[datetime] = mapped_column(nullable=False)
     # Time until the pair is locked (end time)
-    lock_end_time = Column(DateTime(), nullable=False, index=True)
+    lock_end_time: Mapped[datetime] = mapped_column(nullable=False, index=True)
 
-    active = Column(Boolean, nullable=False, default=True, index=True)
+    active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (

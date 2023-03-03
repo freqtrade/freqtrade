@@ -1,5 +1,6 @@
 import platform
 import shutil
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -13,8 +14,12 @@ from freqtrade.freqai.utils import download_all_data_for_training, get_required_
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
-from tests.conftest import create_mock_trades, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
+
+
+def is_py11() -> bool:
+    return sys.version_info >= (3, 11)
 
 
 def is_arm() -> bool:
@@ -27,25 +32,32 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32, can_short', [
-    ('LightGBMRegressor', True, False, True, True),
-    ('XGBoostRegressor', False, True, False, True),
-    ('XGBoostRFRegressor', False, False, False, True),
-    ('CatboostRegressor', False, False, False, True),
-    ('ReinforcementLearner', False, True, False, True),
-    ('ReinforcementLearner_multiproc', False, False, False, True),
-    ('ReinforcementLearner_test_3ac', False, False, False, False),
-    ('ReinforcementLearner_test_3ac', False, False, False, True),
-    ('ReinforcementLearner_test_4ac', False, False, False, True)
-    ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
-                                               dbscan, float32, can_short):
-    if is_arm() and model == 'CatboostRegressor':
+def can_run_model(model: str) -> None:
+    if (is_arm() or is_py11()) and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     if is_mac() and not is_arm() and 'Reinforcement' in model:
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
+    if is_py11() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+
+
+@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
+    ('LightGBMRegressor', True, False, True, True, False, 0),
+    ('XGBoostRegressor', False, True, False, True, False, 10),
+    ('XGBoostRFRegressor', False, False, False, True, False, 0),
+    ('CatboostRegressor', False, False, False, True, True, 0),
+    ('ReinforcementLearner', False, True, False, True, False, 0),
+    ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
+    ])
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
+                                               dbscan, float32, can_short, shuffle, buffer):
+
+    can_run_model(model)
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -53,6 +65,8 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai_conf['freqai']['feature_parameters'].update({"principal_component_analysis": pca})
     freqai_conf['freqai']['feature_parameters'].update({"use_DBSCAN_to_remove_outliers": dbscan})
     freqai_conf.update({"reduce_df_footprint": float32})
+    freqai_conf['freqai']['feature_parameters'].update({"shuffle_after_split": shuffle})
+    freqai_conf['freqai']['feature_parameters'].update({"buffer_train_data_candles": buffer})
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
@@ -114,7 +128,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
-    if is_arm() and 'Catboost' in model:
+    if (is_arm() or is_py11()) and 'Catboost' in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -156,7 +170,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
-    if is_arm() and model == 'CatboostClassifier':
+    if (is_arm() or is_py11()) and model == 'CatboostClassifier':
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"freqaimodel": model})
@@ -203,13 +217,11 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
+    can_run_model(model)
+
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
-    if is_arm() and "Catboost" in model:
-        pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
     Trade.use_db = False
 
     freqai_conf.update({"freqaimodel": model})
@@ -506,6 +518,8 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    if is_py11():
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -517,7 +531,7 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
-    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     strategy.dp = DataProvider(freqai_conf, exchange)
 
     if not dp_exists:

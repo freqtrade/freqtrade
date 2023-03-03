@@ -58,7 +58,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
     """
     try:
         # Read config from stdin if requested in the options
-        with open(path) if path != '-' else sys.stdin as file:
+        with Path(path).open() if path != '-' else sys.stdin as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
     except FileNotFoundError:
         raise OperationalException(

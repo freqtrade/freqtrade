@@ -12,17 +12,17 @@ from freqtrade.data import history
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
-from tests.conftest import patch_exchange
+from tests.conftest import EXMS, patch_exchange
 
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     default_conf['max_open_trades'] = 10
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.amount_to_contract_precision',
                  lambda x, *args, **kwargs: round(x, 8))
-    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,
@@ -99,10 +99,10 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
 ])
 def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, leverage) -> None:
     default_conf['use_exit_signal'] = False
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=10)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
-    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
+    mocker.patch(f'{EXMS}.get_fee', fee)
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=10)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
 
     patch_exchange(mocker)
     default_conf.update({

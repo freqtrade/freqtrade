@@ -17,7 +17,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.exchange import Exchange, timeframe_to_msecs
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_default_conf_usdt
+from tests.conftest import EXMS, get_default_conf_usdt
 
 
 EXCHANGE_FIXTURE_TYPE = Tuple[Exchange, str]
@@ -309,7 +309,7 @@ def exchange(request, exchange_conf):
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange_futures(request, exchange_conf, class_mocker):
-    if not EXCHANGES[request.param].get('futures') is True:
+    if EXCHANGES[request.param].get('futures') is not True:
         yield None, request.param
     else:
         exchange_conf = set_test_proxy(
@@ -322,13 +322,12 @@ def exchange_futures(request, exchange_conf, class_mocker):
 
         class_mocker.patch(
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
-        class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
+        class_mocker.patch(f'{EXMS}.fetch_trading_fees')
         class_mocker.patch('freqtrade.exchange.okx.Okx.additional_exchange_init')
         class_mocker.patch('freqtrade.exchange.binance.Binance.additional_exchange_init')
         class_mocker.patch('freqtrade.exchange.bybit.Bybit.additional_exchange_init')
-        class_mocker.patch('freqtrade.exchange.exchange.Exchange.load_cached_leverage_tiers',
-                           return_value=None)
-        class_mocker.patch('freqtrade.exchange.exchange.Exchange.cache_leverage_tiers')
+        class_mocker.patch(f'{EXMS}.load_cached_leverage_tiers', return_value=None)
+        class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(
             request.param, exchange_conf, validate=True, load_leverage_tiers=True)

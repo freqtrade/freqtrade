@@ -8,7 +8,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.plugins.pairlistmanager import PairListManager
-from tests.conftest import generate_test_data, get_patched_exchange
+from tests.conftest import EXMS, generate_test_data, get_patched_exchange
 
 
 @pytest.mark.parametrize('candle_type', [
@@ -223,7 +223,7 @@ def test_emit_df(mocker, default_conf, ohlcv_history):
 
 def test_refresh(mocker, default_conf):
     refresh_mock = MagicMock()
-    mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
+    mocker.patch(f"{EXMS}.refresh_latest_ohlcv", refresh_mock)
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     timeframe = default_conf["timeframe"]
@@ -281,7 +281,7 @@ def test_market(mocker, default_conf, markets):
 
 def test_ticker(mocker, default_conf, tickers):
     ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
-    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
     res = dp.ticker('ETH/BTC')
@@ -290,7 +290,7 @@ def test_ticker(mocker, default_conf, tickers):
     assert res['symbol'] == 'ETH/BTC'
 
     ticker_mock = MagicMock(side_effect=ExchangeError('Pair not found'))
-    mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
+    mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
     res = dp.ticker('UNITTEST/BTC')
@@ -301,7 +301,7 @@ def test_current_whitelist(mocker, default_conf, tickers):
     # patch default conf to volumepairlist
     default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers)
     exchange = get_patched_exchange(mocker, default_conf)

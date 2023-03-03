@@ -157,7 +157,7 @@ class RemotePairList(IPairList):
                 file_path = Path(filename)
 
                 if file_path.exists():
-                    with open(filename) as json_file:
+                    with file_path.open() as json_file:
                         # Load the JSON data into a dictionary
                         jsonparse = json.load(json_file)
 

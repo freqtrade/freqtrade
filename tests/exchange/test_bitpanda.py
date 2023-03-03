@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from tests.conftest import get_patched_exchange
+from tests.conftest import EXMS, get_patched_exchange
 
 
 def test_get_trades_for_order(default_conf, mocker):
@@ -9,7 +9,7 @@ def test_get_trades_for_order(default_conf, mocker):
     order_id = 'ABCD-ABCD'
     since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     api_mock = MagicMock()
 
     api_mock.fetch_my_trades = MagicMock(return_value=[{'id': 'TTR67E-3PFBD-76IISV',

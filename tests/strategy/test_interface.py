@@ -214,12 +214,12 @@ def test_ignore_expired_candle(default_conf):
 
     current_time = latest_date + timedelta(seconds=30 + 300)
 
-    assert not strategy.ignore_expired_candle(
+    assert strategy.ignore_expired_candle(
         latest_date=latest_date,
         current_time=current_time,
         timeframe_seconds=300,
         enter=True
-    ) is True
+    ) is not True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
@@ -288,18 +288,6 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
     processed = strategy.advise_all_indicators(data)
-    assert len(processed['UNITTEST/BTC']) == 103
-
-
-def test_populate_any_indicators(default_conf, testdatadir) -> None:
-    strategy = StrategyResolver.load_strategy(default_conf)
-
-    timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
-                     fill_up_missing=True)
-    processed = strategy.populate_any_indicators('UNITTEST/BTC', data, '5m')
-    assert processed == data
-    assert id(processed) == id(data)
     assert len(processed['UNITTEST/BTC']) == 103
 
 

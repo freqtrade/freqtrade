@@ -35,6 +35,9 @@ warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$'
 ]
+plugins = [
+  "sqlalchemy.ext.mypy.plugin"
+]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -56,3 +59,24 @@ exclude = [
   "build_helpers/*.py",
 ]
 ignore = ["freqtrade/vendor/**"]
+
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env"]
+target-version = "py38"
+extend-select = [
+  "C90",    # mccabe
+  # "N",    # pep8-naming
+  # "UP",   # pyupgrade
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  "YTT",    # flake8-2020
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  "PTH",  # flake8-use-pathlib
+]
+
+[tool.ruff.mccabe]
+max-complexity = 12

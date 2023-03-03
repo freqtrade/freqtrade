@@ -7,18 +7,18 @@ from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Gate
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_patched_exchange
+from tests.conftest import EXMS, get_patched_exchange
 
 
 def test_validate_order_types_gate(default_conf, mocker):
     default_conf['exchange']['name'] = 'gate'
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt')
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', return_value={})
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
-    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
-    mocker.patch('freqtrade.exchange.Exchange.name', 'Gate')
+    mocker.patch(f'{EXMS}._init_ccxt')
+    mocker.patch(f'{EXMS}._load_markets', return_value={})
+    mocker.patch(f'{EXMS}.validate_pairs')
+    mocker.patch(f'{EXMS}.validate_timeframes')
+    mocker.patch(f'{EXMS}.validate_stakecurrency')
+    mocker.patch(f'{EXMS}.validate_pricing')
+    mocker.patch(f'{EXMS}.name', 'Gate')
     exch = ExchangeResolver.load_exchange('gate', default_conf, True)
     assert isinstance(exch, Gate)
 
@@ -105,7 +105,7 @@ def test_stoploss_adjust_gate(mocker, default_conf, sl1, sl2, sl3, side):
     ('maker', 0.0, 0.0),
 ])
 def test_fetch_my_trades_gate(mocker, default_conf, takerormaker, rate, cost):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     tick = {'ETH/USDT:USDT': {
         'info': {'user_id': '',
                  'taker_fee': '0.0018',

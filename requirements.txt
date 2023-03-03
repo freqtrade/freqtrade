@@ -2,12 +2,10 @@ numpy==1.24.2
 pandas==1.5.3
 pandas-ta==0.3.14b
 
-ccxt==2.7.93
-# Pin cryptography for now due to rust build errors with piwheels
-cryptography==38.0.1; platform_machine == 'armv7l'
-cryptography==39.0.1; platform_machine != 'armv7l'
+ccxt==2.8.54
+cryptography==39.0.1
 aiohttp==3.8.4
-SQLAlchemy==1.4.46
+SQLAlchemy==2.0.4
 python-telegram-bot==13.15
 arrow==1.2.3
 cachetools==4.2.2
@@ -36,8 +34,8 @@ orjson==3.8.6
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.91.0
-pydantic==1.10.4
+fastapi==0.92.0
+pydantic==1.10.5
 uvicorn==0.20.0
 pyjwt==2.6.0
 aiofiles==23.1.0
@@ -47,7 +45,7 @@ psutil==5.9.4
 colorama==0.4.6
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.36
+prompt-toolkit==3.0.37
 # Extensions to datetime library
 python-dateutil==2.8.2
 

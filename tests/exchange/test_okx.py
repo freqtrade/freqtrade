@@ -46,7 +46,7 @@ def test_get_maintenance_ratio_and_amt_okx(
     default_conf['margin_mode'] = 'isolated'
     default_conf['dry_run'] = False
     mocker.patch.multiple(
-        'freqtrade.exchange.Okx',
+        'freqtrade.exchange.okx.Okx',
         exchange_has=MagicMock(return_value=True),
         load_leverage_tiers=MagicMock(return_value={
             'ETH/USDT:USDT': [

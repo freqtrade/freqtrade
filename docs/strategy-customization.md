@@ -954,12 +954,14 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ## Additional data (Wallets)
 
-The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
+The strategy provides access to the `wallets` object. This contains the current balances on the exchange.
 
-!!! Note
-    Wallets is not available during backtesting / hyperopt.
+!!! Note "Backtesting / Hyperopt"
+    Wallets behaves differently depending on the function it's called.
+    Within `populate_*()` methods, it'll return the full wallet as configured.
+    Within [callbacks](strategy-callbacks.md), you'll get the wallet state corresponding to the actual simulated wallet at that point in the simulation process.
 
-Please always check if `Wallets` is available to avoid failures during backtesting.
+Please always check if `wallets` is available to avoid failures during backtesting.
 
 ``` python
 if self.wallets:
