@@ -74,3 +74,8 @@ Webhook terminology changed from "sell" to "exit", and from "buy" to "entry", re
 * `webhooksell`, `webhookexit` -> `exit`
 * `webhooksellfill`, `webhookexitfill` -> `exit_fill`
 * `webhooksellcancel`, `webhookexitcancel` -> `exit_cancel`
+
+
+## Removal of `populate_any_indicators`
+
+version 2023.3 saw the removal of `populate_any_indicators` in favor of split methods for feature engineering and targets. Please read the [migration document](strategy_migration.md#freqai-strategy) for full details.
