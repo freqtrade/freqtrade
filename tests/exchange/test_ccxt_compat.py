@@ -463,7 +463,9 @@ class TestCCXTExchange():
         if exchangename == 'gate':
             # TODO: Gate is unstable here at the moment, ignoring the limit partially.
             return
-        for val in [1, 2, 5, 25, 100]:
+        for val in [1, 2, 5, 25, 50, 100]:
+            if val > 50 and exchangename == 'bybit':
+                continue
             l2 = exch.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
                 if val > 50:
