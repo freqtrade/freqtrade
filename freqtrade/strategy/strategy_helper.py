@@ -86,7 +86,8 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 def stoploss_from_open(
     open_relative_stop: float,
     current_profit: float,
-    is_short: bool = False
+    is_short: bool = False,
+    leverage: float = 1.0
 ) -> float:
     """
 
@@ -102,21 +103,23 @@ def stoploss_from_open(
     :param open_relative_stop: Desired stop loss percentage relative to open price
     :param current_profit: The current profit percentage
     :param is_short: When true, perform the calculation for short instead of long
+    :param leverage: Leverage to use for the calculation
     :return: Stop loss value relative to current price
     """
 
     # formula is undefined for current_profit -1 (longs) or 1 (shorts), return maximum value
-    if (current_profit == -1 and not is_short) or (is_short and current_profit == 1):
+    _current_profit = current_profit / leverage
+    if (_current_profit == -1 and not is_short) or (is_short and _current_profit == 1):
         return 1
 
     if is_short is True:
-        stoploss = -1 + ((1 - open_relative_stop) / (1 - current_profit))
+        stoploss = -1 + ((1 - open_relative_stop / leverage) / (1 - _current_profit))
     else:
-        stoploss = 1 - ((1 + open_relative_stop) / (1 + current_profit))
+        stoploss = 1 - ((1 + open_relative_stop / leverage) / (1 + _current_profit))
 
     # negative stoploss values indicate the requested stop price is higher/lower
     # (long/short) than the current price
-    return max(stoploss, 0.0)
+    return max(stoploss * leverage, 0.0)
 
 
 def stoploss_from_absolute(stop_rate: float, current_rate: float, is_short: bool = False) -> float:
