@@ -333,13 +333,13 @@ class Telegram(RPCHandler):
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
         profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
         cp_extra = ''
-
+        exit_wording = 'Exited' if is_fill else 'Exiting'
         if is_sub_profit and is_sub_trade:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
                 cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
-
+            exit_wording = f"Partially {exit_wording.lower()}"
             cp_extra = (
                 f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} "
                 f"{msg['stake_currency']}{cp_extra}`)\n"
@@ -347,7 +347,7 @@ class Telegram(RPCHandler):
 
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
-            f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
+            f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
