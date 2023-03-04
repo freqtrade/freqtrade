@@ -321,28 +321,30 @@ class Telegram(RPCHandler):
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = (
-                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}")
+            msg['profit_extra'] = f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}"
         else:
             msg['profit_extra'] = ''
         msg['profit_extra'] = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
             f"{msg['profit_extra']})")
+
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
-        profit_prefix = ('Sub ' if is_sub_profit
-                         else 'Cumulative ') if is_sub_trade else ''
+        profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
         cp_extra = ''
+
         if is_sub_profit and is_sub_trade:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
                 cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
-            else:
-                cp_extra = ''
-            cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} " \
-                       f"{msg['stake_currency']}{cp_extra}`)\n"
+
+            cp_extra = (
+                f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} "
+                f"{msg['stake_currency']}{cp_extra}`)\n"
+            )
+
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
@@ -364,7 +366,7 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
-        if msg.get('sub_trade'):
+        if is_sub_trade:
             if self._rpc._fiat_converter:
                 msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
                     msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
@@ -597,7 +599,8 @@ class Telegram(RPCHandler):
 
             if r['is_open']:
                 if r.get('realized_profit'):
-                    lines.append("*Realized Profit:* `{realized_profit_r}`")
+                    lines.append(
+                        "*Realized Profit:* `{realized_profit_r} {realized_profit_ratio:.2%}`")
                     lines.append("*Total Profit:* `{total_profit_abs_r}` ")
 
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
