@@ -76,6 +76,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10376381,
         'open_order': None,
         'realized_profit': 0.0,
+        'realized_profit_ratio': None,
         'total_profit_abs': -4.09e-06,
         'total_profit_fiat': ANY,
         'exchange': 'binance',

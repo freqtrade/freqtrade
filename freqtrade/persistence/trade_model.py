@@ -519,6 +519,8 @@ class LocalTrade():
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
             'realized_profit': self.realized_profit or 0.0,
+            # Close-profit corresponds to relative realized_profit ratio
+            'realized_profit_ratio': self.close_profit or None,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
             'close_profit': self.close_profit,  # Deprecated
