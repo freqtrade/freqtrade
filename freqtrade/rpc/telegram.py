@@ -488,7 +488,9 @@ class Telegram(RPCHandler):
             if order_nr == 1:
                 lines.append(f"*{wording} #{order_nr}:*")
                 lines.append(
-                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                    f"*Amount:* {cur_entry_amount} "
+                    f"({round_coin_value(order['cost'], quote_currency)})"
+                )
                 lines.append(f"*Average Price:* {cur_entry_average}")
             else:
                 sum_stake = 0
