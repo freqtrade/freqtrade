@@ -947,11 +947,20 @@ Common arguments:
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 ```
-
 ### Examples
 
 Print trades with id 2 and 3 as json
 
 ``` bash
 freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --trade-ids 2 3 --print-json
+```
+
+### Strategy-Updater
+Updates a list strategies or all strategies within the strategies folder to be v3 compliant including futures.
+If the command runs without --strategy-list then all files inside the strategies folder will be converted.
+```
+usage: freqtrade strategy_updater 
+
+optional arguments:
+  --strategy-list       defines a list of strategies that should be converted
 ```
