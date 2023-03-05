@@ -602,7 +602,7 @@ class Telegram(RPCHandler):
             if r['is_open']:
                 if r.get('realized_profit'):
                     lines.append(
-                        "*Realized Profit:* `{realized_profit_r} {realized_profit_ratio:.2%}`")
+                        "*Realized Profit:* `{realized_profit_ratio:.2%} ({realized_profit_r})`")
                     lines.append("*Total Profit:* `{total_profit_abs_r}` ")
 
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
