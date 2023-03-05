@@ -1,4 +1,3 @@
-import os
 import shutil
 from pathlib import Path
 
@@ -55,10 +54,10 @@ class StrategyUpdater:
         target_file = Path.joinpath(strategies_backup_folder, strategy_obj['location_rel'])
 
         # read the file
-        with open(source_file, 'r') as f:
+        with Path(source_file).open('r') as f:
             old_code = f.read()
         if not strategies_backup_folder.is_dir():
-            os.makedirs(strategies_backup_folder)
+            Path(strategies_backup_folder).mkdir(parents=True, exist_ok=True)
 
         # backup original
         # => currently no date after the filename,
@@ -69,7 +68,7 @@ class StrategyUpdater:
         # update the code
         new_code = self.update_code(old_code)
         # write the modified code to the destination folder
-        with open(source_file, 'w') as f:
+        with Path(source_file).open('w') as f:
             f.write(new_code)
 
     # define the function to update the code

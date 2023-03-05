@@ -1,6 +1,6 @@
 import logging
-import os
 import time
+from pathlib import Path
 from typing import Any, Dict
 
 from freqtrade.configuration import setup_utils_configuration
@@ -45,11 +45,11 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
 
 def start_conversion(strategy_obj, config):
     # try:
-    print(f"Conversion of {os.path.basename(strategy_obj['location'])} started.")
+    print(f"Conversion of {Path(strategy_obj['location']).name} started.")
     instance_strategy_updater = StrategyUpdater()
     start = time.perf_counter()
     instance_strategy_updater.start(config, strategy_obj)
     elapsed = time.perf_counter() - start
-    print(f"Conversion of {os.path.basename(strategy_obj['location'])} took {elapsed:.1f} seconds.")
+    print(f"Conversion of {Path(strategy_obj['location']).name} took {elapsed:.1f} seconds.")
     # except:
     #    pass
