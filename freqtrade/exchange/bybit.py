@@ -27,11 +27,10 @@ class Bybit(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 1000,
+        "ohlcv_candle_limit": 200,
         "ohlcv_has_history": False,
     }
     _ft_has_futures: Dict = {
-        "ohlcv_candle_limit": 200,
         "ohlcv_has_history": True,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",

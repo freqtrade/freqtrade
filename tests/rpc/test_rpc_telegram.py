@@ -2012,7 +2012,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'sub_trade': True,
         })
         assert msg_mock.call_args[0][0] == (
-            '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
+            '\N{WARNING SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n'
             '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
             '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
             '*Enter Tag:* `buy_signal1`\n'
