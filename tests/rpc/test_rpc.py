@@ -50,7 +50,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount': 91.07468123,
         'amount_requested': 91.07468124,
         'stake_amount': 0.001,
-        'max_stake_amount': ANY,
+        'max_stake_amount': None,
         'trade_duration': None,
         'trade_duration_s': None,
         'close_profit': None,
@@ -79,7 +79,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'realized_profit_ratio': None,
         'total_profit_abs': -4.09e-06,
         'total_profit_fiat': ANY,
-        'total_profit_ratio': ANY,
+        'total_profit_ratio': None,
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
@@ -169,6 +169,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     results = rpc._rpc_trade_status()
 
     response = deepcopy(gen_response)
+    response.update({
+        'max_stake_amount': 0.001,
+        'total_profit_ratio': pytest.approx(-0.00409),
+    })
     assert results[0] == response
 
     mocker.patch(f'{EXMS}.get_rate',
@@ -182,6 +186,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_current_dist': ANY,
         'stoploss_current_dist_ratio': ANY,
         'stoploss_current_dist_pct': ANY,
+        'max_stake_amount': 0.001,
         'profit_ratio': ANY,
         'profit_pct': ANY,
         'profit_abs': ANY,

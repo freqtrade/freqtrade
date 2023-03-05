@@ -192,7 +192,7 @@ class RPC:
                     current_profit = trade.close_profit or 0.0
                     current_profit_abs = trade.close_profit_abs or 0.0
                 total_profit_abs = trade.realized_profit + current_profit_abs
-                total_profit_ratio = 0.0
+                total_profit_ratio: Optional[float] = None
                 if trade.max_stake_amount:
                     total_profit_ratio = (
                         (total_profit_abs / trade.max_stake_amount) * trade.leverage
