@@ -569,6 +569,8 @@ class Telegram(RPCHandler):
                                  and not o['ft_order_side'] == 'stoploss'])
             r['exit_reason'] = r.get('exit_reason', "")
             r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
+            r['max_stake_amount_r'] = round_coin_value(
+                r['max_stake_amount'] or r['stake_amount'], r['quote_currency'])
             r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
             r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
             r['total_profit_abs_r'] = round_coin_value(
@@ -580,21 +582,24 @@ class Telegram(RPCHandler):
                 f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}"
                 + " ` ({leverage}x)`" if r.get('leverage') else "",
                 "*Amount:* `{amount} ({stake_amount_r})`",
+                "*Total invested:* `{max_stake_amount_r}`" if position_adjust else "",
                 "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                 "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
             ]
 
             if position_adjust:
                 max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
-                lines.append("*Number of Entries:* `{num_entries}" + max_buy_str + "`")
-                lines.append("*Number of Exits:* `{num_exits}`")
+                lines.extend([
+                    "*Number of Entries:* `{num_entries}" + max_buy_str + "`",
+                    "*Number of Exits:* `{num_exits}`"
+                ])
 
             lines.extend([
                 "*Open Rate:* `{open_rate:.8f}`",
                 "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
                 "*Open Date:* `{open_date}`",
                 "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                "\n*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
+                " \n*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                 ("*Unrealized Profit:* " if r['is_open'] else "*Close Profit: *")
                 + "`{profit_ratio:.2%}` `({profit_abs_r})`",
             ])
