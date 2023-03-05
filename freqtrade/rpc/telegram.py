@@ -510,14 +510,14 @@ class Telegram(RPCHandler):
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg profit")
+                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg Profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append(f"*Amount:* {cur_entry_amount} "
                              f"({round_coin_value(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average} "
-                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                             f"({price_to_1st_entry:.2%} from 1st entry Rate)")
                 lines.append(f"*Order filled:* {order['order_filled_date']}")
 
                 # TODO: is this really useful?
