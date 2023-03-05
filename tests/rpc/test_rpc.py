@@ -79,6 +79,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'realized_profit_ratio': None,
         'total_profit_abs': -4.09e-06,
         'total_profit_fiat': ANY,
+        'total_profit_ratio': ANY,
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
@@ -185,6 +186,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_pct': ANY,
         'profit_abs': ANY,
         'total_profit_abs': ANY,
+        'total_profit_ratio': ANY,
         'current_rate': ANY,
     })
     assert results[0] == response_norate
