@@ -594,7 +594,7 @@ class Telegram(RPCHandler):
                 "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
                 "*Open Date:* `{open_date}`",
                 "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
+                "\n*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                 ("*Unrealized Profit:* " if r['is_open'] else "*Close Profit: *")
                 + "`{profit_ratio:.2%}` `({profit_abs_r})`",
             ])
@@ -605,6 +605,8 @@ class Telegram(RPCHandler):
                         "*Realized Profit:* `{realized_profit_ratio:.2%} ({realized_profit_r})`")
                     lines.append("*Total Profit:* `{total_profit_abs_r}` ")
 
+                # Append empty line to improve readability
+                lines.append(" ")
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                         and r['initial_stop_loss_ratio'] is not None):
                     # Adding initial stoploss only if it is different from stoploss
