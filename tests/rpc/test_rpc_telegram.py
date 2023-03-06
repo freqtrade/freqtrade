@@ -198,6 +198,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'current_rate': 1.098e-05,
             'amount': 90.99181074,
             'stake_amount': 90.99181074,
+            'max_stake_amount': 90.99181074,
             'buy_tag': None,
             'enter_tag': None,
             'close_profit_ratio': None,

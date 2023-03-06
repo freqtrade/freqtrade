@@ -3,9 +3,9 @@ pandas==1.5.3
 pandas-ta==0.3.14b
 
 ccxt==2.8.98
-cryptography==39.0.1
+cryptography==39.0.2
 aiohttp==3.8.4
-SQLAlchemy==2.0.4
+SQLAlchemy==2.0.5.post1
 python-telegram-bot==13.15
 arrow==1.2.3
 cachetools==4.2.2
@@ -28,7 +28,7 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.9
 # Properly format api responses
-orjson==3.8.6
+orjson==3.8.7
 
 # Notify systemd
 sdnotify==0.3.2
@@ -45,7 +45,7 @@ psutil==5.9.4
 colorama==0.4.6
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.37
+prompt-toolkit==3.0.38
 # Extensions to datetime library
 python-dateutil==2.8.2
 
