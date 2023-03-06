@@ -51,7 +51,7 @@ class PyTorchModelTrainer:
             # training
             for batch_data in data_loaders_dictionary['train']:
                 xb, yb = batch_data
-                xb = xb.to(self.device)  # type: ignore
+                xb = xb.to(self.device)
                 yb = yb.to(self.device)
                 yb_pred = self.model(xb)
                 loss = self.criterion(yb_pred, yb)
