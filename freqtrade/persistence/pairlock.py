@@ -2,8 +2,7 @@ from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, Optional
 
 from sqlalchemy import String, or_
-from sqlalchemy.orm import Mapped, Query, mapped_column
-from sqlalchemy.orm.scoping import _QueryDescriptorType
+from sqlalchemy.orm import Mapped, Query, QueryPropertyDescriptor, mapped_column
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence.base import ModelBase, SessionType
@@ -14,7 +13,7 @@ class PairLock(ModelBase):
     Pair Locks database model.
     """
     __tablename__ = 'pairlocks'
-    query: ClassVar[_QueryDescriptorType]
+    query: ClassVar[QueryPropertyDescriptor]
     _session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(primary_key=True)
