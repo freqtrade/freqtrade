@@ -27,12 +27,12 @@ class RPCProtectionMsg(RPCSendMsgBase):
 
 
 class RPCBuyMsg(RPCSendMsgBase):
-    trade_id: str
-    buy_tag: str
-    enter_tag: str
+    trade_id: int
+    buy_tag: Optional[str]
+    enter_tag: Optional[str]
     exchange: str
     pair: str
-    leverage: float
+    leverage: Optional[float]
     direction: str
     limit: float
     open_rate: float
@@ -42,7 +42,7 @@ class RPCBuyMsg(RPCSendMsgBase):
     fiat_currency: Optional[str]
     amount: float
     open_date: datetime
-    current_rate: float
+    current_rate: Optional[float]
     sub_trade: bool
 
 
@@ -56,10 +56,11 @@ class RPCSellMsg(RPCBuyMsg):
     close_rate: float
     profit_amount: float
     profit_ratio: float
-    sell_reason: str
-    exit_reason: str
+    sell_reason: Optional[str]
+    exit_reason: Optional[str]
     close_date: datetime
-    current_rate: Optional[float]
+    # current_rate: Optional[float]
+    order_rate: Optional[float]
 
 
 class RPCSellCancelMsg(RPCBuyMsg):
@@ -67,8 +68,8 @@ class RPCSellCancelMsg(RPCBuyMsg):
     gain: str  # Literal["profit", "loss"]
     profit_amount: float
     profit_ratio: float
-    sell_reason: str
-    exit_reason: str
+    sell_reason: Optional[str]
+    exit_reason: Optional[str]
     close_date: datetime
 
 
