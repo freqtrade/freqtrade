@@ -45,7 +45,7 @@ psutil==5.9.4
 colorama==0.4.6
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.37
+prompt-toolkit==3.0.38
 # Extensions to datetime library
 python-dateutil==2.8.2
 
