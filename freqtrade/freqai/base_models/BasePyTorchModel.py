@@ -1,6 +1,6 @@
 import logging
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 import torch
 from pandas import DataFrame
@@ -11,7 +11,7 @@ from freqtrade.freqai.freqai_interface import IFreqaiModel
 logger = logging.getLogger(__name__)
 
 
-class BasePytorchModel(IFreqaiModel):
+class BasePyTorchModel(IFreqaiModel):
     """
     Base class for TensorFlow type models.
     User *must* inherit from this class and set fit() and predict().
@@ -29,7 +29,6 @@ class BasePytorchModel(IFreqaiModel):
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
         :param unfiltered_df: Full dataframe for the current training period
-        :param metadata: pair metadata from strategy.
         :return:
         :model: Trained model which can be used to inference (self.predict)
         """
