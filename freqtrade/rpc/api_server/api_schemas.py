@@ -286,6 +286,7 @@ class OpenTradeSchema(TradeSchema):
     current_rate: float
     total_profit_abs: float
     total_profit_fiat: Optional[float]
+    total_profit_ratio: Optional[float]
 
     open_order: Optional[str]
 
