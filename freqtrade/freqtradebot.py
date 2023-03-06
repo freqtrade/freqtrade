@@ -30,7 +30,8 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from freqtrade.rpc.rpc_types import RPCBuyMsg, RPCCancelMsg, RPCSellCancelMsg, RPCSellMsg
+from freqtrade.rpc.rpc_types import (RPCBuyMsg, RPCCancelMsg, RPCProtectionMsg, RPCSellCancelMsg,
+                                     RPCSellMsg)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -1853,14 +1854,18 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(pair, datetime.now(timezone.utc), reason='Auto lock')
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
-            msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }
-            msg.update(prot_trig.to_json())
+            msg: RPCProtectionMsg = {
+                'type': RPCMessageType.PROTECTION_TRIGGER,
+                **prot_trig.to_json()
+            }
             self.rpc.send_msg(msg)
 
         prot_trig_glb = self.protections.global_stop(side=side)
         if prot_trig_glb:
-            msg = {'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL, }
-            msg.update(prot_trig_glb.to_json())
+            msg = {
+                'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+                **prot_trig_glb.to_json()
+            }
             self.rpc.send_msg(msg)
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
