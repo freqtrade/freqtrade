@@ -114,6 +114,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         # normalize all data based on train_dataset only
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
+
         data_dictionary = dk.normalize_data(data_dictionary)
 
         # data cleaning/analysis
@@ -148,12 +149,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         env_info = self.pack_env_dict(dk.pair)
 
-        self.train_env = self.MyRLEnv(df=train_df,
-                                      prices=prices_train,
-                                      **env_info)
-        self.eval_env = Monitor(self.MyRLEnv(df=test_df,
-                                             prices=prices_test,
-                                             **env_info))
+        self.train_env = self.MyRLEnv(df=train_df, prices=prices_train, **env_info)
+        self.eval_env = Monitor(self.MyRLEnv(df=test_df, prices=prices_test, **env_info))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
@@ -285,7 +282,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
-        # %-raw_volume_gen_shift-2_ETH/USDT_1h
         # price data for model training and evaluation
         tf = self.config['timeframe']
         rename_dict = {'%-raw_open': 'open', '%-raw_low': 'low',
@@ -317,6 +313,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         prices_test = test_df.filter(rename_dict.keys(), axis=1)
         prices_test.rename(columns=rename_dict, inplace=True)
         prices_test.reset_index(drop=True)
+
+        if self.rl_config["drop_ohlc_from_features"]:
+            train_df.drop(rename_dict.keys(), axis=1, inplace=True)
+            test_df.drop(rename_dict.keys(), axis=1, inplace=True)
+            feature_list = dk.training_features_list
+            feature_list = [e for e in feature_list if e not in rename_dict.keys()]
 
         return prices_train, prices_test
 
