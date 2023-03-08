@@ -8,6 +8,7 @@ from pandas import DataFrame
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 
+
 logger = logging.getLogger(__name__)
 
 

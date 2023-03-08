@@ -1,13 +1,13 @@
 import logging
 from pathlib import Path
 from typing import Dict
-from torch.optim import Optimizer
 
+import pandas as pd
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from torch.utils.data import TensorDataset
-import pandas as pd
+from torch.optim import Optimizer
+from torch.utils.data import DataLoader, TensorDataset
+
 
 logger = logging.getLogger(__name__)
 
