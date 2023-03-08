@@ -104,8 +104,6 @@ class PyTorchModelTrainer:
                 .long()
                 .view(labels_view)
             )
-            # todo currently assuming class labels are strings ['0.0', '1.0' .. n_classes].
-            #  need to resolve it per ClassifierModel
 
             data_loader = DataLoader(
                 dataset,
