@@ -235,6 +235,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         filtered_dataframe, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
+
+        filtered_dataframe = self.drop_ohlc_from_df(filtered_dataframe, dk)
+
         filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
         dk.data_dictionary["prediction_features"] = filtered_dataframe
 
@@ -314,13 +317,23 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         prices_test.rename(columns=rename_dict, inplace=True)
         prices_test.reset_index(drop=True)
 
-        if self.rl_config["drop_ohlc_from_features"]:
-            train_df.drop(rename_dict.keys(), axis=1, inplace=True)
-            test_df.drop(rename_dict.keys(), axis=1, inplace=True)
-            feature_list = dk.training_features_list
-            feature_list = [e for e in feature_list if e not in rename_dict.keys()]
+        train_df = self.drop_ohlc_from_df(train_df, dk)
+        test_df = self.drop_ohlc_from_df(test_df, dk)
 
         return prices_train, prices_test
+
+    def drop_ohlc_from_df(self, df: DataFrame, dk: FreqaiDataKitchen):
+        """
+        Given a dataframe, drop the ohlc data
+        """
+        drop_list = ['%-raw_open', '%-raw_low', '%-raw_high', '%-raw_close']
+
+        if self.rl_config["drop_ohlc_from_features"]:
+            df.drop(drop_list, axis=1, inplace=True)
+            feature_list = dk.training_features_list
+            feature_list = [e for e in feature_list if e not in drop_list]
+
+        return df
 
     def load_model_from_disk(self, dk: FreqaiDataKitchen) -> Any:
         """
