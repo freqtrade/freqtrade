@@ -330,6 +330,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         if self.rl_config["drop_ohlc_from_features"]:
             df.drop(drop_list, axis=1, inplace=True)
+            feature_list = dk.training_features_list
+            dk.training_features_list = [e for e in feature_list if e not in drop_list]
 
         return df
 
