@@ -8,6 +8,7 @@ import torch
 from pandas import DataFrame
 from torch.nn import functional as F
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.base_models.BasePyTorchModel import BasePyTorchModel
 from freqtrade.freqai.base_models.PyTorchModelTrainer import PyTorchModelTrainer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
