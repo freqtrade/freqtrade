@@ -127,7 +127,7 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
                 f"expecting labels: {self.multiclass_names}"
             )
 
-    def decode_classes_name(self, classes: torch.Tensor[int]) -> List[str]:
+    def decode_classes_name(self, classes: torch.Tensor) -> List[str]:
         """
         decode class name int -> str
         """
