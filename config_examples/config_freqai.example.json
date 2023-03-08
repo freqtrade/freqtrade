@@ -79,7 +79,8 @@
             "test_size": 0.33,
             "random_state": 1
         },
-        "model_training_parameters": {}
+        "model_training_parameters": {},
+        "multiclass_target_names": ["down", "neither", "up"]
     },
     "bot_name": "",
     "force_entry_enable": true,
