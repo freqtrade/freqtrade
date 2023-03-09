@@ -59,7 +59,7 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
 
         self.init_class_names_to_index_mapping(self.class_names)
         self.encode_classes_name(data_dictionary, dk)
-        n_features = data_dictionary['train_features'].shape[-1]
+        n_features = data_dictionary["train_features"].shape[-1]
         model = PyTorchMLPModel(
             input_dim=n_features,
             hidden_dim=self.n_hidden,

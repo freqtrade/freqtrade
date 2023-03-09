@@ -19,9 +19,9 @@ class BasePyTorchModel(IFreqaiModel):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(config=kwargs['config'])
-        self.dd.model_type = 'pytorch'
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        super().__init__(config=kwargs["config"])
+        self.dd.model_type = "pytorch"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def train(
         self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
