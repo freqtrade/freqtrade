@@ -27,6 +27,27 @@ class PyTorchModelTrainer:
     ):
         """
         A class for training PyTorch models.
+        Implements the training loop logic, load/save methods.
+
+        fit method - training loop logic:
+         - Calculates the predicted output for the batch using the PyTorch model.
+         - Calculates the loss between the predicted and actual output using a loss function.
+         - Computes the gradients of the loss with respect to the model's parameters using
+           backpropagation.
+         - Updates the model's parameters using an optimizer.
+
+        save method:
+         called by DataDrawer
+         - Saving any nn.Module state_dict
+         - Saving model_meta_data, this dict should contain any additional data that the
+           user needs to store. e.g class_names for classification models.
+
+        load method:
+         currently DataDrawer is responsible for the actual loading.
+         when using continual_learning the DataDrawer will load the dict
+         (saved by self.save(path)). and this class will populate the necessary
+         state_dict of the self.model & self.optimizer and self.model_meta_data.
+
 
         :param model: The PyTorch model to be trained.
         :param optimizer: The optimizer to use for training.
@@ -34,10 +55,11 @@ class PyTorchModelTrainer:
         :param device: The device to use for training (e.g. 'cpu', 'cuda').
         :param batch_size: The size of the batches to use during training.
         :param max_iters: The number of training iterations to run.
-            iteration here refers to the number of times we call
-            self.optimizer.step() . used to calculate n_epochs.
+            iteration here refers to the number of times we call self.optimizer.step().
+            used to calculate n_epochs.
         :param eval_iters: The number of iterations used to estimate the loss.
-        :param init_model: A dictionary containing the initial model parameters.
+        :param init_model: A dictionary containing the initial model/optimizer
+         state_dict and model_meta_data saved by self.save() method.
         :param model_meta_data: Additional metadata about the model (optional).
         """
         self.model = model
