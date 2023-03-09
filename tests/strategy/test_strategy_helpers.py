@@ -177,26 +177,30 @@ def test_stoploss_from_open(side, profitrange):
     ("long", 0.1, 0.2, 1, 0.08333333),
     ("long", 0.1, 0.5, 1, 0.266666666),
     ("long", 0.1, 5, 1, 0.816666666),  # 500% profit, set stoploss to 10% above open price
+    ("long", 0, 5, 10,  3.3333333),  # 500% profit, set stoploss break even
+    ("long", 0.1, 5, 10,  3.26666666),  # 500% profit, set stoploss to 10% above open price
+    ("long", -0.1, 5, 10,  3.3999999),  # 500% profit, set stoploss to 10% belowopen price
 
     ("short", 0, 0.1, 1, 0.1111111),
     ("short", -0.1, 0.1, 1, 0.2222222),
     ("short", 0.1, 0.2, 1, 0.125),
     ("short", 0.1, 1, 1, 1),
+    ("short", -0.01, 5, 10, 10.01999999),  # 500% profit at 10x
 ])
 def test_stoploss_from_open_leverage(side, rel_stop, curr_profit, leverage, expected):
 
-    stoploss = stoploss_from_open(rel_stop, curr_profit, side == 'short')
+    stoploss = stoploss_from_open(rel_stop, curr_profit, side == 'short', leverage)
     assert pytest.approx(stoploss) == expected
     open_rate = 100
     if stoploss != 1:
         if side == 'long':
-            current_rate = open_rate * (1 + curr_profit)
-            stop = current_rate * (1 - stoploss)
-            assert pytest.approx(stop) == open_rate * (1 + rel_stop)
+            current_rate = open_rate * (1 + curr_profit / leverage)
+            stop = current_rate * (1 - stoploss / leverage)
+            assert pytest.approx(stop) == open_rate * (1 + rel_stop / leverage)
         else:
-            current_rate = open_rate * (1 - curr_profit)
-            stop = current_rate * (1 + stoploss)
-            assert pytest.approx(stop) == open_rate * (1 - rel_stop)
+            current_rate = open_rate * (1 - curr_profit / leverage)
+            stop = current_rate * (1 + stoploss / leverage)
+            assert pytest.approx(stop) == open_rate * (1 - rel_stop / leverage)
 
 
 def test_stoploss_from_absolute():
