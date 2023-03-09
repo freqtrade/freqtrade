@@ -25,6 +25,21 @@ class PyTorchModelTrainer:
             init_model: Dict,
             model_meta_data: Dict[str, Any] = {},
     ):
+        """
+        A class for training PyTorch models.
+
+        :param model: The PyTorch model to be trained.
+        :param optimizer: The optimizer to use for training.
+        :param criterion: The loss function to use for training.
+        :param device: The device to use for training (e.g. 'cpu', 'cuda').
+        :param batch_size: The size of the batches to use during training.
+        :param max_iters: The number of training iterations to run.
+            iteration here refers to the number of times we call
+            self.optimizer.step() . used to calculate n_epochs.
+        :param eval_iters: The number of iterations used to estimate the loss.
+        :param init_model: A dictionary containing the initial model parameters.
+        :param model_meta_data: Additional metadata about the model (optional).
+        """
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -38,6 +53,12 @@ class PyTorchModelTrainer:
             self.load_from_checkpoint(init_model)
 
     def fit(self, data_dictionary: Dict[str, pd.DataFrame]):
+        """
+        general training loop:
+        - converting data to tensors
+        - calculating n_epochs
+        -
+        """
         data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary)
         epochs = self.calc_n_epochs(
             n_obs=len(data_dictionary['train_features']),

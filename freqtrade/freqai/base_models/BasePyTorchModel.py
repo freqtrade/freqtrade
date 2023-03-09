@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class BasePyTorchModel(IFreqaiModel):
     """
-    Base class for TensorFlow type models.
+    Base class for PyTorch type models.
     User *must* inherit from this class and set fit() and predict().
     """
 

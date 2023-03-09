@@ -19,8 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 class PyTorchClassifierMultiTarget(BasePyTorchModel):
-
+    """
+    A PyTorch implementation of a multi-target classifier.
+    """
     def __init__(self, **kwargs):
+        """
+        int: The number of nodes in the hidden layer of the neural network.
+        int: The maximum number of iterations to run during training.
+        int: The batch size to use during training.
+        float: The learning rate to use during training.
+        int: The number of training iterations between each evaluation.
+        dict: A dictionary mapping class names to their corresponding indices.
+        dict: A dictionary mapping indices to their corresponding class names.
+        """
         super().__init__(**kwargs)
         model_training_parameters = self.freqai_info["model_training_parameters"]
         self.n_hidden = model_training_parameters.get("n_hidden", 1024)
@@ -34,8 +45,10 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :param tensor_dictionary: the dictionary constructed by DataHandler to hold
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
                                 all the training and test data/labels.
+        :raises ValueError: If self.class_names is not defined in the parent class.
+
         """
         if not hasattr(self, "class_names"):
             raise ValueError(
