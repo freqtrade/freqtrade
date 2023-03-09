@@ -1,6 +1,14 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
+import sys
+
+import pytest
+
 from freqtrade.strategy.strategyupdater import StrategyUpdater
+
+
+if sys.version_info < (3, 9):
+    pytest.skip("StrategyUpdater is not compatible with Python 3.8", allow_module_level=True)
 
 
 def test_strategy_updater(default_conf, caplog) -> None:
