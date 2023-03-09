@@ -192,6 +192,11 @@ class RPC:
                     current_profit = trade.close_profit or 0.0
                     current_profit_abs = trade.close_profit_abs or 0.0
                 total_profit_abs = trade.realized_profit + current_profit_abs
+                total_profit_ratio: Optional[float] = None
+                if trade.max_stake_amount:
+                    total_profit_ratio = (
+                        (total_profit_abs / trade.max_stake_amount) * trade.leverage
+                    )
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
@@ -224,6 +229,7 @@ class RPC:
 
                     total_profit_abs=total_profit_abs,
                     total_profit_fiat=total_profit_fiat,
+                    total_profit_ratio=total_profit_ratio,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
