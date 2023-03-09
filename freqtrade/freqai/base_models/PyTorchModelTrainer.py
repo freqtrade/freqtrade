@@ -55,8 +55,8 @@ class PyTorchModelTrainer:
         :param device: The device to use for training (e.g. 'cpu', 'cuda').
         :param batch_size: The size of the batches to use during training.
         :param max_iters: The number of training iterations to run.
-            iteration here refers to the number of times we call self.optimizer.step().
-            used to calculate n_epochs.
+            iteration here refers to the number of times we call
+            self.optimizer.step(). used to calculate n_epochs.
         :param eval_iters: The number of iterations used to estimate the loss.
         :param init_model: A dictionary containing the initial model/optimizer
          state_dict and model_meta_data saved by self.save() method.
