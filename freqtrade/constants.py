@@ -5,6 +5,8 @@ bot constants
 """
 from typing import Any, Dict, List, Literal, Tuple
 
+from ccxt import ROUND, ROUND_DOWN, ROUND_UP, TRUNCATE
+
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 
@@ -50,6 +52,8 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 TRADING_MODES = ['spot', 'margin', 'futures']
+PRICE_ROUND_MODES = [TRUNCATE, ROUND, ROUND_UP, ROUND_DOWN]
+DEFAULT_PRICE_ROUND_MODE = ROUND_UP
 MARGIN_MODES = ['cross', 'isolated', '']
 
 LAST_BT_RESULT_FN = '.last_result.json'
@@ -476,7 +480,9 @@ CONF_SCHEMA = {
                 'outdated_offset': {'type': 'integer', 'minimum': 1},
                 'markets_refresh_interval': {'type': 'integer'},
                 'ccxt_config': {'type': 'object'},
-                'ccxt_async_config': {'type': 'object'}
+                'ccxt_async_config': {'type': 'object'},
+                'price_rounding_mode': {'type':    'integer', 'enum': PRICE_ROUND_MODES,
+                                        'default': DEFAULT_PRICE_ROUND_MODE}
             },
             'required': ['name']
         },

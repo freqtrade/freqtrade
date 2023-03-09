@@ -19,9 +19,9 @@ from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, concat
 
-from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
-                                 BuySell, Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
-                                 OBLiteral, PairWithTimeframe)
+from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_PRICE_ROUND_MODE,
+                                 NON_OPEN_EXCHANGE_STATES, BidAsk, BuySell, Config, EntryExit,
+                                 ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.enums.pricetype import PriceType
@@ -143,7 +143,9 @@ class Exchange:
             if config.get('margin_mode')
             else MarginMode.NONE
         )
-        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
+        self.liquidation_buffer = config.get("liquidation_buffer", 0.05)
+        self._price_rounding_mode = exchange_config.get("price_rounding_mode",
+                                                        DEFAULT_PRICE_ROUND_MODE)
 
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
@@ -732,10 +734,11 @@ class Exchange:
 
     def price_to_precision(self, pair: str, price: float) -> float:
         """
-        Returns the price rounded up to the precision the Exchange accepts.
-        Rounds up
+        Returns the price rounded to the precision the Exchange accepts.
+        The default price_rounding_mode in conf is ROUND_UP
         """
-        return price_to_precision(price, self.get_precision_price(pair), self.precisionMode)
+        return price_to_precision(price, self.get_precision_price(pair),
+                                  self.precisionMode, self._price_rounding_mode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """

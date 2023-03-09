@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 import arrow
 import ccxt
 import pytest
+from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, TICK_SIZE, TRUNCATE
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
@@ -312,35 +313,47 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     assert amount_to_precision(amount, precision, precision_mode) == expected
 
 
-@pytest.mark.parametrize("price,precision_mode,precision,expected", [
-    (2.34559, 2, 4, 2.3456),
-    (2.34559, 2, 5, 2.34559),
-    (2.34559, 2, 3, 2.346),
-    (2.9999, 2, 3, 3.000),
-    (2.9909, 2, 3, 2.991),
-    # Tests for Tick_size
-    (2.34559, 4, 0.0001, 2.3456),
-    (2.34559, 4, 0.00001, 2.34559),
-    (2.34559, 4, 0.001, 2.346),
-    (2.9999, 4, 0.001, 3.000),
-    (2.9909, 4, 0.001, 2.991),
-    (2.9909, 4, 0.005, 2.995),
-    (2.9973, 4, 0.005, 3.0),
-    (2.9977, 4, 0.005, 3.0),
-    (234.43, 4, 0.5, 234.5),
-    (234.53, 4, 0.5, 235.0),
-    (0.891534, 4, 0.0001, 0.8916),
-    (64968.89, 4, 0.01, 64968.89),
-    (0.000000003483, 4, 1e-12, 0.000000003483),
-
+@pytest.mark.parametrize("price,precision_mode,precision,expected,rounding_mode", [
+    # Tests for DECIMAL_PLACES, ROUND_UP
+    (2.34559, 2, 4, 2.3456, ROUND_UP),
+    (2.34559, 2, 5, 2.34559, ROUND_UP),
+    (2.34559, 2, 3, 2.346, ROUND_UP),
+    (2.9999, 2, 3, 3.000, ROUND_UP),
+    (2.9909, 2, 3, 2.991, ROUND_UP),
+    # Tests for DECIMAL_PLACES, ROUND
+    (2.345600000000001, DECIMAL_PLACES, 4, 2.3456, ROUND),
+    (2.345551, DECIMAL_PLACES, 4, 2.3456, ROUND),
+    (2.49, DECIMAL_PLACES, 0, 2., ROUND),
+    (2.51, DECIMAL_PLACES, 0, 3., ROUND),
+    (5.1, DECIMAL_PLACES, -1, 10., ROUND),
+    (4.9, DECIMAL_PLACES, -1, 0., ROUND),
+    # Tests for TICK_SIZE, ROUND_UP
+    (2.34559, TICK_SIZE, 0.0001, 2.3456, ROUND_UP),
+    (2.34559, TICK_SIZE, 0.00001, 2.34559, ROUND_UP),
+    (2.34559, TICK_SIZE, 0.001, 2.346, ROUND_UP),
+    (2.9999, TICK_SIZE, 0.001, 3.000, ROUND_UP),
+    (2.9909, TICK_SIZE, 0.001, 2.991, ROUND_UP),
+    (2.9909, TICK_SIZE, 0.005, 2.995, ROUND_UP),
+    (2.9973, TICK_SIZE, 0.005, 3.0, ROUND_UP),
+    (2.9977, TICK_SIZE, 0.005, 3.0, ROUND_UP),
+    (234.43, TICK_SIZE, 0.5, 234.5, ROUND_UP),
+    (234.53, TICK_SIZE, 0.5, 235.0, ROUND_UP),
+    (0.891534, TICK_SIZE, 0.0001, 0.8916, ROUND_UP),
+    (64968.89, TICK_SIZE, 0.01, 64968.89, ROUND_UP),
+    (0.000000003483, TICK_SIZE, 1e-12, 0.000000003483, ROUND_UP),
+    # Tests for TICK_SIZE, ROUND
+    (2.49, TICK_SIZE, 1., 2., ROUND),
+    (2.51, TICK_SIZE, 1., 3., ROUND),
+    (2.000000051, TICK_SIZE, 0.0000001, 2.0000001, ROUND),
+    (2.000000049, TICK_SIZE, 0.0000001, 2., ROUND),
+    (2.9909, TICK_SIZE, 0.005, 2.990, ROUND),
+    (2.9973, TICK_SIZE, 0.005, 2.995, ROUND),
+    (2.9977, TICK_SIZE, 0.005, 3.0, ROUND),
+    (234.24, TICK_SIZE, 0.5, 234., ROUND),
+    (234.26, TICK_SIZE, 0.5, 234.5, ROUND),
 ])
-def test_price_to_precision(price, precision_mode, precision, expected):
-    # digits counting mode
-    # DECIMAL_PLACES = 2
-    # SIGNIFICANT_DIGITS = 3
-    # TICK_SIZE = 4
-
-    assert price_to_precision(price, precision, precision_mode) == expected
+def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
+    assert price_to_precision(price, precision, precision_mode, rounding_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -5307,3 +5320,29 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     assert order['cost'] == 100
     assert order['filled'] == 100
     assert order['remaining'] == 100
+
+
+def test_price_to_precision_with_default_conf(default_conf, mocker):
+    conf = copy.deepcopy(default_conf)
+    patched_ex = get_patched_exchange(mocker, conf)
+    prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
+    assert prec_price == 1.00000002
+
+
+@pytest.mark.parametrize(
+    "rounding_mode, price, expected_price",
+    [
+        (TRUNCATE, 1.0000000199, 1.00000001),
+        (ROUND, 1.0000000149, 1.00000001),
+        (ROUND, 1.0000000151, 1.00000002),
+        (ROUND_UP, 1.0000000101, 1.00000002),
+    ],
+)
+def test_price_to_precision_rounding_mode_from_conf(
+    default_conf, mocker, rounding_mode, price, expected_price
+):
+    conf = copy.deepcopy(default_conf)
+    conf["exchange"]["price_rounding_mode"] = rounding_mode
+    patched_ex = get_patched_exchange(mocker, conf)
+    prec_price = patched_ex.price_to_precision("XRP/USDT", price)
+    assert prec_price == expected_price
