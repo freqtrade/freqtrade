@@ -8,8 +8,8 @@ from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, cast
 
 from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func
-from sqlalchemy.orm import Mapped, Query, lazyload, mapped_column, relationship
-from sqlalchemy.orm.scoping import _QueryDescriptorType
+from sqlalchemy.orm import (Mapped, Query, QueryPropertyDescriptor, lazyload, mapped_column,
+                            relationship)
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
                                  BuySell, LongShort)
@@ -36,7 +36,7 @@ class Order(ModelBase):
     Mirrors CCXT Order structure
     """
     __tablename__ = 'orders'
-    query: ClassVar[_QueryDescriptorType]
+    query: ClassVar[QueryPropertyDescriptor]
     _session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
@@ -1181,7 +1181,7 @@ class Trade(ModelBase, LocalTrade):
     Note: Fields must be aligned with LocalTrade class
     """
     __tablename__ = 'trades'
-    query: ClassVar[_QueryDescriptorType]
+    query: ClassVar[QueryPropertyDescriptor]
     _session: ClassVar[SessionType]
 
     use_db: bool = True
