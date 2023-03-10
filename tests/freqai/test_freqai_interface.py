@@ -75,15 +75,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'ReinforcementLearner' in model:
-        model_save_ext = 'zip'
-        freqai_conf = make_rl_config(freqai_conf)
-        # test the RL guardrails
-        freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
-        freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
-
     if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+        freqai_conf["freqai"]["rl_config"]["drop_ohlc_from_features"] = True
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
