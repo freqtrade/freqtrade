@@ -1468,8 +1468,6 @@ class FreqtradeBot(LoggingMixin):
                 return False
             trade.close_rate = None
             trade.close_rate_requested = None
-            trade.close_profit = None
-            trade.close_profit_abs = None
             # Set exit_reason for fill message
             exit_reason_prev = trade.exit_reason
             trade.exit_reason = trade.exit_reason + f", {reason}" if trade.exit_reason else reason
