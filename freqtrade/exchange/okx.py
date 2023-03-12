@@ -173,7 +173,30 @@ class Okx(Exchange):
             params['posSide'] = self._get_posSide(side, True)
         return params
 
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
+        """
+        OKX uses non-default stoploss price naming.
+        """
+        if not self._ft_has.get('stoploss_on_exchange'):
+            raise OperationalException(f"stoploss is not implemented for {self.name}.")
+
+        return (
+            order.get('stopLossPrice', None) is None
+            or ((side == "sell" and stop_loss > float(order['stopLossPrice'])) or
+                (side == "buy" and stop_loss < float(order['stopLossPrice'])))
+        )
+
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        if self._config['dry_run']:
+            return self.fetch_dry_run_order(order_id)
+
+        try:
+            params1 = {'stop': True}
+            order_reg = self._api.fetch_order(order_id, pair, params=params1)
+            self._log_exchange_response('fetch_stoploss_order1', order_reg)
+            return order_reg
+        except ccxt.OrderNotFound:
+            pass
         params1 = {'stop': True, 'ordType': 'conditional'}
         for method in (self._api.fetch_open_orders, self._api.fetch_closed_orders,
                        self._api.fetch_canceled_orders):
@@ -192,9 +215,10 @@ class Okx(Exchange):
                         order_reg['type'] = 'stop'
                         order_reg['status_stop'] = 'triggered'
                         return order_reg
+                    order['type'] = 'stoploss'
                     return order
             except ccxt.BaseError:
-                logger.exception()
+                pass
         raise RetryableOrderError(
                 f'StoplossOrder not found (pair: {pair} id: {order_id}).')
 
@@ -204,8 +228,11 @@ class Okx(Exchange):
         return order['id']
 
     def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        params1 = {'stop': True}
+        # 'ordType': 'conditional'
+        #
         return self.cancel_order(
             order_id=order_id,
             pair=pair,
-            params={'ordType': 'conditional'}
+            params=params1,
         )
