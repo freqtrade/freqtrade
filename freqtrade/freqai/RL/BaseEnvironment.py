@@ -157,7 +157,7 @@ class BaseEnvironment(gym.Env):
         :param value: `metric` value
         :param category: `metric` category
         """
-        increment = True if not value else False
+        increment = True if value is None else False
         value = 1 if increment else value
 
         if category not in self.tensorboard_metrics:
