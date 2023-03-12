@@ -414,6 +414,9 @@ class Telegram(RPCHandler):
 
         elif msg_type == RPCMessageType.WARNING:
             message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
+        elif msg_type == RPCMessageType.EXCEPTION:
+            # Errors will contain exceptions, which are wrapped in tripple ticks.
+            message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
         elif msg_type == RPCMessageType.STARTUP:
             message = f"{msg['status']}"
