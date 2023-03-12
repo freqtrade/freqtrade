@@ -39,7 +39,7 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
         self.max_iters = model_training_parameters.get("max_iters", 100)
         self.batch_size = model_training_parameters.get("batch_size", 64)
         self.learning_rate = model_training_parameters.get("learning_rate", 3e-4)
-        self.eval_iters = model_training_parameters.get("eval_iters", 10)
+        self.max_n_eval_batches = model_training_parameters.get("max_n_eval_batches", None)
         self.class_name_to_index = None
         self.index_to_class_name = None
 
@@ -79,7 +79,7 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
             device=self.device,
             batch_size=self.batch_size,
             max_iters=self.max_iters,
-            eval_iters=self.eval_iters,
+            max_n_eval_batches=self.max_n_eval_batches,
             init_model=init_model
         )
         trainer.fit(data_dictionary)
