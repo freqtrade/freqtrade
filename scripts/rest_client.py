@@ -347,7 +347,7 @@ class FtRestClient():
         if limit:
             params['limit'] = limit
         return self._get("pair_candles", params=params)
-    
+
     def pair_history(self, pair, timeframe, strategy, timerange=None):
         """Return historic, analyzed dataframe
 
