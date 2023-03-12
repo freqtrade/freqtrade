@@ -116,7 +116,7 @@ NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
-ARGS_STRATEGY_UTILS = ARGS_COMMON_OPTIMIZE + ["strategy_list"]
+ARGS_STRATEGY_UTILS = ["strategy_list"]
 
 
 class Arguments:
