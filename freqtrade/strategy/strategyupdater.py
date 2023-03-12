@@ -3,6 +3,8 @@ from pathlib import Path
 
 import ast_comments
 
+from freqtrade.constants import Config
+
 
 class StrategyUpdater:
     name_mapping = {
@@ -42,7 +44,7 @@ class StrategyUpdater:
     # create a dictionary that maps the old column names to the new ones
     rename_dict = {'buy': 'enter_long', 'sell': 'exit_long', 'buy_tag': 'enter_tag'}
 
-    def start(self, config, strategy_obj: dict) -> None:
+    def start(self, config: Config, strategy_obj: dict) -> None:
         """
         Run strategy updater
         It updates a strategy to v3 with the help of the ast-module

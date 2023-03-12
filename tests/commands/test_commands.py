@@ -1549,7 +1549,7 @@ def test_start_convert_db(mocker, fee, tmpdir, caplog):
     assert db_target_file.is_file()
 
 
-def test_start_strategy_updater(mocker,  tmpdir):
+def test_start_strategy_updater(mocker, tmpdir):
     sc_mock = mocker.patch('freqtrade.commands.strategy_utils_commands.start_conversion')
     teststrats = Path(__file__).parent.parent / 'strategy/strats'
     args = [

@@ -1,14 +1,54 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
+import re
+import shutil
 import sys
+from pathlib import Path
 
 import pytest
 
+from freqtrade.commands.strategy_utils_commands import start_strategy_update
 from freqtrade.strategy.strategyupdater import StrategyUpdater
+from tests.conftest import get_args
 
 
 if sys.version_info < (3, 9):
     pytest.skip("StrategyUpdater is not compatible with Python 3.8", allow_module_level=True)
+
+
+def test_strategy_updater_start(tmpdir, capsys) -> None:
+    # Effective test without mocks.
+    teststrats = Path(__file__).parent / 'strategy/strats'
+    tmpdirp = Path(tmpdir) / "strategies"
+    tmpdirp.mkdir()
+    shutil.copy(teststrats / 'strategy_test_v2.py', tmpdirp)
+    old_code = (teststrats / 'strategy_test_v2.py').read_text()
+
+    args = [
+        "strategy-updater",
+        "--userdir",
+        str(tmpdir),
+        "--strategy-list",
+        "StrategyTestV2"
+         ]
+    pargs = get_args(args)
+    pargs['config'] = None
+
+    start_strategy_update(pargs)
+
+    assert Path(tmpdir / "strategies_orig_updater").exists()
+    # Backup file exists
+    assert Path(tmpdir / "strategies_orig_updater" / 'strategy_test_v2.py').exists()
+    # updated file exists
+    new_file = Path(tmpdirp / 'strategy_test_v2.py')
+    assert new_file.exists()
+    new_code = new_file.read_text()
+    assert 'INTERFACE_VERSION = 3' in new_code
+    assert 'INTERFACE_VERSION = 2' in old_code
+    captured = capsys.readouterr()
+
+    assert 'Conversion of strategy_test_v2.py started.' in captured.out
+    assert re.search(r'Conversion of strategy_test_v2\.py took .* seconds', captured.out)
 
 
 def test_strategy_updater_methods(default_conf, caplog) -> None:
@@ -155,6 +195,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class someStrategy(IStrategy):
+    INTERFACE_VERSION = 2
     # This is the 3rd comment
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
@@ -168,5 +209,6 @@ class someStrategy(IStrategy):
     assert "This is the 1st comment" in modified_code
     assert "This is the 2nd comment" in modified_code
     assert "This is the 3rd comment" in modified_code
+    assert "INTERFACE_VERSION = 3" in modified_code
     # currently still missing:
     # Webhook terminology, Telegram notification settings, Strategy/Config settings
