@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -34,12 +34,13 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
         """
 
         super().__init__(**kwargs)
-        model_training_parameters = self.freqai_info["model_training_parameters"]
-        self.n_hidden = model_training_parameters.get("n_hidden", 1024)
-        self.max_iters = model_training_parameters.get("max_iters", 100)
-        self.batch_size = model_training_parameters.get("batch_size", 64)
-        self.learning_rate = model_training_parameters.get("learning_rate", 3e-4)
-        self.max_n_eval_batches = model_training_parameters.get("max_n_eval_batches", None)
+        trainer_kwargs = self.freqai_info.get("trainer_kwargs", {})
+        self.n_hidden: int = trainer_kwargs.get("n_hidden", 1024)
+        self.max_iters: int = trainer_kwargs.get("max_iters", 100)
+        self.batch_size: int = trainer_kwargs.get("batch_size", 64)
+        self.learning_rate: float = trainer_kwargs.get("learning_rate", 3e-4)
+        self.max_n_eval_batches: Optional[int] = trainer_kwargs.get("max_n_eval_batches", None)
+        self.model_kwargs: Dict = trainer_kwargs.get("model_kwargs", {})
         self.class_name_to_index = None
         self.index_to_class_name = None
 
@@ -64,8 +65,8 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
         n_features = data_dictionary["train_features"].shape[-1]
         model = PyTorchMLPModel(
             input_dim=n_features,
-            hidden_dim=self.n_hidden,
-            output_dim=len(self.class_names)
+            output_dim=len(self.class_names),
+            **self.model_kwargs
         )
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
