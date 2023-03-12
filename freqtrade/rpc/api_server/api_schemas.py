@@ -311,7 +311,7 @@ class LockModel(BaseModel):
     lock_timestamp: int
     pair: str
     side: str
-    reason: str
+    reason: Optional[str]
 
 
 class Locks(BaseModel):
