@@ -84,7 +84,7 @@ class PyTorchModelTrainer:
             # evaluation
             test_loss = self.estimate_loss(data_loaders_dictionary, self.max_n_eval_batches, "test")
             logger.info(
-                f"epoch ({epoch}/{epochs}):"
+                f"epoch {epoch}/{epochs}:"
                 f" train loss {train_loss:.4f} ; test loss {test_loss:.4f}"
             )
 
