@@ -133,13 +133,13 @@ class FreqtradeBot(LoggingMixin):
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
         self.protections = ProtectionManager(self.config, self.strategy.protections)
 
-    def notify_status(self, msg: str) -> None:
+    def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
         via RPC about changes in the bot status.
         """
         self.rpc.send_msg({
-            'type': RPCMessageType.STATUS,
+            'type': msg_type,
             'status': msg
         })
 
@@ -1460,34 +1460,32 @@ class FreqtradeBot(LoggingMixin):
                     return False
 
             try:
-                co = self.exchange.cancel_order_with_result(order['id'], trade.pair,
-                                                            trade.amount)
+                order = self.exchange.cancel_order_with_result(order['id'], trade.pair,
+                                                               trade.amount)
             except InvalidOrderException:
                 logger.exception(
                     f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
                 return False
-            trade.close_rate = None
-            trade.close_rate_requested = None
-            trade.close_profit = None
-            trade.close_profit_abs = None
+
             # Set exit_reason for fill message
             exit_reason_prev = trade.exit_reason
             trade.exit_reason = trade.exit_reason + f", {reason}" if trade.exit_reason else reason
-            self.update_trade_state(trade, trade.open_order_id, co)
             # Order might be filled above in odd timing issues.
-            if co.get('status') in ('canceled', 'cancelled'):
+            if order.get('status') in ('canceled', 'cancelled'):
                 trade.exit_reason = None
-                trade.open_order_id = None
             else:
                 trade.exit_reason = exit_reason_prev
-
-            logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
             cancelled = True
         else:
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
-            logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
-            self.update_trade_state(trade, trade.open_order_id, order)
-            trade.open_order_id = None
+            trade.exit_reason = None
+
+        self.update_trade_state(trade, trade.open_order_id, order)
+
+        logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
+        trade.open_order_id = None
+        trade.close_rate = None
+        trade.close_rate_requested = None
 
         self._notify_exit_cancel(
             trade,
