@@ -447,8 +447,7 @@ class FreqaiDataDrawer:
         elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
         elif ('stable_baselines' in self.model_type or
-              'sb3_contrib' == self.model_type or
-              'pytorch' == self.model_type):
+              self.model_type in ['sb3_contrib', 'pytorch']):
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
