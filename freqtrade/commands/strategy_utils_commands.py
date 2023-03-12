@@ -29,31 +29,27 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
         config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
 
     filtered_strategy_objs = []
-    if 'strategy_list' in args:
-        for args_strategy in args['strategy_list']:
-            for strategy_obj in strategy_objs:
-                if (strategy_obj['name'] == args_strategy
-                        and strategy_obj not in filtered_strategy_objs):
-                    filtered_strategy_objs.append(strategy_obj)
-                    break
+    if args['strategy_list']:
+        filtered_strategy_objs = [
+            strategy_obj for strategy_obj in strategy_objs
+            if strategy_obj['name'] in args['strategy_list']
+        ]
 
-        for filtered_strategy_obj in filtered_strategy_objs:
-            start_conversion(filtered_strategy_obj, config)
     else:
-        processed_locations = set()
-        for strategy_obj in strategy_objs:
-            if strategy_obj['location'] not in processed_locations:
-                processed_locations.add(strategy_obj['location'])
-                start_conversion(strategy_obj, config)
+        # Use all available entries.
+        filtered_strategy_objs = strategy_objs
+
+    processed_locations = set()
+    for strategy_obj in filtered_strategy_objs:
+        if strategy_obj['location'] not in processed_locations:
+            processed_locations.add(strategy_obj['location'])
+            start_conversion(strategy_obj, config)
 
 
 def start_conversion(strategy_obj, config):
-    # try:
     print(f"Conversion of {Path(strategy_obj['location']).name} started.")
     instance_strategy_updater = StrategyUpdater()
     start = time.perf_counter()
     instance_strategy_updater.start(config, strategy_obj)
     elapsed = time.perf_counter() - start
     print(f"Conversion of {Path(strategy_obj['location']).name} took {elapsed:.1f} seconds.")
-    # except:
-    #    pass
