@@ -1122,8 +1122,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
-            self.execute_trade_exit(trade, stop_price, exit_check=ExitCheckTuple(
-                exit_type=ExitType.EMERGENCY_EXIT))
+            self.emergency_exit(trade, stop_price)
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -1281,13 +1280,16 @@ class FreqtradeBot(LoggingMixin):
             if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
                 logger.warning(f'Emergency exiting trade {trade}, as the exit order '
                                f'timed out {max_timeouts} times.')
-                try:
-                    self.execute_trade_exit(
-                        trade, order['price'],
-                        exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
-                except DependencyException as exception:
-                    logger.warning(
-                        f'Unable to emergency sell trade {trade.pair}: {exception}')
+                self.emergency_exit(trade, order['price'])
+
+    def emergency_exit(self, trade: Trade, price: float) -> None:
+        try:
+            self.execute_trade_exit(
+                trade, price,
+                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
+        except DependencyException as exception:
+            logger.warning(
+                f'Unable to emergency exit trade {trade.pair}: {exception}')
 
     def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
         """
