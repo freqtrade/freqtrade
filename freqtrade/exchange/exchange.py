@@ -2785,7 +2785,7 @@ class Exchange:
                 if is_short else
                 isolated_liq + buffer_amount
             )
-            return isolated_liq
+            return max(isolated_liq, 0.0)
         else:
             return None
 
