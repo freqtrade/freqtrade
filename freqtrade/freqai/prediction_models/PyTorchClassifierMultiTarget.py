@@ -35,7 +35,6 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
 
         super().__init__(**kwargs)
         model_training_params = self.freqai_info.get("model_training_parameters", {})
-        self.n_hidden: int = model_training_params.get("n_hidden", 1024)
         self.max_iters: int = model_training_params.get("max_iters", 100)
         self.batch_size: int = model_training_params.get("batch_size", 64)
         self.learning_rate: float = model_training_params.get("learning_rate", 3e-4)
