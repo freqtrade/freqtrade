@@ -1138,7 +1138,10 @@ class Exchange:
         # Ensure rate is less than stop price
         if bad_stop_price:
             raise OperationalException(
-                'In stoploss limit order, stop price should be more than limit price')
+                "In stoploss limit order, stop price should be more than limit price. "
+                f"Stop price: {stop_price}, Limit price: {limit_rate}, "
+                f"Limit Price pct: {limit_price_pct}"
+                )
         return limit_rate
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
