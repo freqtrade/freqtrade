@@ -138,7 +138,7 @@ class BaseEnvironment(gym.Env):
         return [seed]
 
     def tensorboard_log(self, metric: str, value: Optional[Union[int, float]] = None,
-                        category: str = "custom"):
+                        inc: Optional[bool] = None, category: str = "custom"):
         """
         Function builds the tensorboard_metrics dictionary
         to be parsed by the TensorboardCallback. This
@@ -155,6 +155,7 @@ class BaseEnvironment(gym.Env):
 
         :param metric: metric to be tracked and incremented
         :param value: `metric` value
+        :param inc: (deprecated) sets whether the `value` is incremented or not
         :param category: `metric` category
         """
         increment = True if value is None else False
