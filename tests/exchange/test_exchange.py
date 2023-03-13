@@ -12,8 +12,8 @@ from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
-                                  InvalidOrderException, OperationalException, PricingError,
-                                  TemporaryError)
+                                  InsufficientFundsError, InvalidOrderException,
+                                  OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_precision,
                                 date_minus_candles, market_is_active, price_to_precision,
                                 timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
@@ -1599,13 +1599,13 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][4] == 200
 
     # test exception handling
-    with pytest.raises(DependencyException):
+    with pytest.raises(InsufficientFundsError):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200,
                               leverage=1.0)
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype='limit', side="sell", amount=1, rate=200,
