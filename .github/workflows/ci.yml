@@ -16,7 +16,8 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
+permissions:
+  repository-projects: read
 jobs:
   build_linux:
 
@@ -321,7 +322,6 @@ jobs:
   build_linux_online:
     # Run pytest with "live" checks
     runs-on: ubuntu-22.04
-    # permissions:
     steps:
     - uses: actions/checkout@v3
 
@@ -472,6 +472,8 @@ jobs:
         build_helpers/publish_docker_multi.sh
 
   deploy_arm:
+    permissions:
+      packages: write
     needs: [ deploy ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
@@ -492,9 +494,15 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
+    - name: GHCR.io login
+      env:
+        GHCR_USERNAME: ${{ github.actor }}
+        GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "${GHCR_PASSWORD}" | docker login ghcr.io --username ${GHCR_USERNAME} --password-stdin
+
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_arm64.sh

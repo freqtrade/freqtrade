@@ -3,6 +3,8 @@
 # Use BuildKit, otherwise building on ARM fails
 export DOCKER_BUILDKIT=1
 
+IMAGE_NAME=freqtradeorg/freqtrade
+GHCR_IMAGE_NAME=ghcr.io/freqtrade/freqtrade
 # Replace / with _ to create a valid tag
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
@@ -81,6 +83,18 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI}
 
 docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
+
+# Retag images for GHCR
+docker tag ${IMAGE_NAME}:${TAG} ${GHCR_IMAGE_NAME}:${TAG}
+docker tag ${IMAGE_NAME}:${TAG_PLOT} ${GHCR_IMAGE_NAME}:${TAG_PLOT}
+docker tag ${IMAGE_NAME}:${TAG_FREQAI} ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
+docker tag ${IMAGE_NAME}:${TAG_FREQAI_RL} ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
+
+# Push GHCR iamges
+docker push ${GHCR_IMAGE_NAME}:${TAG}
+docker push ${GHCR_IMAGE_NAME}:${TAG_PLOT}
+docker push ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
+docker push ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
