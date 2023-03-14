@@ -586,7 +586,7 @@ class FreqtradeBot(LoggingMixin):
 
         min_entry_stake = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                   current_entry_rate,
-                                                                  self.strategy.stoploss)
+                                                                  0.0)
         min_exit_stake = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                  current_exit_rate,
                                                                  self.strategy.stoploss)
@@ -700,7 +700,8 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_)
+            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_,
+            pos_adjust)
 
         if not stake_amount:
             return False
@@ -860,7 +861,12 @@ class FreqtradeBot(LoggingMixin):
         trade: Optional[Trade],
         order_adjust: bool,
         leverage_: Optional[float],
+        pos_adjust: bool,
     ) -> Tuple[float, float, float]:
+        """
+        Validate and eventually adjust (within limits) limit, amount and leverage
+        :return: Tuple with (price, amount, leverage)
+        """
 
         if price:
             enter_limit_requested = price
@@ -906,7 +912,9 @@ class FreqtradeBot(LoggingMixin):
         # We do however also need min-stake to determine leverage, therefore this is ignored as
         # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, enter_limit_requested, self.strategy.stoploss, leverage)
+            pair, enter_limit_requested,
+            self.strategy.stoploss if not pos_adjust else 0.0,
+            leverage)
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, enter_limit_requested, leverage)
 

@@ -749,7 +749,7 @@ class Backtesting:
             leverage = min(max(leverage, 1.0), max_leverage)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, propose_rate, -0.05, leverage=leverage) or 0
+            pair, propose_rate, -0.05 if not pos_adjust else 0.0, leverage=leverage) or 0
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, propose_rate, leverage=leverage)
         stake_available = self.wallets.get_available_stake_amount()
