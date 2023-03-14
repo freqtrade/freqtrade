@@ -563,7 +563,7 @@ class IFreqaiModel(ABC):
             file_type = ".joblib"
         elif self.dd.model_type == 'keras':
             file_type = ".h5"
-        elif self.dd.model_type in ["stable_baselines", "sb3_contrib", "pytorch"]:
+        elif self.dd.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             file_type = ".zip"
 
         path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model{file_type}")
