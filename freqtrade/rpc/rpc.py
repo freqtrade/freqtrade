@@ -159,7 +159,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades: List[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+            trades: Sequence[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
@@ -449,7 +449,7 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades: Sequence[Trade] = Trade._session.execute(Trade.get_trades_query(
+        trades: Sequence[Trade] = Trade._session.scalars(Trade.get_trades_query(
             trade_filter, include_orders=False).order_by(Trade.id)).all()
 
         profit_all_coin = []
