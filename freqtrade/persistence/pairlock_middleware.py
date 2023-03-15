@@ -2,6 +2,8 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from sqlalchemy import select
+
 from freqtrade.exchange import timeframe_to_next_date
 from freqtrade.persistence.models import PairLock
 
@@ -126,7 +128,7 @@ class PairLocks():
                        PairLock.active.is_(True),
                        PairLock.reason == reason
                        ]
-            locks = PairLock.query.filter(*filters)
+            locks = PairLock.session.scalars(select(PairLock).filter(*filters)).all()
             for lock in locks:
                 logger.info(f"Releasing lock for {lock.pair} with reason '{reason}'.")
                 lock.active = False
@@ -170,6 +172,6 @@ class PairLocks():
         Return all locks, also locks with expired end date
         """
         if PairLocks.use_db:
-            return PairLock.query.all()
+            return PairLock.session.scalars(select(PairLock)).all()
         else:
             return PairLocks.locks

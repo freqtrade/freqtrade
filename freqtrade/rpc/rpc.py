@@ -959,7 +959,7 @@ class RPC:
         if pair:
             locks = PairLocks.get_pair_locks(pair)
         if lockid:
-            locks = PairLock.query.filter(PairLock.id == lockid).all()
+            locks = PairLock.session.scalar(select(PairLock).filter(PairLock.id == lockid)).all()
 
         for lock in locks:
             lock.active = False
