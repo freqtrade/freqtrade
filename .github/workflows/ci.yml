@@ -466,7 +466,6 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_multi.sh
@@ -494,16 +493,18 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-    - name: GHCR.io login
-      env:
-        GHCR_USERNAME: ${{ github.actor }}
-        GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "${GHCR_PASSWORD}" | docker login ghcr.io --username ${GHCR_USERNAME} --password-stdin
+    # - name: GHCR.io login
+    #   env:
+    #     GHCR_USERNAME: ${{ github.actor }}
+    #     GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    #   run: |
+        # echo "${GHCR_PASSWORD}" | docker login ghcr.io --username ${GHCR_USERNAME} --password-stdin
 
     - name: Build and test and push docker images
       env:
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        GHCR_USERNAME: ${{ github.actor }}
+        GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         build_helpers/publish_docker_arm64.sh
 
