@@ -86,9 +86,11 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # copy images to ghcr.io
 
-alias crane="docker run --rm -v $(pwd)/crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
+alias crane="docker run --rm --i -v $(pwd)/.crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
+mkdir .crane
+chmod a+rwx .crane
 
-echo "${GHCR_TOKEN}" | crane auth login ghcr.io -u ${GHCR_USER} --password-stdin
+echo "${GHCR_TOKEN}" | crane auth login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
 crane copy ${IMAGE_NAME}:${TAG} ${GHCR_IMAGE_NAME}:${TAG}
 crane copy ${IMAGE_NAME}:${TAG_PLOT} ${GHCR_IMAGE_NAME}:${TAG_PLOT}
@@ -105,6 +107,7 @@ if [ "${TAG}" = "develop" ]; then
 fi
 
 docker images
+rm -rf .crane
 
 # Cleanup old images from arm64 node.
 docker image prune -a --force --filter "until=24h"

@@ -493,13 +493,6 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-    # - name: GHCR.io login
-    #   env:
-    #     GHCR_USERNAME: ${{ github.actor }}
-    #     GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-    #   run: |
-        # echo "${GHCR_PASSWORD}" | docker login ghcr.io --username ${GHCR_USERNAME} --password-stdin
-
     - name: Build and test and push docker images
       env:
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
