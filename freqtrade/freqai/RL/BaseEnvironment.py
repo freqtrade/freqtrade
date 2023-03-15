@@ -4,11 +4,11 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Optional, Type, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pandas as pd
-from gym import spaces
-from gym.utils import seeding
+from gymnasium import spaces
+from gymnasium.utils import seeding
 from pandas import DataFrame
 
 
@@ -195,7 +195,7 @@ class BaseEnvironment(gym.Env):
         self.close_trade_profit = []
         self._total_unrealized_profit = 1
 
-        return self._get_observation()
+        return self._get_observation(), self.history
 
     @abstractmethod
     def step(self, action: int):
