@@ -37,7 +37,7 @@ class Order(ModelBase):
     """
     __tablename__ = 'orders'
     query: ClassVar[QueryPropertyDescriptor]
-    _session: ClassVar[SessionType]
+    session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
@@ -1153,7 +1153,7 @@ class LocalTrade():
         get open trade count
         """
         if Trade.use_db:
-            return Trade._session.execute(
+            return Trade.session.execute(
                 select(func.count(Trade.id)).filter(Trade.is_open.is_(True))
             ).scalar_one()
         else:
@@ -1189,7 +1189,7 @@ class Trade(ModelBase, LocalTrade):
     """
     __tablename__ = 'trades'
     query: ClassVar[QueryPropertyDescriptor]
-    _session: ClassVar[SessionType]
+    session: ClassVar[SessionType]
 
     use_db: bool = True
 
@@ -1289,18 +1289,18 @@ class Trade(ModelBase, LocalTrade):
     def delete(self) -> None:
 
         for order in self.orders:
-            Order._session.delete(order)
+            Order.session.delete(order)
 
-        Trade._session.delete(self)
+        Trade.session.delete(self)
         Trade.commit()
 
     @staticmethod
     def commit():
-        Trade._session.commit()
+        Trade.session.commit()
 
     @staticmethod
     def rollback():
-        Trade._session.rollback()
+        Trade.session.rollback()
 
     @staticmethod
     def get_trades_proxy(*, pair: Optional[str] = None, is_open: Optional[bool] = None,
@@ -1369,7 +1369,7 @@ class Trade(ModelBase, LocalTrade):
                              e.g. `(trade_filter=Trade.id == trade_id)`
         :return: unsorted query object
         """
-        return Trade._session.scalars(Trade.get_trades_query(trade_filter, include_orders))
+        return Trade.session.scalars(Trade.get_trades_query(trade_filter, include_orders))
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:
@@ -1407,7 +1407,7 @@ class Trade(ModelBase, LocalTrade):
         Retrieves total realized profit
         """
         if Trade.use_db:
-            total_profit: float = Trade._session.execute(
+            total_profit: float = Trade.session.execute(
                 select(func.sum(Trade.close_profit_abs)).filter(Trade.is_open.is_(False))
             ).scalar_one()
         else:
@@ -1422,7 +1422,7 @@ class Trade(ModelBase, LocalTrade):
         in stake currency
         """
         if Trade.use_db:
-            total_open_stake_amount = Trade._session.scalar(
+            total_open_stake_amount = Trade.session.scalar(
                 select(func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True))
             )
         else:
@@ -1441,7 +1441,7 @@ class Trade(ModelBase, LocalTrade):
             start_date = datetime.now(timezone.utc) - timedelta(minutes=minutes)
             filters.append(Trade.close_date >= start_date)
 
-        pair_rates = Trade._session.execute(
+        pair_rates = Trade.session.execute(
             select(
                 Trade.pair,
                 func.sum(Trade.close_profit).label('profit_sum'),
@@ -1476,7 +1476,7 @@ class Trade(ModelBase, LocalTrade):
         if (pair is not None):
             filters.append(Trade.pair == pair)
 
-        enter_tag_perf = Trade._session.execute(
+        enter_tag_perf = Trade.session.execute(
             select(
                 Trade.enter_tag,
                 func.sum(Trade.close_profit).label('profit_sum'),
@@ -1509,7 +1509,7 @@ class Trade(ModelBase, LocalTrade):
         filters: List = [Trade.is_open.is_(False)]
         if (pair is not None):
             filters.append(Trade.pair == pair)
-        sell_tag_perf = Trade._session.execute(
+        sell_tag_perf = Trade.session.execute(
             select(
                 Trade.exit_reason,
                 func.sum(Trade.close_profit).label('profit_sum'),
@@ -1542,7 +1542,7 @@ class Trade(ModelBase, LocalTrade):
         filters: List = [Trade.is_open.is_(False)]
         if (pair is not None):
             filters.append(Trade.pair == pair)
-        mix_tag_perf = Trade._session.execute(
+        mix_tag_perf = Trade.session.execute(
             select(
                 Trade.id,
                 Trade.enter_tag,
@@ -1589,7 +1589,7 @@ class Trade(ModelBase, LocalTrade):
         NOTE: Not supported in Backtesting.
         :returns: Tuple containing (pair, profit_sum)
         """
-        best_pair = Trade._session.execute(
+        best_pair = Trade.session.execute(
             select(
                 Trade.pair,
                 func.sum(Trade.close_profit).label('profit_sum')

@@ -14,7 +14,7 @@ class PairLock(ModelBase):
     """
     __tablename__ = 'pairlocks'
     query: ClassVar[QueryPropertyDescriptor]
-    _session: ClassVar[SessionType]
+    session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

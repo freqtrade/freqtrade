@@ -340,7 +340,7 @@ class RPC:
         for day in range(0, timescale):
             profitday = start_date - time_offset(day)
             # Only query for necessary columns for performance reasons.
-            trades = Trade._session.execute(
+            trades = Trade.session.execute(
                 select(Trade.close_profit_abs)
                 .filter(Trade.is_open.is_(False),
                         Trade.close_date >= profitday,
@@ -384,18 +384,18 @@ class RPC:
         """ Returns the X last trades """
         order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
-            trades = Trade._session.execute(
+            trades = Trade.session.execute(
                 Trade.get_trades_query([Trade.is_open.is_(False)])
                 .order_by(order_by)
                 .limit(limit)
                 .offset(offset))
         else:
-            trades = Trade._session.execute(
+            trades = Trade.session.execute(
                 Trade.get_trades_query([Trade.is_open.is_(False)])
                 .order_by(Trade.close_date.desc()))
 
         output = [trade.to_json() for trade in trades]
-        total_trades = Trade._session.scalar(
+        total_trades = Trade.session.scalar(
             select(func.count(Trade.id)).filter(Trade.is_open.is_(False)))
 
         return {
@@ -444,7 +444,7 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades: Sequence[Trade] = Trade._session.scalars(Trade.get_trades_query(
+        trades: Sequence[Trade] = Trade.session.scalars(Trade.get_trades_query(
             trade_filter, include_orders=False).order_by(Trade.id)).all()
 
         profit_all_coin = []
