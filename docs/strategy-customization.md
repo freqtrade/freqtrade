@@ -1040,11 +1040,10 @@ from datetime import timedelta, datetime, timezone
 
 # Within populate indicators (or populate_buy):
 if self.config['runmode'].value in ('live', 'dry_run'):
-   # fetch closed trades for the last 2 days
-    trades = Trade.get_trades([Trade.pair == metadata['pair'],
-                               Trade.open_date > datetime.utcnow() - timedelta(days=2),
-                               Trade.is_open.is_(False),
-                ]).all()
+    # fetch closed trades for the last 2 days
+    trades = Trade.get_trades_proxy(
+        pair=metadata['pair'], is_open=False, 
+        open_date=datetime.now(timezone.utc) - timedelta(days=2))
     # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
     sumprofit = sum(trade.close_profit for trade in trades)
     if sumprofit < 0:
