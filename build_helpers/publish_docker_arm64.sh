@@ -84,23 +84,27 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI}
 docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
-# Retag images for GHCR
-docker tag ${IMAGE_NAME}:${TAG} ${GHCR_IMAGE_NAME}:${TAG}
-docker tag ${IMAGE_NAME}:${TAG_PLOT} ${GHCR_IMAGE_NAME}:${TAG_PLOT}
-docker tag ${IMAGE_NAME}:${TAG_FREQAI} ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
-docker tag ${IMAGE_NAME}:${TAG_FREQAI_RL} ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
+# Recreate multiarch images for GHCR
+docker manifest create ${GHCR_IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI}
+docker manifest push -p ${GHCR_IMAGE_NAME}:${TAG}
 
-# Push GHCR iamges
-docker push ${GHCR_IMAGE_NAME}:${TAG}
-docker push ${GHCR_IMAGE_NAME}:${TAG_PLOT}
-docker push ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
-docker push ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
+docker manifest create ${GHCR_IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM}
+docker manifest push -p ${GHCR_IMAGE_NAME}:${TAG_PLOT}
+
+docker manifest create ${GHCR_IMAGE_NAME}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI_ARM}
+docker manifest push -p ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
+
+docker manifest create ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
+docker manifest push -p ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
     echo 'Tagging image as latest'
     docker manifest create ${IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
     docker manifest push -p ${IMAGE_NAME}:latest
+
+    docker manifest create ${GHCR_IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
+    docker manifest push -p ${GHCR_IMAGE_NAME}:latest
 fi
 
 docker images
