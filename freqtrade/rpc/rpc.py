@@ -5,7 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import arrow
 import psutil
@@ -13,6 +13,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
 from pandas import DataFrame, NaT
+from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
@@ -339,11 +340,18 @@ class RPC:
         for day in range(0, timescale):
             profitday = start_date - time_offset(day)
             # Only query for necessary columns for performance reasons.
-            trades = Trade.query.session.query(Trade.close_profit_abs).filter(
-                Trade.is_open.is_(False),
-                Trade.close_date >= profitday,
-                Trade.close_date < (profitday + time_offset(1))
-            ).order_by(Trade.close_date).all()
+            trades = Trade._session.execute(
+                select(Trade.close_profit_abs)
+                .filter(Trade.is_open.is_(False),
+                        Trade.close_date >= profitday,
+                        Trade.close_date < (profitday + time_offset(1)))
+                .order_by(Trade.close_date)
+            ).all()
+            # trades = Trade.query.session.query(Trade.close_profit_abs).filter(
+            #     Trade.is_open.is_(False),
+            #     Trade.close_date >= profitday,
+            #     Trade.close_date < (profitday + time_offset(1))
+            # ).order_by(Trade.close_date).all()
 
             curdayprofit = sum(
                 trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
@@ -381,14 +389,19 @@ class RPC:
         """ Returns the X last trades """
         order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
-            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                order_by).limit(limit).offset(offset)
+            trades = Trade._session.execute(
+                Trade.get_trades_query([Trade.is_open.is_(False)])
+                .order_by(order_by)
+                .limit(limit)
+                .offset(offset))
         else:
-            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc())
+            trades = Trade._session.execute(
+                Trade.get_trades_query([Trade.is_open.is_(False)])
+                .order_by(Trade.close_date.desc()))
 
         output = [trade.to_json() for trade in trades]
-        total_trades = Trade.get_trades([Trade.is_open.is_(False)]).count()
+        total_trades = Trade._session.scalar(
+            select(func.count(Trade.id)).filter(Trade.is_open.is_(False)))
 
         return {
             "trades": output,
@@ -436,8 +449,8 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades: List[Trade] = Trade.get_trades(
-            trade_filter, include_orders=False).order_by(Trade.id).all()
+        trades: Sequence[Trade] = Trade._session.execute(Trade.get_trades_query(
+            trade_filter, include_orders=False).order_by(Trade.id)).all()
 
         profit_all_coin = []
         profit_all_ratio = []

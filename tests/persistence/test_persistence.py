@@ -1793,17 +1793,17 @@ def test_get_trades_proxy(fee, use_db, is_short):
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
 def test_get_trades__query(fee, is_short):
-    query = Trade.get_trades([])
+    query = Trade.get_trades_query([])
     # without orders there should be no join issued.
-    query1 = Trade.get_trades([], include_orders=False)
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     # Empty "with-options -> default - selectin"
     assert query._with_options == ()
     assert query1._with_options != ()
 
     create_mock_trades(fee, is_short)
-    query = Trade.get_trades([])
-    query1 = Trade.get_trades([], include_orders=False)
+    query = Trade.get_trades_query([])
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     assert query._with_options == ()
     assert query1._with_options != ()
