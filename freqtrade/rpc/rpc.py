@@ -347,11 +347,6 @@ class RPC:
                         Trade.close_date < (profitday + time_offset(1)))
                 .order_by(Trade.close_date)
             ).all()
-            # trades = Trade.query.session.query(Trade.close_profit_abs).filter(
-            #     Trade.is_open.is_(False),
-            #     Trade.close_date >= profitday,
-            #     Trade.close_date < (profitday + time_offset(1))
-            # ).order_by(Trade.close_date).all()
 
             curdayprofit = sum(
                 trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)

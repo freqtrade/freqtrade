@@ -51,8 +51,8 @@ class PairLocks():
             active=True
         )
         if PairLocks.use_db:
-            PairLock.query.session.add(lock)
-            PairLock.query.session.commit()
+            PairLock._session.add(lock)
+            PairLock._session.commit()
         else:
             PairLocks.locks.append(lock)
         return lock
@@ -106,7 +106,7 @@ class PairLocks():
         for lock in locks:
             lock.active = False
         if PairLocks.use_db:
-            PairLock.query.session.commit()
+            PairLock._session.commit()
 
     @staticmethod
     def unlock_reason(reason: str, now: Optional[datetime] = None) -> None:
@@ -130,7 +130,7 @@ class PairLocks():
             for lock in locks:
                 logger.info(f"Releasing lock for {lock.pair} with reason '{reason}'.")
                 lock.active = False
-            PairLock.query.session.commit()
+            PairLock._session.commit()
         else:
             # used in backtesting mode; don't show log messages for speed
             locksb = PairLocks.get_pair_locks(None)
