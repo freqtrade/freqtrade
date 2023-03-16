@@ -86,7 +86,7 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # copy images to ghcr.io
 
-alias crane="docker run --rm --i -v $(pwd)/.crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
+alias crane="docker run --rm -i -v $(pwd)/.crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
 mkdir .crane
 chmod a+rwx .crane
 
