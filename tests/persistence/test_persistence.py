@@ -1494,7 +1494,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1556,7 +1556,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 0.98
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1618,7 +1618,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.02
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
@@ -2443,8 +2443,8 @@ def test_order_to_ccxt(limit_buy_order_open):
 
     order = Order.parse_from_ccxt_object(limit_buy_order_open, 'mocked', 'buy')
     order.ft_trade_id = 1
-    order.query.session.add(order)
-    Order.query.session.commit()
+    order.session.add(order)
+    Order.session.commit()
 
     order_resp = Order.order_by_id(limit_buy_order_open['id'])
     assert order_resp
@@ -2546,7 +2546,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         leverage=1.0,
         trading_mode=TradingMode.SPOT
     )
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
 
     for idx, (order, result) in enumerate(data['orders']):
         amount = order[1]

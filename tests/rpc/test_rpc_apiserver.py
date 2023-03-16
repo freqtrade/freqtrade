@@ -652,7 +652,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Trade not found.'
 
-    Trade.query.session.rollback()
+    Trade.rollback()
     create_mock_trades(fee, is_short=is_short)
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
@@ -943,7 +943,7 @@ def test_api_performance(botclient, fee):
     )
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
 
     trade = Trade(
         pair='XRP/ETH',
@@ -960,7 +960,7 @@ def test_api_performance(botclient, fee):
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)
 
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     rc = client_get(client, f"{BASE_URI}/performance")
@@ -1290,7 +1290,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
                      data={"tradeid": "1"})
     assert_response(rc, 502)
     assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
-    Trade.query.session.rollback()
+    Trade.rollback()
 
     create_mock_trades(fee)
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1299,7 +1299,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
                      data={"tradeid": "5", "ordertype": "market", "amount": 23})
     assert_response(rc)
     assert rc.json() == {'result': 'Created sell order for trade 5.'}
-    Trade.query.session.rollback()
+    Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
     assert pytest.approx(trade.amount) == 100
@@ -1309,7 +1309,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
                      data={"tradeid": "5"})
     assert_response(rc)
     assert rc.json() == {'result': 'Created sell order for trade 5.'}
-    Trade.query.session.rollback()
+    Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
     assert trade.is_open is False

@@ -21,8 +21,8 @@ spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURE
 def test_init_create_session(default_conf):
     # Check if init create a session
     init_db(default_conf['db_url'])
-    assert hasattr(Trade, '_session')
-    assert 'scoped_session' in type(Trade._session).__name__
+    assert hasattr(Trade, 'session')
+    assert 'scoped_session' in type(Trade.session).__name__
 
 
 def test_init_custom_db_url(default_conf, tmpdir):
@@ -34,7 +34,7 @@ def test_init_custom_db_url(default_conf, tmpdir):
 
     init_db(default_conf['db_url'])
     assert Path(filename).is_file()
-    r = Trade._session.execute(text("PRAGMA journal_mode"))
+    r = Trade.session.execute(text("PRAGMA journal_mode"))
     assert r.first() == ('wal',)
 
 

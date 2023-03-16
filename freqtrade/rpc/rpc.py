@@ -384,13 +384,13 @@ class RPC:
         """ Returns the X last trades """
         order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
-            trades = Trade.session.execute(
+            trades = Trade.session.scalars(
                 Trade.get_trades_query([Trade.is_open.is_(False)])
                 .order_by(order_by)
                 .limit(limit)
                 .offset(offset))
         else:
-            trades = Trade.session.execute(
+            trades = Trade.session.scalars(
                 Trade.get_trades_query([Trade.is_open.is_(False)])
                 .order_by(Trade.close_date.desc()))
 
