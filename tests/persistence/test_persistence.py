@@ -4,6 +4,7 @@ from types import FunctionType
 
 import arrow
 import pytest
+from sqlalchemy import select
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
@@ -2575,11 +2576,11 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         trade.recalc_trade_from_orders()
         Trade.commit()
 
-        orders1 = Order.query.all()
+        orders1 = Order.session.scalars(select(Order)).all()
         assert orders1
         assert len(orders1) == idx + 1
 
-        trade = Trade.query.first()
+        trade = Trade.session.scalars(select(Trade)).first()
         assert trade
         assert len(trade.orders) == idx + 1
         if idx < len(data) - 1:
@@ -2596,6 +2597,6 @@ def test_recalc_trade_from_orders_dca(data) -> None:
     assert pytest.approx(trade.close_profit_abs) == data['end_profit']
     assert pytest.approx(trade.close_profit) == data['end_profit_ratio']
     assert not trade.is_open
-    trade = Trade.query.first()
+    trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.open_order_id is None

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select, text
 
 from freqtrade.constants import DEFAULT_DB_PROD_URL
 from freqtrade.enums import TradingMode
@@ -235,8 +235,9 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     # Run init to test migration
     init_db(default_conf['db_url'])
 
-    assert len(Trade.query.filter(Trade.id == 1).all()) == 1
-    trade = Trade.query.filter(Trade.id == 1).first()
+    trades = Trade.session.scalars(select(Trade).filter(Trade.id == 1)).all()
+    assert len(trades) == 1
+    trade = trades[0]
     assert trade.fee_open == fee.return_value
     assert trade.fee_close == fee.return_value
     assert trade.open_rate_requested is None
@@ -404,7 +405,7 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
 
     init_db(default_conf['db_url'])
 
-    assert len(PairLock.query.all()) == 2
+    assert len(PairLock.get_all_locks().all()) == 2
     assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1
     pairlocks = PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()
     assert len(pairlocks) == 1
