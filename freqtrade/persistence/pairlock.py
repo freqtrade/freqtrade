@@ -37,7 +37,8 @@ class PairLock(ModelBase):
             f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> ScalarResult['PairLock']:
+    def query_pair_locks(
+            pair: Optional[str], now: datetime, side: str = '*') -> ScalarResult['PairLock']:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from sqlalchemy import select
 
@@ -60,8 +60,8 @@ class PairLocks():
         return lock
 
     @staticmethod
-    def get_pair_locks(
-            pair: Optional[str], now: Optional[datetime] = None, side: str = '*') -> List[PairLock]:
+    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None,
+                       side: str = '*') -> Sequence[PairLock]:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -167,7 +167,7 @@ class PairLocks():
         )
 
     @staticmethod
-    def get_all_locks() -> List[PairLock]:
+    def get_all_locks() -> Sequence[PairLock]:
         """
         Return all locks, also locks with expired end date
         """

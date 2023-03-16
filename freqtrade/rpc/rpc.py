@@ -954,12 +954,12 @@ class RPC:
     def _rpc_delete_lock(self, lockid: Optional[int] = None,
                          pair: Optional[str] = None) -> Dict[str, Any]:
         """ Delete specific lock(s) """
-        locks = []
+        locks: Sequence[PairLock] = []
 
         if pair:
             locks = PairLocks.get_pair_locks(pair)
         if lockid:
-            locks = PairLock.session.scalar(select(PairLock).filter(PairLock.id == lockid)).all()
+            locks = PairLock.session.scalars(select(PairLock).filter(PairLock.id == lockid)).all()
 
         for lock in locks:
             lock.active = False

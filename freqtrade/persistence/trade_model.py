@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from math import isclose
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
@@ -263,12 +263,12 @@ class Order(ModelBase):
         return o
 
     @staticmethod
-    def get_open_orders() -> List['Order']:
+    def get_open_orders() -> Sequence['Order']:
         """
         Retrieve open orders from the database
         :return: List of open orders
         """
-        return Order.query.filter(Order.ft_is_open.is_(True)).all()
+        return Order.session.scalars(select(Order).filter(Order.ft_is_open.is_(True))).all()
 
     @staticmethod
     def order_by_id(order_id: str) -> Optional['Order']:
@@ -276,7 +276,7 @@ class Order(ModelBase):
         Retrieve order based on order_id
         :return: Order or None
         """
-        return Order.query.filter(Order.order_id == order_id).first()
+        return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
 
 
 class LocalTrade():
