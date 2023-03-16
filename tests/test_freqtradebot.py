@@ -2499,7 +2499,8 @@ def test_manage_open_orders_entry(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     nb_trades = len(trades)
     assert nb_trades == 0
     # Custom user buy-timeout is never called
@@ -2537,7 +2538,8 @@ def test_adjust_entry_cancel(
     # check that order is cancelled
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=None)
     freqtrade.manage_open_orders()
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 0
     assert len(Order.session.scalars(select(Order)).all()) == 0
     assert log_has_re(
@@ -2578,7 +2580,8 @@ def test_adjust_entry_maintain_replace(
     # Check that order is maintained
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=old_order['price'])
     freqtrade.manage_open_orders()
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 1
     assert len(Order.get_open_orders()) == 1
     # Entry adjustment is called
@@ -2588,7 +2591,8 @@ def test_adjust_entry_maintain_replace(
     freqtrade.get_valid_enter_price_and_stake = MagicMock(return_value={100, 10, 1})
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
     freqtrade.manage_open_orders()
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 1
     nb_all_orders = len(Order.session.scalars(select(Order)).all())
     assert nb_all_orders == 2
@@ -2629,7 +2633,8 @@ def test_check_handle_cancelled_buy(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 2
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 0
     assert log_has_re(
         f"{'Sell' if is_short else 'Buy'} order cancelled on exchange for Trade.*", caplog)
@@ -2660,7 +2665,8 @@ def test_manage_open_orders_buy_exception(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     nb_trades = len(trades)
     assert nb_trades == 1
 
@@ -2860,7 +2866,8 @@ def test_manage_open_orders_partial(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount / leverage
@@ -2907,7 +2914,8 @@ def test_manage_open_orders_partial_fee(
 
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 1
     # Verify that trade has been updated
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
@@ -2957,7 +2965,8 @@ def test_manage_open_orders_partial_except(
 
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
-    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     assert len(trades) == 1
     # Verify that trade has been updated
 

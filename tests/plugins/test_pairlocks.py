@@ -107,7 +107,7 @@ def test_PairLocks_getlongestlock(use_db):
     # No lock should be present
     PairLocks.use_db = use_db
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
@@ -139,7 +139,7 @@ def test_PairLocks_reason(use_db):
     PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 

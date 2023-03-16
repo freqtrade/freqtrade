@@ -406,8 +406,8 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
     init_db(default_conf['db_url'])
 
     assert len(PairLock.get_all_locks().all()) == 2
-    assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1
-    pairlocks = PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()
+    assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == '*')).all()) == 1
+    pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == 'ETH/BTC')).all()
     assert len(pairlocks) == 1
     pairlocks[0].pair == 'ETH/BTC'
     pairlocks[0].side == '*'
