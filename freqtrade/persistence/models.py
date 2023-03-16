@@ -57,9 +57,6 @@ def init_db(db_url: str) -> None:
     Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Order.session = Trade.session
     PairLock.session = Trade.session
-    Trade.query = Trade.session.query_property()
-    Order.query = Trade.session.query_property()
-    PairLock.query = Trade.session.query_property()
 
     previous_tables = inspect(engine).get_table_names()
     ModelBase.metadata.create_all(engine)
