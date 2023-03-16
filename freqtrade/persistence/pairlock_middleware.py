@@ -172,6 +172,6 @@ class PairLocks():
         Return all locks, also locks with expired end date
         """
         if PairLocks.use_db:
-            return PairLock.session.scalars(select(PairLock)).all()
+            return PairLock.get_all_locks().all()
         else:
             return PairLocks.locks

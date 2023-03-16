@@ -56,6 +56,10 @@ class PairLock(ModelBase):
 
         return PairLock.session.scalars(select(PairLock).filter(*filters))
 
+    @staticmethod
+    def get_all_locks() -> ScalarResult['PairLock']:
+        return PairLock.session.scalars(select(PairLock))
+
     def to_json(self) -> Dict[str, Any]:
         return {
             'id': self.id,

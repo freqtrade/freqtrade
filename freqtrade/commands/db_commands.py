@@ -36,7 +36,7 @@ def start_convert_db(args: Dict[str, Any]) -> None:
 
     session_target.commit()
 
-    for pairlock in PairLock.query:
+    for pairlock in PairLock.get_all_locks():
         pairlock_count += 1
         make_transient(pairlock)
         session_target.add(pairlock)

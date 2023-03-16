@@ -1607,12 +1607,13 @@ class Trade(ModelBase, LocalTrade):
         NOTE: Not supported in Backtesting.
         :returns: Tuple containing (pair, profit_sum)
         """
-        trading_volume = Order.query.with_entities(
-            func.sum(Order.cost).label('volume')
-        ).filter(
-            Order.order_filled_date >= start_date,
-            Order.status == 'closed'
-        ).scalar()
+        trading_volume = Trade.session.execute(
+            select(
+                func.sum(Order.cost).label('volume')
+            ).filter(
+                Order.order_filled_date >= start_date,
+                Order.status == 'closed'
+            )).scalar_one()
         return trading_volume
 
     @staticmethod
