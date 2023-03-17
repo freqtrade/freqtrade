@@ -388,12 +388,13 @@ class RPC:
                 Trade.close_date.desc())
 
         output = [trade.to_json() for trade in trades]
+        total_trades = Trade.get_trades([Trade.is_open.is_(False)]).count()
 
         return {
             "trades": output,
             "trades_count": len(output),
             "offset": offset,
-            "total_trades": Trade.get_trades([Trade.is_open.is_(False)]).count(),
+            "total_trades": total_trades,
         }
 
     def _rpc_stats(self) -> Dict[str, Any]:

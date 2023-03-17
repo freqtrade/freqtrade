@@ -302,8 +302,7 @@ def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -> None
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     create_mock_trades(fee)
-    trades = Trade.get_trades([Trade.is_open.is_(False)])
-    trade = trades[0]
+    trade = Trade.get_trades([Trade.is_open.is_(False)]).first()
     context = MagicMock()
     context.args = [str(trade.id)]
     telegram._status(update=update, context=context)
