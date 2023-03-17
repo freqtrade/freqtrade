@@ -674,8 +674,9 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     assert str('Monthly Profit over the last 6 months</b>:') in msg_mock.call_args_list[0][0][0]
 
 
-def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, fee,
-                       limit_sell_order_usdt, mocker) -> None:
+def test_telegram_profit_handle(
+        default_conf_usdt, update, ticker_usdt, ticker_sell_up, fee,
+        limit_sell_order_usdt, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=1.1)
     mocker.patch.multiple(
         EXMS,
@@ -710,6 +711,7 @@ def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, f
     # Update the ticker with a market going up
     mocker.patch(f'{EXMS}.fetch_ticker', ticker_sell_up)
     # Simulate fulfilled LIMIT_SELL order for trade
+    trade = Trade.session.scalars(select(Trade)).first()
     oobj = Order.parse_from_ccxt_object(
         limit_sell_order_usdt, limit_sell_order_usdt['symbol'], 'sell')
     trade.orders.append(oobj)
