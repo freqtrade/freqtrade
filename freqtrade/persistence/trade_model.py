@@ -1088,6 +1088,11 @@ class LocalTrade():
         In live mode, converts the filter to a database query and returns all rows
         In Backtest mode, uses filters on Trade.trades to get the result.
 
+        :param pair: Filter by pair
+        :param is_open: Filter by open/closed status
+        :param open_date: Filter by open_date (filters via trade.open_date > input)
+        :param close_date: Filter by close_date (filters via trade.close_date > input)
+                           Will implicitly only return closed trades.
         :return: unsorted List[Trade]
         """
 

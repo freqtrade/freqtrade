@@ -2724,21 +2724,21 @@ def test_manage_open_orders_exit_usercustom(
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
-    # 2nd canceled trade - Fail execute sell
+    # 2nd canceled trade - Fail execute exit
     caplog.clear()
     open_trade_usdt.open_order_id = limit_sell_order_old['id']
     mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit',
                  side_effect=DependencyException)
     freqtrade.manage_open_orders()
-    assert log_has_re('Unable to emergency sell .*', caplog)
+    assert log_has_re('Unable to emergency exit .*', caplog)
 
     et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
     caplog.clear()
     # 2nd canceled trade ...
     open_trade_usdt.open_order_id = limit_sell_order_old['id']
 
-    # If cancelling fails - no emergency sell!
+    # If cancelling fails - no emergency exit!
     with patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_exit', return_value=False):
         freqtrade.manage_open_orders()
         assert et_mock.call_count == 0

@@ -46,14 +46,12 @@ class TensorboardCallback(BaseCallback):
         local_info = self.locals["infos"][0]
         tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
 
-        for info in local_info:
-            if info not in ["episode", "terminal_observation"]:
-                self.logger.record(f"_info/{info}", local_info[info])
+        for metric in local_info:
+            if metric not in ["episode", "terminal_observation"]:
+                self.logger.record(f"info/{metric}", local_info[metric])
 
-        for info in tensorboard_metrics:
-            if info in [action.name for action in self.actions]:
-                self.logger.record(f"_actions/{info}", tensorboard_metrics[info])
-            else:
-                self.logger.record(f"_custom/{info}", tensorboard_metrics[info])
+        for category in tensorboard_metrics:
+            for metric in tensorboard_metrics[category]:
+                self.logger.record(f"{category}/{metric}", tensorboard_metrics[category][metric])
 
         return True
