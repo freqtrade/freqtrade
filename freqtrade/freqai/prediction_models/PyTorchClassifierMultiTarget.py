@@ -41,7 +41,7 @@ class PyTorchClassifierMultiTarget(BasePyTorchModel):
         self.max_n_eval_batches: Optional[int] = model_training_params.get(
             "max_n_eval_batches", None
         )
-        self.model_kwargs: Dict = model_training_params.get("model_kwargs", {})
+        self.model_kwargs: Dict[str, any] = model_training_params.get("model_kwargs", {})
         self.class_name_to_index = None
         self.index_to_class_name = None
 
