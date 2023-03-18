@@ -181,7 +181,7 @@ class NameUpdater(ast_comments.NodeTransformer):
     def visit_Attribute(self, node):
         if (
                 isinstance(node.value, ast_comments.Name)
-                and node.value.id == 'trades'
+                and node.value.id == 'trade'
                 and node.attr == 'nr_of_successful_buys'
         ):
             node.attr = 'nr_of_successful_entries'
