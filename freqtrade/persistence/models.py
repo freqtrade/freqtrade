@@ -54,12 +54,9 @@ def init_db(db_url: str) -> None:
     # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
     # Scoped sessions proxy requests to the appropriate thread-local session.
     # We should use the scoped_session object - not a seperately initialized version
-    Trade._session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    Order._session = Trade._session
-    PairLock._session = Trade._session
-    Trade.query = Trade._session.query_property()
-    Order.query = Trade._session.query_property()
-    PairLock.query = Trade._session.query_property()
+    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Order.session = Trade.session
+    PairLock.session = Trade.session
 
     previous_tables = inspect(engine).get_table_names()
     ModelBase.metadata.create_all(engine)

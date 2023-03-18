@@ -819,7 +819,7 @@ class FreqtradeBot(LoggingMixin):
 
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
-        Trade.query.session.add(trade)
+        Trade.session.add(trade)
         Trade.commit()
 
         # Updating wallets

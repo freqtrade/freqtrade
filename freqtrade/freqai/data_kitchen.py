@@ -251,7 +251,7 @@ class FreqaiDataKitchen:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]
             logger.info(
-                f"dropped {len(unfiltered_df) - len(filtered_df)} training points"
+                f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
@@ -675,7 +675,7 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - kept_points.sum()}"
+                f"{self.pair}: SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" test points from {len(y_pred)} total points."
             )
 
@@ -949,7 +949,7 @@ class FreqaiDataKitchen:
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
+                f"{self.pair}: DI tossed {len(do_predict) - do_predict.sum()} predictions for "
                 "being too far from training data."
             )
 

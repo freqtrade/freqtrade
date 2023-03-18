@@ -373,7 +373,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
     filters = []
     if strategy:
         filters.append(Trade.strategy == strategy)
-    trades = trade_list_to_dataframe(Trade.get_trades(filters).all())
+    trades = trade_list_to_dataframe(list(Trade.get_trades(filters).all()))
 
     return trades
 

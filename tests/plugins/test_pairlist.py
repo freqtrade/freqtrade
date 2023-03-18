@@ -711,8 +711,8 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
 
 def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
-    if hasattr(Trade, 'query'):
-        del Trade.query
+    if hasattr(Trade, 'session'):
+        del Trade.session
     mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
     pm = PairListManager(exchange, whitelist_conf, MagicMock())

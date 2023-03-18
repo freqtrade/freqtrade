@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import select
 
 from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
@@ -91,7 +92,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
     for trade in trades:
         stoploss_order_closed['id'] = '3'
@@ -179,13 +180,13 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     n = freqtrade.enter_positions()
     assert n == 4
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
     assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 5
 
     for trade in trades:
