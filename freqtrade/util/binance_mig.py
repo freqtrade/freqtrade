@@ -1,6 +1,7 @@
 import logging
 
 from packaging import version
+from sqlalchemy import select
 
 from freqtrade.constants import Config
 from freqtrade.enums.tradingmode import TradingMode
@@ -44,7 +45,7 @@ def _migrate_binance_futures_db(config: Config):
             # Should symbol be migrated too?
             # order.symbol = new_pair
     Trade.commit()
-    pls = PairLock.query.filter(PairLock.pair.notlike('%:%'))
+    pls = PairLock.session.scalars(select(PairLock).filter(PairLock.pair.notlike('%:%'))).all()
     for pl in pls:
         pl.pair = f"{pl.pair}:{config['stake_currency']}"
     # print(pls)
