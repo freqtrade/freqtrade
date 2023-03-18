@@ -123,7 +123,7 @@ class RPC:
                                 if config['max_open_trades'] != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
             'stoploss': config.get('stoploss'),
-            'stoploss_on_exchange': config.get('stoploss_on_exchange', False),
+            'stoploss_on_exchange': config.get('order_types', {}).get('stoploss_on_exchange', False),
             'trailing_stop': config.get('trailing_stop'),
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
