@@ -52,8 +52,7 @@ def can_run_model(model: str) -> None:
     ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
-    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0),
-    ('PyTorchClassifierMultiTarget', False, False, False, True, False, 0)
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
@@ -183,6 +182,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'CatboostClassifier',
     'XGBoostClassifier',
     'XGBoostRFClassifier',
+    'PyTorchClassifierMultiTarget',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if (is_arm() or is_py11()) and model == 'CatboostClassifier':
