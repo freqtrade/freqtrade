@@ -1087,7 +1087,7 @@ class Exchange:
                 f'Tried to {side} amount {amount} at rate {rate}.'
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
-            raise ExchangeError(
+            raise InvalidOrderException(
                 f'Could not create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
@@ -1138,7 +1138,10 @@ class Exchange:
         # Ensure rate is less than stop price
         if bad_stop_price:
             raise OperationalException(
-                'In stoploss limit order, stop price should be more than limit price')
+                "In stoploss limit order, stop price should be more than limit price. "
+                f"Stop price: {stop_price}, Limit price: {limit_rate}, "
+                f"Limit Price pct: {limit_price_pct}"
+                )
         return limit_rate
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
@@ -2755,10 +2758,10 @@ class Exchange:
             raise OperationalException(
                 f"{self.name} does not support {self.margin_mode} {self.trading_mode}")
 
-        isolated_liq = None
+        liquidation_price = None
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
-            isolated_liq = self.dry_run_liquidation_price(
+            liquidation_price = self.dry_run_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
@@ -2773,16 +2776,16 @@ class Exchange:
             positions = self.fetch_positions(pair)
             if len(positions) > 0:
                 pos = positions[0]
-                isolated_liq = pos['liquidationPrice']
+                liquidation_price = pos['liquidationPrice']
 
-        if isolated_liq is not None:
-            buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
-            isolated_liq = (
-                isolated_liq - buffer_amount
+        if liquidation_price is not None:
+            buffer_amount = abs(open_rate - liquidation_price) * self.liquidation_buffer
+            liquidation_price_buffer = (
+                liquidation_price - buffer_amount
                 if is_short else
-                isolated_liq + buffer_amount
+                liquidation_price + buffer_amount
             )
-            return isolated_liq
+            return max(liquidation_price_buffer, 0.0)
         else:
             return None
 
