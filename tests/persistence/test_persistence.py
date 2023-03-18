@@ -4,6 +4,7 @@ from types import FunctionType
 
 import arrow
 import pytest
+from sqlalchemy import select
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
@@ -1494,7 +1495,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1556,7 +1557,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 0.98
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1618,7 +1619,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.02
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
@@ -1793,17 +1794,17 @@ def test_get_trades_proxy(fee, use_db, is_short):
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
 def test_get_trades__query(fee, is_short):
-    query = Trade.get_trades([])
+    query = Trade.get_trades_query([])
     # without orders there should be no join issued.
-    query1 = Trade.get_trades([], include_orders=False)
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     # Empty "with-options -> default - selectin"
     assert query._with_options == ()
     assert query1._with_options != ()
 
     create_mock_trades(fee, is_short)
-    query = Trade.get_trades([])
-    query1 = Trade.get_trades([], include_orders=False)
+    query = Trade.get_trades_query([])
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     assert query._with_options == ()
     assert query1._with_options != ()
@@ -2016,6 +2017,7 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
+        'get_trades_query',
         'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
@@ -2443,8 +2445,8 @@ def test_order_to_ccxt(limit_buy_order_open):
 
     order = Order.parse_from_ccxt_object(limit_buy_order_open, 'mocked', 'buy')
     order.ft_trade_id = 1
-    order.query.session.add(order)
-    Order.query.session.commit()
+    order.session.add(order)
+    Order.session.commit()
 
     order_resp = Order.order_by_id(limit_buy_order_open['id'])
     assert order_resp
@@ -2546,7 +2548,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         leverage=1.0,
         trading_mode=TradingMode.SPOT
     )
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
 
     for idx, (order, result) in enumerate(data['orders']):
         amount = order[1]
@@ -2575,11 +2577,11 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         trade.recalc_trade_from_orders()
         Trade.commit()
 
-        orders1 = Order.query.all()
+        orders1 = Order.session.scalars(select(Order)).all()
         assert orders1
         assert len(orders1) == idx + 1
 
-        trade = Trade.query.first()
+        trade = Trade.session.scalars(select(Trade)).first()
         assert trade
         assert len(trade.orders) == idx + 1
         if idx < len(data) - 1:
@@ -2596,6 +2598,6 @@ def test_recalc_trade_from_orders_dca(data) -> None:
     assert pytest.approx(trade.close_profit_abs) == data['end_profit']
     assert pytest.approx(trade.close_profit) == data['end_profit_ratio']
     assert not trade.is_open
-    trade = Trade.query.first()
+    trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.open_order_id is None
