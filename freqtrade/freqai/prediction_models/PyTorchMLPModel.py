@@ -10,28 +10,25 @@ class PyTorchMLPModel(nn.Module):
     """
     A multi-layer perceptron (MLP) model implemented using PyTorch.
 
-    :param input_dim: The number of input features.
-    :param output_dim: The number of output classes.
-    :param hidden_dim: The number of hidden units in each layer. Default: 256
-    :param dropout_percent: The dropout rate for regularization. Default: 0.2
-    :param n_layer: The number of layers in the MLP. Default: 1
+    :param input_dim: The number of input features. This parameter specifies the number
+        of features in the input data that the MLP will use to make predictions.
+    :param output_dim: The number of output classes. This parameter specifies the number
+        of classes that the MLP will predict.
+    :param hidden_dim: The number of hidden units in each layer. This parameter controls
+        the complexity of the MLP and determines how many nonlinear relationships the MLP
+        can represent. Increasing the number of hidden units can increase the capacity of
+        the MLP to model complex patterns, but it also increases the risk of overfitting
+        the training data. Default: 256
+    :param dropout_percent: The dropout rate for regularization. This parameter specifies
+        the probability of dropping out a neuron during training to prevent overfitting.
+        The dropout rate should be tuned carefully to balance between underfitting and
+        overfitting. Default: 0.2
+    :param n_layer: The number of layers in the MLP. This parameter specifies the number
+        of layers in the MLP architecture. Adding more layers to the MLP can increase its
+        capacity to model complex patterns, but it also increases the risk of overfitting
+        the training data. Default: 1
 
     :returns: The output of the MLP, with shape (batch_size, output_dim)
-
-
-    A neural network typically consists of input, output, and hidden layers, where the
-    information flows from the input layer through the hidden layers to the output layer.
-    In a feedforward neural network, also known as a multilayer perceptron (MLP), the
-    information flows in one direction only. Each hidden layer contains multiple units
-    or nodes that take input from the previous layer and produce output that goes to the
-    next layer.
-
-    The hidden_dim parameter in the FeedForward class refers to the number of units
-    (or nodes) in the hidden layer. This parameter controls the complexity of the neural
-    network and determines how many nonlinear relationships the network can represent.
-    A higher value of hidden_dim allows the network to represent more complex functions
-    but may also make the network more prone to overfitting, where the model memorizes
-    the training data instead of learning general patterns.
     """
 
     def __init__(self, input_dim: int, output_dim: int, **kwargs):
@@ -55,7 +52,7 @@ class PyTorchMLPModel(nn.Module):
 
 class Block(nn.Module):
     """
-    A building block for a multi-layer perceptron (MLP) implemented using PyTorch.
+    A building block for a multi-layer perceptron (MLP).
 
     :param hidden_dim: The number of hidden units in the feedforward network.
     :param dropout_percent: The dropout rate for regularization.
@@ -77,7 +74,7 @@ class Block(nn.Module):
 
 class FeedForward(nn.Module):
     """
-    A fully-connected feedforward neural network block.
+    A simple fully-connected feedforward neural network block.
 
     :param hidden_dim: The number of hidden units in the block.
     :return: torch.Tensor. with shape (batch_size, hidden_dim)
