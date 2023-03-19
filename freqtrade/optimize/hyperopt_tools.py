@@ -464,7 +464,7 @@ class HyperoptTools():
 
         try:
             Path(csv_file).open('w+').close()
-        except IOError:
+        except OSError:
             logger.error(f"Failed to create CSV file: {csv_file}")
             return
 

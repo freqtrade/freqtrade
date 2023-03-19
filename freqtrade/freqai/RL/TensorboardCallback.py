@@ -13,7 +13,7 @@ class TensorboardCallback(BaseCallback):
     episodic summary reports.
     """
     def __init__(self, verbose=1, actions: Type[Enum] = BaseActions):
-        super(TensorboardCallback, self).__init__(verbose)
+        super().__init__(verbose)
         self.model: Any = None
         self.logger = None  # type: Any
         self.training_env: BaseEnvironment = None  # type: ignore
