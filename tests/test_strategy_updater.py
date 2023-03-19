@@ -124,11 +124,11 @@ def test_strategy_updater_method_params(default_conf, caplog) -> None:
     instance_strategy_updater = StrategyUpdater()
     modified_code = instance_strategy_updater.update_code("""
 def confirm_trade_exit(sell_reason: str):
-    nr_orders = trades.nr_of_successful_buys
+    nr_orders = trade.nr_of_successful_buys
     pass
     """)
     assert "exit_reason" in modified_code
-    assert "nr_orders = trades.nr_of_successful_entries" in modified_code
+    assert "nr_orders = trade.nr_of_successful_entries" in modified_code
 
 
 def test_strategy_updater_dicts(default_conf, caplog) -> None:
