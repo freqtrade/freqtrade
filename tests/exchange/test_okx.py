@@ -2,11 +2,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
+import ccxt
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
+from freqtrade.exceptions import RetryableOrderError
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -476,3 +478,53 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
     exchange.load_leverage_tiers()
 
     assert log_has(logmsg, caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_fetch_stoploss_order_okx(default_conf, mocker):
+    default_conf['dry_run'] = False
+    api_mock = MagicMock()
+    api_mock.fetch_order = MagicMock()
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id='okx')
+
+    exchange.fetch_stoploss_order('1234', 'ETH/BTC')
+    assert api_mock.fetch_order.call_count == 1
+    assert api_mock.fetch_order.call_args_list[0][0][0] == '1234'
+    assert api_mock.fetch_order.call_args_list[0][0][1] == 'ETH/BTC'
+    assert api_mock.fetch_order.call_args_list[0][1]['params'] == {'stop': True}
+
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.OrderNotFound)
+    api_mock.fetch_open_orders = MagicMock(return_value=[])
+    api_mock.fetch_closed_orders = MagicMock(return_value=[])
+    api_mock.fetch_canceled_orders = MagicMock(creturn_value=[])
+
+    with pytest.raises(RetryableOrderError):
+        exchange.fetch_stoploss_order('1234', 'ETH/BTC')
+    assert api_mock.fetch_order.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_canceled_orders.call_count == 1
+
+    api_mock.fetch_order.reset_mock()
+    api_mock.fetch_open_orders.reset_mock()
+    api_mock.fetch_closed_orders.reset_mock()
+    api_mock.fetch_canceled_orders.reset_mock()
+
+    api_mock.fetch_closed_orders = MagicMock(return_value=[
+        {
+            'id': '1234',
+            'status': 'closed',
+            'info': {'ordId': '123455'}
+        }
+    ])
+    mocker.patch(f"{EXMS}.fetch_order", MagicMock(return_value={'id': '123455'}))
+    resp = exchange.fetch_stoploss_order('1234', 'ETH/BTC')
+    assert api_mock.fetch_order.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_canceled_orders.call_count == 0
+
+    assert resp['id'] == '1234'
+    assert resp['id_stop'] == '123455'
+    assert resp['type'] == 'stoploss'

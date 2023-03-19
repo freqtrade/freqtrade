@@ -212,7 +212,7 @@ class Okx(Exchange):
                         self._log_exchange_response('fetch_stoploss_order1', order_reg)
                         order_reg['id_stop'] = order_reg['id']
                         order_reg['id'] = order_id
-                        order_reg['type'] = 'stop'
+                        order_reg['type'] = 'stoploss'
                         order_reg['status_stop'] = 'triggered'
                         return order_reg
                     order['type'] = 'stoploss'
