@@ -88,10 +88,12 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     if 'PyTorchClassifierMultiTarget' in model:
         model_save_ext = 'zip'
         freqai_conf['freqai']['model_training_parameters'].update({
-            "max_iters": 1,
-            "batch_size": 64,
             "learning_rate": 3e-4,
-            "max_n_eval_batches": 1,
+            "trainer_kwargs": {
+                "max_iters": 1,
+                "batch_size": 64,
+                "max_n_eval_batches": 1,
+            },
             "model_kwargs": {
                 "hidden_dim": 32,
                 "dropout_percent": 0.2,
