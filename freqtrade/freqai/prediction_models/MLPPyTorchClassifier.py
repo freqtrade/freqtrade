@@ -1,11 +1,11 @@
 from typing import Any, Dict
 
+import torch
+
 from freqtrade.freqai.base_models.PyTorchModelTrainer import PyTorchModelTrainer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.PyTorchClassifierClassifier import PyTorchClassifier
 from freqtrade.freqai.prediction_models.PyTorchMLPModel import PyTorchMLPModel
-
-import torch
 
 
 class MLPPyTorchClassifier(PyTorchClassifier):
