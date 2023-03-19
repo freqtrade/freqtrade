@@ -70,14 +70,11 @@ def _store_backtest_analysis_data(
     return filename
 
 
-def store_backtest_signal_candles(
-        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
-    return _store_backtest_analysis_data(Path(recordfilename), candles, dtappendix, "signals")
-
-
-def store_backtest_rejected_signals(
-        recordfilename: Path, trades: Dict[str, Dict], dtappendix: str) -> Path:
-    return _store_backtest_analysis_data(Path(recordfilename), trades, dtappendix, "rejected")
+def store_backtest_analysis_results(
+        recordfilename: Path, candles: Dict[str, Dict], trades: Dict[str, Dict],
+        dtappendix: str) -> Path:
+    _store_backtest_analysis_data(Path(recordfilename), candles, dtappendix, "signals")
+    _store_backtest_analysis_data(Path(recordfilename), trades, dtappendix, "rejected")
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:
