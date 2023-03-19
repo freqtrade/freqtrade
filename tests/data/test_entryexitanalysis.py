@@ -190,6 +190,15 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '1' in captured.out
     assert '2.5' in captured.out
 
+    # test group 5
+    args = get_args(base_args + ['--analysis-groups', "5"])
+    start_analysis_entries_exits(args)
+    captured = capsys.readouterr()
+    assert 'exit_signal' in captured.out
+    assert 'roi' in captured.out
+    assert 'stop_loss' in captured.out
+    assert 'trailing_stop_loss' in captured.out
+
     # test date filtering
     args = get_args(base_args +
                     ['--analysis-groups', "0", "1", "2",

@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 class PairListManager(LoggingMixin):
 
-    def __init__(self, exchange, config: Config, dataprovider: DataProvider = None) -> None:
+    def __init__(
+            self, exchange, config: Config, dataprovider: Optional[DataProvider] = None) -> None:
         self._exchange = exchange
         self._config = config
         self._whitelist = self._config['exchange'].get('pair_whitelist')
@@ -153,7 +154,8 @@ class PairListManager(LoggingMixin):
             return []
         return whitelist
 
-    def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
+    def create_pair_list(
+            self, pairs: List[str], timeframe: Optional[str] = None) -> ListPairsWithTimeframes:
         """
         Create list of pair tuples with (pair, timeframe)
         """

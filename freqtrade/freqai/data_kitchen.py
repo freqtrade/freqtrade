@@ -1,10 +1,12 @@
 import copy
+import inspect
 import logging
+import random
 import shutil
 from datetime import datetime, timezone
 from math import cos, sin
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -23,6 +25,7 @@ from freqtrade.constants import Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -110,7 +113,7 @@ class FreqaiDataKitchen:
     def set_paths(
         self,
         pair: str,
-        trained_timestamp: int = None,
+        trained_timestamp: Optional[int] = None,
     ) -> None:
         """
         Set the paths to the data for the present coin/botloop
@@ -167,6 +170,19 @@ class FreqaiDataKitchen:
             train_features = filtered_dataframe
             train_labels = labels
             train_weights = weights
+
+        if feat_dict["shuffle_after_split"]:
+            rint1 = random.randint(0, 100)
+            rint2 = random.randint(0, 100)
+            train_features = train_features.sample(
+                frac=1, random_state=rint1).reset_index(drop=True)
+            train_labels = train_labels.sample(frac=1, random_state=rint1).reset_index(drop=True)
+            train_weights = pd.DataFrame(train_weights).sample(
+                frac=1, random_state=rint1).reset_index(drop=True).to_numpy()[:, 0]
+            test_features = test_features.sample(frac=1, random_state=rint2).reset_index(drop=True)
+            test_labels = test_labels.sample(frac=1, random_state=rint2).reset_index(drop=True)
+            test_weights = pd.DataFrame(test_weights).sample(
+                frac=1, random_state=rint2).reset_index(drop=True).to_numpy()[:, 0]
 
         # Simplest way to reverse the order of training and test data:
         if self.freqai_config['feature_parameters'].get('reverse_train_test_order', False):
@@ -235,7 +251,7 @@ class FreqaiDataKitchen:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]
             logger.info(
-                f"dropped {len(unfiltered_df) - len(filtered_df)} training points"
+                f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
@@ -659,7 +675,7 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - kept_points.sum()}"
+                f"{self.pair}: SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" test points from {len(y_pred)} total points."
             )
 
@@ -933,7 +949,7 @@ class FreqaiDataKitchen:
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
+                f"{self.pair}: DI tossed {len(do_predict) - do_predict.sum()} predictions for "
                 "being too far from training data."
             )
 
@@ -1145,9 +1161,9 @@ class FreqaiDataKitchen:
 
         for pair in pairs:
             pair = pair.replace(':', '')  # lightgbm doesnt like colons
-            valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
-            pair_cols = [col for col in dataframe.columns if
-                         any(substr in col for substr in valid_strs)]
+            pair_cols = [col for col in dataframe.columns if col.startswith("%")
+                         and f"{pair}_" in col]
+
             if pair_cols:
                 pair_cols.insert(0, 'date')
                 corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
@@ -1176,6 +1192,105 @@ class FreqaiDataKitchen:
 
         return dataframe
 
+    def get_pair_data_for_features(self,
+                                   pair: str,
+                                   tf: str,
+                                   strategy: IStrategy,
+                                   corr_dataframes: dict = {},
+                                   base_dataframes: dict = {},
+                                   is_corr_pairs: bool = False) -> DataFrame:
+        """
+        Get the data for the pair. If it's not in the dictionary, get it from the data provider
+        :param pair: str = pair to get data for
+        :param tf: str = timeframe to get data for
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the df pair dataframes
+                                (for user defined timeframes)
+        :param base_dataframes: dict = dict containing the current pair dataframes
+                                (for user defined timeframes)
+        :param is_corr_pairs: bool = whether the pair is a corr pair or not
+        :return: dataframe = dataframe containing the pair data
+        """
+        if is_corr_pairs:
+            dataframe = corr_dataframes[pair][tf]
+            if not dataframe.empty:
+                return dataframe
+            else:
+                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
+                return dataframe
+        else:
+            dataframe = base_dataframes[tf]
+            if not dataframe.empty:
+                return dataframe
+            else:
+                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
+                return dataframe
+
+    def merge_features(self, df_main: DataFrame, df_to_merge: DataFrame,
+                       tf: str, timeframe_inf: str, suffix: str) -> DataFrame:
+        """
+        Merge the features of the dataframe and remove HLCV and date added columns
+        :param df_main: DataFrame = main dataframe
+        :param df_to_merge: DataFrame = dataframe to merge
+        :param tf: str = timeframe of the main dataframe
+        :param timeframe_inf: str = timeframe of the dataframe to merge
+        :param suffix: str = suffix to add to the columns of the dataframe to merge
+        :return: dataframe = merged dataframe
+        """
+        dataframe = merge_informative_pair(df_main, df_to_merge, tf, timeframe_inf=timeframe_inf,
+                                           append_timeframe=False, suffix=suffix, ffill=True)
+        skip_columns = [
+            (f"{s}_{suffix}") for s in ["date", "open", "high", "low", "close", "volume"]
+        ]
+        dataframe = dataframe.drop(columns=skip_columns)
+        return dataframe
+
+    def populate_features(self, dataframe: DataFrame, pair: str, strategy: IStrategy,
+                          corr_dataframes: dict, base_dataframes: dict,
+                          is_corr_pairs: bool = False) -> DataFrame:
+        """
+        Use the user defined strategy functions for populating features
+        :param dataframe: DataFrame = dataframe to populate
+        :param pair: str = pair to populate
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the df pair dataframes
+        :param base_dataframes: dict = dict containing the current pair dataframes
+        :param is_corr_pairs: bool = whether the pair is a corr pair or not
+        :return: dataframe = populated dataframe
+        """
+        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+
+        for tf in tfs:
+            metadata = {"pair": pair, "tf": tf}
+            informative_df = self.get_pair_data_for_features(
+                pair, tf, strategy, corr_dataframes, base_dataframes, is_corr_pairs)
+            informative_copy = informative_df.copy()
+
+            for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
+                df_features = strategy.feature_engineering_expand_all(
+                    informative_copy.copy(), t, metadata=metadata)
+                suffix = f"{t}"
+                informative_df = self.merge_features(informative_df, df_features, tf, tf, suffix)
+
+            generic_df = strategy.feature_engineering_expand_basic(
+                informative_copy.copy(), metadata=metadata)
+            suffix = "gen"
+
+            informative_df = self.merge_features(informative_df, generic_df, tf, tf, suffix)
+
+            indicators = [col for col in informative_df if col.startswith("%")]
+            for n in range(self.freqai_config["feature_parameters"]["include_shifted_candles"] + 1):
+                if n == 0:
+                    continue
+                df_shift = informative_df[indicators].shift(n)
+                df_shift = df_shift.add_suffix("_shift-" + str(n))
+                informative_df = pd.concat((informative_df, df_shift), axis=1)
+
+            dataframe = self.merge_features(dataframe.copy(), informative_df,
+                                            self.config["timeframe"], tf, f'{pair}_{tf}')
+
+        return dataframe
+
     def use_strategy_to_populate_indicators(
         self,
         strategy: IStrategy,
@@ -1188,55 +1303,66 @@ class FreqaiDataKitchen:
         """
         Use the user defined strategy for populating indicators during retrain
         :param strategy: IStrategy = user defined strategy object
-        :param corr_dataframes: dict = dict containing the informative pair dataframes
+        :param corr_dataframes: dict = dict containing the df pair dataframes
                                 (for user defined timeframes)
         :param base_dataframes: dict = dict containing the current pair dataframes
                                 (for user defined timeframes)
-        :param metadata: dict = strategy furnished pair metadata
+        :param pair: str = pair to populate
+        :param prediction_dataframe: DataFrame = dataframe containing the pair data
+        used for prediction
+        :param do_corr_pairs: bool = whether to populate corr pairs or not
         :return:
         dataframe: DataFrame = dataframe containing populated indicators
         """
 
-        # for prediction dataframe creation, we let dataprovider handle everything in the strategy
-        # so we create empty dictionaries, which allows us to pass None to
-        # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
+        # check if the user is using the deprecated populate_any_indicators function
+        new_version = inspect.getsource(strategy.populate_any_indicators) == (
+            inspect.getsource(IStrategy.populate_any_indicators))
+
+        if not new_version:
+            raise OperationalException(
+                "You are using the `populate_any_indicators()` function"
+                " which was deprecated on March 1, 2023. Please refer "
+                "to the strategy migration guide to use the new "
+                "feature_engineering_* methods: \n"
+                "https://www.freqtrade.io/en/stable/strategy_migration/#freqai-strategy \n"
+                "And the feature_engineering_* documentation: \n"
+                "https://www.freqtrade.io/en/latest/freqai-feature-engineering/"
+                )
+
         tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
-        pairs: List[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        pairs: List[str] = self.freqai_config["feature_parameters"].get(
+            "include_corr_pairlist", [])
+
+        for tf in tfs:
+            if tf not in base_dataframes:
+                base_dataframes[tf] = pd.DataFrame()
+            for p in pairs:
+                if p not in corr_dataframes:
+                    corr_dataframes[p] = {}
+                if tf not in corr_dataframes[p]:
+                    corr_dataframes[p][tf] = pd.DataFrame()
+
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
-            for tf in tfs:
-                base_dataframes[tf] = None
-                for p in pairs:
-                    if p not in corr_dataframes:
-                        corr_dataframes[p] = {}
-                    corr_dataframes[p][tf] = None
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 
-        sgi = False
-        for tf in tfs:
-            if tf == tfs[-1]:
-                sgi = True  # doing this last allows user to use all tf raw prices in labels
-            dataframe = strategy.populate_any_indicators(
-                pair,
-                dataframe.copy(),
-                tf,
-                informative=base_dataframes[tf],
-                set_generalized_indicators=sgi
-            )
-
+        corr_pairs: List[str] = self.freqai_config["feature_parameters"].get(
+            "include_corr_pairlist", [])
+        dataframe = self.populate_features(dataframe.copy(), pair, strategy,
+                                           corr_dataframes, base_dataframes)
+        metadata = {"pair": pair}
+        dataframe = strategy.feature_engineering_standard(dataframe.copy(), metadata=metadata)
         # ensure corr pairs are always last
-        for corr_pair in pairs:
+        for corr_pair in corr_pairs:
             if pair == corr_pair:
                 continue  # dont repeat anything from whitelist
-            for tf in tfs:
-                if pairs and do_corr_pairs:
-                    dataframe = strategy.populate_any_indicators(
-                        corr_pair,
-                        dataframe.copy(),
-                        tf,
-                        informative=corr_dataframes[corr_pair][tf]
-                    )
+            if corr_pairs and do_corr_pairs:
+                dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
+                                                   corr_dataframes, base_dataframes, True)
+
+        dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
 
         self.get_unique_classes_from_labels(dataframe)
 
@@ -1367,3 +1493,25 @@ class FreqaiDataKitchen:
             dataframe.columns = dataframe.columns.str.replace(c, "")
 
         return dataframe
+
+    def buffer_timerange(self, timerange: TimeRange):
+        """
+        Buffer the start and end of the timerange. This is used *after* the indicators
+        are populated.
+
+        The main example use is when predicting maxima and minima, the argrelextrema
+        function  cannot know the maxima/minima at the edges of the timerange. To improve
+        model accuracy, it is best to compute argrelextrema on the full timerange
+        and then use this function to cut off the edges (buffer) by the kernel.
+
+        In another case, if the targets are set to a shifted price movement, this
+        buffer is unnecessary because the shifted candles at the end of the timerange
+        will be NaN and FreqAI will automatically cut those off of the training
+        dataset.
+        """
+        buffer = self.freqai_config["feature_parameters"]["buffer_train_data_candles"]
+        if buffer:
+            timerange.stopts -= buffer * timeframe_to_seconds(self.config["timeframe"])
+            timerange.startts += buffer * timeframe_to_seconds(self.config["timeframe"])
+
+        return timerange

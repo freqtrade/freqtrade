@@ -8,11 +8,11 @@ import time_machine
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import State
 from freqtrade.worker import Worker
-from tests.conftest import get_patched_worker, log_has, log_has_re
+from tests.conftest import EXMS, get_patched_worker, log_has, log_has_re
 
 
 def test_worker_state(mocker, default_conf, markets) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     worker = get_patched_worker(mocker, default_conf)
     assert worker.freqtrade.state is State.RUNNING
 

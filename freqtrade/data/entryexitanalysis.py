@@ -24,11 +24,12 @@ def _load_backtest_analysis_data(backtest_dir: Path, name: str):
         scpf = Path(backtest_dir.parent / f"{backtest_dir.stem}_{name}.pkl")
 
     try:
-        scp = open(scpf, "rb")
-        loaded_data = joblib.load(scp)
-        logger.info(f"Loaded {name} data: {str(scpf)}")
+        with scpf.open("rb") as scp:
+            loaded_data = joblib.load(scp)
+            logger.info(f"Loaded {name} candles: {str(scpf)}")
     except Exception as e:
         logger.error(f"Cannot load {name} data from pickled results: ", e)
+        return None
 
     return loaded_data
 
@@ -60,7 +61,7 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
     return analysed_trades_dict
 
 
-def _analyze_candles_and_indicators(pair, trades, signal_candles):
+def _analyze_candles_and_indicators(pair, trades: pd.DataFrame, signal_candles: pd.DataFrame):
     buyf = signal_candles
 
     if len(buyf) > 0:
@@ -129,7 +130,7 @@ def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
 
         else:
             agg_mask = {'profit_abs': ['count', 'sum', 'median', 'mean'],
-                        'profit_ratio': ['sum', 'median', 'mean']}
+                        'profit_ratio': ['median', 'mean', 'sum']}
             agg_cols = ['num_buys', 'profit_abs_sum', 'profit_abs_median',
                         'profit_abs_mean', 'median_profit_pct', 'mean_profit_pct',
                         'total_profit_pct']
@@ -150,6 +151,12 @@ def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
             # 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
             if g == "4":
                 group_mask = ['pair', 'enter_reason', 'exit_reason']
+
+            # 5: profit summaries grouped by exit_tag
+            if g == "5":
+                group_mask = ['exit_reason']
+                sortcols = ['exit_reason']
+
             if group_mask:
                 new = bigdf.groupby(group_mask).agg(agg_mask).reset_index()
                 new.columns = group_mask + agg_cols

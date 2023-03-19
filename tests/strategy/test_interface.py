@@ -214,12 +214,12 @@ def test_ignore_expired_candle(default_conf):
 
     current_time = latest_date + timedelta(seconds=30 + 300)
 
-    assert not strategy.ignore_expired_candle(
+    assert strategy.ignore_expired_candle(
         latest_date=latest_date,
         current_time=current_time,
         timeframe_seconds=300,
         enter=True
-    ) is True
+    ) is not True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
@@ -288,18 +288,6 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
     processed = strategy.advise_all_indicators(data)
-    assert len(processed['UNITTEST/BTC']) == 103
-
-
-def test_populate_any_indicators(default_conf, testdatadir) -> None:
-    strategy = StrategyResolver.load_strategy(default_conf)
-
-    timerange = TimeRange.parse_timerange('1510694220-1510700340')
-    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
-                     fill_up_missing=True)
-    processed = strategy.populate_any_indicators('UNITTEST/BTC', data, '5m')
-    assert processed == data
-    assert id(processed) == id(data)
     assert len(processed['UNITTEST/BTC']) == 103
 
 
@@ -452,8 +440,8 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         (0.05, 0.9, ExitType.NONE, None, False, True, 0.09, 0.9, ExitType.NONE,
          lambda **kwargs: None),
     ])
-def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
-                           profit2, adjusted2, expected2, custom_stop) -> None:
+def test_ft_stoploss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
+                             profit2, adjusted2, expected2, custom_stop) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
@@ -477,9 +465,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, t
 
     now = arrow.utcnow().datetime
     current_rate = trade.open_rate * (1 + profit)
-    sl_flag = strategy.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                         current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None)
+    sl_flag = strategy.ft_stoploss_reached(current_rate=current_rate, trade=trade,
+                                           current_time=now, current_profit=profit,
+                                           force_stoploss=0, high=None)
     assert isinstance(sl_flag, ExitCheckTuple)
     assert sl_flag.exit_type == expected
     if expected == ExitType.NONE:
@@ -489,9 +477,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, t
     assert round(trade.stop_loss, 2) == adjusted
     current_rate2 = trade.open_rate * (1 + profit2)
 
-    sl_flag = strategy.stop_loss_reached(current_rate=current_rate2, trade=trade,
-                                         current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None)
+    sl_flag = strategy.ft_stoploss_reached(current_rate=current_rate2, trade=trade,
+                                           current_time=now, current_profit=profit2,
+                                           force_stoploss=0, high=None)
     assert sl_flag.exit_type == expected2
     if expected2 == ExitType.NONE:
         assert sl_flag.exit_flag is False
@@ -579,7 +567,7 @@ def test_should_sell(default_conf, fee) -> None:
     assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
 
     strategy.min_roi_reached = MagicMock(return_value=True)
-    strategy.stop_loss_reached = MagicMock(
+    strategy.ft_stoploss_reached = MagicMock(
         return_value=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
 
     res = strategy.should_exit(trade, 1, now,
@@ -603,7 +591,7 @@ def test_should_sell(default_conf, fee) -> None:
         ExitCheckTuple(exit_type=ExitType.ROI),
         ]
 
-    strategy.stop_loss_reached = MagicMock(
+    strategy.ft_stoploss_reached = MagicMock(
             return_value=ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS))
     # Regular exit signal
     res = strategy.should_exit(trade, 1, now,

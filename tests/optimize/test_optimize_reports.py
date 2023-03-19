@@ -257,9 +257,8 @@ def test_write_read_backtest_candles(tmpdir):
     sample_date = '2022_01_01_15_05_13'
     store_backtest_analysis_results(Path(tmpdir), candle_dict, {}, sample_date)
     stored_file = Path(tmpdir / f'backtest-result-{sample_date}_signals.pkl')
-    scp = open(stored_file, "rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -272,9 +271,8 @@ def test_write_read_backtest_candles(tmpdir):
     filename = Path(tmpdir / 'testresult')
     store_backtest_analysis_results(filename, candle_dict, {}, sample_date)
     stored_file = Path(tmpdir / f'testresult-{sample_date}_signals.pkl')
-    scp = open(stored_file, "rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -311,7 +309,7 @@ def test_generate_pair_metrics():
 
 def test_generate_daily_stats(testdatadir):
 
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     res = generate_daily_stats(bt_data)
     assert isinstance(res, dict)
@@ -331,7 +329,7 @@ def test_generate_daily_stats(testdatadir):
 
 
 def test_generate_trading_stats(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
     res = generate_trading_stats(bt_data)
     assert isinstance(res, dict)
@@ -447,7 +445,7 @@ def test_generate_edge_table():
 
 
 def test_generate_periodic_breakdown_stats(testdatadir):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename).to_dict(orient='records')
 
     res = generate_periodic_breakdown_stats(bt_data, 'day')
@@ -475,7 +473,7 @@ def test__get_resample_from_period():
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
-    filename = testdatadir / "backtest_results/backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_stats(filename)
     default_conf['backtest_show_pair_list'] = True
 

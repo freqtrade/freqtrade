@@ -32,7 +32,7 @@ def flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str,
     :param prefix: Prefix to consider (usually FREQTRADE__)
     :return: Nested dict based on available and relevant variables.
     """
-    no_convert = ['CHAT_ID']
+    no_convert = ['CHAT_ID', 'PASSWORD']
     relevant_vars: Dict[str, Any] = {}
 
     for env_var, val in sorted(env_dict.items()):

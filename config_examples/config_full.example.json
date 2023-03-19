@@ -60,6 +60,7 @@
         "force_entry": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
+        "stoploss_price_type": "last",
         "stoploss_on_exchange_interval": 60,
         "stoploss_on_exchange_limit_ratio": 0.99
     },

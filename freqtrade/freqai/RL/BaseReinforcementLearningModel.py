@@ -1,3 +1,4 @@
+import copy
 import importlib
 import logging
 from abc import abstractmethod
@@ -50,6 +51,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.eval_callback: Optional[EvalCallback] = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
+        self.df_raw: DataFrame = DataFrame()
         self.continual_learning = self.freqai_info.get('continual_learning', False)
         if self.model_type in SB3_MODELS:
             import_str = 'stable_baselines3'
@@ -107,10 +109,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         data_dictionary: Dict[str, Any] = dk.make_train_test_datasets(
             features_filtered, labels_filtered)
+        self.df_raw = copy.deepcopy(data_dictionary["train_features"])
         dk.fit_labels()  # FIXME useless for now, but just satiating append methods
 
         # normalize all data based on train_dataset only
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
+
         data_dictionary = dk.normalize_data(data_dictionary)
 
         # data cleaning/analysis
@@ -143,24 +147,33 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
 
-        self.train_env = self.MyRLEnv(df=train_df,
-                                      prices=prices_train,
-                                      window_size=self.CONV_WIDTH,
-                                      reward_kwargs=self.reward_params,
-                                      config=self.config,
-                                      dp=self.data_provider)
-        self.eval_env = Monitor(self.MyRLEnv(df=test_df,
-                                             prices=prices_test,
-                                             window_size=self.CONV_WIDTH,
-                                             reward_kwargs=self.reward_params,
-                                             config=self.config,
-                                             dp=self.data_provider))
+        env_info = self.pack_env_dict(dk.pair)
+
+        self.train_env = self.MyRLEnv(df=train_df, prices=prices_train, **env_info)
+        self.eval_env = Monitor(self.MyRLEnv(df=test_df, prices=prices_test, **env_info))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
         actions = self.train_env.get_actions()
         self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
+
+    def pack_env_dict(self, pair: str) -> Dict[str, Any]:
+        """
+        Create dictionary of environment arguments
+        """
+        env_info = {"window_size": self.CONV_WIDTH,
+                    "reward_kwargs": self.reward_params,
+                    "config": self.config,
+                    "live": self.live,
+                    "can_short": self.can_short,
+                    "pair": pair,
+                    "df_raw": self.df_raw}
+        if self.data_provider:
+            env_info["fee"] = self.data_provider._exchange \
+                .get_fee(symbol=self.data_provider.current_whitelist()[0])  # type: ignore
+
+        return env_info
 
     @abstractmethod
     def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
@@ -222,6 +235,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         filtered_dataframe, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
+
+        filtered_dataframe = self.drop_ohlc_from_df(filtered_dataframe, dk)
+
         filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
         dk.data_dictionary["prediction_features"] = filtered_dataframe
 
@@ -271,28 +287,53 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         # price data for model training and evaluation
         tf = self.config['timeframe']
-        ohlc_list = [f'%-{pair}raw_open_{tf}', f'%-{pair}raw_low_{tf}',
-                     f'%-{pair}raw_high_{tf}', f'%-{pair}raw_close_{tf}']
-        rename_dict = {f'%-{pair}raw_open_{tf}': 'open', f'%-{pair}raw_low_{tf}': 'low',
-                       f'%-{pair}raw_high_{tf}': ' high', f'%-{pair}raw_close_{tf}': 'close'}
+        rename_dict = {'%-raw_open': 'open', '%-raw_low': 'low',
+                       '%-raw_high': ' high', '%-raw_close': 'close'}
+        rename_dict_old = {f'%-{pair}raw_open_{tf}': 'open', f'%-{pair}raw_low_{tf}': 'low',
+                           f'%-{pair}raw_high_{tf}': ' high', f'%-{pair}raw_close_{tf}': 'close'}
 
-        prices_train = train_df.filter(ohlc_list, axis=1)
-        if prices_train.empty:
-            raise OperationalException('Reinforcement learning module didnt find the raw prices '
-                                       'assigned in populate_any_indicators. Please assign them '
-                                       'with:\n'
-                                       'informative[f"%-{pair}raw_close"] = informative["close"]\n'
-                                       'informative[f"%-{pair}raw_open"] = informative["open"]\n'
-                                       'informative[f"%-{pair}raw_high"] = informative["high"]\n'
-                                       'informative[f"%-{pair}raw_low"] = informative["low"]\n')
+        prices_train = train_df.filter(rename_dict.keys(), axis=1)
+        prices_train_old = train_df.filter(rename_dict_old.keys(), axis=1)
+        if prices_train.empty or not prices_train_old.empty:
+            if not prices_train_old.empty:
+                prices_train = prices_train_old
+                rename_dict = rename_dict_old
+            logger.warning('Reinforcement learning module didnt find the correct raw prices '
+                           'assigned in feature_engineering_standard(). '
+                           'Please assign them with:\n'
+                           'dataframe["%-raw_close"] = dataframe["close"]\n'
+                           'dataframe["%-raw_open"] = dataframe["open"]\n'
+                           'dataframe["%-raw_high"] = dataframe["high"]\n'
+                           'dataframe["%-raw_low"] = dataframe["low"]\n'
+                           'inside `feature_engineering_standard()')
+        elif prices_train.empty:
+            raise OperationalException("No prices found, please follow log warning "
+                                       "instructions to correct the strategy.")
+
         prices_train.rename(columns=rename_dict, inplace=True)
         prices_train.reset_index(drop=True)
 
-        prices_test = test_df.filter(ohlc_list, axis=1)
+        prices_test = test_df.filter(rename_dict.keys(), axis=1)
         prices_test.rename(columns=rename_dict, inplace=True)
         prices_test.reset_index(drop=True)
 
+        train_df = self.drop_ohlc_from_df(train_df, dk)
+        test_df = self.drop_ohlc_from_df(test_df, dk)
+
         return prices_train, prices_test
+
+    def drop_ohlc_from_df(self, df: DataFrame, dk: FreqaiDataKitchen):
+        """
+        Given a dataframe, drop the ohlc data
+        """
+        drop_list = ['%-raw_open', '%-raw_low', '%-raw_high', '%-raw_close']
+
+        if self.rl_config["drop_ohlc_from_features"]:
+            df.drop(drop_list, axis=1, inplace=True)
+            feature_list = dk.training_features_list
+            dk.training_features_list = [e for e in feature_list if e not in drop_list]
+
+        return df
 
     def load_model_from_disk(self, dk: FreqaiDataKitchen) -> Any:
         """
@@ -326,7 +367,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         sets a custom reward based on profit and trade duration.
         """
 
-        def calculate_reward(self, action: int) -> float:
+        def calculate_reward(self, action: int) -> float:  # noqa: C901
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
@@ -342,10 +383,19 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             pnl = self.get_unrealized_profit()
             factor = 100.
 
+            # you can use feature values from dataframe
+            rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{self.pair}_"
+                                        f"{self.config['timeframe']}"].iloc[self._current_tick]
+
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
                     and self._position == Positions.Neutral):
-                return 25
+                if rsi_now < 40:
+                    factor = 40 / rsi_now
+                else:
+                    factor = 1
+                return 25 * factor
+
             # discourage agent from not entering trades
             if action == Actions.Neutral.value and self._position == Positions.Neutral:
                 return -1
@@ -383,8 +433,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
 def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
-             reward_params: Dict[str, int], window_size: int, monitor: bool = False,
-             config: Dict[str, Any] = {}) -> Callable:
+             monitor: bool = False,
+             env_info: Dict[str, Any] = {}) -> Callable:
     """
     Utility function for multiprocessed env.
 
@@ -392,13 +442,14 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
     :param num_env: (int) the number of environment you wish to have in subprocesses
     :param seed: (int) the inital seed for RNG
     :param rank: (int) index of the subprocess
+    :param env_info: (dict) all required arguments to instantiate the environment.
     :return: (Callable)
     """
 
     def _init() -> gym.Env:
 
-        env = MyRLEnv(df=train_df, prices=price, window_size=window_size,
-                      reward_kwargs=reward_params, id=env_id, seed=seed + rank, config=config)
+        env = MyRLEnv(df=train_df, prices=price, id=env_id, seed=seed + rank,
+                      **env_info)
         if monitor:
             env = Monitor(env)
         return env

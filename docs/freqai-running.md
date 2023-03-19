@@ -67,6 +67,10 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
     *want* to retrain a new model with the same config file, you should simply change the `identifier`.
     This way, you can return to using any model you wish by simply specifying the `identifier`.
 
+!!! Note
+    Backtesting calls `set_freqai_targets()` one time for each backtest window (where the number of windows is the full backtest timerange divided by the `backtest_period_days` parameter). Doing this means that the targets simulate dry/live behavior without look ahead bias. However, the definition of the features in `feature_engineering_*()` is performed once on the entire backtest timerange. This means that you should be sure that features do look-ahead into the future.
+    More details about look-ahead bias can be found in [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies).
+
 ---
 
 ### Saving prediction data
@@ -116,7 +120,7 @@ In the presented example config, the user will only allow predictions on models 
 
 Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the `model_training_parameters` dictionary in the config. The example config (found in `config_examples/config_freqai.example.json`) shows some of the example parameters associated with `Catboost` and `LightGBM`, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.
 
-Data split parameters are defined in `data_split_parameters` which can be any parameters associated with Scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [Scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
+Data split parameters are defined in `data_split_parameters` which can be any parameters associated with scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
 
 The FreqAI specific parameter `label_period_candles` defines the offset (number of candles into the future) used for the `labels`. In the presented [example config](freqai-configuration.md#setting-up-the-configuration-file), the user is asking for `labels` that are 24 candles in the future.
 
@@ -135,7 +139,7 @@ freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleSt
 `hyperopt` requires you to have the data pre-downloaded in the same fashion as if you were doing [backtesting](#backtesting). In addition, you must consider some restrictions when trying to hyperopt FreqAI strategies:
 
 - The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
-- It's not possible to hyperopt indicators in the `populate_any_indicators()` function. This means that you cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
+- It's not possible to hyperopt indicators in the `feature_engineering_*()` and `set_freqai_targets()` functions. This means that you cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
 - The backtesting instructions also apply to hyperopt.
 
 The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. You need to focus on hyperopting parameters that are not used in your features. For example, you should not try to hyperopt rolling window lengths in the feature creation, or any part of the FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only.
@@ -161,20 +165,3 @@ tensorboard --logdir user_data/models/unique-id
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
-
-## Setting up a follower
-
-You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:
-
-```json
-    "freqai": {
-        "enabled": true,
-        "follow_mode": true,
-        "identifier": "example",
-        "feature_parameters": {
-        // leader bots feature_parameters inserted here 
-        },
-    }
-```
-
-In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models. The user will also need to duplicate the `feature_parameters` parameters from from the leaders freqai configuration file into the freqai section of the followers config. 

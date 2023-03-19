@@ -8,7 +8,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence.trade_model import LocalTrade
-from tests.conftest import patch_exchange
+from tests.conftest import EXMS, patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)
 
@@ -919,11 +919,12 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["use_exit_signal"] = data.use_exit_signal
+    default_conf["max_open_trades"] = 10
 
-    mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
-    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
-    mocker.patch("freqtrade.exchange.Binance.get_max_leverage", return_value=100)
+    mocker.patch(f"{EXMS}.get_fee", return_value=0.0)
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch(f"{EXMS}.get_max_leverage", return_value=100)
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
@@ -951,7 +952,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         processed=data_processed,
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
 
     results = result['results']

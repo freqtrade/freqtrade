@@ -152,7 +152,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`, `/marketdir`
 
 ## Telegram commands
 
@@ -162,26 +162,34 @@ official commands. You can ask at any moment for help with `/help`.
 
 |  Command | Description |
 |----------|-------------|
+| **System commands**
 | `/start` | Starts the trader
 | `/stop` | Stops the trader
 | `/stopbuy | /stopentry` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_config` | Reloads the configuration file
 | `/show_config` | Shows part of the current configuration with relevant settings to operation
 | `/logs [limit]` | Show last log messages.
+| `/help` | Show help message
+| `/version` | Show version
+| **Status** |
 | `/status` | Lists all open trades
 | `/status <trade_id>` | Lists one or more specific trade. Separate multiple <trade_id> with a blank space.
 | `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
 | `/trades [limit]` | List all recently closed trades in a table format.
-| `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
-| `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
+| `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction. If no direction is provided, the currently set direction will be displayed.
+| **Modify Trade states** |
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `/fx` | alias for `/forceexit`
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
+| `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `/cancel_open_order <trade_id> | /coo <trade_id>` | Cancel an open order for a trade.
+| **Metrics** |
+| `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
@@ -193,8 +201,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
-| `/help` | Show help message
-| `/version` | Show version
+
 
 ## Telegram commands in action
 
@@ -236,7 +243,7 @@ Enter Tag is configurable via Strategy.
 > **Enter Tag:** Awesome Long Signal
 > **Open Rate:** `0.00007489`
 > **Current Rate:** `0.00007489`
-> **Current Profit:** `12.95%`
+> **Unrealized Profit:** `12.95%`
 > **Stoploss:** `0.00007389 (-0.02%)`
 
 ### /status table
@@ -410,3 +417,27 @@ ARDR/ETH   0.366667      0.143059       -0.01
 ### /version
 
 > **Version:** `0.14.3`
+
+### /marketdir
+
+If a market direction is provided the command updates the user managed variable that represents the current market direction.
+This variable is not set to any valid market direction on bot startup and must be set by the user. The example below is for `/marketdir long`:
+
+```
+Successfully updated marketdirection from none to long.
+```
+
+If no market direction is provided the command outputs the currently set market directions. The example below is for `/marketdir`:
+
+```
+Currently set marketdirection: even
+```
+
+You can use the market direction in your strategy via `self.market_direction`.
+
+!!! Warning "Bot restarts"
+    Please note that the market direction is not persisted, and will be reset after a bot restart/reload.
+
+!!! Danger "Backtesting"
+    As this value/variable is intended to be changed manually in dry/live trading.
+    Strategies using `market_direction` will probably not produce reliable, reproducible results (changes to this variable will not be reflected for backtesting). Use at your own risk.

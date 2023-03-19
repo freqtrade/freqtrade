@@ -3,6 +3,10 @@
 # Use BuildKit, otherwise building on ARM fails
 export DOCKER_BUILDKIT=1
 
+IMAGE_NAME=freqtradeorg/freqtrade
+CACHE_IMAGE=freqtradeorg/freqtrade_cache
+GHCR_IMAGE_NAME=ghcr.io/freqtrade/freqtrade
+
 # Replace / with _ to create a valid tag
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
@@ -14,7 +18,6 @@ TAG_ARM=${TAG}_arm
 TAG_PLOT_ARM=${TAG_PLOT}_arm
 TAG_FREQAI_ARM=${TAG_FREQAI}_arm
 TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL}_arm
-CACHE_IMAGE=freqtradeorg/freqtrade_cache
 
 echo "Running for ${TAG}"
 
@@ -38,13 +41,13 @@ if [ $? -ne 0 ]; then
     echo "failed building multiarch images"
     return 1
 fi
-# Tag image for upload and next build step
-docker tag freqtrade:$TAG_ARM ${CACHE_IMAGE}:$TAG_ARM
 
 docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
 docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_ARM} -f docker/Dockerfile.freqai .
 docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_RL_ARM} -f docker/Dockerfile.freqai_rl .
 
+# Tag image for upload and next build step
+docker tag freqtrade:$TAG_ARM ${CACHE_IMAGE}:$TAG_ARM
 docker tag freqtrade:$TAG_PLOT_ARM ${CACHE_IMAGE}:$TAG_PLOT_ARM
 docker tag freqtrade:$TAG_FREQAI_ARM ${CACHE_IMAGE}:$TAG_FREQAI_ARM
 docker tag freqtrade:$TAG_FREQAI_RL_ARM ${CACHE_IMAGE}:$TAG_FREQAI_RL_ARM
@@ -59,7 +62,6 @@ fi
 
 docker images
 
-# docker push ${IMAGE_NAME}
 docker push ${CACHE_IMAGE}:$TAG_PLOT_ARM
 docker push ${CACHE_IMAGE}:$TAG_FREQAI_ARM
 docker push ${CACHE_IMAGE}:$TAG_FREQAI_RL_ARM
@@ -70,25 +72,42 @@ docker push ${CACHE_IMAGE}:$TAG_ARM
 # Otherwise installation might fail.
 echo "create manifests"
 
-docker manifest create --amend ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
+docker manifest create ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI}
 docker manifest push -p ${IMAGE_NAME}:${TAG}
 
-docker manifest create ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM} ${CACHE_IMAGE}:${TAG_PLOT}
+docker manifest create ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_PLOT}
 
-docker manifest create ${IMAGE_NAME}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI_ARM} ${CACHE_IMAGE}:${TAG_FREQAI}
+docker manifest create ${IMAGE_NAME}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI} ${CACHE_IMAGE}:${TAG_FREQAI_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI}
 
-docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM} ${CACHE_IMAGE}:${TAG_FREQAI_RL}
+docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
+
+# copy images to ghcr.io
+
+alias crane="docker run --rm -i -v $(pwd)/.crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
+mkdir .crane
+chmod a+rwx .crane
+
+echo "${GHCR_TOKEN}" | crane auth login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+
+crane copy ${IMAGE_NAME}:${TAG} ${GHCR_IMAGE_NAME}:${TAG}
+crane copy ${IMAGE_NAME}:${TAG_PLOT} ${GHCR_IMAGE_NAME}:${TAG_PLOT}
+crane copy ${IMAGE_NAME}:${TAG_FREQAI} ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
+crane copy ${IMAGE_NAME}:${TAG_FREQAI_RL} ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
 
 # Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
+    echo 'Tagging image as latest'
     docker manifest create ${IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
     docker manifest push -p ${IMAGE_NAME}:latest
+
+    crane copy ${IMAGE_NAME}:latest ${GHCR_IMAGE_NAME}:latest
 fi
 
 docker images
+rm -rf .crane
 
 # Cleanup old images from arm64 node.
 docker image prune -a --force --filter "until=24h"

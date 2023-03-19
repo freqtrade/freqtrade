@@ -46,9 +46,9 @@ class Base4ActionRLEnv(BaseEnvironment):
             self._done = True
 
         self._update_unrealized_total_profit()
-
         step_reward = self.calculate_reward(action)
         self.total_reward += step_reward
+        self.tensorboard_log(self.actions._member_names_[action], category="actions")
 
         trade_type = None
         if self.is_tradesignal(action):
@@ -88,7 +88,8 @@ class Base4ActionRLEnv(BaseEnvironment):
                     {'price': self.current_price(), 'index': self._current_tick,
                      'type': trade_type})
 
-        if self._total_profit < 1 - self.rl_config.get('max_training_drawdown_pct', 0.8):
+        if (self._total_profit < self.max_drawdown or
+                self._total_unrealized_profit < self.max_drawdown):
             self._done = True
 
         self._position_history.append(self._position)

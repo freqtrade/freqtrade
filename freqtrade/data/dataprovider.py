@@ -9,14 +9,17 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame
+from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
+from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
+                                 PairWithTimeframe)
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.exchange.types import OrderBook
+from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
 from freqtrade.util import PeriodicCache
 
@@ -120,7 +123,7 @@ class DataProvider:
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
-                        'df': dataframe,
+                        'df': dataframe.tail(1),
                         'la': datetime.now(timezone.utc)
                     }
                 }
@@ -131,7 +134,7 @@ class DataProvider:
                         'data': pair_key,
                     })
 
-    def _add_external_df(
+    def _replace_external_df(
         self,
         pair: str,
         dataframe: DataFrame,
@@ -156,6 +159,87 @@ class DataProvider:
 
         self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
         logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
+
+    def _add_external_df(
+        self,
+        pair: str,
+        dataframe: DataFrame,
+        last_analyzed: datetime,
+        timeframe: str,
+        candle_type: CandleType,
+        producer_name: str = "default"
+    ) -> Tuple[bool, int]:
+        """
+        Append a candle to the existing external dataframe. The incoming dataframe
+        must have at least 1 candle.
+
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :returns: False if the candle could not be appended, or the int number of missing candles.
+        """
+        pair_key = (pair, timeframe, candle_type)
+
+        if dataframe.empty:
+            # The incoming dataframe must have at least 1 candle
+            return (False, 0)
+
+        if len(dataframe) >= FULL_DATAFRAME_THRESHOLD:
+            # This is likely a full dataframe
+            # Add the dataframe to the dataprovider
+            self._replace_external_df(
+                pair,
+                dataframe,
+                last_analyzed=last_analyzed,
+                timeframe=timeframe,
+                candle_type=candle_type,
+                producer_name=producer_name
+            )
+            return (True, 0)
+
+        if (producer_name not in self.__producer_pairs_df
+           or pair_key not in self.__producer_pairs_df[producer_name]):
+            # We don't have data from this producer yet,
+            # or we don't have data for this pair_key
+            # return False and 1000 for the full df
+            return (False, 1000)
+
+        existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
+
+        # CHECK FOR MISSING CANDLES
+        # Convert the timeframe to a timedelta for pandas
+        timeframe_delta: Timedelta = to_timedelta(timeframe)
+        local_last: Timestamp = existing_df.iloc[-1]['date']  # We want the last date from our copy
+        # We want the first date from the incoming
+        incoming_first: Timestamp = dataframe.iloc[0]['date']
+
+        # Remove existing candles that are newer than the incoming first candle
+        existing_df1 = existing_df[existing_df['date'] < incoming_first]
+
+        candle_difference = (incoming_first - local_last) / timeframe_delta
+
+        # If the difference divided by the timeframe is 1, then this
+        # is the candle we want and the incoming data isn't missing any.
+        # If the candle_difference is more than 1, that means
+        # we missed some candles between our data and the incoming
+        # so return False and candle_difference.
+        if candle_difference > 1:
+            return (False, int(candle_difference))
+        if existing_df1.empty:
+            appended_df = dataframe
+        else:
+            appended_df = append_candles_to_dataframe(existing_df1, dataframe)
+
+        # Everything is good, we appended
+        self._replace_external_df(
+                    pair,
+                    appended_df,
+                    last_analyzed=last_analyzed,
+                    timeframe=timeframe,
+                    candle_type=candle_type,
+                    producer_name=producer_name
+                    )
+        return (True, 0)
 
     def get_producer_df(
         self,
@@ -200,7 +284,7 @@ class DataProvider:
     def historic_ohlcv(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -252,7 +336,7 @@ class DataProvider:
     def get_pair_dataframe(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -334,16 +418,14 @@ class DataProvider:
 
     def refresh(self,
                 pairlist: ListPairsWithTimeframes,
-                helping_pairs: ListPairsWithTimeframes = None) -> None:
+                helping_pairs: Optional[ListPairsWithTimeframes] = None) -> None:
         """
         Refresh data, called with each cycle
         """
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
-        if helping_pairs:
-            self._exchange.refresh_latest_ohlcv(pairlist + helping_pairs)
-        else:
-            self._exchange.refresh_latest_ohlcv(pairlist)
+        final_pairs = (pairlist + helping_pairs) if helping_pairs else pairlist
+        self._exchange.refresh_latest_ohlcv(final_pairs)
 
     @property
     def available_pairs(self) -> ListPairsWithTimeframes:
@@ -358,7 +440,7 @@ class DataProvider:
     def ohlcv(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         copy: bool = True,
         candle_type: str = ''
     ) -> DataFrame:
@@ -406,7 +488,7 @@ class DataProvider:
         except ExchangeError:
             return {}
 
-    def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
+    def orderbook(self, pair: str, maximum: int) -> OrderBook:
         """
         Fetch latest l2 orderbook data
         Warning: Does a network request - so use with common sense.

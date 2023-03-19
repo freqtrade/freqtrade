@@ -32,7 +32,7 @@ To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-an
 with `--analysis-groups` option provided with space-separated arguments:
 
 ``` bash
-freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4 5
 ```
 
 This command will read from the last backtesting results. The `--analysis-groups` option is
@@ -44,6 +44,7 @@ ranging from the simplest (0) to the most detailed per pair, per buy and per sel
 * 2: profit summaries grouped by enter_tag and exit_tag
 * 3: profit summaries grouped by pair and enter_tag
 * 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
+* 5: profit summaries grouped by exit_tag
 
 More options are available by running with the `-h` option.
 

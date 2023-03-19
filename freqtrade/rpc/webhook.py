@@ -58,6 +58,7 @@ class Webhook(RPCHandler):
             valuedict = whconfig.get('webhookexitcancel')
         elif msg['type'] in (RPCMessageType.STATUS,
                              RPCMessageType.STARTUP,
+                             RPCMessageType.EXCEPTION,
                              RPCMessageType.WARNING):
             valuedict = whconfig.get('webhookstatus')
         elif msg['type'].value in whconfig:

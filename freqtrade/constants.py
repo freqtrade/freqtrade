@@ -5,7 +5,7 @@ bot constants
 """
 from typing import Any, Dict, List, Literal, Tuple
 
-from freqtrade.enums import CandleType, RPCMessageType
+from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 
 DEFAULT_CONFIG = 'config.json'
@@ -25,13 +25,14 @@ PRICING_SIDES = ['ask', 'bid', 'same', 'other']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 _ORDERTIF_POSSIBILITIES = ['GTC', 'FOK', 'IOC', 'PO']
 ORDERTIF_POSSIBILITIES = _ORDERTIF_POSSIBILITIES + [t.lower() for t in _ORDERTIF_POSSIBILITIES]
+STOPLOSS_PRICE_TYPES = [p for p in PriceType]
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
                          'CalmarHyperOptLoss',
                          'MaxDrawDownHyperOptLoss', 'MaxDrawDownRelativeHyperOptLoss',
                          'ProfitDrawDownHyperOptLoss']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList',
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList', 'RemotePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
@@ -61,6 +62,7 @@ USERPATH_FREQAIMODELS = 'freqaimodels'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
+FULL_DATAFRAME_THRESHOLD = 100
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
@@ -228,6 +230,7 @@ CONF_SCHEMA = {
                     'default': 'market'},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
+                'stoploss_price_type': {'type': 'string', 'enum': STOPLOSS_PRICE_TYPES},
                 'stoploss_on_exchange_interval': {'type': 'number'},
                 'stoploss_on_exchange_limit_ratio': {'type': 'number', 'minimum': 0.0,
                                                      'maximum': 1.0}
@@ -543,7 +546,7 @@ CONF_SCHEMA = {
                 "enabled": {"type": "boolean", "default": False},
                 "keras": {"type": "boolean", "default": False},
                 "write_metrics_to_disk": {"type": "boolean", "default": False},
-                "purge_old_models": {"type": "boolean", "default": True},
+                "purge_old_models": {"type": ["boolean", "number"], "default": 2},
                 "conv_width": {"type": "integer", "default": 1},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "number", "default": 7},
@@ -565,7 +568,9 @@ CONF_SCHEMA = {
                                            "shuffle": {"type": "boolean", "default": False},
                                            "nu": {"type": "number", "default": 0.1}
                                            },
-                                       }
+                                       },
+                        "shuffle_after_split": {"type": "boolean", "default": False},
+                        "buffer_train_data_candles": {"type": "integer", "default": 0}
                     },
                     "required": ["include_timeframes", "include_corr_pairlist", ]
                 },
@@ -583,6 +588,7 @@ CONF_SCHEMA = {
                 "rl_config": {
                     "type": "object",
                     "properties": {
+                        "drop_ohlc_from_features": {"type": "boolean", "default": False},
                         "train_cycles": {"type": "integer"},
                         "max_trade_duration_candles": {"type": "integer"},
                         "add_state_info": {"type": "boolean", "default": False},
@@ -608,9 +614,8 @@ CONF_SCHEMA = {
                 "backtest_period_days",
                 "identifier",
                 "feature_parameters",
-                "data_split_parameters",
-                "model_training_parameters"
-                ]
+                "data_split_parameters"
+            ]
         },
     },
 }
@@ -636,7 +641,6 @@ SCHEMA_TRADE_REQUIRED = [
 
 SCHEMA_BACKTEST_REQUIRED = [
     'exchange',
-    'max_open_trades',
     'stake_currency',
     'stake_amount',
     'dry_run_wallet',
@@ -646,6 +650,7 @@ SCHEMA_BACKTEST_REQUIRED = [
 SCHEMA_BACKTEST_REQUIRED_FINAL = SCHEMA_BACKTEST_REQUIRED + [
     'stoploss',
     'minimal_roi',
+    'max_open_trades'
 ]
 
 SCHEMA_MINIMAL_REQUIRED = [
@@ -679,5 +684,7 @@ EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
 BidAsk = Literal['bid', 'ask']
+OBLiteral = Literal['asks', 'bids']
 
 Config = Dict[str, Any]
+IntOrInf = float

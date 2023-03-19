@@ -1,12 +1,13 @@
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import select
 
 from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
-from tests.conftest import get_patched_freqtradebot, log_has_re, patch_get_signal
+from tests.conftest import EXMS, get_patched_freqtradebot, log_has_re, patch_get_signal
 
 
 def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -56,9 +57,9 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
         [ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]]
     )
     cancel_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
+        create_stoploss=stoploss,
         fetch_ticker=ticker,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
@@ -91,7 +92,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
     for trade in trades:
         stoploss_order_closed['id'] = '3'
@@ -147,7 +148,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     default_conf['telegram']['enabled'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
@@ -179,13 +180,13 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     n = freqtrade.enter_positions()
     assert n == 4
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
     assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 5
 
     for trade in trades:
@@ -217,7 +218,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
     )
@@ -239,7 +240,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     # Reduce bid amount
     ticker_usdt_modif = ticker_usdt.return_value
     ticker_usdt_modif['bid'] = ticker_usdt_modif['bid'] * 0.995
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value=ticker_usdt_modif)
+    mocker.patch(f'{EXMS}.fetch_ticker', return_value=ticker_usdt_modif)
 
     # additional buy order
     freqtrade.process()
@@ -286,7 +287,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: round(y, 4),
@@ -311,7 +312,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     # Reduce bid amount
     ticker_usdt_modif = ticker_usdt.return_value
     ticker_usdt_modif['ask'] = ticker_usdt_modif['ask'] * 1.004
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value=ticker_usdt_modif)
+    mocker.patch(f'{EXMS}.fetch_ticker', return_value=ticker_usdt_modif)
 
     # additional buy order
     freqtrade.process()
@@ -361,16 +362,16 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
     )
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
-    mocker.patch("freqtrade.exchange.Exchange.get_funding_fees", return_value=0)
-    mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt", return_value=(0, 0))
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
+    mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
+    mocker.patch(f"{EXMS}.get_funding_fees", return_value=0)
+    mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", return_value=(0, 0))
 
     patch_get_signal(freqtrade)
     freqtrade.strategy.custom_entry_price = lambda **kwargs: ticker_usdt['ask'] * 0.96
@@ -413,7 +414,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert trade.initial_stop_loss_pct is None
 
     # Fill order
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
@@ -428,7 +429,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # 2nd order - not filling
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=120)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
 
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -452,7 +453,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # Fill DCA order
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=None)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
     freqtrade.strategy.adjust_entry_price = MagicMock(side_effect=ValueError)
 
     freqtrade.process()
@@ -477,14 +478,14 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     freqtrade.trading_mode = TradingMode.FUTURES
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
         get_min_pair_stake_amount=MagicMock(return_value=10),
     )
-    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
+    mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
 
     patch_get_signal(freqtrade)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
@@ -532,8 +533,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert trade.is_open
 
     # use amount that would trunc to 0.0 once selling
-    mocker.patch("freqtrade.exchange.Exchange.amount_to_contract_precision",
-                 lambda s, p, v: round(v, 1))
+    mocker.patch(f"{EXMS}.amount_to_contract_precision", lambda s, p, v: round(v, 1))
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-0.01)
     freqtrade.process()
     trade = Trade.get_trades().first()

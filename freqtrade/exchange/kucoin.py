@@ -36,3 +36,35 @@ class Kucoin(Exchange):
             'stop': 'loss'
             })
         return params
+
+    def create_order(
+            self,
+            *,
+            pair: str,
+            ordertype: str,
+            side: BuySell,
+            amount: float,
+            rate: float,
+            leverage: float,
+            reduceOnly: bool = False,
+            time_in_force: str = 'GTC',
+            ) -> Dict:
+
+        res = super().create_order(
+            pair=pair,
+            ordertype=ordertype,
+            side=side,
+            amount=amount,
+            rate=rate,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        # Kucoin returns only the order-id.
+        # ccxt returns status = 'closed' at the moment - which is information ccxt invented.
+        # Since we rely on status heavily, we must set it to 'open' here.
+        # ref: https://github.com/ccxt/ccxt/pull/16674, (https://github.com/ccxt/ccxt/pull/16553)
+        if not self._config['dry_run']:
+            res['type'] = ordertype
+            res['status'] = 'open'
+        return res

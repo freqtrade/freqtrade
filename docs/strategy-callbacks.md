@@ -316,11 +316,11 @@ class AwesomeStrategy(IStrategy):
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
-            return stoploss_from_open(0.25, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.25, current_profit, is_short=trade.is_short, leverage=trade.leverage)
         elif current_profit > 0.25:
-            return stoploss_from_open(0.15, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.15, current_profit, is_short=trade.is_short, leverage=trade.leverage)
         elif current_profit > 0.20:
-            return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
 
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
@@ -659,6 +659,7 @@ Position adjustments will always be applied in the direction of the trade, so a 
 
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
+    This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.
 
 ``` python
 from freqtrade.persistence import Trade
@@ -773,7 +774,7 @@ class DigDeeperStrategy(IStrategy):
     * Sell 100@10\$ -> Avg price: 8.5\$, realized profit 150\$, 17.65%
     * Buy 150@11\$ -> Avg price: 10\$, realized profit 150\$, 17.65%
     * Sell 100@12\$ -> Avg price: 10\$, total realized profit 350\$, 20%
-    * Sell 150@14\$ -> Avg price: 10\$, total realized profit 950\$, 40%
+    * Sell 150@14\$ -> Avg price: 10\$, total realized profit 950\$, 40%  <- *This will be the last "Exit" message*
 
     The total profit for this trade was 950$ on a 3350$ investment (`100@8$ + 100@9$ + 150@11$`). As such - the final relative profit is 28.35% (`950 / 3350`).
 
@@ -827,7 +828,7 @@ class AwesomeStrategy(IStrategy):
 
         """
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
-        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10)) > trade.open_date_utc:
             # just cancel the order if it has been filled more than half of the amount
             if order.filled > order.remaining:
                 return None

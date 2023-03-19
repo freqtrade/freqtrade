@@ -195,7 +195,7 @@ class Edge:
 
     def stake_amount(self, pair: str, free_capital: float,
                      total_capital: float, capital_in_trade: float) -> float:
-        stoploss = self.stoploss(pair)
+        stoploss = self.get_stoploss(pair)
         available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
@@ -214,7 +214,7 @@ class Edge:
             )
         return round(position_size, 15)
 
-    def stoploss(self, pair: str) -> float:
+    def get_stoploss(self, pair: str) -> float:
         if pair in self._cached_pairs:
             return self._cached_pairs[pair].stoploss
         else:

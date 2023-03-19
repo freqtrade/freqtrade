@@ -6,13 +6,13 @@ import pytest
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
-from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_wallet
+from tests.conftest import EXMS, create_mock_trades, get_patched_freqtradebot, patch_wallet
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):
     default_conf['dry_run'] = False
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value={
             "BNT": {
                 "free": 1.0,
@@ -45,7 +45,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert 'USDT' in freqtrade.wallets._wallets
     assert freqtrade.wallets._last_wallet_refresh > 0
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value={
             "BNT": {
                 "free": 1.2,
@@ -87,7 +87,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
 def test_sync_wallet_missing_data(mocker, default_conf):
     default_conf['dry_run'] = False
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value={
             "BNT": {
                 "free": 1.0,
@@ -136,7 +136,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
                                                  result1, result2, limit_buy_order_open,
                                                  fee, mocker) -> None:
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         fetch_ticker=ticker,
         create_order=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee
@@ -180,17 +180,17 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     assert result == 0
 
 
-@pytest.mark.parametrize('stake_amount,min_stake,stake_available,max_stake,expected', [
-    (22, 11, 50, 10000, 22),
-    (100, 11, 500, 10000, 100),
-    (1000, 11, 500, 10000, 500),  # Above stake_available
-    (700, 11, 1000, 400, 400),  # Above max_stake, below stake available
-    (20, 15, 10, 10000, 0),  # Minimum stake > stake_available
-    (9, 11, 100, 10000, 11),  # Below min stake
-    (1, 15, 10, 10000, 0),  # Below min stake and min_stake > stake_available
-    (20, 50, 100, 10000, 0),  # Below min stake and stake * 1.3 > min_stake
-    (1000, None, 1000, 10000, 1000),  # No min-stake-amount could be determined
-
+@pytest.mark.parametrize('stake_amount,min_stake,stake_available,max_stake,trade_amount,expected', [
+    (22, 11, 50, 10000, None, 22),
+    (100, 11, 500, 10000, None, 100),
+    (1000, 11, 500, 10000, None, 500),  # Above stake_available
+    (700, 11, 1000, 400, None, 400),  # Above max_stake, below stake available
+    (20, 15, 10, 10000, None, 0),  # Minimum stake > stake_available
+    (9, 11, 100, 10000, None, 11),  # Below min stake
+    (1, 15, 10, 10000, None, 0),  # Below min stake and min_stake > stake_available
+    (20, 50, 100, 10000, None, 0),  # Below min stake and stake * 1.3 > min_stake
+    (1000, None, 1000, 10000, None, 1000),  # No min-stake-amount could be determined
+    (2000, 15, 2000, 3000, 1500, 1500),  # Rebuy - resulting in too high stake amount. Adjusting.
 ])
 def test_validate_stake_amount(
     mocker,
@@ -199,13 +199,15 @@ def test_validate_stake_amount(
     min_stake,
     stake_available,
     max_stake,
+    trade_amount,
     expected,
 ):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch("freqtrade.wallets.Wallets.get_available_stake_amount",
                  return_value=stake_available)
-    res = freqtrade.wallets.validate_stake_amount('XRP/USDT', stake_amount, min_stake, max_stake)
+    res = freqtrade.wallets.validate_stake_amount(
+        'XRP/USDT', stake_amount, min_stake, max_stake, trade_amount)
     assert res == expected
 
 
@@ -310,7 +312,7 @@ def test_sync_wallet_futures_live(mocker, default_conf):
         }
     ]
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_balances=MagicMock(return_value={
             "USDT": {
                 "free": 900,

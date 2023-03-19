@@ -40,6 +40,7 @@ np.seterr(all='raise')
 
 CURRENT_TEST_STRATEGY = 'StrategyTestV3'
 TRADE_SIDES = ('long', 'short')
+EXMS = 'freqtrade.exchange.exchange.Exchange'
 
 
 def pytest_addoption(parser):
@@ -145,22 +146,21 @@ def patch_exchange(
     mock_markets=True,
     mock_supported_modes=True
 ) -> None:
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+    mocker.patch(f'{EXMS}._load_async_markets', return_value={})
+    mocker.patch(f'{EXMS}.validate_config', MagicMock())
+    mocker.patch(f'{EXMS}.validate_timeframes', MagicMock())
+    mocker.patch(f'{EXMS}.id', PropertyMock(return_value=id))
+    mocker.patch(f'{EXMS}.name', PropertyMock(return_value=id.title()))
+    mocker.patch(f'{EXMS}.precisionMode', PropertyMock(return_value=2))
 
     if mock_markets:
         if isinstance(mock_markets, bool):
             mock_markets = get_markets()
-        mocker.patch('freqtrade.exchange.Exchange.markets',
-                     PropertyMock(return_value=mock_markets))
+        mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=mock_markets))
 
     if mock_supported_modes:
         mocker.patch(
-            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_margin_pairs',
+            f'freqtrade.exchange.{id}.{id.capitalize()}._supported_trading_mode_margin_pairs',
             PropertyMock(return_value=[
                 (TradingMode.MARGIN, MarginMode.CROSS),
                 (TradingMode.MARGIN, MarginMode.ISOLATED),
@@ -170,10 +170,10 @@ def patch_exchange(
         )
 
     if api_mock:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+        mocker.patch(f'{EXMS}._init_ccxt', return_value=api_mock)
     else:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
-        mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+        mocker.patch(f'{EXMS}._init_ccxt', MagicMock())
+        mocker.patch(f'{EXMS}.timeframes', PropertyMock(
                 return_value=['5m', '15m', '1h', '1d']))
 
 
@@ -241,7 +241,6 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
-    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 
@@ -300,7 +299,7 @@ def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = Tru
     """
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
     is_short1 = is_short if is_short is not None else True
@@ -333,11 +332,11 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     Create some fake trades ...
     """
     if use_db:
-        Trade.query.session.rollback()
+        Trade.session.rollback()
 
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
@@ -367,7 +366,7 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     add_trade(trade)
 
     if use_db:
-        Trade.query.session.flush()
+        Trade.session.flush()
 
 
 def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool = True):
@@ -376,7 +375,7 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
     """
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
@@ -406,6 +405,11 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
     add_trade(trade)
     if use_db:
         Trade.commit()
+
+
+@pytest.fixture(autouse=True)
+def patch_gc(mocker) -> None:
+    mocker.patch("freqtrade.main.gc_set_threshold")
 
 
 @pytest.fixture(autouse=True)
@@ -505,7 +509,7 @@ def get_default_conf(testdatadir):
             "chat_id": "0",
             "notification_settings": {},
         },
-        "datadir": str(testdatadir),
+        "datadir": Path(testdatadir),
         "initial_state": "running",
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
@@ -2569,7 +2573,7 @@ def import_fails() -> None:
     realimport = builtins.__import__
 
     def mockedimport(name, *args, **kwargs):
-        if name in ["filelock", 'systemd.journal', 'uvloop']:
+        if name in ["filelock", 'cysystemd.journal', 'uvloop']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
 
@@ -2601,6 +2605,8 @@ def open_trade():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2637,6 +2643,8 @@ def open_trade_usdt():
             ft_order_side='buy',
             ft_pair=trade.pair,
             ft_is_open=False,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789',
             status="closed",
             symbol=trade.pair,
@@ -2654,6 +2662,8 @@ def open_trade_usdt():
             ft_order_side='exit',
             ft_pair=trade.pair,
             ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
             order_id='123456789_exit',
             status="open",
             symbol=trade.pair,
@@ -3098,7 +3108,7 @@ def funding_rate_history_octohourly():
 @pytest.fixture(scope='function')
 def leverage_tiers():
     return {
-        "1000SHIB/USDT": [
+        "1000SHIB/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,
@@ -3149,7 +3159,7 @@ def leverage_tiers():
                 'maintAmt': 654500.0
             },
         ],
-        "1INCH/USDT": [
+        "1INCH/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3193,7 +3203,7 @@ def leverage_tiers():
                 'maintAmt': 386940.0
             },
         ],
-        "AAVE/USDT": [
+        "AAVE/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3237,7 +3247,7 @@ def leverage_tiers():
                 'maintAmt': 386950.0
             },
         ],
-        "ADA/BUSD": [
+        "ADA/BUSD:BUSD": [
             {
                 "minNotional": 0,
                 "maxNotional": 100000,
@@ -3281,7 +3291,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             },
         ],
-        'BNB/BUSD': [
+        'BNB/BUSD:BUSD': [
             {
                 "minNotional": 0,       # stake(before leverage) = 0
                 "maxNotional": 100000,  # max stake(before leverage) = 5000
@@ -3325,7 +3335,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             }
         ],
-        'BNB/USDT': [
+        'BNB/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 10000,  # max_stake = 133.33333333333334
@@ -3390,7 +3400,7 @@ def leverage_tiers():
                 "maintAmt": 6233035.0
             },
         ],
-        'BTC/USDT': [
+        'BTC/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 50000,  # max_stake = 400.0
@@ -3462,7 +3472,7 @@ def leverage_tiers():
                 "maintAmt": 1.997038E8
             },
         ],
-        "ZEC/USDT": [
+        "ZEC/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,

@@ -31,15 +31,22 @@ asyncio_mode = "auto"
 [tool.mypy]
 ignore_missing_imports = true
 namespace_packages = false
-implicit_optional = true
 warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$'
+]
+plugins = [
+  "sqlalchemy.ext.mypy.plugin"
 ]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Telegram does not use implicit_optional = false in the current version.
+module = "telegram.*"
+implicit_optional = true
 
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]
@@ -53,5 +60,23 @@ exclude = [
 ]
 ignore = ["freqtrade/vendor/**"]
 
-# Align pyright to mypy config
-strictParameterNoneValue = false
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env"]
+target-version = "py38"
+extend-select = [
+  "C90",    # mccabe
+  # "N",    # pep8-naming
+  # "UP",   # pyupgrade
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  "YTT",    # flake8-2020
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  "PTH",  # flake8-use-pathlib
+]
+
+[tool.ruff.mccabe]
+max-complexity = 12

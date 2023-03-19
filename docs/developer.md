@@ -24,7 +24,7 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
 Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
-This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+This will install all required tools for development, including `pytest`, `ruff`, `mypy`, and `coveralls`.
 
 Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
 This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
@@ -363,7 +363,7 @@ from pathlib import Path
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
     'secret': '<secret>'
-    'options': {'defaultType': 'future'}
+    'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()
 

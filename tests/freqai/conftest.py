@@ -27,7 +27,7 @@ def freqai_conf(default_conf, tmpdir):
             "timerange": "20180110-20180115",
             "freqai": {
                 "enabled": True,
-                "purge_old_models": True,
+                "purge_old_models": 2,
                 "train_period_days": 2,
                 "backtest_period_days": 10,
                 "live_retrain_hours": 0,
@@ -46,6 +46,8 @@ def freqai_conf(default_conf, tmpdir):
                     "use_SVM_to_remove_outliers": True,
                     "stratify_training_data": 0,
                     "indicator_periods_candles": [10],
+                    "shuffle_after_split": False,
+                    "buffer_train_data_candles": 0
                 },
                 "data_split_parameters": {"test_size": 0.33, "shuffle": False},
                 "model_training_parameters": {"n_estimators": 100},
@@ -76,7 +78,9 @@ def make_rl_config(conf):
             "rr": 1,
             "profit_aim": 0.02,
             "win_reward_factor": 2
-        }}
+        },
+        "drop_ohlc_from_features": False
+        }
 
     return conf
 

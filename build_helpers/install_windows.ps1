@@ -14,5 +14,8 @@ if ($pyv -eq '3.9') {
 if ($pyv -eq '3.10') {
     pip install build_helpers\TA_Lib-0.4.25-cp310-cp310-win_amd64.whl
 }
+if ($pyv -eq '3.11') {
+    pip install build_helpers\TA_Lib-0.4.25-cp311-cp311-win_amd64.whl
+}
 pip install -r requirements-dev.txt
 pip install -e .

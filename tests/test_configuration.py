@@ -58,7 +58,8 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
-    file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
+    default_conf['datadir'] = str(default_conf['datadir'])
+    file_mock = mocker.patch('freqtrade.configuration.load_config.Path.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
@@ -69,9 +70,11 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
-    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch('freqtrade.configuration.load_config.Path.open',
+                 mocker.mock_open(read_data=filedata))
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
     with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
@@ -80,6 +83,7 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
@@ -238,6 +242,7 @@ def test_print_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     # Delete non-json elements from default_conf
     del conf1['user_data_dir']
+    conf1['datadir'] = str(conf1['datadir'])
     config_files = [conf1]
 
     configsmock = MagicMock(side_effect=config_files)
@@ -268,7 +273,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
 def test_load_config_file_exception(mocker) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.open',
+        'freqtrade.configuration.configuration.Path.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
 
@@ -697,15 +702,16 @@ def test_set_loggers_journald(mocker):
               'logfile': 'journald',
               }
 
+    setup_logging_pre()
     setup_logging(config)
-    assert len(logger.handlers) == 2
+    assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 
 
-def test_set_loggers_journald_importerror(mocker, import_fails):
+def test_set_loggers_journald_importerror(import_fails):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
@@ -714,7 +720,7 @@ def test_set_loggers_journald_importerror(mocker, import_fails):
               'logfile': 'journald',
               }
     with pytest.raises(OperationalException,
-                       match=r'You need the systemd python package.*'):
+                       match=r'You need the cysystemd python package.*'):
         setup_logging(config)
     logger.handlers = orig_handlers
 
@@ -1046,8 +1052,13 @@ def test__validate_freqai_include_timeframes(default_conf, caplog) -> None:
     # Validation pass
     conf.update({'timeframe': '1m'})
     validate_config_consistency(conf)
-    conf.update({'analyze_per_epoch': True})
 
+    # Ensure base timeframe is in include_timeframes
+    conf['freqai']['feature_parameters']['include_timeframes'] = ["5m", "15m"]
+    validate_config_consistency(conf)
+    assert conf['freqai']['feature_parameters']['include_timeframes'] == ["1m", "5m", "15m"]
+
+    conf.update({'analyze_per_epoch': True})
     with pytest.raises(OperationalException,
                        match=r"Using analyze-per-epoch .* not supported with a FreqAI strategy."):
         validate_config_consistency(conf)

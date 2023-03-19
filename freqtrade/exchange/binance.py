@@ -7,11 +7,11 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
-from freqtrade.enums import CandleType, MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.types import OHLCVResponse, Tickers
 from freqtrade.misc import deep_merge_dicts, json_load
 
 
@@ -28,11 +28,16 @@ class Binance(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
-        "ccxt_futures_name": "future"
     }
     _ft_has_futures: Dict = {
-        "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "tickers_have_price": False,
+        "floor_leverage": True,
+        "stop_price_type_field": "workingType",
+        "stop_price_type_value_mapping": {
+            PriceType.LAST: "CONTRACT_PRICE",
+            PriceType.MARK: "MARK_PRICE",
+        },
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -78,33 +83,9 @@ class Binance(Exchange):
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+                f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
+                ) from e
 
-    @retrier
-    def _set_leverage(
-        self,
-        leverage: float,
-        pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
-    ):
-        """
-        Set's the leverage before making a trade, in order to not
-        have the same leverage on every trade
-        """
-        trading_mode = trading_mode or self.trading_mode
-
-        if self._config['dry_run'] or trading_mode != TradingMode.FUTURES:
-            return
-
-        try:
-            self._api.set_leverage(symbol=pair, leverage=round(leverage))
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
@@ -112,7 +93,7 @@ class Binance(Exchange):
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
                                         until_ms: Optional[int] = None
-                                        ) -> Tuple[str, str, str, List]:
+                                        ) -> OHLCVResponse:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
@@ -150,6 +131,7 @@ class Binance(Exchange):
         is_short: bool,
         amount: float,
         stake_amount: float,
+        leverage: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
@@ -159,11 +141,12 @@ class Binance(Exchange):
         MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
         PERPETUAL: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
 
-        :param exchange_name:
+        :param pair: Pair to calculate liquidation price for
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param amount: Absolute value of position size incl. leverage (in base currency)
         :param stake_amount: Stake amount - Collateral in settle currency.
+        :param leverage: Leverage used for this position.
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param margin_mode: Either ISOLATED or CROSS
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
@@ -212,7 +195,7 @@ class Binance(Exchange):
                 leverage_tiers_path = (
                     Path(__file__).parent / 'binance_leverage_tiers.json'
                 )
-                with open(leverage_tiers_path) as json_file:
+                with leverage_tiers_path.open() as json_file:
                     return json_load(json_file)
             else:
                 try:
