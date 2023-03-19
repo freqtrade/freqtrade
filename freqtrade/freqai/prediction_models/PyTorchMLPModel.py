@@ -10,6 +10,9 @@ class PyTorchMLPModel(nn.Module):
     """
     A multi-layer perceptron (MLP) model implemented using PyTorch.
 
+    This class mainly serves as a simple example for the integration of PyTorch model's
+    to freqai. It is not optimized at all and should not be used for production purposes.
+
     :param input_dim: The number of input features. This parameter specifies the number
         of features in the input data that the MLP will use to make predictions.
     :param output_dim: The number of output classes. This parameter specifies the number
