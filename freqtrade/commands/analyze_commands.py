@@ -40,8 +40,8 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
 
         if (not Path(signals_file).exists()):
             raise OperationalException(
-                (f"Cannot find latest backtest signals file: {signals_file}."
-                  "Run backtesting with `--export signals`.")
+                f"Cannot find latest backtest signals file: {signals_file}."
+                "Run backtesting with `--export signals`."
             )
 
     return config

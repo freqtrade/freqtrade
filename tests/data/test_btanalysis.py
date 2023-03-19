@@ -98,7 +98,7 @@ def test_load_backtest_data_new_format(testdatadir):
     assert bt_data.equals(bt_data3)
 
     with pytest.raises(ValueError, match=r"File .* does not exist\."):
-        load_backtest_data(str("filename") + "nofile")
+        load_backtest_data("filename" + "nofile")
 
     with pytest.raises(ValueError, match=r"Unknown dataformat."):
         load_backtest_data(testdatadir / "backtest_results" / LAST_BT_RESULT_FN)

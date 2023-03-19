@@ -113,7 +113,7 @@ class Webhook(RPCHandler):
                     response = post(self._url, data=payload['data'],
                                     headers={'Content-Type': 'text/plain'})
                 else:
-                    raise NotImplementedError('Unknown format: {}'.format(self._format))
+                    raise NotImplementedError(f'Unknown format: {self._format}')
 
                 # Throw a RequestException if the post was not successful
                 response.raise_for_status()

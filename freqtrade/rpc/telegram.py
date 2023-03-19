@@ -1340,7 +1340,7 @@ class Telegram(RPCHandler):
         message = tabulate({k: [v] for k, v in counts.items()},
                            headers=['current', 'max', 'total stake'],
                            tablefmt='simple')
-        message = "<pre>{}</pre>".format(message)
+        message = f"<pre>{message}</pre>"
         logger.debug(message)
         self._send_msg(message, parse_mode=ParseMode.HTML,
                        reload_able=True, callback_path="update_count",
@@ -1642,7 +1642,7 @@ class Telegram(RPCHandler):
             ])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
-        msg += "\nUpdated: {}".format(datetime.now().ctime())
+        msg += f"\nUpdated: {datetime.now().ctime()}"
         if not query.message:
             return
         chat_id = query.message.chat_id

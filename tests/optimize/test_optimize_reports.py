@@ -236,7 +236,7 @@ def test_store_backtest_candles(testdatadir, mocker):
 
     assert dump_mock.call_count == 1
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
-    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+    assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
 
     dump_mock.reset_mock()
     # mock file exporting
@@ -245,7 +245,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     assert dump_mock.call_count == 1
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
-    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+    assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
     dump_mock.reset_mock()
 
 
