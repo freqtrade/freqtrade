@@ -75,8 +75,7 @@ class Gate(Exchange):
         )
         if ordertype == 'market' and self.trading_mode == TradingMode.FUTURES:
             params['type'] = 'market'
-            param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: 'IOC'})
+            params.update({'timeInForce': 'IOC'})
         return params
 
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime,

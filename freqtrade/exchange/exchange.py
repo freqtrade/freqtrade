@@ -60,7 +60,6 @@ class Exchange:
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["GTC"],
-        "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
@@ -1034,8 +1033,7 @@ class Exchange:
     ) -> Dict:
         params = self._params.copy()
         if time_in_force != 'GTC' and ordertype != 'market':
-            param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: time_in_force.upper()})
+            params.update({'timeInForce': time_in_force.upper()})
         if reduceOnly:
             params.update({'reduceOnly': True})
         return params
