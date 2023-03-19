@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 from uuid import uuid4
 
 from fastapi import Depends
@@ -17,7 +17,7 @@ def get_rpc_optional() -> Optional[RPC]:
     return None
 
 
-async def get_rpc() -> Optional[Iterator[RPC]]:
+async def get_rpc() -> Optional[AsyncIterator[RPC]]:
 
     _rpc = get_rpc_optional()
     if _rpc:
