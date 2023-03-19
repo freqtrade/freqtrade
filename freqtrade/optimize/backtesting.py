@@ -442,10 +442,6 @@ class Backtesting:
                 # Worst case: price ticks tiny bit above open and dives down.
                 stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(
                     (trade.stop_loss_pct or 0.0) / leverage))
-                if is_short:
-                    assert stop_rate > row[LOW_IDX]
-                else:
-                    assert stop_rate < row[HIGH_IDX]
 
             # Limit lower-end to candle low to avoid exits below the low.
             # This still remains "worst case" - but "worst realistic case".
