@@ -3387,7 +3387,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex.get_option('stoploss_on_exchange')
-    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC']
+    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC', 'PO']
     assert ex.get_option('trades_pagination') == 'id'
     assert ex.get_option('trades_pagination_arg') == 'fromId'
 
