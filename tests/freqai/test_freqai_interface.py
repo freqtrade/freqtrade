@@ -168,7 +168,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'CatboostClassifier',
     'XGBoostClassifier',
     'XGBoostRFClassifier',
-    'PyTorchClassifier',
+    'MLPPyTorchClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if (is_arm() or is_py11()) and model == 'CatboostClassifier':
