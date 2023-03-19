@@ -19,35 +19,32 @@ class PyTorchModelTrainer:
             optimizer: Optimizer,
             criterion: nn.Module,
             device: str,
-            batch_size: int,
-            max_iters: int,
-            max_n_eval_batches: int,
             init_model: Dict,
             model_meta_data: Dict[str, Any] = {},
+            **kwargs
     ):
         """
         :param model: The PyTorch model to be trained.
         :param optimizer: The optimizer to use for training.
         :param criterion: The loss function to use for training.
         :param device: The device to use for training (e.g. 'cpu', 'cuda').
-        :param batch_size: The size of the batches to use during training.
+        :param init_model: A dictionary containing the initial model/optimizer
+            state_dict and model_meta_data saved by self.save() method.
+        :param model_meta_data: Additional metadata about the model (optional).
         :param max_iters: The number of training iterations to run.
             iteration here refers to the number of times we call
             self.optimizer.step(). used to calculate n_epochs.
+        :param batch_size: The size of the batches to use during training.
         :param max_n_eval_batches: The maximum number batches to use for evaluation.
-        :param init_model: A dictionary containing the initial model/optimizer
-         state_dict and model_meta_data saved by self.save() method.
-        :param model_meta_data: Additional metadata about the model (optional).
         """
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
         self.model_meta_data = model_meta_data
         self.device = device
-        self.max_iters = max_iters
-        self.batch_size = batch_size
-        self.max_n_eval_batches = max_n_eval_batches
-
+        self.max_iters: int = kwargs.get("max_iters", 100)
+        self.batch_size: int = kwargs.get("batch_size", 64)
+        self.max_n_eval_batches: Optional[int] = kwargs.get("max_n_eval_batches", None)
         if init_model:
             self.load_from_checkpoint(init_model)
 
