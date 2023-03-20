@@ -433,7 +433,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
 def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
-             monitor: bool = False,
              env_info: Dict[str, Any] = {}) -> Callable:
     """
     Utility function for multiprocessed env.
@@ -450,8 +449,7 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
 
         env = MyRLEnv(df=train_df, prices=price, id=env_id, seed=seed + rank,
                       **env_info)
-        if monitor:
-            env = Monitor(env)
+        
         return env
     set_random_seed(seed)
     return _init
