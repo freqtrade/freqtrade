@@ -48,7 +48,7 @@ def can_run_model(model: str) -> None:
     ('XGBoostRegressor', False, True, False, True, False, 10),
     ('XGBoostRFRegressor', False, False, False, True, False, 0),
     ('CatboostRegressor', False, False, False, True, True, 0),
-    ('MLPPyTorchRegressor', False, False, False, True, False, 0),
+    ('PyTorchMLPRegressor', False, False, False, True, False, 0),
     ('ReinforcementLearner', False, True, False, True, False, 0),
     ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
@@ -86,7 +86,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
-    if 'MLPPyTorchRegressor' in model:
+    if 'PyTorchMLPRegressor' in model:
         model_save_ext = 'zip'
         freqai_conf['freqai']['model_training_parameters'].update({
             "learning_rate": 3e-4,
@@ -214,7 +214,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
                                         strategy, freqai.dk, data_load_timerange)
 
-    if 'MLPPyTorchClassifier':
+    if 'PyTorchMLPClassifier':
         freqai_conf['freqai']['model_training_parameters'].update({
             "learning_rate": 3e-4,
             "trainer_kwargs": {
