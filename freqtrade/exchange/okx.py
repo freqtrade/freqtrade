@@ -197,11 +197,11 @@ class Okx(Exchange):
             return order_reg
         except ccxt.OrderNotFound:
             pass
-        params1 = {'stop': True, 'ordType': 'conditional'}
+        params2 = {'stop': True, 'ordType': 'conditional'}
         for method in (self._api.fetch_open_orders, self._api.fetch_closed_orders,
                        self._api.fetch_canceled_orders):
             try:
-                orders = method(pair, params=params1)
+                orders = method(pair, params=params2)
                 orders_f = [order for order in orders if order['id'] == order_id]
                 if orders_f:
                     order = orders_f[0]
