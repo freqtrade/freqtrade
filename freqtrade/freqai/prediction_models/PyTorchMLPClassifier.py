@@ -56,7 +56,7 @@ class PyTorchMLPClassifier(PyTorchClassifier):
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary constructed by DataHandler to hold
                                 all the training and test data/labels.
-        :raises ValueError: If self.class_names is empty.
+        :raises ValueError: If self.class_names is not defined in the parent class.
         """
 
         class_names = self.get_class_names()
