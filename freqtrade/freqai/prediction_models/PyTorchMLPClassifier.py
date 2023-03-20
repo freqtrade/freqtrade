@@ -4,11 +4,11 @@ import torch
 
 from freqtrade.freqai.base_models.PyTorchModelTrainer import PyTorchModelTrainer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.prediction_models.PyTorchClassifierClassifier import PyTorchClassifier
+from freqtrade.freqai.prediction_models.PyTorchClassifier import PyTorchClassifier
 from freqtrade.freqai.prediction_models.PyTorchMLPModel import PyTorchMLPModel
 
 
-class MLPPyTorchClassifier(PyTorchClassifier):
+class PyTorchMLPClassifier(PyTorchClassifier):
     """
     This class implements the fit method of IFreqaiModel.
     int the fit method we initialize the model and trainer objects.
