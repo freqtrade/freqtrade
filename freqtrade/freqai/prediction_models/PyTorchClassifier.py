@@ -22,16 +22,6 @@ class PyTorchClassifier(BasePyTorchModel):
     User must implement fit method
     """
     def __init__(self, **kwargs):
-        """
-        int: The number of nodes in the hidden layer of the neural network.
-        int: The maximum number of iterations to run during training.
-        int: The batch size to use during training.
-        float: The learning rate to use during training.
-        int: The number of training iterations between each evaluation.
-        dict: A dictionary mapping class names to their corresponding indices.
-        dict: A dictionary mapping indices to their corresponding class names.
-        """
-
         super().__init__(**kwargs)
         self.class_name_to_index = None
         self.index_to_class_name = None
