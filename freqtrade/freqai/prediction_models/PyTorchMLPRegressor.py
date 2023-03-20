@@ -37,8 +37,6 @@ class PyTorchMLPRegressor(PyTorchRegressor):
             }
         }
     }
-
-
     """
 
     def __init__(
