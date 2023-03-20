@@ -528,3 +528,19 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
     assert resp['id'] == '1234'
     assert resp['id_stop'] == '123455'
     assert resp['type'] == 'stoploss'
+
+    default_conf['dry_run'] = True
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id='okx')
+    dro_mock = mocker.patch(f"{EXMS}.fetch_dry_run_order", MagicMock(return_value={'id': '123455'}))
+
+    api_mock.fetch_order.reset_mock()
+    api_mock.fetch_open_orders.reset_mock()
+    api_mock.fetch_closed_orders.reset_mock()
+    api_mock.fetch_canceled_orders.reset_mock()
+    resp = exchange.fetch_stoploss_order('1234', 'ETH/BTC')
+
+    assert api_mock.fetch_order.call_count == 0
+    assert api_mock.fetch_open_orders.call_count == 0
+    assert api_mock.fetch_closed_orders.call_count == 0
+    assert api_mock.fetch_canceled_orders.call_count == 0
+    assert dro_mock.call_count == 1
