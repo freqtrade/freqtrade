@@ -56,4 +56,4 @@ schedule==1.1.0
 websockets==10.4
 janus==1.0.0
 
-ast-comments==1.0.0
+ast-comments==1.0.1
