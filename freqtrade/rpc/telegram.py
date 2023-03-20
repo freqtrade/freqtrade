@@ -83,6 +83,8 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             self._send_msg(str(e))
         except BaseException:
             logger.exception('Exception occurred within Telegram module')
+        finally:
+            Trade.session.remove()
 
     return wrapper
 
