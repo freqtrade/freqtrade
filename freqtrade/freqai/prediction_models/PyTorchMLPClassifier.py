@@ -13,8 +13,7 @@ class PyTorchMLPClassifier(PyTorchClassifier):
     This class implements the fit method of IFreqaiModel.
     in the fit method we initialize the model and trainer objects.
     the only requirement from the model is to be aligned to PyTorchClassifier
-    predict method that expects the model to predict tensor of type long.
-    the trainer defines the training loop.
+    predict method that expects the model to predict a tensor of type long.
 
     parameters are passed via `model_training_parameters` under the freqai
     section in the config file. e.g:
@@ -37,8 +36,6 @@ class PyTorchMLPClassifier(PyTorchClassifier):
             }
         }
     }
-
-
     """
 
     def __init__(
@@ -51,15 +48,15 @@ class PyTorchMLPClassifier(PyTorchClassifier):
         super().__init__(**kwargs)
         config = self.freqai_info.get("model_training_parameters", {})
         self.learning_rate: float = config.get("learning_rate", learning_rate)
-        self.model_kwargs: Dict[str, any] = config.get("model_kwargs", model_kwargs)
-        self.trainer_kwargs: Dict[str, any] = config.get("trainer_kwargs", trainer_kwargs)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs", model_kwargs)
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs", trainer_kwargs)
 
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary constructed by DataHandler to hold
                                 all the training and test data/labels.
-        :raises ValueError: If self.class_names is not defined in the parent class.
+        :raises ValueError: If self.class_names is empty.
         """
 
         class_names = self.get_class_names()

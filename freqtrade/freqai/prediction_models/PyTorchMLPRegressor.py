@@ -49,8 +49,8 @@ class PyTorchMLPRegressor(PyTorchRegressor):
         super().__init__(**kwargs)
         config = self.freqai_info.get("model_training_parameters", {})
         self.learning_rate: float = config.get("learning_rate", learning_rate)
-        self.model_kwargs: Dict[str, any] = config.get("model_kwargs", model_kwargs)
-        self.trainer_kwargs: Dict[str, any] = config.get("trainer_kwargs", trainer_kwargs)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs", model_kwargs)
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs", trainer_kwargs)
 
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
