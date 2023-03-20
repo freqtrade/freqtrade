@@ -48,11 +48,12 @@ def can_run_model(model: str) -> None:
     ('XGBoostRegressor', False, True, False, True, False, 10),
     ('XGBoostRFRegressor', False, False, False, True, False, 0),
     ('CatboostRegressor', False, False, False, True, True, 0),
+    ('MLPPyTorchRegressor', False, False, False, True, False, 0),
     ('ReinforcementLearner', False, True, False, True, False, 0),
     ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
-    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0),
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
@@ -84,6 +85,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
 
     if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+
+    if 'MLPPyTorchRegressor' in model:
+        model_save_ext = 'zip'
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
