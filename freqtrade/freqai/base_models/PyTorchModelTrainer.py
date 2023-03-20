@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import torch
