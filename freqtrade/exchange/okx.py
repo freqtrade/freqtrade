@@ -32,7 +32,7 @@ class Okx(Exchange):
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
         "fee_cost_in_contracts": True,
-        "stop_price_type_field": "tpTriggerPxType",
+        "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "last",
             PriceType.MARK: "index",
@@ -193,7 +193,7 @@ class Okx(Exchange):
         try:
             params1 = {'stop': True}
             order_reg = self._api.fetch_order(order_id, pair, params=params1)
-            self._log_exchange_response('fetch_stoploss_order1', order_reg)
+            self._log_exchange_response('fetch_stoploss_order', order_reg)
             return order_reg
         except ccxt.OrderNotFound:
             pass
