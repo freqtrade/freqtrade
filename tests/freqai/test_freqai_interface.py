@@ -229,7 +229,6 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
             }
         })
 
-
     if freqai.dd.model_type == 'joblib':
         model_file_extension = ".joblib"
     elif freqai.dd.model_type == "pytorch":
