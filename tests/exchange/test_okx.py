@@ -480,6 +480,38 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
     assert log_has(logmsg, caplog)
 
 
+def test__set_leverage_okx(mocker, default_conf):
+
+    api_mock = MagicMock()
+    api_mock.set_leverage = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange._lev_prep('BTC/USDT:USDT', 3.2, 'buy')
+    assert api_mock.set_leverage.call_count == 1
+    # Leverage is rounded to 3.
+    assert api_mock.set_leverage.call_args_list[0][1]['leverage'] == 3.2
+    assert api_mock.set_leverage.call_args_list[0][1]['symbol'] == 'BTC/USDT:USDT'
+    assert api_mock.set_leverage.call_args_list[0][1]['params'] == {
+        'mgnMode': 'isolated',
+        'posSide': 'net'}
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "okx",
+        "_lev_prep",
+        "set_leverage",
+        pair="XRP/USDT:USDT",
+        leverage=5.0,
+        side='buy'
+    )
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_okx(default_conf, mocker):
     default_conf['dry_run'] = False
