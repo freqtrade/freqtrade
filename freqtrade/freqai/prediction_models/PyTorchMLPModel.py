@@ -49,8 +49,8 @@ class PyTorchMLPModel(nn.Module):
         x = self.relu(self.input_layer(x))
         x = self.dropout(x)
         x = self.blocks(x)
-        logits = self.output_layer(x)
-        return logits
+        x = self.output_layer(x)
+        return x
 
 
 class Block(nn.Module):
