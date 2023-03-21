@@ -13,7 +13,7 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 logger = logging.getLogger(__name__)
 
 
-class PyTorchRegressor(BasePyTorchModel):
+class BaseTorchRegressor(BasePyTorchModel):
     """
     A PyTorch implementation of a regressor.
     User must implement fit method

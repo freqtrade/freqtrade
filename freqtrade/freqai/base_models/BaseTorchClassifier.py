@@ -16,7 +16,7 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(BasePyTorchModel):
+class BaseTorchClassifier(BasePyTorchModel):
     """
     A PyTorch implementation of a classifier.
     User must implement fit method
