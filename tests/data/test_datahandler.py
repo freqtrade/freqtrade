@@ -20,25 +20,31 @@ from tests.conftest import log_has, log_has_re
 
 
 def test_datahandler_ohlcv_get_pairs(testdatadir):
-    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
+    pairs = JsonDataHandler.ohlcv_get_pairs(
+        testdatadir, '5m', candle_type=CandleType.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(pairs) == {'UNITTEST/BTC', 'XLM/BTC', 'ETH/BTC', 'TRX/BTC', 'LTC/BTC',
                           'XMR/BTC', 'ZEC/BTC', 'ADA/BTC', 'ETC/BTC', 'NXT/BTC',
                           'DASH/BTC', 'XRP/ETH'}
 
-    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m', candle_type=CandleType.SPOT)
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(
+        testdatadir, '8m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
+    pairs = HDF5DataHandler.ohlcv_get_pairs(
+        testdatadir, '5m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
+    pairs = JsonDataHandler.ohlcv_get_pairs(
+        testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT:USDT', 'XRP/USDT:USDT'}
 
-    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.FUTURES)
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(
+        testdatadir, '1h', candle_type=CandleType.FUTURES)
     assert set(pairs) == {'XRP/USDT:USDT'}
 
-    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
+    pairs = HDF5DataHandler.ohlcv_get_pairs(
+        testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT:USDT'}
 
 
@@ -79,7 +85,8 @@ def test_rebuild_pair_from_filename(input, expected):
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
-    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
+    paircombs = JsonDataHandler.ohlcv_get_available_data(
+        testdatadir, TradingMode.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/BTC', '5m', CandleType.SPOT),
@@ -101,7 +108,8 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('NOPAIR/XXX', '4m', CandleType.SPOT),
     }
 
-    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.FUTURES)
+    paircombs = JsonDataHandler.ohlcv_get_available_data(
+        testdatadir, TradingMode.FUTURES)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/USDT:USDT', '1h', 'mark'),
@@ -112,9 +120,11 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('XRP/USDT:USDT', '8h', 'funding_rate'),
     }
 
-    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
+    paircombs = JsonGzDataHandler.ohlcv_get_available_data(
+        testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '8m', CandleType.SPOT)}
-    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
+    paircombs = HDF5DataHandler.ohlcv_get_available_data(
+        testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '5m', CandleType.SPOT)}
 
 
@@ -252,7 +262,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
     assert log_has_re(expected_text, caplog)
 
 
-@pytest.mark.parametrize('datahandler', ['feather', 'parquet'])
+@pytest.mark.parametrize('datahandler', ['parquet'])
 def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
@@ -406,18 +416,21 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 
     assert not ohlcv[ohlcv['date'] < startdt].empty
 
-    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+    timerange = TimeRange.parse_timerange(
+        f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
     # Call private function to ensure timerange is filtered in hdf5
     ohlcv = dh._ohlcv_load(pair, timeframe, timerange, candle_type=candle_type)
-    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe,
+                             timerange, candle_type=candle_type)
     assert len(ohlcv) == len(ohlcv1)
     assert ohlcv.equals(ohlcv1)
     assert ohlcv[ohlcv['date'] < startdt].empty
     assert ohlcv[ohlcv['date'] > enddt].empty
 
     # Try loading inexisting file
-    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe,
+                          candle_type=candle_type)
     assert ohlcv.empty
 
 
@@ -452,7 +465,8 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     # Get data to test
     dh = get_datahandler(testdatadir, datahandler)
 
-    file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
+    file = tmpdir2 / \
+        f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
     assert not file.is_file()
 
     dh1 = get_datahandler(tmpdir1, datahandler)
@@ -461,11 +475,14 @@ def test_generic_datahandler_ohlcv_load_and_resave(
 
     assert not ohlcv[ohlcv['date'] < startdt].empty
 
-    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+    timerange = TimeRange.parse_timerange(
+        f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
-    ohlcv = dhbase.ohlcv_load(pair, timeframe, timerange=timerange, candle_type=candle_type)
+    ohlcv = dhbase.ohlcv_load(
+        pair, timeframe, timerange=timerange, candle_type=candle_type)
     if datahandler == 'hdf5':
-        ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+        ohlcv1 = dh1._ohlcv_load(
+            'UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
         if candle_type == 'mark':
             ohlcv1['volume'] = 0.0
     else:
@@ -478,7 +495,8 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     assert ohlcv[ohlcv['date'] > enddt].empty
 
     # Try loading inexisting file
-    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe,
+                          candle_type=candle_type)
     assert ohlcv.empty
 
 
@@ -494,6 +512,58 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
     assert unlinkmock.call_count == 2
+
+
+def test_featherdatahandler_trades_load(testdatadir):
+    dh = get_datahandler(testdatadir, 'feather')
+    trades = dh.trades_load('XRP/ETH')
+    assert isinstance(trades, list)
+    assert trades[0][0] == 1570752011620
+    assert trades[-1][-1] == 0.1986231
+
+    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    assert trades1 == []
+
+
+def test_featherdatahandler_trades_store(testdatadir, tmpdir):
+    tmpdir1 = Path(tmpdir)
+    dh = get_datahandler(testdatadir, 'feather')
+    trades = dh.trades_load('XRP/ETH')
+
+    dh1 = get_datahandler(tmpdir1, 'feather')
+    dh1.trades_store('XRP/NEW', trades)
+    file = tmpdir1 / 'XRP_NEW-trades.feather'
+    assert file.is_file()
+    # Load trades back
+    trades_new = dh1.trades_load('XRP/NEW')
+
+    assert len(trades_new) == len(trades)
+    assert trades[0][0] == trades_new[0][0]
+    assert trades[0][1] == trades_new[0][1]
+    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
+    assert trades[0][3] == trades_new[0][3]
+    assert trades[0][4] == trades_new[0][4]
+    assert trades[0][5] == trades_new[0][5]
+    assert trades[0][6] == trades_new[0][6]
+    assert trades[-1][0] == trades_new[-1][0]
+    assert trades[-1][1] == trades_new[-1][1]
+    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
+    assert trades[-1][3] == trades_new[-1][3]
+    assert trades[-1][4] == trades_new[-1][4]
+    assert trades[-1][5] == trades_new[-1][5]
+    assert trades[-1][6] == trades_new[-1][6]
+
+
+def test_featherdatahandler_trades_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = get_datahandler(testdatadir, 'feather')
+    assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 1
 
 
 def test_gethandlerclass():

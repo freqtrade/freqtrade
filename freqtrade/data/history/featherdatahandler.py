@@ -4,8 +4,9 @@ from typing import Optional
 from pandas import DataFrame, read_feather, to_datetime
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList, DEFAULT_TRADES_COLUMNS
 from freqtrade.enums import CandleType
+from freqtrade.data.converter import trades_dict_to_list
 
 from .idatahandler import IDataHandler
 
@@ -29,7 +30,8 @@ class FeatherDataHandler(IDataHandler):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        filename = self._pair_data_filename(
+            self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
 
         data.reset_index(drop=True).loc[:, self._columns].to_feather(
@@ -92,12 +94,11 @@ class FeatherDataHandler(IDataHandler):
         :param data: List of Lists containing trade data,
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
-        # filename = self._pair_trades_filename(self._datadir, pair)
+        filename = self._pair_trades_filename(self._datadir, pair)
+        self.create_dir_if_needed(filename)
 
-        raise NotImplementedError()
-        # array = pa.array(data)
-        # array
-        # feather.write_feather(data, filename)
+        tradesdata = DataFrame(data, columns=DEFAULT_TRADES_COLUMNS)
+        tradesdata.to_feather(filename, compression_level=9, compression='lz4')
 
     def trades_append(self, pair: str, data: TradeList):
         """
@@ -116,14 +117,13 @@ class FeatherDataHandler(IDataHandler):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        raise NotImplementedError()
-        # filename = self._pair_trades_filename(self._datadir, pair)
-        # tradesdata = misc.file_load_json(filename)
+        filename = self._pair_trades_filename(self._datadir, pair)
+        if not filename.exists():
+            return []
 
-        # if not tradesdata:
-        #     return []
+        tradesdata = read_feather(filename)
 
-        # return tradesdata
+        return tradesdata.values.tolist()
 
     @classmethod
     def _get_file_extension(cls):
