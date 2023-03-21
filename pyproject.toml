@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 46.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 100
 exclude = '''
@@ -47,10 +51,6 @@ ignore_errors = true
 # Telegram does not use implicit_optional = false in the current version.
 module = "telegram.*"
 implicit_optional = true
-
-[build-system]
-requires = ["setuptools >= 46.4.0", "wheel"]
-build-backend = "setuptools.build_meta"
 
 [tool.pyright]
 include = ["freqtrade"]
