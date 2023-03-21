@@ -146,8 +146,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
-    if (is_arm() or is_py11()) and 'Catboost' in model:
-        pytest.skip("CatBoost is not supported on ARM")
+    can_run_model(model)
 
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": strat})
@@ -189,8 +188,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'PyTorchMLPClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
-    if (is_arm() or is_py11()) and model == 'CatboostClassifier':
-        pytest.skip("CatBoost is not supported on ARM")
+    can_run_model(model)
 
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"strategy": "freqai_test_classifier"})
