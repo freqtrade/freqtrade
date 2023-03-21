@@ -39,7 +39,7 @@ class PyTorchMLPRegressor(PyTorchRegressor):
     }
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         config = self.freqai_info.get("model_training_parameters", {})
         self.learning_rate: float = config.get("learning_rate",  3e-4)
