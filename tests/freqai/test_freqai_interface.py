@@ -34,13 +34,14 @@ def is_mac() -> bool:
 
 def can_run_model(model: str) -> None:
     if (is_arm() or is_py11()) and "Catboost" in model:
-        pytest.skip("CatBoost is not supported on ARM")
+        pytest.skip("CatBoost is not supported on ARM.")
 
-    if is_mac() and not is_arm() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
+    if is_pytorch_model and is_mac() and not is_arm():
+        pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
-    if is_py11() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+    if is_pytorch_model and is_py11():
+        pytest.skip("Reinforcement learning / PyTorch currently not available on python 3.11.")
 
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
