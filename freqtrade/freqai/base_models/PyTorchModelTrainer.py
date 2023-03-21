@@ -124,7 +124,7 @@ class PyTorchModelTrainer:
         data_loader_dictionary = {}
         for split in ["train", "test"]:
             labels_shape = data_dictionary[f"{split}_labels"].shape
-            labels_view = labels_shape[0] if labels_shape[1] == 1 else labels_shape
+            labels_view = (labels_shape[0], 1) if labels_shape[1] == 1 else labels_shape
             dataset = TensorDataset(
                 torch.from_numpy(data_dictionary[f"{split}_features"].values).float(),
                 torch.from_numpy(data_dictionary[f"{split}_labels"].values)
