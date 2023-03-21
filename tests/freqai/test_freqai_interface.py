@@ -15,7 +15,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
+from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config, \
+    mock_pytorch_mlp_model_training_parameters
 
 
 def is_py11() -> bool:
