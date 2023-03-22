@@ -2,13 +2,13 @@ from typing import Any, Dict
 
 import torch
 
-from freqtrade.freqai.base_models.BaseTorchRegressor import BaseTorchRegressor
+from freqtrade.freqai.base_models.BasePyTorchRegressor import BasePyTorchRegressor
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.torch.PyTorchMLPModel import PyTorchMLPModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
 
 
-class PyTorchMLPRegressor(BaseTorchRegressor):
+class PyTorchMLPRegressor(BasePyTorchRegressor):
     """
     This class implements the fit method of IFreqaiModel.
     in the fit method we initialize the model and trainer objects.

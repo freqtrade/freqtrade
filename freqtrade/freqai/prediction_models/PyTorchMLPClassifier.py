@@ -2,13 +2,13 @@ from typing import Any, Dict
 
 import torch
 
-from freqtrade.freqai.base_models.BaseTorchClassifier import BaseTorchClassifier
+from freqtrade.freqai.base_models.BasePyTorchClassifier import BasePyTorchClassifier
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.torch.PyTorchMLPModel import PyTorchMLPModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
 
 
-class PyTorchMLPClassifier(BaseTorchClassifier):
+class PyTorchMLPClassifier(BasePyTorchClassifier):
     """
     This class implements the fit method of IFreqaiModel.
     in the fit method we initialize the model and trainer objects.
