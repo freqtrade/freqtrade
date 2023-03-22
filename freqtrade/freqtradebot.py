@@ -1021,12 +1021,16 @@ class FreqtradeBot(LoggingMixin):
         trades_closed = 0
         for trade in trades:
             try:
+                try:
+                    if (self.strategy.order_types.get('stoploss_on_exchange') and
+                            self.handle_stoploss_on_exchange(trade)):
+                        trades_closed += 1
+                        Trade.commit()
+                        continue
 
-                if (self.strategy.order_types.get('stoploss_on_exchange') and
-                        self.handle_stoploss_on_exchange(trade)):
-                    trades_closed += 1
-                    Trade.commit()
-                    continue
+                except InvalidOrderException as exception:
+                    logger.warning(
+                        f'Unable to handle stoploss on exchange for {trade.pair}: {exception}')
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and trade.is_open and self.handle_trade(trade):
                     trades_closed += 1
