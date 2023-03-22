@@ -1039,9 +1039,9 @@ def test_validate_ordertypes(default_conf, mocker):
     ('bybit', 'last', True),
     ('bybit', 'mark', True),
     ('bybit', 'index', True),
-    # ('okx', 'last', True),
-    # ('okx', 'mark', True),
-    # ('okx', 'index', True),
+    ('okx', 'last', True),
+    ('okx', 'mark', True),
+    ('okx', 'index', True),
     ('gate', 'last', True),
     ('gate', 'mark', True),
     ('gate', 'index', True),
@@ -3866,29 +3866,6 @@ def test_get_stake_amount_considering_leverage(
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
     assert exchange._get_stake_amount_considering_leverage(
         stake_amount, leverage) == min_stake_with_lev
-
-
-@pytest.mark.parametrize("exchange_name,trading_mode", [
-    ("binance", TradingMode.FUTURES),
-])
-def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
-
-    api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
-    default_conf['dry_run'] = False
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        exchange_name,
-        "_set_leverage",
-        "set_leverage",
-        pair="XRP/USDT",
-        leverage=5.0,
-        trading_mode=trading_mode
-    )
 
 
 @pytest.mark.parametrize("margin_mode", [

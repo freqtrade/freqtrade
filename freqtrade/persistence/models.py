@@ -2,7 +2,9 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from typing import Any, Dict
+import threading
+from contextvars import ContextVar
+from typing import Any, Dict, Final, Optional
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import NoSuchModuleError
@@ -17,6 +19,22 @@ from freqtrade.persistence.trade_model import Order, Trade
 
 
 logger = logging.getLogger(__name__)
+
+
+REQUEST_ID_CTX_KEY: Final[str] = 'request_id'
+_request_id_ctx_var: ContextVar[Optional[str]] = ContextVar(REQUEST_ID_CTX_KEY, default=None)
+
+
+def get_request_or_thread_id() -> Optional[str]:
+    """
+    Helper method to get either async context (for fastapi requests), or thread id
+    """
+    id = _request_id_ctx_var.get()
+    if id is None:
+        # when not in request context - use thread id
+        id = str(threading.current_thread().ident)
+
+    return id
 
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
@@ -53,8 +71,9 @@ def init_db(db_url: str) -> None:
 
     # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
     # Scoped sessions proxy requests to the appropriate thread-local session.
-    # We should use the scoped_session object - not a seperately initialized version
-    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    # Since we also use fastAPI, we need to make it aware of the request id, too
+    Trade.session = scoped_session(sessionmaker(
+        bind=engine, autoflush=False), scopefunc=get_request_or_thread_id)
     Order.session = Trade.session
     PairLock.session = Trade.session
 
