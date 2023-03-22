@@ -116,8 +116,14 @@ NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
-ARGS_STRATEGY_UTILS = ["strategy_list", "strategy_path", "recursive_strategy_search"]
+ARGS_STRATEGY_UPDATER = ARGS_COMMON_OPTIMIZE + ["strategy_list"]
 
+ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER = ARGS_BACKTEST
+
+
+# + ["target_trades", "minimum_trades",
+# "target_trades", "exportfilename"]
+# will be added when the base version works.
 
 class Arguments:
     """
@@ -192,7 +198,8 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_analysis_entries_exits, start_backtesting,
+        from freqtrade.commands import (start_analysis_entries_exits,
+                                        start_backtest_lookahead_bias_checker, start_backtesting,
                                         start_backtesting_show, start_convert_data,
                                         start_convert_db, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
@@ -450,4 +457,14 @@ class Arguments:
                                                           'files to the current version',
                                                      parents=[_common_parser])
         strategy_updater_cmd.set_defaults(func=start_strategy_update)
-        self._build_args(optionlist=ARGS_STRATEGY_UTILS, parser=strategy_updater_cmd)
+        self._build_args(optionlist=ARGS_STRATEGY_UPDATER, parser=strategy_updater_cmd)
+
+        # Add backtest lookahead bias checker subcommand
+        backtest_lookahead_bias_checker_cmd = \
+            subparsers.add_parser('backtest_lookahead_bias_checker',
+                                  help="checks for potential look ahead bias",
+                                  parents=[_common_parser])
+        backtest_lookahead_bias_checker_cmd.set_defaults(func=start_backtest_lookahead_bias_checker)
+
+        self._build_args(optionlist=ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER,
+                         parser=backtest_lookahead_bias_checker_cmd)
