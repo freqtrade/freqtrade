@@ -50,14 +50,6 @@ class Gate(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
-    def validate_ordertypes(self, order_types: Dict) -> None:
-
-        if self.trading_mode != TradingMode.FUTURES:
-            if any(v == 'market' for k, v in order_types.items()):
-                raise OperationalException(
-                    f'Exchange {self.name} does not support market orders.')
-        super().validate_stop_ordertypes(order_types)
-
     def _get_params(
             self,
             side: BuySell,
