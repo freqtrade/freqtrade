@@ -85,6 +85,26 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `net_arch` | Network architecture which is well described in [`stable_baselines3` doc](https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html#examples). In summary: `[<shared layers>, dict(vf=[<non-shared value network layers>], pi=[<non-shared policy network layers>])]`. By default this is set to `[128, 128]`, which defines 2 shared hidden layers with 128 units each.
 | `randomize_starting_position` | Randomize the starting point of each episode to avoid overfitting. <br> **Datatype:** bool. <br> Default: `False`.
 
+### PyTorch parameters
+
+#### general
+
+|  Parameter | Description |
+|------------|-------------|
+|  |  **Model training parameters within the freqai.model_training_parameters sub dictionary**
+| `learning_rate` | learning rate to be passed to the optimizer. <br> **Datatype:** float. <br> Default: `3e-4`.
+| `model_kwargs` | paramters to be passed to the model class. <br> **Datatype:** dict. <br> Default: `{}`.
+| `trainer_kwargs` | paramters to be passed to the trainer class. <br> **Datatype:** dict. <br> Default: `{}`.
+
+#### trainer_kwargs
+
+|  Parameter | Description |
+|------------|-------------|
+| `max_iters` | The number of training iterations to run. iteration here refers to the number of times we call self.optimizer.step(). used to calculate n_epochs. <br> **Datatype:** int. <br> Default: `100`.
+| `batch_size` | The size of the batches to use during training.. <br> **Datatype:** int. <br> Default: `64`.
+| `max_n_eval_batches` | The maximum number batches to use for evaluation.. <br> **Datatype:** int, optional. <br> Default: `None`.
+
+
 ### Additional parameters
 
 |  Parameter | Description |
