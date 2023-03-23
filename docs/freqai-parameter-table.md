@@ -87,7 +87,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 
 ### PyTorch parameters
 
-#### general
+#### general:
 
 |  Parameter | Description |
 |------------|-------------|
@@ -96,7 +96,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `model_kwargs` | paramters to be passed to the model class. <br> **Datatype:** dict. <br> Default: `{}`.
 | `trainer_kwargs` | paramters to be passed to the trainer class. <br> **Datatype:** dict. <br> Default: `{}`.
 
-#### trainer_kwargs
+#### trainer_kwargs:
 
 |  Parameter | Description |
 |------------|-------------|
