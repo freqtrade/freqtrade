@@ -522,7 +522,7 @@ class Backtesting:
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None)(
+                                             default_retval=None, supress_error=True)(
             trade=trade,  # type: ignore[arg-type]
             current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
