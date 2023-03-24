@@ -948,7 +948,6 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a entry order occurred.
         """
-        msg_type = RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY
         open_rate = order.safe_price
 
         if open_rate is None:
@@ -961,7 +960,7 @@ class FreqtradeBot(LoggingMixin):
 
         msg: RPCBuyMsg = {
             'trade_id': trade.id,
-            'type': msg_type,
+            'type': RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'exchange': trade.exchange.capitalize(),
@@ -1860,7 +1859,7 @@ class FreqtradeBot(LoggingMixin):
         if prot_trig:
             msg: RPCProtectionMsg = {
                 'type': RPCMessageType.PROTECTION_TRIGGER,
-                **prot_trig.to_json()
+                **prot_trig.to_json()  # type: ignore
             }
             self.rpc.send_msg(msg)
 
@@ -1868,7 +1867,7 @@ class FreqtradeBot(LoggingMixin):
         if prot_trig_glb:
             msg = {
                 'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
-                **prot_trig_glb.to_json()
+                **prot_trig_glb.to_json()  # type: ignore
             }
             self.rpc.send_msg(msg)
 
