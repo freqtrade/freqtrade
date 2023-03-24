@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import Any, List, Literal, Optional, TypedDict, Union
 
+from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums import RPCMessageType
 
 
@@ -95,6 +96,24 @@ class RPCSellCancelMsg(__RPCBuyMsgBase):
     close_date: datetime
 
 
+class __AnalyzedDFData(TypedDict):
+    key: PairWithTimeframe
+    df: Any
+    la: datetime
+
+
+class RPCAnalyzedDFMsg(RPCSendMsgBase):
+    """New Analyzed dataframe message"""
+    type: Literal[RPCMessageType.ANALYZED_DF]
+    data: __AnalyzedDFData
+
+
+class RPCNewCandleMsg(RPCSendMsgBase):
+    """New candle ping message, issued once per new candle/pair"""
+    type: Literal[RPCMessageType.NEW_CANDLE]
+    data: PairWithTimeframe
+
+
 RPCSendMsg = Union[
     RPCStatusMsg,
     RPCStrategyMsg,
@@ -103,5 +122,7 @@ RPCSendMsg = Union[
     RPCBuyMsg,
     RPCCancelMsg,
     RPCSellMsg,
-    RPCSellCancelMsg
+    RPCSellCancelMsg,
+    RPCAnalyzedDFMsg,
+    RPCNewCandleMsg
     ]
