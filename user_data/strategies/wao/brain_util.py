@@ -8,7 +8,8 @@ from wao.error_watcher import Error_Watcher
 import pickle
 
 from execution.config import Config
-from execution.romeo import Romeo, RomeoExitPriceType
+from execution.romeo import Romeo
+from execution.system_core import RomeoExitPriceType
 from execution.backtest_signal import BacktestSignal
 
 

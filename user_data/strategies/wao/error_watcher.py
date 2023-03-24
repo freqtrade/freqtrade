@@ -8,7 +8,8 @@ import time
 from wao.brain_config import BrainConfig
 
 from execution.config import Config
-from execution.romeo import Romeo, RomeoExitPriceType
+from execution.romeo import Romeo
+from execution.system_core import RomeoExitPriceType
 from execution.notifier import Notifier
 
 
