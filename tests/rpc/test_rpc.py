@@ -125,17 +125,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_pct': 0.0,
         'profit_abs': 0.0,
         'total_profit_abs': 0.0,
-        'stop_loss_abs': 0.0,
-        'stop_loss_pct': None,
-        'stop_loss_ratio': None,
-        'stoploss_current_dist': -1.099e-05,
-        'stoploss_current_dist_ratio': -1.0,
-        'stoploss_current_dist_pct': pytest.approx(-100.0),
-        'stoploss_entry_dist': -0.0010025,
-        'stoploss_entry_dist_ratio': -1.0,
-        'initial_stop_loss_abs': 0.0,
-        'initial_stop_loss_pct': None,
-        'initial_stop_loss_ratio': None,
         'open_order': '(limit buy rem=91.07468123)',
     })
     response_unfilled['orders'][0].update({
