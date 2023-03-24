@@ -11,7 +11,7 @@ class RPCSendMsgBase(TypedDict):
 
 class RPCStatusMsg(RPCSendMsgBase):
     """Used for Status, Startup and Warning messages"""
-    type: Literal[RPCMessageType.STATUS]
+    type: Literal[RPCMessageType.STATUS, RPCMessageType.STARTUP, RPCMessageType.WARNING]
     status: str
 
 
