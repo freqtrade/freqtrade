@@ -1135,7 +1135,11 @@ class Exchange:
                           "sell" else (stop_price >= limit_rate))
         # Ensure rate is less than stop price
         if bad_stop_price:
-            raise OperationalException(
+            # This can for example happen if the stop / liquidation price is set to 0
+            # Which is possible if a market-order closes right away.
+            # The InvalidOrderException will bubble up to exit_positions, where it will be
+            # handled gracefully.
+            raise InvalidOrderException(
                 "In stoploss limit order, stop price should be more than limit price. "
                 f"Stop price: {stop_price}, Limit price: {limit_rate}, "
                 f"Limit Price pct: {limit_price_pct}"

@@ -594,7 +594,7 @@ class FreqtradeBot(LoggingMixin):
         stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None)(
+                                             default_retval=None, supress_error=True)(
             trade=trade,
             current_time=datetime.now(timezone.utc), current_rate=current_entry_rate,
             current_profit=current_entry_profit, min_stake=min_entry_stake,
@@ -810,6 +810,9 @@ class FreqtradeBot(LoggingMixin):
                 precision_mode=self.exchange.precisionMode,
                 contract_size=self.exchange.get_contract_size(pair),
             )
+            stoploss = self.strategy.stoploss if not self.edge else self.edge.get_stoploss(pair)
+            trade.adjust_stop_loss(trade.open_rate, stoploss, initial=True)
+
         else:
             # This is additional buy, we reset fee_open_currency so timeout checking can work
             trade.is_open = True
@@ -1021,12 +1024,16 @@ class FreqtradeBot(LoggingMixin):
         trades_closed = 0
         for trade in trades:
             try:
+                try:
+                    if (self.strategy.order_types.get('stoploss_on_exchange') and
+                            self.handle_stoploss_on_exchange(trade)):
+                        trades_closed += 1
+                        Trade.commit()
+                        continue
 
-                if (self.strategy.order_types.get('stoploss_on_exchange') and
-                        self.handle_stoploss_on_exchange(trade)):
-                    trades_closed += 1
-                    Trade.commit()
-                    continue
+                except InvalidOrderException as exception:
+                    logger.warning(
+                        f'Unable to handle stoploss on exchange for {trade.pair}: {exception}')
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and trade.is_open and self.handle_trade(trade):
                     trades_closed += 1
