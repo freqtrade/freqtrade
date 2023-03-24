@@ -96,7 +96,7 @@ class RPCSellCancelMsg(__RPCBuyMsgBase):
     close_date: datetime
 
 
-class __AnalyzedDFData(TypedDict):
+class _AnalyzedDFData(TypedDict):
     key: PairWithTimeframe
     df: Any
     la: datetime
@@ -105,7 +105,7 @@ class __AnalyzedDFData(TypedDict):
 class RPCAnalyzedDFMsg(RPCSendMsgBase):
     """New Analyzed dataframe message"""
     type: Literal[RPCMessageType.ANALYZED_DF]
-    data: __AnalyzedDFData
+    data: _AnalyzedDFData
 
 
 class RPCNewCandleMsg(RPCSendMsgBase):
