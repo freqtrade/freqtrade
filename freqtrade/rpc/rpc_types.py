@@ -15,6 +15,12 @@ class RPCStatusMsg(RPCSendMsgBase):
     status: str
 
 
+class RPCStrategyMsg(RPCSendMsgBase):
+    """Used for Status, Startup and Warning messages"""
+    type: Literal[RPCMessageType.STRATEGY_MSG]
+    msg: str
+
+
 class RPCProtectionMsg(RPCSendMsgBase):
     type: Literal[RPCMessageType.PROTECTION_TRIGGER, RPCMessageType.PROTECTION_TRIGGER_GLOBAL]
     id: int
@@ -40,6 +46,7 @@ class __RPCBuyMsgBase(RPCSendMsgBase):
     enter_tag: Optional[str]
     exchange: str
     pair: str
+    base_currency: str
     leverage: Optional[float]
     direction: str
     limit: float
@@ -90,6 +97,7 @@ class RPCSellCancelMsg(__RPCBuyMsgBase):
 
 RPCSendMsg = Union[
     RPCStatusMsg,
+    RPCStrategyMsg,
     RPCProtectionMsg,
     RPCWhitelistMsg,
     RPCBuyMsg,
