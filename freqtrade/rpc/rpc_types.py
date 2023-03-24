@@ -34,8 +34,7 @@ class RPCWhitelistMsg(RPCSendMsgBase):
     data: List[str]
 
 
-class RPCBuyMsg(RPCSendMsgBase):
-    type: Literal[RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]
+class __RPCBuyMsgBase(RPCSendMsgBase):
     trade_id: int
     buy_tag: Optional[str]
     enter_tag: Optional[str]
@@ -55,12 +54,16 @@ class RPCBuyMsg(RPCSendMsgBase):
     sub_trade: bool
 
 
-class RPCCancelMsg(RPCBuyMsg):
+class RPCBuyMsg(__RPCBuyMsgBase):
+    type: Literal[RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]
+
+
+class RPCCancelMsg(__RPCBuyMsgBase):
     type: Literal[RPCMessageType.ENTRY_CANCEL]
     reason: str
 
 
-class RPCSellMsg(RPCBuyMsg):
+class RPCSellMsg(__RPCBuyMsgBase):
     type: Literal[RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]
     cumulative_profit: float
     gain: str  # Literal["profit", "loss"]
@@ -74,7 +77,7 @@ class RPCSellMsg(RPCBuyMsg):
     order_rate: Optional[float]
 
 
-class RPCSellCancelMsg(RPCBuyMsg):
+class RPCSellCancelMsg(__RPCBuyMsgBase):
     type: Literal[RPCMessageType.EXIT_CANCEL]
     reason: str
     gain: str  # Literal["profit", "loss"]
