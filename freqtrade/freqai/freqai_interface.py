@@ -109,7 +109,6 @@ class IFreqaiModel(ABC):
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
 
-
         record_params(config, self.full_path)
 
     def __getstate__(self):
