@@ -560,6 +560,9 @@ class LocalTrade():
             'trading_mode': self.trading_mode,
             'funding_fees': self.funding_fees,
             'open_order_id': self.open_order_id,
+            'amount_precision': self.amount_precision,
+            'price_precision': self.price_precision,
+            'precision_mode': self.precision_mode,
             'orders': orders,
         }
 

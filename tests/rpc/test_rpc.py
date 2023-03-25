@@ -88,6 +88,9 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'is_short': False,
         'funding_fees': 0.0,
         'trading_mode': TradingMode.SPOT,
+        'amount_precision': 8.0,
+        'price_precision': 8.0,
+        'precision_mode': 2,
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
