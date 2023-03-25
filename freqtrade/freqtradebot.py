@@ -1859,6 +1859,7 @@ class FreqtradeBot(LoggingMixin):
         if prot_trig:
             msg: RPCProtectionMsg = {
                 'type': RPCMessageType.PROTECTION_TRIGGER,
+                'base_currency': self.exchange.get_pair_base_currency(prot_trig.pair),
                 **prot_trig.to_json()  # type: ignore
             }
             self.rpc.send_msg(msg)
@@ -1867,6 +1868,7 @@ class FreqtradeBot(LoggingMixin):
         if prot_trig_glb:
             msg = {
                 'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+                'base_currency': self.exchange.get_pair_base_currency(prot_trig_glb.pair),
                 **prot_trig_glb.to_json()  # type: ignore
             }
             self.rpc.send_msg(msg)
