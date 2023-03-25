@@ -74,10 +74,9 @@ class FreqaiDataDrawer:
         self.historic_predictions: Dict[str, DataFrame] = {}
         self.full_path = full_path
         self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
-        self.historic_predictions_path_parquet = Path(
-            self.full_path / "historic_predictions.parquet")
-        self.historic_predictions_bkp_path_parquet = Path(
-            self.full_path / "historic_predictions.backup.parquet")
+        self.historic_predictions_folder = Path(self.full_path / "historic_predictions")
+        self.historic_predictions_bkp_folder = Path(
+            self.full_path / "historic_predictions_backup")
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
         self.global_metadata_path = Path(self.full_path / "global_metadata.json")
         self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
@@ -165,12 +164,16 @@ class FreqaiDataDrawer:
         Locate and load a previously saved historic predictions.
         :return: bool - whether or not the drawer was located
         """
-        exists = self.historic_predictions_path_parquet.is_file()
+        exists = self.historic_predictions_folder.exists()
         convert = self.historic_predictions_path.is_file()
 
         if exists:
             try:
-                self.historic_predictions = pd.read_parquet(self.historic_predictions_path_parquet)
+                for file_path in self.historic_predictions_folder.glob("*.parquet"):
+                    key = file_path.stem
+                    key.replace("_", "/")
+                    self.historic_predictions[key] = pd.read_parquet(file_path)
+
                 logger.info(
                     f"Found existing historic predictions at {self.full_path}, but beware "
                     "that statistics may be inaccurate if the bot has been offline for "
@@ -178,17 +181,20 @@ class FreqaiDataDrawer:
                 )
             except EOFError:
                 logger.warning(
-                    'Historical prediction file was corrupted. Trying to load backup file.')
-                self.historic_predictions = pd.read_parquet(
-                    self.historic_predictions_bkp_path_parquet)
-                logger.warning('FreqAI successfully loaded the backup historical predictions file.')
+                    'Historical prediction files were corrupted. Trying to load backup files.')
+                for file_path in self.historic_predictions_folder.glob("*.parquet"):
+                    key = file_path.stem
+                    key.replace("_", "/")
+                    self.historic_predictions[key] = pd.read_parquet(file_path)
+                logger.warning('FreqAI successfully loaded the backup '
+                               'historical predictions files.')
 
         elif not exists and convert:
             logger.info("Converting your historic predictions pkl to parquet"
                         "to improve performance.")
             with Path.open(self.historic_predictions_path, "rb") as fp:
                 self.historic_predictions = cloudpickle.load(fp)
-            self.historic_predictions.to_parquet(self.historic_predictions_path_parquet)
+            self.save_historic_predictions_to_disk()
             exists = True
 
         else:
@@ -203,10 +209,16 @@ class FreqaiDataDrawer:
         """
         Save historic predictions pickle to disk
         """
-        self.historic_predictions.to_parquet(self.historic_predictions_path_parquet)
+
+        self.historic_predictions_folder.mkdir(parents=True, exist_ok=True)
+        for key, value in self.historic_predictions.items():
+            key = key.replace("/", "_")
+            # pytest.set_trace()
+            filename = Path(self.historic_predictions_folder / f"{key}.parquet")
+            value.to_parquet(filename)
 
         # create a backup
-        shutil.copy(self.historic_predictions_path, self.historic_predictions_bkp_path_parquet)
+        shutil.copytree(self.historic_predictions_folder, self.historic_predictions_bkp_folder)
 
     def save_metric_tracker_to_disk(self):
         """
@@ -688,7 +700,7 @@ class FreqaiDataDrawer:
         Returns timerange information based on historic predictions file
         :return: timerange calculated from saved live data
         """
-        if not self.historic_predictions_path.is_file():
+        if not self.historic_predictions_folder.exists():
             raise OperationalException(
                 'Historic predictions not found. Historic predictions data is required '
                 'to run backtest with the freqai-backtest-live-models option '
