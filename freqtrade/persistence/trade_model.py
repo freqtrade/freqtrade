@@ -1663,8 +1663,10 @@ class Trade(ModelBase, LocalTrade):
             stop_loss=data["stop_loss_abs"],
             stop_loss_pct=data["stop_loss_ratio"],
             stoploss_order_id=data["stoploss_order_id"],
-            stoploss_last_update=(datetime.fromtimestamp(data["stoploss_last_update"] // 1000,
-                                  tz=timezone.utc) if data["stoploss_last_update"] else None),
+            stoploss_last_update=(
+                datetime.fromtimestamp(data["stoploss_last_update_timestamp"] // 1000,
+                                       tz=timezone.utc)
+                if data["stoploss_last_update_timestamp"] else None),
             initial_stop_loss=data["initial_stop_loss_abs"],
             initial_stop_loss_pct=data["initial_stop_loss_ratio"],
             min_rate=data["min_rate"],
