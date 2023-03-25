@@ -169,11 +169,7 @@ class FreqaiDataDrawer:
 
         if exists:
             try:
-                for file_path in self.historic_predictions_folder.glob("*.parquet"):
-                    key = file_path.stem
-                    key.replace("_", "/")
-                    self.historic_predictions[key] = pd.read_parquet(file_path)
-
+                self.load_historic_predictions_from_folder()
                 logger.info(
                     f"Found existing historic predictions at {self.full_path}, but beware "
                     "that statistics may be inaccurate if the bot has been offline for "
@@ -182,10 +178,7 @@ class FreqaiDataDrawer:
             except EOFError:
                 logger.warning(
                     'Historical prediction files were corrupted. Trying to load backup files.')
-                for file_path in self.historic_predictions_folder.glob("*.parquet"):
-                    key = file_path.stem
-                    key.replace("_", "/")
-                    self.historic_predictions[key] = pd.read_parquet(file_path)
+                self.load_historic_predictions_from_folder()
                 logger.warning('FreqAI successfully loaded the backup '
                                'historical predictions files.')
 
@@ -204,6 +197,18 @@ class FreqaiDataDrawer:
             )
 
         return exists
+
+    def load_historic_predictions_from_folder(self):
+        """
+        Try to build the historic_predictions dictionary from parquet
+        files in the historic_predictions_folder
+        """
+        for file_path in self.historic_predictions_folder.glob("*.parquet"):
+            key = file_path.stem
+            key.replace("_", "/")
+            self.historic_predictions[key] = pd.read_parquet(file_path)
+
+        return
 
     def save_historic_predictions_to_disk(self):
         """
