@@ -223,7 +223,8 @@ class FreqaiDataDrawer:
             value.to_parquet(filename)
 
         # create a backup
-        shutil.copytree(self.historic_predictions_folder, self.historic_predictions_bkp_folder)
+        shutil.copytree(self.historic_predictions_folder,
+                        self.historic_predictions_bkp_folder, dirs_exist_ok=True)
 
     def save_metric_tracker_to_disk(self):
         """
