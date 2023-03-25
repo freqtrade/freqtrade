@@ -1066,6 +1066,9 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'liquidation_price': None,
         'funding_fees': None,
         'trading_mode': ANY,
+        'amount_precision': None,
+        'price_precision': None,
+        'precision_mode': None,
         'orders': [ANY],
     }
 
@@ -1271,6 +1274,9 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'liquidation_price': None,
         'funding_fees': None,
         'trading_mode': 'spot',
+        'amount_precision': None,
+        'price_precision': None,
+        'precision_mode': None,
         'orders': [],
     }
 
