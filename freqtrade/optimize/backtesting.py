@@ -205,7 +205,6 @@ class Backtesting:
         self.strategy.order_types['stoploss_on_exchange'] = False
 
         self.strategy.ft_bot_start()
-        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
@@ -1155,6 +1154,8 @@ class Backtesting:
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
             self.check_abort()
+            strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
+                current_time=current_time)
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 row = self.validate_row(data, pair, row_index, current_time)
