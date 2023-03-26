@@ -1232,7 +1232,8 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         stoploss_norm = self.exchange.price_to_precision(
-            trade.pair, trade.stoploss_or_liquidation, ROUND_DOWN if trade.is_short else ROUND_UP)
+            trade.pair, trade.stoploss_or_liquidation,
+            rounding_mode=ROUND_DOWN if trade.is_short else ROUND_UP)
 
         if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
             # we check if the update is necessary

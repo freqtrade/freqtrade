@@ -224,6 +224,7 @@ def price_to_precision(
     price: float,
     price_precision: Optional[float],
     precisionMode: Optional[int],
+    *,
     rounding_mode: int = ROUND,
 ) -> float:
     """

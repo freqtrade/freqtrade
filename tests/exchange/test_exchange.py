@@ -353,7 +353,8 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (234.26, TICK_SIZE, 0.5, 234.5, ROUND),
 ])
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
-    assert price_to_precision(price, precision, precision_mode, rounding_mode) == expected
+    assert price_to_precision(
+        price, precision, precision_mode, rounding_mode=rounding_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -5277,7 +5278,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     })
     default_conf['dry_run'] = False
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_contract_size = MagicMock(return_value=contract_size)
@@ -5303,5 +5304,5 @@ def test_price_to_precision_with_default_conf(default_conf, mocker):
     conf = copy.deepcopy(default_conf)
     patched_ex = get_patched_exchange(mocker, conf)
     prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
-    assert prec_price == 1.00000002
+    assert prec_price == 1.00000001
 

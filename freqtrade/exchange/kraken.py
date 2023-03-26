@@ -118,11 +118,11 @@ class Kraken(Exchange):
                 limit_rate = stop_price * limit_price_pct
             else:
                 limit_rate = stop_price * (2 - limit_price_pct)
-            params['price2'] = self.price_to_precision(pair, limit_rate, round_mode)
+            params['price2'] = self.price_to_precision(pair, limit_rate, rounding_mode=round_mode)
         else:
             ordertype = "stop-loss"
 
-        stop_price = self.price_to_precision(pair, stop_price, round_mode)
+        stop_price = self.price_to_precision(pair, stop_price, rounding_mode=round_mode)
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(

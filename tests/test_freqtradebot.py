@@ -1602,7 +1602,7 @@ def test_stoploss_on_exchange_price_rounding(
         EXMS,
         get_fee=fee,
     )
-    price_mock = MagicMock(side_effect=lambda p, s: int(s))
+    price_mock = MagicMock(side_effect=lambda p, s, **kwargs: int(s))
     stoploss_mock = MagicMock(return_value={'id': '13434334'})
     adjust_mock = MagicMock(return_value=False)
     mocker.patch.multiple(

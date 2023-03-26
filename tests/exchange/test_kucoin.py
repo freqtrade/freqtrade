@@ -27,7 +27,7 @@ def test_create_stoploss_order_kucoin(default_conf, mocker, limitratio, expected
     })
     default_conf['dry_run'] = False
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kucoin')
     if order_type == 'limit':
@@ -88,7 +88,7 @@ def test_stoploss_order_dry_run_kucoin(default_conf, mocker):
     order_type = 'market'
     default_conf['dry_run'] = True
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kucoin')
 
