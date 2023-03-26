@@ -15,8 +15,8 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     ('buy', 'limit', 'gtc', {'timeInForce': 'GTC'}),
     ('buy', 'limit', 'IOC', {'timeInForce': 'IOC'}),
     ('buy', 'market', 'IOC', {}),
-    ('buy', 'limit', 'PO', {'postOnly': True}),
-    ('sell', 'limit', 'PO', {'postOnly': True}),
+    ('buy', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'limit', 'PO', {'timeInForce': 'PO'}),
     ('sell', 'market', 'PO', {}),
     ])
 def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
