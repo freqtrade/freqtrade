@@ -15,7 +15,8 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPE
                                  BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange import amount_to_contract_precision, price_to_precision
+from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
+                                price_to_precision)
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import ModelBase, SessionType
 from freqtrade.util import FtPrecise
@@ -597,7 +598,8 @@ class LocalTrade():
         """
         Method used internally to set self.stop_loss.
         """
-        stop_loss_norm = price_to_precision(stop_loss, self.price_precision, self.precision_mode)
+        stop_loss_norm = price_to_precision(stop_loss, self.price_precision, self.precision_mode,
+                                            ROUND_DOWN if self.is_short else ROUND_UP)
         if not self.stop_loss:
             self.initial_stop_loss = stop_loss_norm
         self.stop_loss = stop_loss_norm
