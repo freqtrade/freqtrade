@@ -5328,21 +5328,3 @@ def test_price_to_precision_with_default_conf(default_conf, mocker):
     prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
     assert prec_price == 1.00000002
 
-
-@pytest.mark.parametrize(
-    "rounding_mode, price, expected_price",
-    [
-        (TRUNCATE, 1.0000000199, 1.00000001),
-        (ROUND, 1.0000000149, 1.00000001),
-        (ROUND, 1.0000000151, 1.00000002),
-        (ROUND_UP, 1.0000000101, 1.00000002),
-    ],
-)
-def test_price_to_precision_rounding_mode_from_conf(
-    default_conf, mocker, rounding_mode, price, expected_price
-):
-    conf = copy.deepcopy(default_conf)
-    conf["exchange"]["price_rounding_mode"] = rounding_mode
-    patched_ex = get_patched_exchange(mocker, conf)
-    prec_price = patched_ex.price_to_precision("XRP/USDT", price)
-    assert prec_price == expected_price

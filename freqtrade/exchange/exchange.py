@@ -143,9 +143,7 @@ class Exchange:
             if config.get('margin_mode')
             else MarginMode.NONE
         )
-        self.liquidation_buffer = config.get("liquidation_buffer", 0.05)
-        self._price_rounding_mode = exchange_config.get("price_rounding_mode",
-                                                        DEFAULT_PRICE_ROUND_MODE)
+        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
 
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
@@ -732,13 +730,14 @@ class Exchange:
         """
         return amount_to_precision(amount, self.get_precision_amount(pair), self.precisionMode)
 
-    def price_to_precision(self, pair: str, price: float) -> float:
+    def price_to_precision(self, pair: str, price: float, rounding_mode: int) -> float:
         """
         Returns the price rounded to the precision the Exchange accepts.
-        The default price_rounding_mode in conf is ROUND_UP
+        The default price_rounding_mode in conf is ROUND.
+        Must use ROUND_UP / ROUND_DOWN for stoploss calculations.
         """
         return price_to_precision(price, self.get_precision_price(pair),
-                                  self.precisionMode, self._price_rounding_mode)
+                                  self.precisionMode, rounding_mode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
