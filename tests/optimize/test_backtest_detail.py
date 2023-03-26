@@ -930,9 +930,9 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
     # TODO: Should we initialize this properly??
-    backtesting._can_short = True
     backtesting.trading_mode = TradingMode.MARGIN
     backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting._can_short = True
     backtesting.required_startup = 0
     backtesting.strategy.advise_entry = lambda a, m: frame
     backtesting.strategy.advise_exit = lambda a, m: frame
