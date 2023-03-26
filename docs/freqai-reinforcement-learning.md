@@ -55,7 +55,7 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         dataframe["&-action"] = 0
 ```
 
-Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
+Most of the function remains the same as for typical Regressors, however, the function below shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
     def feature_engineering_standard(self, dataframe, **kwargs):
