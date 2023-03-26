@@ -739,7 +739,7 @@ class Backtesting:
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
                 side=direction, entry_tag=entry_tag,
-            ) if self._can_short else 1.0
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
 
