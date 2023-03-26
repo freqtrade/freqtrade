@@ -588,6 +588,7 @@ CONF_SCHEMA = {
                 "rl_config": {
                     "type": "object",
                     "properties": {
+                        "drop_ohlc_from_features": {"type": "boolean", "default": False},
                         "train_cycles": {"type": "integer"},
                         "max_trade_duration_candles": {"type": "integer"},
                         "add_state_info": {"type": "boolean", "default": False},

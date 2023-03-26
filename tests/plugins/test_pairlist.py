@@ -711,8 +711,8 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
 
 def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
-    if hasattr(Trade, 'query'):
-        del Trade.query
+    if hasattr(Trade, 'session'):
+        del Trade.session
     mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
     pm = PairListManager(exchange, whitelist_conf, MagicMock())
@@ -826,6 +826,12 @@ def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> N
 
     with pytest.raises(OperationalException,
                        match=r'Exchange does not support fetchTickers, .*'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.get_option', MagicMock(return_value=False))
+    with pytest.raises(OperationalException,
+                       match=r'.*requires exchange to have bid/ask data'):
         get_patched_freqtradebot(mocker, default_conf)
 
 

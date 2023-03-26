@@ -13,8 +13,8 @@ from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
-                                  InvalidOrderException, OperationalException, PricingError,
-                                  TemporaryError)
+                                  InsufficientFundsError, InvalidOrderException,
+                                  OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_precision,
                                 date_minus_candles, market_is_active, price_to_precision,
                                 timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
@@ -1052,9 +1052,9 @@ def test_validate_ordertypes(default_conf, mocker):
     ('bybit', 'last', True),
     ('bybit', 'mark', True),
     ('bybit', 'index', True),
-    # ('okx', 'last', True),
-    # ('okx', 'mark', True),
-    # ('okx', 'index', True),
+    ('okx', 'last', True),
+    ('okx', 'mark', True),
+    ('okx', 'index', True),
     ('gate', 'last', True),
     ('gate', 'mark', True),
     ('gate', 'index', True),
@@ -1612,13 +1612,13 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][4] == 200
 
     # test exception handling
-    with pytest.raises(DependencyException):
+    with pytest.raises(InsufficientFundsError):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200,
                               leverage=1.0)
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype='limit', side="sell", amount=1, rate=200,
@@ -3400,7 +3400,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex.get_option('stoploss_on_exchange')
-    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC']
+    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC', 'PO']
     assert ex.get_option('trades_pagination') == 'id'
     assert ex.get_option('trades_pagination_arg') == 'fromId'
 
@@ -3879,29 +3879,6 @@ def test_get_stake_amount_considering_leverage(
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
     assert exchange._get_stake_amount_considering_leverage(
         stake_amount, leverage) == min_stake_with_lev
-
-
-@pytest.mark.parametrize("exchange_name,trading_mode", [
-    ("binance", TradingMode.FUTURES),
-])
-def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
-
-    api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
-    default_conf['dry_run'] = False
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        exchange_name,
-        "_set_leverage",
-        "set_leverage",
-        pair="XRP/USDT",
-        leverage=5.0,
-        trading_mode=trading_mode
-    )
 
 
 @pytest.mark.parametrize("margin_mode", [

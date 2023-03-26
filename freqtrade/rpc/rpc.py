@@ -5,7 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import arrow
 import psutil
@@ -13,6 +13,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
 from pandas import DataFrame, NaT
+from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
@@ -122,7 +123,8 @@ class RPC:
                                 if config['max_open_trades'] != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
             'stoploss': config.get('stoploss'),
-            'stoploss_on_exchange': config.get('stoploss_on_exchange', False),
+            'stoploss_on_exchange': config.get('order_types',
+                                               {}).get('stoploss_on_exchange', False),
             'trailing_stop': config.get('trailing_stop'),
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
@@ -158,7 +160,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades: List[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+            trades: Sequence[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
@@ -189,9 +191,14 @@ class RPC:
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
-                    current_profit = trade.close_profit
-                    current_profit_abs = trade.close_profit_abs
+                    current_profit = trade.close_profit or 0.0
+                    current_profit_abs = trade.close_profit_abs or 0.0
                 total_profit_abs = trade.realized_profit + current_profit_abs
+                total_profit_ratio: Optional[float] = None
+                if trade.max_stake_amount:
+                    total_profit_ratio = (
+                        (total_profit_abs / trade.max_stake_amount) * trade.leverage
+                    )
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
@@ -224,6 +231,7 @@ class RPC:
 
                     total_profit_abs=total_profit_abs,
                     total_profit_fiat=total_profit_fiat,
+                    total_profit_ratio=total_profit_ratio,
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
@@ -333,11 +341,13 @@ class RPC:
         for day in range(0, timescale):
             profitday = start_date - time_offset(day)
             # Only query for necessary columns for performance reasons.
-            trades = Trade.query.session.query(Trade.close_profit_abs).filter(
-                Trade.is_open.is_(False),
-                Trade.close_date >= profitday,
-                Trade.close_date < (profitday + time_offset(1))
-            ).order_by(Trade.close_date).all()
+            trades = Trade.session.execute(
+                select(Trade.close_profit_abs)
+                .filter(Trade.is_open.is_(False),
+                        Trade.close_date >= profitday,
+                        Trade.close_date < (profitday + time_offset(1)))
+                .order_by(Trade.close_date)
+            ).all()
 
             curdayprofit = sum(
                 trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
@@ -373,21 +383,27 @@ class RPC:
 
     def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
         """ Returns the X last trades """
-        order_by = Trade.id if order_by_id else Trade.close_date.desc()
+        order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
-            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                order_by).limit(limit).offset(offset)
+            trades = Trade.session.scalars(
+                Trade.get_trades_query([Trade.is_open.is_(False)])
+                .order_by(order_by)
+                .limit(limit)
+                .offset(offset))
         else:
-            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc()).all()
+            trades = Trade.session.scalars(
+                Trade.get_trades_query([Trade.is_open.is_(False)])
+                .order_by(Trade.close_date.desc()))
 
         output = [trade.to_json() for trade in trades]
+        total_trades = Trade.session.scalar(
+            select(func.count(Trade.id)).filter(Trade.is_open.is_(False)))
 
         return {
             "trades": output,
             "trades_count": len(output),
             "offset": offset,
-            "total_trades": Trade.get_trades([Trade.is_open.is_(False)]).count(),
+            "total_trades": total_trades,
         }
 
     def _rpc_stats(self) -> Dict[str, Any]:
@@ -401,7 +417,7 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
+        trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Sell reason
         exit_reasons = {}
         for trade in trades:
@@ -410,7 +426,7 @@ class RPC:
             exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
-        dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
+        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
         for trade in trades:
             if trade.close_date is not None and trade.open_date is not None:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
@@ -429,8 +445,8 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades: List[Trade] = Trade.get_trades(
-            trade_filter, include_orders=False).order_by(Trade.id).all()
+        trades: Sequence[Trade] = Trade.session.scalars(Trade.get_trades_query(
+            trade_filter, include_orders=False).order_by(Trade.id)).all()
 
         profit_all_coin = []
         profit_all_ratio = []
@@ -449,11 +465,11 @@ class RPC:
                 durations.append((trade.close_date - trade.open_date).total_seconds())
 
             if not trade.is_open:
-                profit_ratio = trade.close_profit
-                profit_abs = trade.close_profit_abs
+                profit_ratio = trade.close_profit or 0.0
+                profit_abs = trade.close_profit_abs or 0.0
                 profit_closed_coin.append(profit_abs)
                 profit_closed_ratio.append(profit_ratio)
-                if trade.close_profit >= 0:
+                if profit_ratio >= 0:
                     winning_trades += 1
                     winning_profit += profit_abs
                 else:
@@ -506,7 +522,7 @@ class RPC:
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
-                               for trade in trades if not trade.is_open])
+                               for trade in trades if not trade.is_open and trade.close_date])
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:
@@ -785,7 +801,8 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Optional[Trade] = Trade.get_trades(
+            [Trade.is_open.is_(True), Trade.pair == pair]).first()
         is_short = (order_side == SignalDirection.SHORT)
         if trade:
             is_short = trade.is_short
@@ -938,12 +955,12 @@ class RPC:
     def _rpc_delete_lock(self, lockid: Optional[int] = None,
                          pair: Optional[str] = None) -> Dict[str, Any]:
         """ Delete specific lock(s) """
-        locks = []
+        locks: Sequence[PairLock] = []
 
         if pair:
             locks = PairLocks.get_pair_locks(pair)
         if lockid:
-            locks = PairLock.query.filter(PairLock.id == lockid).all()
+            locks = PairLock.session.scalars(select(PairLock).filter(PairLock.id == lockid)).all()
 
         for lock in locks:
             lock.active = False

@@ -100,7 +100,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             """
             # first, penalize if the action is not valid
             if not self._is_valid(action):
-                self.tensorboard_log("is_valid")
+                self.tensorboard_log("invalid", category="actions")
                 return -2
 
             pnl = self.get_unrealized_profit()

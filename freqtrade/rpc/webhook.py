@@ -58,6 +58,7 @@ class Webhook(RPCHandler):
             valuedict = whconfig.get('webhookexitcancel')
         elif msg['type'] in (RPCMessageType.STATUS,
                              RPCMessageType.STARTUP,
+                             RPCMessageType.EXCEPTION,
                              RPCMessageType.WARNING):
             valuedict = whconfig.get('webhookstatus')
         elif msg['type'].value in whconfig:
@@ -112,7 +113,7 @@ class Webhook(RPCHandler):
                     response = post(self._url, data=payload['data'],
                                     headers={'Content-Type': 'text/plain'})
                 else:
-                    raise NotImplementedError('Unknown format: {}'.format(self._format))
+                    raise NotImplementedError(f'Unknown format: {self._format}')
 
                 # Throw a RequestException if the post was not successful
                 response.raise_for_status()

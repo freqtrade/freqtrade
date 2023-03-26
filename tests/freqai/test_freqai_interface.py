@@ -1,5 +1,6 @@
 import platform
 import shutil
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -17,6 +18,10 @@ from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_h
 from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
 
 
+def is_py11() -> bool:
+    return sys.version_info >= (3, 11)
+
+
 def is_arm() -> bool:
     machine = platform.machine()
     return "arm" in machine or "aarch64" in machine
@@ -25,6 +30,17 @@ def is_arm() -> bool:
 def is_mac() -> bool:
     machine = platform.system()
     return "Darwin" in machine
+
+
+def can_run_model(model: str) -> None:
+    if (is_arm() or is_py11()) and "Catboost" in model:
+        pytest.skip("CatBoost is not supported on ARM")
+
+    if is_mac() and not is_arm() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+
+    if is_py11() and 'Reinforcement' in model:
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
 
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
@@ -41,12 +57,7 @@ def is_mac() -> bool:
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
 
-    if is_arm() and model == 'CatboostRegressor':
-        pytest.skip("CatBoost is not supported on ARM")
-
-    if is_mac() and not is_arm() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-
+    can_run_model(model)
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -64,15 +75,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
-    if 'ReinforcementLearner' in model:
-        model_save_ext = 'zip'
-        freqai_conf = make_rl_config(freqai_conf)
-        # test the RL guardrails
-        freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
-        freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
-
     if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+        freqai_conf["freqai"]["rl_config"]["drop_ohlc_from_features"] = True
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -117,7 +122,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
-    if is_arm() and 'Catboost' in model:
+    if (is_arm() or is_py11()) and 'Catboost' in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -159,7 +164,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
-    if is_arm() and model == 'CatboostClassifier':
+    if (is_arm() or is_py11()) and model == 'CatboostClassifier':
         pytest.skip("CatBoost is not supported on ARM")
 
     freqai_conf.update({"freqaimodel": model})
@@ -206,13 +211,11 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
+    can_run_model(model)
+
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
-    if is_arm() and "Catboost" in model:
-        pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
     Trade.use_db = False
 
     freqai_conf.update({"freqaimodel": model})
@@ -509,6 +512,8 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    if is_py11():
+        pytest.skip("Reinforcement learning currently not available on python 3.11.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})

@@ -32,6 +32,7 @@ class Gate(Exchange):
 
     _ft_has_futures: Dict = {
         "needs_trading_fees": True,
+        "tickers_have_bid_ask": False,
         "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         "stop_price_type_field": "price_type",
@@ -74,8 +75,7 @@ class Gate(Exchange):
         )
         if ordertype == 'market' and self.trading_mode == TradingMode.FUTURES:
             params['type'] = 'market'
-            param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: 'IOC'})
+            params.update({'timeInForce': 'IOC'})
         return params
 
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime,

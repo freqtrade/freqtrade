@@ -35,8 +35,8 @@ def test_freqai_backtest_start_backtest_list(freqai_conf, mocker, testdatadir, c
     args = get_args(args)
     bt_config = setup_optimize_configuration(args, RunMode.BACKTEST)
     Backtesting(bt_config)
-    assert log_has_re('Using --strategy-list with FreqAI REQUIRES all strategies to have identical '
-                      'populate_any_indicators.', caplog)
+    assert log_has_re('Using --strategy-list with FreqAI REQUIRES all strategies to have identical',
+                      caplog)
     Backtesting.cleanup()
 
 

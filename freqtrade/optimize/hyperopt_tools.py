@@ -1,4 +1,3 @@
-import io
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -464,8 +463,8 @@ class HyperoptTools():
             return
 
         try:
-            io.open(csv_file, 'w+').close()
-        except IOError:
+            Path(csv_file).open('w+').close()
+        except OSError:
             logger.error(f"Failed to create CSV file: {csv_file}")
             return
 
