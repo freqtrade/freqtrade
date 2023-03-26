@@ -306,7 +306,7 @@ class IFreqaiModel(ABC):
                 if check_features:
                     self.dd.load_metadata(dk)
                     dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe.tail(1), pair=metadata["pair"]
+                        strategy, prediction_dataframe=dataframe.tail(1), pair=pair
                     )
                     dk.find_features(dataframe_dummy_features)
                     self.check_if_feature_list_matches_strategy(dk)
@@ -316,7 +316,7 @@ class IFreqaiModel(ABC):
             else:
                 if populate_indicators:
                     dataframe = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+                        strategy, prediction_dataframe=dataframe, pair=pair
                     )
                     populate_indicators = False
 
@@ -331,6 +331,9 @@ class IFreqaiModel(ABC):
 
                 dataframe_train = dk.slice_dataframe(tr_train, dataframe_base_train)
                 dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe_base_backtest)
+
+                dataframe_train = dk.remove_special_chars_from_feature_names(dataframe_train)
+                dataframe_backtest = dk.remove_special_chars_from_feature_names(dataframe_backtest)
 
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
