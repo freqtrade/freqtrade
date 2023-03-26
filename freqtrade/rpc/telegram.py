@@ -30,6 +30,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -429,14 +430,14 @@ class Telegram(RPCHandler):
             return None
         return message
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Send a message to telegram channel """
 
         default_noti = 'on'
 
         msg_type = msg['type']
         noti = ''
-        if msg_type == RPCMessageType.EXIT:
+        if msg['type'] == RPCMessageType.EXIT:
             sell_noti = self._config['telegram'] \
                 .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still can be string
@@ -453,7 +454,7 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(deepcopy(msg), msg_type)
+        message = self.compose_message(deepcopy(msg), msg_type)  # type: ignore
         if message:
             self._send_msg(message, disable_notification=(noti == 'silent'))
 

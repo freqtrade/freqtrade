@@ -30,6 +30,7 @@ from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.rpc.rpc_types import RPCSendMsg
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -79,7 +80,7 @@ class RPCHandler:
         """ Cleanup pending module resources """
 
     @abstractmethod
-    def send_msg(self, msg: Dict[str, str]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Sends a message to all registered rpc modules """
 
 
