@@ -1029,6 +1029,9 @@ class Backtesting:
                                   requested_stake=(
                                     order.safe_remaining * order.ft_price / trade.leverage),
                                   direction='short' if trade.is_short else 'long')
+                # Delete trade if no successful entries happened (if placing the new order failed)
+                if trade.open_order_id is None and trade.nr_of_successful_entries == 0 :
+                    return True
                 self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
