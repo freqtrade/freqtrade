@@ -250,6 +250,7 @@ class TradeSchema(BaseModel):
     profit_fiat: Optional[float]
 
     realized_profit: float
+    realized_profit_ratio: Optional[float]
 
     exit_reason: Optional[str]
     exit_order_status: Optional[str]
@@ -275,6 +276,10 @@ class TradeSchema(BaseModel):
     funding_fees: Optional[float]
     trading_mode: Optional[TradingMode]
 
+    amount_precision: Optional[float]
+    price_precision: Optional[float]
+    precision_mode: Optional[int]
+
 
 class OpenTradeSchema(TradeSchema):
     stoploss_current_dist: Optional[float]
@@ -285,6 +290,7 @@ class OpenTradeSchema(TradeSchema):
     current_rate: float
     total_profit_abs: float
     total_profit_fiat: Optional[float]
+    total_profit_ratio: Optional[float]
 
     open_order: Optional[str]
 
@@ -309,7 +315,7 @@ class LockModel(BaseModel):
     lock_timestamp: int
     pair: str
     side: str
-    reason: str
+    reason: Optional[str]
 
 
 class Locks(BaseModel):

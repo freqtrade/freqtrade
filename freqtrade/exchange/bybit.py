@@ -27,11 +27,10 @@ class Bybit(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 1000,
+        "ohlcv_candle_limit": 200,
         "ohlcv_has_history": False,
     }
     _ft_has_futures: Dict = {
-        "ohlcv_candle_limit": 200,
         "ohlcv_has_history": True,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
@@ -115,7 +114,7 @@ class Bybit(Exchange):
         data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
         return data
 
-    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT:
             params = {'leverage': leverage}
             self.set_margin_mode(pair, self.margin_mode, accept_fail=True, params=params)

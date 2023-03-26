@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import ccxt
 import pytest
 
-from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
+from freqtrade.exceptions import DependencyException, InvalidOrderException
 from tests.conftest import EXMS, get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -31,7 +31,7 @@ def test_create_stoploss_order_huobi(default_conf, mocker, limitratio, expected,
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'huobi')
 
-    with pytest.raises(OperationalException):
+    with pytest.raises(InvalidOrderException):
         order = exchange.create_stoploss(pair='ETH/BTC', amount=1, stop_price=190,
                                          order_types={'stoploss_on_exchange_limit_ratio': 1.05},
                                          side=side,
@@ -84,7 +84,7 @@ def test_create_stoploss_order_dry_run_huobi(default_conf, mocker):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'huobi')
 
-    with pytest.raises(OperationalException):
+    with pytest.raises(InvalidOrderException):
         order = exchange.create_stoploss(pair='ETH/BTC', amount=1, stop_price=190,
                                          order_types={'stoploss_on_exchange_limit_ratio': 1.05},
                                          side='sell', leverage=1.0)

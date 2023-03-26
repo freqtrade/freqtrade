@@ -441,10 +441,6 @@ class Backtesting:
                 # Worst case: price ticks tiny bit above open and dives down.
                 stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(
                     (trade.stop_loss_pct or 0.0) / leverage))
-                if is_short:
-                    assert stop_rate > row[LOW_IDX]
-                else:
-                    assert stop_rate < row[HIGH_IDX]
 
             # Limit lower-end to candle low to avoid exits below the low.
             # This still remains "worst case" - but "worst realistic case".
@@ -525,7 +521,7 @@ class Backtesting:
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None)(
+                                             default_retval=None, supress_error=True)(
             trade=trade,  # type: ignore[arg-type]
             current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
@@ -748,7 +744,7 @@ class Backtesting:
             leverage = min(max(leverage, 1.0), max_leverage)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, propose_rate, -0.05, leverage=leverage) or 0
+            pair, propose_rate, -0.05 if not pos_adjust else 0.0, leverage=leverage) or 0
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, propose_rate, leverage=leverage)
         stake_available = self.wallets.get_available_stake_amount()

@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
@@ -23,7 +24,7 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "order_time_in_force": ['GTC', 'FOK', 'IOC'],
+        "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
@@ -31,6 +32,7 @@ class Binance(Exchange):
     }
     _ft_has_futures: Dict = {
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
+        "order_time_in_force": ["GTC", "FOK", "IOC"],
         "tickers_have_price": False,
         "floor_leverage": True,
         "stop_price_type_field": "workingType",
@@ -46,6 +48,26 @@ class Binance(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
+
+    def _get_params(
+        self,
+        side: BuySell,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'GTC',
+    ) -> Dict:
+        params = super()._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
+        if (
+            time_in_force == 'PO'
+            and ordertype != 'market'
+            and self.trading_mode == TradingMode.SPOT
+            # Only spot can do post only orders
+        ):
+            params.pop('timeInForce')
+            params['postOnly'] = True
+
+        return params
 
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)

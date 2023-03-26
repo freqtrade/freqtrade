@@ -340,11 +340,13 @@ class FtRestClient():
         :param limit: Limit result to the last n candles.
         :return: json object
         """
-        return self._get("pair_candles", params={
+        params = {
             "pair": pair,
             "timeframe": timeframe,
-            "limit": limit,
-        })
+        }
+        if limit:
+            params['limit'] = limit
+        return self._get("pair_candles", params=params)
 
     def pair_history(self, pair, timeframe, strategy, timerange=None):
         """Return historic, analyzed dataframe

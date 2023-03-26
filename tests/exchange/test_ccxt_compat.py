@@ -37,7 +37,7 @@ EXCHANGES = {
         'stake_currency': 'USDT',
         'use_ci_proxy': True,
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
         'hasQuoteVolumeFutures': True,
@@ -66,7 +66,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures': False,
         'sample_order': [{
             "symbol": "SOLUSDT",
@@ -91,7 +91,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
     },
@@ -99,7 +99,7 @@ EXCHANGES = {
         'pair': 'XRP/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
         'sample_order': [
@@ -141,7 +141,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
         'hasQuoteVolumeFutures': True,
@@ -215,7 +215,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
         'hasQuoteVolumeFutures': False,
@@ -226,7 +226,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
         'leverage_tiers_public': True,
@@ -253,14 +253,14 @@ EXCHANGES = {
         'pair': 'ETH/BTC',
         'stake_currency': 'BTC',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'futures': False,
     },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
         'hasQuoteVolume': True,
-        'timeframe': '5m',
+        'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
     },
@@ -463,7 +463,9 @@ class TestCCXTExchange():
         if exchangename == 'gate':
             # TODO: Gate is unstable here at the moment, ignoring the limit partially.
             return
-        for val in [1, 2, 5, 25, 100]:
+        for val in [1, 2, 5, 25, 50, 100]:
+            if val > 50 and exchangename == 'bybit':
+                continue
             l2 = exch.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
                 if val > 50:

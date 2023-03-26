@@ -4,6 +4,7 @@ from enum import Enum
 class RPCMessageType(str, Enum):
     STATUS = 'status'
     WARNING = 'warning'
+    EXCEPTION = 'exception'
     STARTUP = 'startup'
 
     ENTRY = 'entry'
