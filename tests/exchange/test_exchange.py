@@ -351,6 +351,12 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (2.9977, TICK_SIZE, 0.005, 3.0, ROUND),
     (234.24, TICK_SIZE, 0.5, 234., ROUND),
     (234.26, TICK_SIZE, 0.5, 234.5, ROUND),
+    # Tests for TRUNCATTE
+    (2.34559, 2, 4, 2.3455, TRUNCATE),
+    (2.34559, 2, 5, 2.34559, TRUNCATE),
+    (2.34559, 2, 3, 2.345, TRUNCATE),
+    (2.9999, 2, 3, 2.999, TRUNCATE),
+    (2.9909, 2, 3, 2.990, TRUNCATE),
 ])
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
     assert price_to_precision(
@@ -5305,4 +5311,3 @@ def test_price_to_precision_with_default_conf(default_conf, mocker):
     patched_ex = get_patched_exchange(mocker, conf)
     prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
     assert prec_price == 1.00000001
-
