@@ -119,6 +119,7 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
@@ -152,6 +153,7 @@ def make_data_dictionary(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)

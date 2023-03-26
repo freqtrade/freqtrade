@@ -87,6 +87,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai.live = True
     freqai.can_short = can_short
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.set_paths('ADA/BTC', 10000)
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
@@ -135,6 +136,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -178,6 +180,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -238,6 +241,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     freqai = strategy.freqai
     freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
     sub_timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -394,6 +398,7 @@ def test_principal_component_analysis(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -425,6 +430,7 @@ def test_plot_feature_importance(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
