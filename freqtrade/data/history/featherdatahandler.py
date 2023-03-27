@@ -30,8 +30,7 @@ class FeatherDataHandler(IDataHandler):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
-        filename = self._pair_data_filename(
-            self._datadir, pair, timeframe, candle_type)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
 
         data.reset_index(drop=True).loc[:, self._columns].to_feather(

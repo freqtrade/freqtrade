@@ -20,31 +20,25 @@ from tests.conftest import log_has, log_has_re
 
 
 def test_datahandler_ohlcv_get_pairs(testdatadir):
-    pairs = JsonDataHandler.ohlcv_get_pairs(
-        testdatadir, '5m', candle_type=CandleType.SPOT)
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(pairs) == {'UNITTEST/BTC', 'XLM/BTC', 'ETH/BTC', 'TRX/BTC', 'LTC/BTC',
                           'XMR/BTC', 'ZEC/BTC', 'ADA/BTC', 'ETC/BTC', 'NXT/BTC',
                           'DASH/BTC', 'XRP/ETH'}
 
-    pairs = JsonGzDataHandler.ohlcv_get_pairs(
-        testdatadir, '8m', candle_type=CandleType.SPOT)
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = HDF5DataHandler.ohlcv_get_pairs(
-        testdatadir, '5m', candle_type=CandleType.SPOT)
+    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = JsonDataHandler.ohlcv_get_pairs(
-        testdatadir, '1h', candle_type=CandleType.MARK)
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT:USDT', 'XRP/USDT:USDT'}
 
-    pairs = JsonGzDataHandler.ohlcv_get_pairs(
-        testdatadir, '1h', candle_type=CandleType.FUTURES)
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.FUTURES)
     assert set(pairs) == {'XRP/USDT:USDT'}
 
-    pairs = HDF5DataHandler.ohlcv_get_pairs(
-        testdatadir, '1h', candle_type=CandleType.MARK)
+    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT:USDT'}
 
 
@@ -85,8 +79,7 @@ def test_rebuild_pair_from_filename(input, expected):
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
-    paircombs = JsonDataHandler.ohlcv_get_available_data(
-        testdatadir, TradingMode.SPOT)
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/BTC', '5m', CandleType.SPOT),
@@ -108,8 +101,7 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('NOPAIR/XXX', '4m', CandleType.SPOT),
     }
 
-    paircombs = JsonDataHandler.ohlcv_get_available_data(
-        testdatadir, TradingMode.FUTURES)
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.FUTURES)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/USDT:USDT', '1h', 'mark'),
@@ -120,11 +112,9 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('XRP/USDT:USDT', '8h', 'funding_rate'),
     }
 
-    paircombs = JsonGzDataHandler.ohlcv_get_available_data(
-        testdatadir, TradingMode.SPOT)
+    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '8m', CandleType.SPOT)}
-    paircombs = HDF5DataHandler.ohlcv_get_available_data(
-        testdatadir, TradingMode.SPOT)
+    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '5m', CandleType.SPOT)}
 
 
@@ -416,21 +406,18 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 
     assert not ohlcv[ohlcv['date'] < startdt].empty
 
-    timerange = TimeRange.parse_timerange(
-        f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
     # Call private function to ensure timerange is filtered in hdf5
     ohlcv = dh._ohlcv_load(pair, timeframe, timerange, candle_type=candle_type)
-    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe,
-                             timerange, candle_type=candle_type)
+    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
     assert len(ohlcv) == len(ohlcv1)
     assert ohlcv.equals(ohlcv1)
     assert ohlcv[ohlcv['date'] < startdt].empty
     assert ohlcv[ohlcv['date'] > enddt].empty
 
     # Try loading inexisting file
-    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe,
-                          candle_type=candle_type)
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
     assert ohlcv.empty
 
 
@@ -465,8 +452,7 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     # Get data to test
     dh = get_datahandler(testdatadir, datahandler)
 
-    file = tmpdir2 / \
-        f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
+    file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
     assert not file.is_file()
 
     dh1 = get_datahandler(tmpdir1, datahandler)
@@ -475,14 +461,11 @@ def test_generic_datahandler_ohlcv_load_and_resave(
 
     assert not ohlcv[ohlcv['date'] < startdt].empty
 
-    timerange = TimeRange.parse_timerange(
-        f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
-    ohlcv = dhbase.ohlcv_load(
-        pair, timeframe, timerange=timerange, candle_type=candle_type)
+    ohlcv = dhbase.ohlcv_load(pair, timeframe, timerange=timerange, candle_type=candle_type)
     if datahandler == 'hdf5':
-        ohlcv1 = dh1._ohlcv_load(
-            'UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+        ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
         if candle_type == 'mark':
             ohlcv1['volume'] = 0.0
     else:
@@ -495,8 +478,7 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     assert ohlcv[ohlcv['date'] > enddt].empty
 
     # Try loading inexisting file
-    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe,
-                          candle_type=candle_type)
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
     assert ohlcv.empty
 
 
