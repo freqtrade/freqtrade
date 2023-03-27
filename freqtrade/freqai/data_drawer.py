@@ -75,8 +75,7 @@ class FreqaiDataDrawer:
         self.full_path = full_path
         self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
         self.historic_predictions_folder = Path(self.full_path / "historic_predictions")
-        self.historic_predictions_bkp_folder = Path(
-            self.full_path / "historic_predictions_backup")
+        self.historic_predictions_bkp_folder = Path(self.full_path / "historic_predictions_backup")
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
         self.global_metadata_path = Path(self.full_path / "global_metadata.json")
         self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
