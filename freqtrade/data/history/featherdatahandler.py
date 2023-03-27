@@ -4,9 +4,8 @@ from typing import Optional
 from pandas import DataFrame, read_feather, to_datetime
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList, DEFAULT_TRADES_COLUMNS
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
 from freqtrade.enums import CandleType
-from freqtrade.data.converter import trades_dict_to_list
 
 from .idatahandler import IDataHandler
 
