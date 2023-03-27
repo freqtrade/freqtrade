@@ -334,6 +334,7 @@ class IFreqaiModel(ABC):
 
                 dataframe_train = dk.remove_special_chars_from_feature_names(dataframe_train)
                 dataframe_backtest = dk.remove_special_chars_from_feature_names(dataframe_backtest)
+                dk.get_unique_classes_from_labels(dataframe_train)
 
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)

@@ -241,7 +241,6 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     freqai = strategy.freqai
     freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
-    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
     sub_timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -375,6 +374,9 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     sub_timerange = TimeRange.parse_timerange("20180129-20180130")
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    df = strategy.set_freqai_targets(df.copy(), metadata={"pair": "LTC/BTC"})
+    df = freqai.dk.remove_special_chars_from_feature_names(df)
+    freqai.dk.get_unique_classes_from_labels(df)
     freqai.dk.pair = "ADA/BTC"
     freqai.dk.full_df = df.fillna(0)
     freqai.dk.full_df
