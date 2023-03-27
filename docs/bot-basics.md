@@ -60,10 +60,10 @@ This loop will be repeated again and again until the bot is stopped.
 
 * Load historic data for configured pairlist.
 * Calls `bot_start()` once.
-* Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
 * Calculate entry / exit signals (calls `populate_entry_trend()` and `populate_exit_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
+  * Calls `bot_loop_start()` strategy callback.
   * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
   * Calls `adjust_entry_price()` strategy callback for open entry orders.
   * Check for trade entry signals (`enter_long` / `enter_short` columns).

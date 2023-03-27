@@ -51,7 +51,8 @@ During hyperopt, this runs only once at startup.
 
 ## Bot loop start
 
-A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
+A simple callback which is called once at the start of every bot throttling iteration in dry/live mode (roughly every 5
+seconds, unless configured differently) or once per candle in backtest/hyperopt mode.
 This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
 
 ``` python
@@ -61,11 +62,12 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def bot_loop_start(self, **kwargs) -> None:
+    def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
         (e.g. gather some remote resource for comparison)
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         if self.config['runmode'].value in ('live', 'dry_run'):

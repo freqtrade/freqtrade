@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import ExitType
+from freqtrade.enums import ExitType, TradingMode
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence.trade_model import LocalTrade
 from tests.conftest import EXMS, patch_exchange
@@ -925,12 +925,14 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=100)
+    mocker.patch(f"{EXMS}.calculate_funding_fees", return_value=0)
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
     # TODO: Should we initialize this properly??
-    backtesting._can_short = True
+    backtesting.trading_mode = TradingMode.MARGIN
     backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting._can_short = True
     backtesting.required_startup = 0
     backtesting.strategy.advise_entry = lambda a, m: frame
     backtesting.strategy.advise_exit = lambda a, m: frame

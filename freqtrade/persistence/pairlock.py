@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, Optional
 
-from sqlalchemy import String, or_
-from sqlalchemy.orm import Mapped, Query, QueryPropertyDescriptor, mapped_column
+from sqlalchemy import ScalarResult, String, or_, select
+from sqlalchemy.orm import Mapped, mapped_column
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence.base import ModelBase, SessionType
@@ -13,8 +13,7 @@ class PairLock(ModelBase):
     Pair Locks database model.
     """
     __tablename__ = 'pairlocks'
-    query: ClassVar[QueryPropertyDescriptor]
-    _session: ClassVar[SessionType]
+    session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
@@ -37,7 +36,8 @@ class PairLock(ModelBase):
             f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> Query:
+    def query_pair_locks(
+            pair: Optional[str], now: datetime, side: str = '*') -> ScalarResult['PairLock']:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -53,9 +53,11 @@ class PairLock(ModelBase):
         else:
             filters.append(PairLock.side == '*')
 
-        return PairLock.query.filter(
-            *filters
-        )
+        return PairLock.session.scalars(select(PairLock).filter(*filters))
+
+    @staticmethod
+    def get_all_locks() -> ScalarResult['PairLock']:
+        return PairLock.session.scalars(select(PairLock))
 
     def to_json(self) -> Dict[str, Any]:
         return {

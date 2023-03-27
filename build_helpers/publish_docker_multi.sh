@@ -2,6 +2,8 @@
 
 # The below assumes a correctly setup docker buildx environment
 
+IMAGE_NAME=freqtradeorg/freqtrade
+CACHE_IMAGE=freqtradeorg/freqtrade_cache
 # Replace / with _ to create a valid tag
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
@@ -11,7 +13,6 @@ TAG_PI="${TAG}_pi"
 
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
-CACHE_IMAGE=freqtradeorg/freqtrade_cache
 CACHE_TAG=${CACHE_IMAGE}:${TAG_PI}_cache
 
 # Add commit and commit_message to docker container

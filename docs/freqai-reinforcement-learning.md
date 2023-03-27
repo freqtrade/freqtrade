@@ -55,7 +55,7 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         dataframe["&-action"] = 0
 ```
 
-Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
+Most of the function remains the same as for typical Regressors, however, the function below shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
     def feature_engineering_standard(self, dataframe, **kwargs):
@@ -248,13 +248,13 @@ FreqAI also provides a built in episodic summary logger called `self.tensorboard
             """
             def calculate_reward(self, action: int) -> float:
                 if not self._is_valid(action):
-                    self.tensorboard_log("is_valid")
+                    self.tensorboard_log("invalid")
                     return -2
 
 ```
 
 !!! Note
-    The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)` would add 0.23 to `float_metric`. In this case you can also disable incrementing using `inc=False` parameter.
+    The `self.tensorboard_log()` function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. `self.tensorboard_log("float_metric1", 0.23)`. In this case the metric values are not incremented.
 
 ### Choosing a base environment
 

@@ -113,18 +113,21 @@ async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fu
             exchange = get_patched_exchange(mocker, default_conf, api_mock)
             await getattr(exchange, fun)(**kwargs)
         assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
+    exchange.close()
 
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
+    exchange.close()
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
+    exchange.close()
 
 
 def test_init(default_conf, mocker, caplog):
@@ -1039,9 +1042,9 @@ def test_validate_ordertypes(default_conf, mocker):
     ('bybit', 'last', True),
     ('bybit', 'mark', True),
     ('bybit', 'index', True),
-    # ('okx', 'last', True),
-    # ('okx', 'mark', True),
-    # ('okx', 'index', True),
+    ('okx', 'last', True),
+    ('okx', 'mark', True),
+    ('okx', 'index', True),
     ('gate', 'last', True),
     ('gate', 'mark', True),
     ('gate', 'index', True),
@@ -2248,7 +2251,6 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, 'open']
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_name):
     ohlcv = [
@@ -2277,7 +2279,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     assert res[3] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
     assert not log_has(f"Using cached candle (OHLCV) data for {pair} ...", caplog)
-
+    exchange.close()
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
@@ -2292,15 +2294,17 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
         await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT,
                                                  (arrow.utcnow().int_timestamp - 2000) * 1000)
 
+    exchange.close()
+
     with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
                                                    r'historical candle \(OHLCV\) data\..*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT,
                                                  (arrow.utcnow().int_timestamp - 2000) * 1000)
+    exchange.close()
 
 
-@pytest.mark.asyncio
 async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     from freqtrade.exchange.common import _reset_logging_mixin
     _reset_logging_mixin()
@@ -2341,9 +2345,9 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
         # Expect the "returned exception" message 12 times (4 retries * 3 (loop))
         assert num_log_has_re(msg, caplog) == 12
         assert num_log_has_re(msg2, caplog) == 9
+    exchange.close()
 
 
-@pytest.mark.asyncio
 async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     """ Test empty exchange result """
     ohlcv = []
@@ -2363,6 +2367,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     assert res[2] == CandleType.SPOT
     assert res[3] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
+    exchange.close()
 
 
 def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
@@ -2757,7 +2762,6 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     assert res_ohlcv[9][5] == 2.31452783
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
                                    fetch_trades_result):
@@ -2785,8 +2789,8 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
     assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
     assert exchange._api_async.fetch_trades.call_args[1]['params'] == {'from': '123'}
     assert log_has_re(f"Fetching trades for pair {pair}, params: .*", caplog)
+    exchange.close()
 
-    exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_fetch_trades", "fetch_trades",
                                pair='ABCD/BTC', since=None)
@@ -2796,15 +2800,16 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
         api_mock.fetch_trades = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_fetch_trades(pair, since=(arrow.utcnow().int_timestamp - 2000) * 1000)
+    exchange.close()
 
     with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
                                                    r'historical trade data\..*'):
         api_mock.fetch_trades = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_fetch_trades(pair, since=(arrow.utcnow().int_timestamp - 2000) * 1000)
+    exchange.close()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_fetch_trades_contract_size(default_conf, mocker, caplog, exchange_name,
                                                  fetch_trades_result):
@@ -2839,6 +2844,7 @@ async def test__async_fetch_trades_contract_size(default_conf, mocker, caplog, e
     pair = 'ETH/USDT:USDT'
     res = await exchange._async_fetch_trades(pair, since=None, params=None)
     assert res[0][5] == 300
+    exchange.close()
 
 
 @pytest.mark.asyncio
@@ -3387,7 +3393,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex.get_option('stoploss_on_exchange')
-    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC']
+    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC', 'PO']
     assert ex.get_option('trades_pagination') == 'id'
     assert ex.get_option('trades_pagination_arg') == 'fromId'
 
@@ -3866,29 +3872,6 @@ def test_get_stake_amount_considering_leverage(
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
     assert exchange._get_stake_amount_considering_leverage(
         stake_amount, leverage) == min_stake_with_lev
-
-
-@pytest.mark.parametrize("exchange_name,trading_mode", [
-    ("binance", TradingMode.FUTURES),
-])
-def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
-
-    api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
-    default_conf['dry_run'] = False
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        exchange_name,
-        "_set_leverage",
-        "set_leverage",
-        pair="XRP/USDT",
-        leverage=5.0,
-        trading_mode=trading_mode
-    )
 
 
 @pytest.mark.parametrize("margin_mode", [
@@ -4830,7 +4813,6 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
     )
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize('exchange_name', EXCHANGES)
 async def test_get_market_leverage_tiers(mocker, default_conf, exchange_name):
     default_conf['exchange']['name'] = exchange_name

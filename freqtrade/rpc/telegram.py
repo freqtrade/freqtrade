@@ -30,6 +30,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,8 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             self._send_msg(str(e))
         except BaseException:
             logger.exception('Exception occurred within Telegram module')
+        finally:
+            Trade.session.remove()
 
     return wrapper
 
@@ -427,14 +430,14 @@ class Telegram(RPCHandler):
             return None
         return message
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Send a message to telegram channel """
 
         default_noti = 'on'
 
         msg_type = msg['type']
         noti = ''
-        if msg_type == RPCMessageType.EXIT:
+        if msg['type'] == RPCMessageType.EXIT:
             sell_noti = self._config['telegram'] \
                 .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still can be string
@@ -451,7 +454,7 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(deepcopy(msg), msg_type)
+        message = self.compose_message(deepcopy(msg), msg_type)  # type: ignore
         if message:
             self._send_msg(message, disable_notification=(noti == 'silent'))
 
@@ -1340,7 +1343,7 @@ class Telegram(RPCHandler):
         message = tabulate({k: [v] for k, v in counts.items()},
                            headers=['current', 'max', 'total stake'],
                            tablefmt='simple')
-        message = "<pre>{}</pre>".format(message)
+        message = f"<pre>{message}</pre>"
         logger.debug(message)
         self._send_msg(message, parse_mode=ParseMode.HTML,
                        reload_able=True, callback_path="update_count",
@@ -1642,7 +1645,7 @@ class Telegram(RPCHandler):
             ])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
-        msg += "\nUpdated: {}".format(datetime.now().ctime())
+        msg += f"\nUpdated: {datetime.now().ctime()}"
         if not query.message:
             return
         chat_id = query.message.chat_id
