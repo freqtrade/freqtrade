@@ -1060,9 +1060,19 @@ def test_execute_entry_min_leverage(mocker, default_conf_usdt, fee, limit_order,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_short) -> None:
+def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_short, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=MagicMock(return_value=limit_order[entry_side(is_short)]),
+        get_fee=fee,
+    )
     order = limit_order[entry_side(is_short)]
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
     mocker.patch(f'{EXMS}.fetch_order', return_value=order)
@@ -1074,8 +1084,10 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
-    # TODO: should not be magicmock
-    trade = MagicMock()
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+
+    freqtrade.enter_positions()
+    trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.open_order_id = None
     trade.stoploss_order_id = None
@@ -1227,7 +1239,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'amount': enter_order['amount'],
         'info': {'stopPrice': 22},
     }])
-    trade.stoploss_order_id = 100
+    trade.stoploss_order_id = "100"
     trade.is_open = True
     trade.stoploss_last_update = arrow.utcnow().shift(hours=-1).datetime
     trade.stop_loss = 24
@@ -1275,7 +1287,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
 
     freqtrade.enter_positions()
     trade = Trade.session.scalars(select(Trade)).first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
