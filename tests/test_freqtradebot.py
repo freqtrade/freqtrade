@@ -1149,10 +1149,12 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
     mocker.patch(f'{EXMS}.fetch_stoploss_order', canceled_stoploss_order)
     stoploss.reset_mock()
+    amount_before = trade.amount
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
     assert trade.stoploss_order_id == "13434334"
+    assert trade.amount == amount_before
 
     # Fourth case: when stoploss is set and it is hit
     # should unset stoploss_order_id and return true
