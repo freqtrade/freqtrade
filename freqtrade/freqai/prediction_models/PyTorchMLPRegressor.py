@@ -27,7 +27,7 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
                 "trainer_kwargs": {
                     "max_iters": 5000,
                     "batch_size": 64,
-                    "max_n_eval_batches": None,
+                    "max_n_eval_batches": null,
                 },
                 "model_kwargs": {
                     "hidden_dim": 512,
@@ -50,7 +50,7 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary constructed by DataHandler to hold
-                                all the training and test data/labels.
+        all the training and test data/labels.
         """
 
         n_features = data_dictionary["train_features"].shape[-1]
