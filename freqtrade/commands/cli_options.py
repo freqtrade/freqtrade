@@ -675,4 +675,18 @@ AVAILABLE_CLI_OPTIONS = {
         help='Run backtest with ready models.',
         action='store_true'
     ),
+    "minimum_trade_amount": Arg(
+        '--minimum-trade-amount',
+        help='set INT minimum trade amount',
+        type=check_int_positive,
+        metavar='INT',
+        default=10,
+    ),
+    "targeted_trade_amount": Arg(
+        '--targeted-trade-amount',
+        help='set INT targeted trade amount',
+        type=check_int_positive,
+        metavar='INT',
+        default=20,
+    )
 }

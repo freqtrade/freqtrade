@@ -116,9 +116,10 @@ NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
-ARGS_STRATEGY_UPDATER = ARGS_COMMON_OPTIMIZE + ["strategy_list"]
+ARGS_STRATEGY_UPDATER = ["strategy_list"]
 
-ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER = ARGS_BACKTEST
+ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER = ARGS_BACKTEST + ["minimum_trade_amount",
+                                                        "targeted_trade_amount"]
 
 
 # + ["target_trades", "minimum_trades",
@@ -461,7 +462,7 @@ class Arguments:
 
         # Add backtest lookahead bias checker subcommand
         backtest_lookahead_bias_checker_cmd = \
-            subparsers.add_parser('backtest_lookahead_bias_checker',
+            subparsers.add_parser('backtest-lookahead-bias-checker',
                                   help="checks for potential look ahead bias",
                                   parents=[_common_parser])
         backtest_lookahead_bias_checker_cmd.set_defaults(func=start_backtest_lookahead_bias_checker)

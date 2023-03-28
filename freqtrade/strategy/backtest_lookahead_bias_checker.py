@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
+import copy
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 
@@ -10,8 +10,8 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.optimize.backtesting import Backtesting
 
 
-class backtest_lookahead_bias_checker:
-    class varHolder:
+class BacktestLookaheadBiasChecker:
+    class VarHolder:
         timerange: TimeRange
         data: pandas.DataFrame
         indicators: pandas.DataFrame
@@ -21,7 +21,7 @@ class backtest_lookahead_bias_checker:
         to_dt: datetime
         compared_dt: datetime
 
-    class analysis:
+    class Analysis:
         def __init__(self):
             self.total_signals = 0
             self.false_entry_signals = 0
@@ -37,24 +37,24 @@ class backtest_lookahead_bias_checker:
         has_bias: bool
 
     def __init__(self):
-        self.strategy_obj
-        self.current_analysis
-        self.config
-        self.full_varHolder
-        self.entry_varholder
-        self.exit_varholder
-        self.backtesting
-        self.signals_to_check: int = 20
-        self.current_analysis
-        self.full_varHolder.from_dt
-        self.full_varHolder.to_dt
+        self.strategy_obj = None
+        self.current_analysis = None
+        self.local_config = None
+        self.full_varHolder = None
+        self.entry_varHolder = None
+        self.exit_varHolder = None
+        self.backtesting = None
+        self.current_analysis = None
+        self.minimum_trade_amount = None
+        self.targeted_trade_amount = None
 
     @staticmethod
     def dt_to_timestamp(dt):
         timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
         return timestamp
 
-    def get_result(self, backtesting, processed):
+    @staticmethod
+    def get_result(backtesting, processed):
         min_date, max_date = get_timerange(processed)
 
         result = backtesting.backtest(
@@ -63,6 +63,24 @@ class backtest_lookahead_bias_checker:
             end_date=max_date
         )
         return result
+
+    @staticmethod
+    def report_signal(result, column_name, checked_timestamp):
+        df = result['results']
+        row_count = df[column_name].shape[0]
+
+        if row_count == 0:
+            return False
+        else:
+
+            df_cut = df[(df[column_name] == checked_timestamp)]
+            if df_cut[column_name].shape[0] == 0:
+                # print("did NOT find the same signal in column " + column_name +
+                #       " at timestamp " + str(checked_timestamp))
+                return False
+            else:
+                return True
+        return False
 
     # analyzes two data frames with processed indicators and shows differences between them.
     def analyze_indicators(self, full_vars, cut_vars, current_pair):
@@ -87,11 +105,10 @@ class backtest_lookahead_bias_checker:
                 for col_name, values in compare_df.items():
                     col_idx = compare_df.columns.get_loc(col_name)
                     compare_df_row = compare_df.iloc[0]
-                    # compare_df now is comprised of tuples with [1] having either 'self' or 'other'
+                    # compare_df now comprises tuples with [1] having either 'self' or 'other'
                     if 'other' in col_name[1]:
                         continue
                     self_value = compare_df_row[col_idx]
-                    other_value = compare_df_row[col_idx + 1]
                     other_value = compare_df_row[col_idx + 1]
 
                     # output differences
@@ -101,90 +118,62 @@ class backtest_lookahead_bias_checker:
                             self.current_analysis.false_indicators.append(col_name[0])
                             print(f"=> found look ahead bias in indicator {col_name[0]}. " +
                                   f"{str(self_value)} != {str(other_value)}")
-                # return compare_df
 
-    def report_signal(self, result, column_name, checked_timestamp):
-        df = result['results']
-        row_count = df[column_name].shape[0]
-
-        if row_count == 0:
-            return False
-        else:
-
-            df_cut = df[(df[column_name] == checked_timestamp)]
-            if df_cut[column_name].shape[0] == 0:
-                # print("did NOT find the same signal in column " + column_name +
-                #       " at timestamp " + str(checked_timestamp))
-                return False
-            else:
-                return True
-        return False
-
-    def prepare_data(self, varholder, var_pairs):
-        self.config['timerange'] = \
-            str(int(self.dt_to_timestamp(varholder.from_dt))) + "-" + \
-            str(int(self.dt_to_timestamp(varholder.to_dt)))
-        self.backtesting = Backtesting(self.config)
+    def prepare_data(self, varHolder, pairs_to_load):
+        prepare_data_config = copy.deepcopy(self.local_config)
+        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varHolder.from_dt)) + "-" +
+                                            str(self.dt_to_timestamp(varHolder.to_dt)))
+        prepare_data_config['pairs'] = pairs_to_load
+        self.backtesting = Backtesting(prepare_data_config)
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
-        varholder.data, varholder.timerange = self.backtesting.load_bt_data()
-        varholder.indicators = self.backtesting.strategy.advise_all_indicators(varholder.data)
-        varholder.result = self.get_result(self.backtesting, varholder.indicators)
+        varHolder.data, varHolder.timerange = self.backtesting.load_bt_data()
+        varHolder.indicators = self.backtesting.strategy.advise_all_indicators(varHolder.data)
+        varHolder.result = self.get_result(self.backtesting, varHolder.indicators)
 
-    def start(self, config, strategy_obj: dict) -> None:
-        self.strategy_obj = strategy_obj
-        self.config = config
-        self.current_analysis = backtest_lookahead_bias_checker.analysis()
+    def update_output_file(self):
+        pass
 
-        max_try_signals: int = 3
-        found_signals: int = 0
-        continue_with_strategy = True
+    def start(self, config, strategy_obj: dict, args) -> None:
 
-        # first we need to get the necessary entry/exit signals
-        # so we start by 14 days and increase in 1 month steps
-        # until we have the desired trade amount.
-        for try_buysignals in range(max_try_signals):  # range(3) = 0..2
-            # re-initialize backtesting-variable
-            self.full_varHolder = backtest_lookahead_bias_checker.varHolder()
+        # deepcopy so we can change the pairs for the 2ndary runs
+        # and not worry about another strategy to check after.
+        self.local_config = deepcopy(config)
+        self.local_config['strategy_list'] = [strategy_obj['name']]
+        self.current_analysis = BacktestLookaheadBiasChecker.Analysis()
+        self.minimum_trade_amount = args['minimum_trade_amount']
+        self.targeted_trade_amount = args['targeted_trade_amount']
 
-            # define datetimes in human readable format
-            self.full_varHolder.from_dt = datetime(2022, 9, 1)
-            self.full_varHolder.to_dt = datetime(2022, 9, 15) + timedelta(days=30 * try_buysignals)
+        # first make a single backtest
+        self.full_varHolder = BacktestLookaheadBiasChecker.VarHolder()
 
-            self.prepare_data(self.full_varHolder, self.config['pairs'])
-
-            found_signals = self.full_varHolder.result['results'].shape[0] + 1
-            if try_buysignals == max_try_signals - 1:
-                if found_signals < self.signals_to_check / 2:
-                    print(f"... only found {str(int(found_signals / 2))} "
-                          f"buy signals for {self.strategy_obj['name']}. "
-                          f"Cancelling...")
-                    continue_with_strategy = False
-                else:
-                    print(
-                        f"Found {str(found_signals)} buy signals. "
-                        f"Going with max {str(self.signals_to_check)} "
-                        f" buy signals in the full timerange from "
-                        f"{str(self.full_varHolder.from_dt)} to {str(self.full_varHolder.to_dt)}")
-                    break
-            elif found_signals < self.signals_to_check:
-                print(
-                    f"Only found {str(found_signals)} buy signals in the full timerange from "
-                    f"{str(self.full_varHolder.from_dt)} to "
-                    f"{str(self.full_varHolder.to_dt)}. "
-                    f"will increase timerange trying to get at least "
-                    f"{str(self.signals_to_check)} signals.")
-            else:
-                print(
-                    f"Found {str(found_signals)} buy signals, more than necessary. "
-                    f"Reducing to {str(self.signals_to_check)} "
-                    f"checked buy signals in the full timerange from "
-                    f"{str(self.full_varHolder.from_dt)} to {str(self.full_varHolder.to_dt)}")
-                break
-        if not continue_with_strategy:
+        # define datetime in human-readable format
+        parsed_timerange = TimeRange.parse_timerange(config['timerange'])
+        if (parsed_timerange is not None and
+                parsed_timerange.startdt is not None and
+                parsed_timerange.stopdt is not None):
+            self.full_varHolder.from_dt = parsed_timerange.startdt
+            self.full_varHolder.to_dt = parsed_timerange.stopdt
+        else:
+            print("Parsing of parsed_timerange failed. exiting!")
             return
 
+        self.prepare_data(self.full_varHolder, self.local_config['pairs'])
+
+        found_signals: int = self.full_varHolder.result['results'].shape[0] + 1
+        if found_signals >= self.targeted_trade_amount:
+            print(f"Found {found_signals} trades, calculating {self.targeted_trade_amount} trades.")
+        elif self.targeted_trade_amount >= found_signals >= self.minimum_trade_amount:
+            print(f"Only found {found_signals} trades. Calculating all available trades.")
+        else:
+            print(f"found {found_signals} trades "
+                  f"which is less than minimum_trade_amount {self.minimum_trade_amount}. "
+                  f"Cancelling this backtest lookahead bias test.")
+            return
+
+        # now we loop through all entry signals
+        # starting from the same datetime to avoid miss-reports of bias
         for idx, result_row in self.full_varHolder.result['results'].iterrows():
-            if self.current_analysis.total_signals == self.signals_to_check:
+            if self.current_analysis.total_signals == self.targeted_trade_amount:
                 break
 
             # if force-sold, ignore this signal since here it will unconditionally exit.
@@ -193,49 +182,45 @@ class backtest_lookahead_bias_checker:
 
             self.current_analysis.total_signals += 1
 
-            self.entry_varholder = backtest_lookahead_bias_checker.varHolder()
-            self.exit_varholder = backtest_lookahead_bias_checker.varHolder()
+            self.entry_varHolder = BacktestLookaheadBiasChecker.VarHolder()
+            self.exit_varHolder = BacktestLookaheadBiasChecker.VarHolder()
 
-            self.entry_varholder.from_dt = self.full_varHolder.from_dt  # result_row['open_date']
-            self.entry_varholder.compared_dt = result_row['open_date']
-
+            self.entry_varHolder.from_dt = self.full_varHolder.from_dt
+            self.entry_varHolder.compared_dt = result_row['open_date']
             # to_dt needs +1 candle since it won't buy on the last candle
-            self.entry_varholder.to_dt = result_row['open_date'] + \
-                timedelta(minutes=timeframe_to_minutes(self.config['timeframe']) * 2)
+            self.entry_varHolder.to_dt = (result_row['open_date'] +
+                                          timedelta(minutes=timeframe_to_minutes(
+                                              self.local_config['timeframe'])))
 
-            self.prepare_data(self.entry_varholder, [result_row['pair']])
+            self.prepare_data(self.entry_varHolder, [result_row['pair']])
 
-            # ---
-            # print("analyzing the sell signal")
-            # to_dt needs +1 candle since it will always sell all trades on the last candle
-            self.exit_varholder.from_dt = self.full_varHolder.from_dt  # result_row['open_date']
-            self.exit_varholder.to_dt = \
-                result_row['close_date'] + \
-                timedelta(minutes=timeframe_to_minutes(self.config['timeframe']))
-            self.exit_varholder.compared_dt = result_row['close_date']
+            # to_dt needs +1 candle since it will always exit/force-exit trades on the last candle
+            self.exit_varHolder.from_dt = self.full_varHolder.from_dt
+            self.exit_varHolder.to_dt = (result_row['close_date'] +
+                                         timedelta(minutes=timeframe_to_minutes(
+                                             self.local_config['timeframe'])))
+            self.exit_varHolder.compared_dt = result_row['close_date']
 
-            self.prepare_data(self.exit_varholder, [result_row['pair']])
+            self.prepare_data(self.exit_varHolder, [result_row['pair']])
 
             # register if buy signal is broken
             if not self.report_signal(
-                    self.entry_varholder.result,
-                    "open_date", self.entry_varholder.compared_dt):
+                    self.entry_varHolder.result, "open_date", self.entry_varHolder.compared_dt):
                 self.current_analysis.false_entry_signals += 1
 
             # register if buy or sell signal is broken
-            if not self.report_signal(self.entry_varholder.result,
-                                      "open_date", self.entry_varholder.compared_dt) \
-                    or not self.report_signal(self.exit_varholder.result,
-                                              "close_date", self.exit_varholder.compared_dt):
+            if not self.report_signal(
+                    self.exit_varHolder.result, "close_date", self.exit_varHolder.compared_dt):
                 self.current_analysis.false_exit_signals += 1
 
-            self.analyze_indicators(self.full_varHolder, self.entry_varholder, result_row['pair'])
-            self.analyze_indicators(self.full_varHolder, self.exit_varholder, result_row['pair'])
+            # check if the indicators themselves contain biased data
+            self.analyze_indicators(self.full_varHolder, self.entry_varHolder, result_row['pair'])
+            self.analyze_indicators(self.full_varHolder, self.exit_varHolder, result_row['pair'])
 
-        if self.current_analysis.false_entry_signals > 0 or \
-                self.current_analysis.false_exit_signals > 0 or \
-                len(self.current_analysis.false_indicators) > 0:
-            print(" => " + self.strategy_obj['name'] + ": bias detected!")
+        if (self.current_analysis.false_entry_signals > 0 or
+                self.current_analysis.false_exit_signals > 0 or
+                len(self.current_analysis.false_indicators) > 0):
+            print(" => " + self.local_config['strategy_list'][0] + ": bias detected!")
             self.current_analysis.has_bias = True
         else:
-            print(self.strategy_obj['name'] + ": no bias detected")
+            print(self.local_config['strategy_list'][0] + ": no bias detected")
