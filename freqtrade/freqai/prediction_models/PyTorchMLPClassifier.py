@@ -76,5 +76,5 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
             squeeze_target_tensor=True,
             **self.trainer_kwargs,
         )
-        trainer.fit(data_dictionary)
+        trainer.fit(data_dictionary, self.splits)
         return trainer

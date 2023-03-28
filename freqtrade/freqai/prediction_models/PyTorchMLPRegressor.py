@@ -72,5 +72,5 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
             target_tensor_type=torch.float,
             **self.trainer_kwargs,
         )
-        trainer.fit(data_dictionary)
+        trainer.fit(data_dictionary, self.splits)
         return trainer

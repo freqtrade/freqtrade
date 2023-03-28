@@ -1,7 +1,7 @@
 import logging
 import math
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import torch
@@ -43,7 +43,6 @@ class PyTorchModelTrainer:
             self.optimizer.step(). used to calculate n_epochs.
         :param batch_size: The size of the batches to use during training.
         :param max_n_eval_batches: The maximum number batches to use for evaluation.
-
         """
         self.model = model
         self.optimizer = optimizer
@@ -58,21 +57,27 @@ class PyTorchModelTrainer:
         if init_model:
             self.load_from_checkpoint(init_model)
 
-    def fit(self, data_dictionary: Dict[str, pd.DataFrame]):
+    def fit(self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]):
         """
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+        all the training and test data/labels.
+        :param splits: splits to use in training, splits must contain "train",
+        optional "test" could be added by setting freqai.data_split_parameters.test_size > 0
+        in the config file.
+
          - Calculates the predicted output for the batch using the PyTorch model.
          - Calculates the loss between the predicted and actual output using a loss function.
          - Computes the gradients of the loss with respect to the model's parameters using
            backpropagation.
          - Updates the model's parameters using an optimizer.
         """
-        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary)
+        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary, splits)
         epochs = self.calc_n_epochs(
             n_obs=len(data_dictionary["train_features"]),
             batch_size=self.batch_size,
             n_iters=self.max_iters
         )
-        for epoch in range(epochs):
+        for epoch in range(1, epochs+1):
             # training
             losses = []
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
@@ -87,13 +92,18 @@ class PyTorchModelTrainer:
                 self.optimizer.step()
                 losses.append(loss.item())
             train_loss = sum(losses) / len(losses)
+            log_message = f"epoch {epoch}/{epochs}: train loss {train_loss:.4f}"
 
             # evaluation
-            test_loss = self.estimate_loss(data_loaders_dictionary, self.max_n_eval_batches, "test")
-            logger.info(
-                f"epoch {epoch}/{epochs}:"
-                f" train loss {train_loss:.4f} ; test loss {test_loss:.4f}"
-            )
+            if "test" in splits:
+                test_loss = self.estimate_loss(
+                    data_loaders_dictionary,
+                    self.max_n_eval_batches,
+                    "test"
+                )
+                log_message += f" ; test loss {test_loss:.4f}"
+
+            logger.info(log_message)
 
     @torch.no_grad()
     def estimate_loss(
@@ -122,13 +132,14 @@ class PyTorchModelTrainer:
 
     def create_data_loaders_dictionary(
             self,
-            data_dictionary: Dict[str, pd.DataFrame]
+            data_dictionary: Dict[str, pd.DataFrame],
+            splits: List[str]
     ) -> Dict[str, DataLoader]:
         """
         Converts the input data to PyTorch tensors using a data loader.
         """
         data_loader_dictionary = {}
-        for split in ["train", "test"]:
+        for split in splits:
             x = torch.from_numpy(data_dictionary[f"{split}_features"].values).float()
             y = torch.from_numpy(data_dictionary[f"{split}_labels"].values)\
                 .to(self.target_tensor_type)

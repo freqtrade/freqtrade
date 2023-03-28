@@ -97,7 +97,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         """
 
         target_column_name = dk.label_list[0]
-        for split in ["train", "test"]:
+        for split in self.splits:
             label_df = data_dictionary[f"{split}_labels"]
             self.assert_valid_class_names(label_df[target_column_name], class_names)
             label_df[target_column_name] = list(
