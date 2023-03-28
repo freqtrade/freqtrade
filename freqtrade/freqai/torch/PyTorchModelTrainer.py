@@ -77,7 +77,7 @@ class PyTorchModelTrainer:
             batch_size=self.batch_size,
             n_iters=self.max_iters
         )
-        for epoch in range(1, epochs+1):
+        for epoch in range(1, epochs + 1):
             # training
             losses = []
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
