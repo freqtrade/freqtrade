@@ -1439,7 +1439,10 @@ def test_buy_prod(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
     assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] is None
+    if exchange._order_needs_price(order_type):
+        assert api_mock.create_order.call_args[0][4] == 200
+    else:
+        assert api_mock.create_order.call_args[0][4] is None
 
     api_mock.create_order.reset_mock()
     order_type = 'limit'
@@ -1544,7 +1547,10 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
     assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] is None
+    if exchange._order_needs_price(order_type):
+        assert api_mock.create_order.call_args[0][4] == 200
+    else:
+        assert api_mock.create_order.call_args[0][4] is None
     # Market orders should not send timeInForce!!
     assert "timeInForce" not in api_mock.create_order.call_args[0][5]
 
@@ -1588,7 +1594,10 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'sell'
     assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] is None
+    if exchange._order_needs_price(order_type):
+        assert api_mock.create_order.call_args[0][4] == 200
+    else:
+        assert api_mock.create_order.call_args[0][4] is None
 
     api_mock.create_order.reset_mock()
     order_type = 'limit'
@@ -1682,7 +1691,10 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'sell'
     assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] is None
+    if exchange._order_needs_price(order_type):
+        assert api_mock.create_order.call_args[0][4] == 200
+    else:
+        assert api_mock.create_order.call_args[0][4] is None
     # Market orders should not send timeInForce!!
     assert "timeInForce" not in api_mock.create_order.call_args[0][5]
 
