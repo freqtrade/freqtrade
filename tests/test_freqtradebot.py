@@ -1395,7 +1395,7 @@ def test_handle_stoploss_on_exchange_trailing(
     # When trailing stoploss is set
     enter_order = limit_order[entry_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
-    stoploss = MagicMock(return_value={'id': 13434334})
+    stoploss = MagicMock(return_value={'id': 13434334, 'status': 'open'})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         EXMS,
@@ -1442,6 +1442,16 @@ def test_handle_stoploss_on_exchange_trailing(
     trade.open_order_id = None
     trade.stoploss_order_id = '100'
     trade.stoploss_last_update = arrow.utcnow().shift(minutes=-20).datetime
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='100',
+        )
+    )
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': '100',
@@ -1471,7 +1481,7 @@ def test_handle_stoploss_on_exchange_trailing(
     )
 
     cancel_order_mock = MagicMock()
-    stoploss_order_mock = MagicMock(return_value={'id': 'so1'})
+    stoploss_order_mock = MagicMock(return_value={'id': 'so1', 'status': 'open'})
     mocker.patch(f'{EXMS}.cancel_stoploss_order', cancel_order_mock)
     mocker.patch(f'{EXMS}.create_stoploss', stoploss_order_mock)
 
@@ -1520,7 +1530,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     enter_order = limit_order[entry_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
     # When trailing stoploss is set
-    stoploss = MagicMock(return_value={'id': 13434334})
+    stoploss = MagicMock(return_value={'id': '13434334', 'status': 'open'})
     patch_exchange(mocker)
 
     mocker.patch.multiple(
@@ -1629,7 +1639,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     enter_order = limit_order[entry_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
     # When trailing stoploss is set
-    stoploss = MagicMock(return_value={'id': 13434334})
+    stoploss = MagicMock(return_value={'id': 13434334, 'status': 'open'})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         EXMS,
@@ -1676,6 +1686,16 @@ def test_handle_stoploss_on_exchange_custom_stop(
     trade.open_order_id = None
     trade.stoploss_order_id = '100'
     trade.stoploss_last_update = arrow.utcnow().shift(minutes=-601).datetime
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='100',
+        )
+    )
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': '100',
@@ -1704,7 +1724,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     )
 
     cancel_order_mock = MagicMock()
-    stoploss_order_mock = MagicMock(return_value={'id': 'so1'})
+    stoploss_order_mock = MagicMock(return_value={'id': 'so1', 'status': 'open'})
     mocker.patch(f'{EXMS}.cancel_stoploss_order', cancel_order_mock)
     mocker.patch(f'{EXMS}.create_stoploss', stoploss_order_mock)
     trade.stoploss_order_id = '100'
@@ -1753,7 +1773,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
     exit_order = limit_order['sell']
 
     # When trailing stoploss is set
-    stoploss = MagicMock(return_value={'id': 13434334})
+    stoploss = MagicMock(return_value={'id': '13434334', 'status': 'open'})
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
@@ -1802,11 +1822,21 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_open = True
     trade.open_order_id = None
-    trade.stoploss_order_id = 100
-    trade.stoploss_last_update = arrow.utcnow()
+    trade.stoploss_order_id = '100'
+    trade.stoploss_last_update = arrow.utcnow().datetime
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='100',
+        )
+    )
 
     stoploss_order_hanging = MagicMock(return_value={
-        'id': 100,
+        'id': '100',
         'status': 'open',
         'type': 'stop_loss_limit',
         'price': 3,
@@ -1853,7 +1883,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
 
     # stoploss should be set to 1% as trailing is on
     assert trade.stop_loss == 4.4 * 0.99
-    cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
+    cancel_order_mock.assert_called_once_with('100', 'NEO/BTC')
     stoploss_order_mock.assert_called_once_with(
         amount=pytest.approx(11.41438356),
         pair='NEO/BTC',
@@ -3606,10 +3636,12 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     patch_exchange(mocker)
     stoploss = MagicMock(return_value={
         'id': 123,
+        'status': 'open',
         'info': {
             'foo': 'bar'
         }
     })
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_order_fee')
 
     cancel_order = MagicMock(return_value=True)
     mocker.patch.multiple(
@@ -3707,12 +3739,12 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
         "lastTradeTimestamp": None,
         "symbol": "BTC/USDT",
         "type": "stop_loss_limit",
-        "side": "sell",
+        "side": "buy" if is_short else "sell",
         "price": 1.08801,
-        "amount": 90.99181074,
-        "cost": 99.0000000032274,
+        "amount": trade.amount,
+        "cost": 1.08801 * trade.amount,
         "average": 1.08801,
-        "filled": 90.99181074,
+        "filled": trade.amount,
         "remaining": 0.0,
         "status": "closed",
         "fee": None,
