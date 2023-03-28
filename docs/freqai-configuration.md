@@ -325,4 +325,18 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
         return trainer
 ```
 
-Here we create `PyTorchMLPRegressor` that implements the `fit` method. The `fit` method specifies the training building blocks: model, optimizer, criterion, and trainer. We inherit both `BasePyTorchRegressor` and `BasePyTorchModel` (a parent of `BasePyTorchRegressor`). The former implements the `predict` method that suits our regression task. The latter implements the `train` method.
+Here we create a `PyTorchMLPRegressor` class that implements the `fit` method. The `fit` method specifies the training building blocks: model, optimizer, criterion, and trainer. We inherit both `BasePyTorchRegressor` and `BasePyTorchModel`, where the former implements the `predict` method that is suitable for our regression task, and the latter implements the train method.
+
+??? Note "Setting Class Names for Classifiers"
+    When using classifiers, the user must declare the class names (or targets) by overriding the `IFreqaiModel.class_names` attribute. This is achieved by setting `self.freqai.class_names` in the FreqAI strategy inside the `set_freqai_targets` method.
+    
+    For example, if you are using a binary classifier to predict price movements as up or down, you can set the class names as follows:
+    ```python
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+        self.freqai.class_names = ["down", "up"]
+        dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-100) >
+                                                  dataframe["close"], 'up', 'down')
+    
+        return dataframe
+    ```
+    To see a full example, you can refer to the [classifier test strategy class](https://github.com/freqtrade/freqtrade/blob/develop/tests/strategy/strats/freqai_test_classifier.py).
