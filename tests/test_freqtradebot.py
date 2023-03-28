@@ -1147,6 +1147,17 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = "102"
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='102',
+            status='open',
+        )
+    )
 
     hanging_stoploss_order = MagicMock(return_value={'status': 'open'})
     mocker.patch(f'{EXMS}.fetch_stoploss_order', hanging_stoploss_order)
@@ -1159,9 +1170,9 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = None
-    trade.stoploss_order_id = "103"
+    trade.stoploss_order_id = "102"
 
-    canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
+    canceled_stoploss_order = MagicMock(return_value={'id': '103_1', 'status': 'canceled'})
     mocker.patch(f'{EXMS}.fetch_stoploss_order', canceled_stoploss_order)
     stoploss.reset_mock()
     amount_before = trade.amount
@@ -1245,12 +1256,26 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'price': 3,
         'average': 2,
         'amount': enter_order['amount'],
+        'filled': 0,
+        'remaining': enter_order['amount'],
         'info': {'stopPrice': 22},
     }])
     trade.stoploss_order_id = "107"
     trade.is_open = True
     trade.stoploss_last_update = arrow.utcnow().shift(hours=-1).datetime
     trade.stop_loss = 24
+    trade.exit_reason = None
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='107',
+            status='open',
+        )
+    )
     freqtrade.config['trailing_stop'] = True
     stoploss = MagicMock(side_effect=InvalidOrderException())
 
@@ -1299,7 +1324,18 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     assert trade.is_short == is_short
     trade.is_open = True
     trade.open_order_id = None
-    trade.stoploss_order_id = 100
+    trade.stoploss_order_id = "100"
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='100',
+            status='open',
+        )
+    )
     assert trade
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
