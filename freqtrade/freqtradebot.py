@@ -1811,7 +1811,7 @@ class FreqtradeBot(LoggingMixin):
                     # TODO: should shorting/leverage be supported by Edge,
                     # then this will need to be fixed.
                     trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            if order.get('side') == trade.entry_side or trade.amount > 0:
+            if order.get('side') == trade.entry_side or (trade.amount > 0 and trade.is_open):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
