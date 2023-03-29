@@ -427,6 +427,9 @@ class FreqaiDataDrawer:
         with (save_path / f"{dk.model_filename}_metadata.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
+        with (save_path / f"{dk.model_filename}_metadata.pkl").open("wb") as fp:
+            cloudpickle.dump(dk.pkl_data, fp)
+
         return
 
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
@@ -456,9 +459,13 @@ class FreqaiDataDrawer:
         dk.data["model_filename"] = str(dk.model_filename)
         dk.data["training_features_list"] = dk.training_features_list
         dk.data["label_list"] = dk.label_list
-        # store the metadata
+        # store the json metadata
         with (save_path / f"{dk.model_filename}_metadata.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
+
+        # store the pickle metadata
+        with (save_path / f"{dk.model_filename}_metadata.pkl").open("wb") as fp:
+            cloudpickle.dump(dk.pkl_data, fp)
 
         # save the train data to file so we can check preds for area of applicability later
         dk.data_dictionary["train_features"].to_pickle(
@@ -486,6 +493,16 @@ class FreqaiDataDrawer:
 
         return
 
+    def load_pickle_metadata(self, dk: FreqaiDataKitchen):
+        pickle_file_path = dk.data_path / f"{dk.model_filename}_metadata.pkl"
+        exists = pickle_file_path.is_file()
+        # Check if the metadata pickle file exists before attempting to read it.
+        # This is for backward compatibility with models generated before the
+        # pickle metadata feature was implemented.
+        if exists:
+            with (dk.data_path / f"{dk.model_filename}_metadata.pkl").open("rb") as fp:
+                dk.pkl_data = cloudpickle.load(fp)
+
     def load_metadata(self, dk: FreqaiDataKitchen) -> None:
         """
         Load only metadata into datakitchen to increase performance during
@@ -495,6 +512,8 @@ class FreqaiDataDrawer:
             dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
+
+        self.load_pickle_metadata(dk)
 
     def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:
         """
@@ -516,6 +535,8 @@ class FreqaiDataDrawer:
         else:
             with (dk.data_path / f"{dk.model_filename}_metadata.json").open("r") as fp:
                 dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
+
+            self.load_pickle_metadata(dk)
 
             dk.data_dictionary["train_features"] = pd.read_pickle(
                 dk.data_path / f"{dk.model_filename}_trained_df.pkl"

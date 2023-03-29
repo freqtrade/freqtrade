@@ -142,7 +142,7 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     return freqai, unfiltered_dataframe
 
 
-def make_data_dictionary(mocker, freqai_conf):
+def make_data_dictionary(mocker, freqai_conf, normalized=True):
     freqai_conf.update({"timerange": "20180110-20180130"})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -181,7 +181,8 @@ def make_data_dictionary(mocker, freqai_conf):
 
     data_dictionary = freqai.dk.make_train_test_datasets(features_filtered, labels_filtered)
 
-    data_dictionary = freqai.dk.normalize_data(data_dictionary)
+    if normalized:
+        data_dictionary = freqai.dk.normalize_data(data_dictionary)
 
     return freqai
 

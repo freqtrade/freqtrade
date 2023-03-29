@@ -25,6 +25,7 @@ from freqtrade.constants import Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.freqai.normalization import Normalization, normalization_factory
 from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -68,6 +69,7 @@ class FreqaiDataKitchen:
         pair: str = "",
     ):
         self.data: Dict[str, Any] = {}
+        self.pkl_data: Dict[str, Any] = {}
         self.data_dictionary: Dict[str, DataFrame] = {}
         self.config = config
         self.freqai_config: Dict[str, Any] = config["freqai"]
@@ -109,6 +111,8 @@ class FreqaiDataKitchen:
         self.unique_classes: Dict[str, list] = {}
         self.unique_class_list: list = []
         self.backtest_live_models_data: Dict[str, Any] = {}
+        self.normalizer: Normalization = normalization_factory(config, self.data, self.pkl_data,
+                                                self.unique_class_list)
 
     def set_paths(
         self,
@@ -308,105 +312,16 @@ class FreqaiDataKitchen:
         return self.data_dictionary
 
     def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
-        """
-        Normalize all data in the data_dictionary according to the training dataset
-        :param data_dictionary: dictionary containing the cleaned and
-                                split training/test data/labels
-        :returns:
-        :data_dictionary: updated dictionary with standardized values.
-        """
-
-        # standardize the data by training stats
-        train_max = data_dictionary["train_features"].max()
-        train_min = data_dictionary["train_features"].min()
-        data_dictionary["train_features"] = (
-            2 * (data_dictionary["train_features"] - train_min) / (train_max - train_min) - 1
-        )
-        data_dictionary["test_features"] = (
-            2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
-        )
-
-        for item in train_max.keys():
-            self.data[item + "_max"] = train_max[item]
-            self.data[item + "_min"] = train_min[item]
-
-        for item in data_dictionary["train_labels"].keys():
-            if data_dictionary["train_labels"][item].dtype == object:
-                continue
-            train_labels_max = data_dictionary["train_labels"][item].max()
-            train_labels_min = data_dictionary["train_labels"][item].min()
-            data_dictionary["train_labels"][item] = (
-                2
-                * (data_dictionary["train_labels"][item] - train_labels_min)
-                / (train_labels_max - train_labels_min)
-                - 1
-            )
-            if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
-                data_dictionary["test_labels"][item] = (
-                    2
-                    * (data_dictionary["test_labels"][item] - train_labels_min)
-                    / (train_labels_max - train_labels_min)
-                    - 1
-                )
-
-            self.data[f"{item}_max"] = train_labels_max
-            self.data[f"{item}_min"] = train_labels_min
-        return data_dictionary
+        return self.normalizer.normalize_data(data_dictionary)
 
     def normalize_single_dataframe(self, df: DataFrame) -> DataFrame:
-
-        train_max = df.max()
-        train_min = df.min()
-        df = (
-            2 * (df - train_min) / (train_max - train_min) - 1
-        )
-
-        for item in train_max.keys():
-            self.data[item + "_max"] = train_max[item]
-            self.data[item + "_min"] = train_min[item]
-
-        return df
+        return self.normalizer.normalize_single_dataframe(df)
 
     def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
-        """
-        Normalize a set of data using the mean and standard deviation from
-        the associated training data.
-        :param df: Dataframe to be standardized
-        """
-
-        train_max = [None] * len(df.keys())
-        train_min = [None] * len(df.keys())
-
-        for i, item in enumerate(df.keys()):
-            train_max[i] = self.data[f"{item}_max"]
-            train_min[i] = self.data[f"{item}_min"]
-
-        train_max_series = pd.Series(train_max, index=df.keys())
-        train_min_series = pd.Series(train_min, index=df.keys())
-
-        df = (
-            2 * (df - train_min_series) / (train_max_series - train_min_series) - 1
-        )
-
-        return df
+        return self.normalizer.normalize_data_from_metadata(df)
 
     def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
-        """
-        Denormalize a set of data using the mean and standard deviation from
-        the associated training data.
-        :param df: Dataframe of predictions to be denormalized
-        """
-
-        for label in df.columns:
-            if df[label].dtype == object or label in self.unique_class_list:
-                continue
-            df[label] = (
-                (df[label] + 1)
-                * (self.data[f"{label}_max"] - self.data[f"{label}_min"])
-                / 2
-            ) + self.data[f"{label}_min"]
-
-        return df
+        return self.normalizer.denormalize_labels_from_metadata(df)
 
     def split_timerange(
         self, tr: str, train_split: int = 28, bt_split: float = 7
@@ -524,7 +439,7 @@ class FreqaiDataKitchen:
             columns=["PC" + str(i) for i in range(0, n_keep_components)],
             index=self.data_dictionary["train_features"].index,
         )
-        # normalsing transformed training features
+        # normalizing transformed training features
         self.data_dictionary["train_features"] = self.normalize_single_dataframe(
             self.data_dictionary["train_features"])
 
