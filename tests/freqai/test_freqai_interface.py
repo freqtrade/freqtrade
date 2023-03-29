@@ -432,7 +432,6 @@ def test_plot_feature_importance(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
-    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
