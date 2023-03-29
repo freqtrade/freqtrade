@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
-from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
@@ -48,26 +47,6 @@ class Binance(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
-
-    def _get_params(
-        self,
-        side: BuySell,
-        ordertype: str,
-        leverage: float,
-        reduceOnly: bool,
-        time_in_force: str = 'GTC',
-    ) -> Dict:
-        params = super()._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
-        if (
-            time_in_force == 'PO'
-            and ordertype != 'market'
-            and self.trading_mode == TradingMode.SPOT
-            # Only spot can do post only orders
-        ):
-            params.pop('timeInForce')
-            params['postOnly'] = True
-
-        return params
 
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)

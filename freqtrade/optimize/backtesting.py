@@ -203,9 +203,10 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        # Update can_short flag
+        self._can_short = self.trading_mode != TradingMode.SPOT and strategy.can_short
 
         self.strategy.ft_bot_start()
-        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
@@ -740,7 +741,7 @@ class Backtesting:
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
                 side=direction, entry_tag=entry_tag,
-            ) if self._can_short else 1.0
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
 
@@ -1030,6 +1031,9 @@ class Backtesting:
                                   requested_stake=(
                                     order.safe_remaining * order.ft_price / trade.leverage),
                                   direction='short' if trade.is_short else 'long')
+                # Delete trade if no successful entries happened (if placing the new order failed)
+                if trade.open_order_id is None and trade.nr_of_successful_entries == 0:
+                    return True
                 self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
@@ -1155,6 +1159,8 @@ class Backtesting:
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
             self.check_abort()
+            strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
+                current_time=current_time)
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 row = self.validate_row(data, pair, row_index, current_time)

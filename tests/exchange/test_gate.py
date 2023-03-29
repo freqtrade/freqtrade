@@ -4,40 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import Gate
-from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import EXMS, get_patched_exchange
-
-
-def test_validate_order_types_gate(default_conf, mocker):
-    default_conf['exchange']['name'] = 'gate'
-    mocker.patch(f'{EXMS}._init_ccxt')
-    mocker.patch(f'{EXMS}._load_markets', return_value={})
-    mocker.patch(f'{EXMS}.validate_pairs')
-    mocker.patch(f'{EXMS}.validate_timeframes')
-    mocker.patch(f'{EXMS}.validate_stakecurrency')
-    mocker.patch(f'{EXMS}.validate_pricing')
-    mocker.patch(f'{EXMS}.name', 'Gate')
-    exch = ExchangeResolver.load_exchange('gate', default_conf, True)
-    assert isinstance(exch, Gate)
-
-    default_conf['order_types'] = {
-        'entry': 'market',
-        'exit': 'limit',
-        'stoploss': 'market',
-        'stoploss_on_exchange': False
-    }
-
-    with pytest.raises(OperationalException,
-                       match=r'Exchange .* does not support market orders.'):
-        ExchangeResolver.load_exchange('gate', default_conf, True)
-
-    # market-orders supported on futures markets.
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    ex = ExchangeResolver.load_exchange('gate', default_conf, True)
-    assert ex
 
 
 @pytest.mark.usefixtures("init_persistence")

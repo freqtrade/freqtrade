@@ -276,6 +276,10 @@ class TradeSchema(BaseModel):
     funding_fees: Optional[float]
     trading_mode: Optional[TradingMode]
 
+    amount_precision: Optional[float]
+    price_precision: Optional[float]
+    precision_mode: Optional[int]
+
 
 class OpenTradeSchema(TradeSchema):
     stoploss_current_dist: Optional[float]
