@@ -84,6 +84,7 @@ def test_assertion_invalid_normalization_id(mocker, freqai_conf):
         assert str(e_info).startswith("Invalid data normalization identifier"), \
             "unexpected exception string"
 
+
 @pytest.mark.parametrize(
     "config_id",
     [

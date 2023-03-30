@@ -112,7 +112,7 @@ class FreqaiDataKitchen:
         self.unique_class_list: list = []
         self.backtest_live_models_data: Dict[str, Any] = {}
         self.normalizer: Normalization = normalization_factory(config, self.data, self.pkl_data,
-                                                self.unique_class_list)
+                                                               self.unique_class_list)
 
     def set_paths(
         self,

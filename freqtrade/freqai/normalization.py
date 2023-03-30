@@ -16,20 +16,19 @@ def normalization_factory(
             config: Config,
             meta_data: Dict[str, Any],
             pickle_meta_data: Dict[str, Any],
-            unique_class_list: list
-    ):
-        freqai_config: Dict[str, Any] = config["freqai"]
-        norm_config_id = freqai_config["feature_parameters"].get("data_normalization", "legacy")
-        if norm_config_id.lower() == "legacy":
-            return LegacyNormalization(config, meta_data, pickle_meta_data, unique_class_list)
-        elif norm_config_id.lower() == "standard":
-            return StandardNormalization(config, meta_data, pickle_meta_data, unique_class_list)
-        elif norm_config_id.lower() == "minmax":
-            return MinMaxNormalization(config, meta_data, pickle_meta_data, unique_class_list)
-        elif norm_config_id.lower() == "quantile":
-            return QuantileNormalization(config, meta_data, pickle_meta_data, unique_class_list)
-        else:
-            raise OperationalException(f"Invalid data normalization identifier '{norm_config_id}'")
+            unique_class_list: list):
+    freqai_config: Dict[str, Any] = config["freqai"]
+    norm_config_id = freqai_config["feature_parameters"].get("data_normalization", "legacy")
+    if norm_config_id.lower() == "legacy":
+        return LegacyNormalization(config, meta_data, pickle_meta_data, unique_class_list)
+    elif norm_config_id.lower() == "standard":
+        return StandardNormalization(config, meta_data, pickle_meta_data, unique_class_list)
+    elif norm_config_id.lower() == "minmax":
+        return MinMaxNormalization(config, meta_data, pickle_meta_data, unique_class_list)
+    elif norm_config_id.lower() == "quantile":
+        return QuantileNormalization(config, meta_data, pickle_meta_data, unique_class_list)
+    else:
+        raise OperationalException(f"Invalid data normalization identifier '{norm_config_id}'")
 
 
 class Normalization(ABC):
@@ -268,5 +267,3 @@ class QuantileNormalization(SKLearnNormalization):
                  unique_class_list: list):
         super().__init__(config, meta_data, pickle_meta_data, unique_class_list,
                          QuantileTransformer)
-
-
