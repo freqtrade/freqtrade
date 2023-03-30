@@ -33,6 +33,7 @@ def test_legacy_normalization_add_max_min_columns(mocker, freqai_conf):
 
     assert any('_max' in entry for entry in freqai.dk.data.keys())
     assert any('_min' in entry for entry in freqai.dk.data.keys())
+    assert all(not entry.endswith('_scaler') for entry in freqai.dk.pkl_data.keys())
 
 
 def test_standard_normalization_dont_add_max_min_columns(mocker, freqai_conf):
@@ -42,6 +43,7 @@ def test_standard_normalization_dont_add_max_min_columns(mocker, freqai_conf):
     freqai.dk.normalize_data(data_dict)
     assert all(not entry.endswith('_max') for entry in freqai.dk.data.keys())
     assert all(not entry.endswith('_min') for entry in freqai.dk.data.keys())
+    assert any(entry.endswith('_scaler') for entry in freqai.dk.pkl_data.keys())
 
 
 def test_legacy_and_standard_normalization_difference(mocker, freqai_conf):
