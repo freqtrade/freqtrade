@@ -48,7 +48,7 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
     default_conf['margin_mode'] = MarginMode.ISOLATED
     default_conf['trading_mode'] = trademode
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
@@ -127,7 +127,7 @@ def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
