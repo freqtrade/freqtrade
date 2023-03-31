@@ -211,7 +211,7 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
         "pairs": config.get('exchange', {}).get('pair_whitelist')
     }
 
-    with open(params_record_path, "w") as handle:
+    with params_record_path.open("w") as handle:
         rapidjson.dump(
             run_params,
             handle,

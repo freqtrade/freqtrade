@@ -7,8 +7,21 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+@pytest.mark.parametrize('side,type,time_in_force,expected', [
+    ('buy', 'limit', 'gtc', {'timeInForce': 'GTC'}),
+    ('buy', 'limit', 'IOC', {'timeInForce': 'IOC'}),
+    ('buy', 'market', 'IOC', {}),
+    ('buy', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'market', 'PO', {}),
+    ])
+def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    assert exchange._get_params(side, type, 1, False, time_in_force) == expected
 
 
 @pytest.mark.parametrize('trademode', [TradingMode.FUTURES, TradingMode.SPOT])
@@ -34,12 +47,12 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
     default_conf['dry_run'] = False
     default_conf['margin_mode'] = MarginMode.ISOLATED
     default_conf['trading_mode'] = trademode
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
+    with pytest.raises(InvalidOrderException):
         order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
@@ -113,12 +126,12 @@ def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
+    with pytest.raises(InvalidOrderException):
         order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
@@ -542,7 +555,6 @@ def test__set_leverage_binance(mocker, default_conf):
         "set_leverage",
         pair="XRP/USDT",
         leverage=5.0,
-        trading_mode=TradingMode.FUTURES
     )
 
 
@@ -600,7 +612,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     mm_ratio,
     amt,
 ):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)

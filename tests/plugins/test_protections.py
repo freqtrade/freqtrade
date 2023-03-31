@@ -74,7 +74,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         trade.close(close_price)
         trade.exit_reason = exit_reason
 
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
     return trade
 

@@ -23,7 +23,7 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "order_time_in_force": ['GTC', 'FOK', 'IOC'],
+        "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
@@ -31,6 +31,7 @@ class Binance(Exchange):
     }
     _ft_has_futures: Dict = {
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
+        "order_time_in_force": ["GTC", "FOK", "IOC"],
         "tickers_have_price": False,
         "floor_leverage": True,
         "stop_price_type_field": "workingType",
@@ -195,7 +196,7 @@ class Binance(Exchange):
                 leverage_tiers_path = (
                     Path(__file__).parent / 'binance_leverage_tiers.json'
                 )
-                with open(leverage_tiers_path) as json_file:
+                with leverage_tiers_path.open() as json_file:
                     return json_load(json_file)
             else:
                 try:

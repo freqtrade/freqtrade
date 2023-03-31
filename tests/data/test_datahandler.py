@@ -252,7 +252,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
     assert log_has_re(expected_text, caplog)
 
 
-@pytest.mark.parametrize('datahandler', ['feather', 'parquet'])
+@pytest.mark.parametrize('datahandler', ['parquet'])
 def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
@@ -494,6 +494,58 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
     assert unlinkmock.call_count == 2
+
+
+def test_featherdatahandler_trades_load(testdatadir):
+    dh = get_datahandler(testdatadir, 'feather')
+    trades = dh.trades_load('XRP/ETH')
+    assert isinstance(trades, list)
+    assert trades[0][0] == 1570752011620
+    assert trades[-1][-1] == 0.1986231
+
+    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    assert trades1 == []
+
+
+def test_featherdatahandler_trades_store(testdatadir, tmpdir):
+    tmpdir1 = Path(tmpdir)
+    dh = get_datahandler(testdatadir, 'feather')
+    trades = dh.trades_load('XRP/ETH')
+
+    dh1 = get_datahandler(tmpdir1, 'feather')
+    dh1.trades_store('XRP/NEW', trades)
+    file = tmpdir1 / 'XRP_NEW-trades.feather'
+    assert file.is_file()
+    # Load trades back
+    trades_new = dh1.trades_load('XRP/NEW')
+
+    assert len(trades_new) == len(trades)
+    assert trades[0][0] == trades_new[0][0]
+    assert trades[0][1] == trades_new[0][1]
+    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
+    assert trades[0][3] == trades_new[0][3]
+    assert trades[0][4] == trades_new[0][4]
+    assert trades[0][5] == trades_new[0][5]
+    assert trades[0][6] == trades_new[0][6]
+    assert trades[-1][0] == trades_new[-1][0]
+    assert trades[-1][1] == trades_new[-1][1]
+    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
+    assert trades[-1][3] == trades_new[-1][3]
+    assert trades[-1][4] == trades_new[-1][4]
+    assert trades[-1][5] == trades_new[-1][5]
+    assert trades[-1][6] == trades_new[-1][6]
+
+
+def test_featherdatahandler_trades_purge(mocker, testdatadir):
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
+    dh = get_datahandler(testdatadir, 'feather')
+    assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 0
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
+    assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert unlinkmock.call_count == 1
 
 
 def test_gethandlerclass():

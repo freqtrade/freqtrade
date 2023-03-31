@@ -10,6 +10,7 @@ from requests import RequestException, post
 from freqtrade.constants import Config
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class Webhook(RPCHandler):
         """
         pass
 
-    def _get_value_dict(self, msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _get_value_dict(self, msg: RPCSendMsg) -> Optional[Dict[str, Any]]:
         whconfig = self._config['webhook']
         # Deprecated 2022.10 - only keep generic method.
         if msg['type'] in [RPCMessageType.ENTRY]:
@@ -58,6 +59,7 @@ class Webhook(RPCHandler):
             valuedict = whconfig.get('webhookexitcancel')
         elif msg['type'] in (RPCMessageType.STATUS,
                              RPCMessageType.STARTUP,
+                             RPCMessageType.EXCEPTION,
                              RPCMessageType.WARNING):
             valuedict = whconfig.get('webhookstatus')
         elif msg['type'].value in whconfig:
@@ -74,7 +76,7 @@ class Webhook(RPCHandler):
             return None
         return valuedict
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Send a message to telegram channel """
         try:
 
@@ -112,7 +114,7 @@ class Webhook(RPCHandler):
                     response = post(self._url, data=payload['data'],
                                     headers={'Content-Type': 'text/plain'})
                 else:
-                    raise NotImplementedError('Unknown format: {}'.format(self._format))
+                    raise NotImplementedError(f'Unknown format: {self._format}')
 
                 # Throw a RequestException if the post was not successful
                 response.raise_for_status()

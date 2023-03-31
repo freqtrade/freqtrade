@@ -251,7 +251,7 @@ class FreqaiDataKitchen:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]
             logger.info(
-                f"dropped {len(unfiltered_df) - len(filtered_df)} training points"
+                f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
@@ -675,7 +675,7 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - kept_points.sum()}"
+                f"{self.pair}: SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" test points from {len(y_pred)} total points."
             )
 
@@ -949,7 +949,7 @@ class FreqaiDataKitchen:
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
+                f"{self.pair}: DI tossed {len(do_predict) - do_predict.sum()} predictions for "
                 "being too far from training data."
             )
 
@@ -1315,123 +1315,54 @@ class FreqaiDataKitchen:
         dataframe: DataFrame = dataframe containing populated indicators
         """
 
-        # this is a hack to check if the user is using the populate_any_indicators function
+        # check if the user is using the deprecated populate_any_indicators function
         new_version = inspect.getsource(strategy.populate_any_indicators) == (
             inspect.getsource(IStrategy.populate_any_indicators))
 
-        if new_version:
-            tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
-            pairs: List[str] = self.freqai_config["feature_parameters"].get(
-                "include_corr_pairlist", [])
+        if not new_version:
+            raise OperationalException(
+                "You are using the `populate_any_indicators()` function"
+                " which was deprecated on March 1, 2023. Please refer "
+                "to the strategy migration guide to use the new "
+                "feature_engineering_* methods: \n"
+                "https://www.freqtrade.io/en/stable/strategy_migration/#freqai-strategy \n"
+                "And the feature_engineering_* documentation: \n"
+                "https://www.freqtrade.io/en/latest/freqai-feature-engineering/"
+                )
 
-            for tf in tfs:
-                if tf not in base_dataframes:
-                    base_dataframes[tf] = pd.DataFrame()
-                for p in pairs:
-                    if p not in corr_dataframes:
-                        corr_dataframes[p] = {}
-                    if tf not in corr_dataframes[p]:
-                        corr_dataframes[p][tf] = pd.DataFrame()
-
-            if not prediction_dataframe.empty:
-                dataframe = prediction_dataframe.copy()
-            else:
-                dataframe = base_dataframes[self.config["timeframe"]].copy()
-
-            corr_pairs: List[str] = self.freqai_config["feature_parameters"].get(
-                "include_corr_pairlist", [])
-            dataframe = self.populate_features(dataframe.copy(), pair, strategy,
-                                               corr_dataframes, base_dataframes)
-            metadata = {"pair": pair}
-            dataframe = strategy.feature_engineering_standard(dataframe.copy(), metadata=metadata)
-            # ensure corr pairs are always last
-            for corr_pair in corr_pairs:
-                if pair == corr_pair:
-                    continue  # dont repeat anything from whitelist
-                if corr_pairs and do_corr_pairs:
-                    dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
-                                                       corr_dataframes, base_dataframes, True)
-
-            dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
-
-            self.get_unique_classes_from_labels(dataframe)
-
-            dataframe = self.remove_special_chars_from_feature_names(dataframe)
-
-            if self.config.get('reduce_df_footprint', False):
-                dataframe = reduce_dataframe_footprint(dataframe)
-
-            return dataframe
-
-        else:
-            # the user is using the populate_any_indicators functions which is deprecated
-
-            df = self.use_strategy_to_populate_indicators_old_version(
-                strategy, corr_dataframes, base_dataframes, pair,
-                prediction_dataframe, do_corr_pairs)
-            return df
-
-    def use_strategy_to_populate_indicators_old_version(
-        self,
-        strategy: IStrategy,
-        corr_dataframes: dict = {},
-        base_dataframes: dict = {},
-        pair: str = "",
-        prediction_dataframe: DataFrame = pd.DataFrame(),
-        do_corr_pairs: bool = True,
-    ) -> DataFrame:
-        """
-        Use the user defined strategy for populating indicators during retrain
-        :param strategy: IStrategy = user defined strategy object
-        :param corr_dataframes: dict = dict containing the df pair dataframes
-                                (for user defined timeframes)
-        :param base_dataframes: dict = dict containing the current pair dataframes
-                                (for user defined timeframes)
-        :param metadata: dict = strategy furnished pair metadata
-        :return:
-        dataframe: DataFrame = dataframe containing populated indicators
-        """
-
-        # for prediction dataframe creation, we let dataprovider handle everything in the strategy
-        # so we create empty dictionaries, which allows us to pass None to
-        # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
         tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
-        pairs: List[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        pairs: List[str] = self.freqai_config["feature_parameters"].get(
+            "include_corr_pairlist", [])
+
+        for tf in tfs:
+            if tf not in base_dataframes:
+                base_dataframes[tf] = pd.DataFrame()
+            for p in pairs:
+                if p not in corr_dataframes:
+                    corr_dataframes[p] = {}
+                if tf not in corr_dataframes[p]:
+                    corr_dataframes[p][tf] = pd.DataFrame()
+
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
-            for tf in tfs:
-                base_dataframes[tf] = None
-                for p in pairs:
-                    if p not in corr_dataframes:
-                        corr_dataframes[p] = {}
-                    corr_dataframes[p][tf] = None
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 
-        sgi = False
-        for tf in tfs:
-            if tf == tfs[-1]:
-                sgi = True  # doing this last allows user to use all tf raw prices in labels
-            dataframe = strategy.populate_any_indicators(
-                pair,
-                dataframe.copy(),
-                tf,
-                informative=base_dataframes[tf],
-                set_generalized_indicators=sgi
-            )
-
+        corr_pairs: List[str] = self.freqai_config["feature_parameters"].get(
+            "include_corr_pairlist", [])
+        dataframe = self.populate_features(dataframe.copy(), pair, strategy,
+                                           corr_dataframes, base_dataframes)
+        metadata = {"pair": pair}
+        dataframe = strategy.feature_engineering_standard(dataframe.copy(), metadata=metadata)
         # ensure corr pairs are always last
-        for corr_pair in pairs:
+        for corr_pair in corr_pairs:
             if pair == corr_pair:
                 continue  # dont repeat anything from whitelist
-            for tf in tfs:
-                if pairs and do_corr_pairs:
-                    dataframe = strategy.populate_any_indicators(
-                        corr_pair,
-                        dataframe.copy(),
-                        tf,
-                        informative=corr_dataframes[corr_pair][tf]
-                    )
+            if corr_pairs and do_corr_pairs:
+                dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
+                                                   corr_dataframes, base_dataframes, True)
+
+        dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
 
         self.get_unique_classes_from_labels(dataframe)
 

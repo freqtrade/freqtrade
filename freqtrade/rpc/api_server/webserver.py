@@ -13,6 +13,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ class ApiServer(RPCHandler):
         cls._has_rpc = False
         cls._rpc = None
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """
         Publish the message to the message stream
         """

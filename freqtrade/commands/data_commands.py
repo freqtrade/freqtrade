@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -20,15 +20,24 @@ from freqtrade.util.binance_mig import migrate_binance_futures_data
 logger = logging.getLogger(__name__)
 
 
+def _data_download_sanity(config: Config) -> None:
+    if 'days' in config and 'timerange' in config:
+        raise OperationalException("--days and --timerange are mutually exclusive. "
+                                   "You can only specify one or the other.")
+
+    if 'pairs' not in config:
+        raise OperationalException(
+            "Downloading data requires a list of pairs. "
+            "Please check the documentation on how to configure this.")
+
+
 def start_download_data(args: Dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    if 'days' in config and 'timerange' in config:
-        raise OperationalException("--days and --timerange are mutually exclusive. "
-                                   "You can only specify one or the other.")
+    _data_download_sanity(config)
     timerange = TimeRange()
     if 'days' in config:
         time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
@@ -39,11 +48,6 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     # Remove stake-currency to skip checks which are not relevant for datadownload
     config['stake_currency'] = ''
-
-    if 'pairs' not in config:
-        raise OperationalException(
-            "Downloading data requires a list of pairs. "
-            "Please check the documentation on how to configure this.")
 
     pairs_not_available: List[str] = []
 
@@ -200,11 +204,14 @@ def start_list_data(args: Dict[str, Any]) -> None:
             pair, timeframe, candle_type,
             *dhc.ohlcv_data_min_max(pair, timeframe, candle_type)
         ) for pair, timeframe, candle_type in paircombs]
+
         print(tabulate([
             (pair, timeframe, candle_type,
                 start.strftime(DATETIME_PRINT_FORMAT),
                 end.strftime(DATETIME_PRINT_FORMAT))
-            for pair, timeframe, candle_type, start, end in paircombs1
+            for pair, timeframe, candle_type, start, end in sorted(
+                paircombs1,
+                key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2]))
             ],
             headers=("Pair", "Timeframe", "Type", 'From', 'To'),
             tablefmt='psql', stralign='right'))

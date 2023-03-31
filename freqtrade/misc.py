@@ -6,8 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Union
-from typing.io import IO
+from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
 
 import orjson
@@ -81,7 +80,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
     else:
         if log:
             logger.info(f'dumping json to "{filename}"')
-        with open(filename, 'w') as fp:
+        with filename.open('w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
@@ -98,12 +97,12 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
 
     if log:
         logger.info(f'dumping joblib to "{filename}"')
-    with open(filename, 'wb') as fp:
+    with filename.open('wb') as fp:
         joblib.dump(data, fp)
     logger.debug(f'done joblib dump to "{filename}"')
 
 
-def json_load(datafile: IO) -> Any:
+def json_load(datafile: Union[gzip.GzipFile, TextIO]) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -112,7 +111,7 @@ def json_load(datafile: IO) -> Any:
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
 
-def file_load_json(file):
+def file_load_json(file: Path):
 
     if file.suffix != ".gz":
         gzipfile = file.with_suffix(file.suffix + '.gz')
@@ -125,7 +124,7 @@ def file_load_json(file):
             pairdata = json_load(datafile)
     elif file.is_file():
         logger.debug(f"Loading historical data from file {file}")
-        with open(file) as datafile:
+        with file.open() as datafile:
             pairdata = json_load(datafile)
     else:
         return None

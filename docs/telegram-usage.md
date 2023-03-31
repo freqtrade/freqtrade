@@ -152,7 +152,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`, `/marketdir`
 
 ## Telegram commands
 
@@ -179,6 +179,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
+| `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction. If no direction is provided, the currently set direction will be displayed.
 | **Modify Trade states** |
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
@@ -242,7 +243,7 @@ Enter Tag is configurable via Strategy.
 > **Enter Tag:** Awesome Long Signal
 > **Open Rate:** `0.00007489`
 > **Current Rate:** `0.00007489`
-> **Current Profit:** `12.95%`
+> **Unrealized Profit:** `12.95%`
 > **Stoploss:** `0.00007389 (-0.02%)`
 
 ### /status table
@@ -416,3 +417,27 @@ ARDR/ETH   0.366667      0.143059       -0.01
 ### /version
 
 > **Version:** `0.14.3`
+
+### /marketdir
+
+If a market direction is provided the command updates the user managed variable that represents the current market direction.
+This variable is not set to any valid market direction on bot startup and must be set by the user. The example below is for `/marketdir long`:
+
+```
+Successfully updated marketdirection from none to long.
+```
+
+If no market direction is provided the command outputs the currently set market directions. The example below is for `/marketdir`:
+
+```
+Currently set marketdirection: even
+```
+
+You can use the market direction in your strategy via `self.market_direction`.
+
+!!! Warning "Bot restarts"
+    Please note that the market direction is not persisted, and will be reset after a bot restart/reload.
+
+!!! Danger "Backtesting"
+    As this value/variable is intended to be changed manually in dry/live trading.
+    Strategies using `market_direction` will probably not produce reliable, reproducible results (changes to this variable will not be reflected for backtesting). Use at your own risk.

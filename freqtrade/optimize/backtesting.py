@@ -93,7 +93,7 @@ class Backtesting:
         if self.config.get('strategy_list'):
             if self.config.get('freqai', {}).get('enabled', False):
                 logger.warning("Using --strategy-list with FreqAI REQUIRES all strategies "
-                               "to have identical populate_any_indicators.")
+                               "to have identical feature_engineering_* functions.")
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -203,9 +203,10 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        # Update can_short flag
+        self._can_short = self.trading_mode != TradingMode.SPOT and strategy.can_short
 
         self.strategy.ft_bot_start()
-        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
@@ -440,11 +441,8 @@ class Backtesting:
                               side_1 * abs(self.strategy.trailing_stop_positive / leverage)))
             else:
                 # Worst case: price ticks tiny bit above open and dives down.
-                stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(trade.stop_loss_pct / leverage))
-                if is_short:
-                    assert stop_rate > row[LOW_IDX]
-                else:
-                    assert stop_rate < row[HIGH_IDX]
+                stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(
+                    (trade.stop_loss_pct or 0.0) / leverage))
 
             # Limit lower-end to candle low to avoid exits below the low.
             # This still remains "worst case" - but "worst realistic case".
@@ -472,7 +470,7 @@ class Backtesting:
             # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
             roi_rate = trade.open_rate * roi / leverage
             open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
-            close_rate = -(roi_rate + open_fee_rate) / (trade.fee_close - side_1 * 1)
+            close_rate = -(roi_rate + open_fee_rate) / ((trade.fee_close or 0.0) - side_1 * 1)
             if is_short:
                 is_new_roi = row[OPEN_IDX] < close_rate
             else:
@@ -525,7 +523,7 @@ class Backtesting:
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None)(
+                                             default_retval=None, supress_error=True)(
             trade=trade,  # type: ignore[arg-type]
             current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
@@ -563,7 +561,7 @@ class Backtesting:
             pos_trade = self._get_exit_for_signal(trade, row, exit_, amount)
             if pos_trade is not None:
                 order = pos_trade.orders[-1]
-                if self._get_order_filled(order.price, row):
+                if self._get_order_filled(order.ft_price, row):
                     order.close_bt_order(current_date, trade)
                     trade.recalc_trade_from_orders()
                 self.wallets.update()
@@ -664,6 +662,7 @@ class Backtesting:
             side=trade.exit_side,
             order_type=order_type,
             status="open",
+            ft_price=close_rate,
             price=close_rate,
             average=close_rate,
             amount=amount,
@@ -742,12 +741,12 @@ class Backtesting:
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
                 side=direction, entry_tag=entry_tag,
-            ) if self._can_short else 1.0
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, propose_rate, -0.05, leverage=leverage) or 0
+            pair, propose_rate, -0.05 if not pos_adjust else 0.0, leverage=leverage) or 0
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, propose_rate, leverage=leverage)
         stake_available = self.wallets.get_available_stake_amount()
@@ -887,6 +886,7 @@ class Backtesting:
                 order_date=current_time,
                 order_filled_date=current_time,
                 order_update_date=current_time,
+                ft_price=propose_rate,
                 price=propose_rate,
                 average=propose_rate,
                 amount=amount,
@@ -895,7 +895,7 @@ class Backtesting:
                 cost=stake_amount + trade.fee_open,
             )
             trade.orders.append(order)
-            if pos_adjust and self._get_order_filled(order.price, row):
+            if pos_adjust and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
@@ -1008,15 +1008,15 @@ class Backtesting:
         # only check on new candles for open entry orders
         if order.side == trade.entry_side and current_time > order.order_date_utc:
             requested_rate = strategy_safe_wrapper(self.strategy.adjust_entry_price,
-                                                   default_retval=order.price)(
+                                                   default_retval=order.ft_price)(
                 trade=trade,  # type: ignore[arg-type]
                 order=order, pair=trade.pair, current_time=current_time,
-                proposed_rate=row[OPEN_IDX], current_order_rate=order.price,
+                proposed_rate=row[OPEN_IDX], current_order_rate=order.ft_price,
                 entry_tag=trade.enter_tag, side=trade.trade_direction
             )  # default value is current order price
 
             # cancel existing order whenever a new rate is requested (or None)
-            if requested_rate == order.price:
+            if requested_rate == order.ft_price:
                 # assumption: there can't be multiple open entry orders at any given time
                 return False
             else:
@@ -1028,8 +1028,12 @@ class Backtesting:
             if requested_rate:
                 self._enter_trade(pair=trade.pair, row=row, trade=trade,
                                   requested_rate=requested_rate,
-                                  requested_stake=(order.remaining * order.price / trade.leverage),
+                                  requested_stake=(
+                                    order.safe_remaining * order.ft_price / trade.leverage),
                                   direction='short' if trade.is_short else 'long')
+                # Delete trade if no successful entries happened (if placing the new order failed)
+                if trade.open_order_id is None and trade.nr_of_successful_entries == 0:
+                    return True
                 self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
@@ -1095,7 +1099,7 @@ class Backtesting:
         for trade in list(LocalTrade.bt_trades_open_pp[pair]):
             # 3. Process entry orders.
             order = trade.select_order(trade.entry_side, is_open=True)
-            if order and self._get_order_filled(order.price, row):
+            if order and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
                 trade.open_order_id = None
                 self.wallets.update()
@@ -1106,7 +1110,7 @@ class Backtesting:
 
                 # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
-            if order and self._get_order_filled(order.price, row):
+            if order and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
                 trade.open_order_id = None
                 sub_trade = order.safe_amount_after_fee != trade.amount
@@ -1115,7 +1119,7 @@ class Backtesting:
                     trade.recalc_trade_from_orders()
                 else:
                     trade.close_date = current_time
-                    trade.close(order.price, show_msg=False)
+                    trade.close(order.ft_price, show_msg=False)
 
                     # logger.debug(f"{pair} - Backtesting exit {trade}")
                     LocalTrade.close_bt_trade(trade)
@@ -1155,6 +1159,8 @@ class Backtesting:
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
             self.check_abort()
+            strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
+                current_time=current_time)
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 row = self.validate_row(data, pair, row_index, current_time)

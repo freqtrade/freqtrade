@@ -16,7 +16,8 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
+permissions:
+  repository-projects: read
 jobs:
   build_linux:
 
@@ -24,7 +25,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-20.04, ubuntu-22.04 ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -90,13 +91,13 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -115,7 +116,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -186,13 +187,13 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -212,7 +213,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -248,9 +249,9 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
+    - name: Run Ruff
       run: |
-        flake8
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -321,7 +322,6 @@ jobs:
   build_linux_online:
     # Run pytest with "live" checks
     runs-on: ubuntu-22.04
-    # permissions:
     steps:
     - uses: actions/checkout@v3
 
@@ -425,7 +425,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.6.4
+      uses: pypa/gh-action-pypi-publish@v1.8.3
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -433,7 +433,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.6.4
+      uses: pypa/gh-action-pypi-publish@v1.8.3
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -466,12 +466,13 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_multi.sh
 
   deploy_arm:
+    permissions:
+      packages: write
     needs: [ deploy ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
@@ -494,8 +495,9 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        GHCR_USERNAME: ${{ github.actor }}
+        GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         build_helpers/publish_docker_arm64.sh
 

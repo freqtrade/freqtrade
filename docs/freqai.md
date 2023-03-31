@@ -71,6 +71,10 @@ pip install -r requirements-freqai.txt
 !!! Note
     Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since it does not provide wheels for this platform.
 
+!!! Note "python 3.11"
+    Some dependencies (Catboost, Torch) currently don't support python 3.11. Freqtrade therefore only supports python 3.10 for these models/dependencies.
+    Tests involving these dependencies are skipped on 3.11.
+
 ### Usage with docker
 
 If you are using docker, a dedicated tag with FreqAI dependencies is available as `:freqai`. As such - you can replace the image line in your docker compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular FreqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices.

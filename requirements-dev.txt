@@ -7,12 +7,11 @@
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
-flake8==6.0.0
-flake8-tidy-imports==4.8.0
-mypy==1.0.1
-pre-commit==3.0.4
-pytest==7.2.1
-pytest-asyncio==0.20.3
+ruff==0.0.259
+mypy==1.1.1
+pre-commit==3.2.1
+pytest==7.2.2
+pytest-asyncio==0.21.0
 pytest-cov==4.0.0
 pytest-mock==3.10.0
 pytest-random-order==1.1.0
@@ -23,11 +22,11 @@ time-machine==2.9.0
 httpx==0.23.3
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==7.2.9
+nbconvert==7.2.10
 
 # mypy types
-types-cachetools==5.3.0.0
+types-cachetools==5.3.0.4
 types-filelock==3.2.7
-types-requests==2.28.11.13
-types-tabulate==0.9.0.0
-types-python-dateutil==2.8.19.6
+types-requests==2.28.11.16
+types-tabulate==0.9.0.1
+types-python-dateutil==2.8.19.10

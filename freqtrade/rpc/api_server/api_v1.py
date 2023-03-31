@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 # 2.22: Add FreqAI to backtesting
 # 2.23: Allow plot config request in webserver mode
 # 2.24: Add cancel_open_order endpoint
-API_VERSION = 2.24
+# 2.25: Add several profit values to /status endpoint
+API_VERSION = 2.25
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -346,4 +347,4 @@ def sysinfo():
 
 @router.get('/health', response_model=Health, tags=['info'])
 def health(rpc: RPC = Depends(get_rpc)):
-    return rpc._health()
+    return rpc.health()

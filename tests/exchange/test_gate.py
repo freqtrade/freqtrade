@@ -4,40 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import Gate
-from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_patched_exchange
-
-
-def test_validate_order_types_gate(default_conf, mocker):
-    default_conf['exchange']['name'] = 'gate'
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt')
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', return_value={})
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
-    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
-    mocker.patch('freqtrade.exchange.Exchange.name', 'Gate')
-    exch = ExchangeResolver.load_exchange('gate', default_conf, True)
-    assert isinstance(exch, Gate)
-
-    default_conf['order_types'] = {
-        'entry': 'market',
-        'exit': 'limit',
-        'stoploss': 'market',
-        'stoploss_on_exchange': False
-    }
-
-    with pytest.raises(OperationalException,
-                       match=r'Exchange .* does not support market orders.'):
-        ExchangeResolver.load_exchange('gate', default_conf, True)
-
-    # market-orders supported on futures markets.
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    ex = ExchangeResolver.load_exchange('gate', default_conf, True)
-    assert ex
+from tests.conftest import EXMS, get_patched_exchange
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -105,7 +72,7 @@ def test_stoploss_adjust_gate(mocker, default_conf, sl1, sl2, sl3, side):
     ('maker', 0.0, 0.0),
 ])
 def test_fetch_my_trades_gate(mocker, default_conf, takerormaker, rate, cost):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     tick = {'ETH/USDT:USDT': {
         'info': {'user_id': '',
                  'taker_fee': '0.0018',

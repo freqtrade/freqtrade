@@ -12,7 +12,7 @@ import sdnotify
 from freqtrade import __version__
 from freqtrade.configuration import Configuration
 from freqtrade.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT, Config
-from freqtrade.enums import State
+from freqtrade.enums import RPCMessageType, State
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.exchange import timeframe_to_next_date
 from freqtrade.freqtradebot import FreqtradeBot
@@ -185,7 +185,10 @@ class Worker:
             tb = traceback.format_exc()
             hint = 'Issue `/start` if you think it is safe to restart.'
 
-            self.freqtrade.notify_status(f'OperationalException:\n```\n{tb}```{hint}')
+            self.freqtrade.notify_status(
+                f'*OperationalException:*\n```\n{tb}```\n {hint}',
+                msg_type=RPCMessageType.EXCEPTION
+            )
 
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
