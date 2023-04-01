@@ -947,7 +947,7 @@ class FreqtradeBot(LoggingMixin):
 
         return enter_limit_requested, stake_amount, leverage
 
-    def _notify_enter(self, trade: Trade, order: Order, order_type: Optional[str] = None,
+    def _notify_enter(self, trade: Trade, order: Order, order_type: str,
                       fill: bool = False, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a entry order occurred.
@@ -1852,7 +1852,7 @@ class FreqtradeBot(LoggingMixin):
                 self.handle_protections(trade.pair, trade.trade_direction)
         elif send_msg and not trade.open_order_id and not stoploss_order:
             # Enter fill
-            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
+            self._notify_enter(trade, order, order.order_type, fill=True, sub_trade=sub_trade)
 
     def handle_protections(self, pair: str, side: LongShort) -> None:
         # Lock pair for one candle to prevent immediate rebuys
