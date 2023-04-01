@@ -599,6 +599,7 @@ CONF_SCHEMA = {
                         "policy_type": {"type": "string", "default": "MlpPolicy"},
                         "net_arch": {"type": "array", "default": [128, 128]},
                         "randomize_startinng_position": {"type": "boolean", "default": False},
+                        "progress_bar": {"type": "boolean", "default": False},
                         "model_reward_parameters": {
                             "type": "object",
                             "properties": {

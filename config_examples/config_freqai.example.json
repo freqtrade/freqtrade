@@ -73,7 +73,8 @@
                 10,
                 20
             ],
-            "plot_feature_importances": 0
+            "plot_feature_importances": 0,
+            "progress_bar": false
         },
         "data_split_parameters": {
             "test_size": 0.33,

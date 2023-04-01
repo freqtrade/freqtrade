@@ -8,3 +8,6 @@ sb3-contrib==1.7.0; python_version < '3.11'
 # Gym is forced to this version by stable-baselines3.
 setuptools==65.5.1 # Should be removed when gym is fixed.
 gym==0.21; python_version < '3.11'
+# Progress bar for stable-baselines3 and sb3-contrib
+tqdm==4.65.0; python_version < '3.11'
+rich==13.3.3; python_version < '3.11'
