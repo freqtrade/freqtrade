@@ -854,7 +854,8 @@ class FreqtradeBot(LoggingMixin):
                 logger.info(f"Canceling stoploss on exchange for {trade}")
                 co = self.exchange.cancel_stoploss_order_with_result(
                     trade.stoploss_order_id, trade.pair, trade.amount)
-                trade.update_order(co)
+                self.update_trade_state(trade, trade.stoploss_order_id, co, stoploss_order=True)
+
                 # Reset stoploss order id.
                 trade.stoploss_order_id = None
             except InvalidOrderException:
@@ -1172,7 +1173,8 @@ class FreqtradeBot(LoggingMixin):
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
         if stoploss_order:
-            trade.update_order(stoploss_order)
+            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
+                                    stoploss_order=True)
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
