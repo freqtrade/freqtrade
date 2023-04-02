@@ -496,6 +496,9 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, 12.0)
+    assert result == 1000 / 12
+
     markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
