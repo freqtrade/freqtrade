@@ -598,7 +598,7 @@ CONF_SCHEMA = {
                         "model_type": {"type": "string", "default": "PPO"},
                         "policy_type": {"type": "string", "default": "MlpPolicy"},
                         "net_arch": {"type": "array", "default": [128, 128]},
-                        "randomize_startinng_position": {"type": "boolean", "default": False},
+                        "randomize_starting_position": {"type": "boolean", "default": False},
                         "model_reward_parameters": {
                             "type": "object",
                             "properties": {
