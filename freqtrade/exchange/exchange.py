@@ -788,27 +788,6 @@ class Exchange:
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
-        stake_limits = []
-        limits = market['limits']
-        if (limits['cost'][limit] is not None):
-            stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['cost'][limit]
-                )
-            )
-
-        if (limits['amount'][limit] is not None):
-            stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['amount'][limit] * price
-                )
-            )
-
-        if not stake_limits:
-            return None if isMin else float('inf')
-
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
@@ -817,6 +796,21 @@ class Exchange:
         )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
+
+        stake_limits = []
+        limits = market['limits']
+        if (limits['cost'][limit] is not None):
+            stake_limits.append(
+                self._contracts_to_amount(pair, limits['cost'][limit])
+            )
+
+        if (limits['amount'][limit] is not None):
+            stake_limits.append(
+                self._contracts_to_amount(pair, limits['amount'][limit] * price)
+            )
+
+        if not stake_limits:
+            return None if isMin else float('inf')
 
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
