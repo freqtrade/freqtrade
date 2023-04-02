@@ -72,7 +72,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         model.learn(
             total_timesteps=int(total_timesteps),
             callback=[self.eval_callback, self.tensorboard_callback],
-            progress_bar=self.freqai_info["rl_config"]["progress_bar"]
+            progress_bar=self.rl_config.get('progress_bar', False)
         )
 
         if Path(dk.data_path / "best_model.zip").is_file():
