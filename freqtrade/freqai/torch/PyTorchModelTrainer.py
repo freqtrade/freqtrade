@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from freqtrade.freqai.torch.PyTorchDataConvertor import PyTorchDataConvertor
 from freqtrade.freqai.torch.PyTorchTrainerInterface import PyTorchTrainerInterface
 
+
 logger = logging.getLogger(__name__)
 
 

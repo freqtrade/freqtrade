@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Dict, List
 
 import pandas as pd
 import torch
 import torch.nn as nn
-
-from pathlib import Path
 
 
 class PyTorchTrainerInterface(ABC):

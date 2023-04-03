@@ -4,8 +4,8 @@ import torch
 
 from freqtrade.freqai.base_models.BasePyTorchClassifier import BasePyTorchClassifier
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.torch import PyTorchDataConvertor
-from freqtrade.freqai.torch.PyTorchDataConvertor import DefaultPyTorchDataConvertor
+from freqtrade.freqai.torch.PyTorchDataConvertor import (DefaultPyTorchDataConvertor,
+                                                         PyTorchDataConvertor)
 from freqtrade.freqai.torch.PyTorchMLPModel import PyTorchMLPModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
 
@@ -42,7 +42,10 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
 
     @property
     def data_convertor(self) -> PyTorchDataConvertor:
-        return DefaultPyTorchDataConvertor(target_tensor_type=torch.long, squeeze_target_tensor=True)
+        return DefaultPyTorchDataConvertor(
+            target_tensor_type=torch.long,
+            squeeze_target_tensor=True
+        )
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)

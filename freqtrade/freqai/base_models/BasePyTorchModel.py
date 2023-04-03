@@ -8,7 +8,7 @@ from pandas import DataFrame
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
-from freqtrade.freqai.torch import PyTorchDataConvertor
+from freqtrade.freqai.torch.PyTorchDataConvertor import PyTorchDataConvertor
 
 
 logger = logging.getLogger(__name__)
