@@ -11,7 +11,7 @@ class PyTorchDataConvertor(ABC):
     def convert_x(self, df: pd.DataFrame, device: Optional[str] = None) -> Tuple[torch.Tensor, ...]:
         """
         :param df: "*_features" dataframe.
-        :param device: cpu/gpu.
+        :param device: The device to use for training (e.g. 'cpu', 'cuda').
         :returns: tuple of tensors.
         """
 
@@ -19,7 +19,7 @@ class PyTorchDataConvertor(ABC):
     def convert_y(self, df: pd.DataFrame, device: Optional[str] = None) -> Tuple[torch.Tensor, ...]:
         """
         :param df: "*_labels" dataframe.
-        :param device: cpu/gpu.
+        :param device: The device to use for training (e.g. 'cpu', 'cuda').
         :returns: tuple of tensors.
         """
 
