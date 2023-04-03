@@ -76,4 +76,8 @@ class BasePyTorchModel(IFreqaiModel, ABC):
     @property
     @abstractmethod
     def data_convertor(self) -> PyTorchDataConvertor:
+        """
+        a class responsible for converting `*_features` & `*_labels` pandas dataframes
+        to pytorch tensors.
+        """
         raise NotImplementedError("Abstract property")

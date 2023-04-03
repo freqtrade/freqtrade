@@ -36,6 +36,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         :param init_model: A dictionary containing the initial model/optimizer
             state_dict and model_meta_data saved by self.save() method.
         :param model_meta_data: Additional metadata about the model (optional).
+        :param data_convertor: convertor from pd.DataFrame to torch.tensor.
         :param max_iters: The number of training iterations to run.
             iteration here refers to the number of times we call
             self.optimizer.step(). used to calculate n_epochs.
