@@ -52,7 +52,7 @@ class __RPCBuyMsgBase(RPCSendMsgBase):
     direction: str
     limit: float
     open_rate: float
-    order_type: Optional[str]  # TODO: why optional??
+    order_type: str
     stake_amount: float
     stake_currency: str
     fiat_currency: Optional[str]

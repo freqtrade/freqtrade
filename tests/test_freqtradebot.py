@@ -356,7 +356,7 @@ def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, fee, mocke
 @pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.parametrize('stake_amount,create,amount_enough,max_open_trades', [
     (5.0, True, True, 99),
-    (0.049, True, False, 99),  # Amount will be adjusted to min - which is 0.051
+    (0.042, True, False, 99),  # Amount will be adjusted to min - which is 0.051
     (0, False, True, 99),
     (UNLIMITED_STAKE_AMOUNT, False, True, 0),
 ])
@@ -1291,6 +1291,137 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
 
 @pytest.mark.parametrize("is_short", [False, True])
+def test_handle_stoploss_on_exchange_partial(
+        mocker, default_conf_usdt, fee, is_short, limit_order) -> None:
+    stop_order_dict = {'id': "101", "status": "open"}
+    stoploss = MagicMock(return_value=stop_order_dict)
+    enter_order = limit_order[entry_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=MagicMock(side_effect=[
+            enter_order,
+            exit_order,
+        ]),
+        get_fee=fee,
+        create_stoploss=stoploss
+    )
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+
+    freqtrade.enter_positions()
+    trade = Trade.session.scalars(select(Trade)).first()
+    trade.is_short = is_short
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = None
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss.call_count == 1
+    assert trade.stoploss_order_id == "101"
+    assert trade.amount == 30
+    stop_order_dict.update({'id': "102"})
+    # Stoploss on exchange is cancelled on exchange, but filled partially.
+    # Must update trade amount to guarantee successful exit.
+    stoploss_order_hit = MagicMock(return_value={
+        'id': "101",
+        'status': 'canceled',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'filled': trade.amount / 2,
+        'remaining': trade.amount / 2,
+        'amount': enter_order['amount'],
+    })
+    mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    # Stoploss filled partially ...
+    assert trade.amount == 15
+
+    assert trade.stoploss_order_id == "102"
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_stoploss_on_exchange_partial_cancel_here(
+        mocker, default_conf_usdt, fee, is_short, limit_order, caplog) -> None:
+    stop_order_dict = {'id': "101", "status": "open"}
+    default_conf_usdt['trailing_stop'] = True
+    stoploss = MagicMock(return_value=stop_order_dict)
+    enter_order = limit_order[entry_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=MagicMock(side_effect=[
+            enter_order,
+            exit_order,
+        ]),
+        get_fee=fee,
+        create_stoploss=stoploss
+    )
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+
+    freqtrade.enter_positions()
+    trade = Trade.session.scalars(select(Trade)).first()
+    trade.is_short = is_short
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = None
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss.call_count == 1
+    assert trade.stoploss_order_id == "101"
+    assert trade.amount == 30
+    stop_order_dict.update({'id': "102"})
+    # Stoploss on exchange is open.
+    # Freqtrade cancels the stop - but cancel returns a partial filled order.
+    stoploss_order_hit = MagicMock(return_value={
+        'id': "101",
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'filled': 0,
+        'remaining': trade.amount,
+        'amount': enter_order['amount'],
+    })
+    stoploss_order_cancel = MagicMock(return_value={
+        'id': "101",
+        'status': 'canceled',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'filled': trade.amount / 2,
+        'remaining': trade.amount / 2,
+        'amount': enter_order['amount'],
+    })
+    mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
+    mocker.patch(f'{EXMS}.cancel_stoploss_order_with_result', stoploss_order_cancel)
+    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-10).datetime
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    # Canceled Stoploss filled partially ...
+    assert log_has_re('Cancelling current stoploss on exchange.*', caplog)
+
+    assert trade.stoploss_order_id == "102"
+    assert trade.amount == 15
+
+
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog, is_short,
                                          limit_order) -> None:
     # Sixth case: stoploss order was cancelled but couldn't create new one
@@ -1671,7 +1802,7 @@ def test_stoploss_on_exchange_price_rounding(
         EXMS,
         get_fee=fee,
     )
-    price_mock = MagicMock(side_effect=lambda p, s: int(s))
+    price_mock = MagicMock(side_effect=lambda p, s, **kwargs: int(s))
     stoploss_mock = MagicMock(return_value={'id': '13434334'})
     adjust_mock = MagicMock(return_value=False)
     mocker.patch.multiple(

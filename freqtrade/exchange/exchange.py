@@ -30,13 +30,14 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, remove_credentials, retrier,
                                        retrier_async)
-from freqtrade.exchange.exchange_utils import (CcxtModuleType, amount_to_contract_precision,
-                                               amount_to_contracts, amount_to_precision,
-                                               contracts_to_amount, date_minus_candles,
-                                               is_exchange_known_ccxt, market_is_active,
-                                               price_to_precision, timeframe_to_minutes,
-                                               timeframe_to_msecs, timeframe_to_next_date,
-                                               timeframe_to_prev_date, timeframe_to_seconds)
+from freqtrade.exchange.exchange_utils import (ROUND, ROUND_DOWN, ROUND_UP, CcxtModuleType,
+                                               amount_to_contract_precision, amount_to_contracts,
+                                               amount_to_precision, contracts_to_amount,
+                                               date_minus_candles, is_exchange_known_ccxt,
+                                               market_is_active, price_to_precision,
+                                               timeframe_to_minutes, timeframe_to_msecs,
+                                               timeframe_to_next_date, timeframe_to_prev_date,
+                                               timeframe_to_seconds)
 from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
@@ -734,12 +735,14 @@ class Exchange:
         """
         return amount_to_precision(amount, self.get_precision_amount(pair), self.precisionMode)
 
-    def price_to_precision(self, pair: str, price: float) -> float:
+    def price_to_precision(self, pair: str, price: float, *, rounding_mode: int = ROUND) -> float:
         """
-        Returns the price rounded up to the precision the Exchange accepts.
-        Rounds up
+        Returns the price rounded to the precision the Exchange accepts.
+        The default price_rounding_mode in conf is ROUND.
+        For stoploss calculations, must use ROUND_UP for longs, and ROUND_DOWN for shorts.
         """
-        return price_to_precision(price, self.get_precision_price(pair), self.precisionMode)
+        return price_to_precision(price, self.get_precision_price(pair),
+                                  self.precisionMode, rounding_mode=rounding_mode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
@@ -762,12 +765,12 @@ class Exchange:
         return self._get_stake_amount_limit(pair, price, stoploss, 'min', leverage)
 
     def get_max_pair_stake_amount(self, pair: str, price: float, leverage: float = 1.0) -> float:
-        max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max')
+        max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max', leverage)
         if max_stake_amount is None:
             # * Should never be executed
             raise OperationalException(f'{self.name}.get_max_pair_stake_amount should'
                                        'never set max_stake_amount to None')
-        return max_stake_amount / leverage
+        return max_stake_amount
 
     def _get_stake_amount_limit(
         self,
@@ -785,43 +788,41 @@ class Exchange:
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
+        if isMin:
+            # reserve some percent defined in config (5% default) + stoploss
+            margin_reserve: float = 1.0 + self._config.get('amount_reserve_percent',
+                                                           DEFAULT_AMOUNT_RESERVE_PERCENT)
+            stoploss_reserve = (
+                margin_reserve / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+            )
+            # it should not be more than 50%
+            stoploss_reserve = max(min(stoploss_reserve, 1.5), 1)
+        else:
+            margin_reserve = 1.0
+            stoploss_reserve = 1.0
+
         stake_limits = []
         limits = market['limits']
         if (limits['cost'][limit] is not None):
             stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['cost'][limit]
-                )
+                self._contracts_to_amount(pair, limits['cost'][limit]) * stoploss_reserve
             )
 
         if (limits['amount'][limit] is not None):
             stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['amount'][limit] * price
-                )
+                self._contracts_to_amount(pair, limits['amount'][limit]) * price * margin_reserve
             )
 
         if not stake_limits:
             return None if isMin else float('inf')
 
-        # reserve some percent defined in config (5% default) + stoploss
-        amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
-                                                        DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent = (
-            amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
-        )
-        # it should not be more than 50%
-        amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
-
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
         return self._get_stake_amount_considering_leverage(
-            max(stake_limits) * amount_reserve_percent,
+            max(stake_limits) if isMin else min(stake_limits),
             leverage or 1.0
-        ) if isMin else min(stake_limits)
+        )
 
     def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float) -> float:
         """
@@ -1185,12 +1186,12 @@ class Exchange:
 
         user_order_type = order_types.get('stoploss', 'market')
         ordertype, user_order_type = self._get_stop_order_type(user_order_type)
-
-        stop_price_norm = self.price_to_precision(pair, stop_price)
+        round_mode = ROUND_DOWN if side == 'buy' else ROUND_UP
+        stop_price_norm = self.price_to_precision(pair, stop_price, rounding_mode=round_mode)
         limit_rate = None
         if user_order_type == 'limit':
             limit_rate = self._get_stop_limit_rate(stop_price, order_types, side)
-            limit_rate = self.price_to_precision(pair, limit_rate)
+            limit_rate = self.price_to_precision(pair, limit_rate, rounding_mode=round_mode)
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
