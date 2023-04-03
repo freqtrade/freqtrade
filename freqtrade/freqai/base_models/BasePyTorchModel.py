@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from time import time
 from typing import Any
 
@@ -7,15 +8,17 @@ from pandas import DataFrame
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
+from freqtrade.freqai.torch import PyTorchDataConvertor
 
 
 logger = logging.getLogger(__name__)
 
 
-class BasePyTorchModel(IFreqaiModel):
+class BasePyTorchModel(IFreqaiModel, ABC):
     """
     Base class for PyTorch type models.
-    User *must* inherit from this class and set fit() and predict().
+    User *must* inherit from this class and set fit() and predict() and
+    data_convertor property.
     """
 
     def __init__(self, **kwargs):
@@ -69,3 +72,8 @@ class BasePyTorchModel(IFreqaiModel):
                     f"({end_time - start_time:.2f} secs) --------------------")
 
         return model
+
+    @property
+    @abstractmethod
+    def data_convertor(self) -> PyTorchDataConvertor:
+        raise NotImplementedError("Abstract property")

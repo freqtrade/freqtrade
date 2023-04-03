@@ -69,12 +69,11 @@ class BasePyTorchClassifier(BasePyTorchModel):
         )
         filtered_df = dk.normalize_data_from_metadata(filtered_df)
         dk.data_dictionary["prediction_features"] = filtered_df
-
         self.data_cleaning_predict(dk)
-        x = torch.from_numpy(dk.data_dictionary["prediction_features"].values)\
-            .float()\
-            .to(self.device)
-
+        x = self.data_convertor.convert_x(
+            dk.data_dictionary["prediction_features"],
+            device=self.device
+        )
         logits = self.model.model(x)
         probs = F.softmax(logits, dim=-1)
         predicted_classes = torch.argmax(probs, dim=-1)

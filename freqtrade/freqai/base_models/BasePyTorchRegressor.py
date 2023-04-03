@@ -3,7 +3,6 @@ from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
-import torch
 from pandas import DataFrame
 
 from freqtrade.freqai.base_models.BasePyTorchModel import BasePyTorchModel
@@ -41,9 +40,12 @@ class BasePyTorchRegressor(BasePyTorchModel):
         dk.data_dictionary["prediction_features"] = filtered_df
 
         self.data_cleaning_predict(dk)
-        x = torch.from_numpy(dk.data_dictionary["prediction_features"].values)\
-            .float()\
-            .to(self.device)
+        x = self.data_convertor.convert_x(
+            dk.data_dictionary["prediction_features"],
+            device=self.device
+        )
+        logger.info(self.model.model)
+        logger.info(self.model.model)
 
         y = self.model.model(x)
         pred_df = DataFrame(y.detach().numpy(), columns=[dk.label_list[0]])

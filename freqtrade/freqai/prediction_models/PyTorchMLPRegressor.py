@@ -4,6 +4,8 @@ import torch
 
 from freqtrade.freqai.base_models.BasePyTorchRegressor import BasePyTorchRegressor
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.torch import PyTorchDataConvertor
+from freqtrade.freqai.torch.PyTorchDataConvertor import DefaultPyTorchDataConvertor
 from freqtrade.freqai.torch.PyTorchMLPModel import PyTorchMLPModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
 
@@ -39,6 +41,10 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
     }
     """
 
+    @property
+    def data_convertor(self) -> PyTorchDataConvertor:
+        return DefaultPyTorchDataConvertor(target_tensor_type=torch.float)
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         config = self.freqai_info.get("model_training_parameters", {})
@@ -69,7 +75,7 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
             criterion=criterion,
             device=self.device,
             init_model=init_model,
-            target_tensor_type=torch.float,
+            data_convertor=self.data_convertor,
             **self.trainer_kwargs,
         )
         trainer.fit(data_dictionary, self.splits)
