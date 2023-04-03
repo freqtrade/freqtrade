@@ -5,7 +5,7 @@ pandas-ta==0.3.14b
 ccxt==3.0.50
 cryptography==40.0.1
 aiohttp==3.8.4
-SQLAlchemy==2.0.7
+SQLAlchemy==2.0.8
 python-telegram-bot==13.15
 arrow==1.2.3
 cachetools==4.2.2
@@ -28,7 +28,7 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.10
 # Properly format api responses
-orjson==3.8.8
+orjson==3.8.9
 
 # Notify systemd
 sdnotify==0.3.2
