@@ -47,8 +47,8 @@ class PyTorchMLPModel(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout_percent)
 
-    def forward(self, x: List[torch.Tensor]) -> torch.Tensor:
-        x: torch.Tensor = x[0]
+    def forward(self, tensors: List[torch.Tensor]) -> torch.Tensor:
+        x: torch.Tensor = tensors[0]
         x = self.relu(self.input_layer(x))
         x = self.dropout(x)
         x = self.blocks(x)
