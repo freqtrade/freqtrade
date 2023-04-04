@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
 
+HYPER_PARAMS_FILE_FORMAT = rapidjson.NM_NATIVE | rapidjson.NM_NAN
+
 
 def hyperopt_serializer(x):
     if isinstance(x, np.integer):
@@ -76,8 +78,17 @@ class HyperoptTools():
         with filename.open('w') as f:
             rapidjson.dump(final_params, f, indent=2,
                            default=hyperopt_serializer,
-                           number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                           number_mode=HYPER_PARAMS_FILE_FORMAT
                            )
+
+    @staticmethod
+    def load_params(filename: Path) -> Dict:
+        """
+        Load parameters from file
+        """
+        with filename.open('r') as f:
+            params = rapidjson.load(f, number_mode=HYPER_PARAMS_FILE_FORMAT)
+        return params
 
     @staticmethod
     def try_export_params(config: Config, strategy_name: str, params: Dict):
@@ -189,7 +200,7 @@ class HyperoptTools():
             for s in ['buy', 'sell', 'protection',
                       'roi', 'stoploss', 'trailing', 'max_open_trades']:
                 HyperoptTools._params_update_for_json(result_dict, params, non_optimized, s)
-            print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
+            print(rapidjson.dumps(result_dict, default=str, number_mode=HYPER_PARAMS_FILE_FORMAT))
 
         else:
             HyperoptTools._params_pretty_print(params, 'buy', "Buy hyperspace params:",
