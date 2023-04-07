@@ -1496,17 +1496,18 @@ class FreqtradeBot(LoggingMixin):
             # Order might be filled above in odd timing issues.
             if order.get('status') in ('canceled', 'cancelled'):
                 trade.exit_reason = None
+                trade.open_order_id = None
             else:
                 trade.exit_reason = exit_reason_prev
             cancelled = True
         else:
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
             trade.exit_reason = None
+            trade.open_order_id = None
 
         self.update_trade_state(trade, trade.open_order_id, order)
 
         logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
-        trade.open_order_id = None
         trade.close_rate = None
         trade.close_rate_requested = None
 
