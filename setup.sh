@@ -85,7 +85,7 @@ function updateenv() {
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
             REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
-            read -p "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]? "
+            read -p "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]? "
             if [[ $REPLY =~ ^[Yy]$ ]]
             then
                 REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"

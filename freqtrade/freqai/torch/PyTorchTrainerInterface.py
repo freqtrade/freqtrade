@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import pandas as pd
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class PyTorchTrainerInterface(ABC):

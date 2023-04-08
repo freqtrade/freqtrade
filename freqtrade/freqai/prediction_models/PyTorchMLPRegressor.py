@@ -55,8 +55,9 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :param data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary holding all data for train, test,
+            labels, weights
+        :param dk: The datakitchen object for the current coin/model
         """
 
         n_features = data_dictionary["train_features"].shape[-1]

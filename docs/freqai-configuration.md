@@ -237,7 +237,7 @@ df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'do
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) == df["close"], 'same', df['&s-up_or_down'])
 ```
 
-## PyTorch Models
+## PyTorch Module
 
 ### Quick start
 
@@ -247,14 +247,16 @@ The easiest way to quickly run a pytorch model is with the following command (fo
 freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel PyTorchMLPRegressor --strategy-path freqtrade/templates 
 ```
 
+!!! note "Installation/docker"
+    The PyTorch module requires large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]?".
+    Users who prefer docker should ensure they use the docker image appended with `_freqaitorch`.
+
 ### Structure
 
 #### Model
-You can use any pytorch model. Here is an example of logistic regression model implementation using pytorch (should be used with nn.BCELoss criterion) for classification tasks.
+You can construct your own Neural Network architecture in PyTorch by simply defining your `nn.Module` class inside your custom [`IFreqaiModel` file](#using-different-prediction-models) and then using that class in your `def train()` function. Here is an example of logistic regression model implementation using PyTorch (should be used with nn.BCELoss criterion) for classification tasks.
 
 ```python
-import torch.nn as nn
-import torch 
 
 class LogisticRegression(nn.Module):
     def __init__(self, input_size: int):
@@ -268,11 +270,59 @@ class LogisticRegression(nn.Module):
         out = self.linear(x)
         out = self.activation(out)
         return out
+
+class MyCoolPyTorchClassifier(BasePyTorchClassifier):
+    """
+    This is a custom IFreqaiModel showing how a user might setup their own 
+    custom Neural Network architecture for their training.
+    """
+
+    @property
+    def data_convertor(self) -> PyTorchDataConvertor:
+        return DefaultPyTorchDataConvertor(target_tensor_type=torch.float)
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        config = self.freqai_info.get("model_training_parameters", {})
+        self.learning_rate: float = config.get("learning_rate",  3e-4)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs",  {})
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs",  {})
+
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+        """
+        User sets up the training and test data to fit their desired model here
+        :param data_dictionary: the dictionary holding all data for train, test,
+            labels, weights
+        :param dk: The datakitchen object for the current coin/model
+        """
+
+        class_names = self.get_class_names()
+        self.convert_label_column_to_int(data_dictionary, dk, class_names)
+        n_features = data_dictionary["train_features"].shape[-1]
+        model = LogisticRegression(
+            input_dim=n_features
+        )
+        model.to(self.device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        criterion = torch.nn.CrossEntropyLoss()
+        init_model = self.get_init_model(dk.pair)
+        trainer = PyTorchModelTrainer(
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            model_meta_data={"class_names": class_names},
+            device=self.device,
+            init_model=init_model,
+            data_convertor=self.data_convertor,
+            **self.trainer_kwargs,
+        )
+        trainer.fit(data_dictionary, self.splits)
+        return trainer
+
 ```
 
-
 #### Trainer
-The `PyTorchModelTrainer` performs the idiomatic pytorch train loop:
+The `PyTorchModelTrainer` performs the idiomatic PyTorch train loop:
 Define our model, loss function, and optimizer, and then move them to the appropriate device (GPU or CPU). Inside the loop, we iterate through the batches in the dataloader, move the data to the device, compute the prediction and loss, backpropagate, and update the model parameters using the optimizer. 
 
 In addition, the trainer is responsible for the following:

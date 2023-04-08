@@ -539,7 +539,9 @@ class FreqaiDataDrawer:
             model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
         elif self.model_type == 'pytorch':
             import torch
-            model = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            zip = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = zip["pytrainer"]
+            model = model.load_from_checkpoint(zip)
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
