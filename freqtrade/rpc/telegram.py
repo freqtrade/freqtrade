@@ -819,7 +819,7 @@ class Telegram(RPCHandler):
         best_pair = stats['best_pair']
         best_pair_profit_ratio = stats['best_pair_profit_ratio']
         if stats['trade_count'] == 0:
-            markdown_msg = 'No trades yet.'
+            markdown_msg = f"No trades yet.\n*Bot started:* `{stats['bot_start_date']}`"
         else:
             # Message to display
             if stats['closed_trade_count'] > 0:
@@ -838,6 +838,7 @@ class Telegram(RPCHandler):
                 f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                 f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
+                f"*Bot started:* `{stats['bot_start_date']}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
                 f"*Latest Trade opened:* `{latest_trade_date}`\n"
