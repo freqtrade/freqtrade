@@ -432,10 +432,12 @@ def test_plot_feature_importance(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
-    freqai.dd.pair_dict = MagicMock()
+    freqai.dd.pair_dict = {"ADA/BTC": {"model_filename": "fake_name",
+                                       "trained_timestamp": 1, "data_path": "", "extras": {}}}
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
