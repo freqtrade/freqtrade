@@ -104,3 +104,19 @@ class KeyValueStore():
         if kv is not None:
             _KeyValueStoreModel.session.delete(kv)
             _KeyValueStoreModel.session.commit()
+
+
+def set_startup_time():
+    """
+    sets bot_start_time to the first trade open date - or "now" on new databases.
+    sets startup_time to "now"
+    """
+    st = KeyValueStore.get_value('bot_start_time')
+    if st is None:
+        from freqtrade.persistence import Trade
+        t = Trade.session.query(Trade).order_by(Trade.open_date.asc()).first()
+        if t is not None:
+            KeyValueStore.store_value('bot_start_time', t.open_date_utc)
+        else:
+            KeyValueStore.store_value('bot_start_time', datetime.now(timezone.utc))
+    KeyValueStore.store_value('startup_time', datetime.now(timezone.utc))
