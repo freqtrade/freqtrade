@@ -32,6 +32,8 @@ def test_key_value_store(time_machine):
     # test deleting
     KeyValueStore.delete_value("test_float")
     assert KeyValueStore.get_value("test_float") is None
+    # Delete same value again (should not fail)
+    KeyValueStore.delete_value("test_float")
 
     with pytest.raises(ValueError, match=r"Unknown value type"):
         KeyValueStore.store_value("test_float", {'some': 'dict'})

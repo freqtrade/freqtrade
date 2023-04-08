@@ -38,11 +38,17 @@ class _KeyValueStoreModel(ModelBase):
 
 
 class KeyValueStore():
+    """
+    Generic bot-wide, persistent key-value store
+    Can be used to store generic values, e.g. very first bot startup time.
+    Supports the types str, datetime, float and int.
+    """
 
     @staticmethod
     def get_value(key: str) -> Optional[ValueTypes]:
         """
         Get the value for the given key.
+        :param key: Key to get the value for
         """
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key).first()
@@ -63,6 +69,8 @@ class KeyValueStore():
     def store_value(key: str, value: ValueTypes) -> None:
         """
         Store the given value for the given key.
+        :param key: Key to store the value for - can be used in get-value to retrieve the key
+        :param value: Value to store - can be str, datetime, float or int
         """
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key).first()
@@ -89,6 +97,7 @@ class KeyValueStore():
     def delete_value(key: str) -> None:
         """
         Delete the value for the given key.
+        :param key: Key to delete the value for
         """
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key).first()
