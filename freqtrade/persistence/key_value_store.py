@@ -18,6 +18,11 @@ class ValueTypesEnum(str, Enum):
     INT = 'int'
 
 
+class KeyStoreKeys(str, Enum):
+    BOT_START_TIME = 'bot_start_time'
+    STARTUP_TIME = 'startup_time'
+
+
 class _KeyValueStoreModel(ModelBase):
     """
     Pair Locks database model.
@@ -27,9 +32,9 @@ class _KeyValueStoreModel(ModelBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    key: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    key: Mapped[KeyStoreKeys] = mapped_column(String(25), nullable=False, index=True)
 
-    value_type: Mapped[ValueTypesEnum] = mapped_column(String(25), nullable=False)
+    value_type: Mapped[ValueTypesEnum] = mapped_column(String(20), nullable=False)
 
     string_value: Mapped[Optional[str]]
     datetime_value: Mapped[Optional[datetime]]
@@ -45,7 +50,7 @@ class KeyValueStore():
     """
 
     @staticmethod
-    def store_value(key: str, value: ValueTypes) -> None:
+    def store_value(key: KeyStoreKeys, value: ValueTypes) -> None:
         """
         Store the given value for the given key.
         :param key: Key to store the value for - can be used in get-value to retrieve the key
@@ -73,7 +78,7 @@ class KeyValueStore():
         _KeyValueStoreModel.session.commit()
 
     @staticmethod
-    def delete_value(key: str) -> None:
+    def delete_value(key: KeyStoreKeys) -> None:
         """
         Delete the value for the given key.
         :param key: Key to delete the value for
@@ -85,7 +90,7 @@ class KeyValueStore():
             _KeyValueStoreModel.session.commit()
 
     @staticmethod
-    def get_value(key: str) -> Optional[ValueTypes]:
+    def get_value(key: KeyStoreKeys) -> Optional[ValueTypes]:
         """
         Get the value for the given key.
         :param key: Key to get the value for
@@ -106,7 +111,7 @@ class KeyValueStore():
         raise ValueError(f'Unknown value type {kv.value_type}')  # pragma: no cover
 
     @staticmethod
-    def get_string_value(key: str) -> Optional[str]:
+    def get_string_value(key: KeyStoreKeys) -> Optional[str]:
         """
         Get the value for the given key.
         :param key: Key to get the value for
@@ -119,7 +124,7 @@ class KeyValueStore():
         return kv.string_value
 
     @staticmethod
-    def get_datetime_value(key: str) -> Optional[datetime]:
+    def get_datetime_value(key: KeyStoreKeys) -> Optional[datetime]:
         """
         Get the value for the given key.
         :param key: Key to get the value for
@@ -132,7 +137,7 @@ class KeyValueStore():
         return kv.datetime_value.replace(tzinfo=timezone.utc)
 
     @staticmethod
-    def get_float_value(key: str) -> Optional[float]:
+    def get_float_value(key: KeyStoreKeys) -> Optional[float]:
         """
         Get the value for the given key.
         :param key: Key to get the value for
@@ -145,7 +150,7 @@ class KeyValueStore():
         return kv.float_value
 
     @staticmethod
-    def get_int_value(key: str) -> Optional[int]:
+    def get_int_value(key: KeyStoreKeys) -> Optional[int]:
         """
         Get the value for the given key.
         :param key: Key to get the value for
