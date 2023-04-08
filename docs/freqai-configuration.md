@@ -254,6 +254,7 @@ freqtrade trade --config config_examples/config_freqai.example.json --strategy F
 ### Structure
 
 #### Model
+
 You can construct your own Neural Network architecture in PyTorch by simply defining your `nn.Module` class inside your custom [`IFreqaiModel` file](#using-different-prediction-models) and then using that class in your `def train()` function. Here is an example of logistic regression model implementation using PyTorch (should be used with nn.BCELoss criterion) for classification tasks.
 
 ```python
@@ -322,6 +323,7 @@ class MyCoolPyTorchClassifier(BasePyTorchClassifier):
 ```
 
 #### Trainer
+
 The `PyTorchModelTrainer` performs the idiomatic PyTorch train loop:
 Define our model, loss function, and optimizer, and then move them to the appropriate device (GPU or CPU). Inside the loop, we iterate through the batches in the dataloader, move the data to the device, compute the prediction and loss, backpropagate, and update the model parameters using the optimizer. 
 
@@ -330,6 +332,7 @@ In addition, the trainer is responsible for the following:
  - converting the data from `pandas.DataFrame` to `torch.Tensor`. 
 
 #### Integration with Freqai module 
+
 Like all freqai models, PyTorch models inherit `IFreqaiModel`. `IFreqaiModel` declares three abstract methods: `train`, `fit`, and `predict`. we implement these methods in three levels of hierarchy.
 From top to bottom:
 
@@ -340,6 +343,7 @@ From top to bottom:
 ![image](assets/freqai_pytorch-diagram.png)
 
 #### Full example
+
 Building a PyTorch regressor using MLP (multilayer perceptron) model, MSELoss criterion, and AdamW optimizer.
 
 ```python
