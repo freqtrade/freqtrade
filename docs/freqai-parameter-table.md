@@ -88,19 +88,20 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 
 ### PyTorch parameters
 
-#### general:
+#### general
 
 |  Parameter | Description |
 |------------|-------------|
-|  |  **Model training parameters within the freqai.model_training_parameters sub dictionary**
-| `learning_rate` | learning rate to be passed to the optimizer. <br> **Datatype:** float. <br> Default: `3e-4`.
-| `model_kwargs` | paramters to be passed to the model class. <br> **Datatype:** dict. <br> Default: `{}`.
-| `trainer_kwargs` | paramters to be passed to the trainer class. <br> **Datatype:** dict. <br> Default: `{}`.
+|  |  **Model training parameters within the `freqai.model_training_parameters` sub dictionary**
+| `learning_rate` | Learning rate to be passed to the optimizer. <br> **Datatype:** float. <br> Default: `3e-4`.
+| `model_kwargs` | Parameters to be passed to the model class. <br> **Datatype:** dict. <br> Default: `{}`.
+| `trainer_kwargs` | Parameters to be passed to the trainer class. <br> **Datatype:** dict. <br> Default: `{}`.
 
-#### trainer_kwargs:
+#### trainer_kwargs
 
 |  Parameter | Description |
 |------------|-------------|
+|  |  **Model training parameters within the `freqai.model_training_parameters.model_kwargs` sub dictionary**
 | `max_iters` | The number of training iterations to run. iteration here refers to the number of times we call self.optimizer.step(). used to calculate n_epochs. <br> **Datatype:** int. <br> Default: `100`.
 | `batch_size` | The size of the batches to use during training.. <br> **Datatype:** int. <br> Default: `64`.
 | `max_n_eval_batches` | The maximum number batches to use for evaluation.. <br> **Datatype:** int, optional. <br> Default: `None`.
