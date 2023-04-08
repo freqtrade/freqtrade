@@ -30,6 +30,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,8 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             self._send_msg(str(e))
         except BaseException:
             logger.exception('Exception occurred within Telegram module')
+        finally:
+            Trade.session.remove()
 
     return wrapper
 
@@ -414,6 +417,9 @@ class Telegram(RPCHandler):
 
         elif msg_type == RPCMessageType.WARNING:
             message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
+        elif msg_type == RPCMessageType.EXCEPTION:
+            # Errors will contain exceptions, which are wrapped in tripple ticks.
+            message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
         elif msg_type == RPCMessageType.STARTUP:
             message = f"{msg['status']}"
@@ -424,14 +430,14 @@ class Telegram(RPCHandler):
             return None
         return message
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Send a message to telegram channel """
 
         default_noti = 'on'
 
         msg_type = msg['type']
         noti = ''
-        if msg_type == RPCMessageType.EXIT:
+        if msg['type'] == RPCMessageType.EXIT:
             sell_noti = self._config['telegram'] \
                 .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still can be string
@@ -448,7 +454,7 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(deepcopy(msg), msg_type)
+        message = self.compose_message(deepcopy(msg), msg_type)  # type: ignore
         if message:
             self._send_msg(message, disable_notification=(noti == 'silent'))
 
@@ -510,14 +516,14 @@ class Telegram(RPCHandler):
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg profit")
+                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg Profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append(f"*Amount:* {cur_entry_amount} "
                              f"({round_coin_value(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average} "
-                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                             f"({price_to_1st_entry:.2%} from 1st entry Rate)")
                 lines.append(f"*Order filled:* {order['order_filled_date']}")
 
                 # TODO: is this really useful?
@@ -569,6 +575,8 @@ class Telegram(RPCHandler):
                                  and not o['ft_order_side'] == 'stoploss'])
             r['exit_reason'] = r.get('exit_reason', "")
             r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
+            r['max_stake_amount_r'] = round_coin_value(
+                r['max_stake_amount'] or r['stake_amount'], r['quote_currency'])
             r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
             r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
             r['total_profit_abs_r'] = round_coin_value(
@@ -580,31 +588,37 @@ class Telegram(RPCHandler):
                 f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}"
                 + " ` ({leverage}x)`" if r.get('leverage') else "",
                 "*Amount:* `{amount} ({stake_amount_r})`",
+                "*Total invested:* `{max_stake_amount_r}`" if position_adjust else "",
                 "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                 "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
             ]
 
             if position_adjust:
                 max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
-                lines.append("*Number of Entries:* `{num_entries}" + max_buy_str + "`")
-                lines.append("*Number of Exits:* `{num_exits}`")
+                lines.extend([
+                    "*Number of Entries:* `{num_entries}" + max_buy_str + "`",
+                    "*Number of Exits:* `{num_exits}`"
+                ])
 
             lines.extend([
                 "*Open Rate:* `{open_rate:.8f}`",
                 "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
                 "*Open Date:* `{open_date}`",
                 "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
+                " \n*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                 ("*Unrealized Profit:* " if r['is_open'] else "*Close Profit: *")
                 + "`{profit_ratio:.2%}` `({profit_abs_r})`",
             ])
 
             if r['is_open']:
                 if r.get('realized_profit'):
-                    lines.append(
-                        "*Realized Profit:* `{realized_profit_r} {realized_profit_ratio:.2%}`")
-                    lines.append("*Total Profit:* `{total_profit_abs_r}` ")
+                    lines.extend([
+                        "*Realized Profit:* `{realized_profit_ratio:.2%} ({realized_profit_r})`",
+                        "*Total Profit:* `{total_profit_ratio:.2%} ({total_profit_abs_r})`"
+                    ])
 
+                # Append empty line to improve readability
+                lines.append(" ")
                 if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                         and r['initial_stop_loss_ratio'] is not None):
                     # Adding initial stoploss only if it is different from stoploss
@@ -1329,7 +1343,7 @@ class Telegram(RPCHandler):
         message = tabulate({k: [v] for k, v in counts.items()},
                            headers=['current', 'max', 'total stake'],
                            tablefmt='simple')
-        message = "<pre>{}</pre>".format(message)
+        message = f"<pre>{message}</pre>"
         logger.debug(message)
         self._send_msg(message, parse_mode=ParseMode.HTML,
                        reload_able=True, callback_path="update_count",
@@ -1631,7 +1645,7 @@ class Telegram(RPCHandler):
             ])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
-        msg += "\nUpdated: {}".format(datetime.now().ctime())
+        msg += f"\nUpdated: {datetime.now().ctime()}"
         if not query.message:
             return
         chat_id = query.message.chat_id

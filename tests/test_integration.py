@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import select
 
 from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
@@ -34,7 +35,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
         "type": "stop_loss_limit",
         "side": "sell",
         "price": 1.08801,
-        "amount": 90.99181074,
+        "amount": 91.07468123,
         "cost": 0.0,
         "average": 0.0,
         "filled": 0.0,
@@ -48,17 +49,18 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     stoploss_order_closed['filled'] = stoploss_order_closed['amount']
 
     # Sell first trade based on stoploss, keep 2nd and 3rd trade open
+    stop_orders = [stoploss_order_closed, stoploss_order_open, stoploss_order_open]
     stoploss_order_mock = MagicMock(
-        side_effect=[stoploss_order_closed, stoploss_order_open, stoploss_order_open])
+        side_effect=stop_orders)
     # Sell 3rd trade (not called for the first trade)
     should_sell_mock = MagicMock(side_effect=[
         [],
         [ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]]
     )
     cancel_order_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.binance.Binance.create_stoploss', stoploss)
     mocker.patch.multiple(
         EXMS,
+        create_stoploss=stoploss,
         fetch_ticker=ticker,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
@@ -91,14 +93,15 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
 
-    trades = Trade.query.all()
-    # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
-    for trade in trades:
-        stoploss_order_closed['id'] = '3'
-        oobj = Order.parse_from_ccxt_object(stoploss_order_closed, trade.pair, 'stoploss')
+    trades = Trade.session.scalars(select(Trade)).all()
+    # Make sure stoploss-order is open and trade is bought
+    for idx, trade in enumerate(trades):
+        stop_order = stop_orders[idx]
+        stop_order['id'] = f"stop{idx}"
+        oobj = Order.parse_from_ccxt_object(stop_order, trade.pair, 'stoploss')
 
         trade.orders.append(oobj)
-        trade.stoploss_order_id = '3'
+        trade.stoploss_order_id = f"stop{idx}"
         trade.open_order_id = None
 
     n = freqtrade.exit_positions(trades)
@@ -179,13 +182,13 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     n = freqtrade.enter_positions()
     assert n == 4
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
     assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
-    trades = Trade.query.all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 5
 
     for trade in trades:
@@ -385,12 +388,12 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert trade.open_order_id is not None
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 1.96
-    assert trade.stop_loss_pct is None
-    assert trade.stop_loss == 0.0
+    assert trade.stop_loss_pct == -0.1
+    assert pytest.approx(trade.stop_loss) == trade.open_rate * (1 - 0.1 / leverage)
+    assert pytest.approx(trade.initial_stop_loss) == trade.open_rate * (1 - 0.1 / leverage)
+    assert trade.initial_stop_loss_pct == -0.1
     assert trade.leverage == leverage
     assert trade.stake_amount == 60
-    assert trade.initial_stop_loss == 0.0
-    assert trade.initial_stop_loss_pct is None
     # No adjustment
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -406,11 +409,11 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert trade.open_order_id is not None
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.96
-    assert trade.stop_loss_pct is None
-    assert trade.stop_loss == 0.0
+    assert trade.stop_loss_pct == -0.1
+    assert pytest.approx(trade.stop_loss) == trade.open_rate * (1 - 0.1 / leverage)
+    assert pytest.approx(trade.initial_stop_loss) == trade.open_rate * (1 - 0.1 / leverage)
     assert trade.stake_amount == 60
-    assert trade.initial_stop_loss == 0.0
-    assert trade.initial_stop_loss_pct is None
+    assert trade.initial_stop_loss_pct == -0.1
 
     # Fill order
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
@@ -423,7 +426,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.stop_loss_pct == -0.1
     assert pytest.approx(trade.stop_loss) == 1.99 * (1 - 0.1 / leverage)
-    assert pytest.approx(trade.initial_stop_loss) == 1.99 * (1 - 0.1 / leverage)
+    assert pytest.approx(trade.initial_stop_loss) == 1.96 * (1 - 0.1 / leverage)
     assert trade.initial_stop_loss_pct == -0.1
 
     # 2nd order - not filling

@@ -111,9 +111,12 @@ ARGS_ANALYZE_ENTRIES_EXITS = ["exportfilename", "analysis_groups", "enter_reason
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-freqaimodels",
                     "list-data", "hyperopt-list", "hyperopt-show", "backtest-filter",
-                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv"]
+                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv",
+                    "strategy-updater"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
+
+ARGS_STRATEGY_UTILS = ["strategy_list", "strategy_path", "recursive_strategy_search"]
 
 
 class Arguments:
@@ -198,8 +201,8 @@ class Arguments:
                                         start_list_freqAI_models, start_list_markets,
                                         start_list_strategies, start_list_timeframes,
                                         start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_test_pairlist,
-                                        start_trading, start_webserver)
+                                        start_plot_profit, start_show_trades, start_strategy_update,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -440,3 +443,11 @@ class Arguments:
                                               parents=[_common_parser])
         webserver_cmd.set_defaults(func=start_webserver)
         self._build_args(optionlist=ARGS_WEBSERVER, parser=webserver_cmd)
+
+        # Add strategy_updater subcommand
+        strategy_updater_cmd = subparsers.add_parser('strategy-updater',
+                                                     help='updates outdated strategy'
+                                                          'files to the current version',
+                                                     parents=[_common_parser])
+        strategy_updater_cmd.set_defaults(func=start_strategy_update)
+        self._build_args(optionlist=ARGS_STRATEGY_UTILS, parser=strategy_updater_cmd)

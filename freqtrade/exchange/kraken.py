@@ -12,6 +12,7 @@ from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, Invali
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange_utils import ROUND_DOWN, ROUND_UP
 from freqtrade.exchange.types import Tickers
 
 
@@ -109,6 +110,7 @@ class Kraken(Exchange):
         if self.trading_mode == TradingMode.FUTURES:
             params.update({'reduceOnly': True})
 
+        round_mode = ROUND_DOWN if side == 'buy' else ROUND_UP
         if order_types.get('stoploss', 'market') == 'limit':
             ordertype = "stop-loss-limit"
             limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
@@ -116,11 +118,11 @@ class Kraken(Exchange):
                 limit_rate = stop_price * limit_price_pct
             else:
                 limit_rate = stop_price * (2 - limit_price_pct)
-            params['price2'] = self.price_to_precision(pair, limit_rate)
+            params['price2'] = self.price_to_precision(pair, limit_rate, rounding_mode=round_mode)
         else:
             ordertype = "stop-loss"
 
-        stop_price = self.price_to_precision(pair, stop_price)
+        stop_price = self.price_to_precision(pair, stop_price, rounding_mode=round_mode)
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
@@ -158,7 +160,6 @@ class Kraken(Exchange):
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None,
         accept_fail: bool = False,
     ):
         """

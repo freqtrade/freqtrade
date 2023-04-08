@@ -6,8 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Union
-from typing.io import IO
+from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
 
 import orjson
@@ -103,7 +102,7 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
     logger.debug(f'done joblib dump to "{filename}"')
 
 
-def json_load(datafile: IO) -> Any:
+def json_load(datafile: Union[gzip.GzipFile, TextIO]) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,

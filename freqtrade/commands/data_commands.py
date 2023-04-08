@@ -204,11 +204,14 @@ def start_list_data(args: Dict[str, Any]) -> None:
             pair, timeframe, candle_type,
             *dhc.ohlcv_data_min_max(pair, timeframe, candle_type)
         ) for pair, timeframe, candle_type in paircombs]
+
         print(tabulate([
             (pair, timeframe, candle_type,
                 start.strftime(DATETIME_PRINT_FORMAT),
                 end.strftime(DATETIME_PRINT_FORMAT))
-            for pair, timeframe, candle_type, start, end in paircombs1
+            for pair, timeframe, candle_type, start, end in sorted(
+                paircombs1,
+                key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2]))
             ],
             headers=("Pair", "Timeframe", "Type", 'From', 'To'),
             tablefmt='psql', stralign='right'))

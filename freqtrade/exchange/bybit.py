@@ -114,7 +114,7 @@ class Bybit(Exchange):
         data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
         return data
 
-    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT:
             params = {'leverage': leverage}
             self.set_margin_mode(pair, self.margin_mode, accept_fail=True, params=params)

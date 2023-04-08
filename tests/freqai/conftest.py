@@ -79,7 +79,9 @@ def make_rl_config(conf):
             "rr": 1,
             "profit_aim": 0.02,
             "win_reward_factor": 2
-        }}
+        },
+        "drop_ohlc_from_features": False
+        }
 
     return conf
 

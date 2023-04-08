@@ -128,6 +128,9 @@ The FreqAI specific parameter `label_period_candles` defines the offset (number 
 
 You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `False` which means that all new models are trained from scratch, without input from previous models.
 
+???+ danger "Continual learning enforces a constant parameter space"
+    Since `continual_learning` means that the model parameter space *cannot* change between trainings, `principal_component_analysis` is automatically disabled when `continual_learning` is enabled. Hint: PCA changes the parameter space and the number of features, learn more about PCA [here](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis).
+
 ## Hyperopt
 
 You can hyperopt using the same command as for [typical Freqtrade hyperopt](hyperopt.md):

@@ -14,7 +14,7 @@ def test_PairLocks(use_db):
     PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
@@ -88,13 +88,13 @@ def test_PairLocks(use_db):
 
     if use_db:
         locks = PairLocks.get_all_locks()
-        locks_db = PairLock.query.all()
+        locks_db = PairLock.get_all_locks().all()
         assert len(locks) == len(locks_db)
         assert len(locks_db) > 0
     else:
         # Nothing was pushed to the database
         assert len(PairLocks.get_all_locks()) > 0
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
     # Reset use-db variable
     PairLocks.reset_locks()
     PairLocks.use_db = True
@@ -107,7 +107,7 @@ def test_PairLocks_getlongestlock(use_db):
     # No lock should be present
     PairLocks.use_db = use_db
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
@@ -139,7 +139,7 @@ def test_PairLocks_reason(use_db):
     PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 

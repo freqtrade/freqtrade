@@ -105,6 +105,10 @@ class IFreqaiModel(ABC):
         self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
+        self.model: Any = None
+        if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
+            self.ft_params.update({'principal_component_analysis': False})
+            logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
 
         record_params(config, self.full_path)
 
@@ -154,8 +158,7 @@ class IFreqaiModel(ABC):
                 dk = self.start_backtesting(dataframe, metadata, self.dk, strategy)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
-                logger.info(
-                    "Backtesting using historic predictions (live models)")
+                logger.info("Backtesting using historic predictions (live models)")
                 dk = self.start_backtesting_from_historic_predictions(
                     dataframe, metadata, self.dk)
                 dataframe = dk.return_dataframe
@@ -339,13 +342,14 @@ class IFreqaiModel(ABC):
                     except Exception as msg:
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
-                            f"Message: {msg}, skipping.")
+                            f"Message: {msg}, skipping.", exc_info=True)
+                        self.model = None
 
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(
                         tr_train.stopts)
-                    if self.plot_features:
+                    if self.plot_features and self.model is not None:
                         plot_feature_importance(self.model, pair, dk, self.plot_features)
-                    if self.save_backtest_models:
+                    if self.save_backtest_models and self.model is not None:
                         logger.info('Saving backtest model to disk.')
                         self.dd.save_data(self.model, pair, dk)
                     else:
