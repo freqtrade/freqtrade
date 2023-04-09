@@ -82,6 +82,7 @@ setup(
         'numpy',
         'pandas',
         'joblib>=1.2.0',
+        'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'pydantic>=1.8.0',
