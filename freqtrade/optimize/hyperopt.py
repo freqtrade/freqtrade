@@ -582,8 +582,9 @@ class Hyperopt:
                     BarColumn(bar_width=None),
                     MofNCompleteColumn(),
                     TaskProgressColumn(),
+                    "•",
                     TimeElapsedColumn(),
-                    "<",
+                    "•",
                     TimeRemainingColumn(),
                     expand=True,
                 ) as pbar:
