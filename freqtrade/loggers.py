@@ -1,10 +1,34 @@
 import logging
 import sys
-from logging import Formatter
+from logging import Formatter, Handler
 from logging.handlers import BufferingHandler, RotatingFileHandler, SysLogHandler
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
+
+
+class FTStdErrStreamHandler(Handler):
+    def flush(self):
+        """
+        Override Flush behaviour - we keep half of the configured capacity
+        otherwise, we have moments with "empty" logs.
+        """
+        self.acquire()
+        try:
+            sys.stderr.flush()
+        finally:
+            self.release()
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            # Don't keep a reference to stderr - this can be problematic with progressbars.
+            sys.stderr.write(msg + '\n')
+            self.flush()
+        except RecursionError:
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 class FTBufferingHandler(BufferingHandler):
@@ -69,7 +93,7 @@ def setup_logging_pre() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format=LOGFORMAT,
-        handlers=[logging.StreamHandler(sys.stderr), bufferHandler]
+        handlers=[FTStdErrStreamHandler(), bufferHandler]
     )
 
 
