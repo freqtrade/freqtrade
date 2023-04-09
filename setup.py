@@ -8,7 +8,6 @@ hyperopt = [
     'scikit-learn',
     'scikit-optimize>=0.7.0',
     'filelock',
-    'progressbar2',
 ]
 
 freqai = [
