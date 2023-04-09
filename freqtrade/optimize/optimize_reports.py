@@ -917,11 +917,11 @@ def show_backtest_results(config: Config, backtest_stats: Dict):
             strategy, results, stake_currency,
             config.get('backtest_breakdown', []))
 
-    if len(backtest_stats['strategy']) > 1:
+    if len(backtest_stats['strategy']) > 0:
         # Print Strategy summary table
 
         table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
-        print(f"{results['backtest_start']} -> {results['backtest_end']} |"
+        print(f"Backtested {results['backtest_start']} -> {results['backtest_end']} |"
               f" Max open trades : {results['max_open_trades']}")
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
