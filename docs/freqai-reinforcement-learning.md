@@ -180,7 +180,7 @@ As you begin to modify the strategy and the prediction model, you will quickly r
 
                 # you can use feature values from dataframe
                 # Assumes the shifted RSI indicator has been generated in the strategy.
-                rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{pair}_"
+                rsi_now = self.raw_features[f"%-rsi-period_10_shift-1_{pair}_"
                                 f"{self.config['timeframe']}"].iloc[self._current_tick]
 
                 # reward agent for entering trades

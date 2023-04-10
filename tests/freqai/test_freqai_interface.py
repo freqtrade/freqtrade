@@ -87,6 +87,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai.live = True
     freqai.can_short = can_short
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.set_paths('ADA/BTC', 10000)
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
@@ -135,6 +136,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -178,6 +180,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -371,6 +374,9 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     sub_timerange = TimeRange.parse_timerange("20180129-20180130")
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    df = strategy.set_freqai_targets(df.copy(), metadata={"pair": "LTC/BTC"})
+    df = freqai.dk.remove_special_chars_from_feature_names(df)
+    freqai.dk.get_unique_classes_from_labels(df)
     freqai.dk.pair = "ADA/BTC"
     freqai.dk.full_df = df.fillna(0)
     freqai.dk.full_df
@@ -394,6 +400,7 @@ def test_principal_component_analysis(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -425,10 +432,12 @@ def test_plot_feature_importance(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
-    freqai.dd.pair_dict = MagicMock()
+    freqai.dd.pair_dict = {"ADA/BTC": {"model_filename": "fake_name",
+                                       "trained_timestamp": 1, "data_path": "", "extras": {}}}
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")

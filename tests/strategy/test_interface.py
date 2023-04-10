@@ -986,7 +986,8 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
             }
         }
     }
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
     assert strategy.stoploss == -0.05
@@ -1005,11 +1006,13 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
         }
     }
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     with pytest.raises(OperationalException, match="Invalid parameter file provided."):
         StrategyResolver.load_strategy(default_conf)
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', MagicMock(side_effect=ValueError()))
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 MagicMock(side_effect=ValueError()))
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
