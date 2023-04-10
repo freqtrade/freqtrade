@@ -1193,6 +1193,7 @@ class RPC:
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
         strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
+        strategy.ft_bot_start()
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
