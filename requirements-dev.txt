@@ -9,7 +9,7 @@
 coveralls==3.3.1
 ruff==0.0.260
 mypy==1.2.0
-pre-commit==3.2.1
+pre-commit==3.2.2
 pytest==7.3.0
 pytest-asyncio==0.21.0
 pytest-cov==4.0.0
