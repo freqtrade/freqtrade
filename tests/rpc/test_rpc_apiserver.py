@@ -883,6 +883,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'max_drawdown': ANY,
         'max_drawdown_abs': ANY,
         'trading_volume': expected['trading_volume'],
+        'bot_start_timestamp': 0,
+        'bot_start_date': '',
     }
 
 

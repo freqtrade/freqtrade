@@ -26,6 +26,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, timeframe_to_minutes, time
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
+from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -182,6 +183,7 @@ class FreqtradeBot(LoggingMixin):
         performs startup tasks
         """
         migrate_binance_futures_names(self.config)
+        set_startup_time()
 
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
         # Update older trades with precision and precision mode
