@@ -2241,8 +2241,9 @@ def test_send_msg_buy_notification_no_fiat(
     ('Short', 'short_signal_01', 2.0),
 ])
 def test_send_msg_sell_notification_no_fiat(
-        default_conf, mocker, direction, enter_signal, leverage) -> None:
+        default_conf, mocker, direction, enter_signal, leverage, time_machine) -> None:
     del default_conf['fiat_display_currency']
+    time_machine.move_to('2022-05-02 00:00:00 +00:00', tick=False)
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
