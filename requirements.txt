@@ -5,7 +5,7 @@ pandas-ta==0.3.14b
 ccxt==3.0.58
 cryptography==40.0.1
 aiohttp==3.8.4
-SQLAlchemy==2.0.8
+SQLAlchemy==2.0.9
 python-telegram-bot==13.15
 arrow==1.2.3
 cachetools==4.2.2
