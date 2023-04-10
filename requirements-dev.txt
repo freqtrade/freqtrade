@@ -22,7 +22,7 @@ time-machine==2.9.0
 httpx==0.23.3
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==7.2.10
+nbconvert==7.3.1
 
 # mypy types
 types-cachetools==5.3.0.5
