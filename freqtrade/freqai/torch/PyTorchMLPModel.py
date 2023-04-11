@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 logger = logging.getLogger(__name__)
