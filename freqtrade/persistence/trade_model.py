@@ -11,8 +11,8 @@ from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, 
                         UniqueConstraint, desc, func, select)
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship
 
-from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
-                                 BuySell, LongShort)
+from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
+                                 NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
@@ -1259,11 +1259,13 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True, default=0.0)  # type: ignore
     # Lowest price reached
     min_rate: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    exit_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
+    exit_reason: Mapped[Optional[str]] = mapped_column(
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
     exit_order_status: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True)  # type: ignore
     strategy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
-    enter_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
+    enter_tag: Mapped[Optional[str]] = mapped_column(
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
     timeframe: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
 
     trading_mode: Mapped[TradingMode] = mapped_column(
