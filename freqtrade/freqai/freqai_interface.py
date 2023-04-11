@@ -83,6 +83,7 @@ class IFreqaiModel(ABC):
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
+        self.class_names: List[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
@@ -571,8 +572,9 @@ class IFreqaiModel(ABC):
             file_type = ".joblib"
         elif self.dd.model_type == 'keras':
             file_type = ".h5"
-        elif 'stable_baselines' in self.dd.model_type or 'sb3_contrib' == self.dd.model_type:
+        elif self.dd.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             file_type = ".zip"
+
         path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model{file_type}")
         file_exists = path_to_modelfile.is_file()
         if file_exists:
