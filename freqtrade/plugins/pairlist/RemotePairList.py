@@ -142,7 +142,10 @@ class RemotePairList(IPairList):
         """
 
         if self._init_done:
-            pairlist = self._pair_cache.get('pairlist')
+            if self._pair_cache.get('pairlist') == ["Empty"]:
+                return []
+            else:
+                pairlist = self._pair_cache.get('pairlist')
         else:
             pairlist = []
 
@@ -181,7 +184,10 @@ class RemotePairList(IPairList):
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
-        self._pair_cache['pairlist'] = pairlist.copy()
+        if pairlist:
+            self._pair_cache['pairlist'] = pairlist.copy()
+        else:
+            self._pair_cache['pairlist'] = ["Empty"]
 
         if time_elapsed != 0.0:
             self.log_once(f'Pairlist Fetched in {time_elapsed} seconds.', logger.info)
