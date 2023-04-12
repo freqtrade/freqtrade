@@ -9,7 +9,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
-from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship
+from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
                                  NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
@@ -1294,6 +1294,13 @@ class Trade(ModelBase, LocalTrade):
         super().__init__(**kwargs)
         self.realized_profit = 0
         self.recalc_open_trade_value()
+
+    @validates('enter_tag', 'exit_reason')
+    def validate_string_len(self, key, value):
+        max_len = getattr(self.__class__, key).prop.columns[0].type.length
+        if value and len(value) > max_len:
+            return value[:max_len]
+        return value
 
     def delete(self) -> None:
 
