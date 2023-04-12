@@ -116,10 +116,11 @@ NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
-ARGS_STRATEGY_UPDATER = ["strategy_list"]
+ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_search"]
 
 ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER = ARGS_BACKTEST + ["minimum_trade_amount",
-                                                        "targeted_trade_amount"]
+                                                        "targeted_trade_amount",
+                                                        "overwrite_existing_exportfilename_content"]
 
 
 # + ["target_trades", "minimum_trades",
@@ -458,13 +459,14 @@ class Arguments:
                                                           'files to the current version',
                                                      parents=[_common_parser])
         strategy_updater_cmd.set_defaults(func=start_strategy_update)
-        self._build_args(optionlist=ARGS_STRATEGY_UPDATER, parser=strategy_updater_cmd)
+        self._build_args(optionlist=ARGS_STRATEGY_UPDATER,
+                         parser=strategy_updater_cmd)
 
         # Add backtest lookahead bias checker subcommand
         backtest_lookahead_bias_checker_cmd = \
             subparsers.add_parser('backtest-lookahead-bias-checker',
                                   help="checks for potential look ahead bias",
-                                  parents=[_common_parser])
+                                  parents=[_common_parser, _strategy_parser])
         backtest_lookahead_bias_checker_cmd.set_defaults(func=start_backtest_lookahead_bias_checker)
 
         self._build_args(optionlist=ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER,

@@ -2,7 +2,7 @@ import copy
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 
-import pandas
+from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import get_timerange
@@ -10,33 +10,37 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.optimize.backtesting import Backtesting
 
 
+class VarHolder:
+    timerange: TimeRange
+    data: DataFrame
+    indicators: DataFrame
+    result: DataFrame
+    compared: DataFrame
+    from_dt: datetime
+    to_dt: datetime
+    compared_dt: datetime
+
+
+class Analysis:
+    def __init__(self):
+        self.total_signals = 0
+        self.false_entry_signals = 0
+        self.false_exit_signals = 0
+        self.false_indicators = []
+        self.has_bias = False
+
+    total_signals: int
+    false_entry_signals: int
+    false_exit_signals: int
+
+    false_indicators: list
+    has_bias: bool
+
+
 class BacktestLookaheadBiasChecker:
-    class VarHolder:
-        timerange: TimeRange
-        data: pandas.DataFrame
-        indicators: pandas.DataFrame
-        result: pandas.DataFrame
-        compared: pandas.DataFrame
-        from_dt: datetime
-        to_dt: datetime
-        compared_dt: datetime
-
-    class Analysis:
-        def __init__(self):
-            self.total_signals = 0
-            self.false_entry_signals = 0
-            self.false_exit_signals = 0
-            self.false_indicators = []
-            self.has_bias = False
-
-        total_signals: int
-        false_entry_signals: int
-        false_exit_signals: int
-
-        false_indicators: list
-        has_bias: bool
 
     def __init__(self):
+        self.exportfilename = None
         self.strategy_obj = None
         self.current_analysis = None
         self.local_config = None
@@ -44,7 +48,6 @@ class BacktestLookaheadBiasChecker:
         self.entry_varHolder = None
         self.exit_varHolder = None
         self.backtesting = None
-        self.current_analysis = None
         self.minimum_trade_amount = None
         self.targeted_trade_amount = None
 
@@ -124,9 +127,12 @@ class BacktestLookaheadBiasChecker:
         prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varHolder.from_dt)) + "-" +
                                             str(self.dt_to_timestamp(varHolder.to_dt)))
         prepare_data_config['pairs'] = pairs_to_load
+
         self.backtesting = Backtesting(prepare_data_config)
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
         varHolder.data, varHolder.timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
+
         varHolder.indicators = self.backtesting.strategy.advise_all_indicators(varHolder.data)
         varHolder.result = self.get_result(self.backtesting, varHolder.indicators)
 
@@ -139,12 +145,14 @@ class BacktestLookaheadBiasChecker:
         # and not worry about another strategy to check after.
         self.local_config = deepcopy(config)
         self.local_config['strategy_list'] = [strategy_obj['name']]
-        self.current_analysis = BacktestLookaheadBiasChecker.Analysis()
+        self.current_analysis = Analysis()
         self.minimum_trade_amount = args['minimum_trade_amount']
         self.targeted_trade_amount = args['targeted_trade_amount']
+        self.exportfilename = args['exportfilename']
+        self.strategy_obj = strategy_obj
 
         # first make a single backtest
-        self.full_varHolder = BacktestLookaheadBiasChecker.VarHolder()
+        self.full_varHolder = VarHolder()
 
         # define datetime in human-readable format
         parsed_timerange = TimeRange.parse_timerange(config['timerange'])
@@ -182,8 +190,8 @@ class BacktestLookaheadBiasChecker:
 
             self.current_analysis.total_signals += 1
 
-            self.entry_varHolder = BacktestLookaheadBiasChecker.VarHolder()
-            self.exit_varHolder = BacktestLookaheadBiasChecker.VarHolder()
+            self.entry_varHolder = VarHolder()
+            self.exit_varHolder = VarHolder()
 
             self.entry_varHolder.from_dt = self.full_varHolder.from_dt
             self.entry_varHolder.compared_dt = result_row['open_date']

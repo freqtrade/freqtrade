@@ -688,5 +688,10 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=20,
+    ),
+    "overwrite_existing_exportfilename_content": Arg(
+        '--overwrite-existing-exportfilename-content',
+        help='overwrites existing contents if existent with exportfilename given',
+        action='store_true'
     )
 }
