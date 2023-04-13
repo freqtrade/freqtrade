@@ -437,7 +437,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     }
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = 2 * 2 * (1 + 0.05) / (1 - abs(stoploss))
+    expected_result = 2 * 2 * (1 + 0.05)
     assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
@@ -446,14 +446,14 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
 
-    # min amount and cost are set (cost is minimal)
+    # min amount and cost are set (cost is minimal and therefore ignored)
     markets["ETH/BTC"]["limits"] = {
         'cost': {'min': 2, 'max': None},
         'amount': {'min': 2, 'max': None},
     }
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = max(2, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
+    expected_result = max(2, 2 * 2) * (1 + 0.05)
     assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
@@ -495,6 +495,9 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
+
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, 12.0)
+    assert result == 1000 / 12
 
     markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'

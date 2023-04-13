@@ -279,6 +279,7 @@ Return a summary of your profit/loss and performance.
 >   ∙ `33.095 EUR`
 >
 > **Total Trade Count:** `138`
+> **Bot started:** `2022-07-11 18:40:44`
 > **First Trade opened:** `3 days ago`
 > **Latest Trade opened:** `2 minutes ago`
 > **Avg. Duration:** `2:33:45`
@@ -292,6 +293,7 @@ The relative profit of `15.2 Σ%` is be based on the starting capital - so in th
 Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
 Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.
 Max drawdown corresponds to the backtesting metric `Absolute Drawdown (Account)` - calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
+Bot started date will refer to the date the bot was first started. For older bots, this will default to the first trade's open date.
 
 ### /forceexit <trade_id>
 

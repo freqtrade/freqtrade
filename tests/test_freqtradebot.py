@@ -356,7 +356,7 @@ def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, fee, mocke
 @pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.parametrize('stake_amount,create,amount_enough,max_open_trades', [
     (5.0, True, True, 99),
-    (0.049, True, False, 99),  # Amount will be adjusted to min - which is 0.051
+    (0.042, True, False, 99),  # Amount will be adjusted to min - which is 0.051
     (0, False, True, 99),
     (UNLIMITED_STAKE_AMOUNT, False, True, 0),
 ])
@@ -2955,6 +2955,9 @@ def test_manage_open_orders_exit_usercustom(
     assert rpc_mock.call_count == 2
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    trade = Trade.session.scalars(select(Trade)).first()
+    # cancelling didn't succeed - order-id remains open.
+    assert trade.open_order_id is not None
 
     # 2nd canceled trade - Fail execute exit
     caplog.clear()
@@ -3465,12 +3468,17 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
 
     # TODO: should not be magicmock
     trade = MagicMock()
+    trade.open_order_id = '125'
     reason = CANCEL_REASON['TIMEOUT']
     order = {'remaining': 1,
              'id': '125',
              'amount': 1,
              'status': "open"}
     assert not freqtrade.handle_cancel_exit(trade, order, reason)
+
+    # mocker.patch(f'{EXMS}.cancel_order_with_result', return_value=order)
+    # assert not freqtrade.handle_cancel_exit(trade, order, reason)
+    # assert trade.open_order_id == '125'
 
 
 @pytest.mark.parametrize("is_short, open_rate, amt", [

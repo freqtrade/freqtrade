@@ -8,7 +8,6 @@ hyperopt = [
     'scikit-learn',
     'scikit-optimize>=0.7.0',
     'filelock',
-    'progressbar2',
 ]
 
 freqai = [
@@ -59,7 +58,7 @@ setup(
     install_requires=[
         # from requirements.txt
         'ccxt>=2.6.26',
-        'SQLAlchemy',
+        'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
         'cachetools',
@@ -82,6 +81,7 @@ setup(
         'numpy',
         'pandas',
         'joblib>=1.2.0',
+        'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'pydantic>=1.8.0',

@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import deep_merge_dicts, json_load
+from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.strategy.parameters import BaseParameter
 
@@ -124,8 +124,7 @@ class HyperStrategyMixin:
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
-                with filename.open('r') as f:
-                    params = json_load(f)
+                params = HyperoptTools.load_params(filename)
                 if params.get('strategy_name') != self.__class__.__name__:
                     raise OperationalException('Invalid parameter file provided.')
                 return params

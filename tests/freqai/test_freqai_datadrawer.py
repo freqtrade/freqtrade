@@ -19,6 +19,7 @@ def test_update_historic_data(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180114")
 
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
@@ -41,6 +42,7 @@ def test_load_all_pairs_histories(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
@@ -60,6 +62,7 @@ def test_get_base_and_corr_dataframes(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
@@ -87,6 +90,7 @@ def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
@@ -103,8 +107,9 @@ def test_get_timerange_from_live_historic_predictions(mocker, freqai_conf):
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
     freqai = strategy.freqai
-    freqai.live = True
+    freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = False
     timerange = TimeRange.parse_timerange("20180126-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
     sub_timerange = TimeRange.parse_timerange("20180128-20180130")

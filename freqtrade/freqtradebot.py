@@ -26,6 +26,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, timeframe_to_minutes, time
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
+from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -182,6 +183,7 @@ class FreqtradeBot(LoggingMixin):
         performs startup tasks
         """
         migrate_binance_futures_names(self.config)
+        set_startup_time()
 
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
         # Update older trades with precision and precision mode
@@ -1483,8 +1485,8 @@ class FreqtradeBot(LoggingMixin):
                     return False
 
             try:
-                order = self.exchange.cancel_order_with_result(order['id'], trade.pair,
-                                                               trade.amount)
+                order = self.exchange.cancel_order_with_result(
+                    order['id'], trade.pair, trade.amount)
             except InvalidOrderException:
                 logger.exception(
                     f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
@@ -1496,17 +1498,18 @@ class FreqtradeBot(LoggingMixin):
             # Order might be filled above in odd timing issues.
             if order.get('status') in ('canceled', 'cancelled'):
                 trade.exit_reason = None
+                trade.open_order_id = None
             else:
                 trade.exit_reason = exit_reason_prev
             cancelled = True
         else:
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
             trade.exit_reason = None
+            trade.open_order_id = None
 
         self.update_trade_state(trade, trade.open_order_id, order)
 
         logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
-        trade.open_order_id = None
         trade.close_rate = None
         trade.close_rate_requested = None
 
@@ -1783,11 +1786,11 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # Update trade with order values
-        logger.info(f'Found open order for {trade}')
+        if not stoploss_order:
+            logger.info(f'Found open order for {trade}')
         try:
-            order = action_order or self.exchange.fetch_order_or_stoploss_order(order_id,
-                                                                                trade.pair,
-                                                                                stoploss_order)
+            order = action_order or self.exchange.fetch_order_or_stoploss_order(
+                order_id, trade.pair, stoploss_order)
         except InvalidOrderException as exception:
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False

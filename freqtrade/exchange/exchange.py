@@ -60,6 +60,7 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
+        "stop_price_param": "stopPrice",
         "order_time_in_force": ["GTC"],
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
@@ -765,12 +766,12 @@ class Exchange:
         return self._get_stake_amount_limit(pair, price, stoploss, 'min', leverage)
 
     def get_max_pair_stake_amount(self, pair: str, price: float, leverage: float = 1.0) -> float:
-        max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max')
+        max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max', leverage)
         if max_stake_amount is None:
             # * Should never be executed
             raise OperationalException(f'{self.name}.get_max_pair_stake_amount should'
                                        'never set max_stake_amount to None')
-        return max_stake_amount / leverage
+        return max_stake_amount
 
     def _get_stake_amount_limit(
         self,
@@ -788,43 +789,41 @@ class Exchange:
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
+        if isMin:
+            # reserve some percent defined in config (5% default) + stoploss
+            margin_reserve: float = 1.0 + self._config.get('amount_reserve_percent',
+                                                           DEFAULT_AMOUNT_RESERVE_PERCENT)
+            stoploss_reserve = (
+                margin_reserve / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+            )
+            # it should not be more than 50%
+            stoploss_reserve = max(min(stoploss_reserve, 1.5), 1)
+        else:
+            margin_reserve = 1.0
+            stoploss_reserve = 1.0
+
         stake_limits = []
         limits = market['limits']
         if (limits['cost'][limit] is not None):
             stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['cost'][limit]
-                )
+                self._contracts_to_amount(pair, limits['cost'][limit]) * stoploss_reserve
             )
 
         if (limits['amount'][limit] is not None):
             stake_limits.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['amount'][limit] * price
-                )
+                self._contracts_to_amount(pair, limits['amount'][limit]) * price * margin_reserve
             )
 
         if not stake_limits:
             return None if isMin else float('inf')
 
-        # reserve some percent defined in config (5% default) + stoploss
-        amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
-                                                        DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent = (
-            amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
-        )
-        # it should not be more than 50%
-        amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
-
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
         return self._get_stake_amount_considering_leverage(
-            max(stake_limits) * amount_reserve_percent,
+            max(stake_limits) if isMin else min(stake_limits),
             leverage or 1.0
-        ) if isMin else min(stake_limits)
+        )
 
     def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float) -> float:
         """
@@ -1117,11 +1116,11 @@ class Exchange:
         """
         if not self._ft_has.get('stoploss_on_exchange'):
             raise OperationalException(f"stoploss is not implemented for {self.name}.")
-
+        price_param = self._ft_has['stop_price_param']
         return (
-            order.get('stopPrice', None) is None
-            or ((side == "sell" and stop_loss > float(order['stopPrice'])) or
-                (side == "buy" and stop_loss < float(order['stopPrice'])))
+            order.get(price_param, None) is None
+            or ((side == "sell" and stop_loss > float(order[price_param])) or
+                (side == "buy" and stop_loss < float(order[price_param])))
         )
 
     def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
@@ -1161,8 +1160,8 @@ class Exchange:
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()
-        # Verify if stopPrice works for your exchange!
-        params.update({'stopPrice': stop_price})
+        # Verify if stopPrice works for your exchange, else configure stop_price_param
+        params.update({self._ft_has['stop_price_param']: stop_price})
         return params
 
     @retrier(retries=0)

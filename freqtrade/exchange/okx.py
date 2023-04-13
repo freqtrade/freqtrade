@@ -28,6 +28,7 @@ class Okx(Exchange):
         "funding_fee_timeframe": "8h",
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
+        "stop_price_param": "stopLossPrice",
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
@@ -162,28 +163,11 @@ class Okx(Exchange):
         return pair_tiers[-1]['maxNotional'] / leverage
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
-
-        params = self._params.copy()
-        # Verify if stopPrice works for your exchange!
-        params.update({'stopLossPrice': stop_price})
-
+        params = super()._get_stop_params(side, ordertype, stop_price)
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params['tdMode'] = self.margin_mode.value
             params['posSide'] = self._get_posSide(side, True)
         return params
-
-    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
-        """
-        OKX uses non-default stoploss price naming.
-        """
-        if not self._ft_has.get('stoploss_on_exchange'):
-            raise OperationalException(f"stoploss is not implemented for {self.name}.")
-
-        return (
-            order.get('stopLossPrice', None) is None
-            or ((side == "sell" and stop_loss > float(order['stopLossPrice'])) or
-                (side == "buy" and stop_loss < float(order['stopLossPrice'])))
-        )
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:

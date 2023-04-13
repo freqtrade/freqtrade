@@ -26,7 +26,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin, shorten_date
-from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.persistence import KeyStoreKeys, KeyValueStore, Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -543,6 +543,7 @@ class RPC:
         first_date = trades[0].open_date if trades else None
         last_date = trades[-1].open_date if trades else None
         num = float(len(durations) or 1)
+        bot_start = KeyValueStore.get_datetime_value(KeyStoreKeys.BOT_START_TIME)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
             'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
@@ -576,6 +577,8 @@ class RPC:
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
+            'bot_start_timestamp': int(bot_start.timestamp() * 1000) if bot_start else 0,
+            'bot_start_date': bot_start.strftime(DATETIME_PRINT_FORMAT) if bot_start else '',
         }
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
@@ -1193,6 +1196,7 @@ class RPC:
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
         strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
+        strategy.ft_bot_start()
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 

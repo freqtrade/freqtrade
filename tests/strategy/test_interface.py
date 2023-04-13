@@ -9,6 +9,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, HyperoptState, SignalDirection
@@ -529,13 +530,13 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     assert res[0].exit_reason == 'hello world'
 
     caplog.clear()
-    strategy.custom_exit = MagicMock(return_value='h' * 100)
+    strategy.custom_exit = MagicMock(return_value='h' * CUSTOM_TAG_MAX_LENGTH * 2)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res[0].exit_type == ExitType.CUSTOM_EXIT
     assert res[0].exit_flag is True
-    assert res[0].exit_reason == 'h' * 64
+    assert res[0].exit_reason == 'h' * (CUSTOM_TAG_MAX_LENGTH)
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
@@ -986,7 +987,8 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
             }
         }
     }
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
     assert strategy.stoploss == -0.05
@@ -1005,11 +1007,13 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
         }
     }
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     with pytest.raises(OperationalException, match="Invalid parameter file provided."):
         StrategyResolver.load_strategy(default_conf)
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', MagicMock(side_effect=ValueError()))
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 MagicMock(side_effect=ValueError()))
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)

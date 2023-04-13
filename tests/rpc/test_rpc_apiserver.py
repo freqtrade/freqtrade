@@ -883,6 +883,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'max_drawdown': ANY,
         'max_drawdown_abs': ANY,
         'trading_volume': expected['trading_volume'],
+        'bot_start_timestamp': 0,
+        'bot_start_date': '',
     }
 
 
@@ -1403,10 +1405,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
              ])
 
 
-def test_api_pair_history(botclient, ohlcv_history):
+def test_api_pair_history(botclient, mocker):
     ftbot, client = botclient
     timeframe = '5m'
-
+    lfm = mocker.patch('freqtrade.strategy.interface.IStrategy.load_freqAI_model')
     # No pair
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?timeframe={timeframe}"
@@ -1440,6 +1442,7 @@ def test_api_pair_history(botclient, ohlcv_history):
     assert len(rc.json()['data']) == rc.json()['length']
     assert 'columns' in rc.json()
     assert 'data' in rc.json()
+    assert lfm.call_count == 1
     assert rc.json()['pair'] == 'UNITTEST/BTC'
     assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
     assert rc.json()['data_start'] == '2018-01-11 00:00:00+00:00'
