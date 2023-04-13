@@ -143,8 +143,8 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         """
         data_loader_dictionary = {}
         for split in splits:
-            x = self.data_convertor.convert_x(data_dictionary[f"{split}_features"])
-            y = self.data_convertor.convert_y(data_dictionary[f"{split}_labels"])
+            x = self.data_convertor.convert_x(data_dictionary[f"{split}_features"], self.device)
+            y = self.data_convertor.convert_y(data_dictionary[f"{split}_labels"], self.device)
             dataset = TensorDataset(*x, *y)
             data_loader = DataLoader(
                 dataset,
