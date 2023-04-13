@@ -1,24 +1,11 @@
 import logging
-import sys
 from logging import Formatter
-from logging.handlers import BufferingHandler, RotatingFileHandler, SysLogHandler
+from logging.handlers import RotatingFileHandler, SysLogHandler
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
-
-
-class FTBufferingHandler(BufferingHandler):
-    def flush(self):
-        """
-        Override Flush behaviour - we keep half of the configured capacity
-        otherwise, we have moments with "empty" logs.
-        """
-        self.acquire()
-        try:
-            # Keep half of the records in buffer.
-            self.buffer = self.buffer[-int(self.capacity / 2):]
-        finally:
-            self.release()
+from freqtrade.loggers.buffering_handler import FTBufferingHandler
+from freqtrade.loggers.std_err_stream_handler import FTStdErrStreamHandler
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +56,7 @@ def setup_logging_pre() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format=LOGFORMAT,
-        handlers=[logging.StreamHandler(sys.stderr), bufferHandler]
+        handlers=[FTStdErrStreamHandler(), bufferHandler]
     )
 
 
