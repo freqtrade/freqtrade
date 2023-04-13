@@ -82,7 +82,7 @@ class freqai_test_classifier(IStrategy):
         return dataframe
 
     def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
+        self.freqai.class_names = ["down", "up"]
         dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-100) >
                                               dataframe["close"], 'up', 'down')
 

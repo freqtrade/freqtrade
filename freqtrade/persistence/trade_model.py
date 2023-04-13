@@ -9,10 +9,10 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
-from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship
+from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 
-from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
-                                 BuySell, LongShort)
+from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
+                                 NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
@@ -1259,11 +1259,13 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True, default=0.0)  # type: ignore
     # Lowest price reached
     min_rate: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    exit_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
+    exit_reason: Mapped[Optional[str]] = mapped_column(
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
     exit_order_status: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True)  # type: ignore
     strategy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
-    enter_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
+    enter_tag: Mapped[Optional[str]] = mapped_column(
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
     timeframe: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
 
     trading_mode: Mapped[TradingMode] = mapped_column(
@@ -1292,6 +1294,13 @@ class Trade(ModelBase, LocalTrade):
         super().__init__(**kwargs)
         self.realized_profit = 0
         self.recalc_open_trade_value()
+
+    @validates('enter_tag', 'exit_reason')
+    def validate_string_len(self, key, value):
+        max_len = getattr(self.__class__, key).prop.columns[0].type.length
+        if value and len(value) > max_len:
+            return value[:max_len]
+        return value
 
     def delete(self) -> None:
 

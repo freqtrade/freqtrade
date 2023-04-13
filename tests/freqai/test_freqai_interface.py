@@ -15,7 +15,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import get_patched_freqai_strategy, make_rl_config
+from tests.freqai.conftest import (get_patched_freqai_strategy, make_rl_config,
+                                   mock_pytorch_mlp_model_training_parameters)
 
 
 def is_py11() -> bool:
@@ -34,13 +35,14 @@ def is_mac() -> bool:
 
 def can_run_model(model: str) -> None:
     if (is_arm() or is_py11()) and "Catboost" in model:
-        pytest.skip("CatBoost is not supported on ARM")
+        pytest.skip("CatBoost is not supported on ARM.")
 
-    if is_mac() and not is_arm() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
+    if is_pytorch_model and is_mac() and not is_arm():
+        pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
-    if is_py11() and 'Reinforcement' in model:
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+    if is_pytorch_model and is_py11():
+        pytest.skip("Reinforcement learning / PyTorch currently not available on python 3.11.")
 
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
@@ -48,11 +50,12 @@ def can_run_model(model: str) -> None:
     ('XGBoostRegressor', False, True, False, True, False, 10),
     ('XGBoostRFRegressor', False, False, False, True, False, 0),
     ('CatboostRegressor', False, False, False, True, True, 0),
+    ('PyTorchMLPRegressor', False, False, False, True, False, 0),
     ('ReinforcementLearner', False, True, False, True, False, 0),
     ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
-    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0)
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0),
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
@@ -78,6 +81,11 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     if 'test_3ac' in model or 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
         freqai_conf["freqai"]["rl_config"]["drop_ohlc_from_features"] = True
+
+    if 'PyTorchMLPRegressor' in model:
+        model_save_ext = 'zip'
+        pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -123,8 +131,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
     ])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
-    if (is_arm() or is_py11()) and 'Catboost' in model:
-        pytest.skip("CatBoost is not supported on ARM")
+    can_run_model(model)
 
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": strat})
@@ -164,10 +171,10 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'CatboostClassifier',
     'XGBoostClassifier',
     'XGBoostRFClassifier',
+    'PyTorchMLPClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
-    if (is_arm() or is_py11()) and model == 'CatboostClassifier':
-        pytest.skip("CatBoost is not supported on ARM")
+    can_run_model(model)
 
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"strategy": "freqai_test_classifier"})
@@ -193,7 +200,20 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
                                         strategy, freqai.dk, data_load_timerange)
 
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
+    if 'PyTorchMLPClassifier':
+        pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
+
+    if freqai.dd.model_type == 'joblib':
+        model_file_extension = ".joblib"
+    elif freqai.dd.model_type == "pytorch":
+        model_file_extension = ".zip"
+    else:
+        raise Exception(f"Unsupported model type: {freqai.dd.model_type},"
+                        f" can't assign model_file_extension")
+
+    assert Path(freqai.dk.data_path /
+                f"{freqai.dk.model_filename}_model{model_file_extension}").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").exists()
@@ -207,10 +227,12 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         ("LightGBMRegressor", 2, "freqai_test_strat"),
         ("XGBoostRegressor", 2, "freqai_test_strat"),
         ("CatboostRegressor", 2, "freqai_test_strat"),
+        ("PyTorchMLPRegressor", 2, "freqai_test_strat"),
         ("ReinforcementLearner", 3, "freqai_rl_test_strat"),
         ("XGBoostClassifier", 2, "freqai_test_classifier"),
         ("LightGBMClassifier", 2, "freqai_test_classifier"),
-        ("CatboostClassifier", 2, "freqai_test_classifier")
+        ("CatboostClassifier", 2, "freqai_test_classifier"),
+        ("PyTorchMLPClassifier", 2, "freqai_test_classifier")
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
@@ -230,6 +252,10 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
     if 'test_4ac' in model:
         freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+
+    if 'PyTorchMLP' in model:
+        pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
 
     freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
         {"indicator_periods_candles": [2]})

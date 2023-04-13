@@ -6,7 +6,7 @@ import arrow
 import pytest
 from sqlalchemy import select
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
@@ -2037,6 +2037,7 @@ def test_Trade_object_idem():
         'get_mix_tag_performance',
         'get_trading_volume',
         'from_json',
+        'validate_string_len',
     )
     EXCLUDES2 = ('trades', 'trades_open', 'bt_trades_open_pp', 'bt_open_open_trade_count',
                  'total_profit')
@@ -2053,6 +2054,31 @@ def test_Trade_object_idem():
                 and item not in EXCLUDES2
                 and type(getattr(LocalTrade, item)) not in (property, FunctionType)):
             assert item in trade
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_truncates_string_fields():
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=20.0,
+        amount=30.0,
+        open_rate=2.0,
+        open_date=datetime.utcnow() - timedelta(minutes=20),
+        fee_open=0.001,
+        fee_close=0.001,
+        exchange='binance',
+        leverage=1.0,
+        trading_mode='futures',
+        enter_tag='a' * CUSTOM_TAG_MAX_LENGTH * 2,
+        exit_reason='b' * CUSTOM_TAG_MAX_LENGTH * 2,
+    )
+    Trade.session.add(trade)
+    Trade.commit()
+
+    trade1 = Trade.session.scalars(select(Trade)).first()
+
+    assert trade1.enter_tag == 'a' * CUSTOM_TAG_MAX_LENGTH
+    assert trade1.exit_reason == 'b' * CUSTOM_TAG_MAX_LENGTH
 
 
 def test_recalc_trade_from_orders(fee):

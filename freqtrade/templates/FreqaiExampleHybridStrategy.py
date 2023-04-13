@@ -223,6 +223,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
+        self.freqai.class_names = ["down", "up"]
         dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-50) >
                                               dataframe["close"], 'up', 'down')
 
