@@ -13,6 +13,7 @@ class WAOStrategyController:
         Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
         self.dup = dup
         self.notifier = Notifier(BrainConfig.MODE)
+        self.execution_index = 0
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST) +
               ", system.version=" + str(Config.VERSION) + ", brain=" + Config.BRAIN +
               ", system_ss_timeout_hour=" + str(Config.ROMEO_SS_TIMEOUT_HOURS))
@@ -55,11 +56,12 @@ class WAOStrategyController:
             remove_from_pool(coin)
 
     def __buy_execute(self, coin):
+        self.execution_index += 1
         if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
-                             args=(coin, self.dup)).start()
+                             args=(coin, self.dup, self.execution_index)).start()
         else:
-            perform_execute_buy(coin, self.dup)
+            perform_execute_buy(coin, self.dup, self.execution_index)
 
     def __send_start_deliminator_message(self, brain, month, year):
         print("WAOStrategyController: send_start_deliminator_message: ")

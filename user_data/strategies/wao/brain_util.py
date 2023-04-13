@@ -20,7 +20,7 @@ def write_to_backtest_table(timestamp, coin, dup, type):
     pickle.dump(BrainConfig.BACKTEST_SIGNAL_LIST, open(BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH, 'wb'))
 
 
-def perform_execute_buy(coin, dup):
+def perform_execute_buy(coin, dup, execution_index):
     is_test_mode = False
     if BrainConfig.MODE == Config.MODE_TEST:
         is_test_mode = True
@@ -32,7 +32,7 @@ def perform_execute_buy(coin, dup):
 
     romeo = Romeo.instance(is_test_mode, True)
     BrainConfig.ROMEO_POOL[coin] = romeo
-    romeo.start()
+    romeo.start(execution_index)
 
 
 def perform_execute_sell(coin):
