@@ -16,7 +16,7 @@ class bbrsi_scalp(WAOStrategy):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
         if self.coin == 'BTC' or self.coin == 'ADA':
             BrainConfig.BRAIN = "Freq_bbrsi_scalp_ada_btc"
-        super().__init__(config, 2.33, 0.16)
+        super().__init__(config, 2, 0.16)
 
     timeframe = '5m'
 
