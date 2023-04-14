@@ -1295,6 +1295,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     assert order_book_l2_usd.call_count == (1 if not filled else 0)
     assert order_closed['status'] == ('open' if not filled else 'closed')
     assert order_closed['filled'] == (0 if not filled else 1)
+    assert order_closed['cost'] == 1 * order_closed['average']
 
     order_book_l2_usd.reset_mock()
 
@@ -1342,6 +1343,8 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert order["symbol"] == "LTC/USDT"
     assert order['status'] == 'closed'
     assert order['filled'] == amount
+    assert order['amount'] == amount
+    assert pytest.approx(order['cost']) == amount * order['average']
     assert round(order["average"], 4) == round(endprice, 4)
 
 
