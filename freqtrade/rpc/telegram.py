@@ -163,7 +163,7 @@ class Telegram(RPCHandler):
         registers all known command handlers
         and starts polling for message updates
         """
-        self._app = Application.builder().token(self._config['telegram']['token']).build
+        self._app = Application.builder().token(self._config['telegram']['token']).build()
         # self._updater = Updater(token=, workers=0,
                                 # use_context=True)
 
@@ -229,15 +229,15 @@ class Telegram(RPCHandler):
         for callback in callbacks:
             self._app.add_handler(callback)
 
-        self._app.run_polling(
-            bootstrap_retries=-1,
-            timeout=20,
-            read_latency=60,  # Assumed transmission latency
-            drop_pending_updates=True,
-        )
         logger.info(
             'rpc.telegram is listening for following commands: %s',
             [[x for x in sorted(h.commands)] for h in handles]
+        )
+        self._app.run_polling(
+            bootstrap_retries=-1,
+            timeout=20,
+            # read_latency=60,  # Assumed transmission latency
+            drop_pending_updates=True,
         )
 
     def cleanup(self) -> None:
