@@ -50,6 +50,7 @@ class BacktestLookaheadBiasChecker:
         self.backtesting = None
         self.minimum_trade_amount = None
         self.targeted_trade_amount = None
+        self.failed_bias_check = True
 
     @staticmethod
     def dt_to_timestamp(dt):
@@ -156,14 +157,16 @@ class BacktestLookaheadBiasChecker:
 
         # define datetime in human-readable format
         parsed_timerange = TimeRange.parse_timerange(config['timerange'])
-        if (parsed_timerange is not None and
-                parsed_timerange.startdt is not None and
-                parsed_timerange.stopdt is not None):
-            self.full_varHolder.from_dt = parsed_timerange.startdt
-            self.full_varHolder.to_dt = parsed_timerange.stopdt
+
+        if parsed_timerange.startdt is None:
+            self.full_varHolder.from_dt = datetime.utcfromtimestamp(0)
         else:
-            print("Parsing of parsed_timerange failed. exiting!")
-            return
+            self.full_varHolder.from_dt = parsed_timerange.startdt
+
+        if parsed_timerange.stopdt is None:
+            self.full_varHolder.to_dt = datetime.now()
+        else:
+            self.full_varHolder.to_dt = parsed_timerange.stopdt
 
         self.prepare_data(self.full_varHolder, self.local_config['pairs'])
 
@@ -232,3 +235,5 @@ class BacktestLookaheadBiasChecker:
             self.current_analysis.has_bias = True
         else:
             print(self.local_config['strategy_list'][0] + ": no bias detected")
+
+        self.failed_bias_check = False

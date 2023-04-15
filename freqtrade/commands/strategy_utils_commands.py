@@ -103,48 +103,62 @@ def start_backtest_lookahead_bias_checker(args: Dict[str, Any]) -> None:
 
 
 def text_table_bias_checker_instances(bias_checker_instances):
-    headers = ['strategy', 'has_bias',
+    headers = ['filename', 'strategy', 'has_bias',
                'total_signals', 'biased_entry_signals', 'biased_exit_signals', 'biased_indicators']
     data = []
     for current_instance in bias_checker_instances:
-        data.append(
-            [current_instance.strategy_obj['name'],
-             current_instance.current_analysis.has_bias,
-             current_instance.current_analysis.total_signals,
-             current_instance.current_analysis.false_entry_signals,
-             current_instance.current_analysis.false_exit_signals,
-             ", ".join(current_instance.current_analysis.false_indicators)]
-        )
+        if current_instance.failed_bias_check:
+            data.append(
+                [
+                    current_instance.strategy_obj['location'].parts[-1],
+                    current_instance.strategy_obj['name'],
+                    'error while checking'
+                ]
+            )
+        else:
+            data.append(
+                [
+                    current_instance.strategy_obj['location'].parts[-1],
+                    current_instance.strategy_obj['name'],
+                    current_instance.current_analysis.has_bias,
+                    current_instance.current_analysis.total_signals,
+                    current_instance.current_analysis.false_entry_signals,
+                    current_instance.current_analysis.false_exit_signals,
+                    ", ".join(current_instance.current_analysis.false_indicators)
+                ]
+            )
     table = tabulate(data, headers=headers, tablefmt="orgtbl")
     print(table)
 
 
 def export_to_csv(args, bias_checker_instances):
     def add_or_update_row(df, row_data):
-        strategy_col_name = 'strategy'
-        if row_data[strategy_col_name] in df[strategy_col_name].values:
-            # create temporary dataframe with a single row
-            # and use that to replace the previous data in there.
-            index = (df.index[df[strategy_col_name] ==
-                              row_data[strategy_col_name]][0])
-            df.loc[index] = pd.Series(row_data, index='strategy')
-
+        if (
+                (df['filename'] == row_data['filename']) &
+                (df['strategy'] == row_data['strategy'])
+        ).any():
+            # Update existing row
+            pd_series = pd.DataFrame([row_data])
+            df.loc[
+                (df['filename'] == row_data['filename']) &
+                (df['strategy'] == row_data['strategy'])
+                ] = pd_series
         else:
-            df = df.concat(row_data, ignore_index=True)
+            # Add new row
+            df = pd.concat([df, pd.DataFrame([row_data], columns=df.columns)])
+
         return df
 
-    csv_df = None
-
-    if not Path.exists(args['exportfilename']):
-        # If the file doesn't exist, create a new DataFrame from scratch
-        csv_df = pd.DataFrame(columns=['filename', 'strategy', 'has_bias',
-                                       'total_signals',
-                                       'biased_entry_signals', 'biased_exit_signals',
-                                       'biased_indicators'],
-                              index='filename')
-    else:
+    if Path(args['exportfilename']).exists():
         # Read CSV file into a pandas dataframe
         csv_df = pd.read_csv(args['exportfilename'])
+    else:
+        # Create a new empty DataFrame with the desired column names and set the index
+        csv_df = pd.DataFrame(columns=[
+            'filename', 'strategy', 'has_bias', 'total_signals',
+            'biased_entry_signals', 'biased_exit_signals', 'biased_indicators'
+        ],
+            index=None)
 
     for inst in bias_checker_instances:
         new_row_data = {'filename': inst.strategy_obj['location'].parts[-1],
@@ -153,11 +167,11 @@ def export_to_csv(args, bias_checker_instances):
                         'total_signals': inst.current_analysis.total_signals,
                         'biased_entry_signals': inst.current_analysis.false_entry_signals,
                         'biased_exit_signals': inst.current_analysis.false_exit_signals,
-                        'biased_indicators': ", ".join(inst.current_analysis.false_indicators)}
+                        'biased_indicators': ",".join(inst.current_analysis.false_indicators)}
         csv_df = add_or_update_row(csv_df, new_row_data)
-    if len(bias_checker_instances) > 0:
-        print(f"saving {args['exportfilename']}")
-        csv_df.to_csv(args['exportfilename'])
+
+    print(f"saving {args['exportfilename']}")
+    csv_df.to_csv(args['exportfilename'], index=False)
 
 
 def initialize_single_lookahead_bias_checker(strategy_obj, config, args):
