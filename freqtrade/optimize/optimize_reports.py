@@ -865,6 +865,11 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
+    table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
+    if isinstance(table, str) and len(table) > 0:
+        print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
+    print(table)
+
     if (results.get('results_per_enter_tag') is not None
             or results.get('results_per_buy_tag') is not None):
         # results_per_buy_tag is deprecated and should be removed 2 versions after short golive.
@@ -882,11 +887,6 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
         print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
-    print(table)
-
-    table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
-    if isinstance(table, str) and len(table) > 0:
-        print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
     for period in backtest_breakdown:
@@ -917,11 +917,11 @@ def show_backtest_results(config: Config, backtest_stats: Dict):
             strategy, results, stake_currency,
             config.get('backtest_breakdown', []))
 
-    if len(backtest_stats['strategy']) > 1:
+    if len(backtest_stats['strategy']) > 0:
         # Print Strategy summary table
 
         table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
-        print(f"{results['backtest_start']} -> {results['backtest_end']} |"
+        print(f"Backtested {results['backtest_start']} -> {results['backtest_end']} |"
               f" Max open trades : {results['max_open_trades']}")
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
