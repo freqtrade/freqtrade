@@ -64,14 +64,14 @@ class DummyCls(Telegram):
         pass
 
     @authorized_only
-    def dummy_handler(self, *args, **kwargs) -> None:
+    async def dummy_handler(self, *args, **kwargs) -> None:
         """
         Fake method that only change the state of the object
         """
         self.state['called'] = True
 
     @authorized_only
-    def dummy_exception(self, *args, **kwargs) -> None:
+    async def dummy_exception(self, *args, **kwargs) -> None:
         """
         Fake method that throw an exception
         """
@@ -91,6 +91,7 @@ def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
         ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     telegram = Telegram(rpc, default_conf)
+    telegram._loop = MagicMock()
 
     return telegram, ftbot, msg_mock
 
@@ -139,7 +140,7 @@ def test_cleanup(default_conf, mocker, ) -> None:
     assert telegram._updater.stop.call_count == 1
 
 
-def test_authorized_only(default_conf, mocker, caplog, update) -> None:
+async def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
     caplog.set_level(logging.DEBUG)
     default_conf['telegram']['enabled'] = False
@@ -148,14 +149,14 @@ def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     dummy = DummyCls(rpc, default_conf)
 
     patch_get_signal(bot)
-    dummy.dummy_handler(update=update, context=MagicMock())
+    await dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is True
     assert log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
     assert not log_has('Rejected unauthorized message from: 0', caplog)
     assert not log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
+async def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
@@ -168,14 +169,14 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(rpc, default_conf)
 
     patch_get_signal(bot)
-    dummy.dummy_handler(update=update, context=MagicMock())
+    await dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is False
     assert not log_has('Executing handler: dummy_handler for chat_id: 3735928559', caplog)
     assert log_has('Rejected unauthorized message from: 3735928559', caplog)
     assert not log_has('Exception occurred within Telegram module', caplog)
 
 
-def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None:
+async def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
 
     default_conf['telegram']['enabled'] = False
@@ -185,7 +186,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None
     dummy = DummyCls(rpc, default_conf)
     patch_get_signal(bot)
 
-    dummy.dummy_exception(update=update, context=MagicMock())
+    await dummy.dummy_exception(update=update, context=MagicMock())
     assert dummy.state['called'] is False
     assert not log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
     assert not log_has('Rejected unauthorized message from: 0', caplog)
@@ -2086,7 +2087,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
-def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
+async def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
