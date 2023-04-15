@@ -103,7 +103,6 @@ class Telegram(RPCHandler):
         """
         super().__init__(rpc, config)
 
-        self._updater: Updater
         self._app: Application
         self._init_keyboard()
         self._init()
@@ -164,8 +163,6 @@ class Telegram(RPCHandler):
         and starts polling for message updates
         """
         self._app = Application.builder().token(self._config['telegram']['token']).build()
-        # self._updater = Updater(token=, workers=0,
-                                # use_context=True)
 
         # Register command handler and start telegram message polling
         handles = [
@@ -1650,8 +1647,8 @@ class Telegram(RPCHandler):
             f"*Current state:* `{val['state']}`"
         )
 
-    def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
-                    reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
+    async def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
+                          reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
         if reload_able:
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton("Refresh", callback_data=callback_path)],
@@ -1665,7 +1662,7 @@ class Telegram(RPCHandler):
         message_id = query.message.message_id
 
         try:
-            self._updater.bot.edit_message_text(
+            await self._app.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=message_id,
                 text=msg,
@@ -1695,8 +1692,8 @@ class Telegram(RPCHandler):
         """
         reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]
         if query:
-            self._update_msg(query=query, msg=msg, parse_mode=parse_mode,
-                             callback_path=callback_path, reload_able=reload_able)
+            await self._update_msg(query=query, msg=msg, parse_mode=parse_mode,
+                                   callback_path=callback_path, reload_able=reload_able)
             return
         if reload_able and self._config['telegram'].get('reload', True):
             reply_markup = InlineKeyboardMarkup([
