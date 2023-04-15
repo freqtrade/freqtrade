@@ -58,7 +58,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     :return: decorated function
     """
 
-    def wrapper(self, *args, **kwargs):
+    async def wrapper(self, *args, **kwargs):
         """ Decorator logic """
         update = kwargs.get('update') or args[0]
 
@@ -80,9 +80,9 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             chat_id
         )
         try:
-            return command_handler(self, *args, **kwargs)
+            return await command_handler(self, *args, **kwargs)
         except RPCException as e:
-            self._send_msg(str(e))
+            await self._send_msg(str(e))
         except BaseException:
             logger.exception('Exception occurred within Telegram module')
         finally:
@@ -1589,7 +1589,7 @@ class Telegram(RPCHandler):
         self._send_msg(message)
 
     @authorized_only
-    def _version(self, update: Update, context: CallbackContext) -> None:
+    async def _version(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /version.
         Show version information
@@ -1602,7 +1602,7 @@ class Telegram(RPCHandler):
         if strategy_version is not None:
             version_string += f', *Strategy version: * `{strategy_version}`'
 
-        self._send_msg(version_string)
+        await self._send_msg(version_string)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
@@ -1680,12 +1680,12 @@ class Telegram(RPCHandler):
         except TelegramError as telegram_err:
             logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
 
-    def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
-                  disable_notification: bool = False,
-                  keyboard: Optional[List[List[InlineKeyboardButton]]] = None,
-                  callback_path: str = "",
-                  reload_able: bool = False,
-                  query: Optional[CallbackQuery] = None) -> None:
+    async def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
+                        disable_notification: bool = False,
+                        keyboard: Optional[List[List[InlineKeyboardButton]]] = None,
+                        callback_path: str = "",
+                        reload_able: bool = False,
+                        query: Optional[CallbackQuery] = None) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -1708,7 +1708,7 @@ class Telegram(RPCHandler):
                 reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
         try:
             try:
-                self._updater.bot.send_message(
+                await self._app.bot.send_message(
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
@@ -1722,7 +1722,7 @@ class Telegram(RPCHandler):
                     'Telegram NetworkError: %s! Trying one more time.',
                     network_err.message
                 )
-                self._updater.bot.send_message(
+                await self._app.bot.send_message(
                     self._config['telegram']['chat_id'],
                     text=msg,
                     parse_mode=parse_mode,
