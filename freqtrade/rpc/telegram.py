@@ -15,7 +15,7 @@ from html import escape
 from itertools import chain
 from math import isnan
 from threading import Thread
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 import arrow
 from tabulate import tabulate
@@ -53,7 +53,7 @@ class TimeunitMappings:
     default: int
 
 
-def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
+def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
@@ -252,20 +252,22 @@ class Telegram(RPCHandler):
     async def _startup_telegram(self) -> None:
         await self._app.initialize()
         await self._app.start()
-        await self._app.updater.start_polling(
-            bootstrap_retries=-1,
-            timeout=20,
-            # read_latency=60,  # Assumed transmission latency
-            drop_pending_updates=True,
-            # stop_signals=[],  # Necessary as we don't run on the main thread
-        )
-        while True:
-            await asyncio.sleep(10)
-            if not self._app.updater.running:
-                break
+        if self._app.updater:
+            await self._app.updater.start_polling(
+                bootstrap_retries=-1,
+                timeout=20,
+                # read_latency=60,  # Assumed transmission latency
+                drop_pending_updates=True,
+                # stop_signals=[],  # Necessary as we don't run on the main thread
+            )
+            while True:
+                await asyncio.sleep(10)
+                if not self._app.updater.running:
+                    break
 
     async def _cleanup_telegram(self) -> None:
-        await self._app.updater.stop()
+        if self._app.updater:
+            await self._app.updater.stop()
         await self._app.stop()
         await self._app.shutdown()
 
@@ -994,7 +996,7 @@ class Telegram(RPCHandler):
 
             # Handle overflowing message length
             if len(output + curr_output) >= MAX_MESSAGE_LENGTH:
-                self._send_msg(output)
+                await self._send_msg(output)
                 output = curr_output
             else:
                 output += curr_output
@@ -1088,7 +1090,7 @@ class Telegram(RPCHandler):
                 statlist, _, _ = self._rpc._rpc_status_table(
                     self._config['stake_currency'], fiat_currency)
             except RPCException:
-                self._send_msg(msg='No open trade found.')
+                await self._send_msg(msg='No open trade found.')
                 return
             trades = []
             for trade in statlist:
@@ -1121,7 +1123,7 @@ class Telegram(RPCHandler):
                     await query.edit_message_text(text="Force exit canceled.")
                     return
                 trade: Optional[Trade] = Trade.get_trades(trade_filter=Trade.id == trade_id).first()
-                query.answer()
+                await query.answer()
                 if trade:
                     await query.edit_message_text(
                         text=f"Manually exiting Trade #{trade_id}, {trade.pair}")
@@ -1132,7 +1134,7 @@ class Telegram(RPCHandler):
     async def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
             try:
-                await self._rpc._rpc_force_entry(pair, price, order_side=order_side)
+                self._rpc._rpc_force_entry(pair, price, order_side=order_side)
             except RPCException as e:
                 logger.exception("Forcebuy error!")
                 await self._send_msg(str(e), ParseMode.HTML)
@@ -1268,7 +1270,7 @@ class Telegram(RPCHandler):
                 f"({trade['count']})</code>\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                self._send_msg(output, parse_mode=ParseMode.HTML)
+                await self._send_msg(output, parse_mode=ParseMode.HTML)
                 output = stat_line
             else:
                 output += stat_line
@@ -1300,7 +1302,7 @@ class Telegram(RPCHandler):
                 f"({trade['count']})</code>\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                self._send_msg(output, parse_mode=ParseMode.HTML)
+                await self._send_msg(output, parse_mode=ParseMode.HTML)
                 output = stat_line
             else:
                 output += stat_line
