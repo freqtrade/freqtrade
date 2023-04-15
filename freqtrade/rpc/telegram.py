@@ -3,6 +3,7 @@
 """
 This module manage Telegram communication
 """
+import asyncio
 import json
 import logging
 import re
@@ -13,6 +14,7 @@ from functools import partial
 from html import escape
 from itertools import chain
 from math import isnan
+from threading import Thread
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import arrow
@@ -104,8 +106,16 @@ class Telegram(RPCHandler):
         super().__init__(rpc, config)
 
         self._app: Application
+        self._loop: asyncio.AbstractEventLoop
         self._init_keyboard()
-        self._init()
+        self._start_thread()
+
+    def _start_thread(self):
+        """
+        Creates and starts the polling thread
+        """
+        self._thread = Thread(target=self._init, name='FTTelegram')
+        self._thread.start()
 
     def _init_keyboard(self) -> None:
         """
@@ -161,7 +171,14 @@ class Telegram(RPCHandler):
         Initializes this module with the given config,
         registers all known command handlers
         and starts polling for message updates
+        Runs in a separate thread.
         """
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+
         self._app = Application.builder().token(self._config['telegram']['token']).build()
 
         # Register command handler and start telegram message polling
@@ -230,12 +247,27 @@ class Telegram(RPCHandler):
             'rpc.telegram is listening for following commands: %s',
             [[x for x in sorted(h.commands)] for h in handles]
         )
-        self._app.run_polling(
+        self._loop.run_until_complete(self._startup_telegram())
+
+    async def _startup_telegram(self) -> None:
+        await self._app.initialize()
+        await self._app.start()
+        await self._app.updater.start_polling(
             bootstrap_retries=-1,
             timeout=20,
             # read_latency=60,  # Assumed transmission latency
             drop_pending_updates=True,
+            # stop_signals=[],  # Necessary as we don't run on the main thread
         )
+        while True:
+            await asyncio.sleep(10)
+            if not self._app.updater.running:
+                break
+
+    async def _cleanup_telegram(self) -> None:
+        await self._app.updater.stop()
+        await self._app.stop()
+        await self._app.shutdown()
 
     def cleanup(self) -> None:
         """
@@ -243,7 +275,8 @@ class Telegram(RPCHandler):
         :return: None
         """
         # This can take up to `timeout` from the call to `start_polling`.
-        self._app.stop()
+        asyncio.run_coroutine_threadsafe(self._cleanup_telegram(), self._loop)
+        self._thread.join()
 
     def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
         """
