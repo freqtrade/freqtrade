@@ -1083,7 +1083,7 @@ class Telegram(RPCHandler):
 
         if context.args:
             trade_id = context.args[0]
-            self._force_exit_action(trade_id)
+            await self._force_exit_action(trade_id)
         else:
             fiat_currency = self._config.get('fiat_display_currency', '')
             try:

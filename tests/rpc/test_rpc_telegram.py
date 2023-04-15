@@ -1211,7 +1211,7 @@ async def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> 
 
     assert keyboard[1][0].callback_data == 'force_exit__2 '
     update = MagicMock()
-    update.callback_query = MagicMock()
+    update.callback_query = AsyncMock()
     update.callback_query.data = keyboard[1][0].callback_data
     await telegram._force_exit_inline(update, None)
     assert update.callback_query.answer.call_count == 1
@@ -1298,7 +1298,7 @@ async def test_force_enter_no_pair(default_conf, update, mocker) -> None:
     # One additional button - cancel
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
     update = MagicMock()
-    update.callback_query = MagicMock()
+    update.callback_query = AsyncMock()
     update.callback_query.data = 'XRP/USDT_||_long'
     await telegram._force_enter_inline(update, None)
     assert fbuy_mock.call_count == 1
