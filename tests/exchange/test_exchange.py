@@ -1255,9 +1255,10 @@ def test_create_dry_run_order_fees(
     ("buy", 29.563, True, True),
     ("sell", 21.563, True, True),
 ])
+@pytest.mark.parametrize("leverage", [1, 2, 5])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, filled, caplog,
-                                         exchange_name, order_book_l2_usd, converted):
+                                         exchange_name, order_book_l2_usd, converted, leverage):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple(EXMS,
@@ -1271,7 +1272,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
         side=side,
         amount=1,
         rate=price,
-        leverage=1.0
+        leverage=leverage,
     )
     assert order_book_l2_usd.call_count == 1
     assert 'id' in order
@@ -1295,6 +1296,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     assert order_book_l2_usd.call_count == (1 if not filled else 0)
     assert order_closed['status'] == ('open' if not filled else 'closed')
     assert order_closed['filled'] == (0 if not filled else 1)
+    assert order_closed['cost'] == 1 * order_closed['average']
 
     order_book_l2_usd.reset_mock()
 
@@ -1317,9 +1319,10 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     ("sell", 25.564, 1000, 25.5555),  # More than orderbook return
     ("sell", 27, 10000, 25.65),  # max-slippage 5%
 ])
+@pytest.mark.parametrize("leverage", [1, 2, 5])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amount, endprice,
-                                          exchange_name, order_book_l2_usd):
+                                          exchange_name, order_book_l2_usd, leverage):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple(EXMS,
@@ -1333,7 +1336,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
         side=side,
         amount=amount,
         rate=rate,
-        leverage=1.0
+        leverage=leverage,
     )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
@@ -1342,6 +1345,8 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert order["symbol"] == "LTC/USDT"
     assert order['status'] == 'closed'
     assert order['filled'] == amount
+    assert order['amount'] == amount
+    assert pytest.approx(order['cost']) == amount * order['average']
     assert round(order["average"], 4) == round(endprice, 4)
 
 

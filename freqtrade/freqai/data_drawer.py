@@ -446,7 +446,7 @@ class FreqaiDataDrawer:
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
         elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
-        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
+        elif self.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
@@ -496,7 +496,7 @@ class FreqaiDataDrawer:
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
 
-    def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:
+    def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:  # noqa: C901
         """
         loads all data required to make a prediction on a sub-train time range
         :returns:
@@ -537,6 +537,11 @@ class FreqaiDataDrawer:
                 self.model_type, self.freqai_info['rl_config']['model_type'])
             MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
             model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
+        elif self.model_type == 'pytorch':
+            import torch
+            zip = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = zip["pytrainer"]
+            model = model.load_from_checkpoint(zip)
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
