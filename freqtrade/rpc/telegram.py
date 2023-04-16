@@ -1739,7 +1739,7 @@ class Telegram(RPCHandler):
                 [InlineKeyboardButton("Refresh", callback_data=callback_path)]])
         else:
             if keyboard is not None:
-                reply_markup = InlineKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup = InlineKeyboardMarkup(keyboard)
             else:
                 reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
         try:
