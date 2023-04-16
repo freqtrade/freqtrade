@@ -2,6 +2,7 @@
 # pragma pylint: disable=protected-access, unused-argument, invalid-name
 # pragma pylint: disable=too-many-lines, too-many-arguments
 
+import asyncio
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -130,14 +131,24 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog)
 
 
-def test_cleanup(default_conf, mocker, ) -> None:
-    updater_mock = MagicMock()
-    updater_mock.stop = MagicMock()
-    mocker.patch('freqtrade.rpc.telegram.Updater', updater_mock)
+async def test_telegram_cleanup(default_conf, mocker, ) -> None:
+    app_mock = MagicMock()
+    app_mock.stop = AsyncMock()
+    app_mock.initialize = AsyncMock()
 
-    telegram, _, _ = get_telegram_testobject(mocker, default_conf, mock=False)
+    updater_mock = MagicMock()
+    updater_mock.stop = AsyncMock()
+    app_mock.updater = updater_mock
+    # mocker.patch('freqtrade.rpc.telegram.Application', app_mock)
+
+    telegram, _, _ = get_telegram_testobject(mocker, default_conf)
+    telegram._app = app_mock
+    telegram._loop = asyncio.get_running_loop()
+    telegram._thread = MagicMock()
     telegram.cleanup()
-    assert telegram._app.stop.call_count == 1
+    await asyncio.sleep(0.1)
+    assert app_mock.stop.call_count == 1
+    assert telegram._thread.join.call_count == 1
 
 
 async def test_authorized_only(default_conf, mocker, caplog, update) -> None:
