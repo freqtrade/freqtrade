@@ -37,6 +37,11 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades,
                             patch_exchange, patch_get_signal, patch_whitelist)
 
 
+@pytest.fixture(autouse=True)
+def mock_exchange_loop(mocker):
+    mocker.patch('freqtrade.exchange.exchange.Exchange._init_async_loop')
+
+
 @pytest.fixture
 def default_conf(default_conf) -> dict:
     # Telegram is enabled by default
