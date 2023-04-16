@@ -116,7 +116,7 @@ class TimeRange:
         :param text: value from --timerange
         :return: Start and End range period
         """
-        if text is None:
+        if not text:
             return TimeRange(None, None, 0, 0)
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),

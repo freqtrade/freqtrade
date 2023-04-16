@@ -62,10 +62,7 @@ class ParquetDataHandler(IDataHandler):
         pairdata.columns = self._columns
         pairdata = pairdata.astype(dtype={'open': 'float', 'high': 'float',
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
-        pairdata['date'] = to_datetime(pairdata['date'],
-                                       unit='ms',
-                                       utc=True,
-                                       infer_datetime_format=True)
+        pairdata['date'] = to_datetime(pairdata['date'], unit='ms', utc=True)
         return pairdata
 
     def ohlcv_append(

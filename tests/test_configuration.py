@@ -23,7 +23,8 @@ from freqtrade.configuration.load_config import (load_config_file, load_file, lo
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.loggers import FTBufferingHandler, _set_loggers, setup_logging, setup_logging_pre
+from freqtrade.loggers import (FTBufferingHandler, FTStdErrStreamHandler, _set_loggers,
+                               setup_logging, setup_logging_pre)
 from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
                             patched_configuration_load_config_file)
 
@@ -658,7 +659,7 @@ def test_set_loggers_syslog():
     setup_logging(config)
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
     assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
@@ -681,7 +682,7 @@ def test_set_loggers_Filehandler(tmpdir):
     setup_logging(config)
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
     assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
@@ -706,7 +707,7 @@ def test_set_loggers_journald(mocker):
     setup_logging(config)
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
+    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 

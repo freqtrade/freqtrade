@@ -10,6 +10,8 @@ from freqtrade.exceptions import OperationalException
 
 def test_parse_timerange_incorrect():
 
+    timerange = TimeRange.parse_timerange('')
+    assert timerange == TimeRange(None, None, 0, 0)
     timerange = TimeRange.parse_timerange('20100522-')
     assert TimeRange('date', None, 1274486400, 0) == timerange
     assert timerange.timerange_str == '20100522-'

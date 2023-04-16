@@ -58,9 +58,9 @@ fi
 # Tag image for upload and next build step
 docker tag freqtrade:$TAG ${CACHE_IMAGE}:$TAG
 
-docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
-docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG} -t freqtrade:${TAG_FREQAI} -f docker/Dockerfile.freqai .
-docker build --cache-from freqtrade:${TAG_FREQAI} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_FREQAI} -t freqtrade:${TAG_FREQAI_RL} -f docker/Dockerfile.freqai_rl .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG} -t freqtrade:${TAG_FREQAI} -f docker/Dockerfile.freqai .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG_FREQAI} -t freqtrade:${TAG_FREQAI_RL} -f docker/Dockerfile.freqai_rl .
 
 docker tag freqtrade:$TAG_PLOT ${CACHE_IMAGE}:$TAG_PLOT
 docker tag freqtrade:$TAG_FREQAI ${CACHE_IMAGE}:$TAG_FREQAI
