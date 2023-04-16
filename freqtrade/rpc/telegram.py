@@ -166,6 +166,9 @@ class Telegram(RPCHandler):
                 logger.info('using custom keyboard from '
                             f'config.json: {self._keyboard}')
 
+    def _init_telegram_app(self):
+        return Application.builder().token(self._config['telegram']['token']).build()
+
     def _init(self) -> None:
         """
         Initializes this module with the given config,
@@ -179,7 +182,7 @@ class Telegram(RPCHandler):
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
 
-        self._app = Application.builder().token(self._config['telegram']['token']).build()
+        self._app = self._init_telegram_app()
 
         # Register command handler and start telegram message polling
         handles = [

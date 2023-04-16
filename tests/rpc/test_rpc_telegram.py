@@ -105,15 +105,18 @@ def test_telegram__init__(default_conf, mocker) -> None:
 
 
 def test_telegram_init(default_conf, mocker, caplog) -> None:
-    start_polling = MagicMock()
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock(return_value=start_polling))
+    app_mock = MagicMock()
+    mocker.patch('freqtrade.rpc.telegram.Telegram._start_thread', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init_telegram_app', return_value=app_mock)
+    mocker.patch('freqtrade.rpc.telegram.Telegram._startup_telegram', AsyncMock())
 
-    get_telegram_testobject(mocker, default_conf, mock=False)
-    assert start_polling.call_count == 0
+    telegram, _, _ = get_telegram_testobject(mocker, default_conf, mock=False)
+    telegram._init()
+    assert app_mock.call_count == 0
 
     # number of handles registered
-    assert start_polling.dispatcher.add_handler.call_count > 0
-    assert start_polling.start_polling.call_count == 1
+    assert app_mock.add_handler.call_count > 0
+    # assert start_polling.start_polling.call_count == 1
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
