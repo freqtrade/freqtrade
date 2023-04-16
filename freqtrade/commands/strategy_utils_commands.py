@@ -91,6 +91,12 @@ def start_backtest_lookahead_bias_checker(args: Dict[str, Any]) -> None:
         for filtered_strategy_obj in filtered_strategy_objs:
             bias_checker_instances.append(
                 initialize_single_lookahead_bias_checker(filtered_strategy_obj, config, args))
+    elif 'strategy' in args and args['strategy'] is not None:
+        for strategy_obj in strategy_objs:
+            if strategy_obj['name'] == args['strategy']:
+                bias_checker_instances.append(
+                    initialize_single_lookahead_bias_checker(strategy_obj, config, args))
+                break
     else:
         processed_locations = set()
         for strategy_obj in strategy_objs:

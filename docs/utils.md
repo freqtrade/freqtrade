@@ -999,3 +999,36 @@ Common arguments:
                         Path to userdata directory.
 
 ```
+### Backtest lookahead bias checker
+#### Summary
+Checks a given strategy for look ahead bias
+Look ahead bias means that the backtest uses data from future candles thereby not making it viable beyond backtesting
+and producing false hopes for the one backtesting.
+
+#### Introduction:
+Many strategies - without the programmer knowing - have fallen prey to look ahead bias.
+
+Any backtest will populate the full dataframe including all time stamps at the beginning.
+If the programmer is not careful or oblivious how things work internally
+(which sometimes can be really hard to find out) then it will just look into the future making the strategy amazing
+but not realistic.
+
+The tool is made to try to verify the validity in the form of the aforementioned look ahead bias.
+
+#### How does the command work?
+It will not look at the strategy or any contents itself but instead will run multiple backtests 
+by using precisely cut timeranges and analyzing the results each time, comparing to the full timerange.
+
+At first, it starts a backtest over the whole duration
+and then repeats backtests from the same starting point to the respective points to watch.
+In addition, it analyzes the dataframes form the overall backtest to the cut ones.
+
+At the end it will return a result-table in terminal.
+
+Hint:
+If an entry or exit condition is only triggered rarely or the timerange was chosen
+so only a few entry conditions are met
+then the bias checker is unable to catch the biased entry or exit condition.
+In the end it only checks which entry and exit signals have been triggered.
+
+---Flow chart here for better understanding---

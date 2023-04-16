@@ -1,4 +1,6 @@
 import copy
+import pathlib
+import shutil
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 
@@ -45,8 +47,11 @@ class BacktestLookaheadBiasChecker:
         self.current_analysis = None
         self.local_config = None
         self.full_varHolder = None
+
         self.entry_varHolder = None
         self.exit_varHolder = None
+        self.entry_varHolders = []
+        self.exit_varHolders = []
         self.backtesting = None
         self.minimum_trade_amount = None
         self.targeted_trade_amount = None
@@ -105,29 +110,36 @@ class BacktestLookaheadBiasChecker:
             if cut_df_cut.shape[0] != 0:
                 compare_df = full_df_cut.compare(cut_df_cut)
 
-                # skippedColumns = ["date", "open", "high", "low", "close", "volume"]
-                for col_name, values in compare_df.items():
-                    col_idx = compare_df.columns.get_loc(col_name)
-                    compare_df_row = compare_df.iloc[0]
-                    # compare_df now comprises tuples with [1] having either 'self' or 'other'
-                    if 'other' in col_name[1]:
-                        continue
-                    self_value = compare_df_row[col_idx]
-                    other_value = compare_df_row[col_idx + 1]
+                if compare_df.shape[0] > 0:
+                    for col_name, values in compare_df.items():
+                        col_idx = compare_df.columns.get_loc(col_name)
+                        compare_df_row = compare_df.iloc[0]
+                        # compare_df now comprises tuples with [1] having either 'self' or 'other'
+                        if 'other' in col_name[1]:
+                            continue
+                        self_value = compare_df_row[col_idx]
+                        other_value = compare_df_row[col_idx + 1]
 
-                    # output differences
-                    if self_value != other_value:
+                        # output differences
+                        if self_value != other_value:
 
-                        if not self.current_analysis.false_indicators.__contains__(col_name[0]):
-                            self.current_analysis.false_indicators.append(col_name[0])
-                            print(f"=> found look ahead bias in indicator {col_name[0]}. " +
-                                  f"{str(self_value)} != {str(other_value)}")
+                            if not self.current_analysis.false_indicators.__contains__(col_name[0]):
+                                self.current_analysis.false_indicators.append(col_name[0])
+                                print(f"=> found look ahead bias in indicator {col_name[0]}. " +
+                                      f"{str(self_value)} != {str(other_value)}")
 
     def prepare_data(self, varHolder, pairs_to_load):
+
+        # purge previous data
+        abs_folder_path = pathlib.Path("user_data/models/uniqe-id").resolve()
+        # remove folder and its contents
+        if pathlib.Path.exists(abs_folder_path):
+            shutil.rmtree(abs_folder_path)
+
         prepare_data_config = copy.deepcopy(self.local_config)
         prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varHolder.from_dt)) + "-" +
                                             str(self.dt_to_timestamp(varHolder.to_dt)))
-        prepare_data_config['pairs'] = pairs_to_load
+        prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
         self.backtesting = Backtesting(prepare_data_config)
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
@@ -136,9 +148,6 @@ class BacktestLookaheadBiasChecker:
 
         varHolder.indicators = self.backtesting.strategy.advise_all_indicators(varHolder.data)
         varHolder.result = self.get_result(self.backtesting, varHolder.indicators)
-
-    def update_output_file(self):
-        pass
 
     def start(self, config, strategy_obj: dict, args) -> None:
 
@@ -195,6 +204,8 @@ class BacktestLookaheadBiasChecker:
 
             self.entry_varHolder = VarHolder()
             self.exit_varHolder = VarHolder()
+            self.entry_varHolders.append(self.entry_varHolder)
+            self.exit_varHolders.append(self.exit_varHolder)
 
             self.entry_varHolder.from_dt = self.full_varHolder.from_dt
             self.entry_varHolder.compared_dt = result_row['open_date']
@@ -224,6 +235,8 @@ class BacktestLookaheadBiasChecker:
                     self.exit_varHolder.result, "close_date", self.exit_varHolder.compared_dt):
                 self.current_analysis.false_exit_signals += 1
 
+            if len(self.entry_varHolders) >= 10:
+                pass
             # check if the indicators themselves contain biased data
             self.analyze_indicators(self.full_varHolder, self.entry_varHolder, result_row['pair'])
             self.analyze_indicators(self.full_varHolder, self.exit_varHolder, result_row['pair'])
