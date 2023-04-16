@@ -886,7 +886,7 @@ class Exchange:
                 'filled': _amount,
                 'remaining': 0.0,
                 'status': "closed",
-                'cost': (dry_order['amount'] * average) / leverage
+                'cost': (dry_order['amount'] * average)
             })
             # market orders will always incurr taker fees
             dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')

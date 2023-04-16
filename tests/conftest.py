@@ -504,7 +504,7 @@ def get_default_conf(testdatadir):
             {"method": "StaticPairList"}
         ],
         "telegram": {
-            "enabled": True,
+            "enabled": False,
             "token": "token",
             "chat_id": "0",
             "notification_settings": {},

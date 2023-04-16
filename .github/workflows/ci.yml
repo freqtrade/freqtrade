@@ -57,7 +57,7 @@ jobs:
     - name: Installation - *nix
       if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade pip==23.0.1 wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -163,7 +163,7 @@ jobs:
         rm /usr/local/bin/python3.11-config || true
 
         brew install hdf5 c-blosc
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade pip==23.0.1 wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -352,7 +352,7 @@ jobs:
     - name: Installation - *nix
       if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade pip==23.0.1 wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include

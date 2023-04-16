@@ -66,10 +66,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
 
         chat_id = int(self._config['telegram']['chat_id'])
         if cchat_id != chat_id:
-            logger.info(
-                'Rejected unauthorized message from: %s',
-                update.message.chat_id
-            )
+            logger.info(f'Rejected unauthorized message from: {update.message.chat_id}')
             return wrapper
         # Rollback session to avoid getting data stored in a transaction.
         Trade.rollback()
