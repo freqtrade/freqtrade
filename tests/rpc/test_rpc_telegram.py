@@ -134,6 +134,23 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog)
 
 
+async def test_telegram_startup(default_conf, mocker) -> None:
+    app_mock = MagicMock()
+    app_mock.initialize = AsyncMock()
+    app_mock.start = AsyncMock()
+    app_mock.updater.start_polling = AsyncMock()
+    app_mock.updater.running = False
+    sleep_mock = mocker.patch('freqtrade.rpc.telegram.asyncio.sleep',AsyncMock())
+
+    telegram, _, _ = get_telegram_testobject(mocker, default_conf)
+    telegram._app = app_mock
+    await telegram._startup_telegram()
+    assert app_mock.initialize.call_count == 1
+    assert app_mock.start.call_count == 1
+    assert app_mock.updater.start_polling.call_count == 1
+    assert sleep_mock.call_count == 1
+
+
 async def test_telegram_cleanup(default_conf, mocker, ) -> None:
     app_mock = MagicMock()
     app_mock.stop = AsyncMock()
