@@ -107,8 +107,7 @@ class Exchange:
         # Lock event loop. This is necessary to avoid race-conditions when using force* commands
         # Due to funding fee fetching.
         self._loop_lock = Lock()
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+        self.loop = self._init_async_loop()
         self._config: Config = {}
 
         self._config.update(config)
@@ -211,6 +210,11 @@ class Exchange:
             self.loop.run_until_complete(self._api_async.close())
         if self.loop and not self.loop.is_closed():
             self.loop.close()
+
+    def _init_async_loop(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
 
     def validate_config(self, config):
         # Check if timeframe is available

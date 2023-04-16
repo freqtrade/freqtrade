@@ -89,6 +89,7 @@ def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
             _start_thread=MagicMock(),
         )
     if not ftbot:
+        mocker.patch('freqtrade.exchange.exchange.Exchange._init_async_loop')
         ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     telegram = Telegram(rpc, default_conf)
@@ -140,7 +141,7 @@ async def test_telegram_startup(default_conf, mocker) -> None:
     app_mock.start = AsyncMock()
     app_mock.updater.start_polling = AsyncMock()
     app_mock.updater.running = False
-    sleep_mock = mocker.patch('freqtrade.rpc.telegram.asyncio.sleep',AsyncMock())
+    sleep_mock = mocker.patch('freqtrade.rpc.telegram.asyncio.sleep', AsyncMock())
 
     telegram, _, _ = get_telegram_testobject(mocker, default_conf)
     telegram._app = app_mock
