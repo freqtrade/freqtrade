@@ -4,9 +4,9 @@
 # Required for freqai-rl
 torch==1.13.1; python_version < '3.11'
 #until these branches will be released we can use this
-git+https://github.com/Farama-Foundation/Gymnasium@main
-git+https://github.com/DLR-RM/stable-baselines3@feat/gymnasium-support
-git+https://github.com/Stable-Baselines-Team/stable-baselines3-contrib@feat/gymnasium-support
+gymnasium==0.28.1
+stable_baselines3>=2.0.0a1
+sb3_contrib>=2.0.0a1 
 # Gym is forced to this version by stable-baselines3.
 setuptools==65.5.1 # Should be removed when gym is fixed.
 
