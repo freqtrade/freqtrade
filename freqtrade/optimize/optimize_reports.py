@@ -273,7 +273,8 @@ def _get_resample_from_period(period: str) -> str:
     if period == 'day':
         return '1d'
     if period == 'week':
-        return '1w'
+        # Weekly defaulting to Monday.
+        return '1W-MON'
     if period == 'month':
         return '1M'
     raise ValueError(f"Period {period} is not supported.")
