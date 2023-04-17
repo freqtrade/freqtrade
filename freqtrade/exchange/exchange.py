@@ -2374,6 +2374,8 @@ class Exchange:
                 symbols = []
 
                 for symbol, market in markets.items():
+                    if symbol in self._config['exchange'].get('leverage_blocklist', []):
+                        continue                    
                     if (self.market_is_future(market)
                             and market['quote'] == self._config['stake_currency']):
                         symbols.append(symbol)
