@@ -1796,7 +1796,7 @@ class Telegram(RPCHandler):
             if new_market_dir is not None:
                 self._rpc._update_market_direction(new_market_dir)
                 await self._send_msg("Successfully updated market direction"
-                               f" from *{old_market_dir}* to *{new_market_dir}*.")
+                                     f" from *{old_market_dir}* to *{new_market_dir}*.")
             else:
                 raise RPCException("Invalid market direction provided. \n"
                                    "Valid market directions: *long, short, even, none*")
