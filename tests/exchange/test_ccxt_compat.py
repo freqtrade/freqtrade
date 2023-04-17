@@ -530,7 +530,8 @@ class TestCCXTExchange():
             candles = res[3]
             candle_count = exchange.ohlcv_candle_limit(timeframe, candle_type, since_ms) * 0.9
             candle_count1 = (now.timestamp() * 1000 - since_ms) // timeframe_ms
-            assert len(candles) >= min(candle_count, candle_count1)
+            assert len(candles) >= min(candle_count, candle_count1), \
+                f"{len(candles)} < {candle_count} in {timeframe}, Offset: {offset} "
             assert candles[0][0] == since_ms or (since_ms + timeframe_ms)
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
