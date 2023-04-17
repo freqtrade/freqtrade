@@ -449,7 +449,7 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
 
         env = MyRLEnv(df=train_df, prices=price, id=env_id, seed=seed + rank,
                       **env_info)
-        
+
         return env
     set_random_seed(seed)
     return _init

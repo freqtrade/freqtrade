@@ -101,12 +101,12 @@ class Base5ActionRLEnv(BaseEnvironment):
         )
 
         observation = self._get_observation()
-        #user can play with time if they want
+        # user can play with time if they want
         truncated = False
 
         self._update_history(info)
 
-        return observation, step_reward, self._done,truncated, info
+        return observation, step_reward, self._done, truncated, info
 
     def is_tradesignal(self, action: int) -> bool:
         """
