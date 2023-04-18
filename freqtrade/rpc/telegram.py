@@ -1413,13 +1413,12 @@ class Telegram(RPCHandler):
         Handler for /blacklist
         Shows the currently active blacklist
         """
-        self.send_blacklist_msg(self._rpc._rpc_blacklist(context.args), 1)
+        self.send_blacklist_msg(self._rpc._rpc_blacklist(context.args))
 
-    def send_blacklist_msg(self, blacklist: Dict, des):
+    def send_blacklist_msg(self, blacklist: Dict):
         errmsgs = []
-        act = ['adding', 'to'] if des == 1 else ['deleting', 'from']
         for pair, error in blacklist['errors'].items():
-            errmsgs.append(f"Error {act[0]} `{pair}` {act[1]} blacklist: `{error['error_msg']}`")
+            errmsgs.append(f"Error: {error['error_msg']}")
         if errmsgs:
             self._send_msg('\n'.join(errmsgs))
 
@@ -1435,7 +1434,7 @@ class Telegram(RPCHandler):
         Handler for /bl_delete
         Deletes pair(s) from current blacklist
         """
-        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []), 0)
+        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []))
 
     @authorized_only
     def _logs(self, update: Update, context: CallbackContext) -> None:
