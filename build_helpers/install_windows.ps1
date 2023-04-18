@@ -1,7 +1,7 @@
 # Downloads don't work automatically, since the URL is regenerated via javascript.
 # Downloaded from https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib
 
-python -m pip install --upgrade pip wheel
+python -m pip install --upgrade pip==23.0.1 wheel
 
 $pyv = python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
 

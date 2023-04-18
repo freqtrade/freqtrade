@@ -36,6 +36,13 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades,
                             patch_exchange, patch_get_signal, patch_whitelist)
 
 
+@pytest.fixture
+def default_conf(default_conf) -> dict:
+    # Telegram is enabled by default
+    default_conf['telegram']['enabled'] = True
+    return default_conf
+
+
 class DummyCls(Telegram):
     """
     Dummy class for testing the Telegram @authorized_only decorator

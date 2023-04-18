@@ -465,7 +465,7 @@ def test_generate_periodic_breakdown_stats(testdatadir):
 def test__get_resample_from_period():
 
     assert _get_resample_from_period('day') == '1d'
-    assert _get_resample_from_period('week') == '1w'
+    assert _get_resample_from_period('week') == '1W-MON'
     assert _get_resample_from_period('month') == '1M'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')

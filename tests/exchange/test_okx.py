@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.exceptions import RetryableOrderError
+from freqtrade.exceptions import RetryableOrderError, TemporaryError
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
+from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -278,7 +278,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
         'fetchLeverageTiers': False,
         'fetchMarketLeverageTiers': True,
     })
-    api_mock.fetch_market_leverage_tiers = get_mock_coro(side_effect=[
+    api_mock.fetch_market_leverage_tiers = AsyncMock(side_effect=[
         [
             {
                 'tier': 1,
@@ -341,6 +341,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
                 }
             },
         ],
+        TemporaryError("this Failed"),
         [
             {
                 'tier': 1,

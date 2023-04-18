@@ -68,6 +68,9 @@ target-version = "py38"
 extend-select = [
   "C90",    # mccabe
   # "N",    # pep8-naming
+  "F",      # pyflakes
+  "E",      # pycodestyle
+  "W",      # pycodestyle
   "UP",     # pyupgrade
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
