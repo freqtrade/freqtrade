@@ -352,7 +352,7 @@ class AwesomeStrategy(IStrategy):
 
         # Convert absolute price to percentage relative to current_rate
         if stoploss_price < current_rate:
-            return (stoploss_price / current_rate) - 1
+            return stoploss_from_absolute(stoploss_price, current_rate, is_short=trade.is_short))
 
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
