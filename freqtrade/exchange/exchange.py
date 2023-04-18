@@ -2371,12 +2371,12 @@ class Exchange:
                 # Must fetch the leverage tiers for each market separately
                 # * This is slow(~45s) on Okx, makes ~90 api calls to load all linear swap markets
                 markets = self.markets
-                symbols = []
 
-                for symbol, market in markets.items():
+                symbols = [
+                    symbol for symbol, market in markets.items()
                     if (self.market_is_future(market)
-                            and market['quote'] == self._config['stake_currency']):
-                        symbols.append(symbol)
+                        and market['quote'] == self._config['stake_currency'])
+                ]
 
                 tiers: Dict[str, List[Dict]] = {}
 
@@ -2396,25 +2396,26 @@ class Exchange:
                 else:
                     logger.info("Using cached leverage_tiers.")
 
-                async def gather_results():
+                async def gather_results(input_coro):
                     return await asyncio.gather(*input_coro, return_exceptions=True)
 
                 for input_coro in chunks(coros, 100):
 
                     with self._loop_lock:
-                        results = self.loop.run_until_complete(gather_results())
+                        results = self.loop.run_until_complete(gather_results(input_coro))
 
-                    for symbol, res in results:
-                        tiers[symbol] = res
+                    for res in results:
+                        if isinstance(res, Exception):
+                            logger.warning(f"Leverage tier exception: {repr(res)}")
+                            continue
+                        symbol, tier = res
+                        tiers[symbol] = tier
                 if len(coros) > 0:
                     self.cache_leverage_tiers(tiers, self._config['stake_currency'])
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
-            else:
-                return {}
-        else:
-            return {}
+        return {}
 
     def cache_leverage_tiers(self, tiers: Dict[str, List[Dict]], stake_currency: str) -> None:
 
@@ -2430,14 +2431,17 @@ class Exchange:
     def load_cached_leverage_tiers(self, stake_currency: str) -> Optional[Dict[str, List[Dict]]]:
         filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
         if filename.is_file():
-            tiers = file_load_json(filename)
-            updated = tiers.get('updated')
-            if updated:
-                updated_dt = parser.parse(updated)
-                if updated_dt < datetime.now(timezone.utc) - timedelta(weeks=4):
-                    logger.info("Cached leverage tiers are outdated. Will update.")
-                    return None
-            return tiers['data']
+            try:
+                tiers = file_load_json(filename)
+                updated = tiers.get('updated')
+                if updated:
+                    updated_dt = parser.parse(updated)
+                    if updated_dt < datetime.now(timezone.utc) - timedelta(weeks=4):
+                        logger.info("Cached leverage tiers are outdated. Will update.")
+                        return None
+                return tiers['data']
+            except Exception:
+                logger.exception("Error loading cached leverage tiers. Refreshing.")
         return None
 
     def fill_leverage_tiers(self) -> None:
