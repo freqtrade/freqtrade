@@ -12,7 +12,7 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 from freqtrade.util import PeriodicCache
 
 
@@ -67,6 +67,29 @@ class AgeFilter(IPairList):
             " or more than "
             f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
         ) if self._max_days_listed else '')
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        """
+        Return parameters used by this Pairlist Handler, and their type
+        contains a dictionary with the parameter name as key, and a dictionary
+        with the type and default value.
+        -> Please overwrite in subclasses
+        """
+        return {
+            "min_days_listed": {
+                "type": "number",
+                "default": 10,
+                "description": "Minimum Days Listed",
+                "help": "Minimum number of days a pair must have been listed on the exchange.",
+            },
+            "max_days_listed": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum Days Listed",
+                "help": "Maximum number of days a pair must have been listed on the exchange.",
+            },
+        }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """

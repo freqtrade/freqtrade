@@ -310,6 +310,7 @@ def list_pairlists(config=Depends(get_config)):
 
     return {'pairlists': [{
         "name": x['name'],
+        "params": x['class'].available_parameters(),
          } for x in pairlists
         ]}
 

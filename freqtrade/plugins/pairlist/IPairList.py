@@ -4,7 +4,7 @@ PairList Handler base class
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -14,6 +14,13 @@ from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
+
+
+class PairlistParameter(TypedDict):
+    type: Literal["number", "string", "boolean"]
+    default: Union[int, float, str, bool]
+    description: str
+    help: str
 
 
 class IPairList(LoggingMixin, ABC):
@@ -53,6 +60,27 @@ class IPairList(LoggingMixin, ABC):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        """
+        Return parameters used by this Pairlist Handler, and their type
+        contains a dictionary with the parameter name as key, and a dictionary
+        with the type and default value.
+        -> Please overwrite in subclasses
+        """
+        return {}
+
+    @staticmethod
+    def refresh_period(params: Dict[str, PairlistParameter]) -> None:
+        return {
+            "refresh_period": {
+                "type": "number",
+                "default": 1800,
+                "description": "Refresh period",
+                "help": "Refresh period in seconds",
+            }
+        }
 
     @abstractmethod
     def short_desc(self) -> str:
