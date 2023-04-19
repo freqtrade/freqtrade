@@ -10,7 +10,7 @@ coveralls==3.3.1
 ruff==0.0.261
 mypy==1.2.0
 pre-commit==3.2.2
-pytest==7.3.0
+pytest==7.3.1
 pytest-asyncio==0.21.0
 pytest-cov==4.0.0
 pytest-mock==3.10.0
@@ -19,7 +19,7 @@ isort==5.12.0
 # For datetime mocking
 time-machine==2.9.0
 # fastapi testing
-httpx==0.23.3
+httpx==0.24.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==7.3.1

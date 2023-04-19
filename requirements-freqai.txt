@@ -8,4 +8,4 @@ joblib==1.2.0
 catboost==1.1.1; platform_machine != 'aarch64' and 'arm' not in platform_machine and python_version < '3.11'
 lightgbm==3.3.5
 xgboost==1.7.5
-tensorboard==2.12.1
+tensorboard==2.12.2
