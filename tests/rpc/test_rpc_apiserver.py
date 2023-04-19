@@ -1580,6 +1580,22 @@ def test_api_freqaimodels(botclient, tmpdir, mocker):
     ]}
 
 
+def test_api_pairlists(botclient, tmpdir, mocker):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+
+    rc = client_get(client, f"{BASE_URI}/pairlists")
+
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response['pairlists'], list)
+    assert len(response['pairlists']) > 0
+
+    assert len([r for r in response['pairlists'] if r['name'] == 'AgeFilter']) == 1
+    assert len([r for r in response['pairlists'] if r['name'] == 'VolumePairList']) == 1
+    assert len([r for r in response['pairlists'] if r['name'] == 'StaticPairList']) == 1
+
+
 def test_list_available_pairs(botclient):
     ftbot, client = botclient
 

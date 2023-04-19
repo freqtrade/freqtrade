@@ -15,11 +15,11 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version,
-                                                  WhitelistResponse)
+                                                  OpenTradeSchema, PairHistory, PairListResponse,
+                                                  PerformanceEntry, Ping, PlotConfig, Profit,
+                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -43,7 +43,8 @@ logger = logging.getLogger(__name__)
 # 2.23: Allow plot config request in webserver mode
 # 2.24: Add cancel_open_order endpoint
 # 2.25: Add several profit values to /status endpoint
-API_VERSION = 2.25
+# 2.26: new /pairlists endpoint
+API_VERSION = 2.26
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -298,6 +299,19 @@ def get_strategy(strategy: str, config=Depends(get_config)):
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
     }
+
+
+@router.get('/pairlists', response_model=PairListResponse)
+def list_pairlists(config=Depends(get_config)):
+    from freqtrade.resolvers import PairListResolver
+    pairlists = PairListResolver.search_all_objects(
+        config, False)
+    pairlists = sorted(pairlists, key=lambda x: x['name'])
+
+    return {'pairlists': [{
+        "name": x['name'],
+         } for x in pairlists
+        ]}
 
 
 @router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])

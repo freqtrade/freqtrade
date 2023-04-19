@@ -389,6 +389,10 @@ class StrategyListResponse(BaseModel):
     strategies: List[str]
 
 
+class PairListResponse(BaseModel):
+    pairlists: List[Dict[str, Any]]
+
+
 class FreqAIModelListResponse(BaseModel):
     freqaimodels: List[str]
 
