@@ -28,6 +28,7 @@ class ProducerPairList(IPairList):
             }
         ],
     """
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],

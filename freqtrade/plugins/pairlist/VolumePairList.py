@@ -25,6 +25,8 @@ SORT_VALUES = ['quoteVolume']
 
 class VolumePairList(IPairList):
 
+    is_pairlist_generator = True
+
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:

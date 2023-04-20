@@ -45,6 +45,8 @@ PairlistParameter = Union[
 
 class IPairList(LoggingMixin, ABC):
 
+    is_pairlist_generator = False
+
     def __init__(self, exchange: Exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
