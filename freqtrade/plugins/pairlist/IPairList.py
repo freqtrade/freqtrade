@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class PairlistParameter(TypedDict):
     type: Literal["number", "string", "boolean"]
-    default: Union[int, float, str, bool]
+    default: Union[int, float, str, bool, None]
     description: str
     help: str
 
@@ -72,7 +72,7 @@ class IPairList(LoggingMixin, ABC):
         return {}
 
     @staticmethod
-    def refresh_period(params: Dict[str, PairlistParameter]) -> None:
+    def refresh_period_parameter() -> Dict[str, PairlistParameter]:
         return {
             "refresh_period": {
                 "type": "number",

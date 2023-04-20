@@ -70,12 +70,6 @@ class AgeFilter(IPairList):
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
-        """
-        Return parameters used by this Pairlist Handler, and their type
-        contains a dictionary with the parameter name as key, and a dictionary
-        with the type and default value.
-        -> Please overwrite in subclasses
-        """
         return {
             "min_days_listed": {
                 "type": "number",
