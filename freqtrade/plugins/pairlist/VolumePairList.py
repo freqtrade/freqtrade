@@ -14,7 +14,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import format_ms_time
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -110,6 +110,48 @@ class VolumePairList(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "number_assets": {
+                "type": "number",
+                "default": 0,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist",
+            },
+            "sort_key": {
+                "type": "string",
+                "default": "quoteVolume",
+                "description": "Sort key",
+                "help": "Sort key to use for sorting the pairlist.",
+            },
+            "min_value": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum value",
+                "help": "Minimum value to use for filtering the pairlist.",
+            },
+            **IPairList.refresh_period_parameter(),
+            "lookback_days": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "1d",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": 0,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
+            },
+        }
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """

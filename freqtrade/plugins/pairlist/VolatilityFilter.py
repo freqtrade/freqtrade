@@ -15,7 +15,7 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,30 @@ class VolatilityFilter(IPairList):
         return (f"{self.name} - Filtering pairs with volatility range "
                 f"{self._min_volatility}-{self._max_volatility} "
                 f" the last {self._days} {plural(self._days, 'day')}.")
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "lookback_days": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "min_volatility": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum Volatility",
+                "help": "Minimum volatility a pair must have to be considered.",
+            },
+            "max_volatility": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum Volatility",
+                "help": "Maximum volatility a pair must have to be considered.",
+            },
+            **IPairList.refresh_period_parameter()
+        }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """

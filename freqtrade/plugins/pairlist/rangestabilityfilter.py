@@ -13,7 +13,7 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,30 @@ class RangeStabilityFilter(IPairList):
         return (f"{self.name} - Filtering pairs with rate of change below "
                 f"{self._min_rate_of_change}{max_rate_desc} over the "
                 f"last {plural(self._days, 'day')}.")
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "lookback_days": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "min_rate_of_change": {
+                "type": "number",
+                "default": 0.01,
+                "description": "Minimum Rate of Change",
+                "help": "Minimum rate of change to filter pairs.",
+            },
+            "max_rate_of_change": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum Rate of Change",
+                "help": "Maximum rate of change to filter pairs.",
+            },
+            **IPairList.refresh_period_parameter()
+        }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
