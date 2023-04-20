@@ -16,11 +16,31 @@ from freqtrade.mixins import LoggingMixin
 logger = logging.getLogger(__name__)
 
 
-class PairlistParameter(TypedDict):
-    type: Literal["number", "string", "boolean"]
-    default: Union[int, float, str, bool, None]
+class __PairlistParameterBase(TypedDict):
     description: str
     help: str
+
+
+class __NumberPairlistParameter(__PairlistParameterBase):
+    type: Literal["number"]
+    default: Union[int, float, None]
+
+
+class __StringPairlistParameter(__PairlistParameterBase):
+    type: Literal["string"]
+    default: Union[str, None]
+
+
+class __BoolPairlistParameter(__PairlistParameterBase):
+    type: Literal["boolean"]
+    default: Union[bool, None]
+
+
+PairlistParameter = Union[
+    __NumberPairlistParameter,
+    __StringPairlistParameter,
+    __BoolPairlistParameter
+    ]
 
 
 class IPairList(LoggingMixin, ABC):
