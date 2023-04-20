@@ -15,7 +15,7 @@ If you're just getting started, please be familiar with the methods described in
 
 Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
 
 ```python
 class AwesomeStrategy(IStrategy):

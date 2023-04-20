@@ -43,7 +43,7 @@ class AwesomeStrategy(IStrategy):
         if self.config['runmode'].value in ('live', 'dry_run'):
             # Assign this to the class by using self.*
             # can then be used by populate_* methods
-            self.cust_remote_data = requests.get('https://some_remote_source.example.com')
+            self.custom_remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
 
