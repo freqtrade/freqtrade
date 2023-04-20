@@ -1595,6 +1595,13 @@ def test_api_pairlists(botclient, tmpdir, mocker):
     assert len([r for r in response['pairlists'] if r['name'] == 'VolumePairList']) == 1
     assert len([r for r in response['pairlists'] if r['name'] == 'StaticPairList']) == 1
 
+    volumepl = [r for r in response['pairlists'] if r['name'] == 'VolumePairList'][0]
+    assert volumepl['is_pairlist_generator'] is True
+    assert len(volumepl['params']) > 1
+    age_pl = [r for r in response['pairlists'] if r['name'] == 'AgeFilter'][0]
+    assert age_pl['is_pairlist_generator'] is False
+    assert len(volumepl['params']) > 2
+
 
 def test_list_available_pairs(botclient):
     ftbot, client = botclient
