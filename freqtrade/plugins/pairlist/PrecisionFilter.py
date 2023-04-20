@@ -8,7 +8,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import ROUND_UP
 from freqtrade.exchange.types import Ticker
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)

@@ -15,7 +15,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PairListResponse,
+                                                  OpenTradeSchema, PairHistory, PairListsResponse,
                                                   PerformanceEntry, Ping, PlotConfig, Profit,
                                                   ResultMsg, ShowConfig, Stats, StatusMsg,
                                                   StrategyListResponse, StrategyResponse, SysInfo,
@@ -301,7 +301,7 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     }
 
 
-@router.get('/pairlists', response_model=PairListResponse)
+@router.get('/pairlists', response_model=PairListsResponse)
 def list_pairlists(config=Depends(get_config)):
     from freqtrade.resolvers import PairListResolver
     pairlists = PairListResolver.search_all_objects(
