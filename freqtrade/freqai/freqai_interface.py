@@ -242,8 +242,8 @@ class IFreqaiModel(ABC):
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                 except Exception as msg:
-                    logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
-                                   f"Message: {msg}, skipping.")
+                    logger.exception(f"Training {pair} raised exception {msg.__class__.__name__}. "
+                                     f"Message: {msg}, skipping.")
 
                 self.train_timer('stop', pair)
 
