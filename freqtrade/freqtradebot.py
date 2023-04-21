@@ -1507,7 +1507,7 @@ class FreqtradeBot(LoggingMixin):
             trade.exit_reason = None
             trade.open_order_id = None
 
-        self.update_trade_state(trade, trade.open_order_id, order)
+        self.update_trade_state(trade, order['id'], order)
 
         logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
         trade.close_rate = None
