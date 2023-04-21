@@ -123,8 +123,9 @@ class VolumePairList(IPairList):
                 "help": "Number of assets to use from the pairlist",
             },
             "sort_key": {
-                "type": "string",
+                "type": "option",
                 "default": "quoteVolume",
+                "options": SORT_VALUES,
                 "description": "Sort key",
                 "help": "Sort key to use for sorting the pairlist.",
             },

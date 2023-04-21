@@ -59,8 +59,9 @@ class ShuffleFilter(IPairList):
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "shuffle_frequency": {
-                "type": "string",
+                "type": "option",
                 "default": "candle",
+                "options": ["candle", "iteration"],
                 "description": "Shuffle frequency",
                 "help": "Shuffle frequency. Can be either 'candle' or 'iteration'.",
             },
