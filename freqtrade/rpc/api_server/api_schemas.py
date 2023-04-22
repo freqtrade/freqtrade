@@ -43,6 +43,7 @@ class Balance(BaseModel):
     leverage: float
     is_position: bool
     position: float
+    is_bot_managed: bool
 
 
 class Balances(BaseModel):

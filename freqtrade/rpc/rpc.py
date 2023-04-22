@@ -631,7 +631,8 @@ class RPC:
                 continue
 
             total += est_stake
-            if coin == stake_currency or coin in open_assets:
+            is_bot_managed = coin == stake_currency or coin in open_assets
+            if is_bot_managed:
                 total_bot += est_stake
             currencies.append({
                 'currency': coin,
@@ -643,6 +644,7 @@ class RPC:
                 'side': 'long',
                 'leverage': 1,
                 'position': 0,
+                'is_bot_managed': is_bot_managed,
                 'is_position': False,
             })
         symbol: str
@@ -660,6 +662,7 @@ class RPC:
                 'stake': stake_currency,
                 'leverage': position.leverage,
                 'side': position.side,
+                'is_bot_managed': True,
                 'is_position': True
             })
 

@@ -43,7 +43,8 @@ logger = logging.getLogger(__name__)
 # 2.23: Allow plot config request in webserver mode
 # 2.24: Add cancel_open_order endpoint
 # 2.25: Add several profit values to /status endpoint
-API_VERSION = 2.25
+# 2.26: increase /balance output
+API_VERSION = 2.26
 
 # Public API, requires no auth.
 router_public = APIRouter()
