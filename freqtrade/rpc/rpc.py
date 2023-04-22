@@ -585,11 +585,13 @@ class RPC:
         """ Returns current account balance per crypto """
         currencies: List[Dict] = []
         total = 0.0
+        total_bot = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers(cached=True)
         except (ExchangeError):
             raise RPCException('Error getting current tickers.')
-
+        open_trades: List[Trade] = Trade.get_open_trades()
+        open_assets = [t.base_currency for t in open_trades]
         self._freqtrade.wallets.update(require_update=False)
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
@@ -618,7 +620,9 @@ class RPC:
                 except (ExchangeError):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
-            total = total + est_stake
+            total += est_stake
+            if coin == stake_currency or coin in open_assets:
+                total_bot += est_stake
             currencies.append({
                 'currency': coin,
                 'free': balance.free,
@@ -651,10 +655,12 @@ class RPC:
 
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
+        value_bot = self._fiat_converter.convert_amount(
+            total_bot, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
         trade_count = len(Trade.get_trades_proxy())
-        starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
-        starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
+        starting_capital_ratio = (total_bot / starting_capital) - 1 if starting_capital else 0.0
+        starting_cap_fiat_ratio = (value_bot / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
         return {
             'currencies': currencies,
