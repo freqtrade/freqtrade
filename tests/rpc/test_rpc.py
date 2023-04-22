@@ -591,6 +591,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'side': 'short',
         }
     ]
+    assert result['starting_capital'] == 10
+    assert result['starting_capital_ratio'] == 0.0
 
 
 def test_rpc_start(mocker, default_conf) -> None:
