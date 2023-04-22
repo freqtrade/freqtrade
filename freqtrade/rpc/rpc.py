@@ -24,6 +24,7 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirecti
                              State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
+from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin, shorten_date
 from freqtrade.persistence import KeyStoreKeys, KeyValueStore, Order, PairLocks, Trade
@@ -581,15 +582,38 @@ class RPC:
             'bot_start_date': bot_start.strftime(DATETIME_PRINT_FORMAT) if bot_start else '',
         }
 
+    def __balance_get_est_stake(
+            self, coin: str, stake_currency: str, balance: Wallet, tickers) -> float:
+        est_stake = 0.0
+        if coin == stake_currency:
+            est_stake = balance.total
+            if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+                # in Futures, "total" includes the locked stake, and therefore all positions
+                est_stake = balance.free
+        else:
+            try:
+                pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
+                rate: Optional[float] = tickers.get(pair, {}).get('last', None)
+                if rate:
+                    if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
+                        rate = 1.0 / rate
+                    est_stake = rate * balance.total
+            except (ExchangeError):
+                logger.warning(f"Could not get rate for pair {coin}.")
+                raise ValueError()
+
+        return est_stake
+
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         currencies: List[Dict] = []
         total = 0.0
         total_bot = 0.0
         try:
-            tickers = self._freqtrade.exchange.get_tickers(cached=True)
+            tickers: Tickers = self._freqtrade.exchange.get_tickers(cached=True)
         except (ExchangeError):
             raise RPCException('Error getting current tickers.')
+
         open_trades: List[Trade] = Trade.get_open_trades()
         open_assets = [t.base_currency for t in open_trades]
         self._freqtrade.wallets.update(require_update=False)
@@ -601,25 +625,11 @@ class RPC:
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
+            try:
+                est_stake = self.__balance_get_est_stake(coin, stake_currency, balance, tickers)
+            except ValueError:
+                continue
 
-            est_stake: float = 0
-            if coin == stake_currency:
-                rate = 1.0
-                est_stake = balance.total
-                if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-                    # in Futures, "total" includes the locked stake, and therefore all positions
-                    est_stake = balance.free
-            else:
-                try:
-                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                    rate = tickers.get(pair, {}).get('last')
-                    if rate:
-                        if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
-                            rate = 1.0 / rate
-                        est_stake = rate * balance.total
-                except (ExchangeError):
-                    logger.warning(f" Could not get rate for pair {coin}.")
-                    continue
             total += est_stake
             if coin == stake_currency or coin in open_assets:
                 total_bot += est_stake
