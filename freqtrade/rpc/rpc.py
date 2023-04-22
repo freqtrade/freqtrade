@@ -678,8 +678,10 @@ class RPC:
         return {
             'currencies': currencies,
             'total': total,
+            'total_bot': total_bot,
             'symbol': fiat_display_currency,
             'value': value,
+            'value_bot': value_bot,
             'stake': stake_currency,
             'starting_capital': starting_capital,
             'starting_capital_ratio': starting_capital_ratio,
