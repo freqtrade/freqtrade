@@ -916,8 +916,7 @@ class Telegram(RPCHandler):
         output = ''
         if self._config['dry_run']:
             output += "*Warning:* Simulated balances in Dry Mode.\n"
-        starting_cap = round_coin_value(
-            result['starting_capital'], self._config['stake_currency'])
+        starting_cap = round_coin_value(result['starting_capital'], self._config['stake_currency'])
         output += f"Starting capital: `{starting_cap}`"
         starting_cap_fiat = round_coin_value(
             result['starting_capital_fiat'], self._config['fiat_display_currency']
@@ -938,13 +937,17 @@ class Telegram(RPCHandler):
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
+                    est_stake = round_coin_value(
+                        curr['est_stake' if full_result else 'est_stake_bot'], curr['stake'], False)
+
                     curr_output = (
                         f"*{curr['currency']}:*\n"
                         f"\t`Available: {curr['free']:.8f}`\n"
                         f"\t`Balance: {curr['balance']:.8f}`\n"
                         f"\t`Pending: {curr['used']:.8f}`\n"
-                        f"\t`Est. {curr['stake']}: "
-                        f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                        f"\t`Bot Owned: {curr['bot_owned']:.8f}`\n"
+                        f"\t`Est. {curr['stake']}: {est_stake}`\n")
+
             elif curr['est_stake'] <= balance_dust_level:
                 total_dust_balance += curr['est_stake']
                 total_dust_currencies += 1

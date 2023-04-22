@@ -583,13 +583,16 @@ class RPC:
         }
 
     def __balance_get_est_stake(
-            self, coin: str, stake_currency: str, balance: Wallet, tickers) -> float:
+            self, coin: str, stake_currency: str, amount: float,
+            balance: Wallet, tickers) -> Tuple[float, float]:
         est_stake = 0.0
+        est_bot_stake = 0.0
         if coin == stake_currency:
             est_stake = balance.total
             if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
                 # in Futures, "total" includes the locked stake, and therefore all positions
                 est_stake = balance.free
+            est_bot_stake = est_stake
         else:
             try:
                 pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
@@ -598,11 +601,12 @@ class RPC:
                     if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                         rate = 1.0 / rate
                     est_stake = rate * balance.total
+                    est_bot_stake = rate * amount
             except (ExchangeError):
                 logger.warning(f"Could not get rate for pair {coin}.")
                 raise ValueError()
 
-        return est_stake
+        return est_stake, est_bot_stake
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
@@ -615,7 +619,7 @@ class RPC:
             raise RPCException('Error getting current tickers.')
 
         open_trades: List[Trade] = Trade.get_open_trades()
-        open_assets = [t.base_currency for t in open_trades]
+        open_assets: Dict[str, Trade] = {t.safe_base_currency: t for t in open_trades}
         self._freqtrade.wallets.update(require_update=False)
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
@@ -625,21 +629,29 @@ class RPC:
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
+
+            trade = open_assets.get(coin, None)
+            is_bot_managed = coin == stake_currency or trade is not None
+            trade_amount = trade.amount if trade else 0
+
             try:
-                est_stake = self.__balance_get_est_stake(coin, stake_currency, balance, tickers)
+                est_stake, est_stake_bot = self.__balance_get_est_stake(
+                    coin, stake_currency, trade_amount, balance, tickers)
             except ValueError:
                 continue
 
             total += est_stake
-            is_bot_managed = coin == stake_currency or coin in open_assets
+
             if is_bot_managed:
-                total_bot += est_stake
+                total_bot += est_stake_bot
             currencies.append({
                 'currency': coin,
                 'free': balance.free,
                 'balance': balance.total,
                 'used': balance.used,
+                'bot_owned': trade_amount,
                 'est_stake': est_stake or 0,
+                'est_stake_bot': est_stake_bot if is_bot_managed else 0,
                 'stake': stake_currency,
                 'side': 'long',
                 'leverage': 1,
