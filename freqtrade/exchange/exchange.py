@@ -211,7 +211,7 @@ class Exchange:
         if self.loop and not self.loop.is_closed():
             self.loop.close()
 
-    def _init_async_loop(self):
+    def _init_async_loop(self) -> asyncio.AbstractEventLoop:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop

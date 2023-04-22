@@ -556,7 +556,7 @@ class Hyperopt:
         self.backtesting.exchange.close()
         self.backtesting.exchange._api = None
         self.backtesting.exchange._api_async = None
-        self.backtesting.exchange.loop = None
+        self.backtesting.exchange.loop = None  # type: ignore
         self.backtesting.exchange._loop_lock = None  # type: ignore
         self.backtesting.exchange._cache_lock = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
