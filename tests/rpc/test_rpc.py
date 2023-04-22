@@ -546,7 +546,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'free': 10.0,
             'balance': 12.0,
             'used': 2.0,
-            'bot_owned': 0,
+            'bot_owned': 9.9,  # available stake - reducing by reserved amount
             'est_stake': 10.0,  # In futures mode, "free" is used here.
             'est_stake_bot': 10,
             'stake': 'BTC',

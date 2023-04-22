@@ -633,6 +633,8 @@ class RPC:
             trade = open_assets.get(coin, None)
             is_bot_managed = coin == stake_currency or trade is not None
             trade_amount = trade.amount if trade else 0
+            if coin == stake_currency:
+                trade_amount = self._freqtrade.wallets.get_available_stake_amount()
 
             try:
                 est_stake, est_stake_bot = self.__balance_get_est_stake(
