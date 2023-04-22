@@ -49,8 +49,10 @@ class Balance(BaseModel):
 class Balances(BaseModel):
     currencies: List[Balance]
     total: float
+    total_bot: float
     symbol: str
     value: float
+    value_bot: float
     stake: str
     note: str
     starting_capital: float

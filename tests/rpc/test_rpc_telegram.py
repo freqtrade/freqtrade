@@ -783,19 +783,27 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     patch_get_signal(freqtradebot)
 
     telegram._balance(update=update, context=MagicMock())
+    context = MagicMock()
+    context.args = ["full"]
+    telegram._balance(update=update, context=context)
     result = msg_mock.call_args_list[0][0][0]
-    assert msg_mock.call_count == 1
+    result_full = msg_mock.call_args_list[1][0][0]
+    assert msg_mock.call_count == 2
     assert '*BTC:*' in result
     assert '*ETH:*' not in result
     assert '*USDT:*' not in result
     assert '*EUR:*' not in result
-    assert '*LTC:*' in result
+    assert '*LTC:*' not in result
+
+    assert '*LTC:*' in result_full
     assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12' in result
     assert "*3 Other Currencies (< 0.0001 BTC):*" in result
     assert 'BTC: 0.00000309' in result
+    assert '*Estimated Value*:' in result_full
+    assert '*Estimated Value (Bot managed assets only)*:' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
@@ -840,12 +848,15 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': True,
         })
     mocker.patch('freqtrade.rpc.rpc.RPC._rpc_balance', return_value={
         'currencies': balances,
         'total': 100.0,
+        'total_bot': 100.0,
         'symbol': 100.0,
         'value': 1000.0,
+        'value_bot': 1000.0,
         'starting_capital': 1000,
         'starting_capital_fiat': 1000,
     })

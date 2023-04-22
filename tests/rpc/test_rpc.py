@@ -552,6 +552,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': True,
         },
         {
             'free': 1.0,
@@ -564,7 +565,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
-
+            'is_bot_managed': False,
         },
         {
             'free': 5.0,
@@ -577,6 +578,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': False,
         },
         {
             'free': 0.0,
@@ -589,8 +591,11 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'leverage': 5.0,
             'position': 1000.0,
             'side': 'short',
+            'is_bot_managed': True,
         }
     ]
+    assert pytest.approx(result['total_bot']) == 10
+    assert pytest.approx(result['total']) == 30.309096
     assert result['starting_capital'] == 10
     assert result['starting_capital_ratio'] == 0.0
 

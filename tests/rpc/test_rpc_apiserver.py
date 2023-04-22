@@ -486,7 +486,10 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'leverage': 1.0,
         'position': 0.0,
         'side': 'long',
+        'is_bot_managed': True,
     }
+    assert response['total'] == 12.159513094
+    assert response['total_bot'] == 12.0
     assert 'starting_capital' in response
     assert 'starting_capital_fiat' in response
     assert 'starting_capital_pct' in response
