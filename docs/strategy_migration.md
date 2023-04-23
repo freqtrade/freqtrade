@@ -578,7 +578,7 @@ def populate_any_indicators(
 Features will now expand automatically. As such, the expansion loops, as well as the `{pair}` / `{timeframe}` parts will need to be removed.
 
 ``` python linenums="1"
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe, period, **kwargs) -> DataFrame::
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -638,7 +638,7 @@ Features will now expand automatically. As such, the expansion loops, as well as
 Basic features. Make sure to remove the `{pair}` part from your features.
 
 ``` python linenums="1"
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs) -> DataFrame::
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -673,7 +673,7 @@ Basic features. Make sure to remove the `{pair}` part from your features.
 ### FreqAI - feature engineering standard
 
 ``` python linenums="1"
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -704,7 +704,7 @@ Basic features. Make sure to remove the `{pair}` part from your features.
 Targets now get their own, dedicated method.
 
 ``` python linenums="1"
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
