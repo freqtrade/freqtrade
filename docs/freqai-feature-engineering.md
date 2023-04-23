@@ -16,7 +16,7 @@ Meanwhile, high level feature engineering is handled within `"feature_parameters
 It is advisable to start from the template `feature_engineering_*` functions in the source provided example strategy (found in `templates/FreqaiExampleStrategy.py`) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:
 
 ```python
-    def feature_engineering_expand_all(self, dataframe, period, metadata, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period, metadata, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -67,7 +67,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, metadata, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -96,7 +96,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, metadata, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, metadata, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -122,7 +122,7 @@ It is advisable to start from the template `feature_engineering_*` functions in 
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
-    def set_freqai_targets(self, dataframe, metadata, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.

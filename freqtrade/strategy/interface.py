@@ -674,7 +674,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def feature_engineering_standard(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
