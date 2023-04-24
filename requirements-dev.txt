@@ -18,8 +18,6 @@ pytest-random-order==1.1.0
 isort==5.12.0
 # For datetime mocking
 time-machine==2.9.0
-# fastapi testing
-httpx==0.24.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==7.3.1
