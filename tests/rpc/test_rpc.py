@@ -548,7 +548,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'used': 2.0,
             'bot_owned': 9.9,  # available stake - reducing by reserved amount
             'est_stake': 10.0,  # In futures mode, "free" is used here.
-            'est_stake_bot': 10,
+            'est_stake_bot': 9.9,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
@@ -591,6 +591,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'balance': 0.0,
             'currency': 'ETH/USDT:USDT',
             'est_stake': 20,
+            'est_stake_bot': 20,
             'used': 0,
             'stake': 'BTC',
             'is_position': True,
@@ -600,10 +601,12 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'is_bot_managed': True,
         }
     ]
-    assert pytest.approx(result['total_bot']) == 10
+    assert pytest.approx(result['total_bot']) == 29.9
     assert pytest.approx(result['total']) == 30.309096
     assert result['starting_capital'] == 10
-    assert result['starting_capital_ratio'] == 0.0
+    # Very high starting capital ratio, because the futures position really has the wrong unit.
+    # TODO: improve this test (see comment above)
+    assert result['starting_capital_ratio'] == pytest.approx(1.98999999)
 
 
 def test_rpc_start(mocker, default_conf) -> None:

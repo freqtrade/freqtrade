@@ -482,7 +482,7 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'used': 0.0,
         'bot_owned': pytest.approx(11.879999),
         'est_stake': 12.0,
-        'est_stake_bot': 12.0,
+        'est_stake_bot': pytest.approx(11.879999),
         'stake': 'BTC',
         'is_position': False,
         'leverage': 1.0,
@@ -491,7 +491,7 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'is_bot_managed': True,
     }
     assert response['total'] == 12.159513094
-    assert response['total_bot'] == 12.0
+    assert response['total_bot'] == pytest.approx(11.879999)
     assert 'starting_capital' in response
     assert 'starting_capital_fiat' in response
     assert 'starting_capital_pct' in response

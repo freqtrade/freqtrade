@@ -799,7 +799,8 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC: 12' in result
+    assert 'BTC: 11' in result
+    assert 'BTC: 12' in result_full
     assert "*3 Other Currencies (< 0.0001 BTC):*" in result
     assert 'BTC: 0.00000309' in result
     assert '*Estimated Value*:' in result_full
