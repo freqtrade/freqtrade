@@ -905,6 +905,7 @@ class Telegram(RPCHandler):
     @authorized_only
     def _balance(self, update: Update, context: CallbackContext) -> None:
         """ Handler for /balance """
+        full_result = context.args and 'full' in context.args
         result = self._rpc._rpc_balance(self._config['stake_currency'],
                                         self._config.get('fiat_display_currency', ''))
 
@@ -915,8 +916,7 @@ class Telegram(RPCHandler):
         output = ''
         if self._config['dry_run']:
             output += "*Warning:* Simulated balances in Dry Mode.\n"
-        starting_cap = round_coin_value(
-            result['starting_capital'], self._config['stake_currency'])
+        starting_cap = round_coin_value(result['starting_capital'], self._config['stake_currency'])
         output += f"Starting capital: `{starting_cap}`"
         starting_cap_fiat = round_coin_value(
             result['starting_capital_fiat'], self._config['fiat_display_currency']
@@ -928,7 +928,10 @@ class Telegram(RPCHandler):
         total_dust_currencies = 0
         for curr in result['currencies']:
             curr_output = ''
-            if curr['est_stake'] > balance_dust_level:
+            if (
+                (curr['is_position'] or curr['est_stake'] > balance_dust_level)
+                and (full_result or curr['is_bot_managed'])
+            ):
                 if curr['is_position']:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
@@ -937,13 +940,17 @@ class Telegram(RPCHandler):
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
+                    est_stake = round_coin_value(
+                        curr['est_stake' if full_result else 'est_stake_bot'], curr['stake'], False)
+
                     curr_output = (
                         f"*{curr['currency']}:*\n"
                         f"\t`Available: {curr['free']:.8f}`\n"
                         f"\t`Balance: {curr['balance']:.8f}`\n"
                         f"\t`Pending: {curr['used']:.8f}`\n"
-                        f"\t`Est. {curr['stake']}: "
-                        f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                        f"\t`Bot Owned: {curr['bot_owned']:.8f}`\n"
+                        f"\t`Est. {curr['stake']}: {est_stake}`\n")
+
             elif curr['est_stake'] <= balance_dust_level:
                 total_dust_balance += curr['est_stake']
                 total_dust_currencies += 1
@@ -965,14 +972,15 @@ class Telegram(RPCHandler):
         tc = result['trade_count'] > 0
         stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
         fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
-
-        output += ("\n*Estimated Value*:\n"
-                   f"\t`{result['stake']}: "
-                   f"{round_coin_value(result['total'], result['stake'], False)}`"
-                   f"{stake_improve}\n"
-                   f"\t`{result['symbol']}: "
-                   f"{round_coin_value(result['value'], result['symbol'], False)}`"
-                   f"{fiat_val}\n")
+        value = round_coin_value(
+            result['value' if full_result else 'value_bot'], result['symbol'], False)
+        total_stake = round_coin_value(
+            result['total' if full_result else 'total_bot'], result['stake'], False)
+        output += (
+            f"\n*Estimated Value{' (Bot managed assets only)' if not full_result else ''}*:\n"
+            f"\t`{result['stake']}: {total_stake}`{stake_improve}\n"
+            f"\t`{result['symbol']}: {value}`{fiat_val}\n"
+        )
         self._send_msg(output, reload_able=True, callback_path="update_balance",
                        query=update.callback_query)
 
@@ -1528,7 +1536,8 @@ class Telegram(RPCHandler):
             "------------\n"
             "*/show_config:* `Show running configuration` \n"
             "*/locks:* `Show currently locked pairs`\n"
-            "*/balance:* `Show account balance per currency`\n"
+            "*/balance:* `Show bot managed balance per currency`\n"
+            "*/balance total:* `Show account balance per currency`\n"
             "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
