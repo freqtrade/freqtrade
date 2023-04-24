@@ -9,7 +9,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
@@ -469,6 +469,9 @@ def test__get_resample_from_period():
     assert _get_resample_from_period('month') == '1M'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')
+
+    for period in BACKTEST_BREAKDOWNS:
+        assert isinstance(_get_resample_from_period(period), str)
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
