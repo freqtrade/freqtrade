@@ -1575,13 +1575,13 @@ class FreqtradeBot(LoggingMixin):
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
         if self.trading_mode == TradingMode.FUTURES:
+            # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
         wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
-            # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
