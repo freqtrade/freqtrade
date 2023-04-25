@@ -470,13 +470,17 @@ class FreqtradeBot(LoggingMixin):
                 trade.orders.append(order_obj)
                 # TODO: how do we handle open_order_id ...
                 Trade.commit()
+                prev_exit_reason = trade.exit_reason
+                trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
                 self.update_trade_state(trade, order['id'], order)
                 logger.info(f"handled order {order['id']}")
                 if not trade.is_open:
                     # Trade was just closed
                     trade.close_date = order_obj.order_filled_date
                     Trade.commit()
-                    continue
+                    break
+                else:
+                    trade.exit_reason = prev_exit_reason
 
         except ExchangeError:
             logger.warning("Error finding onexchange order")
