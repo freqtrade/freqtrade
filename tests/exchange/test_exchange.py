@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 import arrow
 import ccxt
 import pytest
+from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, TICK_SIZE, TRUNCATE
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
@@ -315,35 +316,54 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     assert amount_to_precision(amount, precision, precision_mode) == expected
 
 
-@pytest.mark.parametrize("price,precision_mode,precision,expected", [
-    (2.34559, 2, 4, 2.3456),
-    (2.34559, 2, 5, 2.34559),
-    (2.34559, 2, 3, 2.346),
-    (2.9999, 2, 3, 3.000),
-    (2.9909, 2, 3, 2.991),
-    # Tests for Tick_size
-    (2.34559, 4, 0.0001, 2.3456),
-    (2.34559, 4, 0.00001, 2.34559),
-    (2.34559, 4, 0.001, 2.346),
-    (2.9999, 4, 0.001, 3.000),
-    (2.9909, 4, 0.001, 2.991),
-    (2.9909, 4, 0.005, 2.995),
-    (2.9973, 4, 0.005, 3.0),
-    (2.9977, 4, 0.005, 3.0),
-    (234.43, 4, 0.5, 234.5),
-    (234.53, 4, 0.5, 235.0),
-    (0.891534, 4, 0.0001, 0.8916),
-    (64968.89, 4, 0.01, 64968.89),
-    (0.000000003483, 4, 1e-12, 0.000000003483),
-
+@pytest.mark.parametrize("price,precision_mode,precision,expected,rounding_mode", [
+    # Tests for DECIMAL_PLACES, ROUND_UP
+    (2.34559, 2, 4, 2.3456, ROUND_UP),
+    (2.34559, 2, 5, 2.34559, ROUND_UP),
+    (2.34559, 2, 3, 2.346, ROUND_UP),
+    (2.9999, 2, 3, 3.000, ROUND_UP),
+    (2.9909, 2, 3, 2.991, ROUND_UP),
+    # Tests for DECIMAL_PLACES, ROUND
+    (2.345600000000001, DECIMAL_PLACES, 4, 2.3456, ROUND),
+    (2.345551, DECIMAL_PLACES, 4, 2.3456, ROUND),
+    (2.49, DECIMAL_PLACES, 0, 2., ROUND),
+    (2.51, DECIMAL_PLACES, 0, 3., ROUND),
+    (5.1, DECIMAL_PLACES, -1, 10., ROUND),
+    (4.9, DECIMAL_PLACES, -1, 0., ROUND),
+    # Tests for TICK_SIZE, ROUND_UP
+    (2.34559, TICK_SIZE, 0.0001, 2.3456, ROUND_UP),
+    (2.34559, TICK_SIZE, 0.00001, 2.34559, ROUND_UP),
+    (2.34559, TICK_SIZE, 0.001, 2.346, ROUND_UP),
+    (2.9999, TICK_SIZE, 0.001, 3.000, ROUND_UP),
+    (2.9909, TICK_SIZE, 0.001, 2.991, ROUND_UP),
+    (2.9909, TICK_SIZE, 0.005, 2.995, ROUND_UP),
+    (2.9973, TICK_SIZE, 0.005, 3.0, ROUND_UP),
+    (2.9977, TICK_SIZE, 0.005, 3.0, ROUND_UP),
+    (234.43, TICK_SIZE, 0.5, 234.5, ROUND_UP),
+    (234.53, TICK_SIZE, 0.5, 235.0, ROUND_UP),
+    (0.891534, TICK_SIZE, 0.0001, 0.8916, ROUND_UP),
+    (64968.89, TICK_SIZE, 0.01, 64968.89, ROUND_UP),
+    (0.000000003483, TICK_SIZE, 1e-12, 0.000000003483, ROUND_UP),
+    # Tests for TICK_SIZE, ROUND
+    (2.49, TICK_SIZE, 1., 2., ROUND),
+    (2.51, TICK_SIZE, 1., 3., ROUND),
+    (2.000000051, TICK_SIZE, 0.0000001, 2.0000001, ROUND),
+    (2.000000049, TICK_SIZE, 0.0000001, 2., ROUND),
+    (2.9909, TICK_SIZE, 0.005, 2.990, ROUND),
+    (2.9973, TICK_SIZE, 0.005, 2.995, ROUND),
+    (2.9977, TICK_SIZE, 0.005, 3.0, ROUND),
+    (234.24, TICK_SIZE, 0.5, 234., ROUND),
+    (234.26, TICK_SIZE, 0.5, 234.5, ROUND),
+    # Tests for TRUNCATTE
+    (2.34559, 2, 4, 2.3455, TRUNCATE),
+    (2.34559, 2, 5, 2.34559, TRUNCATE),
+    (2.34559, 2, 3, 2.345, TRUNCATE),
+    (2.9999, 2, 3, 2.999, TRUNCATE),
+    (2.9909, 2, 3, 2.990, TRUNCATE),
 ])
-def test_price_to_precision(price, precision_mode, precision, expected):
-    # digits counting mode
-    # DECIMAL_PLACES = 2
-    # SIGNIFICANT_DIGITS = 3
-    # TICK_SIZE = 4
-
-    assert price_to_precision(price, precision, precision_mode) == expected
+def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
+    assert price_to_precision(
+        price, precision, precision_mode, rounding_mode=rounding_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -417,7 +437,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     }
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = 2 * 2 * (1 + 0.05) / (1 - abs(stoploss))
+    expected_result = 2 * 2 * (1 + 0.05)
     assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
@@ -426,14 +446,14 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
 
-    # min amount and cost are set (cost is minimal)
+    # min amount and cost are set (cost is minimal and therefore ignored)
     markets["ETH/BTC"]["limits"] = {
         'cost': {'min': 2, 'max': None},
         'amount': {'min': 2, 'max': None},
     }
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = max(2, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
+    expected_result = max(2, 2 * 2) * (1 + 0.05)
     assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
@@ -475,6 +495,9 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
+
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, 12.0)
+    assert result == 1000 / 12
 
     markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'
@@ -1232,9 +1255,10 @@ def test_create_dry_run_order_fees(
     ("buy", 29.563, True, True),
     ("sell", 21.563, True, True),
 ])
+@pytest.mark.parametrize("leverage", [1, 2, 5])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, filled, caplog,
-                                         exchange_name, order_book_l2_usd, converted):
+                                         exchange_name, order_book_l2_usd, converted, leverage):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple(EXMS,
@@ -1248,7 +1272,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
         side=side,
         amount=1,
         rate=price,
-        leverage=1.0
+        leverage=leverage,
     )
     assert order_book_l2_usd.call_count == 1
     assert 'id' in order
@@ -1272,6 +1296,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     assert order_book_l2_usd.call_count == (1 if not filled else 0)
     assert order_closed['status'] == ('open' if not filled else 'closed')
     assert order_closed['filled'] == (0 if not filled else 1)
+    assert order_closed['cost'] == 1 * order_closed['average']
 
     order_book_l2_usd.reset_mock()
 
@@ -1294,9 +1319,10 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, price, fill
     ("sell", 25.564, 1000, 25.5555),  # More than orderbook return
     ("sell", 27, 10000, 25.65),  # max-slippage 5%
 ])
+@pytest.mark.parametrize("leverage", [1, 2, 5])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amount, endprice,
-                                          exchange_name, order_book_l2_usd):
+                                          exchange_name, order_book_l2_usd, leverage):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple(EXMS,
@@ -1310,7 +1336,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
         side=side,
         amount=amount,
         rate=rate,
-        leverage=1.0
+        leverage=leverage,
     )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
@@ -1319,6 +1345,8 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert order["symbol"] == "LTC/USDT"
     assert order['status'] == 'closed'
     assert order['filled'] == amount
+    assert order['amount'] == amount
+    assert pytest.approx(order['cost']) == amount * order['average']
     assert round(order["average"], 4) == round(endprice, 4)
 
 
@@ -5281,7 +5309,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     })
     default_conf['dry_run'] = False
     mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
-    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_contract_size = MagicMock(return_value=contract_size)
@@ -5301,3 +5329,10 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     assert order['cost'] == 100
     assert order['filled'] == 100
     assert order['remaining'] == 100
+
+
+def test_price_to_precision_with_default_conf(default_conf, mocker):
+    conf = copy.deepcopy(default_conf)
+    patched_ex = get_patched_exchange(mocker, conf)
+    prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
+    assert prec_price == 1.00000001

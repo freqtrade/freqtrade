@@ -34,7 +34,7 @@ def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
     cols = DEFAULT_DATAFRAME_COLUMNS
     df = DataFrame(ohlcv, columns=cols)
 
-    df['date'] = to_datetime(df['date'], unit='ms', utc=True, infer_datetime_format=True)
+    df['date'] = to_datetime(df['date'], unit='ms', utc=True)
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats

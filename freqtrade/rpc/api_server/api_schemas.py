@@ -108,6 +108,8 @@ class Profit(BaseModel):
     max_drawdown: float
     max_drawdown_abs: float
     trading_volume: Optional[float]
+    bot_start_timestamp: int
+    bot_start_date: str
 
 
 class SellReason(BaseModel):

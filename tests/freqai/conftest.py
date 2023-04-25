@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -85,6 +86,22 @@ def make_rl_config(conf):
     return conf
 
 
+def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
+    return {
+            "learning_rate": 3e-4,
+            "trainer_kwargs": {
+                "max_iters": 1,
+                "batch_size": 64,
+                "max_n_eval_batches": 1,
+            },
+            "model_kwargs": {
+                "hidden_dim": 32,
+                "dropout_percent": 0.2,
+                "n_layer": 1,
+            }
+        }
+
+
 def get_patched_data_kitchen(mocker, freqaiconf):
     dk = FreqaiDataKitchen(freqaiconf)
     return dk
@@ -119,6 +136,7 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
@@ -152,6 +170,7 @@ def make_data_dictionary(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)

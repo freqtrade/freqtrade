@@ -66,10 +66,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
 
         chat_id = int(self._config['telegram']['chat_id'])
         if cchat_id != chat_id:
-            logger.info(
-                'Rejected unauthorized message from: %s',
-                update.message.chat_id
-            )
+            logger.info(f'Rejected unauthorized message from: {update.message.chat_id}')
             return wrapper
         # Rollback session to avoid getting data stored in a transaction.
         Trade.rollback()
@@ -819,7 +816,7 @@ class Telegram(RPCHandler):
         best_pair = stats['best_pair']
         best_pair_profit_ratio = stats['best_pair_profit_ratio']
         if stats['trade_count'] == 0:
-            markdown_msg = 'No trades yet.'
+            markdown_msg = f"No trades yet.\n*Bot started:* `{stats['bot_start_date']}`"
         else:
             # Message to display
             if stats['closed_trade_count'] > 0:
@@ -838,6 +835,7 @@ class Telegram(RPCHandler):
                 f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                 f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
+                f"*Bot started:* `{stats['bot_start_date']}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
                 f"*Latest Trade opened:* `{latest_trade_date}`\n"
@@ -1420,7 +1418,7 @@ class Telegram(RPCHandler):
     def send_blacklist_msg(self, blacklist: Dict):
         errmsgs = []
         for pair, error in blacklist['errors'].items():
-            errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
+            errmsgs.append(f"Error: {error['error_msg']}")
         if errmsgs:
             self._send_msg('\n'.join(errmsgs))
 

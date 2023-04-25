@@ -2,11 +2,12 @@
 Exchange support utils
 """
 from datetime import datetime, timedelta, timezone
-from math import ceil
+from math import ceil, floor
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
-from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
+from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
+                  TRUNCATE, decimal_to_precision)
 
 from freqtrade.exchange.common import BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED
 from freqtrade.util import FtPrecise
@@ -219,35 +220,51 @@ def amount_to_contract_precision(
     return amount
 
 
-def price_to_precision(price: float, price_precision: Optional[float],
-                       precisionMode: Optional[int]) -> float:
+def price_to_precision(
+    price: float,
+    price_precision: Optional[float],
+    precisionMode: Optional[int],
+    *,
+    rounding_mode: int = ROUND,
+) -> float:
     """
-    Returns the price rounded up to the precision the Exchange accepts.
+    Returns the price rounded to the precision the Exchange accepts.
     Partial Re-implementation of ccxt internal method decimal_to_precision(),
-    which does not support rounding up
+    which does not support rounding up.
+    For stoploss calculations, must use ROUND_UP for longs, and ROUND_DOWN for shorts.
+
     TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
     align with amount_to_precision().
-    !!! Rounds up
     :param price: price to convert
     :param price_precision: price precision to use. Used from markets[pair]['precision']['price']
     :param precisionMode: precision mode to use. Should be used from precisionMode
                           one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :param rounding_mode: rounding mode to use. Defaults to ROUND
     :return: price rounded up to the precision the Exchange accepts
-
     """
     if price_precision is not None and precisionMode is not None:
-        # price = float(decimal_to_precision(price, rounding_mode=ROUND,
-        #                                    precision=price_precision,
-        #                                    counting_mode=self.precisionMode,
-        #                                    ))
         if precisionMode == TICK_SIZE:
+            if rounding_mode == ROUND:
+                ticks = price / price_precision
+                rounded_ticks = round(ticks)
+                return rounded_ticks * price_precision
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
             if not missing == FtPrecise("0"):
-                price = round(float(str(price_str - missing + precision)), 14)
-        else:
-            symbol_prec = price_precision
-            big_price = price * pow(10, symbol_prec)
-            price = ceil(big_price) / pow(10, symbol_prec)
+                return round(float(str(price_str - missing + precision)), 14)
+            return price
+        elif precisionMode in (SIGNIFICANT_DIGITS, DECIMAL_PLACES):
+            ndigits = round(price_precision)
+            if rounding_mode == ROUND:
+                return round(price, ndigits)
+            ticks = price * (10**ndigits)
+            if rounding_mode == ROUND_UP:
+                return ceil(ticks) / (10**ndigits)
+            if rounding_mode == TRUNCATE:
+                return int(ticks) / (10**ndigits)
+            if rounding_mode == ROUND_DOWN:
+                return floor(ticks) / (10**ndigits)
+            raise ValueError(f"Unknown rounding_mode {rounding_mode}")
+        raise ValueError(f"Unknown precisionMode {precisionMode}")
     return price

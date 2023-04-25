@@ -66,7 +66,7 @@ class Base3ActionRLEnv(BaseEnvironment):
             elif action == Actions.Sell.value and not self.can_short:
                 self._update_total_profit()
                 self._position = Positions.Neutral
-                trade_type = "neutral"
+                trade_type = "exit"
                 self._last_trade_tick = None
             else:
                 print("case not defined")
@@ -74,7 +74,7 @@ class Base3ActionRLEnv(BaseEnvironment):
             if trade_type is not None:
                 self.trade_history.append(
                     {'price': self.current_price(), 'index': self._current_tick,
-                     'type': trade_type})
+                     'type': trade_type, 'profit': self.get_unrealized_profit()})
 
         if (self._total_profit < self.max_drawdown or
                 self._total_unrealized_profit < self.max_drawdown):

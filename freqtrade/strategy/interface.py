@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import arrow
 from pandas import DataFrame
 
-from freqtrade.constants import Config, IntOrInf, ListPairsWithTimeframes
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
@@ -27,7 +27,6 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
-CUSTOM_EXIT_MAX_LENGTH = 64
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -619,7 +618,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return df
 
     def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
-                                       metadata: Dict, **kwargs):
+                                       metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -645,7 +644,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def feature_engineering_expand_basic(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -674,7 +674,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def feature_engineering_standard(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -698,7 +699,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -1118,11 +1119,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                     exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(reason_cust, str):
                         custom_reason = reason_cust
-                        if len(reason_cust) > CUSTOM_EXIT_MAX_LENGTH:
+                        if len(reason_cust) > CUSTOM_TAG_MAX_LENGTH:
                             logger.warning(f'Custom exit reason returned from '
                                            f'custom_exit is too long and was trimmed'
-                                           f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
-                            custom_reason = reason_cust[:CUSTOM_EXIT_MAX_LENGTH]
+                                           f'to {CUSTOM_TAG_MAX_LENGTH} characters.')
+                            custom_reason = reason_cust[:CUSTOM_TAG_MAX_LENGTH]
                     else:
                         custom_reason = ''
             if (

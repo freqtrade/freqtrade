@@ -12,6 +12,7 @@ TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
 TAG_FREQAI=${TAG}_freqai
 TAG_FREQAI_RL=${TAG_FREQAI}rl
+TAG_FREQAI_TORCH=${TAG_FREQAI}torch
 TAG_PI="${TAG}_pi"
 
 TAG_ARM=${TAG}_arm
@@ -42,9 +43,9 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
-docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
-docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_ARM} -f docker/Dockerfile.freqai .
-docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_RL_ARM} -f docker/Dockerfile.freqai_rl .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_FREQAI_ARM} -f docker/Dockerfile.freqai .
+docker build --build-arg sourceimage=freqtrade --build-arg sourcetag=${TAG_FREQAI_ARM} -t freqtrade:${TAG_FREQAI_RL_ARM} -f docker/Dockerfile.freqai_rl .
 
 # Tag image for upload and next build step
 docker tag freqtrade:$TAG_ARM ${CACHE_IMAGE}:$TAG_ARM
@@ -84,6 +85,10 @@ docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI}
 docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
 docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_RL}
 
+# Create special Torch tag - which is identical to the RL tag.
+docker manifest create ${IMAGE_NAME}:${TAG_FREQAI_TORCH} ${CACHE_IMAGE}:${TAG_FREQAI_RL} ${CACHE_IMAGE}:${TAG_FREQAI_RL_ARM}
+docker manifest push -p ${IMAGE_NAME}:${TAG_FREQAI_TORCH}
+
 # copy images to ghcr.io
 
 alias crane="docker run --rm -i -v $(pwd)/.crane:/home/nonroot/.docker/ gcr.io/go-containerregistry/crane"
@@ -93,6 +98,7 @@ chmod a+rwx .crane
 echo "${GHCR_TOKEN}" | crane auth login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
 crane copy ${IMAGE_NAME}:${TAG_FREQAI_RL} ${GHCR_IMAGE_NAME}:${TAG_FREQAI_RL}
+crane copy ${IMAGE_NAME}:${TAG_FREQAI_RL} ${GHCR_IMAGE_NAME}:${TAG_FREQAI_TORCH}
 crane copy ${IMAGE_NAME}:${TAG_FREQAI} ${GHCR_IMAGE_NAME}:${TAG_FREQAI}
 crane copy ${IMAGE_NAME}:${TAG_PLOT} ${GHCR_IMAGE_NAME}:${TAG_PLOT}
 crane copy ${IMAGE_NAME}:${TAG} ${GHCR_IMAGE_NAME}:${TAG}

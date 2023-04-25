@@ -1291,7 +1291,7 @@ class FreqaiDataKitchen:
 
         return dataframe
 
-    def use_strategy_to_populate_indicators(
+    def use_strategy_to_populate_indicators(  # noqa: C901
         self,
         strategy: IStrategy,
         corr_dataframes: dict = {},
@@ -1362,11 +1362,11 @@ class FreqaiDataKitchen:
                 dataframe = self.populate_features(dataframe.copy(), corr_pair, strategy,
                                                    corr_dataframes, base_dataframes, True)
 
-        dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
+        if self.live:
+            dataframe = strategy.set_freqai_targets(dataframe.copy(), metadata=metadata)
+            dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
         self.get_unique_classes_from_labels(dataframe)
-
-        dataframe = self.remove_special_chars_from_feature_names(dataframe)
 
         if self.config.get('reduce_df_footprint', False):
             dataframe = reduce_dataframe_footprint(dataframe)
