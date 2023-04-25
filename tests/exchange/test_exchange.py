@@ -1773,6 +1773,32 @@ def test_fetch_positions(default_conf, mocker, exchange_name):
                            "fetch_positions", "fetch_positions")
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
+
+    api_mock = MagicMock()
+    api_mock.fetch_orders = MagicMock(return_value=[
+        limit_order['buy'],
+        limit_order['sell'],
+    ])
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+    start_time = datetime.now(timezone.utc) - timedelta(days=5)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    # Not available in dry-run
+    assert exchange.fetch_orders('mocked', start_time) == []
+
+    default_conf['dry_run'] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.fetch_orders('mocked', start_time)
+    assert len(res) == 2
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_orders", "fetch_orders", retries=1,
+                           pair='mocked', since=start_time)
+
+
 def test_fetch_trading_fees(default_conf, mocker):
     api_mock = MagicMock()
     tick = {
