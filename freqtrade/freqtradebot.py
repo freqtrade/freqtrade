@@ -1063,14 +1063,11 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_closed = 0
         for trade in trades:
-            # TODO: get_total currently fails for futures!
-            wallet_amount = self.wallets.get_total(trade.safe_base_currency)
 
-            if wallet_amount < trade.amount:
-                #
+            if not self.wallets.check_exit_amount(trade):
                 logger.warning(
-                    f'Not enough {trade.safe_base_currency} in wallet to exit {trade.pair}. '
-                    f'Amount needed: {trade.amount}, amount available: {wallet_amount}')
+                    f'Not enough {trade.safe_base_currency} in wallet to exit {trade}. '
+                    'Trying to recover.')
                 self.handle_onexchange_order(trade)
 
             try:
