@@ -711,7 +711,10 @@ class LocalTrade():
         if order.ft_order_side != self.entry_side:
             amount_tr = amount_to_contract_precision(self.amount, self.amount_precision,
                                                      self.precision_mode, self.contract_size)
-            if isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC):
+            if (
+                isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
+                or order.safe_amount_after_fee > amount_tr
+            ):
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
