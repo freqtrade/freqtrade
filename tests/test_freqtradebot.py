@@ -2107,6 +2107,7 @@ def test_enter_positions(mocker, default_conf_usdt, return_value, side_effect,
     assert mock_ct.call_count == len(default_conf_usdt['exchange']['pair_whitelist'])
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
 def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -2115,12 +2116,33 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     mocker.patch(f'{EXMS}.fetch_order', return_value=limit_order[entry_side(is_short)])
     mocker.patch(f'{EXMS}.get_trades_for_order', return_value=[])
 
-    # TODO: should not be magicmock
-    trade = MagicMock()
-    trade.is_short = is_short
-    trade.open_order_id = '123'
-    trade.open_fee = 0.001
+    order_id = '123'
+    trade = Trade(
+            open_order_id=order_id,
+            pair='ETH/USDT',
+            fee_open=0.001,
+            fee_close=0.001,
+            open_rate=0.01,
+            open_date=arrow.utcnow().datetime,
+            stake_amount=0.01,
+            amount=11,
+            exchange="binance",
+            is_short=is_short,
+            leverage=1,
+            )
+    trade.orders.append(Order(
+        ft_order_side=entry_side(is_short),
+        price=0.01,
+        ft_pair=trade.pair,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
+        order_id=order_id,
+
+    ))
+    Trade.session.add(trade)
+    Trade.commit()
     trades = [trade]
+    freqtrade.wallets.update()
     n = freqtrade.exit_positions(trades)
     assert n == 0
     # Test amount not modified by fee-logic
@@ -2133,17 +2155,40 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     assert gra.call_count == 0
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
 def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog, is_short) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order = limit_order[entry_side(is_short)]
     mocker.patch(f'{EXMS}.fetch_order', return_value=order)
 
-    # TODO: should not be magicmock
-    trade = MagicMock()
-    trade.is_short = is_short
+    order_id = '123'
+    trade = Trade(
+        open_order_id=order_id,
+        pair='ETH/USDT',
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=0.01,
+        open_date=arrow.utcnow().datetime,
+        stake_amount=0.01,
+        amount=11,
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
+    trade.orders.append(Order(
+        ft_order_side=entry_side(is_short),
+        price=0.01,
+        ft_pair=trade.pair,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
+        order_id=order_id,
+
+    ))
     trade.open_order_id = None
-    trade.pair = 'ETH/USDT'
+    Trade.session.add(trade)
+    Trade.commit()
+    freqtrade.wallets.update()
     trades = [trade]
 
     # Test raise of DependencyException exception
