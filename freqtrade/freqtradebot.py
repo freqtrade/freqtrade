@@ -451,6 +451,35 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
+    def handle_onexchange_order(self, trade: Trade):
+        """
+        Try refinding a order that is not in the database.
+        Only used balance disappeared, which would make exiting impossible.
+        """
+        try:
+            orders = self.exchange.fetch_orders(trade.pair, trade.open_date_utc)
+            for order in orders:
+                trade_order = [o for o in trade.orders if o.order_id == order['id']]
+                if trade_order:
+                    continue
+                logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
+                order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
+                order_obj.order_filled_date = datetime.fromtimestamp(
+                    safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
+                    tz=timezone.utc)
+                trade.orders.append(order_obj)
+                # TODO: how do we handle open_order_id ...
+                Trade.commit()
+                self.update_trade_state(trade, order['id'], order)
+                logger.info(f"handled order {order['id']}")
+                if not trade.is_open:
+                    # Trade was just closed
+                    trade.close_date = order_obj.order_filled_date
+                    Trade.commit()
+                    continue
+
+        except ExchangeError:
+            logger.warning("Error finding onexchange order")
 #
 # BUY / enter positions / open trades logic and methods
 #
@@ -1034,6 +1063,16 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_closed = 0
         for trade in trades:
+            # TODO: get_total currently fails for futures!
+            wallet_amount = self.wallets.get_total(trade.safe_base_currency)
+
+            if wallet_amount < trade.amount:
+                #
+                logger.warning(
+                    f'Not enough {trade.safe_base_currency} in wallet to exit {trade.pair}. '
+                    f'Amount needed: {trade.amount}, amount available: {wallet_amount}')
+                self.handle_onexchange_order(trade)
+
             try:
                 try:
                     if (self.strategy.order_types.get('stoploss_on_exchange') and
