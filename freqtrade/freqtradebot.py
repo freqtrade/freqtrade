@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Try refinding a lost trade.
         Only used when InsufficientFunds appears on exit orders (stoploss or long sell/short buy).
-        Tries to walk the stored orders and sell them off eventually.
+        Tries to walk the stored orders and updates the trade state if necessary.
         """
         logger.info(f"Trying to refind lost order for {trade}")
         for order in trade.orders:
