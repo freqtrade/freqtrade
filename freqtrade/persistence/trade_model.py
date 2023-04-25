@@ -158,7 +158,7 @@ class Order(ModelBase):
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
-    def to_ccxt_object(self) -> Dict[str, Any]:
+    def to_ccxt_object(self, stopPriceName: str = 'stopPrice') -> Dict[str, Any]:
         order: Dict[str, Any] = {
             'id': self.order_id,
             'symbol': self.ft_pair,
@@ -170,7 +170,6 @@ class Order(ModelBase):
             'side': self.ft_order_side,
             'filled': self.filled,
             'remaining': self.remaining,
-            'stopPrice': self.stop_price,
             'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f'),
             'timestamp': int(self.order_date_utc.timestamp() * 1000),
             'status': self.status,
@@ -178,7 +177,11 @@ class Order(ModelBase):
             'info': {},
         }
         if self.ft_order_side == 'stoploss':
-            order['ft_order_type'] = 'stoploss'
+            order.update({
+                stopPriceName: self.stop_price,
+                'ft_order_type': 'stoploss',
+            })
+
         return order
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
