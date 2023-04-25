@@ -196,6 +196,7 @@ class Telegram(RPCHandler):
                 self._force_enter, order_side=SignalDirection.LONG)),
             CommandHandler('forceshort', partial(
                 self._force_enter, order_side=SignalDirection.SHORT)),
+            CommandHandler('reload_trade', self._reload_trade_from_exchange),
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler(['coo', 'cancel_open_order'], self._cancel_open_order),
@@ -1072,6 +1073,17 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stopentry()
+        await self._send_msg(f"Status: `{msg['status']}`")
+
+    @authorized_only
+    async def _reload_trade_from_exchange(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_trade <tradeid>.
+        """
+        if not context.args or len(context.args) == 0:
+            raise RPCException("Trade-id not set.")
+        trade_id = context.args[0]
+        msg = self._rpc._rpc_reload_trade_from_exchange(trade_id)
         await self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
