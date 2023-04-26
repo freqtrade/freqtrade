@@ -1082,7 +1082,7 @@ class Telegram(RPCHandler):
         """
         if not context.args or len(context.args) == 0:
             raise RPCException("Trade-id not set.")
-        trade_id = context.args[0]
+        trade_id = int(context.args[0])
         msg = self._rpc._rpc_reload_trade_from_exchange(trade_id)
         await self._send_msg(f"Status: `{msg['status']}`")
 

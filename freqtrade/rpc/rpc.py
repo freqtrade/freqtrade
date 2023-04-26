@@ -741,7 +741,7 @@ class RPC:
 
         return {'status': 'No more entries will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_reload_trade_from_exchange(self, trade_id: str) -> Dict[str, str]:
+    def _rpc_reload_trade_from_exchange(self, trade_id: int) -> Dict[str, str]:
         """
         Handler for reload_trade_from_exchange.
         Reloads a trade from it's orders, should manual interaction have happened.
