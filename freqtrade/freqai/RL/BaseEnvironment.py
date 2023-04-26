@@ -127,6 +127,14 @@ class BaseEnvironment(gym.Env):
         self.history: dict = {}
         self.trade_history: list = []
 
+    def get_attr(self, attr: str):
+        """
+        Returns the attribute of the environment
+        :param attr: attribute to return
+        :return: attribute
+        """
+        return getattr(self, attr)
+
     @abstractmethod
     def set_action_space(self):
         """

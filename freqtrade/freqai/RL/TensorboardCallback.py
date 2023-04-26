@@ -3,7 +3,7 @@ from typing import Any, Dict, Type, Union
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
 from freqtrade.freqai.RL.BaseEnvironment import BaseActions, BaseEnvironment
 
@@ -17,7 +17,7 @@ class TensorboardCallback(BaseCallback):
         super().__init__(verbose)
         self.model: Any = None
         self.logger = None  # type: Any
-        self.training_env: Type[BaseEnvironment] = None  # type: ignore
+        self.training_env: Union[BaseEnvironment, SubprocVecEnv, VecMonitor] = None
         self.actions: Type[Enum] = actions
 
     def _on_training_start(self) -> None:
@@ -45,10 +45,7 @@ class TensorboardCallback(BaseCallback):
     def _on_step(self) -> bool:
 
         local_info = self.locals["infos"][0]
-        if isinstance(self.training_env, SubprocVecEnv):
-            tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
-        else:
-            tensorboard_metrics = self.training_env.tensorboard_metrics
+        tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
 
         for metric in local_info:
             if metric not in ["episode", "terminal_observation"]:
