@@ -184,7 +184,7 @@ class Wallets:
     def _check_exit_amount(self, trade: Trade) -> bool:
         if trade.trading_mode != TradingMode.FUTURES:
             # Slightly higher offset than in safe_exit_amount.
-            wallet_amount: float = self.get_total(trade.safe_base_currency) * 0.981
+            wallet_amount: float = self.get_total(trade.safe_base_currency) * (2 - 0.981)
         else:
             # wallet_amount: float = self.wallets.get_free(trade.safe_base_currency)
             position = self._positions.get(trade.pair)

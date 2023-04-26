@@ -463,6 +463,7 @@ class FreqtradeBot(LoggingMixin):
                 if trade_order:
                     continue
                 logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
+
                 order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
                 order_obj.order_filled_date = datetime.fromtimestamp(
                     safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
@@ -473,6 +474,7 @@ class FreqtradeBot(LoggingMixin):
                 prev_exit_reason = trade.exit_reason
                 trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
                 self.update_trade_state(trade, order['id'], order)
+
                 logger.info(f"handled order {order['id']}")
                 if not trade.is_open:
                     # Trade was just closed
@@ -481,6 +483,7 @@ class FreqtradeBot(LoggingMixin):
                     break
                 else:
                     trade.exit_reason = prev_exit_reason
+                    Trade.commit()
 
         except ExchangeError:
             logger.warning("Error finding onexchange order")
