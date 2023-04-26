@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple, Optional
 
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
@@ -588,7 +588,7 @@ CONF_SCHEMA = {
                                        "properties": {
                                            "shuffle": {"type": "boolean", "default": False},
                                            "nu": {"type": "number", "default": 0.1}
-                                           },
+                                       },
                                        },
                         "shuffle_after_split": {"type": "boolean", "default": False},
                         "buffer_train_data_candles": {"type": "integer", "default": 0}
@@ -704,6 +704,9 @@ ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
 TradeList = List[List]
+# ticks, pair, timeframe, CandleType
+TickWithTimeframe = Tuple[str, str, CandleType, Optional[int], Optional[int]]
+ListTicksWithTimeframes = List[TickWithTimeframe]
 
 LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']

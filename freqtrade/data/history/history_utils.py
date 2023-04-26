@@ -329,7 +329,9 @@ def _download_trades_history(exchange: Exchange,
                              pair: str, *,
                              new_pairs_days: int = 30,
                              timerange: Optional[TimeRange] = None,
-                             data_handler: IDataHandler
+                             data_handler: IDataHandler,
+                             since: Optional[int] = None,
+                             until: Optional[int] = None
                              ) -> bool:
     """
     Download trade history from the exchange.
@@ -395,7 +397,7 @@ def _download_trades_history(exchange: Exchange,
 
     except Exception:
         logger.exception(
-            f'Failed to download historic trades for pair: "{pair}". '
+            f'Failed to download and store historic trades for pair: "{pair}". '
         )
         return False
 
@@ -506,8 +508,6 @@ def download_data_main(config: Config) -> None:
     # Start downloading
     try:
         if config.get('download_trades'):
-            if config.get('trading_mode') == 'futures':
-                raise OperationalException("Trade download not supported for futures.")
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=expanded_pairs, datadir=config['datadir'],
                 timerange=timerange, new_pairs_days=config['new_pairs_days'],

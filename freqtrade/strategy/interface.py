@@ -14,7 +14,8 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds, timeframe_to_msecs
+from freqtrade.data import converter
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
@@ -840,6 +841,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_indicators(dataframe, metadata)
         dataframe = self.advise_entry(dataframe, metadata)
         dataframe = self.advise_exit(dataframe, metadata)
+        logger.debug("TA Analysis Ended")
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -1363,6 +1365,23 @@ class IStrategy(ABC, HyperStrategyMixin):
         for inf_data, populate_fn in self._ft_informative:
             dataframe = _create_and_merge_informative_pair(
                 self, dataframe, metadata, inf_data, populate_fn)
+
+        # TODO: extract this into a separate method e.g. if_enabled_populate_trades()
+        use_public_trades = self.config.get(
+            'exchange', {}).get('use_public_trades', False)
+        if use_public_trades:
+            trades = self.dp.trades(pair=metadata['pair'], copy=False)
+
+            config = self.config
+            config['timeframe'] = self.timeframe
+            # TODO: slice trades to size of dataframe for faster backtesting
+            dataframe = converter.populate_dataframe_with_trades(
+                config,
+                dataframe,
+                trades,
+                pair=metadata['pair'])
+
+            logger.debug("Populated dataframe with trades.")
 
         return self.populate_indicators(dataframe, metadata)
 
