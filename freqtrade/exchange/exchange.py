@@ -2393,6 +2393,13 @@ class Exchange:
         now = arrow.utcnow().int_timestamp
         return plr < now
 
+    def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
+        # Timeframe in seconds
+        interval_in_sec = timeframe_to_seconds(timeframe)
+        plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        REFRESH_EARLIER_SECONDS = 5
+        return plr < arrow.utcnow().int_timestamp - REFRESH_EARLIER_SECONDS
+
     @retrier_async
     async def _async_get_candle_history(
         self,
