@@ -43,7 +43,7 @@ class TensorboardCallback(BaseCallback):
     def _on_step(self) -> bool:
 
         local_info = self.locals["infos"][0]
-        tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
+        tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]  # type: ignore
 
         for metric in local_info:
             if metric not in ["episode", "terminal_observation"]:
