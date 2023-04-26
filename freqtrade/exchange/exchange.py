@@ -164,6 +164,8 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
+        self._required_candle_call_count_max = self._config.get('exchange', {}).get('required_candle_call_count_max', 5)
+
         self._max_trades_candle_limit = self._config.get('exchange', {}).get('trades_candle_limit', 1000)
 
         self._trades_pagination = self._ft_has['trades_pagination']
@@ -683,16 +685,16 @@ class Exchange:
             if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
-        # Allow 5 calls to the exchange per pair
+        # Allow max calls to the exchange per pair
         required_candle_call_count = int(
             (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
         if self._ft_has['ohlcv_has_history']:
 
-            if required_candle_call_count > 5:
-                # Only allow 5 calls per pair to somewhat limit the impact
+            if required_candle_call_count > self._required_candle_call_count_max:
+                # Only allow max calls per pair to somewhat limit the impact
                 raise OperationalException(
                     f"This strategy requires {startup_candles} candles to start, "
-                    "which is more than 5x "
+                    f"which is more than {self._required_candle_call_count_max} "
                     f"the amount of candles {self.name} provides for {timeframe}.")
         elif required_candle_call_count > 1:
             raise OperationalException(
