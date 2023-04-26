@@ -3,7 +3,7 @@ from typing import Any, Dict, Type, Union
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecMonitor
 
 from freqtrade.freqai.RL.BaseEnvironment import BaseActions, BaseEnvironment
 
@@ -17,7 +17,8 @@ class TensorboardCallback(BaseCallback):
         super().__init__(verbose)
         self.model: Any = None
         self.logger = None  # type: Any
-        self.training_env: Union[BaseEnvironment, SubprocVecEnv, VecMonitor] = None
+        self.training_env: Union[BaseEnvironment, SubprocVecEnv,
+                                 VecMonitor, DummyVecEnv] = DummyVecEnv()
         self.actions: Type[Enum] = actions
 
     def _on_training_start(self) -> None:
