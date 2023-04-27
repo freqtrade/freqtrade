@@ -1636,7 +1636,7 @@ class Telegram(RPCHandler):
         strategy_version = self._rpc._freqtrade.strategy.version()
         version_string = f'*Version:* `{__version__}`'
         if strategy_version is not None:
-            version_string += f', *Strategy version: * `{strategy_version}`'
+            version_string += f'\n*Strategy version: * `{strategy_version}`'
 
         await self._send_msg(version_string)
 
