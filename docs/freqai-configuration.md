@@ -52,7 +52,7 @@ The FreqAI strategy requires including the following lines of code in the standa
 
         return dataframe
 
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -77,7 +77,7 @@ The FreqAI strategy requires including the following lines of code in the standa
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -101,7 +101,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -122,7 +122,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -139,6 +139,7 @@ The FreqAI strategy requires including the following lines of code in the standa
             / dataframe["close"]
             - 1
             )
+        return dataframe
 ```
 
 Notice how the `feature_engineering_*()` is where [features](freqai-feature-engineering.md#feature-engineering) are added. Meanwhile `set_freqai_targets()` adds the labels/targets. A full example strategy is available in `templates/FreqaiExampleStrategy.py`.
@@ -386,7 +387,7 @@ Here we create a `PyTorchMLPRegressor` class that implements the `fit` method. T
     
     For example, if you are using a binary classifier to predict price movements as up or down, you can set the class names as follows:
     ```python
-    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         self.freqai.class_names = ["down", "up"]
         dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-100) >
                                                   dataframe["close"], 'up', 'down')

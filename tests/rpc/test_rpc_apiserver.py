@@ -283,7 +283,7 @@ def test_api__init__(default_conf, mocker):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
     mocker.patch('freqtrade.rpc.api_server.webserver.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
@@ -341,7 +341,7 @@ def test_api_run(default_conf, mocker, caplog):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
 
     server_inst_mock = MagicMock()
     server_inst_mock.run_in_thread = MagicMock()
@@ -419,7 +419,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
 
     server_mock = MagicMock()
     server_mock.cleanup = MagicMock()
@@ -480,13 +480,18 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'free': 12.0,
         'balance': 12.0,
         'used': 0.0,
+        'bot_owned': pytest.approx(11.879999),
         'est_stake': 12.0,
+        'est_stake_bot': pytest.approx(11.879999),
         'stake': 'BTC',
         'is_position': False,
         'leverage': 1.0,
         'position': 0.0,
         'side': 'long',
+        'is_bot_managed': True,
     }
+    assert response['total'] == 12.159513094
+    assert response['total_bot'] == pytest.approx(11.879999)
     assert 'starting_capital' in response
     assert 'starting_capital_fiat' in response
     assert 'starting_capital_pct' in response
@@ -1895,7 +1900,7 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
                                             "password": _TEST_PASS,
                                             "ws_token": _TEST_WS_TOKEN
                                             }})
-        mocker.patch('freqtrade.rpc.telegram.Updater')
+        mocker.patch('freqtrade.rpc.telegram.Telegram._init')
         mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api')
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))

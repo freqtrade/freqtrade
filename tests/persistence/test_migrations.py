@@ -1,15 +1,18 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+from importlib import import_module
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine, select, text
+from sqlalchemy.schema import CreateTable
 
 from freqtrade.constants import DEFAULT_DB_PROD_URL
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade, init_db
+from freqtrade.persistence.base import ModelBase
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from freqtrade.persistence.models import PairLock
 from tests.conftest import log_has
@@ -411,3 +414,14 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
     assert len(pairlocks) == 1
     pairlocks[0].pair == 'ETH/BTC'
     pairlocks[0].side == '*'
+
+
+@pytest.mark.parametrize('dialect', [
+    'sqlite', 'postgresql', 'mysql', 'oracle', 'mssql',
+    ])
+def test_create_table_compiles(dialect):
+
+    dialect_mod = import_module(f"sqlalchemy.dialects.{dialect}")
+    for table in ModelBase.metadata.tables.values():
+        create_sql = str(CreateTable(table).compile(dialect=dialect_mod.dialect()))
+        assert 'CREATE TABLE' in create_sql

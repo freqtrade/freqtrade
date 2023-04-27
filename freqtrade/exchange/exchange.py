@@ -107,8 +107,7 @@ class Exchange:
         # Lock event loop. This is necessary to avoid race-conditions when using force* commands
         # Due to funding fee fetching.
         self._loop_lock = Lock()
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+        self.loop = self._init_async_loop()
         self._config: Config = {}
 
         self._config.update(config)
@@ -211,6 +210,11 @@ class Exchange:
             self.loop.run_until_complete(self._api_async.close())
         if self.loop and not self.loop.is_closed():
             self.loop.close()
+
+    def _init_async_loop(self) -> asyncio.AbstractEventLoop:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
 
     def validate_config(self, config):
         # Check if timeframe is available
@@ -863,7 +867,7 @@ class Exchange:
         }
         if stop_loss:
             dry_order["info"] = {"stopPrice": dry_order["price"]}
-            dry_order["stopPrice"] = dry_order["price"]
+            dry_order[self._ft_has['stop_price_param']] = dry_order["price"]
             # Workaround to avoid filling stoploss orders immediately
             dry_order["ft_order_type"] = "stoploss"
         orderbook: Optional[OrderBook] = None
@@ -1015,7 +1019,7 @@ class Exchange:
             from freqtrade.persistence import Order
             order = Order.order_by_id(order_id)
             if order:
-                ccxt_order = order.to_ccxt_object()
+                ccxt_order = order.to_ccxt_object(self._ft_has['stop_price_param'])
                 self._dry_run_open_orders[order_id] = ccxt_order
                 return ccxt_order
             # Gracefully handle errors with dry-run orders.

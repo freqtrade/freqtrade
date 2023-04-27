@@ -209,11 +209,6 @@ You can also keep a static stoploss until the offset is reached, and then trail 
 If `trailing_only_offset_is_reached = True` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
 This option can be used with or without `trailing_stop_positive`, but uses `trailing_stop_positive_offset` as offset.
 
-``` python
-    trailing_stop_positive_offset = 0.011
-    trailing_only_offset_is_reached = True
-```
-
 Configuration (offset is buy-price + 3%):
 
 ``` python
