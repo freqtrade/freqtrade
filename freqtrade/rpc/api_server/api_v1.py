@@ -15,11 +15,11 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PairListsResponse,
-                                                  PerformanceEntry, Ping, PlotConfig, Profit,
-                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse, SysInfo,
-                                                  Version, WhitelistResponse)
+                                                  OpenTradeSchema, PairHistory, PairListsPayload,
+                                                  PairListsResponse, PerformanceEntry, Ping,
+                                                  PlotConfig, Profit, ResultMsg, ShowConfig, Stats,
+                                                  StatusMsg, StrategyListResponse, StrategyResponse,
+                                                  SysInfo, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -301,7 +301,7 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     }
 
 
-@router.get('/pairlists', response_model=PairListsResponse)
+@router.get('/pairlists', response_model=PairListsResponse, tags=['pairlists', 'webserver'])
 def list_pairlists(config=Depends(get_config)):
     from freqtrade.resolvers import PairListResolver
     pairlists = PairListResolver.search_all_objects(
@@ -314,6 +314,32 @@ def list_pairlists(config=Depends(get_config)):
         "params": x['class'].available_parameters(),
          } for x in pairlists
         ]}
+
+
+@router.post('/pairlists/test', response_model=WhitelistResponse, tags=['pairlists', 'webserver'])
+def pairlists_test(payload: PairListsPayload, config=Depends(get_config)):
+    from freqtrade.plugins.pairlistmanager import PairListManager
+    from freqtrade.resolvers import ExchangeResolver
+
+    config_loc = deepcopy(config)
+
+    exchange = ExchangeResolver.load_exchange(
+        config_loc['exchange']['name'], config_loc, validate=False)
+    config_loc['stake_currency'] = payload.stake_currency
+    config_loc['pairlists'] = payload.pairlists
+
+    # TODO: overwrite blacklist? make it optional and fall back to the one in config?
+    # Outcome depends on the UI approach.
+    config_loc['exchange']['pair_blacklist'] = payload.blacklist
+    pairlists = PairListManager(exchange, config_loc)
+    pairlists.refresh_pairlist()
+
+    res = {
+        'method': pairlists.name_list,
+        'length': len(pairlists.whitelist),
+        'whitelist': pairlists.whitelist
+    }
+    return res
 
 
 @router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])

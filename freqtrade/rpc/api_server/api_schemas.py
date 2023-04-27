@@ -399,6 +399,16 @@ class PairListsResponse(BaseModel):
     pairlists: List[PairListResponse]
 
 
+class PairListsPayload(BaseModel):
+    pairlists: List[Dict[str, Any]]
+    blacklist: List[str]
+    stake_currency: str
+
+
+class PairListsTest(BaseModel):
+    pairlists: List[PairListResponse]
+
+
 class FreqAIModelListResponse(BaseModel):
     freqaimodels: List[str]
 
