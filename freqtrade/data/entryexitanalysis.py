@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import joblib
 import pandas as pd
@@ -169,7 +169,8 @@ def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
                 logger.warning("Invalid group mask specified.")
 
 
-def _do_rejected_signals_output(rejected_signals_df, to_csv=False, csv_path=None):
+def _do_rejected_signals_output(rejected_signals_df: pd.DataFrame,
+                                to_csv: bool = False, csv_path=None) -> None:
     cols = ['pair', 'date', 'enter_tag']
     sortcols = ['date', 'pair', 'enter_tag']
     _print_table(rejected_signals_df[cols],
@@ -213,14 +214,17 @@ def prepare_results(analysed_trades, stratname,
     return res_df
 
 
-def print_results(res_df: pd.DataFrame, analysis_groups, indicator_list,
+def print_results(res_df: pd.DataFrame, analysis_groups: List[str], indicator_list: List[str],
                   rejected_signals=None, to_csv=False, csv_path: Optional[Path] = None):
     if res_df.shape[0] > 0:
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
 
-        if rejected_signals is not None and not rejected_signals.empty:
-            _do_rejected_signals_output(rejected_signals, to_csv=to_csv, csv_path=csv_path)
+        if rejected_signals is not None:
+            if rejected_signals.empty:
+                print("There were no rejected signals.")
+            else:
+                _do_rejected_signals_output(rejected_signals, to_csv=to_csv, csv_path=csv_path)
 
         # NB this can be large for big dataframes!
         if "all" in indicator_list:
@@ -245,7 +249,8 @@ def print_results(res_df: pd.DataFrame, analysis_groups, indicator_list,
         print("\\No trades to show")
 
 
-def _print_table(df: pd.DataFrame, sortcols=None, show_index=False, name=None, to_csv=False, csv_path=None):
+def _print_table(df: pd.DataFrame, sortcols=None, show_index=False, name=None,
+                 to_csv=False, csv_path=None):
     if (sortcols is not None):
         data = df.sort_values(sortcols)
     else:
@@ -282,7 +287,7 @@ def process_entry_exit_reasons(config: Config):
         indicator_list = config.get('indicator_list', [])
         do_rejected = config.get('analysis_rejected', False)
         to_csv = config.get('analysis_to_csv', False)
-        csv_path = config.get('analysis_csv_path', config['exportfilename'])
+        csv_path = Path(config.get('analysis_csv_path', config['exportfilename']))
 
         timerange = TimeRange.parse_timerange(None if config.get(
             'timerange') is None else str(config.get('timerange')))
