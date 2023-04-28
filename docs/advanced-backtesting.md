@@ -141,6 +141,7 @@ freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --rejected-sig
 ```
 
 This will write to `user_data/backtest_results`:
+
 * rejected_signals.csv
 * group_0.csv
 * group_1.csv

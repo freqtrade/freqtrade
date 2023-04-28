@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Optional
 
 import joblib
 import pandas as pd
@@ -52,9 +53,7 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
         for pair in pairlist:
             if pair in signal_candles[strategy_name]:
                 analysed_trades_dict[strategy_name][pair] = _analyze_candles_and_indicators(
-                                                            pair,
-                                                            trades,
-                                                            signal_candles[strategy_name][pair])
+                    pair, trades, signal_candles[strategy_name][pair])
     except Exception as e:
         print(f"Cannot process entry/exit reasons for {strategy_name}: ", e)
 
@@ -214,8 +213,8 @@ def prepare_results(analysed_trades, stratname,
     return res_df
 
 
-def print_results(res_df, analysis_groups, indicator_list,
-                  rejected_signals=None, to_csv=False, csv_path=None):
+def print_results(res_df: pd.DataFrame, analysis_groups, indicator_list,
+                  rejected_signals=None, to_csv=False, csv_path: Optional[Path] = None):
     if res_df.shape[0] > 0:
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
@@ -246,7 +245,7 @@ def print_results(res_df, analysis_groups, indicator_list,
         print("\\No trades to show")
 
 
-def _print_table(df, sortcols=None, show_index=False, name=None, to_csv=False, csv_path=None):
+def _print_table(df: pd.DataFrame, sortcols=None, show_index=False, name=None, to_csv=False, csv_path=None):
     if (sortcols is not None):
         data = df.sort_values(sortcols)
     else:
