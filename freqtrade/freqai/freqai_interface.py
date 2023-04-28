@@ -83,6 +83,7 @@ class IFreqaiModel(ABC):
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
+        self.class_names: List[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
@@ -105,6 +106,9 @@ class IFreqaiModel(ABC):
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
         self.model: Any = None
+        if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
+            self.ft_params.update({'principal_component_analysis': False})
+            logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
 
         record_params(config, self.full_path)
 
@@ -154,8 +158,7 @@ class IFreqaiModel(ABC):
                 dk = self.start_backtesting(dataframe, metadata, self.dk, strategy)
                 dataframe = dk.remove_features_from_df(dk.return_dataframe)
             else:
-                logger.info(
-                    "Backtesting using historic predictions (live models)")
+                logger.info("Backtesting using historic predictions (live models)")
                 dk = self.start_backtesting_from_historic_predictions(
                     dataframe, metadata, self.dk)
                 dataframe = dk.return_dataframe
@@ -304,7 +307,7 @@ class IFreqaiModel(ABC):
                 if check_features:
                     self.dd.load_metadata(dk)
                     dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe.tail(1), pair=metadata["pair"]
+                        strategy, prediction_dataframe=dataframe.tail(1), pair=pair
                     )
                     dk.find_features(dataframe_dummy_features)
                     self.check_if_feature_list_matches_strategy(dk)
@@ -314,7 +317,7 @@ class IFreqaiModel(ABC):
             else:
                 if populate_indicators:
                     dataframe = self.dk.use_strategy_to_populate_indicators(
-                        strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+                        strategy, prediction_dataframe=dataframe, pair=pair
                     )
                     populate_indicators = False
 
@@ -329,6 +332,10 @@ class IFreqaiModel(ABC):
 
                 dataframe_train = dk.slice_dataframe(tr_train, dataframe_base_train)
                 dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe_base_backtest)
+
+                dataframe_train = dk.remove_special_chars_from_feature_names(dataframe_train)
+                dataframe_backtest = dk.remove_special_chars_from_feature_names(dataframe_backtest)
+                dk.get_unique_classes_from_labels(dataframe_train)
 
                 if not self.model_exists(dk):
                     dk.find_features(dataframe_train)
@@ -482,9 +489,9 @@ class IFreqaiModel(ABC):
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
-                "but found different features furnished by current strategy."
-                "Change `identifier` to train from scratch, or ensure the"
-                "strategy is furnishing the same features as the pretrained"
+                "but found different features furnished by current strategy. "
+                "Change `identifier` to train from scratch, or ensure the "
+                "strategy is furnishing the same features as the pretrained "
                 "model. In case of --strategy-list, please be aware that FreqAI "
                 "requires all strategies to maintain identical "
                 "feature_engineering_* functions"
@@ -565,8 +572,9 @@ class IFreqaiModel(ABC):
             file_type = ".joblib"
         elif self.dd.model_type == 'keras':
             file_type = ".h5"
-        elif 'stable_baselines' in self.dd.model_type or 'sb3_contrib' == self.dd.model_type:
+        elif self.dd.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             file_type = ".zip"
+
         path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model{file_type}")
         file_exists = path_to_modelfile.is_file()
         if file_exists:

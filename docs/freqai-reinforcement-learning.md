@@ -37,7 +37,7 @@ freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --con
 where `ReinforcementLearner` will use the templated `ReinforcementLearner` from `freqai/prediction_models/ReinforcementLearner` (or a custom user defined one located in `user_data/freqaimodels`). The strategy, on the other hand, follows the same base [feature engineering](freqai-feature-engineering.md) with `feature_engineering_*` as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:
 
 ```python
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -53,17 +53,19 @@ where `ReinforcementLearner` will use the templated `ReinforcementLearner` from 
         # For RL, there are no direct targets to set. This is filler (neutral)
         # until the agent sends an action.
         dataframe["&-action"] = 0
+        return dataframe
 ```
 
-Most of the function remains the same as for typical Regressors, however, the function above shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
+Most of the function remains the same as for typical Regressors, however, the function below shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:
 
 ```python
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         # The following features are necessary for RL models
         dataframe[f"%-raw_close"] = dataframe["close"]
         dataframe[f"%-raw_open"] = dataframe["open"]
         dataframe[f"%-raw_high"] = dataframe["high"]
         dataframe[f"%-raw_low"] = dataframe["low"]
+    return dataframe
 ```
 
 Finally, there is no explicit "label" to make - instead it is necessary to assign the `&-action` column which will contain the agent's actions when accessed in `populate_entry/exit_trends()`. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.
@@ -180,7 +182,7 @@ As you begin to modify the strategy and the prediction model, you will quickly r
 
                 # you can use feature values from dataframe
                 # Assumes the shifted RSI indicator has been generated in the strategy.
-                rsi_now = self.raw_features[f"%-rsi-period-10_shift-1_{pair}_"
+                rsi_now = self.raw_features[f"%-rsi-period_10_shift-1_{pair}_"
                                 f"{self.config['timeframe']}"].iloc[self._current_tick]
 
                 # reward agent for entering trades

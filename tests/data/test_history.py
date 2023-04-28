@@ -409,7 +409,7 @@ def test_init_with_refresh(default_conf, mocker) -> None:
 
 
 def test_file_dump_json_tofile(testdatadir) -> None:
-    file = testdatadir / 'test_{id}.json'.format(id=str(uuid.uuid4()))
+    file = testdatadir / f'test_{uuid.uuid4()}.json'
     data = {'bar': 'foo'}
 
     # check the file we will create does not exist

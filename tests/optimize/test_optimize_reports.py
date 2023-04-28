@@ -9,7 +9,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
@@ -236,7 +236,7 @@ def test_store_backtest_candles(testdatadir, mocker):
 
     assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
-    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+    assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
 
     dump_mock.reset_mock()
     # mock file exporting
@@ -245,7 +245,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
-    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+    assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
     dump_mock.reset_mock()
 
 
@@ -466,10 +466,13 @@ def test_generate_periodic_breakdown_stats(testdatadir):
 def test__get_resample_from_period():
 
     assert _get_resample_from_period('day') == '1d'
-    assert _get_resample_from_period('week') == '1w'
+    assert _get_resample_from_period('week') == '1W-MON'
     assert _get_resample_from_period('month') == '1M'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')
+
+    for period in BACKTEST_BREAKDOWNS:
+        assert isinstance(_get_resample_from_period(period), str)
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):

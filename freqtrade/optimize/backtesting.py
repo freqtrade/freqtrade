@@ -205,9 +205,10 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        # Update can_short flag
+        self._can_short = self.trading_mode != TradingMode.SPOT and strategy.can_short
 
         self.strategy.ft_bot_start()
-        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
@@ -444,10 +445,6 @@ class Backtesting:
                 # Worst case: price ticks tiny bit above open and dives down.
                 stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(
                     (trade.stop_loss_pct or 0.0) / leverage))
-                if is_short:
-                    assert stop_rate > row[LOW_IDX]
-                else:
-                    assert stop_rate < row[HIGH_IDX]
 
             # Limit lower-end to candle low to avoid exits below the low.
             # This still remains "worst case" - but "worst realistic case".
@@ -528,7 +525,7 @@ class Backtesting:
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None)(
+                                             default_retval=None, supress_error=True)(
             trade=trade,  # type: ignore[arg-type]
             current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
@@ -746,7 +743,7 @@ class Backtesting:
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
                 side=direction, entry_tag=entry_tag,
-            ) if self._can_short else 1.0
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
 
@@ -1036,6 +1033,9 @@ class Backtesting:
                                   requested_stake=(
                                     order.safe_remaining * order.ft_price / trade.leverage),
                                   direction='short' if trade.is_short else 'long')
+                # Delete trade if no successful entries happened (if placing the new order failed)
+                if trade.open_order_id is None and trade.nr_of_successful_entries == 0:
+                    return True
                 self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
@@ -1175,6 +1175,8 @@ class Backtesting:
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
             self.check_abort()
+            strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
+                current_time=current_time)
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 row = self.validate_row(data, pair, row_index, current_time)

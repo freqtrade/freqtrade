@@ -344,7 +344,7 @@ def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
     assert backtesting.progress.progress == 0
 
 
-def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
+def test_backtesting_start(default_conf, mocker, caplog) -> None:
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
@@ -367,6 +367,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.bot_loop_start = MagicMock()
+    backtesting.strategy.bot_start = MagicMock()
     backtesting.start()
     # check the logs, that will contain the backtest result
     exists = [
@@ -376,7 +377,8 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     for line in exists:
         assert log_has(line, caplog)
     assert backtesting.strategy.dp._pairlists is not None
-    assert backtesting.strategy.bot_loop_start.call_count == 1
+    assert backtesting.strategy.bot_start.call_count == 1
+    assert backtesting.strategy.bot_loop_start.call_count == 0
     assert sbs.call_count == 1
     assert sbc.call_count == 1
 

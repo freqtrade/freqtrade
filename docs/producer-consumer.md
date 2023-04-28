@@ -42,14 +42,14 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 | `producers` | **Required.** List of producers <br> **Datatype:** Array.
 | `producers.name` | **Required.** Name of this producer. This name must be used in calls to `get_producer_pairs()` and `get_producer_df()` if more than one producer is used.<br> **Datatype:** string
 | `producers.host` | **Required.** The hostname or IP address from your producer.<br> **Datatype:** string
-| `producers.port` | **Required.** The port matching the above host.<br> **Datatype:** string
+| `producers.port` | **Required.** The port matching the above host.<br>*Defaults to `8080`.*<br> **Datatype:** Integer
 | `producers.secure` | **Optional.**  Use ssl in websockets connection. Default False.<br> **Datatype:** string
 | `producers.ws_token` | **Required.**  `ws_token` as configured on the producer.<br> **Datatype:** string
 | | **Optional settings**
 | `wait_timeout` | Timeout until we ping again if no message is received. <br>*Defaults to `300`.*<br> **Datatype:** Integer - in seconds.
-| `wait_timeout` | Ping timeout <br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
+| `ping_timeout` | Ping timeout <br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
 | `sleep_time` | Sleep time before retrying to connect.<br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
-| `remove_entry_exit_signals` | Remove signal columns from the dataframe (set them to 0) on dataframe receipt.<br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
+| `remove_entry_exit_signals` | Remove signal columns from the dataframe (set them to 0) on dataframe receipt.<br>*Defaults to `false`.*<br> **Datatype:** Boolean.
 | `message_size_limit` | Size limit per message<br>*Defaults to `8`.*<br> **Datatype:** Integer - Megabytes.
 
 Instead of (or as well as) calculating indicators in `populate_indicators()` the follower instance listens on the connection to a producer instance's messages (or multiple producer instances in advanced configurations) and requests the producer's most recently analyzed dataframes for each pair in the active whitelist.

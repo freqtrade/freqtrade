@@ -10,7 +10,7 @@ from arrow import Arrow
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import ExitType
+from freqtrade.enums import ExitType, TradingMode
 from freqtrade.optimize.backtesting import Backtesting
 from tests.conftest import EXMS, patch_exchange
 
@@ -108,9 +108,10 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     default_conf.update({
         "stake_amount": 100.0,
         "dry_run_wallet": 1000.0,
-        "strategy": "StrategyTestV3"
+        "strategy": "StrategyTestV3",
     })
     backtesting = Backtesting(default_conf)
+    backtesting.trading_mode = TradingMode.FUTURES
     backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'XRP/USDT'

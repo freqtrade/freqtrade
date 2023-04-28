@@ -21,6 +21,7 @@ from freqtrade.exchange import Exchange, timeframe_to_seconds
 from freqtrade.exchange.types import OrderBook
 from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
+from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg
 from freqtrade.util import PeriodicCache
 
 
@@ -118,8 +119,7 @@ class DataProvider:
         :param new_candle: This is a new candle
         """
         if self.__rpc:
-            self.__rpc.send_msg(
-                {
+            msg: RPCAnalyzedDFMsg = {
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
@@ -127,7 +127,7 @@ class DataProvider:
                         'la': datetime.now(timezone.utc)
                     }
                 }
-            )
+            self.__rpc.send_msg(msg)
             if new_candle:
                 self.__rpc.send_msg({
                         'type': RPCMessageType.NEW_CANDLE,

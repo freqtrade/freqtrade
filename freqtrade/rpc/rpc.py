@@ -24,12 +24,14 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirecti
                              State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
+from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin, shorten_date
-from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.persistence import KeyStoreKeys, KeyValueStore, Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.rpc.rpc_types import RPCSendMsg
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -79,7 +81,7 @@ class RPCHandler:
         """ Cleanup pending module resources """
 
     @abstractmethod
-    def send_msg(self, msg: Dict[str, str]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """ Sends a message to all registered rpc modules """
 
 
@@ -542,6 +544,7 @@ class RPC:
         first_date = trades[0].open_date if trades else None
         last_date = trades[-1].open_date if trades else None
         num = float(len(durations) or 1)
+        bot_start = KeyValueStore.get_datetime_value(KeyStoreKeys.BOT_START_TIME)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
             'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
@@ -575,17 +578,48 @@ class RPC:
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
+            'bot_start_timestamp': int(bot_start.timestamp() * 1000) if bot_start else 0,
+            'bot_start_date': bot_start.strftime(DATETIME_PRINT_FORMAT) if bot_start else '',
         }
+
+    def __balance_get_est_stake(
+            self, coin: str, stake_currency: str, amount: float,
+            balance: Wallet, tickers) -> Tuple[float, float]:
+        est_stake = 0.0
+        est_bot_stake = 0.0
+        if coin == stake_currency:
+            est_stake = balance.total
+            if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+                # in Futures, "total" includes the locked stake, and therefore all positions
+                est_stake = balance.free
+            est_bot_stake = amount
+        else:
+            try:
+                pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
+                rate: Optional[float] = tickers.get(pair, {}).get('last', None)
+                if rate:
+                    if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
+                        rate = 1.0 / rate
+                    est_stake = rate * balance.total
+                    est_bot_stake = rate * amount
+            except (ExchangeError):
+                logger.warning(f"Could not get rate for pair {coin}.")
+                raise ValueError()
+
+        return est_stake, est_bot_stake
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         currencies: List[Dict] = []
         total = 0.0
+        total_bot = 0.0
         try:
-            tickers = self._freqtrade.exchange.get_tickers(cached=True)
+            tickers: Tickers = self._freqtrade.exchange.get_tickers(cached=True)
         except (ExchangeError):
             raise RPCException('Error getting current tickers.')
 
+        open_trades: List[Trade] = Trade.get_open_trades()
+        open_assets: Dict[str, Trade] = {t.safe_base_currency: t for t in open_trades}
         self._freqtrade.wallets.update(require_update=False)
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
@@ -596,41 +630,42 @@ class RPC:
             if not balance.total:
                 continue
 
-            est_stake: float = 0
+            trade = open_assets.get(coin, None)
+            is_bot_managed = coin == stake_currency or trade is not None
+            trade_amount = trade.amount if trade else 0
             if coin == stake_currency:
-                rate = 1.0
-                est_stake = balance.total
-                if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-                    # in Futures, "total" includes the locked stake, and therefore all positions
-                    est_stake = balance.free
-            else:
-                try:
-                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                    rate = tickers.get(pair, {}).get('last')
-                    if rate:
-                        if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
-                            rate = 1.0 / rate
-                        est_stake = rate * balance.total
-                except (ExchangeError):
-                    logger.warning(f" Could not get rate for pair {coin}.")
-                    continue
-            total = total + est_stake
+                trade_amount = self._freqtrade.wallets.get_available_stake_amount()
+
+            try:
+                est_stake, est_stake_bot = self.__balance_get_est_stake(
+                    coin, stake_currency, trade_amount, balance, tickers)
+            except ValueError:
+                continue
+
+            total += est_stake
+
+            if is_bot_managed:
+                total_bot += est_stake_bot
             currencies.append({
                 'currency': coin,
                 'free': balance.free,
                 'balance': balance.total,
                 'used': balance.used,
+                'bot_owned': trade_amount,
                 'est_stake': est_stake or 0,
+                'est_stake_bot': est_stake_bot if is_bot_managed else 0,
                 'stake': stake_currency,
                 'side': 'long',
                 'leverage': 1,
                 'position': 0,
+                'is_bot_managed': is_bot_managed,
                 'is_position': False,
             })
         symbol: str
         position: PositionWallet
         for symbol, position in self._freqtrade.wallets.get_all_positions().items():
             total += position.collateral
+            total_bot += position.collateral
 
             currencies.append({
                 'currency': symbol,
@@ -639,24 +674,30 @@ class RPC:
                 'used': 0,
                 'position': position.position,
                 'est_stake': position.collateral,
+                'est_stake_bot': position.collateral,
                 'stake': stake_currency,
                 'leverage': position.leverage,
                 'side': position.side,
+                'is_bot_managed': True,
                 'is_position': True
             })
 
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
+        value_bot = self._fiat_converter.convert_amount(
+            total_bot, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
         trade_count = len(Trade.get_trades_proxy())
-        starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
-        starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
+        starting_capital_ratio = (total_bot / starting_capital) - 1 if starting_capital else 0.0
+        starting_cap_fiat_ratio = (value_bot / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
         return {
             'currencies': currencies,
             'total': total,
+            'total_bot': total_bot,
             'symbol': fiat_display_currency,
             'value': value,
+            'value_bot': value_bot,
             'stake': stake_currency,
             'starting_capital': starting_capital,
             'starting_capital_ratio': starting_capital_ratio,
@@ -1192,6 +1233,7 @@ class RPC:
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
         strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
+        strategy.ft_bot_start()
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 

@@ -36,20 +36,25 @@ class Balance(BaseModel):
     free: float
     balance: float
     used: float
+    bot_owned: Optional[float]
     est_stake: float
+    est_stake_bot: Optional[float]
     stake: str
     # Starting with 2.x
     side: str
     leverage: float
     is_position: bool
     position: float
+    is_bot_managed: bool
 
 
 class Balances(BaseModel):
     currencies: List[Balance]
     total: float
+    total_bot: float
     symbol: str
     value: float
+    value_bot: float
     stake: str
     note: str
     starting_capital: float
@@ -108,6 +113,8 @@ class Profit(BaseModel):
     max_drawdown: float
     max_drawdown_abs: float
     trading_volume: Optional[float]
+    bot_start_timestamp: int
+    bot_start_date: str
 
 
 class SellReason(BaseModel):
@@ -275,6 +282,10 @@ class TradeSchema(BaseModel):
     liquidation_price: Optional[float]
     funding_fees: Optional[float]
     trading_mode: Optional[TradingMode]
+
+    amount_precision: Optional[float]
+    price_precision: Optional[float]
+    precision_mode: Optional[int]
 
 
 class OpenTradeSchema(TradeSchema):

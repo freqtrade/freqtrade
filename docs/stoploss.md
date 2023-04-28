@@ -23,10 +23,22 @@ These modes can be configured with these values:
     'stoploss_on_exchange_limit_ratio': 0.99
 ```
 
-!!! Note
-    Stoploss on exchange is only supported for Binance (stop-loss-limit), Huobi (stop-limit), Kraken (stop-loss-market, stop-loss-limit), Gate (stop-limit), and Kucoin (stop-limit and stop-market) as of now.  
-    <ins>Do not set too low/tight stoploss value if using stop loss on exchange!</ins>  
-    If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work.
+Stoploss on exchange is only supported for the following exchanges, and not all exchanges support both stop-limit and stop-market.
+The Order-type will be ignored if only one mode is available.
+
+| Exchange | stop-loss type |
+|----------|-------------|
+| Binance  | limit |
+| Binance Futures  | market, limit |
+| Huobi    | limit |
+| kraken   | market, limit |
+| Gate     | limit |
+| Okx      | limit |
+| Kucoin   | stop-limit, stop-market|
+
+!!! Note "Tight stoploss"
+    <ins>Do not set too low/tight stoploss value when using stop loss on exchange!</ins>  
+    If set to low/tight you will have greater risk of missing fill on the order and stoploss will not work.
 
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
@@ -196,11 +208,6 @@ You can also keep a static stoploss until the offset is reached, and then trail 
 
 If `trailing_only_offset_is_reached = True` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
 This option can be used with or without `trailing_stop_positive`, but uses `trailing_stop_positive_offset` as offset.
-
-``` python
-    trailing_stop_positive_offset = 0.011
-    trailing_only_offset_is_reached = True
-```
 
 Configuration (offset is buy-price + 3%):
 
