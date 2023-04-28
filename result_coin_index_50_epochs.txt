@@ -1,0 +1,113 @@
+2023-04-28 17:47:05,442 - freqtrade.configuration.load_config - INFO - Using config: config_wao.json ...
+2023-04-28 17:47:05,499 - freqtrade.loggers - INFO - Verbosity set to 0
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Using max_open_trades: 1 ...
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Using user-data directory: /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data ...
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Using data directory: /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/data/binance ...
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Parameter --epochs detected ... Will run Hyperopt with for 50 epochs ...
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Parameter -s/--spaces detected: ['roi', 'stoploss', 'trailing']
+2023-04-28 17:47:05,500 - freqtrade.configuration.configuration - INFO - Parameter -j/--job-workers detected: -1
+2023-04-28 17:47:05,501 - freqtrade.configuration.configuration - INFO - Parameter --min-trades detected: 1
+2023-04-28 17:47:05,501 - freqtrade.configuration.configuration - INFO - Using Hyperopt loss class name: SharpeHyperOptLossDaily
+2023-04-28 17:47:05,501 - freqtrade.configuration.check_exchange - INFO - Checking exchange...
+2023-04-28 17:47:05,526 - freqtrade.configuration.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2023-04-28 17:47:05,526 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2023-04-28 17:47:05,526 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2023-04-28 17:47:05,529 - freqtrade.commands.optimize_commands - INFO - Starting freqtrade in Hyperopt mode
+2023-04-28 17:47:05,530 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2023-04-28 17:47:05,530 - freqtrade.exchange.exchange - INFO - Using CCXT 3.0.80
+2023-04-28 17:47:05,562 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2023-04-28 17:47:12,337 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2023-04-28 17:47:12,432 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy bbrsi_scalp from '/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp.py'...
+2023-04-28 17:47:12,433 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_types' with value in config file: {'entry': 'limit', 'exit': 'limit', 'emergency_exit': 'market', 'force_exit': 'market', 'force_entry': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'stoploss_on_exchange_limit_ratio': 0.99}.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_time_in_force' with value in config file: {'entry': 'gtc', 'exit': 'gtc'}.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value in config file: USDT.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value in config file: 50.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'unfilledtimeout' with value in config file: {'entry': 210, 'exit': 210, 'unit': 'minutes', 'exit_timeout_count': 0}.
+2023-04-28 17:47:12,433 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'240': 0.005, '220': 0.006, '200': 0.007, '180': 0.008, '160': 0.009, '140': 0.01, '120': 0.011, '100': 0.012, '80': 0.013, '60': 0.014, '40': 0.016, '20': 0.018, '0': 0.02}
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 5m
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.01
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive: 0.089
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.11
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: False
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'limit', 'exit': 'limit', 'emergency_exit': 'market', 'force_exit': 'market', 'force_entry': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'stoploss_on_exchange_limit_ratio': 0.99}
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'gtc', 'exit': 'gtc'}
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 50
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using protections: []
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2023-04-28 17:47:12,434 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using unfilledtimeout: {'entry': 210, 'exit': 210, 'unit': 'minutes', 'exit_timeout_count': 0}
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: True
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: True
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2023-04-28 17:47:12,435 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2023-04-28 17:47:12,435 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2023-04-28 17:47:12,477 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/hello/Desktop/Wao-Local/workspace/freqtrade/freqtrade/plugins/pairlist/StaticPairList.py'...
+2023-04-28 17:47:12,488 - freqtrade.strategy.hyper - INFO - No params for buy found, using default values.
+2023-04-28 17:47:12,489 - freqtrade.strategy.hyper - INFO - No params for sell found, using default values.
+2023-04-28 17:47:12,489 - freqtrade.strategy.hyper - INFO - No params for protection found, using default values.
+2023-04-28 17:47:12,568 - freqtrade.resolvers.iresolver - INFO - Using resolved hyperoptloss SharpeHyperOptLossDaily from '/home/hello/Desktop/Wao-Local/workspace/freqtrade/freqtrade/optimize/hyperopt_loss/hyperopt_loss_sharpe_daily.py'...
+2023-04-28 17:47:12,568 - freqtrade.optimize.hyperopt - INFO - Removing `/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/hyperopt_results/hyperopt_tickerdata.pkl`.
+2023-04-28 17:47:12,569 - freqtrade.optimize.hyperopt - INFO - Using optimizer random state: 25512
+2023-04-28 17:47:12,569 - freqtrade.optimize.hyperopt_interface - INFO - Min roi table: {0: 0.03, 10: 0.02, 20: 0.01, 30: 0}
+2023-04-28 17:47:12,569 - freqtrade.optimize.hyperopt_interface - INFO - Max roi table: {0: 0.31, 40: 0.11, 100: 0.04, 220: 0}
+2023-04-28 17:47:12,961 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-10-30 00:00:00 up to 2023-04-28 09:10:00 (180 days).
+2023-04-28 17:47:12,961 - freqtrade.configuration.timerange - WARNING - Moving start-date by 0 candles to account for startup time.
+2023-04-28 17:47:12,961 - freqtrade.optimize.hyperopt - INFO - Dataload complete. Calculating indicators
+2023-04-28 17:47:12,974 - freqtrade.optimize.hyperopt - INFO - Hyperopting with data from 2022-10-30 00:00:00 up to 2023-04-28 09:10:00 (180 days)..
+2023-04-28 17:47:12,981 - freqtrade.exchange.exchange - INFO - Closing async ccxt session.
+2023-04-28 17:47:12,999 - freqtrade.optimize.hyperopt - INFO - Found 4 CPU cores. Let's make them scream!
+2023-04-28 17:47:13,000 - freqtrade.optimize.hyperopt - INFO - Number of parallel jobs set as: -1
+2023-04-28 17:47:13,000 - freqtrade.optimize.hyperopt - INFO - Using estimator ET.
+2023-04-28 17:47:13,027 - freqtrade.optimize.hyperopt - INFO - Effective number of parallel workers used: 4
++--------+---------+----------+------------------+--------------+-------------------------------+-----------------+-------------+-------------------------------+
+|   Best |   Epoch |   Trades |    Win Draw Loss |   Avg profit |                        Profit |    Avg duration |   Objective |           Max Drawdown (Acct) |
+|--------+---------+----------+------------------+--------------+-------------------------------+-----------------+-------------+-------------------------------|
+| [32m* Best[39m |   [32m 1/50[39m |      [32m240[39m |    [32m110  127    3[39m |      [32m  0.02%[39m | [32m        2.225 USDT    (0.22%)[39m | [32m0 days 14:52:00[39m |     [32m0.38902[39m |         9.740 USDT    (0.96%) |
+ [Epoch 0 of 50 (  0%)] |[32m[39m[1m/[0m            | [ETA:  --:--:--, Elapsed Time: 0:00:00]                                                                               | [32m* Best[39m |   [32m 3/50[39m |      [32m114[39m |     [32m49   64    1[39m |      [32m  0.05%[39m | [32m        2.631 USDT    (0.26%)[39m | [32m1 days 11:00:00[39m |     [32m0.04238[39m |         6.993 USDT    (0.69%) |
+ [Epoch 3 of 50 (  6%)] |[32m[39m[1m-[0m            | [ETA:   0:00:01, Elapsed Time: 0:00:00] [Epoch 5 of 50 ( 10%)] |[32m█[39m[1m\[0m           | [ETA:   0:04:36, Elapsed Time: 0:00:30] [Epoch 8 of 50 ( 16%)] |[32m█[39m[1m|[0m           | [ETA:   0:02:41, Elapsed Time: 0:00:30] [Epoch 9 of 50 ( 18%)] |[32m██[39m[1m/[0m          | [ETA:   0:04:45, Elapsed Time: 0:01:02] [Epoch 12 of 50 ( 24%)] |[32m██[39m[1m-[0m         | [ETA:   0:03:18, Elapsed Time: 0:01:02] [Epoch 13 of 50 ( 26%)] |[32m██[39m[1m\[0m         | [ETA:   0:04:29, Elapsed Time: 0:01:34] [Epoch 16 of 50 ( 32%)] |[32m███[39m[1m|[0m        | [ETA:   0:03:21, Elapsed Time: 0:01:34] [Epoch 17 of 50 ( 34%)] |[32m███[39m[1m/[0m        | [ETA:   0:04:11, Elapsed Time: 0:02:09] [Epoch 20 of 50 ( 40%)] |[32m████[39m[1m-[0m       | [ETA:   0:03:14, Elapsed Time: 0:02:09] [Epoch 21 of 50 ( 42%)] |[32m████[39m[1m\[0m       | [ETA:   0:03:56, Elapsed Time: 0:02:51]                                                                               | [32m* Best[39m |   [32m25/50[39m |      [32m115[39m |     [32m51   63    1[39m |      [32m  0.05%[39m | [32m        2.700 USDT    (0.27%)[39m | [32m1 days 10:40:00[39m |     [32m0.03436[39m |         6.993 USDT    (0.69%) |
+ [Epoch 25 of 50 ( 50%)] |[32m█████[39m[1m|[0m      | [ETA:   0:03:37, Elapsed Time: 0:03:37] [Epoch 28 of 50 ( 56%)] |[32m██████[39m[1m/[0m     | [ETA:   0:02:51, Elapsed Time: 0:03:37] [Epoch 29 of 50 ( 58%)] |[32m██████[39m[1m-[0m     | [ETA:   0:03:19, Elapsed Time: 0:04:36] [Epoch 31 of 50 ( 62%)] |[32m██████[39m[1m\[0m     | [ETA:   0:02:49, Elapsed Time: 0:04:36] [Epoch 33 of 50 ( 66%)] |[32m███████[39m[1m|[0m    | [ETA:   0:02:49, Elapsed Time: 0:05:29]                                                                               |   [32mBest[39m |   [32m34/50[39m |      [32m115[39m |     [32m54   60    1[39m |      [32m  0.06%[39m | [32m        3.603 USDT    (0.36%)[39m | [32m1 days 10:40:00[39m |    [32m-0.13868[39m |         6.993 USDT    (0.69%) |
+ [Epoch 34 of 50 ( 68%)] |[32m███████[39m[1m/[0m    | [ETA:   0:02:35, Elapsed Time: 0:05:29] [Epoch 37 of 50 ( 74%)] |[32m████████[39m[1m-[0m   | [ETA:   0:02:13, Elapsed Time: 0:06:18]                                                                               |   [32mBest[39m |   [32m41/50[39m |      [32m114[39m |     [32m53   60    1[39m |      [32m  0.07%[39m | [32m        4.065 USDT    (0.41%)[39m | [32m1 days 10:59:00[39m |    [32m-0.22965[39m |         6.993 USDT    (0.69%) |
+ [Epoch 41 of 50 ( 82%)] |[32m█████████[39m[1m\[0m  | [ETA:   0:01:34, Elapsed Time: 0:07:11] [Epoch 45 of 50 ( 90%)] |[32m█████████[39m[1m|[0m  | [ETA:   0:00:53, Elapsed Time: 0:08:03] [Epoch 49 of 50 ( 98%)] |[32m██████████[39m[1m/[0m | [ETA:   0:00:10, Elapsed Time: 0:08:32] [Epoch 50 of 50 (100%)] ||           | [Time:  0:08:32, Elapsed Time: 0:08:32]
+2023-04-28 17:56:27,097 - freqtrade.optimize.hyperopt - INFO - 50 epochs saved to '/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/hyperopt_results/strategy_bbrsi_scalp_2023-04-28_17-47-12.fthypt'.
+2023-04-28 17:56:27,210 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp_futures_short.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,212 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bb_scalp_15m.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,213 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Strategy004.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,215 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/ClucHAnix.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,216 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Cluc6werk.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,217 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Cluc5werk.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,240 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Strategy002.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,462 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Hacklemore.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,533 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp_futures.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,534 - freqtrade.resolvers.iresolver - WARNING - Could not import /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/Strategy003.py due to 'cannot import name 'WAOStrategyController' from 'wao.wao_strategy_controller' (/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/wao/wao_strategy_controller.py)'
+2023-04-28 17:56:27,535 - freqtrade.optimize.hyperopt_tools - INFO - Dumping parameters to /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp.json
+
+Best result:
+
+    41/50:    114 trades. 53/60/1 Wins/Draws/Losses. Avg profit   0.07%. Median profit   0.00%. Total profit  4.06547359 USDT (   0.41%). Avg duration 1 day, 10:59:00 min. Objective: -0.22965
+
+
+    # ROI table:
+    minimal_roi = {
+        "0": 0.241,
+        "13": 0.06,
+        "36": 0.025,
+        "105": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.268
+
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.094
+    trailing_stop_positive_offset = 0.175
+    trailing_only_offset_is_reached = False
+    

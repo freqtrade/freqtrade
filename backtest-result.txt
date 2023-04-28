@@ -1,0 +1,125 @@
+2023-04-28 20:47:42,578 - freqtrade.configuration.load_config - INFO - Using config: config_wao.json ...
+2023-04-28 20:47:42,579 - freqtrade.loggers - INFO - Verbosity set to 0
+2023-04-28 20:47:42,580 - freqtrade.configuration.configuration - INFO - Using max_open_trades: 1 ...
+2023-04-28 20:47:42,580 - freqtrade.configuration.configuration - INFO - Using user-data directory: /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data ...
+2023-04-28 20:47:42,580 - freqtrade.configuration.configuration - INFO - Using data directory: /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/data/binance ...
+2023-04-28 20:47:42,580 - freqtrade.configuration.configuration - INFO - Parameter --cache=day detected ...
+2023-04-28 20:47:42,580 - freqtrade.configuration.check_exchange - INFO - Checking exchange...
+2023-04-28 20:47:42,661 - freqtrade.configuration.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2023-04-28 20:47:42,661 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2023-04-28 20:47:42,661 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2023-04-28 20:47:42,666 - freqtrade.commands.optimize_commands - INFO - Starting freqtrade in Backtesting mode
+2023-04-28 20:47:42,666 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2023-04-28 20:47:42,666 - freqtrade.exchange.exchange - INFO - Using CCXT 3.0.80
+2023-04-28 20:47:42,704 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2023-04-28 20:47:49,881 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2023-04-28 20:47:50,101 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy bbrsi_scalp from '/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp.py'...
+2023-04-28 20:47:50,101 - freqtrade.strategy.hyper - INFO - Loading parameters from file /home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/strategies/bbrsi_scalp.json
+2023-04-28 20:47:50,101 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_types' with value in config file: {'entry': 'limit', 'exit': 'limit', 'emergency_exit': 'market', 'force_exit': 'market', 'force_entry': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'stoploss_on_exchange_limit_ratio': 0.99}.
+2023-04-28 20:47:50,101 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_time_in_force' with value in config file: {'entry': 'gtc', 'exit': 'gtc'}.
+2023-04-28 20:47:50,101 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value in config file: USDT.
+2023-04-28 20:47:50,101 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value in config file: 50.
+2023-04-28 20:47:50,101 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'unfilledtimeout' with value in config file: {'entry': 210, 'exit': 210, 'unit': 'minutes', 'exit_timeout_count': 0}.
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 0.168, '34': 0.056, '88': 0.031, '105': 0}
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 5m
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.319
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: True
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive: 0.264
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.338
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: True
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: False
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'limit', 'exit': 'limit', 'emergency_exit': 'market', 'force_exit': 'market', 'force_entry': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'stoploss_on_exchange_limit_ratio': 0.99}
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'gtc', 'exit': 'gtc'}
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 50
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using protections: []
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using unfilledtimeout: {'entry': 210, 'exit': 210, 'unit': 'minutes', 'exit_timeout_count': 0}
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: True
+2023-04-28 20:47:50,102 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: True
+2023-04-28 20:47:50,103 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2023-04-28 20:47:50,103 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2023-04-28 20:47:50,103 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2023-04-28 20:47:50,103 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2023-04-28 20:47:50,103 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2023-04-28 20:47:50,103 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2023-04-28 20:47:50,124 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/hello/Desktop/Wao-Local/workspace/freqtrade/freqtrade/plugins/pairlist/StaticPairList.py'...
+2023-04-28 20:47:50,405 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-10-30 00:00:00 up to 2023-04-28 17:35:00 (180 days).
+2023-04-28 20:47:50,405 - freqtrade.configuration.timerange - WARNING - Moving start-date by 0 candles to account for startup time.
+2023-04-28 20:47:50,405 - freqtrade.optimize.backtesting - INFO - Dataload complete. Calculating indicators
+2023-04-28 20:47:50,425 - freqtrade.optimize.backtesting - WARNING - Backtest result caching disabled due to use of open-ended timerange.
+2023-04-28 20:47:50,425 - freqtrade.optimize.backtesting - INFO - Running backtesting for Strategy bbrsi_scalp
+2023-04-28 20:47:50,425 - freqtrade.strategy.hyper - INFO - No params for buy found, using default values.
+2023-04-28 20:47:50,425 - freqtrade.strategy.hyper - INFO - No params for sell found, using default values.
+2023-04-28 20:47:50,426 - freqtrade.strategy.hyper - INFO - No params for protection found, using default values.
+2023-04-28 20:47:50,440 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2022-10-30 00:00:00 up to 2023-04-28 17:35:00 (180 days).
+2023-04-28 20:48:06,044 - freqtrade.misc - INFO - dumping json to "/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/backtest_results/backtest-result-2023-04-28_20-48-06.meta.json"
+2023-04-28 20:48:06,045 - freqtrade.misc - INFO - dumping json to "/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/backtest_results/backtest-result-2023-04-28_20-48-06.json"
+2023-04-28 20:48:06,048 - freqtrade.misc - INFO - dumping json to "/home/hello/Desktop/Wao-Local/workspace/freqtrade/user_data/backtest_results/.last_result.json"
+Result for strategy bbrsi_scalp
+========================================================== BACKTESTING REPORT ==========================================================
+|     Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |    Avg Duration |   Win  Draw  Loss  Win% |
+|----------+--------+----------------+----------------+-------------------+----------------+-----------------+-------------------------|
+| XMR/USDT |    114 |           0.07 |           8.29 |             4.149 |           0.41 | 1 day, 11:04:00 |    53    60     1  46.5 |
+|    TOTAL |    114 |           0.07 |           8.29 |             4.149 |           0.41 | 1 day, 11:04:00 |    53    60     1  46.5 |
+========================================================== ENTER TAG STATS ==========================================================
+|   TAG |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |    Avg Duration |   Win  Draw  Loss  Win% |
+|-------+--------+----------------+----------------+-------------------+----------------+-----------------+-------------------------|
+| TOTAL |    114 |           0.07 |           8.29 |             4.149 |           0.41 | 1 day, 11:04:00 |    53    60     1  46.5 |
+===================================================== EXIT REASON STATS =====================================================
+|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |
+|---------------+---------+--------------------------+----------------+----------------+-------------------+----------------|
+|           roi |      79 |     19    60     0   100 |           0.1  |           7.61 |             3.809 |           7.61 |
+|   exit_signal |      34 |     34     0     0   100 |           0.43 |          14.48 |             7.249 |          14.48 |
+|    force_exit |       1 |      0     0     1     0 |         -13.8  |         -13.8  |            -6.909 |         -13.8  |
+======================================================== LEFT OPEN TRADES REPORT =========================================================
+|     Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |      Avg Duration |   Win  Draw  Loss  Win% |
+|----------+--------+----------------+----------------+-------------------+----------------+-------------------+-------------------------|
+| XMR/USDT |      1 |         -13.80 |         -13.80 |            -6.909 |          -0.69 | 84 days, 23:20:00 |     0     0     1     0 |
+|    TOTAL |      1 |         -13.80 |         -13.80 |            -6.909 |          -0.69 | 84 days, 23:20:00 |     0     0     1     0 |
+================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2022-10-30 00:00:00 |
+| Backtesting to              | 2023-04-28 17:35:00 |
+| Max open trades             | 1                   |
+|                             |                     |
+| Total/Daily Avg Trades      | 114 / 0.63          |
+| Starting balance            | 1000 USDT           |
+| Final balance               | 1004.149 USDT       |
+| Absolute profit             | 4.149 USDT          |
+| Total profit %              | 0.41%               |
+| CAGR %                      | 0.84%               |
+| Profit factor               | 1.60                |
+| Trades per day              | 0.63                |
+| Avg. daily profit %         | 0.00%               |
+| Avg. stake amount           | 50 USDT             |
+| Total trade volume          | 5700 USDT           |
+|                             |                     |
+| Best Pair                   | XMR/USDT 8.29%      |
+| Worst Pair                  | XMR/USDT 8.29%      |
+| Best trade                  | XMR/USDT 1.86%      |
+| Worst trade                 | XMR/USDT -13.80%    |
+| Best day                    | 1.845 USDT          |
+| Worst day                   | -6.909 USDT         |
+| Days win/draw/lose          | 25 / 155 / 1        |
+| Avg. Duration Winners       | 1:21:00             |
+| Avg. Duration Loser         | 84 days, 23:20:00   |
+| Rejected Entry signals      | 0                   |
+| Entry/Exit Timeouts         | 0 / 0               |
+|                             |                     |
+| Min balance                 | 1000.102 USDT       |
+| Max balance                 | 1011.058 USDT       |
+| Max % of account underwater | 0.68%               |
+| Absolute Drawdown (Account) | 0.68%               |
+| Absolute Drawdown           | 6.909 USDT          |
+| Drawdown high               | 11.058 USDT         |
+| Drawdown low                | 4.149 USDT          |
+| Drawdown Start              | 2023-02-02 16:50:00 |
+| Drawdown End                | 2023-04-28 17:35:00 |
+| Market change               | 3.76%               |
+=====================================================
+
+2023-04-28 20:48:06,144 - freqtrade.exchange.exchange - INFO - Closing async ccxt session.
