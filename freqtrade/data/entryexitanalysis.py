@@ -93,7 +93,7 @@ def _analyze_candles_and_indicators(pair, trades: pd.DataFrame, signal_candles: 
         return pd.DataFrame()
 
 
-def _do_group_table_output(bigdf, glist, to_csv=False, csv_path=None):
+def _do_group_table_output(bigdf, glist, csv_path: Path, to_csv=False, ):
     for g in glist:
         # 0: summary wins/losses grouped by enter tag
         if g == "0":
@@ -215,7 +215,7 @@ def prepare_results(analysed_trades, stratname,
 
 
 def print_results(res_df: pd.DataFrame, analysis_groups: List[str], indicator_list: List[str],
-                  rejected_signals=None, to_csv=False, csv_path: Optional[Path] = None):
+                  csv_path: Path, rejected_signals=None, to_csv=False):
     if res_df.shape[0] > 0:
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
@@ -249,21 +249,15 @@ def print_results(res_df: pd.DataFrame, analysis_groups: List[str], indicator_li
         print("\\No trades to show")
 
 
-def _print_table(df: pd.DataFrame, sortcols=None, show_index=False, name=None,
-                 to_csv=False, csv_path=None):
+def _print_table(df: pd.DataFrame, sortcols=None, *, show_index=False, name=None,
+                 to_csv=False, csv_path: Path):
     if (sortcols is not None):
         data = df.sort_values(sortcols)
     else:
         data = df
 
     if to_csv:
-        if csv_path is not None:
-            safe_name = Path(csv_path,
-                             name.lower().replace(" ", "_").replace(":", ""))
-        else:
-            safe_name = Path("user_data",
-                             "backtest_results",
-                             name.lower().replace(" ", "_").replace(":", ""))
+        safe_name = Path(csv_path, name.lower().replace(" ", "_").replace(":", ""))
         data.to_csv(f"{str(safe_name)}.csv")
     else:
         if name is not None:
@@ -288,6 +282,8 @@ def process_entry_exit_reasons(config: Config):
         do_rejected = config.get('analysis_rejected', False)
         to_csv = config.get('analysis_to_csv', False)
         csv_path = Path(config.get('analysis_csv_path', config['exportfilename']))
+        if to_csv and not csv_path.is_dir():
+            raise OperationalException(f"Specified directory {csv_path} does not exist.")
 
         timerange = TimeRange.parse_timerange(None if config.get(
             'timerange') is None else str(config.get('timerange')))
