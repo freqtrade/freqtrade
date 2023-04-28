@@ -26,3 +26,12 @@ services:
       --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
       --config /freqtrade/user_data/config.json
       --strategy SampleStrategy
+    # Enable GPU Image and GPU Resources
+    #image: freqtradeorg/freqtrade:develop_freqaitorch
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: 1
+    #          capabilities: [gpu]
