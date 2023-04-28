@@ -1252,8 +1252,8 @@ class Backtesting:
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, DataFrame],
                               timerange: TimeRange):
         self.progress.init_step(BacktestState.ANALYZE, 0)
-
-        logger.info(f"Running backtesting for Strategy {strat.get_strategy_name()}")
+        strategy_name = strat.get_strategy_name()
+        logger.info(f"Running backtesting for Strategy {strategy_name}")
         backtest_start_time = datetime.now(timezone.utc)
         self._set_strategy(strat)
 
@@ -1288,20 +1288,23 @@ class Backtesting:
         )
         backtest_end_time = datetime.now(timezone.utc)
         results.update({
-            'run_id': self.run_ids.get(strat.get_strategy_name(), ''),
+            'run_id': self.run_ids.get(strategy_name, ''),
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
         })
-        self.all_results[self.strategy.get_strategy_name()] = results
+        self.all_results[strategy_name] = results
 
         if (self.config.get('export', 'none') == 'signals' and
                 self.dataprovider.runmode == RunMode.BACKTEST):
-            self._generate_trade_signal_candles(preprocessed_tmp, results)
-            self._generate_rejected_signals(preprocessed_tmp, self.rejected_dict)
+            self.processed_dfs[strategy_name] = self._generate_trade_signal_candles(
+                preprocessed_tmp, results)
+            self.rejected_df[strategy_name] = self._generate_rejected_signals(
+                preprocessed_tmp, self.rejected_dict)
 
         return min_date, max_date
 
-    def _generate_trade_signal_candles(self, preprocessed_df, bt_results):
+    def _generate_trade_signal_candles(self, preprocessed_df: Dict[str, pd.DataFrame],
+                                       bt_results: Dict[str, Any]) -> pd.DataFrame:
         signal_candles_only = {}
         for pair in preprocessed_df.keys():
             signal_candles_only_df = DataFrame()
@@ -1319,10 +1322,10 @@ class Backtesting:
                         signal_inds.infer_objects()])
 
                 signal_candles_only[pair] = signal_candles_only_df
+        return signal_candles_only
 
-        self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
-
-    def _generate_rejected_signals(self, preprocessed_df, rejected_dict):
+    def _generate_rejected_signals(self, preprocessed_df: Dict[str, DataFrame],
+                                   rejected_dict: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         rejected_candles_only = {}
         for pair, signals in rejected_dict.items():
             rejected_signals_only_df = DataFrame()
@@ -1338,8 +1341,7 @@ class Backtesting:
                     data_df_row.infer_objects()])
 
             rejected_candles_only[pair] = rejected_signals_only_df
-
-        self.rejected_df[self.strategy.get_strategy_name()] = rejected_candles_only
+        return rejected_candles_only
 
     def _get_min_cached_backtest_date(self):
         min_backtest_date = None
