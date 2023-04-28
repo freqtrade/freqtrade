@@ -257,8 +257,9 @@ def _print_table(df: pd.DataFrame, sortcols=None, *, show_index=False, name=None
         data = df
 
     if to_csv:
-        safe_name = Path(csv_path, name.lower().replace(" ", "_").replace(":", ""))
-        data.to_csv(f"{str(safe_name)}.csv")
+        safe_name = Path(csv_path, name.lower().replace(" ", "_").replace(":", "") + ".csv")
+        data.to_csv(safe_name)
+        print(f"Saved {name} to {safe_name}")
     else:
         if name is not None:
             print(name)
