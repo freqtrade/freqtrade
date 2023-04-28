@@ -9,7 +9,6 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
 from numpy import nan
 from pandas import DataFrame
 
@@ -28,7 +27,9 @@ from freqtrade.exchange import (amount_to_contract_precision, price_to_precision
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
-from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_rejected_signals,
+                                                 generate_trade_signal_candles,
+                                                 show_backtest_results,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
@@ -1296,52 +1297,12 @@ class Backtesting:
 
         if (self.config.get('export', 'none') == 'signals' and
                 self.dataprovider.runmode == RunMode.BACKTEST):
-            self.processed_dfs[strategy_name] = self._generate_trade_signal_candles(
+            self.processed_dfs[strategy_name] = generate_trade_signal_candles(
                 preprocessed_tmp, results)
-            self.rejected_df[strategy_name] = self._generate_rejected_signals(
+            self.rejected_df[strategy_name] = generate_rejected_signals(
                 preprocessed_tmp, self.rejected_dict)
 
         return min_date, max_date
-
-    def _generate_trade_signal_candles(self, preprocessed_df: Dict[str, pd.DataFrame],
-                                       bt_results: Dict[str, Any]) -> pd.DataFrame:
-        signal_candles_only = {}
-        for pair in preprocessed_df.keys():
-            signal_candles_only_df = DataFrame()
-
-            pairdf = preprocessed_df[pair]
-            resdf = bt_results['results']
-            pairresults = resdf.loc[(resdf["pair"] == pair)]
-
-            if pairdf.shape[0] > 0:
-                for t, v in pairresults.open_date.items():
-                    allinds = pairdf.loc[(pairdf['date'] < v)]
-                    signal_inds = allinds.iloc[[-1]]
-                    signal_candles_only_df = pd.concat([
-                        signal_candles_only_df.infer_objects(),
-                        signal_inds.infer_objects()])
-
-                signal_candles_only[pair] = signal_candles_only_df
-        return signal_candles_only
-
-    def _generate_rejected_signals(self, preprocessed_df: Dict[str, DataFrame],
-                                   rejected_dict: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
-        rejected_candles_only = {}
-        for pair, signals in rejected_dict.items():
-            rejected_signals_only_df = DataFrame()
-            pairdf = preprocessed_df[pair]
-
-            for t in signals:
-                data_df_row = pairdf.loc[(pairdf['date'] == t[0])].copy()
-                data_df_row['pair'] = pair
-                data_df_row['enter_tag'] = t[1]
-
-                rejected_signals_only_df = pd.concat([
-                    rejected_signals_only_df.infer_objects(),
-                    data_df_row.infer_objects()])
-
-            rejected_candles_only[pair] = rejected_signals_only_df
-        return rejected_candles_only
 
     def _get_min_cached_backtest_date(self):
         min_backtest_date = None
