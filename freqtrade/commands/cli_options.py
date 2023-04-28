@@ -641,22 +641,22 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "enter_reason_list": Arg(
         "--enter-reason-list",
-        help=("Comma separated list of entry signals to analyse. Default: all. "
-              "e.g. 'entry_tag_a,entry_tag_b'"),
+        help=("Space separated list of entry signals to analyse. Default: all. "
+              "e.g. 'entry_tag_a entry_tag_b'"),
         nargs='+',
         default=['all'],
     ),
     "exit_reason_list": Arg(
         "--exit-reason-list",
-        help=("Comma separated list of exit signals to analyse. Default: all. "
-              "e.g. 'exit_tag_a,roi,stop_loss,trailing_stop_loss'"),
+        help=("Space separated list of exit signals to analyse. Default: all. "
+              "e.g. 'exit_tag_a roi stop_loss trailing_stop_loss'"),
         nargs='+',
         default=['all'],
     ),
     "indicator_list": Arg(
         "--indicator-list",
-        help=("Comma separated list of indicators to analyse. "
-              "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
+        help=("Space separated list of indicators to analyse. "
+              "e.g. 'close rsi bb_lowerband profit_abs'"),
         nargs='+',
         default=[],
     ),
