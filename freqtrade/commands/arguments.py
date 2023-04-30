@@ -46,7 +46,7 @@ ARGS_LIST_FREQAIMODELS = ["freqaimodel_path", "print_one_column", "print_coloriz
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
-ARGS_BACKTEST_SHOW = ["exportfilename", "backtest_show_pair_list"]
+ARGS_BACKTEST_SHOW = ["exportfilename", "backtest_show_pair_list", "backtest_breakdown"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
