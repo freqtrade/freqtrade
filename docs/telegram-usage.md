@@ -191,7 +191,8 @@ official commands. You can ask at any moment for help with `/help`.
 | **Metrics** |
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/performance` | Show performance of each finished trade grouped by pair
-| `/balance` | Show account balance per currency
+| `/balance` | Show bot managed balance per currency
+| `/balance full` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
 | `/weekly <n>` | Shows profit or loss per week, over the last n weeks (n defaults to 8)
 | `/monthly <n>` | Shows profit or loss per month, over the last n months (n defaults to 6)
@@ -201,7 +202,6 @@ official commands. You can ask at any moment for help with `/help`.
 | `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
-
 
 ## Telegram commands in action
 

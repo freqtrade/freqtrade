@@ -44,8 +44,11 @@ class Webhook(RPCHandler):
 
     def _get_value_dict(self, msg: RPCSendMsg) -> Optional[Dict[str, Any]]:
         whconfig = self._config['webhook']
+        if msg['type'].value in whconfig:
+            # Explicit types should have priority
+            valuedict = whconfig.get(msg['type'].value)
         # Deprecated 2022.10 - only keep generic method.
-        if msg['type'] in [RPCMessageType.ENTRY]:
+        elif msg['type'] in [RPCMessageType.ENTRY]:
             valuedict = whconfig.get('webhookentry')
         elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
             valuedict = whconfig.get('webhookentrycancel')
@@ -62,9 +65,6 @@ class Webhook(RPCHandler):
                              RPCMessageType.EXCEPTION,
                              RPCMessageType.WARNING):
             valuedict = whconfig.get('webhookstatus')
-        elif msg['type'].value in whconfig:
-            # Allow all types ...
-            valuedict = whconfig.get(msg['type'].value)
         elif msg['type'] in (
                 RPCMessageType.PROTECTION_TRIGGER,
                 RPCMessageType.PROTECTION_TRIGGER_GLOBAL,

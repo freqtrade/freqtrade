@@ -546,51 +546,67 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'free': 10.0,
             'balance': 12.0,
             'used': 2.0,
+            'bot_owned': 9.9,  # available stake - reducing by reserved amount
             'est_stake': 10.0,  # In futures mode, "free" is used here.
+            'est_stake_bot': 9.9,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': True,
         },
         {
             'free': 1.0,
             'balance': 5.0,
             'currency': 'ETH',
+            'bot_owned': 0,
             'est_stake': 0.30794,
+            'est_stake_bot': 0,
             'used': 4.0,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
-
+            'is_bot_managed': False,
         },
         {
             'free': 5.0,
             'balance': 10.0,
             'currency': 'USDT',
+            'bot_owned': 0,
             'est_stake': 0.0011562404610161968,
+            'est_stake_bot': 0,
             'used': 5.0,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': False,
         },
         {
             'free': 0.0,
             'balance': 0.0,
             'currency': 'ETH/USDT:USDT',
             'est_stake': 20,
+            'est_stake_bot': 20,
             'used': 0,
             'stake': 'BTC',
             'is_position': True,
             'leverage': 5.0,
             'position': 1000.0,
             'side': 'short',
+            'is_bot_managed': True,
         }
     ]
+    assert pytest.approx(result['total_bot']) == 29.9
+    assert pytest.approx(result['total']) == 30.309096
+    assert result['starting_capital'] == 10
+    # Very high starting capital ratio, because the futures position really has the wrong unit.
+    # TODO: improve this test (see comment above)
+    assert result['starting_capital_ratio'] == pytest.approx(1.98999999)
 
 
 def test_rpc_start(mocker, default_conf) -> None:
