@@ -44,6 +44,7 @@ class BasePyTorchRegressor(BasePyTorchModel):
             dk.data_dictionary["prediction_features"],
             device=self.device
         )
+        self.model.model.eval()
         y = self.model.model(x)
         y = y.cpu()
         pred_df = DataFrame(y.detach().numpy(), columns=[dk.label_list[0]])

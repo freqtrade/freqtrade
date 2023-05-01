@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 import torch
 from torch import nn
@@ -47,8 +46,8 @@ class PyTorchMLPModel(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout_percent)
 
-    def forward(self, tensors: List[torch.Tensor]) -> torch.Tensor:
-        x: torch.Tensor = tensors[0]
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: torch.Tensor = tensors[0]
         x = self.relu(self.input_layer(x))
         x = self.dropout(x)
         x = self.blocks(x)
