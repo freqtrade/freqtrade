@@ -5,7 +5,7 @@ pandas-ta==0.3.14b
 ccxt==3.0.84
 cryptography==40.0.2
 aiohttp==3.8.4
-SQLAlchemy==2.0.10
+SQLAlchemy==2.0.12
 python-telegram-bot==20.2
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.23.3
