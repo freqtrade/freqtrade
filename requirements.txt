@@ -31,7 +31,7 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.10
 # Properly format api responses
-orjson==3.8.10
+orjson==3.8.11
 
 # Notify systemd
 sdnotify==0.3.2
