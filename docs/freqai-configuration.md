@@ -43,10 +43,10 @@ The FreqAI strategy requires including the following lines of code in the standa
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        # the model will return all labels created by user in `set_freqai_labels()`
+        # the model will return all labels created by user in `feature_engineering_*`
         # (& appended targets), an indication of whether or not the prediction should be accepted,
         # the target mean/std values for each of the labels created by user in
-        # `feature_engineering_*` for each training period.
+        # `set_freqai_targets()` for each training period.
 
         dataframe = self.freqai.start(dataframe, metadata, self)
 
