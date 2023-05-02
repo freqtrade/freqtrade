@@ -109,6 +109,7 @@ setup(
         'cryptography',
         'httpx',
         'python-dateutil',
+        'packaging',
     ],
     extras_require={
         'dev': all_extra,
