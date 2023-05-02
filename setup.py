@@ -24,7 +24,6 @@ freqai_rl = [
     'gymnasium',
     'stable-baselines3',
     'sb3-contrib',
-    'setuptools',
     'tqdm'
 ]
 
@@ -107,12 +106,9 @@ setup(
         'janus',
         'ast-comments',
         'aiohttp',
-        'blosc',
         'cryptography',
         'httpx',
         'python-dateutil',
-        'tables'
-
     ],
     extras_require={
         'dev': all_extra,
