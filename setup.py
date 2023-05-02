@@ -91,7 +91,15 @@ setup(
         'aiofiles',
         'schedule',
         'websockets',
-        'janus'
+        'janus',
+        'ast-comments',
+        'aiohttp',
+        'blosc',
+        'cryptography',
+        'httpx',
+        'python-dateutil',
+        'tables'
+
     ],
     extras_require={
         'dev': all_extra,
