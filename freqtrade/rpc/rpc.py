@@ -1216,8 +1216,8 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config: Config, pair: str, timeframe: str,
-                                   timerange: str, exchange) -> Dict[str, Any]:
-        timerange_parsed = TimeRange.parse_timerange(timerange)
+                                   exchange) -> Dict[str, Any]:
+        timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
         _data = load_data(
             datadir=config["datadir"],
@@ -1228,7 +1228,8 @@ class RPC:
             candle_type=config.get('candle_type_def', CandleType.SPOT)
         )
         if pair not in _data:
-            raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
+            raise RPCException(
+                f"No data for {pair}, {timeframe} in {config.get('timerange')} found.")
         from freqtrade.data.dataprovider import DataProvider
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
