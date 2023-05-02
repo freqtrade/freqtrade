@@ -21,9 +21,11 @@ freqai = [
 
 freqai_rl = [
     'torch',
+    'gymnasium',
     'stable-baselines3',
-    'gym==0.21',
-    'sb3-contrib'
+    'sb3-contrib',
+    'setuptools',
+    'tqdm'
 ]
 
 hdf5 = [
