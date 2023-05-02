@@ -32,11 +32,20 @@ hdf5 = [
 develop = [
     'coveralls',
     'mypy',
+    'ruff',
+    'pre-commit',
     'pytest',
     'pytest-asyncio',
     'pytest-cov',
     'pytest-mock',
     'pytest-random-order',
+    'isort',
+    'time-machine',
+    'types-cachetools',
+    'types-filelock',
+    'types-requests',
+    'types-tabulate',
+    'types-python-dateutil'
 ]
 
 jupyter = [
