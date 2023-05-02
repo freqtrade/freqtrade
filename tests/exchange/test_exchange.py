@@ -4932,7 +4932,7 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
 
     exchange._leverage_tiers = leverage_tiers
     with pytest.raises(
-        OperationalException,
+        DependencyException,
         match='nominal value can not be lower than 0',
     ):
         exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT:USDT', -1)
