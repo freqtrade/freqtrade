@@ -80,9 +80,6 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
     df.drop(columns=['datetime'], inplace=True)
 
 
-cached_grouped_trades_pair = {}
-
-
 def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades: DataFrame, *, pair: str) -> DataFrame:
     """
     Populates a dataframe with trades
@@ -110,51 +107,12 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
         # group trades by candle start
         trades_grouped_by_candle_start = trades.groupby(
             'candle_start', group_keys=False)
-
-        # groups = trades_grouped_by_candle_start.groups
-        new_grouped_trades_dict = {key1: group for key1,
-                                   group in trades_grouped_by_candle_start}
-        logger.debug(
-            f"{len(new_grouped_trades_dict.keys())} candles to process")
-
-        cached_grouped_trades_dict = cached_grouped_trades_pair.get(
-            (pair, timeframe), {})
-
-        new_keys = set(list(new_grouped_trades_dict.keys()))
-        # don't process twice
-        for candle_start in cached_grouped_trades_dict:
-            # TODO: don't delete last candle
-            # to allow refresh in case of wrong data
-            if candle_start in new_grouped_trades_dict:
-                del new_grouped_trades_dict[candle_start]
-
-        cached_keys = set(list(cached_grouped_trades_dict.keys()))
-        old_keys = cached_keys - new_keys
-        # return values not in cached
-        for key in old_keys:
-            if key in cached_grouped_trades_dict and not np.any((key == df.date) == True):
-                del cached_grouped_trades_dict[key]
-
-        for candle_start in cached_grouped_trades_dict:
-            is_between = (candle_start == df['candle_start'])
-            for column in list(dataframe.columns):
-                # special case 'trades','oderflow'
-                # they don't have a single value
-                if column in ['trades', 'orderflow']:
-                    dataframe.loc[is_between,
-                                  column] = dataframe.loc[is_between,
-                                                          column].apply(lambda _:
-                                                                        cached_grouped_trades_dict[candle_start][column].values[0])
-                else:
-                    dataframe.loc[is_between,
-                                  column] = cached_grouped_trades_dict[candle_start][column].values[0]
-
         # repair 'date' datetime type (otherwise crashes on each compare)
         if "date" in dataframe.columns:
             dataframe['date'] = pd.to_datetime(dataframe['date'])
 
-        for candle_start in new_grouped_trades_dict.keys():
-            trades_grouped_df = new_grouped_trades_dict[candle_start]
+        for candle_start in trades_grouped_by_candle_start.groups:
+            trades_grouped_df = trades[candle_start == trades['candle_start']]
             is_between = (candle_start == df['candle_start'])
             if np.any(is_between == True):
                 (timeframe_frequency, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(
@@ -211,9 +169,7 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
                 max_delta = np.max(deltas_per_trade)
 
                 df.loc[is_between, 'total_trades'] = len(trades_grouped_df)
-                # cache
-                cached_grouped_trades_dict[candle_start] = df.loc[is_between].copy() # copy() to avoid memleak
-                dataframe.loc[is_between] = df.loc[is_between]
+                dataframe.loc[is_between] = df.loc[is_between].copy() # copy to avoid memory leaks
             else:
                 logger.debug(
                     f"Found NO candles for trades starting with {candle_start}")
@@ -222,9 +178,6 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
 
         logger.debug(
             f"trades.singleton_iterate in {time.time() - start_time} seconds")
-        del cached_grouped_trades_pair[(pair, timeframe)]
-        cached_grouped_trades_pair[(pair, timeframe)
-                                   ] = cached_grouped_trades_dict
 
     except Exception as e:
         logger.error(f"Error populating dataframe with trades: {e}")
