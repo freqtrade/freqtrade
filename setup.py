@@ -12,16 +12,20 @@ hyperopt = [
 
 freqai = [
     'scikit-learn',
+    'joblib',
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
-    'xgboost'
+    'xgboost',
+    'tensorboard'
 ]
 
 freqai_rl = [
     'torch',
+    'gymnasium',
     'stable-baselines3',
-    'gym==0.21',
-    'sb3-contrib'
+    'sb3-contrib',
+    'setuptools',
+    'tqdm'
 ]
 
 hdf5 = [
@@ -32,11 +36,20 @@ hdf5 = [
 develop = [
     'coveralls',
     'mypy',
+    'ruff',
+    'pre-commit',
     'pytest',
     'pytest-asyncio',
     'pytest-cov',
     'pytest-mock',
     'pytest-random-order',
+    'isort',
+    'time-machine',
+    'types-cachetools',
+    'types-filelock',
+    'types-requests',
+    'types-tabulate',
+    'types-python-dateutil'
 ]
 
 jupyter = [
@@ -91,7 +104,15 @@ setup(
         'aiofiles',
         'schedule',
         'websockets',
-        'janus'
+        'janus',
+        'ast-comments',
+        'aiohttp',
+        'blosc',
+        'cryptography',
+        'httpx',
+        'python-dateutil',
+        'tables'
+
     ],
     extras_require={
         'dev': all_extra,
