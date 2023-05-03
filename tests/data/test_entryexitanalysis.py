@@ -209,9 +209,8 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert 'enter_tag_long_a' in captured.out
     assert 'enter_tag_long_b' not in captured.out
 
-    # test rejected - how to mock this?
-    # args = get_args(base_args + ['--rejected-signals'])
-    # start_analysis_entries_exits(args)
-    # captured = capsys.readouterr()
-    # assert 'Rejected Signals:' in captured.out
-    # assert False
+    # Due to the backtest mock, there's no rejected signals generated.
+    args = get_args(base_args + ['--rejected-signals'])
+    start_analysis_entries_exits(args)
+    captured = capsys.readouterr()
+    assert 'no rejected signals' in captured.out
