@@ -1722,9 +1722,7 @@ class FreqtradeBot(LoggingMixin):
             trade.exit_order_status = reason
 
         order = trade.select_order_by_order_id(order_id)
-        if not order:
-            raise DependencyException(
-                f"Order_obj not found for {order_id}. This should not have happened.")
+        self.order_obj_or_raise(order_id, order)
 
         profit_rate: float = trade.safe_close_rate
         profit_trade = trade.calc_profit(rate=profit_rate)
@@ -1765,6 +1763,11 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
+    def order_obj_or_raise(self, order_id: str, order_obj: Order):
+        if not order_obj:
+            raise DependencyException(
+                f"Order_obj not found for {order_id}. This should not have happened.")
+
 #
 # Common update trade state methods
 #
@@ -1804,9 +1807,7 @@ class FreqtradeBot(LoggingMixin):
             return True
 
         order_obj = trade.select_order_by_order_id(order_id)
-        if not order_obj:
-            raise DependencyException(
-                f"Order_obj not found for {order_id}. This should not have happened.")
+        self.order_obj_or_raise(order_id, order_obj)
 
         self.handle_order_fee(trade, order_obj, order)
 
