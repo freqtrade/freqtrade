@@ -825,6 +825,9 @@ async def test_telegram_stats(default_conf, update, ticker, fee, mocker, is_shor
     assert 'Exit Reason' in msg_mock.call_args_list[-1][0][0]
     assert 'ROI' in msg_mock.call_args_list[-1][0][0]
     assert 'Avg. Duration' in msg_mock.call_args_list[-1][0][0]
+    # Duration is not only N/A
+    assert '0:19:00' in msg_mock.call_args_list[-1][0][0]
+    assert 'N/A' in msg_mock.call_args_list[-1][0][0]
     msg_mock.reset_mock()
 
 
