@@ -98,11 +98,8 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     dataframe['date'] = pd.to_datetime(
         dataframe['date'], unit='ms').dt.tz_localize('UTC')
     dataframe = dataframe.copy().tail().reset_index(drop=True)
-    config = Configuration.from_files(
-        ["../volumio-strategy/user_data/config.json"])
-    config['timeframe'] = '5m'
-    config['orderflow']['scale'] = 0.005
-    config['orderflow']['imbalance_volume'] = 0
+    config = {'timeframe': '5m',
+              'orderflow': {'scale': 0.005, 'imbalance_volume': 0, 'imbalance_ratio': 300, 'stacked_imbalance_range': 3}}
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
     results = df.iloc[0]
