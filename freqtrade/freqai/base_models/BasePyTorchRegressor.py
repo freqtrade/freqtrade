@@ -45,6 +45,5 @@ class BasePyTorchRegressor(BasePyTorchModel):
             device=self.device
         )
         y = self.model.model(x)
-        y = y.cpu()
-        pred_df = DataFrame(y.detach().numpy(), columns=[dk.label_list[0]])
+        pred_df = DataFrame(y.detach().tolist(), columns=[dk.label_list[0]])
         return (pred_df, dk.do_predict)
