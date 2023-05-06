@@ -118,9 +118,9 @@ NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
 ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_search"]
 
-ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER = ARGS_BACKTEST + ["minimum_trade_amount",
-                                                        "targeted_trade_amount",
-                                                        "overwrite_existing_exportfilename_content"]
+ARGS_LOOKAHEAD_ANALYSIS = ARGS_BACKTEST + ["minimum_trade_amount",
+                                           "targeted_trade_amount",
+                                           "overwrite_existing_exportfilename_content"]
 
 
 # + ["target_trades", "minimum_trades",
@@ -200,8 +200,7 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_analysis_entries_exits,
-                                        start_backtest_lookahead_bias_checker, start_backtesting,
+        from freqtrade.commands import (start_analysis_entries_exits, start_backtesting,
                                         start_backtesting_show, start_convert_data,
                                         start_convert_db, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
@@ -209,8 +208,9 @@ class Arguments:
                                         start_install_ui, start_list_data, start_list_exchanges,
                                         start_list_freqAI_models, start_list_markets,
                                         start_list_strategies, start_list_timeframes,
-                                        start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_strategy_update,
+                                        start_lookahead_analysis, start_new_config,
+                                        start_new_strategy, start_plot_dataframe, start_plot_profit,
+                                        start_show_trades, start_strategy_update,
                                         start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
@@ -462,12 +462,12 @@ class Arguments:
         self._build_args(optionlist=ARGS_STRATEGY_UPDATER,
                          parser=strategy_updater_cmd)
 
-        # Add backtest lookahead bias checker subcommand
-        backtest_lookahead_bias_checker_cmd = \
-            subparsers.add_parser('backtest-lookahead-bias-checker',
+        # Add lookahead_analysis subcommand
+        lookahead_analayis_cmd = \
+            subparsers.add_parser('lookahead-analysis',
                                   help="checks for potential look ahead bias",
                                   parents=[_common_parser, _strategy_parser])
-        backtest_lookahead_bias_checker_cmd.set_defaults(func=start_backtest_lookahead_bias_checker)
+        lookahead_analayis_cmd.set_defaults(func=start_lookahead_analysis)
 
-        self._build_args(optionlist=ARGS_BACKTEST_LOOKAHEAD_BIAS_CHECKER,
-                         parser=backtest_lookahead_bias_checker_cmd)
+        self._build_args(optionlist=ARGS_LOOKAHEAD_ANALYSIS,
+                         parser=lookahead_analayis_cmd)

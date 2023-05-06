@@ -999,9 +999,9 @@ Common arguments:
                         Path to userdata directory.
 
 ```
-### Backtest lookahead bias checker
+### Lookahead - analysis
 #### Summary
-Checks a given strategy for look ahead bias
+Checks a given strategy for look ahead bias via backtest-analysis
 Look ahead bias means that the backtest uses data from future candles thereby not making it viable beyond backtesting
 and producing false hopes for the one backtesting.
 

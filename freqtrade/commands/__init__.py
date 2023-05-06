@@ -19,10 +19,10 @@ from freqtrade.commands.list_commands import (start_list_exchanges, start_list_f
                                               start_list_markets, start_list_strategies,
                                               start_list_timeframes, start_show_trades)
 from freqtrade.commands.optimize_commands import (start_backtesting, start_backtesting_show,
-                                                  start_edge, start_hyperopt)
+                                                  start_edge, start_hyperopt,
+                                                  start_lookahead_analysis)
 from freqtrade.commands.pairlist_commands import start_test_pairlist
 from freqtrade.commands.plot_commands import start_plot_dataframe, start_plot_profit
-from freqtrade.commands.strategy_utils_commands import (start_backtest_lookahead_bias_checker,
-                                                        start_strategy_update)
+from freqtrade.commands.strategy_utils_commands import start_strategy_update
 from freqtrade.commands.trade_commands import start_trading
 from freqtrade.commands.webserver_commands import start_webserver
