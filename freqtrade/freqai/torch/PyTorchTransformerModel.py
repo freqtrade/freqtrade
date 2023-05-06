@@ -39,7 +39,7 @@ class PyTorchTransformerModel(nn.Module):
 
         # the pseudo decoding FC
         self.output_net = nn.Sequential(
-            nn.Linear(hidden_dim * time_window, int(hidden_dim)),
+            nn.Linear(self.dim_val * time_window, int(hidden_dim)),
             nn.ReLU(),
             nn.Dropout(dropout_percent),
             nn.Linear(int(hidden_dim), int(hidden_dim / 2)),
