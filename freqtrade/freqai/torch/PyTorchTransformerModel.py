@@ -20,32 +20,35 @@ class PyTorchTransformerModel(nn.Module):
     """
 
     def __init__(self, input_dim: int = 7, output_dim: int = 7, hidden_dim=1024,
-                 n_layer=2, dropout_percent=0.1, time_window=10):
+                 n_layer=2, dropout_percent=0.1, time_window=10, nhead=8):
         super().__init__()
         self.time_window = time_window
+        # ensure the input dimension to the transformer is divisible by nhead
+        self.dim_val = input_dim - (input_dim % nhead)
         self.input_net = nn.Sequential(
-            nn.Dropout(dropout_percent), nn.Linear(input_dim, hidden_dim)
+            nn.Dropout(dropout_percent), nn.Linear(input_dim, self.dim_val)
         )
 
         # Encode the timeseries with Positional encoding
-        self.positional_encoding = PositionalEncoding(d_model=hidden_dim, max_len=hidden_dim)
+        self.positional_encoding = PositionalEncoding(d_model=self.dim_val, max_len=self.dim_val)
 
         # Define the encoder block of the Transformer
         self.encoder_layer = nn.TransformerEncoderLayer(
-            d_model=hidden_dim, nhead=8, dropout=dropout_percent, batch_first=True)
+            d_model=self.dim_val, nhead=nhead, dropout=dropout_percent, batch_first=True)
         self.transformer = nn.TransformerEncoder(self.encoder_layer, num_layers=n_layer)
 
-        # Pseudo decoder
+        # the pseudo decoding FC
         self.output_net = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.Tanh(),
+            nn.Linear(hidden_dim * time_window, int(hidden_dim)),
+            nn.ReLU(),
             nn.Dropout(dropout_percent),
-        )
-
-        self.output_layer = nn.Sequential(
-            nn.Linear(hidden_dim * time_window, output_dim),
-            nn.Tanh()
+            nn.Linear(int(hidden_dim), int(hidden_dim / 2)),
+            nn.ReLU(),
+            nn.Dropout(dropout_percent),
+            nn.Linear(int(hidden_dim / 2), int(hidden_dim / 4)),
+            nn.ReLU(),
+            nn.Dropout(dropout_percent),
+            nn.Linear(int(hidden_dim / 4), output_dim)
         )
 
     def forward(self, x, mask=None, add_positional_encoding=True):
@@ -60,9 +63,8 @@ class PyTorchTransformerModel(nn.Module):
         if add_positional_encoding:
             x = self.positional_encoding(x)
         x = self.transformer(x, mask=mask)
-        x = self.output_net(x)
         x = x.reshape(-1, 1, self.time_window * x.shape[-1])
-        x = self.output_layer(x)
+        x = self.output_net(x)
         return x
 
 
