@@ -8,21 +8,23 @@ hyperopt = [
     'scikit-learn',
     'scikit-optimize>=0.7.0',
     'filelock',
-    'progressbar2',
 ]
 
 freqai = [
     'scikit-learn',
+    'joblib',
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
-    'xgboost'
+    'xgboost',
+    'tensorboard'
 ]
 
 freqai_rl = [
     'torch',
+    'gymnasium',
     'stable-baselines3',
-    'gym==0.21',
-    'sb3-contrib'
+    'sb3-contrib',
+    'tqdm'
 ]
 
 hdf5 = [
@@ -33,11 +35,20 @@ hdf5 = [
 develop = [
     'coveralls',
     'mypy',
+    'ruff',
+    'pre-commit',
     'pytest',
     'pytest-asyncio',
     'pytest-cov',
     'pytest-mock',
     'pytest-random-order',
+    'isort',
+    'time-machine',
+    'types-cachetools',
+    'types-filelock',
+    'types-requests',
+    'types-tabulate',
+    'types-python-dateutil'
 ]
 
 jupyter = [
@@ -59,7 +70,7 @@ setup(
     install_requires=[
         # from requirements.txt
         'ccxt>=2.6.26',
-        'SQLAlchemy',
+        'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
         'cachetools',
@@ -82,6 +93,7 @@ setup(
         'numpy',
         'pandas',
         'joblib>=1.2.0',
+        'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'pydantic>=1.8.0',
@@ -91,7 +103,13 @@ setup(
         'aiofiles',
         'schedule',
         'websockets',
-        'janus'
+        'janus',
+        'ast-comments',
+        'aiohttp',
+        'cryptography',
+        'httpx',
+        'python-dateutil',
+        'packaging',
     ],
     extras_require={
         'dev': all_extra,

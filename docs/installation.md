@@ -30,12 +30,6 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 !!! Warning "Up-to-date clock"
     The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
-!!! Error "Running setup.py install for gym did not run successfully."
-    If you get an error related with gym we suggest you to downgrade setuptools it to version 65.5.0 you can do it with the following command:
-    ```bash
-    pip install setuptools==65.5.0
-    ```
-
 ------
 
 ## Requirements
@@ -52,7 +46,7 @@ These requirements apply to both [Script Installation](#script-installation) and
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
-* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions [below](#install-ta-lib))
+* [TA-Lib](https://ta-lib.github.io/ta-lib-python/) (install instructions [below](#install-ta-lib))
 
 ### Install code
 
@@ -210,7 +204,7 @@ sudo ./build_helpers/install_ta-lib.sh
 
 ##### TA-Lib manual installation
 
-Official webpage: https://mrjbq7.github.io/ta-lib/install.html
+[Official installation guide](https://ta-lib.github.io/ta-lib-python/install.html)
 
 ```bash
 wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
@@ -242,6 +236,7 @@ source .env/bin/activate
 
 ```bash
 python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 

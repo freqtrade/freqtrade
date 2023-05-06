@@ -11,6 +11,7 @@ from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence import LocalTrade, Trade
 
 
@@ -148,7 +149,7 @@ class Wallets:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position['contracts'])
-            collateral = position['collateral'] or 0.0
+            collateral = safe_value_fallback(position, 'collateral', 'initialMargin', 0.0)
             leverage = position['leverage']
             self._positions[symbol] = PositionWallet(
                 symbol, position=size,

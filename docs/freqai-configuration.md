@@ -52,7 +52,7 @@ The FreqAI strategy requires including the following lines of code in the standa
 
         return dataframe
 
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -77,7 +77,7 @@ The FreqAI strategy requires including the following lines of code in the standa
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -101,7 +101,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -122,7 +122,7 @@ The FreqAI strategy requires including the following lines of code in the standa
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -139,6 +139,7 @@ The FreqAI strategy requires including the following lines of code in the standa
             / dataframe["close"]
             - 1
             )
+        return dataframe
 ```
 
 Notice how the `feature_engineering_*()` is where [features](freqai-feature-engineering.md#feature-engineering) are added. Meanwhile `set_freqai_targets()` adds the labels/targets. A full example strategy is available in `templates/FreqaiExampleStrategy.py`.
@@ -236,3 +237,161 @@ If you want to predict multiple targets you must specify all labels in the same 
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'down')
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) == df["close"], 'same', df['&s-up_or_down'])
 ```
+
+## PyTorch Module
+
+### Quick start
+
+The easiest way to quickly run a pytorch model is with the following command (for regression task):
+
+```bash
+freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel PyTorchMLPRegressor --strategy-path freqtrade/templates 
+```
+
+!!! note "Installation/docker"
+    The PyTorch module requires large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]?".
+    Users who prefer docker should ensure they use the docker image appended with `_freqaitorch`.
+
+### Structure
+
+#### Model
+
+You can construct your own Neural Network architecture in PyTorch by simply defining your `nn.Module` class inside your custom [`IFreqaiModel` file](#using-different-prediction-models) and then using that class in your `def train()` function. Here is an example of logistic regression model implementation using PyTorch (should be used with nn.BCELoss criterion) for classification tasks.
+
+```python
+
+class LogisticRegression(nn.Module):
+    def __init__(self, input_size: int):
+        super().__init__()
+        # Define your layers
+        self.linear = nn.Linear(input_size, 1)
+        self.activation = nn.Sigmoid()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Define the forward pass
+        out = self.linear(x)
+        out = self.activation(out)
+        return out
+
+class MyCoolPyTorchClassifier(BasePyTorchClassifier):
+    """
+    This is a custom IFreqaiModel showing how a user might setup their own 
+    custom Neural Network architecture for their training.
+    """
+
+    @property
+    def data_convertor(self) -> PyTorchDataConvertor:
+        return DefaultPyTorchDataConvertor(target_tensor_type=torch.float)
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        config = self.freqai_info.get("model_training_parameters", {})
+        self.learning_rate: float = config.get("learning_rate",  3e-4)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs",  {})
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs",  {})
+
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+        """
+        User sets up the training and test data to fit their desired model here
+        :param data_dictionary: the dictionary holding all data for train, test,
+            labels, weights
+        :param dk: The datakitchen object for the current coin/model
+        """
+
+        class_names = self.get_class_names()
+        self.convert_label_column_to_int(data_dictionary, dk, class_names)
+        n_features = data_dictionary["train_features"].shape[-1]
+        model = LogisticRegression(
+            input_dim=n_features
+        )
+        model.to(self.device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        criterion = torch.nn.CrossEntropyLoss()
+        init_model = self.get_init_model(dk.pair)
+        trainer = PyTorchModelTrainer(
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            model_meta_data={"class_names": class_names},
+            device=self.device,
+            init_model=init_model,
+            data_convertor=self.data_convertor,
+            **self.trainer_kwargs,
+        )
+        trainer.fit(data_dictionary, self.splits)
+        return trainer
+
+```
+
+#### Trainer
+
+The `PyTorchModelTrainer` performs the idiomatic PyTorch train loop:
+Define our model, loss function, and optimizer, and then move them to the appropriate device (GPU or CPU). Inside the loop, we iterate through the batches in the dataloader, move the data to the device, compute the prediction and loss, backpropagate, and update the model parameters using the optimizer. 
+
+In addition, the trainer is responsible for the following:
+ - saving and loading the model
+ - converting the data from `pandas.DataFrame` to `torch.Tensor`. 
+
+#### Integration with Freqai module 
+
+Like all freqai models, PyTorch models inherit `IFreqaiModel`. `IFreqaiModel` declares three abstract methods: `train`, `fit`, and `predict`. we implement these methods in three levels of hierarchy.
+From top to bottom:
+
+1. `BasePyTorchModel` - Implements the `train` method. all `BasePyTorch*` inherit it. responsible for general data preparation (e.g., data normalization) and calling the `fit` method. Sets `device` attribute used by children classes. Sets `model_type` attribute used by the parent class.
+2. `BasePyTorch*` -  Implements the `predict` method. Here, the `*` represents a group of algorithms, such as classifiers or regressors. responsible for data preprocessing, predicting, and postprocessing if needed.
+3. `PyTorch*Classifier` / `PyTorch*Regressor` - implements the `fit` method. responsible for the main train flaw, where we initialize the trainer and model objects.
+
+![image](assets/freqai_pytorch-diagram.png)
+
+#### Full example
+
+Building a PyTorch regressor using MLP (multilayer perceptron) model, MSELoss criterion, and AdamW optimizer.
+
+```python
+class PyTorchMLPRegressor(BasePyTorchRegressor):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        config = self.freqai_info.get("model_training_parameters", {})
+        self.learning_rate: float = config.get("learning_rate",  3e-4)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs",  {})
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs",  {})
+
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+        n_features = data_dictionary["train_features"].shape[-1]
+        model = PyTorchMLPModel(
+            input_dim=n_features,
+            output_dim=1,
+            **self.model_kwargs
+        )
+        model.to(self.device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        criterion = torch.nn.MSELoss()
+        init_model = self.get_init_model(dk.pair)
+        trainer = PyTorchModelTrainer(
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            device=self.device,
+            init_model=init_model,
+            target_tensor_type=torch.float,
+            **self.trainer_kwargs,
+        )
+        trainer.fit(data_dictionary)
+        return trainer
+```
+
+Here we create a `PyTorchMLPRegressor` class that implements the `fit` method. The `fit` method specifies the training building blocks: model, optimizer, criterion, and trainer. We inherit both `BasePyTorchRegressor` and `BasePyTorchModel`, where the former implements the `predict` method that is suitable for our regression task, and the latter implements the train method.
+
+??? Note "Setting Class Names for Classifiers"
+    When using classifiers, the user must declare the class names (or targets) by overriding the `IFreqaiModel.class_names` attribute. This is achieved by setting `self.freqai.class_names` in the FreqAI strategy inside the `set_freqai_targets` method.
+    
+    For example, if you are using a binary classifier to predict price movements as up or down, you can set the class names as follows:
+    ```python
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
+        self.freqai.class_names = ["down", "up"]
+        dataframe['&s-up_or_down'] = np.where(dataframe["close"].shift(-100) >
+                                                  dataframe["close"], 'up', 'down')
+    
+        return dataframe
+    ```
+    To see a full example, you can refer to the [classifier test strategy class](https://github.com/freqtrade/freqtrade/blob/develop/tests/strategy/strats/freqai_test_classifier.py).

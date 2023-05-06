@@ -1,21 +1,21 @@
 # Advanced Strategies
 
 This page explains some advanced concepts available for strategies.
-If you're just getting started, please be familiar with the methods described in the [Strategy Customization](strategy-customization.md) documentation and with the [Freqtrade basics](bot-basics.md) first.
+If you're just getting started, please familiarize yourself with the [Freqtrade basics](bot-basics.md) and methods described in [Strategy Customization](strategy-customization.md) first.
 
-[Freqtrade basics](bot-basics.md) describes in which sequence each method described below is called, which can be helpful to understand which method to use for your custom needs.
+The call sequence of the methods described here is covered under [bot execution logic](bot-basics.md#bot-execution-logic). Those docs are also helpful in deciding which method is most suitable for your customisation needs.
 
 !!! Note
-    All callback methods described below should only be implemented in a strategy if they are actually used.
+    Callback methods should *only* be implemented if a strategy uses them.
 
 !!! Tip
-    You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
+    Start off with a strategy template containing all available callback methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
 ## Storing information
 
 Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
 
 ```python
 class AwesomeStrategy(IStrategy):
@@ -227,8 +227,8 @@ for val in self.buy_ema_short.range:
         f'ema_short_{val}': ta.EMA(dataframe, timeperiod=val)
     }))
 
-# Append columns to existing dataframe
-merged_frame = pd.concat(frames, axis=1)
+# Combine all dataframes, and reassign the original dataframe column
+dataframe = pd.concat(frames, axis=1)
 ```
 
 Freqtrade does however also counter this by running `dataframe.copy()` on the dataframe right after the `populate_indicators()` method - so performance implications of this should be low to non-existant.
