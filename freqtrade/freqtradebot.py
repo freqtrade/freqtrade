@@ -1721,10 +1721,8 @@ class FreqtradeBot(LoggingMixin):
         else:
             trade.exit_order_status = reason
 
-        order = trade.select_order_by_order_id(order_id)
-        if not order:
-            raise DependencyException(
-                f"Order_obj not found for {order_id}. This should not have happened.")
+        order_or_none = trade.select_order_by_order_id(order_id)
+        order = self.order_obj_or_raise(order_id, order_or_none)
 
         profit_rate: float = trade.safe_close_rate
         profit_trade = trade.calc_profit(rate=profit_rate)
@@ -1765,6 +1763,12 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
+    def order_obj_or_raise(self, order_id: str, order_obj: Optional[Order]) -> Order:
+        if not order_obj:
+            raise DependencyException(
+                f"Order_obj not found for {order_id}. This should not have happened.")
+        return order_obj
+
 #
 # Common update trade state methods
 #
@@ -1803,10 +1807,8 @@ class FreqtradeBot(LoggingMixin):
             # Handling of this will happen in check_handle_timedout.
             return True
 
-        order_obj = trade.select_order_by_order_id(order_id)
-        if not order_obj:
-            raise DependencyException(
-                f"Order_obj not found for {order_id}. This should not have happened.")
+        order_obj_or_none = trade.select_order_by_order_id(order_id)
+        order_obj = self.order_obj_or_raise(order_id, order_obj_or_none)
 
         self.handle_order_fee(trade, order_obj, order)
 
@@ -1824,16 +1826,18 @@ class FreqtradeBot(LoggingMixin):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
-                trade.set_liquidation_price(self.exchange.get_liquidation_price(
-                    pair=trade.pair,
-                    open_rate=trade.open_rate,
-                    is_short=trade.is_short,
-                    amount=trade.amount,
-                    stake_amount=trade.stake_amount,
-                    leverage=trade.leverage,
-                    wallet_balance=trade.stake_amount,
-                ))
-
+                try:
+                    trade.set_liquidation_price(self.exchange.get_liquidation_price(
+                        pair=trade.pair,
+                        open_rate=trade.open_rate,
+                        is_short=trade.is_short,
+                        amount=trade.amount,
+                        stake_amount=trade.stake_amount,
+                        leverage=trade.leverage,
+                        wallet_balance=trade.stake_amount,
+                    ))
+                except DependencyException:
+                    logger.warning('Unable to calculate liquidation price')
             # Updating wallets when order is closed
             self.wallets.update()
         Trade.commit()

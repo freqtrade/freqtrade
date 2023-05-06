@@ -723,6 +723,9 @@ usage: freqtrade backtesting-analysis [-h] [-v] [--logfile FILE] [-V]
                                       [--exit-reason-list EXIT_REASON_LIST [EXIT_REASON_LIST ...]]
                                       [--indicator-list INDICATOR_LIST [INDICATOR_LIST ...]]
                                       [--timerange YYYYMMDD-[YYYYMMDD]]
+                                      [--rejected]
+                                      [--analysis-to-csv]
+                                      [--analysis-csv-path PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -736,19 +739,27 @@ optional arguments:
                         pair and enter_tag, 4: by pair, enter_ and exit_tag
                         (this can get quite large)
   --enter-reason-list ENTER_REASON_LIST [ENTER_REASON_LIST ...]
-                        Comma separated list of entry signals to analyse.
-                        Default: all. e.g. 'entry_tag_a,entry_tag_b'
+                        Space separated list of entry signals to analyse.
+                        Default: all. e.g. 'entry_tag_a entry_tag_b'
   --exit-reason-list EXIT_REASON_LIST [EXIT_REASON_LIST ...]
-                        Comma separated list of exit signals to analyse.
+                        Space separated list of exit signals to analyse.
                         Default: all. e.g.
-                        'exit_tag_a,roi,stop_loss,trailing_stop_loss'
+                        'exit_tag_a roi stop_loss trailing_stop_loss'
   --indicator-list INDICATOR_LIST [INDICATOR_LIST ...]
-                        Comma separated list of indicators to analyse. e.g.
-                        'close,rsi,bb_lowerband,profit_abs'
+                        Space separated list of indicators to analyse. e.g.
+                        'close rsi bb_lowerband profit_abs'
   --timerange YYYYMMDD-[YYYYMMDD]
                         Timerange to filter trades for analysis, 
                         start inclusive, end exclusive. e.g.
                         20220101-20220201
+  --rejected
+                        Print out rejected trades table
+  --analysis-to-csv
+                        Write out tables to individual CSVs, by default to 
+                        'user_data/backtest_results' unless '--analysis-csv-path' is given.
+  --analysis-csv-path [PATH]
+                        Optional path where individual CSVs will be written. If not used,
+                        CSVs will be written to 'user_data/backtest_results'.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
