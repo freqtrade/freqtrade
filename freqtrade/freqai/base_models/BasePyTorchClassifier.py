@@ -75,6 +75,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
             dk.data_dictionary["prediction_features"],
             device=self.device
         )
+        self.model.model.eval()
         logits = self.model.model(x)
         probs = F.softmax(logits, dim=-1)
         predicted_classes = torch.argmax(probs, dim=-1)
