@@ -130,11 +130,16 @@ class LookaheadAnalysis:
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: List[pd.DataFrame]):
 
-        # purge previous data
-        abs_folder_path = pathlib.Path("user_data/models/uniqe-id").resolve()
-        # remove folder and its contents
-        if pathlib.Path.exists(abs_folder_path):
-            shutil.rmtree(abs_folder_path)
+        if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
+            # purge previous data if the freqai model is defined
+            # (to be sure nothing is carried over from older backtests)
+            path_to_current_identifier = (
+                pathlib.Path(f"{self.local_config['user_data_dir']}"
+                             "/models/"
+                             f"{self.local_config['freqai']['identifier']}").resolve())
+            # remove folder and its contents
+            if pathlib.Path.exists(path_to_current_identifier):
+                shutil.rmtree(path_to_current_identifier)
 
         prepare_data_config = copy.deepcopy(self.local_config)
         prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
@@ -143,6 +148,7 @@ class LookaheadAnalysis:
 
         self.backtesting = Backtesting(prepare_data_config)
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
+
         varholder.data, varholder.timerange = self.backtesting.load_bt_data()
         self.backtesting.load_bt_data_detail()
         varholder.timeframe = self.backtesting.timeframe
@@ -168,7 +174,7 @@ class LookaheadAnalysis:
 
         self.prepare_data(self.full_varHolder, self.local_config['pairs'])
 
-    def fill_entry_and_exit_varHolders(self, idx, result_row):
+    def fill_entry_and_exit_varHolders(self, result_row):
         # entry_varHolder
         entry_varHolder = VarHolder()
         self.entry_varHolders.append(entry_varHolder)
@@ -201,7 +207,7 @@ class LookaheadAnalysis:
         self.current_analysis.total_signals += 1
 
         # fill entry_varHolder and exit_varHolder
-        self.fill_entry_and_exit_varHolders(idx, result_row)
+        self.fill_entry_and_exit_varHolders(result_row)
 
         # register if buy signal is broken
         if not self.report_signal(
