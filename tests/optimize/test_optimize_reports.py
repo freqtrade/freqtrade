@@ -9,7 +9,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
@@ -21,7 +21,7 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
-                                                 store_backtest_signal_candles,
+                                                 store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -232,17 +232,17 @@ def test_store_backtest_candles(testdatadir, mocker):
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # mock directory exporting
-    store_backtest_signal_candles(testdatadir, candle_dict, '2022_01_01_15_05_13')
+    store_backtest_analysis_results(testdatadir, candle_dict, {}, '2022_01_01_15_05_13')
 
-    assert dump_mock.call_count == 1
+    assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
 
     dump_mock.reset_mock()
     # mock file exporting
     filename = Path(testdatadir / 'testresult')
-    store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
-    assert dump_mock.call_count == 1
+    store_backtest_analysis_results(filename, candle_dict, {}, '2022_01_01_15_05_13')
+    assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
     assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
@@ -254,10 +254,11 @@ def test_write_read_backtest_candles(tmpdir):
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # test directory exporting
-    stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict, '2022_01_01_15_05_13')
-    scp = stored_file.open("rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    sample_date = '2022_01_01_15_05_13'
+    store_backtest_analysis_results(Path(tmpdir), candle_dict, {}, sample_date)
+    stored_file = Path(tmpdir / f'backtest-result-{sample_date}_signals.pkl')
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -268,10 +269,10 @@ def test_write_read_backtest_candles(tmpdir):
 
     # test file exporting
     filename = Path(tmpdir / 'testresult')
-    stored_file = store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
-    scp = stored_file.open("rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    store_backtest_analysis_results(filename, candle_dict, {}, sample_date)
+    stored_file = Path(tmpdir / f'testresult-{sample_date}_signals.pkl')
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -465,10 +466,13 @@ def test_generate_periodic_breakdown_stats(testdatadir):
 def test__get_resample_from_period():
 
     assert _get_resample_from_period('day') == '1d'
-    assert _get_resample_from_period('week') == '1w'
+    assert _get_resample_from_period('week') == '1W-MON'
     assert _get_resample_from_period('month') == '1M'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')
+
+    for period in BACKTEST_BREAKDOWNS:
+        assert isinstance(_get_resample_from_period(period), str)
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):

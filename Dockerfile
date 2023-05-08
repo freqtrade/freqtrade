@@ -25,7 +25,7 @@ FROM base as python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
-  && pip install --upgrade pip
+  && pip install --upgrade pip wheel
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
