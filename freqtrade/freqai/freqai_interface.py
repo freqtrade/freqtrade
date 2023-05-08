@@ -80,6 +80,7 @@ class IFreqaiModel(ABC):
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
+
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
@@ -306,10 +307,11 @@ class IFreqaiModel(ABC):
             if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
                 if check_features:
                     self.dd.load_metadata(dk)
-                    dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
+                    df_fts = self.dk.use_strategy_to_populate_indicators(
                         strategy, prediction_dataframe=dataframe.tail(1), pair=pair
                     )
-                    dk.find_features(dataframe_dummy_features)
+                    df_fts = dk.remove_special_chars_from_feature_names(df_fts)
+                    dk.find_features(df_fts)
                     self.check_if_feature_list_matches_strategy(dk)
                     check_features = False
                 append_df = dk.get_backtesting_prediction()

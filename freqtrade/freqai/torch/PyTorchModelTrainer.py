@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from freqtrade.freqai.torch.PyTorchDataConvertor import PyTorchDataConvertor
 from freqtrade.freqai.torch.PyTorchTrainerInterface import PyTorchTrainerInterface
 
+from .datasets import WindowDataset
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             init_model: Dict,
             data_convertor: PyTorchDataConvertor,
             model_meta_data: Dict[str, Any] = {},
+            window_size: int = 1,
             **kwargs
     ):
         """
@@ -52,6 +55,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.batch_size: int = kwargs.get("batch_size", 64)
         self.max_n_eval_batches: Optional[int] = kwargs.get("max_n_eval_batches", None)
         self.data_convertor = data_convertor
+        self.window_size: int = window_size
         if init_model:
             self.load_from_checkpoint(init_model)
 
@@ -75,16 +79,15 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             batch_size=self.batch_size,
             n_iters=self.max_iters
         )
+        self.model.train()
         for epoch in range(1, epochs + 1):
             # training
             losses = []
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
 
-                for tensor in batch_data:
-                    tensor.to(self.device)
-
-                xb = batch_data[:-1]
-                yb = batch_data[-1]
+                xb, yb = batch_data
+                xb.to(self.device)
+                yb.to(self.device)
                 yb_pred = self.model(xb)
                 loss = self.criterion(yb_pred, yb)
 
@@ -120,12 +123,10 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             if max_n_eval_batches and i > max_n_eval_batches:
                 n_batches += 1
                 break
+            xb, yb = batch_data
+            xb.to(self.device)
+            yb.to(self.device)
 
-            for tensor in batch_data:
-                tensor.to(self.device)
-
-            xb = batch_data[:-1]
-            yb = batch_data[-1]
             yb_pred = self.model(xb)
             loss = self.criterion(yb_pred, yb)
             losses.append(loss.item())
@@ -145,7 +146,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         for split in splits:
             x = self.data_convertor.convert_x(data_dictionary[f"{split}_features"], self.device)
             y = self.data_convertor.convert_y(data_dictionary[f"{split}_labels"], self.device)
-            dataset = TensorDataset(*x, *y)
+            dataset = TensorDataset(x, y)
             data_loader = DataLoader(
                 dataset,
                 batch_size=self.batch_size,
@@ -206,3 +207,33 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self.model_meta_data = checkpoint["model_meta_data"]
         return self
+
+
+class PyTorchTransformerTrainer(PyTorchModelTrainer):
+    """
+    Creating a trainer for the Transformer model.
+    """
+
+    def create_data_loaders_dictionary(
+            self,
+            data_dictionary: Dict[str, pd.DataFrame],
+            splits: List[str]
+    ) -> Dict[str, DataLoader]:
+        """
+        Converts the input data to PyTorch tensors using a data loader.
+        """
+        data_loader_dictionary = {}
+        for split in splits:
+            x = self.data_convertor.convert_x(data_dictionary[f"{split}_features"], self.device)
+            y = self.data_convertor.convert_y(data_dictionary[f"{split}_labels"], self.device)
+            dataset = WindowDataset(x, y, self.window_size)
+            data_loader = DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                shuffle=False,
+                drop_last=True,
+                num_workers=0,
+            )
+            data_loader_dictionary[split] = data_loader
+
+        return data_loader_dictionary
