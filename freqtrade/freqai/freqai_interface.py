@@ -622,9 +622,9 @@ class IFreqaiModel(ABC):
             strategy, corr_dataframes, base_dataframes, pair
         )
 
-        new_trained_timerange = dk.buffer_timerange(new_trained_timerange)
+        buffered_timerange = dk.buffer_timerange(new_trained_timerange)
 
-        unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
+        unfiltered_dataframe = dk.slice_dataframe(buffered_timerange, unfiltered_dataframe)
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
