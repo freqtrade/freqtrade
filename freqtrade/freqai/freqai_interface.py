@@ -622,9 +622,11 @@ class IFreqaiModel(ABC):
             strategy, corr_dataframes, base_dataframes, pair
         )
 
-        new_trained_timerange = dk.buffer_timerange(new_trained_timerange)
+        trained_timestamp = new_trained_timerange.stopts
 
-        unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
+        buffered_timerange = dk.buffer_timerange(new_trained_timerange)
+
+        unfiltered_dataframe = dk.slice_dataframe(buffered_timerange, unfiltered_dataframe)
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
@@ -632,8 +634,8 @@ class IFreqaiModel(ABC):
 
         model = self.train(unfiltered_dataframe, pair, dk)
 
-        self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
-        dk.set_new_model_names(pair, new_trained_timerange.stopts)
+        self.dd.pair_dict[pair]["trained_timestamp"] = trained_timestamp
+        dk.set_new_model_names(pair, trained_timestamp)
         self.dd.save_data(model, pair, dk)
 
         if self.plot_features:
