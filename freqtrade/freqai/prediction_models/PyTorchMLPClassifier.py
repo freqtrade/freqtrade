@@ -83,6 +83,7 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
             device=self.device,
             init_model=init_model,
             data_convertor=self.data_convertor,
+            tb_logger=self.tb_logger,
             **self.trainer_kwargs,
         )
         trainer.fit(data_dictionary, self.splits)

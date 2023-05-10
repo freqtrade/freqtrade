@@ -32,8 +32,7 @@ class PyTorchTransformerRegressor(BasePyTorchRegressor):
                 "trainer_kwargs": {
                     "max_iters": 5000,
                     "batch_size": 64,
-                    "max_n_eval_batches": null,
-                    "window_size": 10
+                    "max_n_eval_batches": null
                 },
                 "model_kwargs": {
                     "hidden_dim": 512,
@@ -84,6 +83,7 @@ class PyTorchTransformerRegressor(BasePyTorchRegressor):
             init_model=init_model,
             data_convertor=self.data_convertor,
             window_size=self.window_size,
+            tb_logger=self.tb_logger,
             **self.trainer_kwargs,
         )
         trainer.fit(data_dictionary, self.splits)

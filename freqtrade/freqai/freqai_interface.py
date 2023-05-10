@@ -19,6 +19,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.freqai import TBLogger
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import plot_feature_importance, record_params
@@ -630,7 +631,9 @@ class IFreqaiModel(ABC):
         dk.find_features(unfiltered_dataframe)
         dk.find_labels(unfiltered_dataframe)
 
+        self.tb_logger = TBLogger(dk.data_path)
         model = self.train(unfiltered_dataframe, pair, dk)
+        self.tb_logger.close()
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange.stopts)

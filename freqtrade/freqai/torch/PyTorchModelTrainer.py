@@ -29,6 +29,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             data_convertor: PyTorchDataConvertor,
             model_meta_data: Dict[str, Any] = {},
             window_size: int = 1,
+            tb_logger: Any = None,
             **kwargs
     ):
         """
@@ -56,6 +57,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.max_n_eval_batches: Optional[int] = kwargs.get("max_n_eval_batches", None)
         self.data_convertor = data_convertor
         self.window_size: int = window_size
+        self.tb_logger = tb_logger
         if init_model:
             self.load_from_checkpoint(init_model)
 
@@ -81,8 +83,6 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         )
         self.model.train()
         for epoch in range(1, epochs + 1):
-            # training
-            losses = []
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
 
                 xb, yb = batch_data
@@ -94,20 +94,15 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 self.optimizer.step()
-                losses.append(loss.item())
-            train_loss = sum(losses) / len(losses)
-            log_message = f"epoch {epoch}/{epochs}: train loss {train_loss:.4f}"
+                self.tb_logger.log_scalar("train_loss", loss.item(), i)
 
             # evaluation
             if "test" in splits:
-                test_loss = self.estimate_loss(
+                self.estimate_loss(
                     data_loaders_dictionary,
                     self.max_n_eval_batches,
                     "test"
                 )
-                log_message += f" ; test loss {test_loss:.4f}"
-
-            logger.info(log_message)
 
     @torch.no_grad()
     def estimate_loss(
@@ -115,10 +110,9 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             data_loader_dictionary: Dict[str, DataLoader],
             max_n_eval_batches: Optional[int],
             split: str,
-    ) -> float:
+    ) -> None:
         self.model.eval()
         n_batches = 0
-        losses = []
         for i, batch_data in enumerate(data_loader_dictionary[split]):
             if max_n_eval_batches and i > max_n_eval_batches:
                 n_batches += 1
@@ -129,10 +123,9 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
 
             yb_pred = self.model(xb)
             loss = self.criterion(yb_pred, yb)
-            losses.append(loss.item())
+            self.tb_logger.log_scalar(f"{split}_loss", loss.item(), i)
 
         self.model.train()
-        return sum(losses) / len(losses)
 
     def create_data_loaders_dictionary(
             self,

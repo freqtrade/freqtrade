@@ -158,7 +158,10 @@ This specific hyperopt would help you understand the appropriate `DI_values` for
 
 ## Using Tensorboard
 
-CatBoost models benefit from tracking training metrics via Tensorboard. You can take advantage of the FreqAI integration to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
+!!! note "Availability"
+    FreqAI includes tensorboard for a variety of models, including XGBoost, all PyTorch models, Reinforcement Learning, and Catboost. If you would like to see Tensorboard integrated into another model type, please open an issue on the [Freqtrade GitHub](https://github.com/freqtrade/freqtrade/issues)
+
+The easiest way to use tensorboard is to open a separate shell and run:
 
 ```bash
 cd freqtrade
