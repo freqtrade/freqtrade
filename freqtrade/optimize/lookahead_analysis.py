@@ -296,7 +296,7 @@ class LookaheadAnalysisSubFunctions:
         print(table)
 
     @staticmethod
-    def export_to_csv(args: Dict[str, Any], lookahead_analysis: List[LookaheadAnalysis]):
+    def export_to_csv(config: Dict[str, Any], lookahead_analysis: List[LookaheadAnalysis]):
         def add_or_update_row(df, row_data):
             if (
                     (df['filename'] == row_data['filename']) &
@@ -314,9 +314,9 @@ class LookaheadAnalysisSubFunctions:
 
             return df
 
-        if Path(args['exportfilename']).exists():
+        if Path(config['lookahead_analysis_exportfilename']).exists():
             # Read CSV file into a pandas dataframe
-            csv_df = pd.read_csv(args['exportfilename'])
+            csv_df = pd.read_csv(config['lookahead_analysis_exportfilename'])
         else:
             # Create a new empty DataFrame with the desired column names and set the index
             csv_df = pd.DataFrame(columns=[
@@ -335,8 +335,8 @@ class LookaheadAnalysisSubFunctions:
                             'biased_indicators': ",".join(inst.current_analysis.false_indicators)}
             csv_df = add_or_update_row(csv_df, new_row_data)
 
-        logger.info(f"saving {args['exportfilename']}")
-        csv_df.to_csv(args['exportfilename'], index=False)
+        logger.info(f"saving {config['lookahead_analysis_exportfilename']}")
+        csv_df.to_csv(config['lookahead_analysis_exportfilename'], index=False)
 
     @staticmethod
     def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any],

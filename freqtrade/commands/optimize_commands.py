@@ -175,8 +175,8 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
     if lookaheadAnalysis_instances:
         LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
             lookaheadAnalysis_instances)
-        if args['exportfilename'] is not None:
-            LookaheadAnalysisSubFunctions.export_to_csv(args, lookaheadAnalysis_instances)
+        if config['lookahead_analysis_exportfilename'] is not None:
+            LookaheadAnalysisSubFunctions.export_to_csv(config, lookaheadAnalysis_instances)
     else:
         logger.error("There were no strategies specified neither through "
                      "--strategy nor through "

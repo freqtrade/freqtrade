@@ -704,9 +704,10 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=20,
     ),
-    "overwrite_existing_exportfilename_content": Arg(
-        '--overwrite-existing-exportfilename-content',
-        help='overwrites existing contents if existent with exportfilename given',
-        action='store_true'
-    )
+    "lookahead_analysis_exportfilename": Arg(
+        '--lookahead-analysis-exportfilename',
+        help="Use this filename to store lookahead-analysis-results",
+        default=None,
+        type=str
+    ),
 }

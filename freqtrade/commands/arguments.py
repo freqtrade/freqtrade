@@ -121,7 +121,7 @@ ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_s
 
 ARGS_LOOKAHEAD_ANALYSIS = ARGS_BACKTEST + ["minimum_trade_amount",
                                            "targeted_trade_amount",
-                                           "overwrite_existing_exportfilename_content"]
+                                           "lookahead_analysis_exportfilename"]
 
 
 # + ["target_trades", "minimum_trades",

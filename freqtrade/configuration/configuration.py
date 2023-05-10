@@ -203,7 +203,7 @@ class Configuration:
         # This will override the strategy configuration
         self._args_to_config(config, argname='timeframe',
                              logstring='Parameter -i/--timeframe detected ... '
-                             'Using timeframe: {} ...')
+                                       'Using timeframe: {} ...')
 
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
@@ -299,6 +299,10 @@ class Configuration:
 
         self._args_to_config(config, argname='hyperoptexportfilename',
                              logstring='Using hyperopt file: {}')
+
+        if self.args["lookahead_analysis_exportfilename"] is not None:
+            self._args_to_config(config, argname='lookahead_analysis_exportfilename',
+                                 logstring='saving lookahead analysis results into {} ...')
 
         self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '
