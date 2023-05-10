@@ -345,7 +345,9 @@ class IFreqaiModel(ABC):
                     dk.find_labels(dataframe_train)
 
                     try:
+                        self.tb_logger = TBLogger(dk.data_path)
                         self.model = self.train(dataframe_train, pair, dk)
+                        self.tb_logger.close()
                     except Exception as msg:
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
