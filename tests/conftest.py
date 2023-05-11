@@ -412,9 +412,11 @@ def patch_gc(mocker) -> None:
 
 
 @pytest.fixture(autouse=True)
-def patched_user_dir(mocker, tmpdir) -> None:
+def user_dir(mocker, tmpdir) -> Path:
+    user_dir = Path(tmpdir) / "user_data"
     mocker.patch('freqtrade.configuration.configuration.create_userdata_dir',
-                 return_value=Path(tmpdir) / "user_data")
+                 return_value=user_dir)
+    return user_dir
 
 
 @pytest.fixture(autouse=True)
