@@ -77,6 +77,18 @@ jobs:
         # Allow failure for coveralls
         coveralls || true
 
+    - name: Check for repository changes
+      run: |
+        git status
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
     - name: Backtesting (multi)
       run: |
         cp config_examples/config_bittrex.example.json config.json
