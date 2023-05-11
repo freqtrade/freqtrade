@@ -14,7 +14,7 @@ on:
     - cron:  '0 5 * * 4'
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}${{ github.head_ref }}"
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
 permissions:
   repository-projects: read
