@@ -259,6 +259,18 @@ jobs:
       run: |
         pytest --random-order
 
+    - name: Check for repository changes
+      run: |
+        if (git status --porcelain) {
+          Write-Host "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        }
+        else {
+          Write-Host "Repository is clean, no changes detected."
+        }
+
     - name: Backtesting
       run: |
         cp config_examples/config_bittrex.example.json config.json
