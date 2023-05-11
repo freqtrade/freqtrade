@@ -79,7 +79,6 @@ jobs:
 
     - name: Check for repository changes
       run: |
-        git status
         if [ -n "$(git status --porcelain)" ]; then
           echo "Repository is dirty, changes detected:"
           git status
