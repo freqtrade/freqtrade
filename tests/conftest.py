@@ -412,6 +412,12 @@ def patch_gc(mocker) -> None:
 
 
 @pytest.fixture(autouse=True)
+def patched_user_dir(mocker, tmpdir) -> None:
+    mocker.patch('freqtrade.configuration.configuration.create_userdata_dir',
+                 return_value=Path(tmpdir) / "user_data")
+
+
+@pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
     """
     Mocker to coingekko to speed up tests
