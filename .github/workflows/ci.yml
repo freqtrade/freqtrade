@@ -14,7 +14,7 @@ on:
     - cron:  '0 5 * * 4'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
 permissions:
   repository-projects: read
@@ -76,6 +76,17 @@ jobs:
       run: |
         # Allow failure for coveralls
         coveralls || true
+
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
 
     - name: Backtesting (multi)
       run: |
@@ -174,6 +185,17 @@ jobs:
       run: |
         pytest --random-order
 
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
     - name: Backtesting
       run: |
         cp config_examples/config_bittrex.example.json config.json
@@ -236,6 +258,18 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order
+
+    - name: Check for repository changes
+      run: |
+        if (git status --porcelain) {
+          Write-Host "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        }
+        else {
+          Write-Host "Repository is clean, no changes detected."
+        }
 
     - name: Backtesting
       run: |
