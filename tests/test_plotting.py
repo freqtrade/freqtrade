@@ -282,13 +282,13 @@ def test_generate_Plot_filename():
     assert fn == "freqtrade-plot-UNITTEST_BTC-5m.html"
 
 
-def test_generate_plot_file(mocker, caplog):
+def test_generate_plot_file(mocker, caplog, user_dir):
     fig = generate_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
     store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html",
-                    directory=Path("user_data/plot"))
+                    directory=user_dir / "plot")
 
-    expected_fn = str(Path("user_data/plot/freqtrade-plot-UNITTEST_BTC-5m.html"))
+    expected_fn = str(user_dir / "plot/freqtrade-plot-UNITTEST_BTC-5m.html")
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
