@@ -180,7 +180,7 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
             f"trades.singleton_iterate in {time.time() - start_time} seconds")
 
     except Exception as e:
-        logger.error(f"Error populating dataframe with trades: {e}")
+        logger.exception("Error populating dataframe with trades:", e)
 
     return dataframe
 
