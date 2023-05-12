@@ -42,30 +42,6 @@ def can_run_model(model: str) -> None:
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
 
-@pytest.fixture(scope="function")
-def import_fails_mac():
-    # Source of this test-method:
-    # https://stackoverflow.com/questions/2481511/mocking-importerror-in-python
-    if is_mac():
-        import builtins
-        realimport = builtins.__import__
-
-        def mockedimport(name, *args, **kwargs):
-            if name in ["freqtrade.freqai.tensorboard.tensorboard"]:
-                raise ImportError(f"No module named '{name}'")
-            return realimport(name, *args, **kwargs)
-
-        builtins.__import__ = mockedimport
-
-        # Run test - then cleanup
-        yield
-
-        # restore previous importfunction
-        builtins.__import__ = realimport
-    else:
-        yield
-
-
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
     ('LightGBMRegressor', True, False, True, True, False, 0),
     ('XGBoostRegressor', False, True, False, True, False, 10),
@@ -79,10 +55,15 @@ def import_fails_mac():
     ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
     ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0),
     ])
-def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca, import_fails_mac,
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
 
     can_run_model(model)
+    if is_mac():
+        # MacOS CI is not friendly to tensorboard
+        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.SummaryWriter')
+        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.TensorBoardCallback.after_iteration')
+
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
