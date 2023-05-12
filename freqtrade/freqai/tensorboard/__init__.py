@@ -6,8 +6,8 @@ try:
 except ModuleNotFoundError:
     from freqtrade.freqai.tensorboard.base_tensorboard import (BaseTensorBoardCallback,
                                                                BaseTensorboardLogger)
-    TBLogger = BaseTensorboardLogger
-    TBCallback = BaseTensorBoardCallback
+    TBLogger = BaseTensorboardLogger  # type: ignore
+    TBCallback = BaseTensorBoardCallback  # type: ignore
 
 __all__ = (
     "TBLogger",

@@ -43,7 +43,7 @@ def can_run_model(model: str) -> None:
 
 
 @pytest.fixture(scope="function")
-def import_fails_mac() -> None:
+def import_fails_mac():
     # Source of this test-method:
     # https://stackoverflow.com/questions/2481511/mocking-importerror-in-python
     if is_mac():
