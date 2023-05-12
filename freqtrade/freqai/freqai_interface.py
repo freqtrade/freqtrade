@@ -19,9 +19,9 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.freqai import TBLogger
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.tensorboard import TBLogger
 from freqtrade.freqai.utils import plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 

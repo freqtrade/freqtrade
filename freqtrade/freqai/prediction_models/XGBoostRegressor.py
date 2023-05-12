@@ -3,9 +3,9 @@ from typing import Any, Dict
 
 from xgboost import XGBRegressor
 
-from freqtrade.freqai import TBCallback
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.tensorboard import TBCallback
 
 
 logger = logging.getLogger(__name__)
