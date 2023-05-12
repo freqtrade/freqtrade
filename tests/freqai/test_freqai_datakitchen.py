@@ -188,7 +188,7 @@ def test_get_full_model_path(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
-
+    freqai.dk.set_paths('ADA/BTC', None)
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 

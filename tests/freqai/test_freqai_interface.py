@@ -282,6 +282,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
         df[f'%-constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
+    freqai.dk.set_paths('LTC/BTC', None)
     freqai.start_backtesting(df, metadata, freqai.dk, strategy)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
@@ -439,6 +440,7 @@ def test_principal_component_analysis(mocker, freqai_conf):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
@@ -472,6 +474,7 @@ def test_plot_feature_importance(mocker, freqai_conf):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)

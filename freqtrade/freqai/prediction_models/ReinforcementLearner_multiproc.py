@@ -8,7 +8,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import make_env
-from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
+from freqtrade.freqai.tensorboard.TensorboardCallback import TensorboardCallback
 
 
 logger = logging.getLogger(__name__)
