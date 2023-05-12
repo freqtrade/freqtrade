@@ -194,4 +194,3 @@ def test_get_full_model_path(mocker, freqai_conf, model):
 
     model_path = freqai.dk.get_full_models_path(freqai_conf)
     assert model_path.is_dir() is True
-    shutil.rmtree(Path(freqai.dk.full_path))
