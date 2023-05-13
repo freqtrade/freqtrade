@@ -32,7 +32,10 @@ The easiest way to quickly test FreqAI is to run it in dry mode with the followi
 freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates
 ```
 
-You will see the boot-up process of automatic data downloading, followed by simultaneous training and trading.
+You will see the boot-up process of automatic data downloading, followed by simultaneous training and trading. 
+
+!!! danger "Not for production"
+    The example strategy provided with the Freqtrade source code is designed for showcasing/testing a wide variety of FreqAI features. It is also designed to run on small computers so that it can be used as a benchmark between developers and users. It is *not* designed to be run in production.
 
 An example strategy, prediction model, and config to use as a starting points can be found in
 `freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMRegressor.py`, and

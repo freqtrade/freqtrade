@@ -18,6 +18,11 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
         """
         User can override any function in BaseRLEnv and gym.Env. Here the user
         sets a custom reward based on profit and trade duration.
+
+        Warning!
+        This is function is a showcase of functionality designed to show as many possible
+        environment control features as possible. It is also designed to run quickly
+        on small computers. This is a benchmark, it is *not* for live production.
         """
 
         def calculate_reward(self, action: int) -> float:
