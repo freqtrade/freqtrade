@@ -92,7 +92,7 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Config, validate: bool = True,
+    def __init__(self, config: Config, *, validate: bool = True,
                  load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
