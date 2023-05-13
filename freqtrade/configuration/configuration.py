@@ -300,9 +300,10 @@ class Configuration:
         self._args_to_config(config, argname='hyperoptexportfilename',
                              logstring='Using hyperopt file: {}')
 
-        if self.args["lookahead_analysis_exportfilename"] is not None:
-            self._args_to_config(config, argname='lookahead_analysis_exportfilename',
-                                 logstring='saving lookahead analysis results into {} ...')
+        if self.args.get('lookahead_analysis_exportfilename'):
+            if self.args["lookahead_analysis_exportfilename"] is not None:
+                self._args_to_config(config, argname='lookahead_analysis_exportfilename',
+                                     logstring='saving lookahead analysis results into {} ...')
 
         self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '
