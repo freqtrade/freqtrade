@@ -63,6 +63,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Init objects
         self.config = config
+        exchange_config = deepcopy(config['exchange'])
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -70,7 +71,7 @@ class FreqtradeBot(LoggingMixin):
         validate_config_consistency(config)
 
         self.exchange = ExchangeResolver.load_exchange(
-            self.config, load_leverage_tiers=True)
+            self.config, exchange_config=exchange_config, load_leverage_tiers=True)
 
         init_db(self.config['db_url'])
 

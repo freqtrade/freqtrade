@@ -92,8 +92,8 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Config, *, validate: bool = True,
-                 load_leverage_tiers: bool = False) -> None:
+    def __init__(self, config: Config, *, exchange_config: Optional[Config] = None,
+                 validate: bool = True, load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -136,8 +136,8 @@ class Exchange:
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
         logger.info(f"Using CCXT {ccxt.__version__}")
-        exchange_config = config['exchange']
-        self.log_responses = exchange_config.get('log_responses', False)
+        exchange_conf: Dict[str, Any] = exchange_config if exchange_config else config['exchange']
+        self.log_responses = exchange_conf.get('log_responses', False)
 
         # Leverage properties
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
@@ -152,8 +152,8 @@ class Exchange:
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
         if self.trading_mode == TradingMode.FUTURES:
             self._ft_has = deep_merge_dicts(self._ft_has_futures, self._ft_has)
-        if exchange_config.get('_ft_has_params'):
-            self._ft_has = deep_merge_dicts(exchange_config.get('_ft_has_params'),
+        if exchange_conf.get('_ft_has_params'):
+            self._ft_has = deep_merge_dicts(exchange_conf.get('_ft_has_params'),
                                             self._ft_has)
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
@@ -165,18 +165,18 @@ class Exchange:
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
-        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}), ccxt_config)
-        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_sync_config', {}), ccxt_config)
+        ccxt_config = deep_merge_dicts(exchange_conf.get('ccxt_config', {}), ccxt_config)
+        ccxt_config = deep_merge_dicts(exchange_conf.get('ccxt_sync_config', {}), ccxt_config)
 
-        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=ccxt_config)
+        self._api = self._init_ccxt(exchange_conf, ccxt_kwargs=ccxt_config)
 
         ccxt_async_config = self._ccxt_config
-        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
+        ccxt_async_config = deep_merge_dicts(exchange_conf.get('ccxt_config', {}),
                                              ccxt_async_config)
-        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
+        ccxt_async_config = deep_merge_dicts(exchange_conf.get('ccxt_async_config', {}),
                                              ccxt_async_config)
         self._api_async = self._init_ccxt(
-            exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
+            exchange_conf, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
@@ -189,7 +189,7 @@ class Exchange:
                 self._startup_candle_count, config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
-        self.markets_refresh_interval: int = exchange_config.get(
+        self.markets_refresh_interval: int = exchange_conf.get(
             "markets_refresh_interval", 60) * 60
 
         if self.trading_mode != TradingMode.SPOT and load_leverage_tiers:
