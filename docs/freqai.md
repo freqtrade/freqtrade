@@ -72,11 +72,7 @@ pip install -r requirements-freqai.txt
 ```
 
 !!! Note
-    Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since it does not provide wheels for this platform.
-
-!!! Note "python 3.11"
-    Some dependencies (Catboost, Torch) currently don't support python 3.11. Freqtrade therefore only supports python 3.10 for these models/dependencies.
-    Tests involving these dependencies are skipped on 3.11.
+    Catboost will not be installed on low-powered arm devices (raspberry), since it does not provide wheels for this platform.
 
 ### Usage with docker
 
