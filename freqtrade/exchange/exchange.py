@@ -20,16 +20,16 @@ from dateutil import parser
 from pandas import DataFrame, concat
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
-                                 BuySell, Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
-                                 OBLiteral, PairWithTimeframe)
+                                 BuySell, Config, EntryExit, ExchangeConfig,
+                                 ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.enums.pricetype import PriceType
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, remove_credentials, retrier,
-                                       retrier_async)
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, remove_exchange_credentials,
+                                       retrier, retrier_async)
 from freqtrade.exchange.exchange_utils import (ROUND, ROUND_DOWN, ROUND_UP, CcxtModuleType,
                                                amount_to_contract_precision, amount_to_contracts,
                                                amount_to_precision, contracts_to_amount,
@@ -92,7 +92,7 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Config, *, exchange_config: Optional[Config] = None,
+    def __init__(self, config: Config, *, exchange_config: Optional[ExchangeConfig] = None,
                  validate: bool = True, load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
@@ -131,12 +131,12 @@ class Exchange:
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
-        remove_credentials(config)
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
         logger.info(f"Using CCXT {ccxt.__version__}")
         exchange_conf: Dict[str, Any] = exchange_config if exchange_config else config['exchange']
+        remove_exchange_credentials(exchange_conf, config.get('dry_run', False))
         self.log_responses = exchange_conf.get('log_responses', False)
 
         # Leverage properties

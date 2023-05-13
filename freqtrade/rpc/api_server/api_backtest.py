@@ -11,6 +11,7 @@ from freqtrade.configuration.config_validation import validate_config_consistenc
 from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
                                                   BacktestResponse)
@@ -38,6 +39,7 @@ async def api_start_backtest(  # noqa: C901
         raise HTTPException(status_code=500, detail="base64 encoded strategies are not allowed.")
 
     btconfig = deepcopy(config)
+    remove_exchange_credentials(btconfig['exchange'], True)
     settings = dict(bt_settings)
     if settings.get('freqai', None) is not None:
         settings['freqai'] = dict(settings['freqai'])

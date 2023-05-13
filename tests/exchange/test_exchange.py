@@ -20,7 +20,7 @@ from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_pr
                                 timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
                                 timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
-                                       calculate_backoff, remove_credentials)
+                                       calculate_backoff, remove_exchange_credentials)
 from freqtrade.exchange.exchange import amount_to_contract_precision
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_patched_exchange,
@@ -137,16 +137,14 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog)
 
 
-def test_remove_credentials(default_conf, caplog) -> None:
+def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
-    conf['dry_run'] = False
-    remove_credentials(conf)
+    remove_exchange_credentials(conf['exchange'], False)
 
     assert conf['exchange']['key'] != ''
     assert conf['exchange']['secret'] != ''
 
-    conf['dry_run'] = True
-    remove_credentials(conf)
+    remove_exchange_credentials(conf['exchange'], True)
     assert conf['exchange']['key'] == ''
     assert conf['exchange']['secret'] == ''
     assert conf['exchange']['password'] == ''
