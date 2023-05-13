@@ -330,7 +330,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(
-            request.param, exchange_conf, validate=True, load_leverage_tiers=True)
+            exchange_conf, validate=True, load_leverage_tiers=True)
 
         yield exchange, request.param
 
