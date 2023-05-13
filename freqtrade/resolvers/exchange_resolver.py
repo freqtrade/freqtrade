@@ -19,7 +19,7 @@ class ExchangeResolver(IResolver):
     object_type = Exchange
 
     @staticmethod
-    def load_exchange(config: Config, validate: bool = True,
+    def load_exchange(config: Config, *, validate: bool = True,
                       load_leverage_tiers: bool = False) -> Exchange:
         """
         Load the custom class from config parameter
