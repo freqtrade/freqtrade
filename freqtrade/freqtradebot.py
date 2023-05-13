@@ -451,6 +451,42 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
+    def handle_onexchange_order(self, trade: Trade):
+        """
+        Try refinding a order that is not in the database.
+        Only used balance disappeared, which would make exiting impossible.
+        """
+        try:
+            orders = self.exchange.fetch_orders(trade.pair, trade.open_date_utc)
+            for order in orders:
+                trade_order = [o for o in trade.orders if o.order_id == order['id']]
+                if trade_order:
+                    continue
+                logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
+
+                order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
+                order_obj.order_filled_date = datetime.fromtimestamp(
+                    safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
+                    tz=timezone.utc)
+                trade.orders.append(order_obj)
+                # TODO: how do we handle open_order_id ...
+                Trade.commit()
+                prev_exit_reason = trade.exit_reason
+                trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
+                self.update_trade_state(trade, order['id'], order)
+
+                logger.info(f"handled order {order['id']}")
+                if not trade.is_open:
+                    # Trade was just closed
+                    trade.close_date = order_obj.order_filled_date
+                    Trade.commit()
+                    break
+                else:
+                    trade.exit_reason = prev_exit_reason
+                    Trade.commit()
+
+        except ExchangeError:
+            logger.warning("Error finding onexchange order")
 #
 # BUY / enter positions / open trades logic and methods
 #
@@ -1034,6 +1070,13 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_closed = 0
         for trade in trades:
+
+            if not self.wallets.check_exit_amount(trade):
+                logger.warning(
+                    f'Not enough {trade.safe_base_currency} in wallet to exit {trade}. '
+                    'Trying to recover.')
+                self.handle_onexchange_order(trade)
+
             try:
                 try:
                     if (self.strategy.order_types.get('stoploss_on_exchange') and
@@ -1536,13 +1579,13 @@ class FreqtradeBot(LoggingMixin):
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
         if self.trading_mode == TradingMode.FUTURES:
+            # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
 
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
         wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
         if wallet_amount >= amount:
-            # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")

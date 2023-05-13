@@ -1779,6 +1779,71 @@ def test_fetch_positions(default_conf, mocker, exchange_name):
                            "fetch_positions", "fetch_positions")
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
+
+    api_mock = MagicMock()
+    api_mock.fetch_orders = MagicMock(return_value=[
+        limit_order['buy'],
+        limit_order['sell'],
+    ])
+    api_mock.fetch_open_orders = MagicMock(return_value=[limit_order['buy']])
+    api_mock.fetch_closed_orders = MagicMock(return_value=[limit_order['buy']])
+
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+    start_time = datetime.now(timezone.utc) - timedelta(days=5)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    # Not available in dry-run
+    assert exchange.fetch_orders('mocked', start_time) == []
+    assert api_mock.fetch_orders.call_count == 0
+    default_conf['dry_run'] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.fetch_orders('mocked', start_time)
+    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 0
+    assert api_mock.fetch_closed_orders.call_count == 0
+    assert len(res) == 2
+
+    res = exchange.fetch_orders('mocked', start_time)
+
+    api_mock.fetch_orders.reset_mock()
+
+    def has_resp(_, endpoint):
+        if endpoint == 'fetchOrders':
+            return False
+        if endpoint == 'fetchClosedOrders':
+            return True
+        if endpoint == 'fetchOpenOrders':
+            return True
+
+    mocker.patch(f'{EXMS}.exchange_has', has_resp)
+
+    # happy path without fetchOrders
+    res = exchange.fetch_orders('mocked', start_time)
+    assert api_mock.fetch_orders.call_count == 0
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
+
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_orders", "fetch_orders", retries=1,
+                           pair='mocked', since=start_time)
+
+    # Unhappy path - first fetch-orders call fails.
+    api_mock.fetch_orders = MagicMock(side_effect=ccxt.NotSupported())
+    api_mock.fetch_open_orders.reset_mock()
+    api_mock.fetch_closed_orders.reset_mock()
+
+    res = exchange.fetch_orders('mocked', start_time)
+
+    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
+
+
 def test_fetch_trading_fees(default_conf, mocker):
     api_mock = MagicMock()
     tick = {
