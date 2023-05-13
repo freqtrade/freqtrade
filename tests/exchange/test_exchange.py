@@ -228,27 +228,30 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.validate_pricing')
-
-    exchange = ExchangeResolver.load_exchange('zaif', default_conf)
+    default_conf['exchange']['name'] = 'zaif'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
 
-    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+    default_conf['exchange']['name'] = 'Bittrex'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Bittrex)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
     caplog.clear()
 
-    exchange = ExchangeResolver.load_exchange('kraken', default_conf)
+    default_conf['exchange']['name'] = 'kraken'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
 
-    exchange = ExchangeResolver.load_exchange('binance', default_conf)
+    default_conf['exchange']['name'] = 'binance'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -257,7 +260,8 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                           caplog)
 
     # Test mapping
-    exchange = ExchangeResolver.load_exchange('binanceus', default_conf)
+    default_conf['exchange']['name'] = 'binanceus'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -990,19 +994,20 @@ def test_validate_pricing(default_conf, mocker):
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.name', 'Binance')
-    ExchangeResolver.load_exchange('binance', default_conf)
+    default_conf['exchange']['name'] = 'binance'
+    ExchangeResolver.load_exchange(default_conf)
     has.update({'fetchTicker': False})
     with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
     has.update({'fetchTicker': True})
 
     default_conf['exit_pricing']['use_order_book'] = True
-    ExchangeResolver.load_exchange('binance', default_conf)
+    ExchangeResolver.load_exchange(default_conf)
     has.update({'fetchL2OrderBook': False})
 
     with pytest.raises(OperationalException, match="Orderbook not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
     has.update({'fetchL2OrderBook': True})
 
@@ -1011,7 +1016,7 @@ def test_validate_pricing(default_conf, mocker):
     default_conf['margin_mode'] = MarginMode.ISOLATED
 
     with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
 
 def test_validate_ordertypes(default_conf, mocker):
@@ -1091,12 +1096,13 @@ def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, 
         'stoploss_on_exchange': True,
         'stoploss_price_type': stopadv,
     }
+    default_conf['exchange']['name'] = exchange_name
     if expected:
-        ExchangeResolver.load_exchange(exchange_name, default_conf)
+        ExchangeResolver.load_exchange(default_conf)
     else:
         with pytest.raises(OperationalException,
                            match=r'On exchange stoploss price type is not supported for .*'):
-            ExchangeResolver.load_exchange(exchange_name, default_conf)
+            ExchangeResolver.load_exchange(default_conf)
 
 
 def test_validate_order_types_not_in_config(default_conf, mocker):

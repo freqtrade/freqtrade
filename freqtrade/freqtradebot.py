@@ -70,7 +70,7 @@ class FreqtradeBot(LoggingMixin):
         validate_config_consistency(config)
 
         self.exchange = ExchangeResolver.load_exchange(
-            self.config['exchange']['name'], self.config, load_leverage_tiers=True)
+            self.config, load_leverage_tiers=True)
 
         init_db(self.config['db_url'])
 

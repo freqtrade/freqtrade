@@ -46,7 +46,7 @@ def get_exchange(config=Depends(get_config)):
     if not ApiServer._exchange:
         from freqtrade.resolvers import ExchangeResolver
         ApiServer._exchange = ExchangeResolver.load_exchange(
-            config['exchange']['name'], config, load_leverage_tiers=False)
+            config, load_leverage_tiers=False)
     return ApiServer._exchange
 
 
