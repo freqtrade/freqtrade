@@ -1,3 +1,4 @@
+import platform
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
@@ -12,6 +13,19 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
+
+
+def is_mac() -> bool:
+    machine = platform.system()
+    return "Darwin" in machine
+
+
+@pytest.fixture(scope="function", autouse=True)
+def patch_tensorboard_maconly(mocker):
+    if is_mac():
+        # MacOS CI is not friendly to tensorboard
+        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.SummaryWriter')
+        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.TensorBoardCallback.after_iteration')
 
 
 @pytest.fixture(scope="function")

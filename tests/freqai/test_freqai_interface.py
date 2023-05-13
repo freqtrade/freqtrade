@@ -15,7 +15,7 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import (get_patched_freqai_strategy, make_rl_config,
+from tests.freqai.conftest import (get_patched_freqai_strategy, is_mac, make_rl_config,
                                    mock_pytorch_mlp_model_training_parameters)
 
 
@@ -26,11 +26,6 @@ def is_py11() -> bool:
 def is_arm() -> bool:
     machine = platform.machine()
     return "arm" in machine or "aarch64" in machine
-
-
-def is_mac() -> bool:
-    machine = platform.system()
-    return "Darwin" in machine
 
 
 def can_run_model(model: str) -> None:
@@ -59,10 +54,6 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle, buffer):
 
     can_run_model(model)
-    if is_mac():
-        # MacOS CI is not friendly to tensorboard
-        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.SummaryWriter')
-        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.TensorBoardCallback.after_iteration')
 
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
