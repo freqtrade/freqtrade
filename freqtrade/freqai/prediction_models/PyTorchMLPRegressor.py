@@ -69,15 +69,16 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.MSELoss()
-        init_model = self.get_init_model(dk.pair)
-        trainer = PyTorchModelTrainer(
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
-            device=self.device,
-            init_model=init_model,
-            data_convertor=self.data_convertor,
-            **self.trainer_kwargs,
-        )
+        # check if continual_learning is activated, and retreive the model to continue training
+        trainer = self.get_init_model(dk.pair)
+        if trainer is None:
+            trainer = PyTorchModelTrainer(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                device=self.device,
+                data_convertor=self.data_convertor,
+                **self.trainer_kwargs,
+            )
         trainer.fit(data_dictionary, self.splits)
         return trainer
