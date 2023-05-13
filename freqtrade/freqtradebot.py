@@ -1,9 +1,9 @@
 """
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
-import copy
 import logging
 import traceback
+from copy import deepcopy
 from datetime import datetime, time, timedelta, timezone
 from math import isclose
 from threading import Lock
@@ -461,7 +461,7 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_created = 0
 
-        whitelist = copy.deepcopy(self.active_pair_whitelist)
+        whitelist = deepcopy(self.active_pair_whitelist)
         if not whitelist:
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
