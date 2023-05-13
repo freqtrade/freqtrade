@@ -493,7 +493,6 @@ def get_default_conf(testdatadir):
         },
         "exchange": {
             "name": "binance",
-            "enabled": True,
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
