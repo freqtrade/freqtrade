@@ -69,9 +69,9 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=2.6.26',
+        'ccxt>=3.0.0',
         'SQLAlchemy>=2.0.6',
-        'python-telegram-bot>=13.4',
+        'python-telegram-bot>=20.1',
         'arrow>=0.17.0',
         'cachetools',
         'requests',

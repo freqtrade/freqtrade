@@ -19,13 +19,14 @@ class ExchangeResolver(IResolver):
     object_type = Exchange
 
     @staticmethod
-    def load_exchange(exchange_name: str, config: Config, validate: bool = True,
+    def load_exchange(config: Config, validate: bool = True,
                       load_leverage_tiers: bool = False) -> Exchange:
         """
         Load the custom class from config parameter
         :param exchange_name: name of the Exchange to load
         :param config: configuration dictionary
         """
+        exchange_name: str = config['exchange']['name']
         # Map exchange name to avoid duplicate classes for identical exchanges
         exchange_name = MAP_EXCHANGE_CHILDCLASS.get(exchange_name, exchange_name)
         exchange_name = exchange_name.title()

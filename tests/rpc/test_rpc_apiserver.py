@@ -740,6 +740,33 @@ def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short
     assert cancel_mock.call_count == 1
 
 
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_trade_reload_trade(botclient, mocker, fee, markets, ticker, is_short):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    ftbot.handle_onexchange_order = MagicMock()
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+
+    rc = client_get(client, f"{BASE_URI}/trades/10/reload")
+    assert_response(rc, 502)
+    assert 'Could not find trade with id 10.' in rc.json()['error']
+    assert ftbot.handle_onexchange_order.call_count == 0
+
+    create_mock_trades(fee, is_short=is_short)
+    Trade.commit()
+
+    rc = client_get(client, f"{BASE_URI}/trades/5/reload")
+    assert ftbot.handle_onexchange_order.call_count == 1
+
+
 def test_api_logs(botclient):
     ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/logs")

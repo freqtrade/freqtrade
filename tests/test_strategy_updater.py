@@ -16,18 +16,18 @@ if sys.version_info < (3, 9):
     pytest.skip("StrategyUpdater is not compatible with Python 3.8", allow_module_level=True)
 
 
-def test_strategy_updater_start(tmpdir, capsys) -> None:
+def test_strategy_updater_start(user_dir, capsys) -> None:
     # Effective test without mocks.
     teststrats = Path(__file__).parent / 'strategy/strats'
-    tmpdirp = Path(tmpdir) / "strategies"
-    tmpdirp.mkdir()
+    tmpdirp = Path(user_dir) / "strategies"
+    tmpdirp.mkdir(parents=True, exist_ok=True)
     shutil.copy(teststrats / 'strategy_test_v2.py', tmpdirp)
     old_code = (teststrats / 'strategy_test_v2.py').read_text()
 
     args = [
         "strategy-updater",
         "--userdir",
-        str(tmpdir),
+        str(user_dir),
         "--strategy-list",
         "StrategyTestV2"
          ]
@@ -36,9 +36,9 @@ def test_strategy_updater_start(tmpdir, capsys) -> None:
 
     start_strategy_update(pargs)
 
-    assert Path(tmpdir / "strategies_orig_updater").exists()
+    assert Path(user_dir / "strategies_orig_updater").exists()
     # Backup file exists
-    assert Path(tmpdir / "strategies_orig_updater" / 'strategy_test_v2.py').exists()
+    assert Path(user_dir / "strategies_orig_updater" / 'strategy_test_v2.py').exists()
     # updated file exists
     new_file = Path(tmpdirp / 'strategy_test_v2.py')
     assert new_file.exists()

@@ -143,8 +143,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
                    "['forceexit', 'forcesell', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
-                   "['trades'], ['delete'], ['cancel_open_order', 'coo'], ['performance'], "
-                   "['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
+                   "['reload_trade'], ['trades'], ['delete'], ['cancel_open_order', 'coo'], "
+                   "['performance'], ['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['delete_locks', 'unlock'], "
                    "['reload_conf', 'reload_config'], ['show_conf', 'show_config'], "
@@ -1761,6 +1761,25 @@ async def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short
     msg_mock.call_count == 1
     assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
     assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
+
+
+@pytest.mark.parametrize('is_short', [True, False])
+async def test_telegram_reload_trade_from_exchange(mocker, update, default_conf, fee, is_short):
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    context = MagicMock()
+    context.args = []
+
+    await telegram._reload_trade_from_exchange(update=update, context=context)
+    assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee, is_short=is_short)
+
+    context.args = [5]
+
+    await telegram._reload_trade_from_exchange(update=update, context=context)
+    assert "Status: `Reloaded from orders from exchange`" in msg_mock.call_args_list[0][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])

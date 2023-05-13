@@ -302,7 +302,7 @@ def exchange(request, exchange_conf):
         exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
     exchange_conf['exchange']['name'] = request.param
     exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
-    exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True)
 
     yield exchange, request.param
 
@@ -330,7 +330,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(
-            request.param, exchange_conf, validate=True, load_leverage_tiers=True)
+            exchange_conf, validate=True, load_leverage_tiers=True)
 
         yield exchange, request.param
 
