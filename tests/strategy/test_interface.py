@@ -331,14 +331,14 @@ def test_min_roi_reached(default_conf, fee) -> None:
             open_rate=1,
         )
 
-        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+        assert strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+        assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=39))
 
-        assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
-        assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+        assert not strategy.min_roi_reached(trade, -0.01, dt_now() - timedelta(minutes=1))
+        assert strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=1))
 
 
 def test_min_roi_reached2(default_conf, fee) -> None:
@@ -362,25 +362,25 @@ def test_min_roi_reached2(default_conf, fee) -> None:
             pair='ETH/BTC',
             stake_amount=0.001,
             amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            open_date=dt_now() - timedelta(hours=1),
             fee_open=fee.return_value,
             fee_close=fee.return_value,
             exchange='binance',
             open_rate=1,
         )
 
-        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+        assert strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-        assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+        assert strategy.min_roi_reached(trade, 0.071, dt_now() - timedelta(minutes=39))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
-        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=26))
+        assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=26))
 
         # Should not trigger with 20% profit since after 55 minutes only 30% is active.
-        assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
-        assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+        assert not strategy.min_roi_reached(trade, 0.20, dt_now() - timedelta(minutes=2))
+        assert strategy.min_roi_reached(trade, 0.31, dt_now() - timedelta(minutes=2))
 
 
 def test_min_roi_reached3(default_conf, fee) -> None:
@@ -396,25 +396,25 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=5,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
     )
 
-    assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-    assert not strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+    assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+    assert not strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-    assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+    assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+    assert strategy.min_roi_reached(trade, 0.071, dt_now() - timedelta(minutes=39))
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
-    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+    assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=26))
+    assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=26))
 
     # Should not trigger with 20% profit since after 55 minutes only 30% is active.
-    assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
-    assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+    assert not strategy.min_roi_reached(trade, 0.20, dt_now() - timedelta(minutes=2))
+    assert strategy.min_roi_reached(trade, 0.31, dt_now() - timedelta(minutes=2))
 
 
 @pytest.mark.parametrize(
@@ -450,7 +450,7 @@ def test_ft_stoploss_reached(default_conf, fee, profit, adjusted, expected, liq,
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -499,7 +499,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -548,7 +548,7 @@ def test_should_sell(default_conf, fee) -> None:
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
