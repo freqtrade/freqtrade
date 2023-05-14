@@ -23,6 +23,7 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_CO
                                        calculate_backoff, remove_credentials)
 from freqtrade.exchange.exchange import amount_to_contract_precision
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
+from freqtrade.util import dt_now, dt_ts
 from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_patched_exchange,
                             log_has, log_has_re, num_log_has_re)
 
@@ -646,7 +647,7 @@ def test_reload_markets(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance",
                                     mock_markets=False)
     exchange._load_async_markets = MagicMock()
-    exchange._last_markets_refresh = arrow.utcnow().int_timestamp
+    exchange._last_markets_refresh = dt_ts()
 
     assert exchange.markets == initial_markets
 
@@ -657,7 +658,7 @@ def test_reload_markets(default_conf, mocker, caplog):
 
     api_mock.load_markets = MagicMock(return_value=updated_markets)
     # more than 10 minutes have passed, reload is executed
-    exchange._last_markets_refresh = arrow.utcnow().int_timestamp - 15 * 60
+    exchange._last_markets_refresh = dt_ts(dt_now() - timedelta(minutes=15))
     exchange.reload_markets()
     assert exchange.markets == updated_markets
     assert exchange._load_async_markets.call_count == 1

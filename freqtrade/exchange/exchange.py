@@ -42,6 +42,8 @@ from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.util import dt_from_ts, dt_now
+from freqtrade.util.datetime_helpers import dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -490,7 +492,7 @@ class Exchange:
         try:
             self._markets = self._api.load_markets(params={})
             self._load_async_markets()
-            self._last_markets_refresh = arrow.utcnow().int_timestamp
+            self._last_markets_refresh = dt_ts()
             if self._ft_has['needs_trading_fees']:
                 self._trading_fees = self.fetch_trading_fees()
 
@@ -501,15 +503,14 @@ class Exchange:
         """Reload markets both sync and async if refresh interval has passed """
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
-                self._last_markets_refresh + self.markets_refresh_interval
-                > arrow.utcnow().int_timestamp):
+                self._last_markets_refresh + self.markets_refresh_interval > dt_ts()):
             return None
         logger.debug("Performing scheduled market reload..")
         try:
             self._markets = self._api.load_markets(reload=True, params={})
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
-            self._last_markets_refresh = arrow.utcnow().int_timestamp
+            self._last_markets_refresh = dt_ts()
             self.fill_leverage_tiers()
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
@@ -843,7 +844,8 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
-        order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
+        now = dt_now()
+        order_id = f'dry_run_{side}_{now.timestamp()}'
         # Rounding here must respect to contract sizes
         _amount = self._contracts_to_amount(
             pair, self.amount_to_precision(pair, self._amount_to_contracts(pair, amount)))
@@ -858,8 +860,8 @@ class Exchange:
             'side': side,
             'filled': 0,
             'remaining': _amount,
-            'datetime': arrow.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-            'timestamp': arrow.utcnow().int_timestamp * 1000,
+            'datetime': now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+            'timestamp': dt_ts(now),
             'status': "open",
             'fee': None,
             'info': {},
@@ -1934,7 +1936,7 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, candle_type, since) for since in
-            range(since_ms, until_ms or (arrow.utcnow().int_timestamp * 1000), one_call)]
+            range(since_ms, until_ms or dt_ts(), one_call)]
 
         data: List = []
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
@@ -2117,7 +2119,7 @@ class Exchange:
         """
         try:
             # Fetch OHLCV asynchronously
-            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
+            s = '(' + dt_from_ts(since_ms).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
                 "Fetching pair %s, %s, interval %s, since %s %s...",
                 pair, candle_type, timeframe, since_ms, s
@@ -2207,7 +2209,7 @@ class Exchange:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair, since,
-                    '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
+                    '(' + dt_from_ts(since).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
             trades = self._trades_contracts_to_amount(trades)
