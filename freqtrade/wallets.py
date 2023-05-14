@@ -3,9 +3,8 @@
 
 import logging
 from copy import deepcopy
+from datetime import datetime
 from typing import Dict, NamedTuple, Optional
-
-import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.enums import RunMode, TradingMode
@@ -166,14 +165,15 @@ class Wallets:
         for trading operations, the latest balance is needed.
         :param require_update: Allow skipping an update if balances were recently refreshed
         """
-        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().int_timestamp)):
+        now = datetime.now().timestamp()
+        if (require_update or (self._last_wallet_refresh + 3600 < now)):
             if (not self._config['dry_run'] or self._config.get('runmode') == RunMode.LIVE):
                 self._update_live()
             else:
                 self._update_dry()
             if self._log:
                 logger.info('Wallets synced.')
-            self._last_wallet_refresh = arrow.utcnow().int_timestamp
+            self._last_wallet_refresh = datetime.now().timestamp()
 
     def get_all_balances(self) -> Dict[str, Wallet]:
         return self._wallets
