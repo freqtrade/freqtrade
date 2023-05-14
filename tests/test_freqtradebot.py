@@ -4,10 +4,10 @@
 import logging
 import time
 from copy import deepcopy
+from datetime import timedelta
 from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
-import arrow
 import pytest
 from pandas import DataFrame
 from sqlalchemy import select
@@ -446,7 +446,7 @@ def test_enter_positions_global_pairlock(default_conf_usdt, ticker_usdt, limit_b
     assert not log_has_re(message, caplog)
     caplog.clear()
 
-    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because', side='*')
+    PairLocks.lock_pair('*', dt_now() + timedelta(minutes=20), 'Just because', side='*')
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has_re(message, caplog)
@@ -467,7 +467,7 @@ def test_handle_protections(mocker, default_conf_usdt, fee, is_short):
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     freqtrade.protections._protection_handlers[1].global_stop = MagicMock(
-        return_value=ProtectionReturn(True, arrow.utcnow().shift(hours=1).datetime, "asdf"))
+        return_value=ProtectionReturn(True, dt_now() + timedelta(hours=1), "asdf"))
     create_mock_trades(fee, is_short)
     freqtrade.handle_protections('ETC/BTC', '*')
     send_msg_mock = freqtrade.rpc.send_msg
@@ -1263,7 +1263,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     }])
     trade.stoploss_order_id = "107"
     trade.is_open = True
-    trade.stoploss_last_update = arrow.utcnow().shift(hours=-1).datetime
+    trade.stoploss_last_update = dt_now() - timedelta(hours=1)
     trade.stop_loss = 24
     trade.exit_reason = None
     trade.orders.append(
@@ -1412,7 +1412,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     })
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
     mocker.patch(f'{EXMS}.cancel_stoploss_order_with_result', stoploss_order_cancel)
-    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-10).datetime
+    trade.stoploss_last_update = dt_now() - timedelta(minutes=10)
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     # Canceled Stoploss filled partially ...
@@ -1632,7 +1632,7 @@ def test_handle_stoploss_on_exchange_trailing(
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = '100'
-    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-20).datetime
+    trade.stoploss_last_update = dt_now() - timedelta(minutes=20)
     trade.orders.append(
         Order(
             ft_order_side='stoploss',
@@ -1763,7 +1763,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     trade.open_order_id = None
     trade.stoploss_order_id = "abcd"
     trade.stop_loss = 0.2
-    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-601).datetime.replace(tzinfo=None)
+    trade.stoploss_last_update = (dt_now() - timedelta(minutes=601)).replace(tzinfo=None)
     trade.is_short = is_short
 
     stoploss_order_hanging = {
@@ -1787,7 +1787,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     assert stoploss.call_count == 1
 
     # Fail creating stoploss order
-    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-601).datetime
+    trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
     caplog.clear()
     cancel_mock = mocker.patch(f'{EXMS}.cancel_stoploss_order')
     mocker.patch(f'{EXMS}.create_stoploss', side_effect=ExchangeError())
@@ -1876,7 +1876,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = '100'
-    trade.stoploss_last_update = arrow.utcnow().shift(minutes=-601).datetime
+    trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
     trade.orders.append(
         Order(
             ft_order_side='stoploss',
@@ -2965,8 +2965,8 @@ def test_manage_open_orders_exit_usercustom(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
-    open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade_usdt.open_date = dt_now() - timedelta(hours=5)
+    open_trade_usdt.close_date = dt_now() - timedelta(minutes=601)
     open_trade_usdt.close_profit_abs = 0.001
 
     Trade.session.add(open_trade_usdt)
@@ -3047,8 +3047,8 @@ def test_manage_open_orders_exit(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
-    open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade_usdt.open_date = dt_now() - timedelta(hours=5)
+    open_trade_usdt.close_date = dt_now() - timedelta(minutes=601)
     open_trade_usdt.close_profit_abs = 0.001
     open_trade_usdt.is_short = is_short
 
@@ -3088,8 +3088,8 @@ def test_check_handle_cancelled_exit(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
-    open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade_usdt.open_date = dt_now() - timedelta(hours=5)
+    open_trade_usdt.close_date = dt_now() - timedelta(minutes=601)
     open_trade_usdt.is_short = is_short
 
     Trade.session.add(open_trade_usdt)
@@ -3417,7 +3417,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         exchange='binance',
         open_rate=0.245441,
         open_order_id="sell_123456",
-        open_date=arrow.utcnow().shift(days=-2).datetime,
+        open_date=dt_now() - timedelta(days=2),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         close_rate=0.555,

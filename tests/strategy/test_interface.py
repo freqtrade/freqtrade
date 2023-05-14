@@ -729,7 +729,7 @@ def test_is_pair_locked(default_conf):
 
     pair = 'ETH/BTC'
     assert not strategy.is_pair_locked(pair)
-    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime)
+    strategy.lock_pair(pair, dt_now() + timedelta(minutes=4))
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 
@@ -747,7 +747,7 @@ def test_is_pair_locked(default_conf):
 
     # Lock with reason
     reason = "TestLockR"
-    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime, reason)
+    strategy.lock_pair(pair, dt_now() + timedelta(minutes=4), reason)
     assert strategy.is_pair_locked(pair)
     strategy.unlock_reason(reason)
     assert not strategy.is_pair_locked(pair)
