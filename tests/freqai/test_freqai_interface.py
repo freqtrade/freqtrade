@@ -58,9 +58,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
 
     can_run_model(model)
 
-    # test_tb = True
-    # if is_mac():
-    #     test_tb = False
+    test_tb = True
+    if is_mac():
+        test_tb = False
 
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
@@ -97,7 +97,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    # freqai.activate_tensorboard = test_tb
+    freqai.activate_tensorboard = test_tb
     freqai.can_short = can_short
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
@@ -245,9 +245,9 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
     can_run_model(model)
-    # test_tb = True
-    # if is_mac():
-    #     test_tb = False
+    test_tb = True
+    if is_mac():
+        test_tb = False
 
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
@@ -280,7 +280,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = False
-    # freqai.activate_tensorboard = test_tb
+    freqai.activate_tensorboard = test_tb
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)

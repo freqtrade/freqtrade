@@ -13,7 +13,7 @@ class BaseTensorboardLogger:
         logger.warning("Tensorboard is not installed, no logs will be written."
                        "Ensure torch is installed, or use the torch/RL docker images")
 
-    def log_scaler(self, tag: str, scalar_value: Any, step: int):
+    def log_scalar(self, tag: str, scalar_value: Any, step: int):
         return
 
     def close(self):

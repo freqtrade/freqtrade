@@ -110,7 +110,7 @@ class IFreqaiModel(ABC):
         if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
-        self.activate_tensorboard: bool = self.freqai_info.get('activate_tensorboard', False)
+        self.activate_tensorboard: bool = self.freqai_info.get('activate_tensorboard', True)
 
         record_params(config, self.full_path)
 
