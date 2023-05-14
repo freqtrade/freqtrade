@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts
+from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_utc
 
 
 def test_dt_now():
@@ -19,6 +19,13 @@ def test_dt_now():
         assert dt_ts() == int(dt_now().timestamp() * 1000)
         # Test with different time than now
         assert dt_ts(now) == int(now.timestamp() * 1000)
+
+
+def test_dt_utc():
+    assert dt_utc(2023, 5, 5) == datetime(2023, 5, 5, tzinfo=timezone.utc)
+    assert dt_utc(2023, 5, 5, 0, 0, 0, 555500) == datetime(2023, 5, 5, 0, 0, 0, 555500,
+                                                           tzinfo=timezone.utc)
+
 
 
 @pytest.mark.parametrize('as_ms', [True, False])

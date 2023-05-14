@@ -7,6 +7,12 @@ def dt_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def dt_utc(year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0,
+           microsecond: int = 0) -> datetime:
+    """Return a datetime in UTC."""
+    return datetime(year, month, day, hour, minute, second, microsecond, tzinfo=timezone.utc)
+
+
 def dt_ts(dt: Optional[datetime] = None) -> int:
     """
     Return dt in ms as a timestamp in UTC.
