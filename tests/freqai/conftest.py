@@ -20,14 +20,6 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
-@pytest.fixture(scope="function", autouse=True)
-def patch_tensorboard_maconly(mocker):
-    if is_mac():
-        # MacOS CI is not friendly to tensorboard
-        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.SummaryWriter')
-        mocker.patch('freqtrade.freqai.tensorboard.tensorboard.TensorBoardCallback.after_iteration')
-
-
 @pytest.fixture(scope="function")
 def freqai_conf(default_conf, tmpdir):
     freqaiconf = deepcopy(default_conf)

@@ -36,6 +36,9 @@ def can_run_model(model: str) -> None:
     if is_pytorch_model and is_mac() and not is_arm():
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
+    if "XGBoost" in model and is_mac():
+        pytest.skip("Mac doesn't tb callbacks?")
+
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
     ('LightGBMRegressor', True, False, True, True, False, 0),
