@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -162,25 +163,25 @@ def test_extract_trades_of_period(testdatadir):
         {'pair': [pair, pair, pair, pair],
          'profit_ratio': [0.0, 0.1, -0.2, -0.5],
          'profit_abs': [0.0, 1, -2, -5],
-         'open_date': to_datetime([Arrow(2017, 11, 13, 15, 40, 0).datetime,
-                                   Arrow(2017, 11, 14, 9, 41, 0).datetime,
-                                   Arrow(2017, 11, 14, 14, 20, 0).datetime,
-                                   Arrow(2017, 11, 15, 3, 40, 0).datetime,
+         'open_date': to_datetime([datetime(2017, 11, 13, 15, 40, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 14, 9, 41, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 14, 14, 20, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 15, 3, 40, 0, tzinfo=timezone.utc),
                                    ], utc=True
                                   ),
-         'close_date': to_datetime([Arrow(2017, 11, 13, 16, 40, 0).datetime,
-                                    Arrow(2017, 11, 14, 10, 41, 0).datetime,
-                                    Arrow(2017, 11, 14, 15, 25, 0).datetime,
-                                    Arrow(2017, 11, 15, 3, 55, 0).datetime,
+         'close_date': to_datetime([datetime(2017, 11, 13, 16, 40, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 14, 10, 41, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 14, 15, 25, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 15, 3, 55, 0, tzinfo=timezone.utc),
                                     ], utc=True)
          })
     trades1 = extract_trades_of_period(data, trades)
     # First and last trade are dropped as they are out of range
     assert len(trades1) == 2
-    assert trades1.iloc[0].open_date == Arrow(2017, 11, 14, 9, 41, 0).datetime
-    assert trades1.iloc[0].close_date == Arrow(2017, 11, 14, 10, 41, 0).datetime
-    assert trades1.iloc[-1].open_date == Arrow(2017, 11, 14, 14, 20, 0).datetime
-    assert trades1.iloc[-1].close_date == Arrow(2017, 11, 14, 15, 25, 0).datetime
+    assert trades1.iloc[0].open_date == datetime(2017, 11, 14, 9, 41, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[0].close_date == datetime(2017, 11, 14, 10, 41, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[-1].open_date == datetime(2017, 11, 14, 14, 20, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[-1].close_date == datetime(2017, 11, 14, 15, 25, 0, tzinfo=timezone.utc)
 
 
 def test_analyze_trade_parallelism(testdatadir):
@@ -454,8 +455,8 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
     [1000, 500,  1000, 11000, 10000] # absolute results
     [1000, 50%,  0%,   0%,       ~9%]   # Relative drawdowns
     """
-    init_date = Arrow(2020, 1, 1)
-    dates = [init_date.shift(days=i) for i in range(len(profits))]
+    init_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    dates = [init_date + timedelta(days=i) for i in range(len(profits))]
     df = DataFrame(zip(profits, dates), columns=['profit_abs', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit_abs').reset_index(drop=True)
@@ -467,8 +468,8 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
 
     assert isinstance(drawdown, float)
     assert isinstance(drawdown_rel, float)
-    assert hdate == init_date.shift(days=highd)
-    assert ldate == init_date.shift(days=lowd)
+    assert hdate == init_date + timedelta(days=highd)
+    assert ldate == init_date + timedelta(days=lowd)
 
     # High must be before low
     assert hdate < ldate

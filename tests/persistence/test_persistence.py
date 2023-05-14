@@ -636,7 +636,7 @@ def test_trade_close(fee):
     assert pytest.approx(trade.close_profit) == 0.094513715
     assert trade.close_date is not None
 
-    new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    new_date = datetime(2020, 2, 2, 15, 6, 1),
     assert trade.close_date != new_date
     # Close should NOT update close_date if the trade has been closed already
     assert trade.is_open is False

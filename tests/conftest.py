@@ -2598,7 +2598,7 @@ def open_trade():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
@@ -2636,7 +2636,7 @@ def open_trade_usdt():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=60.0,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
