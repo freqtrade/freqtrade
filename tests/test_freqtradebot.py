@@ -5552,6 +5552,51 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert log_has(f"Error updating {order['id']}.", caplog)
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_short, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_uts = mocker.spy(freqtrade, 'update_trade_state')
+
+    entry_order = limit_order[entry_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
+    mock_fo = mocker.patch(f'{EXMS}.fetch_orders', return_value=[
+        entry_order,
+        exit_order,
+    ])
+
+    order_id = entry_order['id']
+
+    trade = Trade(
+            open_order_id=order_id,
+            pair='ETH/USDT',
+            fee_open=0.001,
+            fee_close=0.001,
+            open_rate=entry_order['price'],
+            open_date=arrow.utcnow().datetime,
+            stake_amount=entry_order['cost'],
+            amount=entry_order['amount'],
+            exchange="binance",
+            is_short=is_short,
+            leverage=1,
+            )
+
+    trade.orders.append(Order.parse_from_ccxt_object(
+        entry_order, 'ADA/USDT', entry_side(is_short))
+    )
+    Trade.session.add(trade)
+    freqtrade.handle_onexchange_order(trade)
+    assert log_has_re(r"Found previously unknown order .*", caplog)
+    assert mock_uts.call_count == 1
+    assert mock_fo.call_count == 1
+
+    trade = Trade.session.scalars(select(Trade)).first()
+
+    assert len(trade.orders) == 2
+    assert trade.is_open is False
+    assert trade.exit_reason == ExitType.SOLD_ON_EXCHANGE.value
+
+
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)

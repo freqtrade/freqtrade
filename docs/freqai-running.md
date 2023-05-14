@@ -131,6 +131,9 @@ You can choose to adopt a continual learning scheme by setting `"continual_learn
 ???+ danger "Continual learning enforces a constant parameter space"
     Since `continual_learning` means that the model parameter space *cannot* change between trainings, `principal_component_analysis` is automatically disabled when `continual_learning` is enabled. Hint: PCA changes the parameter space and the number of features, learn more about PCA [here](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis).
 
+???+ danger "Experimental functionality"
+    Beware that this is currently a naive approach to incremental learning, and it has a high probability of overfitting/getting stuck in local minima while the market moves away from your model. We have the mechanics available in FreqAI primarily for experimental purposes and so that it is ready for more mature approaches to continual learning in chaotic systems like the crypto market.
+
 ## Hyperopt
 
 You can hyperopt using the same command as for [typical Freqtrade hyperopt](hyperopt.md):

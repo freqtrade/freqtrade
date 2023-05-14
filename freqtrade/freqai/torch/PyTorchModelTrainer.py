@@ -25,7 +25,6 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             optimizer: Optimizer,
             criterion: nn.Module,
             device: str,
-            init_model: Dict,
             data_convertor: PyTorchDataConvertor,
             model_meta_data: Dict[str, Any] = {},
             window_size: int = 1,
@@ -58,8 +57,6 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.data_convertor = data_convertor
         self.window_size: int = window_size
         self.tb_logger = tb_logger
-        if init_model:
-            self.load_from_checkpoint(init_model)
 
     def fit(self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]):
         """

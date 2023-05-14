@@ -18,8 +18,9 @@ def entryexitanalysis_cleanup() -> None:
     Backtesting.cleanup()
 
 
-def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmpdir, capsys):
+def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, user_dir, capsys):
     caplog.set_level(logging.INFO)
+    (user_dir / 'backtest_results').mkdir(parents=True, exist_ok=True)
 
     default_conf.update({
         "use_exit_signal": True,
@@ -80,7 +81,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        '--user-data-dir', str(tmpdir),
+        '--user-data-dir', str(user_dir),
         '--timeframe', '5m',
         '--timerange', '1515560100-1517287800',
         '--export', 'signals',
@@ -98,7 +99,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         'backtesting-analysis',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        '--user-data-dir', str(tmpdir),
+        '--user-data-dir', str(user_dir),
     ]
 
     # test group 0 and indicator list

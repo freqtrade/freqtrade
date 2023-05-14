@@ -425,7 +425,7 @@ class LocalTrade():
 
     @property
     def close_date_utc(self):
-        return self.close_date.replace(tzinfo=timezone.utc)
+        return self.close_date.replace(tzinfo=timezone.utc) if self.close_date else None
 
     @property
     def entry_side(self) -> str:

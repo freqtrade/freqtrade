@@ -135,7 +135,14 @@ Parameter details can be found [here](freqai-parameter-table.md), but in general
 
 ## Creating a custom reward function
 
-As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `MyRLEnv` class (see below). A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards, but users are encouraged to create their own custom reinforcement learning model class (see below) and save it to `user_data/freqaimodels`. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+!!! danger "Not for production"
+    Warning!
+    The reward function provided with the Freqtrade source code is a showcase of functionality designed to show/test as many possible environment control features as possible. It is also designed to run quickly on small computers. This is a benchmark, it is *not* for live production. Please beware that you will need to create your own custom_reward() function or use a template built by other users outside of the Freqtrade source code.
+
+As you begin to modify the strategy and the prediction model, you will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, you set the `calculate_reward()` function inside the `MyRLEnv` class (see below). A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to demonstrate the necessary building blocks for creating rewards, but this is *not* designed for production. Users *must* create their own custom reinforcement learning model class or use a pre-built one from outside the Freqtrade source code and save it to `user_data/freqaimodels`. It is inside the `calculate_reward()` where creative theories about the market can be expressed. For example, you can reward your agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, you wish to reward the agent for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+
+!!! note "Hint"
+    The best reward functions are ones that are continuously differentiable, and well scaled. In other words, adding a single large negative penalty to a rare event is not a good idea, and the neural net will not be able to learn that function. Instead, it is better to add a small negative penalty to a common event. This will help the agent learn faster. Not only this, but you can help improve the continuity of your rewards/penalties by having them scale with severity according to some linear/exponential functions. In other words, you'd slowly scale the penalty as the duration of the trade increases. This is better than a single large penalty occuring at a single point in time.
 
 ```python
     from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
@@ -169,6 +176,11 @@ As you begin to modify the strategy and the prediction model, you will quickly r
             User made custom environment. This class inherits from BaseEnvironment and gym.env.
             Users can override any functions from those parent classes. Here is an example
             of a user customized `calculate_reward()` function.
+
+            Warning!
+            This is function is a showcase of functionality designed to show as many possible
+            environment control features as possible. It is also designed to run quickly
+            on small computers. This is a benchmark, it is *not* for live production.
             """
             def calculate_reward(self, action: int) -> float:
                 # first, penalize if the action is not valid

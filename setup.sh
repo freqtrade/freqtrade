@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 10 9 8
+    for v in 11 10 9 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -258,7 +258,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.8 - 3.10, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.8 - 3.11, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi

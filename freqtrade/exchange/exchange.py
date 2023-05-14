@@ -92,7 +92,7 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Config, validate: bool = True,
+    def __init__(self, config: Config, *, validate: bool = True,
                  load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
@@ -1429,6 +1429,47 @@ class Exchange:
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get positions due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier(retries=0)
+    def fetch_orders(self, pair: str, since: datetime) -> List[Dict]:
+        """
+        Fetch all orders for a pair "since"
+        :param pair: Pair for the query
+        :param since: Starting time for the query
+        """
+        if self._config['dry_run']:
+            return []
+
+        def fetch_orders_emulate() -> List[Dict]:
+            orders = []
+            if self.exchange_has('fetchClosedOrders'):
+                orders = self._api.fetch_closed_orders(pair, since=since_ms)
+                if self.exchange_has('fetchOpenOrders'):
+                    orders_open = self._api.fetch_open_orders(pair, since=since_ms)
+                    orders.extend(orders_open)
+            return orders
+
+        try:
+            since_ms = int((since.timestamp() - 10) * 1000)
+            if self.exchange_has('fetchOrders'):
+                try:
+                    orders: List[Dict] = self._api.fetch_orders(pair, since=since_ms)
+                except ccxt.NotSupported:
+                    # Some exchanges don't support fetchOrders
+                    # attempt to fetch open and closed orders separately
+                    orders = fetch_orders_emulate()
+            else:
+                orders = fetch_orders_emulate()
+            self._log_exchange_response('fetch_orders', orders)
+            orders = [self._order_contracts_to_amount(o) for o in orders]
+            return orders
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not fetch positions due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 

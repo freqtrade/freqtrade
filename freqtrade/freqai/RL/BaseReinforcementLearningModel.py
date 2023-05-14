@@ -371,6 +371,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
+
+            Warning!
+            This is function is a showcase of functionality designed to show as many possible
+            environment control features as possible. It is also designed to run quickly
+            on small computers. This is a benchmark, it is *not* for live production.
+
             :param action: int = The action made by the agent for the current candle.
             :return:
             float = the reward to give to the agent for current step (used for optimization
