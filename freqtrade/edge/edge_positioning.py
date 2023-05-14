@@ -80,8 +80,8 @@ class Edge:
             self._stoploss_range_step
         )
 
-        self._timerange: TimeRange = TimeRange.parse_timerange("%s-" % (
-            dt_now() - timedelta(days=self._since_number_of_days)).strftime('YYYYMMDD'))
+        self._timerange: TimeRange = TimeRange.parse_timerange(
+            f"{(dt_now() - timedelta(days=self._since_number_of_days)).strftime('%Y%m%d')}-")
         if config.get('fee'):
             self.fee = config['fee']
         else:

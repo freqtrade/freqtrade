@@ -32,6 +32,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
+from freqtrade.util.datetime_helpers import dt_now
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -1252,7 +1253,7 @@ class RPC:
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed, arrow.Arrow.utcnow().datetime)
+                                              df_analyzed, dt_now())
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and
