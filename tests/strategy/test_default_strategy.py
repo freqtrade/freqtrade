@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from pandas import DataFrame
@@ -43,12 +43,12 @@ def test_strategy_test_v3(dataframe_1m, fee, is_short, side):
 
     assert strategy.confirm_trade_entry(pair='ETH/BTC', order_type='limit', amount=0.1,
                                         rate=20000, time_in_force='gtc',
-                                        current_time=datetime.utcnow(),
+                                        current_time=datetime.now(timezone.utc),
                                         side=side, entry_tag=None) is True
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
                                        rate=20000, time_in_force='gtc', exit_reason='roi',
                                        sell_reason='roi',
-                                       current_time=datetime.utcnow(),
+                                       current_time=datetime.now(timezone.utc),
                                        side=side) is True
 
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),

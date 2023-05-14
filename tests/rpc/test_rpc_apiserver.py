@@ -601,7 +601,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert len(rc.json()['data']) == 7
     assert rc.json()['stake_currency'] == 'BTC'
     assert rc.json()['fiat_display_currency'] == 'USD'
-    assert rc.json()['data'][0]['date'] == str(datetime.utcnow().date())
+    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -1224,7 +1224,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         stake_amount=1,
         open_rate=0.245441,
         open_order_id="123456",
-        open_date=datetime.utcnow(),
+        open_date=datetime.now(timezone.utc),
         is_open=False,
         is_short=False,
         fee_close=fee.return_value,
