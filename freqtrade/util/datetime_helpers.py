@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 
 def dt_now() -> datetime:
@@ -6,8 +7,10 @@ def dt_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def dt_now_ts() -> int:
+def dt_ts(dt: Optional[datetime] = None) -> int:
     """Return the current timestamp in ms as a timestamp in UTC."""
+    if dt:
+        return int(dt.timestamp() * 1000)
     return int(dt_now().timestamp() * 1000)
 
 
