@@ -14,6 +14,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
+from freqtrade.util.datetime_helpers import dt_ts
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset)
@@ -220,7 +221,7 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
     heartbeat = edge_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
-    edge._last_updated = arrow.utcnow().int_timestamp - heartbeat + 1
+    edge._last_updated = dt_ts() - heartbeat + 1
 
     assert edge.calculate(edge_conf['exchange']['pair_whitelist']) is False
 
@@ -268,7 +269,7 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 
     assert edge.calculate(edge_conf['exchange']['pair_whitelist'])
     assert len(edge._cached_pairs) == 2
-    assert edge._last_updated <= arrow.utcnow().int_timestamp + 2
+    assert edge._last_updated <= dt_ts() + 2
 
 
 def test_edge_process_no_data(mocker, edge_conf, caplog):

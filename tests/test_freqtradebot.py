@@ -6003,7 +6003,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
         'ft_is_open': False,
         'id': '651',
         'order_id': '651',
-        'datetime': arrow.utcnow().isoformat(),
+        'datetime': dt_now().isoformat(),
     }
 
     mocker.patch(f'{EXMS}.create_order', MagicMock(return_value=closed_dca_order_1))

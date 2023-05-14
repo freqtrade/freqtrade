@@ -25,6 +25,7 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
+from freqtrade.util import dt_ts
 from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _clean_test_file
 
@@ -106,8 +107,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '123',
         }
         }
@@ -161,8 +162,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '124',
         }
     }
