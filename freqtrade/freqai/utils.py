@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,8 @@ from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.exchange import market_is_active
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.tensorboard import TBLogger
+from freqtrade.freqai.tensorboard.base_tensorboard import BaseTensorboardLogger
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 
 
@@ -90,55 +92,6 @@ def get_required_data_timerange(config: Config) -> TimeRange:
     data_load_timerange = TimeRange('date', 'date', startts, stopts)
 
     return data_load_timerange
-
-
-# Keep below for when we wish to download heterogeneously lengthed data for FreqAI.
-# def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
-#     """
-#     Called only once upon start of bot to download the necessary data for
-#     populating indicators and training a FreqAI model.
-#     :param timerange: TimeRange = The full data timerange for populating the indicators
-#                                     and training the model.
-#     :param dp: DataProvider instance attached to the strategy
-#     """
-
-#     if dp._exchange is not None:
-#         markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
-#                    or config.get('include_inactive')]
-#     else:
-#         # This should not occur:
-#         raise OperationalException('No exchange object found.')
-
-#     all_pairs = dynamic_expand_pairlist(config, markets)
-
-#     if not dp._exchange:
-#         # Not realistic - this is only called in live mode.
-#         raise OperationalException("Dataprovider did not have an exchange attached.")
-
-#     time = datetime.now(tz=timezone.utc).timestamp()
-
-#     for tf in config["freqai"]["feature_parameters"].get("include_timeframes"):
-#         timerange = TimeRange()
-#         timerange.startts = int(time)
-#         timerange.stopts = int(time)
-#         startup_candles = dp.get_required_startup(str(tf))
-#         tf_seconds = timeframe_to_seconds(str(tf))
-#         timerange.subtract_start(tf_seconds * startup_candles)
-#         new_pairs_days = int((timerange.stopts - timerange.startts) / 86400)
-#         # FIXME: now that we are looping on `refresh_backtest_ohlcv_data`, the function
-#         # redownloads the funding rate for each pair.
-#         refresh_backtest_ohlcv_data(
-#             dp._exchange,
-#             pairs=all_pairs,
-#             timeframes=[tf],
-#             datadir=config["datadir"],
-#             timerange=timerange,
-#             new_pairs_days=new_pairs_days,
-#             erase=False,
-#             data_format=config.get("dataformat_ohlcv", "json"),
-#             trading_mode=config.get("trading_mode", "spot"),
-#             prepend=config.get("prepend_data", False),
-#         )
 
 
 def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
@@ -233,3 +186,14 @@ def get_timerange_backtest_live_models(config: Config) -> str:
     dd = FreqaiDataDrawer(models_path, config)
     timerange = dd.get_timerange_from_live_historic_predictions()
     return timerange.timerange_str
+
+
+def get_tb_logger(model_type: str, path: Path, activate: bool) -> Union[TBLogger,
+                                                                        BaseTensorboardLogger]:
+    tb_logger: Union[TBLogger, BaseTensorboardLogger]
+    if model_type == "pytorch":
+        tb_logger = TBLogger(path, activate)
+    else:
+        tb_logger = BaseTensorboardLogger(path, activate)
+
+    return tb_logger

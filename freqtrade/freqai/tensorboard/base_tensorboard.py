@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTensorboardLogger:
-    def __init__(self, logdir: Path):
+    def __init__(self, logdir: Path, activate: bool = True):
         logger.warning("Tensorboard is not installed, no logs will be written."
                        "Ensure torch is installed, or use the torch/RL docker images")
 
@@ -22,7 +22,7 @@ class BaseTensorboardLogger:
 
 class BaseTensorBoardCallback(xgb.callback.TrainingCallback):
 
-    def __init__(self, logdir: Path):
+    def __init__(self, logdir: Path, activate: bool = True):
         logger.warning("Tensorboard is not installed, no logs will be written."
                        "Ensure torch is installed, or use the torch/RL docker images")
 

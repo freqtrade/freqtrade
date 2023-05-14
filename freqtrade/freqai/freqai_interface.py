@@ -21,8 +21,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.tensorboard import TBLogger
-from freqtrade.freqai.utils import plot_feature_importance, record_params
+from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -111,6 +110,7 @@ class IFreqaiModel(ABC):
         if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
+        self.activate_tensorboard: bool = self.freqai_info.get('activate_tensorboard', True)
 
         record_params(config, self.full_path)
 
@@ -345,7 +345,8 @@ class IFreqaiModel(ABC):
                     dk.find_labels(dataframe_train)
 
                     try:
-                        self.tb_logger = TBLogger(dk.data_path)
+                        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                                       self.activate_tensorboard)
                         self.model = self.train(dataframe_train, pair, dk)
                         self.tb_logger.close()
                     except Exception as msg:
@@ -635,11 +636,10 @@ class IFreqaiModel(ABC):
         dk.find_features(unfiltered_dataframe)
         dk.find_labels(unfiltered_dataframe)
 
-        if self.dd.model_type == "pytorch":
-            self.tb_logger = TBLogger(dk.data_path)
+        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                       self.activate_tensorboard)
         model = self.train(unfiltered_dataframe, pair, dk)
-        if self.dd.model_type == "pytorch":
-            self.tb_logger.close()
+        self.tb_logger.close()
 
         self.dd.pair_dict[pair]["trained_timestamp"] = trained_timestamp
         dk.set_new_model_names(pair, trained_timestamp)

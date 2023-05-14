@@ -13,25 +13,33 @@ logger = logging.getLogger(__name__)
 
 
 class TensorboardLogger(BaseTensorboardLogger):
-    def __init__(self, logdir: Path):
-        self.writer: SummaryWriter = SummaryWriter(f"{str(logdir)}/tensorboard")
+    def __init__(self, logdir: Path, activate: bool = True):
+        self.activate = activate
+        if self.activate:
+            self.writer: SummaryWriter = SummaryWriter(f"{str(logdir)}/tensorboard")
 
     def log_scalar(self, tag: str, scalar_value: Any, step: int):
-        self.writer.add_scalar(tag, scalar_value, step)
+        if self.activate:
+            self.writer.add_scalar(tag, scalar_value, step)
 
     def close(self):
-        self.writer.flush()
-        self.writer.close()
+        if self.activate:
+            self.writer.flush()
+            self.writer.close()
 
 
 class TensorBoardCallback(BaseTensorBoardCallback):
 
-    def __init__(self, logdir: Path):
-        self.writer: SummaryWriter = SummaryWriter(f"{str(logdir)}/tensorboard")
+    def __init__(self, logdir: Path, activate: bool = True):
+        self.activate = activate
+        if self.activate:
+            self.writer: SummaryWriter = SummaryWriter(f"{str(logdir)}/tensorboard")
 
     def after_iteration(
         self, model, epoch: int, evals_log: callback.TrainingCallback.EvalsLog
     ) -> bool:
+        if not self.activate:
+            return False
         if not evals_log:
             return False
 
@@ -39,13 +47,15 @@ class TensorBoardCallback(BaseTensorBoardCallback):
             for metric_name, log in metric.items():
                 score = log[-1][0] if isinstance(log[-1], tuple) else log[-1]
                 if data == "train":
-                    self.writer.add_scalar("train_loss", score**2, epoch)
+                    self.writer.add_scalar("train_loss", score, epoch)
                 else:
-                    self.writer.add_scalar("valid_loss", score**2, epoch)
+                    self.writer.add_scalar("valid_loss", score, epoch)
 
         return False
 
     def after_training(self, model):
+        if not self.activate:
+            return model
         self.writer.flush()
         self.writer.close()
 

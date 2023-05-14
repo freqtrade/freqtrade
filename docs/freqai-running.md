@@ -168,7 +168,7 @@ This specific hyperopt would help you understand the appropriate `DI_values` for
     Tensorboard logging requires the FreqAI torch installation/docker image.
 
 
-The easiest way to use tensorboard is to open a separate shell and run:
+The easiest way to use tensorboard is to ensure `freqai.activate_tensorboard` is set to `True` (default setting) in your configuration file, run FreqAI, then open a separate shell and run:
 
 ```bash
 cd freqtrade
@@ -178,3 +178,7 @@ tensorboard --logdir user_data/models/unique-id
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
+
+
+!!! note "Deactivate for improved performance"
+    Tensorboard logging can slow down training and should be deactivated for production use.

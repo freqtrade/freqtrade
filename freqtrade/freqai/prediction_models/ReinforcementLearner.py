@@ -70,9 +70,14 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)
 
+        callbacks = [self.eval_callback]
+
+        if self.activate_tensorboard:
+            callbacks.append(self.tensorboard_callback)
+
         model.learn(
             total_timesteps=int(total_timesteps),
-            callback=[self.eval_callback, self.tensorboard_callback],
+            callback=callbacks,
             progress_bar=self.rl_config.get('progress_bar', False)
         )
 
