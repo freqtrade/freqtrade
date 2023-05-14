@@ -6,7 +6,6 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
-from arrow import Arrow
 from filelock import Timeout
 from skopt.space import Integer
 
@@ -380,8 +379,8 @@ def test_hyperopt_format_results(hyperopt):
         'backtest_end_time': 1619718665,
     }
     results_metrics = generate_strategy_stats(['XRP/BTC'], '', bt_result,
-                                              Arrow(2017, 11, 14, 19, 32, 00),
-                                              Arrow(2017, 12, 14, 19, 32, 00), market_change=0)
+                                              dt_utc(2017, 11, 14, 19, 32, 00),
+                                              dt_utc(2017, 12, 14, 19, 32, 00), market_change=0)
 
     results_explanation = HyperoptTools.format_results_explanation_string(results_metrics, 'BTC')
     total_profit = results_metrics['profit_total_abs']
@@ -454,7 +453,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
 
     mocker.patch('freqtrade.optimize.hyperopt.Backtesting.backtest', return_value=backtest_result)
     mocker.patch('freqtrade.optimize.hyperopt.get_timerange',
-                 return_value=(Arrow(2017, 12, 10), Arrow(2017, 12, 13)))
+                 return_value=(dt_utc(2017, 12, 10), dt_utc(2017, 12, 13)))
     patch_exchange(mocker)
     mocker.patch.object(Path, 'open')
     mocker.patch('freqtrade.configuration.config_validation.validate_config_schema')
@@ -514,8 +513,8 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
     }
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.min_date = Arrow(2017, 12, 10)
-    hyperopt.max_date = Arrow(2017, 12, 13)
+    hyperopt.min_date = dt_utc(2017, 12, 10)
+    hyperopt.max_date = dt_utc(2017, 12, 13)
     hyperopt.init_spaces()
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected

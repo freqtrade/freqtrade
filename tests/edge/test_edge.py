@@ -5,7 +5,6 @@ import logging
 import math
 from unittest.mock import MagicMock
 
-import arrow
 import numpy as np
 import pytest
 from pandas import DataFrame
@@ -14,7 +13,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
-from freqtrade.util.datetime_helpers import dt_ts
+from freqtrade.util.datetime_helpers import dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset)
@@ -28,7 +27,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 # 5) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
-tests_start_time = arrow.get(2018, 10, 3)
+tests_start_time = dt_utc(2018, 10, 3)
 timeframe_in_minute = 60
 
 # End helper functions

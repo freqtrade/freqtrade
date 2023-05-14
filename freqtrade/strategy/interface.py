@@ -954,7 +954,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
-        # Explicitly convert to arrow object to ensure the below comparison does not fail
+        # Explicitly convert to datetime object to ensure the below comparison does not fail
         latest_date = latest_date.to_pydatetime()
 
         # Check if dataframe is out of date

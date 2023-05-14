@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, PropertyMock
 import numpy as np
 import pandas as pd
 import pytest
-from arrow import Arrow
 
 from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
@@ -347,7 +346,7 @@ def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
     def get_timerange(input1):
-        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+        return dt_utc(2017, 11, 14, 21, 17), dt_utc(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
@@ -386,7 +385,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:
     def get_timerange(input1):
-        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+        return dt_utc(2017, 11, 14, 21, 17), dt_utc(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.history_utils.load_pair_history',
                  MagicMock(return_value=pd.DataFrame()))

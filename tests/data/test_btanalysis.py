@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from arrow import Arrow
 from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
@@ -19,6 +18,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_underwater, combine_dataframes_with_mean,
                                     create_cum_profit)
 from freqtrade.exceptions import OperationalException
+from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -421,7 +421,7 @@ def test_calculate_max_drawdown2():
               -0.025782, 0.010400, 0.012374, 0.012467, 0.114741, 0.010303, 0.010088,
               -0.033961, 0.010680, 0.010886, -0.029274, 0.011178, 0.010693, 0.010711]
 
-    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
+    dates = [dt_utc(2020, 1, 1) + timedelta(days=i) for i in range(len(values))]
     df = DataFrame(zip(values, dates), columns=['profit', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)

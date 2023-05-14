@@ -12,7 +12,6 @@ from random import choice, randint
 from string import ascii_uppercase
 from unittest.mock import ANY, AsyncMock, MagicMock
 
-import arrow
 import pytest
 import time_machine
 from pandas import DataFrame
@@ -260,7 +259,7 @@ async def test_telegram_status(default_conf, update, mocker) -> None:
             'pair': 'ETH/BTC',
             'base_currency': 'ETH',
             'quote_currency': 'BTC',
-            'open_date': arrow.utcnow(),
+            'open_date': dt_now(),
             'close_date': None,
             'open_rate': 1.099e-05,
             'close_rate': None,
@@ -2073,7 +2072,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
             'open_date': dt_now() - timedelta(hours=1),
-            'close_date': arrow.utcnow(),
+            'close_date': dt_now(),
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
@@ -2109,7 +2108,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
             'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
-            'close_date': arrow.utcnow(),
+            'close_date': dt_now(),
             'stake_amount': 0.01,
             'sub_trade': True,
         })
@@ -2146,7 +2145,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
             'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
-            'close_date': arrow.utcnow(),
+            'close_date': dt_now(),
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
@@ -2228,7 +2227,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
             'enter_tag': enter_signal,
             'exit_reason': ExitType.STOP_LOSS.value,
             'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
-            'close_date': arrow.utcnow(),
+            'close_date': dt_now(),
         })
 
         leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
@@ -2365,7 +2364,7 @@ def test_send_msg_sell_notification_no_fiat(
         'enter_tag': enter_signal,
         'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': dt_now() - timedelta(hours=2, minutes=35, seconds=3),
-        'close_date': arrow.utcnow(),
+        'close_date': dt_now(),
     })
 
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''

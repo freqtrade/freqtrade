@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 from datetime import datetime, timezone
 
-import arrow
 import pytest
 
 from freqtrade.configuration import TimeRange
