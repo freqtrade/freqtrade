@@ -465,7 +465,7 @@ def test_ft_stoploss_reached(default_conf, fee, profit, adjusted, expected, liq,
     if custom_stop:
         strategy.custom_stoploss = custom_stop
 
-    now = arrow.utcnow().datetime
+    now = dt_now()
     current_rate = trade.open_rate * (1 + profit)
     sl_flag = strategy.ft_stoploss_reached(current_rate=current_rate, trade=trade,
                                            current_time=now, current_profit=profit,
@@ -506,7 +506,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
         open_rate=1,
     )
 
-    now = arrow.utcnow().datetime
+    now = dt_now()
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
@@ -554,7 +554,7 @@ def test_should_sell(default_conf, fee) -> None:
         exchange='binance',
         open_rate=1,
     )
-    now = arrow.utcnow().datetime
+    now = dt_now()
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)

@@ -22,6 +22,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
+from freqtrade.util.datetime_helpers import dt_now
 from freqtrade.worker import Worker
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
                             get_patched_freqtradebot, get_patched_worker, log_has, log_has_re,
@@ -2013,7 +2014,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = '100'
-    trade.stoploss_last_update = arrow.utcnow().datetime
+    trade.stoploss_last_update = dt_now()
     trade.orders.append(
         Order(
             ft_order_side='stoploss',
@@ -2123,7 +2124,7 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
             fee_open=0.001,
             fee_close=0.001,
             open_rate=0.01,
-            open_date=arrow.utcnow().datetime,
+            open_date=dt_now(),
             stake_amount=0.01,
             amount=11,
             exchange="binance",
@@ -2169,7 +2170,7 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog
         fee_open=0.001,
         fee_close=0.001,
         open_rate=0.01,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         stake_amount=0.01,
         amount=11,
         exchange="binance",
@@ -2218,7 +2219,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
         fee_open=0.001,
         fee_close=0.001,
         open_rate=0.01,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         amount=11,
         exchange="binance",
         is_short=is_short,
@@ -2291,7 +2292,7 @@ def test_update_trade_state_withorderdict(
         amount=amount,
         exchange='binance',
         open_rate=2.0,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_order_id=order_id,
@@ -2378,7 +2379,7 @@ def test_update_trade_state_sell(
         open_rate=0.245441,
         fee_open=0.0025,
         fee_close=0.0025,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         open_order_id=open_order['id'],
         is_open=True,
         interest_rate=0.0005,
@@ -3420,7 +3421,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         close_rate=0.555,
-        close_date=arrow.utcnow().datetime,
+        close_date=dt_now(),
         exit_reason="sell_reason_whatever",
         stake_amount=0.245441 * 2,
     )
@@ -5437,7 +5438,7 @@ def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog, is_sh
         stake_amount=60.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         is_open=True,
         amount=30,
         open_rate=2.0,
@@ -5573,7 +5574,7 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
             fee_open=0.001,
             fee_close=0.001,
             open_rate=entry_order['price'],
-            open_date=arrow.utcnow().datetime,
+            open_date=dt_now(),
             stake_amount=entry_order['cost'],
             amount=entry_order['amount'],
             exchange="binance",
