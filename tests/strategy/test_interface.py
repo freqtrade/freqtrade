@@ -22,6 +22,7 @@ from freqtrade.strategy.hyper import detect_parameters
 from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
                                            DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.util import dt_now
 from tests.conftest import (CURRENT_TEST_STRATEGY, TRADE_SIDES, create_mock_trades, log_has,
                             log_has_re)
 
@@ -34,7 +35,7 @@ _STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    ohlcv_history.loc[1, 'date'] = dt_now()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['enter_long'] = 0
@@ -159,7 +160,7 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    ohlcv_history.loc[1, 'date'] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['exit_long'] = 0
@@ -180,7 +181,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    ohlcv_history.loc[1, 'date'] = dt_now()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
@@ -224,7 +225,7 @@ def test_ignore_expired_candle(default_conf):
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    ohlcv_history.loc[1, 'date'] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['sell'] = 0
@@ -323,7 +324,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
             pair='ETH/BTC',
             stake_amount=0.001,
             amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            open_date=dt_now() - timedelta(hours=1),
             fee_open=fee.return_value,
             fee_close=fee.return_value,
             exchange='binance',
