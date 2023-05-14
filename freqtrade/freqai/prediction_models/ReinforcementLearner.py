@@ -58,10 +58,14 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=self.net_arch)
 
+        if self.activate_tensorboard:
+            tb_path = Path(dk.full_path / "tensorboard" / dk.pair.split('/')[0])
+        else:
+            tb_path = None
+
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                    tensorboard_log=Path(
-                                        dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
+                                    tensorboard_log=tb_path,
                                     **self.freqai_info.get('model_training_parameters', {})
                                     )
         else:
@@ -70,14 +74,9 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)
 
-        callbacks = [self.eval_callback]
-
-        if self.activate_tensorboard:
-            callbacks.append(self.tensorboard_callback)
-
         model.learn(
             total_timesteps=int(total_timesteps),
-            callback=callbacks,
+            callback=[self.eval_callback, self.tensorboard_callback],
             progress_bar=self.rl_config.get('progress_bar', False)
         )
 

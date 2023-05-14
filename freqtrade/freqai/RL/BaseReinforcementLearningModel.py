@@ -68,11 +68,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.unset_outlier_removal()
         self.net_arch = self.rl_config.get('net_arch', [128, 128])
         self.dd.model_type = import_str
-        if self.activate_tensorboard:
-            self.tensorboard_callback: TensorboardCallback = \
-                TensorboardCallback(verbose=1, actions=BaseActions)
-        else:
-            self.tenorboard_callback = None
+        self.tensorboard_callback: TensorboardCallback = \
+            TensorboardCallback(verbose=1, actions=BaseActions)
 
     def unset_outlier_removal(self):
         """
@@ -159,10 +156,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                                           best_model_save_path=str(dk.data_path))
 
         actions = self.train_env.get_actions()
-        if self.activate_tensorboard:
-            self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
-        else:
-            self.tensorboard_callback = None  # type: ignore
+        self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)
 
     def pack_env_dict(self, pair: str) -> Dict[str, Any]:
         """
