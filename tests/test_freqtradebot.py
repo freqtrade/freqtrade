@@ -22,7 +22,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
-from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util.datetime_helpers import dt_now, dt_utc
 from freqtrade.worker import Worker
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
                             get_patched_freqtradebot, get_patched_worker, log_has, log_has_re,
@@ -5712,9 +5712,9 @@ def test_update_funding_fees(
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
 
-    date_midnight = arrow.get('2021-09-01 00:00:00').datetime
-    date_eight = arrow.get('2021-09-01 08:00:00').datetime
-    date_sixteen = arrow.get('2021-09-01 16:00:00').datetime
+    date_midnight = dt_utc(2021, 9, 1)
+    date_eight = dt_utc(2021, 9, 1, 8)
+    date_sixteen = dt_utc(2021, 9, 1, 16)
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
     # 16:00 entry is actually never used
     # But should be kept in the test to ensure we're filtering correctly.

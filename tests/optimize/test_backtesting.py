@@ -26,6 +26,7 @@ from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.util.datetime_helpers import dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, log_has, log_has_re,
                             patch_exchange, patched_configuration_load_config_file)
 
@@ -710,11 +711,11 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'stake_amount': [0.001, 0.001],
          'max_stake_amount': [0.001, 0.001],
          'amount': [0.00957442, 0.0097064],
-         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
-                                      Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
+         'open_date': pd.to_datetime([dt_utc(2018, 1, 29, 18, 40, 0),
+                                      dt_utc(2018, 1, 30, 3, 30, 0)], utc=True
                                      ),
-         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
-                                       Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'close_date': pd.to_datetime([dt_utc(2018, 1, 29, 22, 35, 0),
+                                       dt_utc(2018, 1, 30, 4, 10, 0)], utc=True),
          'open_rate': [0.104445, 0.10302485],
          'close_rate': [0.104969, 0.103541],
          'fee_open': [0.0025, 0.0025],
