@@ -236,7 +236,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         ("CatboostRegressor", 2, "freqai_test_strat"),
         ("PyTorchMLPRegressor", 2, "freqai_test_strat"),
         ("PyTorchTransformerRegressor", 2, "freqai_test_strat"),
-        ("ReinforcementLearner", 2, "freqai_rl_test_strat"),
+        ("ReinforcementLearner", 3, "freqai_rl_test_strat"),
         ("XGBoostClassifier", 2, "freqai_test_classifier"),
         ("LightGBMClassifier", 2, "freqai_test_classifier"),
         ("CatboostClassifier", 2, "freqai_test_classifier"),
