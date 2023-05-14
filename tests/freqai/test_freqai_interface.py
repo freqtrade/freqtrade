@@ -37,7 +37,7 @@ def can_run_model(model: str) -> None:
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
     if "XGBoost" in model and is_mac():
-        pytest.skip("Mac doesn't tb callbacks?")
+        pytest.skip("Mac github CI does not have enough memory/threads to run this test.")
 
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [

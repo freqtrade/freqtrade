@@ -191,7 +191,7 @@ def get_timerange_backtest_live_models(config: Config) -> str:
 def get_tb_logger(model_type: str, path: Path, activate: bool) -> Union[TBLogger,
                                                                         BaseTensorboardLogger]:
     tb_logger: Union[TBLogger, BaseTensorboardLogger]
-    if model_type == "pytorch":
+    if model_type == "pytorch" and activate:
         tb_logger = TBLogger(path, activate)
     else:
         tb_logger = BaseTensorboardLogger(path, activate)
