@@ -6,6 +6,11 @@ def dt_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def dt_now_ts() -> int:
+    """Return the current timestamp in ms as a timestamp in UTC."""
+    return int(dt_now().timestamp() * 1000)
+
+
 def dt_from_ts(timestamp: float) -> datetime:
     """
     Return a datetime from a timestamp.

@@ -3,17 +3,19 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import dt_from_ts, dt_now
+from freqtrade.util import dt_from_ts, dt_now, dt_now_ts
 
 
 def test_dt_now():
     with time_machine.travel("2021-09-01 05:01:00 +00:00", tick=False) as t:
         now = datetime.now(timezone.utc)
         assert dt_now() == now
+        assert dt_now_ts() == int(now.timestamp() * 1000)
 
         t.shift(timedelta(hours=5))
         assert dt_now() >= now
         assert dt_now() == datetime.now(timezone.utc)
+        assert dt_now_ts() == int(dt_now().timestamp() * 1000)
 
 
 @pytest.mark.parametrize('as_ms', [True, False])
