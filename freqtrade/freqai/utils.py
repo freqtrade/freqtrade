@@ -190,9 +190,7 @@ def get_tb_logger(model_type: str, path: Path, activate: bool) -> Any:
 
     if model_type == "pytorch" and activate:
         from freqtrade.freqai.tensorboard import TBLogger
-        tb_logger = TBLogger(path, activate)
+        return TBLogger(path, activate)
     else:
-        from freqtrade.freqai.tensorboard.base_tensorboard import BaseTensorboardLogger
-        tb_logger = BaseTensorboardLogger(path, activate)  # type: ignore
-
-    return tb_logger
+        from freqtrade.freqai.tensorboard import BaseTensorboardLogger
+        return BaseTensorboardLogger(path, activate)
