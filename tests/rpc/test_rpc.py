@@ -414,8 +414,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
@@ -425,8 +425,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
                  MagicMock(side_effect=ExchangeError("Pair 'XRP/USDT' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
