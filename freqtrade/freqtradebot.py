@@ -23,6 +23,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, timeframe_to_minutes, timeframe_to_next_date,
                                 timeframe_to_seconds)
+from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
@@ -64,6 +65,8 @@ class FreqtradeBot(LoggingMixin):
         # Init objects
         self.config = config
         exchange_config = deepcopy(config['exchange'])
+        # Remove credentials from original exchange config to avoid accidental credentail exposure
+        remove_exchange_credentials(config['exchange'], True)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
