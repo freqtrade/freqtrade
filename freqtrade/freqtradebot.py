@@ -13,7 +13,7 @@ from schedule import Scheduler
 
 from freqtrade import constants
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.constants import BuySell, Config, LongShort
+from freqtrade.constants import BuySell, Config, ExchangeConfig, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -64,7 +64,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Init objects
         self.config = config
-        exchange_config = deepcopy(config['exchange'])
+        exchange_config: ExchangeConfig = deepcopy(config['exchange'])
         # Remove credentials from original exchange config to avoid accidental credentail exposure
         remove_exchange_credentials(config['exchange'], True)
 

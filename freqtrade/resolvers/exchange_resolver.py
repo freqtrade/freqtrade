@@ -2,10 +2,10 @@
 This module loads custom exchanges
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import freqtrade.exchange as exchanges
-from freqtrade.constants import Config
+from freqtrade.constants import Config, ExchangeConfig
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, Exchange
 from freqtrade.resolvers import IResolver
 
@@ -20,7 +20,7 @@ class ExchangeResolver(IResolver):
     object_type = Exchange
 
     @staticmethod
-    def load_exchange(config: Config, *, exchange_config: Optional[Dict[str, Any]] = None,
+    def load_exchange(config: Config, *, exchange_config: Optional[ExchangeConfig] = None,
                       validate: bool = True, load_leverage_tiers: bool = False) -> Exchange:
         """
         Load the custom class from config parameter
