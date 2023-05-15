@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -37,3 +38,15 @@ def dt_from_ts(timestamp: float) -> datetime:
         # Timezone in ms - convert to seconds
         timestamp /= 1000
     return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+
+
+def shorten_date(_date: str) -> str:
+    """
+    Trim the date so it fits on small screens
+    """
+    new_date = re.sub('seconds?', 'sec', _date)
+    new_date = re.sub('minutes?', 'min', new_date)
+    new_date = re.sub('hours?', 'h', new_date)
+    new_date = re.sub('days?', 'd', new_date)
+    new_date = re.sub('^an?', '1', new_date)
+    return new_date

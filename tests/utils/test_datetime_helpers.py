@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_utc
+from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_utc, shorten_date
 
 
 def test_dt_now():
@@ -45,3 +45,9 @@ def test_dt_floor_day():
     now = datetime(2023, 9, 1, 5, 2, 3, 455555, tzinfo=timezone.utc)
 
     assert dt_floor_day(now) == datetime(2023, 9, 1, tzinfo=timezone.utc)
+
+
+def test_shorten_date() -> None:
+    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
+    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
+    assert shorten_date(str_data) == str_shorten_data
