@@ -149,6 +149,34 @@ def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
     assert result == default_conf_usdt['stake_amount']
 
 
+@pytest.mark.parametrize('runmode', [
+    RunMode.DRY_RUN,
+    RunMode.LIVE
+])
+def test_load_strategy_no_keys(default_conf_usdt, mocker, runmode, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    conf = deepcopy(default_conf_usdt)
+    conf['runmode'] = runmode
+    erm = mocker.patch('freqtrade.freqtradebot.ExchangeResolver.load_exchange')
+
+    freqtrade = FreqtradeBot(conf)
+    strategy_config = freqtrade.strategy.config
+    assert id(strategy_config['exchange']) == id(conf['exchange'])
+    # Keys have been removed and are not passed to the exchange
+    assert strategy_config['exchange']['key'] == ''
+    assert strategy_config['exchange']['secret'] == ''
+
+    assert erm.call_count == 1
+    ex_conf = erm.call_args_list[0][1]['exchange_config']
+    assert id(ex_conf) != id(conf['exchange'])
+    # Keys are still present
+    assert ex_conf['key'] != ''
+    assert ex_conf['key'] == default_conf_usdt['exchange']['key']
+    assert ex_conf['secret'] != ''
+    assert ex_conf['secret'] == default_conf_usdt['exchange']['secret']
+
+
 @pytest.mark.parametrize("amend_last,wallet,max_open,lsamr,expected", [
                         (False, 120, 2, 0.5, [60, None]),
                         (True, 120, 2, 0.5, [60, 58.8]),
