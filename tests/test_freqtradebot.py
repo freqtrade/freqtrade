@@ -121,7 +121,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
 
     freqtrade = FreqtradeBot(conf)
     if runmode == RunMode.LIVE:
-        assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
+        assert not log_has_re(r".*stoploss_on_exchange .* dry-run", caplog)
     assert freqtrade.strategy.order_types['stoploss_on_exchange']
 
     caplog.clear()
@@ -136,7 +136,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     }
     freqtrade = FreqtradeBot(conf)
     assert not freqtrade.strategy.order_types['stoploss_on_exchange']
-    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
+    assert not log_has_re(r".*stoploss_on_exchange .* dry-run", caplog)
 
 
 def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
