@@ -755,7 +755,7 @@ def test_api_trade_reload_trade(botclient, mocker, fee, markets, ticker, is_shor
         cancel_stoploss_order=stoploss_mock,
     )
 
-    rc = client_get(client, f"{BASE_URI}/trades/10/reload")
+    rc = client_post(client, f"{BASE_URI}/trades/10/reload")
     assert_response(rc, 502)
     assert 'Could not find trade with id 10.' in rc.json()['error']
     assert ftbot.handle_onexchange_order.call_count == 0
@@ -763,7 +763,7 @@ def test_api_trade_reload_trade(botclient, mocker, fee, markets, ticker, is_shor
     create_mock_trades(fee, is_short=is_short)
     Trade.commit()
 
-    rc = client_get(client, f"{BASE_URI}/trades/5/reload")
+    rc = client_post(client, f"{BASE_URI}/trades/5/reload")
     assert ftbot.handle_onexchange_order.call_count == 1
 
 
