@@ -100,8 +100,10 @@ class Profit(BaseModel):
     trade_count: int
     closed_trade_count: int
     first_trade_date: str
+    first_trade_humanized: str
     first_trade_timestamp: int
     latest_trade_date: str
+    latest_trade_humanized: str
     latest_trade_timestamp: int
     avg_duration: str
     best_pair: str

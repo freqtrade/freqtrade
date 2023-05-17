@@ -1018,7 +1018,7 @@ class FreqtradeBot(LoggingMixin):
             'base_currency': self.exchange.get_pair_base_currency(trade.pair),
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': order.safe_amount_after_fee if fill else (order.amount or trade.amount),
-            'open_date': trade.open_date or datetime.utcnow(),
+            'open_date': trade.open_date_utc or datetime.now(timezone.utc),
             'current_rate': current_rate,
             'sub_trade': sub_trade,
         }
@@ -1741,8 +1741,8 @@ class FreqtradeBot(LoggingMixin):
             'enter_tag': trade.enter_tag,
             'sell_reason': trade.exit_reason,  # Deprecated
             'exit_reason': trade.exit_reason,
-            'open_date': trade.open_date,
-            'close_date': trade.close_date or datetime.utcnow(),
+            'open_date': trade.open_date_utc,
+            'close_date': trade.close_date_utc or datetime.now(timezone.utc),
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'base_currency': self.exchange.get_pair_base_currency(trade.pair),

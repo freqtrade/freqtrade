@@ -2,10 +2,11 @@ numpy==1.24.3
 pandas==2.0.1
 pandas-ta==0.3.14b
 
-ccxt==3.0.97
-cryptography==40.0.2
+ccxt==3.0.103
+cryptography==40.0.2; platform_machine != 'armv7l'
+cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.4
-SQLAlchemy==2.0.12
+SQLAlchemy==2.0.13
 python-telegram-bot==20.3
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.23.3
@@ -40,7 +41,7 @@ sdnotify==0.3.2
 fastapi==0.95.1
 pydantic==1.10.7
 uvicorn==0.22.0
-pyjwt==2.6.0
+pyjwt==2.7.0
 aiofiles==23.1.0
 psutil==5.9.5
 

@@ -853,8 +853,8 @@ class Telegram(RPCHandler):
         profit_all_percent = stats['profit_all_percent']
         profit_all_fiat = stats['profit_all_fiat']
         trade_count = stats['trade_count']
-        first_trade_date = stats['first_trade_date']
-        latest_trade_date = stats['latest_trade_date']
+        first_trade_date = f"{stats['first_trade_humanized']} ({stats['first_trade_date']})"
+        latest_trade_date = f"{stats['latest_trade_humanized']} ({stats['latest_trade_date']})"
         avg_duration = stats['avg_duration']
         best_pair = stats['best_pair']
         best_pair_profit_ratio = stats['best_pair_profit_ratio']
