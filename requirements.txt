@@ -3,7 +3,8 @@ pandas==2.0.1
 pandas-ta==0.3.14b
 
 ccxt==3.0.103
-cryptography==40.0.2
+cryptography==40.0.2; platform_machine != 'armv7l'
+cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.4
 SQLAlchemy==2.0.13
 python-telegram-bot==20.3
