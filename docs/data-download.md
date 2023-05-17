@@ -55,7 +55,7 @@ optional arguments:
                         list. Default: `1m 5m`.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
-  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
+  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet,arcticdb}
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `json`).
   --data-format-trades {json,jsongz,hdf5}
@@ -184,6 +184,7 @@ Freqtrade currently supports the following data-formats:
 * `hdf5` - a high performance datastore
 * `feather` - a dataformat based on Apache Arrow (OHLCV only)
 * `parquet` - columnar datastore (OHLCV only)
+* `arcticdb` - a serverless dataframe database (OHLCV only).
 
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 
@@ -201,6 +202,20 @@ If the default data-format has been changed during download, then the keys `data
 
 !!! Note
     You can convert between data-formats using the [convert-data](#sub-command-convert-data) and [convert-trade-data](#sub-command-convert-trade-data) methods.
+
+
+!!! Note
+    You can use ArcticDB format to store data directly to supported ArcticDB URI, by specifying the data 
+    dir to a ArcticDB URI. This feature allows reading data from any AWS S3 API compatible storage. 
+    For example, you can specify S3 location as:
+    ```
+    freqtrade download-data \
+        --data-format-ohlcv arcticdb \
+        --data-dir "s3s://s3.<region>.amazonaws.com:<S3 location>?access=<access key>&secret=<secret key>"
+    ```
+    By default, ArcticDB uses local LMDB for storage. See [ArcticDB documents](https://docs.arcticdb.io/) for more details.
+    
+    
 
 #### Dataformat comparison
 
@@ -244,8 +259,8 @@ To have a best performance/size mix, we recommend the use of either feather or p
 usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-d PATH] [--userdir PATH]
                               [-p PAIRS [PAIRS ...]] --format-from
-                              {json,jsongz,hdf5,feather,parquet} --format-to
-                              {json,jsongz,hdf5,feather,parquet} [--erase]
+                              {json,jsongz,hdf5,feather,parquet,arcticdb} --format-to
+                              {json,jsongz,hdf5,feather,parquet,arcticdb} [--erase]
                               [--exchange EXCHANGE]
                               [-t TIMEFRAMES [TIMEFRAMES ...]]
                               [--trading-mode {spot,margin,futures}]
@@ -256,9 +271,9 @@ optional arguments:
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
                         separated.
-  --format-from {json,jsongz,hdf5,feather,parquet}
+  --format-from {json,jsongz,hdf5,feather,parquet,arcticdb}
                         Source format for data conversion.
-  --format-to {json,jsongz,hdf5,feather,parquet}
+  --format-to {json,jsongz,hdf5,feather,parquet,arcticdb}
                         Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
@@ -413,7 +428,7 @@ You can get a list of downloaded data using the `list-data` sub-command.
 ```
 usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--userdir PATH] [--exchange EXCHANGE]
-                           [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
+                           [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet,arcticdb}]
                            [-p PAIRS [PAIRS ...]]
                            [--trading-mode {spot,margin,futures}]
                            [--show-timerange]
@@ -422,7 +437,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
                         config is provided.
-  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
+  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet,arcticdb}
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `json`).
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
