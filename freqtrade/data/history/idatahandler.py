@@ -414,6 +414,9 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     elif datatype == 'parquet':
         from .parquetdatahandler import ParquetDataHandler
         return ParquetDataHandler
+    elif datatype == 'arcticdb':
+        from .arcticdbdatahandler import ArcticDBDataHandler
+        return ArcticDBDataHandler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 

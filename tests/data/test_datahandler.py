@@ -3,6 +3,7 @@
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from distutils.dir_util import copy_tree
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,6 +16,7 @@ from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.data.history.parquetdatahandler import ParquetDataHandler
+from freqtrade.data.history.arcticdbdatahandler import ArcticDBDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from tests.conftest import log_has, log_has_re
 
@@ -74,7 +76,6 @@ def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
     ('UNITTEST_USDT', 'UNITTEST/USDT'),
 ])
 def test_rebuild_pair_from_filename(input, expected):
-
     assert IDataHandler.rebuild_pair_from_filename(input) == expected
 
 
@@ -232,7 +233,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
         ],
         [
             1511687100000,  # 9:05:00
-            889.1,   # Price jump by several decimals
+            889.1,  # Price jump by several decimals
             889.3,
             887.5,
             887.7,
@@ -374,18 +375,18 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
 
 @pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
     # Data goes from 2018-01-10 - 2018-01-30
-    ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
+    ('UNITTEST/BTC', '5m', 'spot', '', '2018-01-15', '2018-01-19'),
     # Mark data goes from to 2021-11-15 2021-11-19
     ('UNITTEST/USDT:USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])
 def test_hdf5datahandler_ohlcv_load_and_resave(
-    testdatadir,
-    tmpdir,
-    pair,
-    timeframe,
-    candle_type,
-    candle_append,
-    startdt, enddt
+        testdatadir,
+        tmpdir,
+        pair,
+        timeframe,
+        candle_type,
+        candle_append,
+        startdt, enddt
 ):
     tmpdir1 = Path(tmpdir)
     tmpdir2 = tmpdir1
@@ -423,20 +424,20 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 
 @pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
     # Data goes from 2018-01-10 - 2018-01-30
-    ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
+    ('UNITTEST/BTC', '5m', 'spot', '', '2018-01-15', '2018-01-19'),
     # Mark data goes from to 2021-11-15 2021-11-19
     ('UNITTEST/USDT:USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])
 @pytest.mark.parametrize('datahandler', ['hdf5', 'feather', 'parquet'])
 def test_generic_datahandler_ohlcv_load_and_resave(
-    datahandler,
-    testdatadir,
-    tmpdir,
-    pair,
-    timeframe,
-    candle_type,
-    candle_append,
-    startdt, enddt
+        datahandler,
+        testdatadir,
+        tmpdir,
+        pair,
+        timeframe,
+        candle_type,
+        candle_append,
+        startdt, enddt
 ):
     tmpdir1 = Path(tmpdir)
     tmpdir2 = tmpdir1
@@ -546,6 +547,88 @@ def test_featherdatahandler_trades_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.trades_purge('UNITTEST/NONEXIST')
     assert unlinkmock.call_count == 1
+
+
+def test_arcticdbdatahandler_ohlcv_get_pairs(testdatadir):
+    pairs = ArcticDBDataHandler.ohlcv_get_pairs(testdatadir.joinpath('arcticdb/btc_usdt_test'), timeframe='5m',
+                                                candle_type=CandleType.SPOT)
+    # Convert to set to avoid failures due to sorting
+    assert set(pairs) == {'BTC/USDT'}
+
+
+def test_arcticdbdatahandler_ohlcv_get_available_data(testdatadir):
+    available_data = ArcticDBDataHandler.ohlcv_get_available_data(testdatadir.joinpath('arcticdb/btc_usdt_test'),
+                                                                  trading_mode=TradingMode.SPOT)
+    # Convert to set to avoid failures due to sorting
+    assert set(available_data) == {
+        ('BTC/USDT', '1m', CandleType.SPOT),
+        ('BTC/USDT', '5m', CandleType.SPOT)
+    }
+
+
+@pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
+    # Data goes from 2023-04-16 - 2023-05-16
+    ('BTC/USDT', '5m', 'spot', '', '2023-05-01', '2023-05-02'),
+])
+def test_arcticdbdatahandler_ohlcv_load_and_resave(
+        testdatadir,
+        tmpdir,
+        pair,
+        timeframe,
+        candle_type,
+        candle_append,
+        startdt, enddt
+):
+    tmpdir1 = Path(tmpdir)
+    tmpdir2 = tmpdir1
+
+    dh = get_datahandler(testdatadir.joinpath('arcticdb/btc_usdt_test'), 'arcticdb')
+
+    ohlcv = dh._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    file = tmpdir2 / f"arcticdb_test"
+    assert not file.is_file()
+
+    dh1 = get_datahandler(tmpdir1.joinpath('arcticdb_test'), 'arcticdb')
+    dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
+    assert file.is_dir()
+
+    assert not ohlcv[ohlcv['date'] < startdt].empty
+
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+
+    # Call private function to ensure timerange is filtered in hdf5
+    ohlcv = dh._ohlcv_load(pair, timeframe, timerange, candle_type=candle_type)
+    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+    assert len(ohlcv) == len(ohlcv1)
+    assert ohlcv.equals(ohlcv1)
+    assert ohlcv[ohlcv['date'] < startdt].empty
+    assert ohlcv[ohlcv['date'] > enddt].empty
+
+    # Try loading inexisting file
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
+    assert ohlcv.empty
+
+
+def test_arcticdbdatahandler_ohlcv_purge(tmpdir, testdatadir):
+    source = testdatadir.joinpath('arcticdb/btc_usdt_test')
+    target = Path(tmpdir).joinpath('btc_usdt_test')
+
+    copy_tree(str(source.resolve()), str(target.resolve()))
+
+    dh = get_datahandler(target, 'arcticdb')
+
+    ohlcv = dh._ohlcv_load('BTC/USDT', '1m', None, candle_type=CandleType.SPOT)
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    dh.ohlcv_purge('BTC/USDT', '1m', CandleType.SPOT)
+
+    ohlcv = dh._ohlcv_load('BTC/USDT', '1m', None, candle_type=CandleType.SPOT)
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) == 0
 
 
 def test_gethandlerclass():
