@@ -2,8 +2,8 @@
 
 import re
 from datetime import datetime, timezone
-from pathlib import Path
 from distutils.dir_util import copy_tree
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,12 +11,12 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
+from freqtrade.data.history.arcticdbdatahandler import ArcticDBDataHandler
 from freqtrade.data.history.featherdatahandler import FeatherDataHandler
 from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.data.history.parquetdatahandler import ParquetDataHandler
-from freqtrade.data.history.arcticdbdatahandler import ArcticDBDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from tests.conftest import log_has, log_has_re
 
@@ -550,15 +550,18 @@ def test_featherdatahandler_trades_purge(mocker, testdatadir):
 
 
 def test_arcticdbdatahandler_ohlcv_get_pairs(testdatadir):
-    pairs = ArcticDBDataHandler.ohlcv_get_pairs(testdatadir.joinpath('arcticdb/btc_usdt_test'), timeframe='5m',
-                                                candle_type=CandleType.SPOT)
+    pairs = ArcticDBDataHandler.ohlcv_get_pairs(
+        testdatadir.joinpath('arcticdb/btc_usdt_test'), timeframe='5m',
+        candle_type=CandleType.SPOT)
+
     # Convert to set to avoid failures due to sorting
     assert set(pairs) == {'BTC/USDT'}
 
 
 def test_arcticdbdatahandler_ohlcv_get_available_data(testdatadir):
-    available_data = ArcticDBDataHandler.ohlcv_get_available_data(testdatadir.joinpath('arcticdb/btc_usdt_test'),
-                                                                  trading_mode=TradingMode.SPOT)
+    available_data = ArcticDBDataHandler.ohlcv_get_available_data(
+        testdatadir.joinpath('arcticdb/btc_usdt_test'),
+        trading_mode=TradingMode.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(available_data) == {
         ('BTC/USDT', '1m', CandleType.SPOT),
@@ -588,7 +591,7 @@ def test_arcticdbdatahandler_ohlcv_load_and_resave(
     assert isinstance(ohlcv, DataFrame)
     assert len(ohlcv) > 0
 
-    file = tmpdir2 / f"arcticdb_test"
+    file = tmpdir2 / "arcticdb_test"
     assert not file.is_file()
 
     dh1 = get_datahandler(tmpdir1.joinpath('arcticdb_test'), 'arcticdb')

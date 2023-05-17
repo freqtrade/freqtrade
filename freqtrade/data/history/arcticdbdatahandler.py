@@ -1,16 +1,15 @@
 import logging
-from typing import Optional
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList, ListPairsWithTimeframes
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.enums import CandleType, TradingMode
 
 from .idatahandler import IDataHandler
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +18,11 @@ class ArcticDBDataHandler(IDataHandler):
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @staticmethod
-    def _get_arcticdb_connection(datadir):
+    def _get_arcticdb_connection(datadir: Path):
         """
-        Internal method used to connect arcticdb. Convert the dir path to a valid arcticdb connection string.
+        Internal method used to connect arcticdb.
+        Convert the dir path to a valid arcticdb connection string.
+
         :param datadir: Path object to the data dir.
 
         :return: ArcticDB connection
@@ -115,7 +116,7 @@ class ArcticDBDataHandler(IDataHandler):
         _data = data.copy()
 
         # Date is now set to be the index, makes the database happy to do time based query.
-        _data.set_index('date',inplace=True)
+        _data.set_index('date', inplace=True)
         columns = self._columns.copy()
         columns.remove('date')
 
@@ -156,15 +157,14 @@ class ArcticDBDataHandler(IDataHandler):
 
         lib = db['ohlcv']
 
-        symbols = lib.list_symbols()
-
         if not lib.has_symbol(key):
             return pd.DataFrame(columns=self._columns)
 
         columns = self._columns.copy()
         columns.remove('date')
 
-        pairdata = lib.read(key, date_range=(timerange.startdt, timerange.stopdt) if timerange else None,
+        pairdata = lib.read(key,
+                            date_range=(timerange.startdt, timerange.stopdt) if timerange else None,
                             columns=columns).data
 
         pairdata['date'] = pairdata.index
@@ -215,7 +215,6 @@ class ArcticDBDataHandler(IDataHandler):
         :param data: List of Lists containing trade data,
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
-        key = self._pair_trades_key(pair)
 
         raise NotImplementedError()
 
