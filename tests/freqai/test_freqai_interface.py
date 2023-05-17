@@ -36,9 +36,6 @@ def can_run_model(model: str) -> None:
     if is_pytorch_model and is_mac() and not is_arm():
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
-    if "XGBoost" in model and is_mac():
-        pytest.skip("Mac github CI does not have enough memory/threads to run this test.")
-
 
 @pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
     ('LightGBMRegressor', True, False, True, True, False, 0),
@@ -147,7 +144,6 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -192,7 +188,6 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -322,7 +317,6 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = False
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
@@ -442,7 +436,6 @@ def test_principal_component_analysis(mocker, freqai_conf):
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -476,7 +469,6 @@ def test_plot_feature_importance(mocker, freqai_conf):
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")

@@ -42,6 +42,7 @@ def freqai_conf(default_conf, tmpdir):
                 "identifier": "uniqe-id100",
                 "live_trained_timestamp": 0,
                 "data_kitchen_thread_count": 2,
+                "activate_tensorboard": False,
                 "feature_parameters": {
                     "include_timeframes": ["5m"],
                     "include_corr_pairlist": ["ADA/BTC"],

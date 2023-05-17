@@ -183,7 +183,6 @@ def test_get_full_model_path(mocker, freqai_conf, model):
     strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.activate_tensorboard = False
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.live = True
     timerange = TimeRange.parse_timerange("20180110-20180130")
