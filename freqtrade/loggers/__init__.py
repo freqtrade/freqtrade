@@ -32,6 +32,7 @@ def _set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
         logging.INFO if verbosity <= 2 else logging.DEBUG
     )
     logging.getLogger('telegram').setLevel(logging.INFO)
+    logging.getLogger('httpx').setLevel(logging.INFO)
 
     logging.getLogger('werkzeug').setLevel(
         logging.ERROR if api_verbosity == 'error' else logging.INFO

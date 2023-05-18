@@ -78,6 +78,7 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
                 criterion=criterion,
                 device=self.device,
                 data_convertor=self.data_convertor,
+                tb_logger=self.tb_logger,
                 **self.trainer_kwargs,
             )
         trainer.fit(data_dictionary, self.splits)
