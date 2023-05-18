@@ -23,7 +23,7 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv
 from freqtrade.freqai.RL.BaseEnvironment import BaseActions, BaseEnvironment, Positions
-from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
+from freqtrade.freqai.tensorboard.TensorboardCallback import TensorboardCallback
 from freqtrade.persistence import Trade
 
 
