@@ -19,7 +19,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precisi
                                 price_to_precision)
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.util import FtPrecise
+from freqtrade.util import FtPrecise, dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class Order(ModelBase):
     remaining: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     stop_price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
-    order_date: Mapped[datetime] = mapped_column(nullable=True, default=datetime.utcnow)
+    order_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
     order_filled_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     order_update_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     funding_fee: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)

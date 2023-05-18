@@ -3,6 +3,7 @@
 
 import logging
 import math
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -232,7 +233,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
+            dt_ts(tests_start_time + timedelta(minutes=(x * timeframe_in_minute))),
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -244,7 +245,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
+            dt_ts(tests_start_time + timedelta(minutes=(x * timeframe_in_minute))),
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,

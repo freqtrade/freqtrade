@@ -17,7 +17,6 @@ from math import isnan
 from threading import Thread
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
-import arrow
 from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
                       ReplyKeyboardMarkup, Update)

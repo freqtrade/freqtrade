@@ -28,7 +28,6 @@ def test_dt_utc():
                                                            tzinfo=timezone.utc)
 
 
-
 @pytest.mark.parametrize('as_ms', [True, False])
 def test_dt_from_ts(as_ms):
     multi = 1000 if as_ms else 1
