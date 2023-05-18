@@ -7,7 +7,6 @@ from datetime import date, datetime, timedelta, timezone
 from math import isnan
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
-import arrow
 import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
@@ -32,7 +31,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_now, shorten_date
+from freqtrade.util import dt_humanize, dt_now, shorten_date
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -293,7 +292,7 @@ class RPC:
                                   and open_order.ft_order_side == trade.entry_side) else '')
                     + ('**' if (open_order and
                                 open_order.ft_order_side == trade.exit_side is not None) else ''),
-                    shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                    shorten_date(dt_humanize(trade.open_date, only_distance=True)),
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
@@ -565,10 +564,10 @@ class RPC:
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
             'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
-            'first_trade_humanized': arrow.get(first_date).humanize() if first_date else '',
+            'first_trade_humanized': dt_humanize(first_date) if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
             'latest_trade_date': last_date.strftime(DATETIME_PRINT_FORMAT) if last_date else '',
-            'latest_trade_humanized': arrow.get(last_date).humanize() if last_date else '',
+            'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
             'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
