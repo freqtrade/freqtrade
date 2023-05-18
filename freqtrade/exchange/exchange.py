@@ -43,7 +43,7 @@ from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import dt_from_ts, dt_now
-from freqtrade.util.datetime_helpers import dt_ts
+from freqtrade.util.datetime_helpers import dt_humanize, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -1932,7 +1932,7 @@ class Exchange:
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
-            arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
+            dt_humanize(dt_now() - timedelta(milliseconds=one_call), only_distance=True)
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, candle_type, since) for since in

@@ -2,6 +2,8 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
+import arrow
+
 
 def dt_now() -> datetime:
     """Return the current datetime in UTC."""
@@ -50,3 +52,12 @@ def shorten_date(_date: str) -> str:
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
+
+
+def dt_humanize(dt: datetime, **kwargs) -> str:
+    """
+    Return a humanized string for the given datetime.
+    :param dt: datetime to humanize
+    :param kwargs: kwargs to pass to arrow's humanize()
+    """
+    return arrow.get(dt).humanize(**kwargs)

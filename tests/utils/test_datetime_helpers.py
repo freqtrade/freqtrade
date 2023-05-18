@@ -4,6 +4,7 @@ import pytest
 import time_machine
 
 from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_utc, shorten_date
+from freqtrade.util.datetime_helpers import dt_humanize
 
 
 def test_dt_now():
@@ -51,3 +52,9 @@ def test_shorten_date() -> None:
     str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
     str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
     assert shorten_date(str_data) == str_shorten_data
+
+
+def test_dt_humanize() -> None:
+    assert dt_humanize(dt_now()) == 'just now'
+    assert dt_humanize(dt_now(), only_distance=True) == 'instantly'
+    assert dt_humanize(dt_now() - timedelta(hours=16), only_distance=True) == '16 hours'
