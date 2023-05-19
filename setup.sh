@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 10 9 8
+    for v in 11 10 9 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -49,8 +49,7 @@ function updateenv() {
     source .env/bin/activate
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
-    # Setuptools 65.5.0 is the last version that can install gym==0.21.0
-    ${PYTHON} -m pip install --upgrade pip==23.0.1 wheel==0.38.4 setuptools==65.5.1
+    ${PYTHON} -m pip install --upgrade pip wheel setuptools
     REQUIREMENTS_HYPEROPT=""
     REQUIREMENTS_PLOT=""
     REQUIREMENTS_FREQAI=""
@@ -259,7 +258,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.8 - 3.10, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.8 - 3.11, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi

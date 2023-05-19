@@ -121,7 +121,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
 
     freqtrade = FreqtradeBot(conf)
     if runmode == RunMode.LIVE:
-        assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
+        assert not log_has_re(r".*stoploss_on_exchange .* dry-run", caplog)
     assert freqtrade.strategy.order_types['stoploss_on_exchange']
 
     caplog.clear()
@@ -136,7 +136,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     }
     freqtrade = FreqtradeBot(conf)
     assert not freqtrade.strategy.order_types['stoploss_on_exchange']
-    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
+    assert not log_has_re(r".*stoploss_on_exchange .* dry-run", caplog)
 
 
 def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
@@ -147,6 +147,34 @@ def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
 
     result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT')
     assert result == default_conf_usdt['stake_amount']
+
+
+@pytest.mark.parametrize('runmode', [
+    RunMode.DRY_RUN,
+    RunMode.LIVE
+])
+def test_load_strategy_no_keys(default_conf_usdt, mocker, runmode, caplog) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    conf = deepcopy(default_conf_usdt)
+    conf['runmode'] = runmode
+    erm = mocker.patch('freqtrade.freqtradebot.ExchangeResolver.load_exchange')
+
+    freqtrade = FreqtradeBot(conf)
+    strategy_config = freqtrade.strategy.config
+    assert id(strategy_config['exchange']) == id(conf['exchange'])
+    # Keys have been removed and are not passed to the exchange
+    assert strategy_config['exchange']['key'] == ''
+    assert strategy_config['exchange']['secret'] == ''
+
+    assert erm.call_count == 1
+    ex_conf = erm.call_args_list[0][1]['exchange_config']
+    assert id(ex_conf) != id(conf['exchange'])
+    # Keys are still present
+    assert ex_conf['key'] != ''
+    assert ex_conf['key'] == default_conf_usdt['exchange']['key']
+    assert ex_conf['secret'] != ''
+    assert ex_conf['secret'] == default_conf_usdt['exchange']['secret']
 
 
 @pytest.mark.parametrize("amend_last,wallet,max_open,lsamr,expected", [
@@ -5550,6 +5578,51 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
 
     freqtrade.handle_insufficient_funds(trades[4])
     assert log_has(f"Error updating {order['id']}.", caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_short, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_uts = mocker.spy(freqtrade, 'update_trade_state')
+
+    entry_order = limit_order[entry_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
+    mock_fo = mocker.patch(f'{EXMS}.fetch_orders', return_value=[
+        entry_order,
+        exit_order,
+    ])
+
+    order_id = entry_order['id']
+
+    trade = Trade(
+            open_order_id=order_id,
+            pair='ETH/USDT',
+            fee_open=0.001,
+            fee_close=0.001,
+            open_rate=entry_order['price'],
+            open_date=arrow.utcnow().datetime,
+            stake_amount=entry_order['cost'],
+            amount=entry_order['amount'],
+            exchange="binance",
+            is_short=is_short,
+            leverage=1,
+            )
+
+    trade.orders.append(Order.parse_from_ccxt_object(
+        entry_order, 'ADA/USDT', entry_side(is_short))
+    )
+    Trade.session.add(trade)
+    freqtrade.handle_onexchange_order(trade)
+    assert log_has_re(r"Found previously unknown order .*", caplog)
+    assert mock_uts.call_count == 1
+    assert mock_fo.call_count == 1
+
+    trade = Trade.session.scalars(select(Trade)).first()
+
+    assert len(trade.orders) == 2
+    assert trade.is_open is False
+    assert trade.exit_reason == ExitType.SOLD_ON_EXCHANGE.value
 
 
 def test_get_valid_price(mocker, default_conf_usdt) -> None:

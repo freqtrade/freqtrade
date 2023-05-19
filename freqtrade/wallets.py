@@ -181,6 +181,35 @@ class Wallets:
     def get_all_positions(self) -> Dict[str, PositionWallet]:
         return self._positions
 
+    def _check_exit_amount(self, trade: Trade) -> bool:
+        if trade.trading_mode != TradingMode.FUTURES:
+            # Slightly higher offset than in safe_exit_amount.
+            wallet_amount: float = self.get_total(trade.safe_base_currency) * (2 - 0.981)
+        else:
+            # wallet_amount: float = self.wallets.get_free(trade.safe_base_currency)
+            position = self._positions.get(trade.pair)
+            if position is None:
+                # We don't own anything :O
+                return False
+            wallet_amount = position.position
+
+        if wallet_amount >= trade.amount:
+            return True
+        return False
+
+    def check_exit_amount(self, trade: Trade) -> bool:
+        """
+        Checks if the exit amount is available in the wallet.
+        :param trade: Trade to check
+        :return: True if the exit amount is available, False otherwise
+        """
+        if not self._check_exit_amount(trade):
+            # Update wallets just to make sure
+            self.update()
+            return self._check_exit_amount(trade)
+
+        return True
+
     def get_starting_balance(self) -> float:
         """
         Retrieves starting balance - based on either available capital,

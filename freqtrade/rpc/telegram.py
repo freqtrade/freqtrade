@@ -196,6 +196,7 @@ class Telegram(RPCHandler):
                 self._force_enter, order_side=SignalDirection.LONG)),
             CommandHandler('forceshort', partial(
                 self._force_enter, order_side=SignalDirection.SHORT)),
+            CommandHandler('reload_trade', self._reload_trade_from_exchange),
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler(['coo', 'cancel_open_order'], self._cancel_open_order),
@@ -852,8 +853,8 @@ class Telegram(RPCHandler):
         profit_all_percent = stats['profit_all_percent']
         profit_all_fiat = stats['profit_all_fiat']
         trade_count = stats['trade_count']
-        first_trade_date = stats['first_trade_date']
-        latest_trade_date = stats['latest_trade_date']
+        first_trade_date = f"{stats['first_trade_humanized']} ({stats['first_trade_date']})"
+        latest_trade_date = f"{stats['latest_trade_humanized']} ({stats['latest_trade_date']})"
         avg_duration = stats['avg_duration']
         best_pair = stats['best_pair']
         best_pair_profit_ratio = stats['best_pair_profit_ratio']
@@ -1072,6 +1073,17 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stopentry()
+        await self._send_msg(f"Status: `{msg['status']}`")
+
+    @authorized_only
+    async def _reload_trade_from_exchange(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_trade <tradeid>.
+        """
+        if not context.args or len(context.args) == 0:
+            raise RPCException("Trade-id not set.")
+        trade_id = int(context.args[0])
+        msg = self._rpc._rpc_reload_trade_from_exchange(trade_id)
         await self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
@@ -1561,6 +1573,7 @@ class Telegram(RPCHandler):
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
+            "*/reload_trade <trade_id>:* `Relade trade from exchange Orders`\n"
             "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
             "Only valid when the trade has open orders.`\n"
             "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"

@@ -52,7 +52,7 @@ def default_conf(default_conf) -> dict:
 
 @pytest.fixture
 def update():
-    message = Message(0, datetime.utcnow(), Chat(0, 0))
+    message = Message(0, datetime.now(timezone.utc), Chat(0, 0))
     _update = Update(0, message=message)
 
     return _update
@@ -143,8 +143,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
                    "['forceexit', 'forcesell', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
-                   "['trades'], ['delete'], ['cancel_open_order', 'coo'], ['performance'], "
-                   "['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
+                   "['reload_trade'], ['trades'], ['delete'], ['cancel_open_order', 'coo'], "
+                   "['performance'], ['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['delete_locks', 'unlock'], "
                    "['reload_conf', 'reload_config'], ['show_conf', 'show_config'], "
@@ -213,7 +213,7 @@ async def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> Non
     patch_exchange(mocker)
     caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
-    message = Message(randint(1, 100), datetime.utcnow(), chat)
+    message = Message(randint(1, 100), datetime.now(timezone.utc), chat)
     update = Update(randint(1, 100), message=message)
 
     default_conf['telegram']['enabled'] = False
@@ -520,7 +520,7 @@ async def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time
     assert msg_mock.call_count == 1
     assert "Daily Profit over the last 2 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
-    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.now(timezone.utc).date()) in msg_mock.call_args_list[0][0][0]
     assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
@@ -533,8 +533,9 @@ async def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time
     await telegram._daily(update=update, context=context)
     assert msg_mock.call_count == 1
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
-    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.now(timezone.utc).date()) in msg_mock.call_args_list[0][0][0]
+    assert str((datetime.now(timezone.utc) - timedelta(days=5)).date()
+               ) in msg_mock.call_args_list[0][0][0]
     assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
@@ -608,7 +609,7 @@ async def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, tim
     assert "Weekly Profit over the last 2 weeks (starting from Monday)</b>:" \
            in msg_mock.call_args_list[0][0][0]
     assert 'Monday ' in msg_mock.call_args_list[0][0][0]
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     first_iso_day_of_current_week = today - timedelta(days=today.weekday())
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
     assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
@@ -677,7 +678,7 @@ async def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, ti
     assert msg_mock.call_count == 1
     assert 'Monthly Profit over the last 2 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
@@ -825,6 +826,9 @@ async def test_telegram_stats(default_conf, update, ticker, fee, mocker, is_shor
     assert 'Exit Reason' in msg_mock.call_args_list[-1][0][0]
     assert 'ROI' in msg_mock.call_args_list[-1][0][0]
     assert 'Avg. Duration' in msg_mock.call_args_list[-1][0][0]
+    # Duration is not only N/A
+    assert '0:19:00' in msg_mock.call_args_list[-1][0][0]
+    assert 'N/A' in msg_mock.call_args_list[-1][0][0]
     msg_mock.reset_mock()
 
 
@@ -1758,6 +1762,25 @@ async def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short
     msg_mock.call_count == 1
     assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
     assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
+
+
+@pytest.mark.parametrize('is_short', [True, False])
+async def test_telegram_reload_trade_from_exchange(mocker, update, default_conf, fee, is_short):
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    context = MagicMock()
+    context.args = []
+
+    await telegram._reload_trade_from_exchange(update=update, context=context)
+    assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    create_mock_trades(fee, is_short=is_short)
+
+    context.args = [5]
+
+    await telegram._reload_trade_from_exchange(update=update, context=context)
+    assert "Status: `Reloaded from orders from exchange`" in msg_mock.call_args_list[0][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])

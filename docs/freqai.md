@@ -32,7 +32,10 @@ The easiest way to quickly test FreqAI is to run it in dry mode with the followi
 freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates
 ```
 
-You will see the boot-up process of automatic data downloading, followed by simultaneous training and trading.
+You will see the boot-up process of automatic data downloading, followed by simultaneous training and trading. 
+
+!!! danger "Not for production"
+    The example strategy provided with the Freqtrade source code is designed for showcasing/testing a wide variety of FreqAI features. It is also designed to run on small computers so that it can be used as a benchmark between developers and users. It is *not* designed to be run in production.
 
 An example strategy, prediction model, and config to use as a starting points can be found in
 `freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMRegressor.py`, and
@@ -69,11 +72,7 @@ pip install -r requirements-freqai.txt
 ```
 
 !!! Note
-    Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since it does not provide wheels for this platform.
-
-!!! Note "python 3.11"
-    Some dependencies (Catboost, Torch) currently don't support python 3.11. Freqtrade therefore only supports python 3.10 for these models/dependencies.
-    Tests involving these dependencies are skipped on 3.11.
+    Catboost will not be installed on low-powered arm devices (raspberry), since it does not provide wheels for this platform.
 
 ### Usage with docker
 

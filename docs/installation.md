@@ -30,12 +30,6 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 !!! Warning "Up-to-date clock"
     The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
-!!! Error "Running setup.py install for gym did not run successfully."
-    If you get an error related with gym we suggest you to downgrade setuptools it to version 65.5.0 you can do it with the following command:
-    ```bash
-    pip install setuptools==65.5.0
-    ```
-
 ------
 
 ## Requirements
@@ -242,6 +236,7 @@ source .env/bin/activate
 
 ```bash
 python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 

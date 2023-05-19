@@ -131,6 +131,9 @@ You can choose to adopt a continual learning scheme by setting `"continual_learn
 ???+ danger "Continual learning enforces a constant parameter space"
     Since `continual_learning` means that the model parameter space *cannot* change between trainings, `principal_component_analysis` is automatically disabled when `continual_learning` is enabled. Hint: PCA changes the parameter space and the number of features, learn more about PCA [here](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis).
 
+???+ danger "Experimental functionality"
+    Beware that this is currently a naive approach to incremental learning, and it has a high probability of overfitting/getting stuck in local minima while the market moves away from your model. We have the mechanics available in FreqAI primarily for experimental purposes and so that it is ready for more mature approaches to continual learning in chaotic systems like the crypto market.
+
 ## Hyperopt
 
 You can hyperopt using the same command as for [typical Freqtrade hyperopt](hyperopt.md):
@@ -158,7 +161,14 @@ This specific hyperopt would help you understand the appropriate `DI_values` for
 
 ## Using Tensorboard
 
-CatBoost models benefit from tracking training metrics via Tensorboard. You can take advantage of the FreqAI integration to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
+!!! note "Availability"
+    FreqAI includes tensorboard for a variety of models, including XGBoost, all PyTorch models, Reinforcement Learning, and Catboost. If you would like to see Tensorboard integrated into another model type, please open an issue on the [Freqtrade GitHub](https://github.com/freqtrade/freqtrade/issues)
+
+!!! danger "Requirements"
+    Tensorboard logging requires the FreqAI torch installation/docker image.
+
+
+The easiest way to use tensorboard is to ensure `freqai.activate_tensorboard` is set to `True` (default setting) in your configuration file, run FreqAI, then open a separate shell and run:
 
 ```bash
 cd freqtrade
@@ -168,3 +178,7 @@ tensorboard --logdir user_data/models/unique-id
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.jpg)
+
+
+!!! note "Deactivate for improved performance"
+    Tensorboard logging can slow down training and should be deactivated for production use.
