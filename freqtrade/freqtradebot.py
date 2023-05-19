@@ -13,7 +13,7 @@ from schedule import Scheduler
 
 from freqtrade import constants
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.constants import BuySell, Config, LongShort
+from freqtrade.constants import BuySell, Config, ExchangeConfig, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -23,6 +23,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, timeframe_to_minutes, timeframe_to_next_date,
                                 timeframe_to_seconds)
+from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
@@ -63,6 +64,9 @@ class FreqtradeBot(LoggingMixin):
 
         # Init objects
         self.config = config
+        exchange_config: ExchangeConfig = deepcopy(config['exchange'])
+        # Remove credentials from original exchange config to avoid accidental credentail exposure
+        remove_exchange_credentials(config['exchange'], True)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -70,7 +74,7 @@ class FreqtradeBot(LoggingMixin):
         validate_config_consistency(config)
 
         self.exchange = ExchangeResolver.load_exchange(
-            self.config, load_leverage_tiers=True)
+            self.config, exchange_config=exchange_config, load_leverage_tiers=True)
 
         init_db(self.config['db_url'])
 
