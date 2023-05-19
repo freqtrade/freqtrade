@@ -34,4 +34,3 @@ services:
       --config /freqtrade/user_data/config.json
       --freqai-model XGBoostClassifier
       --strategy SampleStrategy
-
