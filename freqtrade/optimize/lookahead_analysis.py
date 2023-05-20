@@ -121,9 +121,9 @@ class LookaheadAnalysis:
 
                             if not self.current_analysis.false_indicators.__contains__(col_name[0]):
                                 self.current_analysis.false_indicators.append(col_name[0])
-                                logging.info(f"=> found look ahead bias in indicator "
-                                             f"{col_name[0]}. "
-                                             f"{str(self_value)} != {str(other_value)}")
+                                logger.info(f"=> found look ahead bias in indicator "
+                                            f"{col_name[0]}. "
+                                            f"{str(self_value)} != {str(other_value)}")
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: List[pd.DataFrame]):
 
@@ -232,14 +232,14 @@ class LookaheadAnalysis:
         # check if requirements have been met of full_varholder
         found_signals: int = self.full_varHolder.result['results'].shape[0] + 1
         if found_signals >= self.targeted_trade_amount:
-            logging.info(f"Found {found_signals} trades, "
-                         f"calculating {self.targeted_trade_amount} trades.")
+            logger.info(f"Found {found_signals} trades, "
+                        f"calculating {self.targeted_trade_amount} trades.")
         elif self.targeted_trade_amount >= found_signals >= self.minimum_trade_amount:
-            logging.info(f"Only found {found_signals} trades. Calculating all available trades.")
+            logger.info(f"Only found {found_signals} trades. Calculating all available trades.")
         else:
-            logging.info(f"found {found_signals} trades "
-                         f"which is less than minimum_trade_amount {self.minimum_trade_amount}. "
-                         f"Cancelling this backtest lookahead bias test.")
+            logger.info(f"found {found_signals} trades "
+                        f"which is less than minimum_trade_amount {self.minimum_trade_amount}. "
+                        f"Cancelling this backtest lookahead bias test.")
             return
 
         # now we loop through all signals
@@ -253,9 +253,9 @@ class LookaheadAnalysis:
         if (self.current_analysis.false_entry_signals > 0 or
                 self.current_analysis.false_exit_signals > 0 or
                 len(self.current_analysis.false_indicators) > 0):
-            logging.info(f" => {self.local_config['strategy']} + : bias detected!")
+            logger.info(f" => {self.local_config['strategy']} + : bias detected!")
             self.current_analysis.has_bias = True
         else:
-            logging.info(self.local_config['strategy'] + ": no bias detected")
+            logger.info(self.local_config['strategy'] + ": no bias detected")
 
         self.failed_bias_check = False
