@@ -116,6 +116,11 @@ class LookaheadAnalysisSubFunctions:
 
         # unify --strategy and --strategy_list to one list
         if not (strategy_list := config.get('strategy_list', [])):
+            if config.get('strategy') is None:
+                raise OperationalException(
+                    "No Strategy specified. Please specify a strategy via --strategy or "
+                    "--strategy_list"
+                )
             strategy_list = [config['strategy']]
 
         # check if strategies can be properly loaded, only check them if they can be.

@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
@@ -9,7 +10,8 @@ from freqtrade.commands.optimize_commands import start_lookahead_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
-from tests.conftest import CURRENT_TEST_STRATEGY, get_args, patch_exchange
+from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
+from tests.conftest import CURRENT_TEST_STRATEGY, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
@@ -61,6 +63,37 @@ def test_start_lookahead_analysis(mocker):
     with pytest.raises(OperationalException,
                        match=r"targeted trade amount can't be smaller than .*"):
         start_lookahead_analysis(pargs)
+
+
+def test_lookahead_helper_invalid_config(lookahead_conf, mocker, caplog) -> None:
+    conf = deepcopy(lookahead_conf)
+    conf['targeted_trade_amount'] = 10
+    conf['minimum_trade_amount'] = 40
+    with pytest.raises(OperationalException,
+                       match=r"targeted trade amount can't be smaller than .*"):
+        LookaheadAnalysisSubFunctions.start(conf)
+
+    conf = deepcopy(lookahead_conf)
+    del conf['strategy']
+    with pytest.raises(OperationalException,
+                       match=r"No Strategy specified"):
+        LookaheadAnalysisSubFunctions.start(conf)
+
+
+def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
+    single_mock = MagicMock()
+    text_table_mock = MagicMock()
+    mocker.patch.multiple(
+            'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
+            initialize_single_lookahead_analysis=single_mock,
+            text_table_lookahead_analysis_instances=text_table_mock,
+        )
+    LookaheadAnalysisSubFunctions.start(lookahead_conf)
+    assert single_mock.call_count == 1
+    assert text_table_mock.call_count == 1
+
+    single_mock.reset_mock()
+    text_table_mock.reset_mock()
 
 
 def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
