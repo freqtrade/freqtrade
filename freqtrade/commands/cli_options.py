@@ -692,20 +692,19 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "minimum_trade_amount": Arg(
         '--minimum-trade-amount',
-        help='set INT minimum trade amount',
+        help='Minimum trade amount for lookahead-analysis',
         type=check_int_positive,
         metavar='INT',
     ),
     "targeted_trade_amount": Arg(
         '--targeted-trade-amount',
-        help='set INT targeted trade amount',
+        help='Targeted trade amount for lookahead analysis',
         type=check_int_positive,
         metavar='INT',
     ),
     "lookahead_analysis_exportfilename": Arg(
         '--lookahead-analysis-exportfilename',
         help="Use this filename to store lookahead-analysis-results",
-        default=None,
         type=str
     ),
 }

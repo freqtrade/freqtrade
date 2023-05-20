@@ -479,6 +479,19 @@ class Configuration:
         self._args_to_config(config, argname='analysis_csv_path',
                              logstring='Path to store analysis CSVs: {}')
 
+        self._args_to_config(config, argname='analysis_csv_path',
+                             logstring='Path to store analysis CSVs: {}')
+
+        # Lookahead analysis results
+        self._args_to_config(config, argname='targeted_trade_amount',
+                             logstring='Targeted Trade amount: {}')
+
+        self._args_to_config(config, argname='minimum_trade_amount',
+                             logstring='Minimum Trade amount: {}')
+
+        self._args_to_config(config, argname='lookahead_analysis_exportfilename',
+                             logstring='Path to store lookahead-analysis-results: {}')
+
     def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',
