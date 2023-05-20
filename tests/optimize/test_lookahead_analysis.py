@@ -11,7 +11,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
 from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
-from tests.conftest import EXMS, get_args, patch_exchange
+from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
@@ -125,12 +125,13 @@ def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
     lookahead_conf['pairs'] = ['UNITTEST/USDT']
 
     lookahead_conf['timeframe'] = '5m'
-    lookahead_conf['timerange'] = '1516406400-1517270400'
+    lookahead_conf['timerange'] = '20180119-20180122'
     lookahead_conf['strategy'] = 'strategy_test_v3_with_lookahead_bias'
 
     strategy_obj = {}
     strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.start()
+    assert log_has_re(r".*bias detected.*", caplog)
 
     # TODO: assert something ... most likely output (?) or instance state?
