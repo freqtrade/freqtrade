@@ -162,14 +162,13 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
         strategy_list = [config['strategy']]
 
     # check if strategies can be properly loaded, only check them if they can be.
-    if strategy_list is not None:
-        for strat in strategy_list:
-            for strategy_obj in strategy_objs:
-                if strategy_obj['name'] == strat and strategy_obj not in strategy_list:
-                    lookaheadAnalysis_instances.append(
-                        LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
-                            strategy_obj, config))
-                    break
+    for strat in strategy_list:
+        for strategy_obj in strategy_objs:
+            if strategy_obj['name'] == strat and strategy_obj not in strategy_list:
+                lookaheadAnalysis_instances.append(
+                    LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
+                        strategy_obj, config))
+                break
 
     # report the results
     if lookaheadAnalysis_instances:
