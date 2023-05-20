@@ -113,7 +113,10 @@ def test_initialize_single_lookahead_analysis():
     pytest.skip("TODO")
 
 
-def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
+@pytest.mark.parametrize('scenario', [
+    'no_bias', 'bias1'
+])
+def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
@@ -128,10 +131,26 @@ def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
     lookahead_conf['timerange'] = '20180119-20180122'
     lookahead_conf['strategy'] = 'strategy_test_v3_with_lookahead_bias'
 
+    # Patch scenario Parameter to allow for easy selection
+    mocker.patch('freqtrade.strategy.hyper.HyperStrategyMixin.load_params_from_file',
+                 return_value={
+                     'params': {
+                         "buy": {
+                                "scenario": scenario
+                         }
+                     }
+                 })
+
     strategy_obj = {}
     strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.start()
+    # Assert init correct
+    assert log_has_re(f"Strategy Parameter: scenario = {scenario}", caplog)
+    # Assert bias detected
     assert log_has_re(r".*bias detected.*", caplog)
-
     # TODO: assert something ... most likely output (?) or instance state?
+
+    # Assert False to see full logs in output
+    # assert False
+    # Run with `pytest tests/optimize/test_lookahead_analysis.py  -k test_biased_strategy`

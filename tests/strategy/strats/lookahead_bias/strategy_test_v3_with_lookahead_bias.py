@@ -3,6 +3,7 @@ from pandas import DataFrame
 from technical.indicators import ichimoku
 
 from freqtrade.strategy import IStrategy
+from freqtrade.strategy.parameters import CategoricalParameter
 
 
 class strategy_test_v3_with_lookahead_bias(IStrategy):
@@ -21,6 +22,7 @@ class strategy_test_v3_with_lookahead_bias(IStrategy):
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
+    scenario = CategoricalParameter(['no_bias', 'bias1'], default='bias1', space="buy")
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 20
@@ -37,14 +39,19 @@ class strategy_test_v3_with_lookahead_bias(IStrategy):
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[
-            dataframe['close'].shift(-10) > dataframe['close'],
-            'enter_long'] = 1
+        if self.scenario.value == 'no_bias':
+            dataframe.loc[dataframe['close'].shift(10) < dataframe['close'], 'enter_long'] = 1
+        else:
+            dataframe.loc[dataframe['close'].shift(-10) > dataframe['close'], 'enter_long'] = 1
 
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[
-            dataframe['close'].shift(-10) > dataframe['close'], 'exit'] = 1
+        if self.scenario.value == 'no_bias':
+            dataframe.loc[
+                dataframe['close'].shift(10) < dataframe['close'], 'exit'] = 1
+        else:
+            dataframe.loc[
+                dataframe['close'].shift(-10) > dataframe['close'], 'exit'] = 1
 
         return dataframe
