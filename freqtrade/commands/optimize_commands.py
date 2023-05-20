@@ -6,7 +6,6 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
-from freqtrade.optimize.lookahead_analysis import LookaheadAnalysisSubFunctions
 from freqtrade.resolvers import StrategyResolver
 
 
@@ -142,12 +141,16 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.optimize.lookahead_analysis import LookaheadAnalysisSubFunctions
+
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if config['targeted_trade_amount'] < config['minimum_trade_amount']:
         # add logic that tells the user to check the configuration
         # since this combo doesn't make any sense.
-        pass
+        raise OperationalException(
+            "targeted trade amount can't be smaller than minimum trade amount."
+        )
 
     strategy_objs = StrategyResolver.search_all_objects(
         config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
