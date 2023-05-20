@@ -96,6 +96,21 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     text_table_mock.reset_mock()
 
 
+def test_lookahead_helper_text_table_lookahead_analysis_instances():
+    # TODO
+    pytest.skip("TODO")
+
+
+def test_lookahead_helper_export_to_csv():
+    # TODO
+    pytest.skip("TODO")
+
+
+def test_initialize_single_lookahead_analysis():
+    # TODO
+    pytest.skip("TODO")
+
+
 def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
