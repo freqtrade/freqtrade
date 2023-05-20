@@ -119,11 +119,11 @@ class PyTorchTransformerRegressor(BasePyTorchRegressor):
         x = x.unsqueeze(0)
         # create empty torch tensor
         self.model.model.eval()
-        yb = torch.empty(0)
+        yb = torch.empty(0).to(self.device)
         if x.shape[1] > 1:
             ws = self.window_size
             for i in range(0, x.shape[1] - ws):
-                xb = x[:, i:i + ws, :]
+                xb = x[:, i:i + ws, :].to(self.device)
                 y = self.model.model(xb)
                 yb = torch.cat((yb, y), dim=0)
         else:

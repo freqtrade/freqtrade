@@ -693,4 +693,6 @@ BidAsk = Literal['bid', 'ask']
 OBLiteral = Literal['asks', 'bids']
 
 Config = Dict[str, Any]
+# Exchange part of the configuration.
+ExchangeConfig = Dict[str, Any]
 IntOrInf = float

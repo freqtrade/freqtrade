@@ -47,4 +47,5 @@ class BasePyTorchRegressor(BasePyTorchModel):
         self.model.model.eval()
         y = self.model.model(x)
         pred_df = DataFrame(y.detach().tolist(), columns=[dk.label_list[0]])
+        pred_df = dk.denormalize_labels_from_metadata(pred_df)
         return (pred_df, dk.do_predict)
