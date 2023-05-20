@@ -1,10 +1,17 @@
+import logging
 import time
 from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis, logger
+from freqtrade.constants import Config
+from freqtrade.exceptions import OperationalException
+from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
+from freqtrade.resolvers import StrategyResolver
+
+
+logger = logging.getLogger(__name__)
 
 
 class LookaheadAnalysisSubFunctions:
@@ -93,3 +100,41 @@ class LookaheadAnalysisSubFunctions:
                     f"of {Path(strategy_obj['location']).name} "
                     f"took {elapsed:.0f} seconds.")
         return current_instance
+
+    @staticmethod
+    def start(config: Config):
+        if config['targeted_trade_amount'] < config['minimum_trade_amount']:
+            # this combo doesn't make any sense.
+            raise OperationalException(
+                "targeted trade amount can't be smaller than minimum trade amount."
+            )
+
+        strategy_objs = StrategyResolver.search_all_objects(
+                config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
+
+        lookaheadAnalysis_instances = []
+
+        # unify --strategy and --strategy_list to one list
+        if not (strategy_list := config.get('strategy_list', [])):
+            strategy_list = [config['strategy']]
+
+        # check if strategies can be properly loaded, only check them if they can be.
+        for strat in strategy_list:
+            for strategy_obj in strategy_objs:
+                if strategy_obj['name'] == strat and strategy_obj not in strategy_list:
+                    lookaheadAnalysis_instances.append(
+                        LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
+                            strategy_obj, config))
+                    break
+
+        # report the results
+        if lookaheadAnalysis_instances:
+            LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+                lookaheadAnalysis_instances)
+            if config.get('lookahead_analysis_exportfilename') is not None:
+                LookaheadAnalysisSubFunctions.export_to_csv(config, lookaheadAnalysis_instances)
+        else:
+            logger.error("There were no strategies specified neither through "
+                         "--strategy nor through "
+                         "--strategy_list "
+                         "or timeframe was not specified.")

@@ -77,4 +77,5 @@ def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
     strategy_obj = {}
     strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
     LookaheadAnalysis(lookahead_conf, strategy_obj)
+
     pass
