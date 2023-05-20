@@ -55,7 +55,6 @@ class LookaheadAnalysis:
         self.current_analysis = Analysis()
         self.minimum_trade_amount = config['minimum_trade_amount']
         self.targeted_trade_amount = config['targeted_trade_amount']
-        self.exportfilename = config['exportfilename']
         self.strategy_obj = strategy_obj
 
     @staticmethod
