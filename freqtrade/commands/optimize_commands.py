@@ -141,7 +141,7 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    from freqtrade.optimize.lookahead_analysis import LookaheadAnalysisSubFunctions
+    from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
