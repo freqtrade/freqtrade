@@ -11,13 +11,15 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
 from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
-from tests.conftest import CURRENT_TEST_STRATEGY, get_args, log_has_re, patch_exchange
+from tests.conftest import EXMS, get_args, patch_exchange
 
 
 @pytest.fixture
 def lookahead_conf(default_conf_usdt):
     default_conf_usdt['minimum_trade_amount'] = 10
     default_conf_usdt['targeted_trade_amount'] = 20
+    default_conf_usdt['strategy_path'] = str(
+        Path(__file__).parent.parent / "strategy/strats/lookahead_bias")
 
     return default_conf_usdt
 
@@ -33,7 +35,7 @@ def test_start_lookahead_analysis(mocker):
     args = [
         "lookahead-analysis",
         "--strategy",
-        CURRENT_TEST_STRATEGY,
+        "strategy_test_v3_with_lookahead_bias",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy" / "strats"),
     ]
@@ -50,7 +52,7 @@ def test_start_lookahead_analysis(mocker):
     args = [
         "lookahead-analysis",
         "--strategy",
-        CURRENT_TEST_STRATEGY,
+        "strategy_test_v3_with_lookahead_bias",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy" / "strats"),
         "--targeted-trade-amount",
@@ -114,16 +116,21 @@ def test_initialize_single_lookahead_analysis():
 def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
+    mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
+    mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.00001)
+    mocker.patch(f'{EXMS}.get_max_pair_stake_amount', return_value=float('inf'))
     patch_exchange(mocker)
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
+    lookahead_conf['pairs'] = ['UNITTEST/USDT']
 
     lookahead_conf['timeframe'] = '5m'
-    lookahead_conf['timerange'] = '-1510694220'
+    lookahead_conf['timerange'] = '1516406400-1517270400'
     lookahead_conf['strategy'] = 'strategy_test_v3_with_lookahead_bias'
 
     strategy_obj = {}
     strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
-    LookaheadAnalysis(lookahead_conf, strategy_obj)
+    instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
+    instance.start()
 
-    pass
+    # TODO: assert something ... most likely output (?) or instance state?

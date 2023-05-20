@@ -259,6 +259,3 @@ class LookaheadAnalysis:
             logging.info(self.local_config['strategy'] + ": no bias detected")
 
         self.failed_bias_check = False
-
-
-
