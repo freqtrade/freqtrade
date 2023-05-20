@@ -42,7 +42,7 @@ class Analysis:
 
 class LookaheadAnalysis:
 
-    def __init__(self, config: Dict[str, Any], strategy_obj: dict, args: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
         self.failed_bias_check = True
         self.full_varHolder = VarHolder
 
@@ -53,9 +53,9 @@ class LookaheadAnalysis:
         self.local_config = deepcopy(config)
         self.local_config['strategy'] = strategy_obj['name']
         self.current_analysis = Analysis()
-        self.minimum_trade_amount = args['minimum_trade_amount']
-        self.targeted_trade_amount = args['targeted_trade_amount']
-        self.exportfilename = args['exportfilename']
+        self.minimum_trade_amount = config['minimum_trade_amount']
+        self.targeted_trade_amount = config['targeted_trade_amount']
+        self.exportfilename = config['exportfilename']
         self.strategy_obj = strategy_obj
 
     @staticmethod
@@ -339,12 +339,11 @@ class LookaheadAnalysisSubFunctions:
         csv_df.to_csv(config['lookahead_analysis_exportfilename'], index=False)
 
     @staticmethod
-    def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any],
-                                             args: Dict[str, Any]):
+    def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any]):
 
         logger.info(f"Bias test of {Path(strategy_obj['location']).name} started.")
         start = time.perf_counter()
-        current_instance = LookaheadAnalysis(config, strategy_obj, args)
+        current_instance = LookaheadAnalysis(config, strategy_obj)
         current_instance.start()
         elapsed = time.perf_counter() - start
         logger.info(f"checking look ahead bias via backtests "

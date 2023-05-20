@@ -144,7 +144,7 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    if args['targeted_trade_amount'] < args['minimum_trade_amount']:
+    if config['targeted_trade_amount'] < config['minimum_trade_amount']:
         # add logic that tells the user to check the configuration
         # since this combo doesn't make any sense.
         pass
@@ -153,13 +153,10 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
         config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
 
     lookaheadAnalysis_instances = []
-    strategy_list = []
 
     # unify --strategy and --strategy_list to one list
-    if 'strategy' in args and args['strategy'] is not None:
-        strategy_list = [args['strategy']]
-    else:
-        strategy_list = args['strategy_list']
+    if not (strategy_list := config.get('strategy_list', [])):
+        strategy_list = [config['strategy']]
 
     # check if strategies can be properly loaded, only check them if they can be.
     if strategy_list is not None:
@@ -168,7 +165,7 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
                 if strategy_obj['name'] == strat and strategy_obj not in strategy_list:
                     lookaheadAnalysis_instances.append(
                         LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
-                            strategy_obj, config, args))
+                            strategy_obj, config))
                     break
 
     # report the results
