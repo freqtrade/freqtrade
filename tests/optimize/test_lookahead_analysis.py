@@ -5,11 +5,10 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-import freqtrade.commands.arguments
-import freqtrade.optimize.lookahead_analysis
 from freqtrade.commands.optimize_commands import start_lookahead_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
+from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
 from tests.conftest import CURRENT_TEST_STRATEGY, get_args, patch_exchange
 
 
@@ -21,12 +20,13 @@ def lookahead_conf(default_conf_usdt):
     return default_conf_usdt
 
 
-def test_start_start_lookahead_analysis(mocker):
+def test_start_lookahead_analysis(mocker):
     single_mock = MagicMock()
+    text_table_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.optimize.lookahead_analysis.LookaheadAnalysisSubFunctions',
+        'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
         initialize_single_lookahead_analysis=single_mock,
-        text_table_lookahead_analysis_instances=MagicMock(),
+        text_table_lookahead_analysis_instances=text_table_mock,
         )
     args = [
         "lookahead-analysis",
@@ -40,6 +40,7 @@ def test_start_start_lookahead_analysis(mocker):
 
     start_lookahead_analysis(pargs)
     assert single_mock.call_count == 1
+    assert text_table_mock.call_count == 1
 
     single_mock.reset_mock()
 
@@ -62,7 +63,6 @@ def test_start_start_lookahead_analysis(mocker):
         start_lookahead_analysis(pargs)
 
 
-
 def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
@@ -76,5 +76,5 @@ def test_biased_strategy(lookahead_conf, mocker, caplog) -> None:
 
     strategy_obj = {}
     strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
-    freqtrade.optimize.lookahead_analysis.LookaheadAnalysis(lookahead_conf, strategy_obj)
+    LookaheadAnalysis(lookahead_conf, strategy_obj)
     pass
