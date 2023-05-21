@@ -20,7 +20,7 @@ from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_pr
                                 timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
                                 timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
-                                       calculate_backoff, remove_credentials)
+                                       calculate_backoff, remove_exchange_credentials)
 from freqtrade.exchange.exchange import amount_to_contract_precision
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_patched_exchange,
@@ -137,16 +137,14 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog)
 
 
-def test_remove_credentials(default_conf, caplog) -> None:
+def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
-    conf['dry_run'] = False
-    remove_credentials(conf)
+    remove_exchange_credentials(conf['exchange'], False)
 
     assert conf['exchange']['key'] != ''
     assert conf['exchange']['secret'] != ''
 
-    conf['dry_run'] = True
-    remove_credentials(conf)
+    remove_exchange_credentials(conf['exchange'], True)
     assert conf['exchange']['key'] == ''
     assert conf['exchange']['secret'] == ''
     assert conf['exchange']['password'] == ''
@@ -228,27 +226,30 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.validate_pricing')
-
-    exchange = ExchangeResolver.load_exchange('zaif', default_conf)
+    default_conf['exchange']['name'] = 'zaif'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
 
-    exchange = ExchangeResolver.load_exchange('Bittrex', default_conf)
+    default_conf['exchange']['name'] = 'Bittrex'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Bittrex)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
     caplog.clear()
 
-    exchange = ExchangeResolver.load_exchange('kraken', default_conf)
+    default_conf['exchange']['name'] = 'kraken'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
 
-    exchange = ExchangeResolver.load_exchange('binance', default_conf)
+    default_conf['exchange']['name'] = 'binance'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -257,7 +258,8 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                           caplog)
 
     # Test mapping
-    exchange = ExchangeResolver.load_exchange('binanceus', default_conf)
+    default_conf['exchange']['name'] = 'binanceus'
+    exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -990,19 +992,20 @@ def test_validate_pricing(default_conf, mocker):
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.name', 'Binance')
-    ExchangeResolver.load_exchange('binance', default_conf)
+    default_conf['exchange']['name'] = 'binance'
+    ExchangeResolver.load_exchange(default_conf)
     has.update({'fetchTicker': False})
     with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
     has.update({'fetchTicker': True})
 
     default_conf['exit_pricing']['use_order_book'] = True
-    ExchangeResolver.load_exchange('binance', default_conf)
+    ExchangeResolver.load_exchange(default_conf)
     has.update({'fetchL2OrderBook': False})
 
     with pytest.raises(OperationalException, match="Orderbook not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
     has.update({'fetchL2OrderBook': True})
 
@@ -1011,7 +1014,7 @@ def test_validate_pricing(default_conf, mocker):
     default_conf['margin_mode'] = MarginMode.ISOLATED
 
     with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
-        ExchangeResolver.load_exchange('binance', default_conf)
+        ExchangeResolver.load_exchange(default_conf)
 
 
 def test_validate_ordertypes(default_conf, mocker):
@@ -1091,12 +1094,13 @@ def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, 
         'stoploss_on_exchange': True,
         'stoploss_price_type': stopadv,
     }
+    default_conf['exchange']['name'] = exchange_name
     if expected:
-        ExchangeResolver.load_exchange(exchange_name, default_conf)
+        ExchangeResolver.load_exchange(default_conf)
     else:
         with pytest.raises(OperationalException,
                            match=r'On exchange stoploss price type is not supported for .*'):
-            ExchangeResolver.load_exchange(exchange_name, default_conf)
+            ExchangeResolver.load_exchange(default_conf)
 
 
 def test_validate_order_types_not_in_config(default_conf, mocker):
@@ -1771,6 +1775,71 @@ def test_fetch_positions(default_conf, mocker, exchange_name):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "fetch_positions", "fetch_positions")
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
+
+    api_mock = MagicMock()
+    api_mock.fetch_orders = MagicMock(return_value=[
+        limit_order['buy'],
+        limit_order['sell'],
+    ])
+    api_mock.fetch_open_orders = MagicMock(return_value=[limit_order['buy']])
+    api_mock.fetch_closed_orders = MagicMock(return_value=[limit_order['buy']])
+
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+    start_time = datetime.now(timezone.utc) - timedelta(days=5)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    # Not available in dry-run
+    assert exchange.fetch_orders('mocked', start_time) == []
+    assert api_mock.fetch_orders.call_count == 0
+    default_conf['dry_run'] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.fetch_orders('mocked', start_time)
+    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 0
+    assert api_mock.fetch_closed_orders.call_count == 0
+    assert len(res) == 2
+
+    res = exchange.fetch_orders('mocked', start_time)
+
+    api_mock.fetch_orders.reset_mock()
+
+    def has_resp(_, endpoint):
+        if endpoint == 'fetchOrders':
+            return False
+        if endpoint == 'fetchClosedOrders':
+            return True
+        if endpoint == 'fetchOpenOrders':
+            return True
+
+    mocker.patch(f'{EXMS}.exchange_has', has_resp)
+
+    # happy path without fetchOrders
+    res = exchange.fetch_orders('mocked', start_time)
+    assert api_mock.fetch_orders.call_count == 0
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
+
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_orders", "fetch_orders", retries=1,
+                           pair='mocked', since=start_time)
+
+    # Unhappy path - first fetch-orders call fails.
+    api_mock.fetch_orders = MagicMock(side_effect=ccxt.NotSupported())
+    api_mock.fetch_open_orders.reset_mock()
+    api_mock.fetch_closed_orders.reset_mock()
+
+    res = exchange.fetch_orders('mocked', start_time)
+
+    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == 1
+    assert api_mock.fetch_closed_orders.call_count == 1
 
 
 def test_fetch_trading_fees(default_conf, mocker):
@@ -4932,7 +5001,7 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
 
     exchange._leverage_tiers = leverage_tiers
     with pytest.raises(
-        OperationalException,
+        DependencyException,
         match='nominal value can not be lower than 0',
     ):
         exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT:USDT', -1)

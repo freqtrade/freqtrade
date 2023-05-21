@@ -261,8 +261,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
-                              limit_buy_order, limit_sell_order, markets, mocker) -> None:
+def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,
@@ -295,7 +294,7 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
         assert day['starting_balance'] in (pytest.approx(1062.37), pytest.approx(1066.46))
         assert day['fiat_value'] in (0.0, )
     # ensure first day is current date
-    assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
+    assert str(days['data'][0]['date']) == str(datetime.now(timezone.utc).date())
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
@@ -415,8 +414,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
@@ -426,8 +425,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
                  MagicMock(side_effect=ExchangeError("Pair 'XRP/USDT' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0

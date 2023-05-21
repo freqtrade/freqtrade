@@ -74,16 +74,18 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.CrossEntropyLoss()
-        init_model = self.get_init_model(dk.pair)
-        trainer = PyTorchModelTrainer(
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
-            model_meta_data={"class_names": class_names},
-            device=self.device,
-            init_model=init_model,
-            data_convertor=self.data_convertor,
-            **self.trainer_kwargs,
-        )
+        # check if continual_learning is activated, and retreive the model to continue training
+        trainer = self.get_init_model(dk.pair)
+        if trainer is None:
+            trainer = PyTorchModelTrainer(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                model_meta_data={"class_names": class_names},
+                device=self.device,
+                data_convertor=self.data_convertor,
+                tb_logger=self.tb_logger,
+                **self.trainer_kwargs,
+            )
         trainer.fit(data_dictionary, self.splits)
         return trainer

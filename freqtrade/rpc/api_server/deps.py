@@ -6,6 +6,7 @@ from fastapi import Depends
 from freqtrade.enums import RunMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import _request_id_ctx_var
+from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPC, RPCException
 
 from .webserver import ApiServer
@@ -43,11 +44,11 @@ def get_api_config() -> Dict[str, Any]:
 
 
 def get_exchange(config=Depends(get_config)):
-    if not ApiServer._exchange:
+    if not ApiBG.exchange:
         from freqtrade.resolvers import ExchangeResolver
-        ApiServer._exchange = ExchangeResolver.load_exchange(
-            config['exchange']['name'], config, load_leverage_tiers=False)
-    return ApiServer._exchange
+        ApiBG.exchange = ExchangeResolver.load_exchange(
+            config, load_leverage_tiers=False)
+    return ApiBG.exchange
 
 
 def get_message_stream():

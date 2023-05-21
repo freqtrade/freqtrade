@@ -15,10 +15,10 @@ repos:
         additional_dependencies:
           - types-cachetools==5.3.0.5
           - types-filelock==3.2.7
-          - types-requests==2.28.11.17
+          - types-requests==2.30.0.0
           - types-tabulate==0.9.0.2
-          - types-python-dateutil==2.8.19.12
-          - SQLAlchemy==2.0.10
+          - types-python-dateutil==2.8.19.13
+          - SQLAlchemy==2.0.13
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort
@@ -30,7 +30,7 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.255'
+    rev: 'v0.0.263'
     hooks:
       - id: ruff
 
