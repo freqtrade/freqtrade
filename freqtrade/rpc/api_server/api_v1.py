@@ -331,36 +331,37 @@ def list_pairlists(config=Depends(get_config)):
     ]}
 
 
+def __run_pairlist(config_loc: Config):
+    try:
+        from freqtrade.plugins.pairlistmanager import PairListManager
+
+        exchange = get_exchange(config_loc)
+        pairlists = PairListManager(exchange, config_loc)
+        pairlists.refresh_pairlist()
+        ApiBG.pairlist_result = {
+                'method': pairlists.name_list,
+                'length': len(pairlists.whitelist),
+                'whitelist': pairlists.whitelist
+            }
+
+    finally:
+        ApiBG.pairlist_running = False
+
+
 @router.post('/pairlists/evaluate', response_model=StatusMsg, tags=['pairlists'])
 def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTasks,
                        config=Depends(get_config)):
     if ApiBG.pairlist_running:
         raise HTTPException(status_code=400, detail='Pairlist evaluation is already running.')
 
-    def run_pairlist(config_loc: Config):
-        try:
-            from freqtrade.plugins.pairlistmanager import PairListManager
-            config_loc['stake_currency'] = payload.stake_currency
-            config_loc['pairlists'] = payload.pairlists
-
-            # TODO: overwrite blacklist? make it optional and fall back to the one in config?
-            # Outcome depends on the UI approach.
-            config_loc['exchange']['pair_blacklist'] = payload.blacklist
-            exchange = get_exchange(config_loc)
-            pairlists = PairListManager(exchange, config_loc)
-            pairlists.refresh_pairlist()
-            ApiBG.pairlist_result = {
-                    'method': pairlists.name_list,
-                    'length': len(pairlists.whitelist),
-                    'whitelist': pairlists.whitelist
-                }
-
-        finally:
-            ApiBG.pairlist_running = False
-
     config_loc = deepcopy(config)
+    config_loc['stake_currency'] = payload.stake_currency
+    config_loc['pairlists'] = payload.pairlists
+    # TODO: overwrite blacklist? make it optional and fall back to the one in config?
+    # Outcome depends on the UI approach.
+    config_loc['exchange']['pair_blacklist'] = payload.blacklist
 
-    background_tasks.add_task(run_pairlist, config_loc)
+    background_tasks.add_task(__run_pairlist, config_loc)
     ApiBG.pairlist_running = True
     return {
         'status': 'Pairlist evaluation started in background.'
@@ -370,7 +371,7 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
 @router.get('/pairlists/evaluate', response_model=WhitelistResponse, tags=['pairlists'])
 def pairlists_evaluate_get():
     if ApiBG.pairlist_running:
-        raise HTTPException(status_code=400, detail='Pairlist evaluation is already running.')
+        raise HTTPException(status_code=400, detail='Pairlist evaluation is currently running.')
 
     if not ApiBG.pairlist_result:
         raise HTTPException(status_code=400, detail='Pairlist not started yet.')
