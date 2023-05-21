@@ -20,6 +20,7 @@ def lookahead_conf(default_conf_usdt):
     default_conf_usdt['targeted_trade_amount'] = 20
     default_conf_usdt['strategy_path'] = str(
         Path(__file__).parent.parent / "strategy/strats/lookahead_bias")
+    default_conf_usdt['strategy'] = 'strategy_test_v3_with_lookahead_bias'
 
     return default_conf_usdt
 
@@ -37,7 +38,7 @@ def test_start_lookahead_analysis(mocker):
         "--strategy",
         "strategy_test_v3_with_lookahead_bias",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy" / "strats"),
+        str(Path(__file__).parent.parent / "strategy/strats/lookahead_bias"),
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -54,7 +55,7 @@ def test_start_lookahead_analysis(mocker):
         "--strategy",
         "strategy_test_v3_with_lookahead_bias",
         "--strategy-path",
-        str(Path(__file__).parent.parent / "strategy" / "strats"),
+        str(Path(__file__).parent.parent / "strategy/strats/lookahead_bias"),
         "--targeted-trade-amount",
         "10",
         "--minimum-trade-amount",
@@ -129,7 +130,6 @@ def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
 
     lookahead_conf['timeframe'] = '5m'
     lookahead_conf['timerange'] = '20180119-20180122'
-    lookahead_conf['strategy'] = 'strategy_test_v3_with_lookahead_bias'
 
     # Patch scenario Parameter to allow for easy selection
     mocker.patch('freqtrade.strategy.hyper.HyperStrategyMixin.load_params_from_file',
