@@ -374,7 +374,7 @@ def pairlists_evaluate_get():
         raise HTTPException(status_code=400, detail='Pairlist evaluation is currently running.')
 
     if not ApiBG.pairlist_result:
-        raise HTTPException(status_code=400, detail='Pairlist not started yet.')
+        raise HTTPException(status_code=400, detail='Pairlist evaluation not started yet.')
 
     return ApiBG.pairlist_result
 

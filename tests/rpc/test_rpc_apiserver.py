@@ -1616,7 +1616,7 @@ def test_api_freqaimodels(botclient, tmpdir, mocker):
     ]}
 
 
-def test_api_available_pairlists(botclient, tmpdir):
+def test_api_pairlists_available(botclient, tmpdir):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
 
@@ -1637,6 +1637,58 @@ def test_api_available_pairlists(botclient, tmpdir):
     age_pl = [r for r in response['pairlists'] if r['name'] == 'AgeFilter'][0]
     assert age_pl['is_pairlist_generator'] is False
     assert len(volumepl['params']) > 2
+
+
+def test_api_pairlists_evaluate(botclient, tmpdir):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+
+    assert_response(rc, 400)
+    assert rc.json()['detail'] == 'Pairlist evaluation not started yet.'
+
+    ApiBG.pairlist_running = True
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    assert_response(rc, 400)
+    assert rc.json()['detail'] == 'Pairlist evaluation is currently running.'
+
+    body = {
+        "pairlists": [
+            {"method": "StaticPairList", },
+        ],
+        "blacklist": [
+        ],
+        "stake_currency": "BTC"
+    }
+    # Fail, already running
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc, 400)
+    assert rc.json()['detail'] == 'Pairlist evaluation is already running.'
+
+    # should start the run
+    ApiBG.pairlist_running = False
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert rc.json()['status'] == 'Pairlist evaluation started in background.'
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    assert_response(rc)
+    response = rc.json()
+    assert response['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
+    assert response['length'] == 4
+
+    # Restart with additional filter, reducing the list to 2
+    body['pairlists'].append({"method": "OffsetFilter", "number_assets": 2})
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert rc.json()['status'] == 'Pairlist evaluation started in background.'
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    assert_response(rc)
+    response = rc.json()
+    assert response['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
+    assert response['length'] == 2
 
 
 def test_list_available_pairs(botclient):
