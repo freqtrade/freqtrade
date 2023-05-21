@@ -26,6 +26,7 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
+from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades, get_mock_coro,
                             get_patched_freqtradebot, log_has, log_has_re, patch_get_signal)
 
@@ -1733,7 +1734,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert result['status_msg'] == 'Backtest ended'
 
     # Simulate running backtest
-    ApiServer._bgtask_running = True
+    ApiBG._bgtask_running = True
     rc = client_get(client, f"{BASE_URI}/backtest/abort")
     assert_response(rc)
     result = rc.json()
@@ -1762,7 +1763,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     result = rc.json()
     assert 'Bot Background task already running' in result['error']
 
-    ApiServer._bgtask_running = False
+    ApiBG._bgtask_running = False
 
     # Rerun backtest (should get previous result)
     rc = client_post(client, f"{BASE_URI}/backtest", data=data)
