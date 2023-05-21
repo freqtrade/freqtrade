@@ -329,14 +329,11 @@ def list_pairlists(config=Depends(get_config)):
 
 
 @router.post('/pairlists/test', response_model=WhitelistResponse, tags=['pairlists', 'webserver'])
-def pairlists_test(payload: PairListsPayload, config=Depends(get_config)):
+def pairlists_test(payload: PairListsPayload, config=Depends(get_config), exchange=Depends(get_exchange)):
     from freqtrade.plugins.pairlistmanager import PairListManager
-    from freqtrade.resolvers import ExchangeResolver
 
     config_loc = deepcopy(config)
 
-    exchange = ExchangeResolver.load_exchange(
-        config_loc['exchange']['name'], config_loc, validate=False)
     config_loc['stake_currency'] = payload.stake_currency
     config_loc['pairlists'] = payload.pairlists
 
