@@ -14,3 +14,6 @@ class ApiBG():
     bgtask_running: bool = False
     # Exchange - only available in webserver mode.
     exchange = None
+    # Pairlist evaluate things
+    pairlist_running: bool = False
+    pairlist_result: Dict[str, Any] = {}

@@ -2,10 +2,11 @@ import logging
 from copy import deepcopy
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
+from freqtrade.constants import Config
 from freqtrade.data.history import get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -21,6 +22,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   StatusMsg, StrategyListResponse, StrategyResponse,
                                                   SysInfo, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
+from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
 
 
@@ -313,7 +315,8 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     }
 
 
-@router.get('/pairlists', response_model=PairListsResponse, tags=['pairlists', 'webserver'])
+@router.get('/pairlists/available',
+            response_model=PairListsResponse, tags=['pairlists', 'webserver'])
 def list_pairlists(config=Depends(get_config)):
     from freqtrade.resolvers import PairListResolver
     pairlists = PairListResolver.search_all_objects(
@@ -325,30 +328,54 @@ def list_pairlists(config=Depends(get_config)):
         "is_pairlist_generator": x['class'].is_pairlist_generator,
         "params": x['class'].available_parameters(),
          } for x in pairlists
-        ]}
+    ]}
 
 
-@router.post('/pairlists/test', response_model=WhitelistResponse, tags=['pairlists', 'webserver'])
-def pairlists_test(payload: PairListsPayload, config=Depends(get_config), exchange=Depends(get_exchange)):
-    from freqtrade.plugins.pairlistmanager import PairListManager
+@router.post('/pairlists/evaluate', response_model=StatusMsg, tags=['pairlists'])
+def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTasks,
+                       config=Depends(get_config)):
+    if ApiBG.pairlist_running:
+        raise HTTPException(status_code=400, detail='Pairlist evaluation is already running.')
+
+    def run_pairlist(config_loc: Config):
+        try:
+            from freqtrade.plugins.pairlistmanager import PairListManager
+            config_loc['stake_currency'] = payload.stake_currency
+            config_loc['pairlists'] = payload.pairlists
+
+            # TODO: overwrite blacklist? make it optional and fall back to the one in config?
+            # Outcome depends on the UI approach.
+            config_loc['exchange']['pair_blacklist'] = payload.blacklist
+            exchange = get_exchange(config_loc)
+            pairlists = PairListManager(exchange, config_loc)
+            pairlists.refresh_pairlist()
+            ApiBG.pairlist_result = {
+                    'method': pairlists.name_list,
+                    'length': len(pairlists.whitelist),
+                    'whitelist': pairlists.whitelist
+                }
+
+        finally:
+            ApiBG.pairlist_running = False
 
     config_loc = deepcopy(config)
 
-    config_loc['stake_currency'] = payload.stake_currency
-    config_loc['pairlists'] = payload.pairlists
-
-    # TODO: overwrite blacklist? make it optional and fall back to the one in config?
-    # Outcome depends on the UI approach.
-    config_loc['exchange']['pair_blacklist'] = payload.blacklist
-    pairlists = PairListManager(exchange, config_loc)
-    pairlists.refresh_pairlist()
-
-    res = {
-        'method': pairlists.name_list,
-        'length': len(pairlists.whitelist),
-        'whitelist': pairlists.whitelist
+    background_tasks.add_task(run_pairlist, config_loc)
+    ApiBG.pairlist_running = True
+    return {
+        'status': 'Pairlist evaluation started in background.'
     }
-    return res
+
+
+@router.get('/pairlists/evaluate', response_model=WhitelistResponse, tags=['pairlists'])
+def pairlists_evaluate_get():
+    if ApiBG.pairlist_running:
+        raise HTTPException(status_code=400, detail='Pairlist evaluation is already running.')
+
+    if not ApiBG.pairlist_result:
+        raise HTTPException(status_code=400, detail='Pairlist not started yet.')
+
+    return ApiBG.pairlist_result
 
 
 @router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])
