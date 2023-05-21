@@ -1616,11 +1616,11 @@ def test_api_freqaimodels(botclient, tmpdir, mocker):
     ]}
 
 
-def test_api_pairlists(botclient, tmpdir, mocker):
+def test_api_available_pairlists(botclient, tmpdir):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
 
-    rc = client_get(client, f"{BASE_URI}/pairlists")
+    rc = client_get(client, f"{BASE_URI}/pairlists/available")
 
     assert_response(rc)
     response = rc.json()
