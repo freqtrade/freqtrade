@@ -44,11 +44,11 @@ def get_api_config() -> Dict[str, Any]:
 
 
 def get_exchange(config=Depends(get_config)):
-    if not ApiBG._exchange:
+    if not ApiBG.exchange:
         from freqtrade.resolvers import ExchangeResolver
-        ApiBG._exchange = ExchangeResolver.load_exchange(
+        ApiBG.exchange = ExchangeResolver.load_exchange(
             config, load_leverage_tiers=False)
-    return ApiBG._exchange
+    return ApiBG.exchange
 
 
 def get_message_stream():
