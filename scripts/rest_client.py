@@ -94,7 +94,7 @@ class FtRestClient():
     def reload_config(self):
         """Reload configuration.
 
-        :return: json object
+        :return: json objectnxcnn nm mnxzcmnm
         """
         return self._post("reload_config")
 

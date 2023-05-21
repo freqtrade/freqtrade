@@ -107,10 +107,10 @@ Strategy arguments:
 
 ## Test your strategy with Backtesting
 
-Now you have good Entry and exit strategies and some historic data, you want to test it against
+Now you have well Entry and exit strategies and some historic data, you want to test it against
 real data. This is what we call [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
-Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHLCV) data from `user_data/data/<exchange>` by default.
+Backtesting will use the crypto-currencie (pairs) from your config files and load historical candle (OHLCV) data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
@@ -138,7 +138,7 @@ This amount must be higher than `stake_amount`, otherwise the bot will not be ab
 ### Dynamic stake amount
 
 Backtesting supports [dynamic stake amount](configuration.md#dynamic-stake-amount) by configuring `stake_amount` as `"unlimited"`, which will split the starting balance into `max_open_trades` pieces.
-Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period.
+Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period. thats is good for it.
 
 ### Example backtesting commands
 
