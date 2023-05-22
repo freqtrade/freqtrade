@@ -3,16 +3,14 @@ import json
 import logging
 import re
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
-import arrow
 import numpy as np
 import pandas as pd
 import pytest
-from telegram import Chat, Message, Update
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
@@ -24,6 +22,8 @@ from freqtrade.exchange.exchange import timeframe_to_minutes
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.util import dt_ts
+from freqtrade.util.datetime_helpers import dt_now
 from freqtrade.worker import Worker
 from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
                                    mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
@@ -40,6 +40,7 @@ np.seterr(all='raise')
 
 CURRENT_TEST_STRATEGY = 'StrategyTestV3'
 TRADE_SIDES = ('long', 'short')
+EXMS = 'freqtrade.exchange.exchange.Exchange'
 
 
 def pytest_addoption(parser):
@@ -145,22 +146,21 @@ def patch_exchange(
     mock_markets=True,
     mock_supported_modes=True
 ) -> None:
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+    mocker.patch(f'{EXMS}._load_async_markets', return_value={})
+    mocker.patch(f'{EXMS}.validate_config', MagicMock())
+    mocker.patch(f'{EXMS}.validate_timeframes', MagicMock())
+    mocker.patch(f'{EXMS}.id', PropertyMock(return_value=id))
+    mocker.patch(f'{EXMS}.name', PropertyMock(return_value=id.title()))
+    mocker.patch(f'{EXMS}.precisionMode', PropertyMock(return_value=2))
 
     if mock_markets:
         if isinstance(mock_markets, bool):
             mock_markets = get_markets()
-        mocker.patch('freqtrade.exchange.Exchange.markets',
-                     PropertyMock(return_value=mock_markets))
+        mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=mock_markets))
 
     if mock_supported_modes:
         mocker.patch(
-            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_margin_pairs',
+            f'freqtrade.exchange.{id}.{id.capitalize()}._supported_trading_mode_margin_pairs',
             PropertyMock(return_value=[
                 (TradingMode.MARGIN, MarginMode.CROSS),
                 (TradingMode.MARGIN, MarginMode.ISOLATED),
@@ -170,10 +170,10 @@ def patch_exchange(
         )
 
     if api_mock:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+        mocker.patch(f'{EXMS}._init_ccxt', return_value=api_mock)
     else:
-        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
-        mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+        mocker.patch(f'{EXMS}._init_ccxt', MagicMock())
+        mocker.patch(f'{EXMS}.timeframes', PropertyMock(
                 return_value=['5m', '15m', '1h', '1d']))
 
 
@@ -182,7 +182,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='binance',
     patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
     config['exchange']['name'] = id
     try:
-        exchange = ExchangeResolver.load_exchange(id, config, load_leverage_tiers=True)
+        exchange = ExchangeResolver.load_exchange(config, load_leverage_tiers=True)
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -241,7 +241,6 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
-    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 
@@ -300,7 +299,7 @@ def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = Tru
     """
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
     is_short1 = is_short if is_short is not None else True
@@ -333,11 +332,11 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     Create some fake trades ...
     """
     if use_db:
-        Trade.query.session.rollback()
+        Trade.session.rollback()
 
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
@@ -367,7 +366,7 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     add_trade(trade)
 
     if use_db:
-        Trade.query.session.flush()
+        Trade.session.flush()
 
 
 def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool = True):
@@ -376,7 +375,7 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
     """
     def add_trade(trade):
         if use_db:
-            Trade.query.session.add(trade)
+            Trade.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
@@ -411,6 +410,14 @@ def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool 
 @pytest.fixture(autouse=True)
 def patch_gc(mocker) -> None:
     mocker.patch("freqtrade.main.gc_set_threshold")
+
+
+@pytest.fixture(autouse=True)
+def user_dir(mocker, tmpdir) -> Path:
+    user_dir = Path(tmpdir) / "user_data"
+    mocker.patch('freqtrade.configuration.configuration.create_userdata_dir',
+                 return_value=user_dir)
+    return user_dir
 
 
 @pytest.fixture(autouse=True)
@@ -487,7 +494,6 @@ def get_default_conf(testdatadir):
         },
         "exchange": {
             "name": "binance",
-            "enabled": True,
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
@@ -505,12 +511,12 @@ def get_default_conf(testdatadir):
             {"method": "StaticPairList"}
         ],
         "telegram": {
-            "enabled": True,
+            "enabled": False,
             "token": "token",
             "chat_id": "0",
             "notification_settings": {},
         },
-        "datadir": str(testdatadir),
+        "datadir": Path(testdatadir),
         "initial_state": "running",
         "db_url": "sqlite://",
         "user_data_dir": Path("user_data"),
@@ -549,13 +555,6 @@ def get_default_conf_usdt(testdatadir):
         },
     })
     return configuration
-
-
-@pytest.fixture
-def update():
-    _update = Update(0)
-    _update.message = Message(0, datetime.utcnow(), Chat(0, 0))
-    return _update
 
 
 @pytest.fixture
@@ -1665,8 +1664,8 @@ def limit_buy_order_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 0.00001099,
         'average': 0.00001099,
         'amount': 90.99181073,
@@ -1693,8 +1692,8 @@ def limit_buy_order_old():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -1710,8 +1709,8 @@ def limit_sell_order_old():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'ETH/BTC',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -1727,8 +1726,8 @@ def limit_buy_order_old_partial():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'ETH/BTC',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 23.0,
@@ -1758,8 +1757,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': 'AZNPFF-4AC4N-7MKTAT',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'status': 'canceled',
             'symbol': 'LTC/USDT',
@@ -1779,8 +1778,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1800,8 +1799,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1825,8 +1824,8 @@ def limit_sell_order_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 0.00001173,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -2488,8 +2487,8 @@ def buy_order_fee():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.245441,
         'amount': 8.0,
         'cost': 1.963528,
@@ -2574,7 +2573,7 @@ def import_fails() -> None:
     realimport = builtins.__import__
 
     def mockedimport(name, *args, **kwargs):
-        if name in ["filelock", 'systemd.journal', 'uvloop']:
+        if name in ["filelock", 'cysystemd.journal', 'uvloop']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
 
@@ -2598,7 +2597,7 @@ def open_trade():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
@@ -2636,7 +2635,7 @@ def open_trade_usdt():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=60.0,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
@@ -2840,8 +2839,8 @@ def limit_buy_order_usdt_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 2.00,
         'average': 2.00,
         'amount': 30.0,
@@ -2868,8 +2867,8 @@ def limit_sell_order_usdt_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 2.20,
         'amount': 30.0,
         'cost': 66.0,
@@ -2895,8 +2894,8 @@ def market_buy_order_usdt():
         'type': 'market',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 2.00,
         'amount': 30.0,
         'filled': 30.0,
@@ -2952,8 +2951,8 @@ def market_sell_order_usdt():
         'type': 'market',
         'side': 'sell',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 2.20,
         'amount': 30.0,
         'filled': 30.0,
@@ -3109,7 +3108,7 @@ def funding_rate_history_octohourly():
 @pytest.fixture(scope='function')
 def leverage_tiers():
     return {
-        "1000SHIB/USDT": [
+        "1000SHIB/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,
@@ -3160,7 +3159,7 @@ def leverage_tiers():
                 'maintAmt': 654500.0
             },
         ],
-        "1INCH/USDT": [
+        "1INCH/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3204,7 +3203,7 @@ def leverage_tiers():
                 'maintAmt': 386940.0
             },
         ],
-        "AAVE/USDT": [
+        "AAVE/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 5000,
@@ -3248,7 +3247,7 @@ def leverage_tiers():
                 'maintAmt': 386950.0
             },
         ],
-        "ADA/BUSD": [
+        "ADA/BUSD:BUSD": [
             {
                 "minNotional": 0,
                 "maxNotional": 100000,
@@ -3292,7 +3291,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             },
         ],
-        'BNB/BUSD': [
+        'BNB/BUSD:BUSD': [
             {
                 "minNotional": 0,       # stake(before leverage) = 0
                 "maxNotional": 100000,  # max stake(before leverage) = 5000
@@ -3336,7 +3335,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             }
         ],
-        'BNB/USDT': [
+        'BNB/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 10000,  # max_stake = 133.33333333333334
@@ -3401,7 +3400,7 @@ def leverage_tiers():
                 "maintAmt": 6233035.0
             },
         ],
-        'BTC/USDT': [
+        'BTC/USDT:USDT': [
             {
                 "minNotional": 0,      # stake = 0.0
                 "maxNotional": 50000,  # max_stake = 400.0
@@ -3473,7 +3472,7 @@ def leverage_tiers():
                 "maintAmt": 1.997038E8
             },
         ],
-        "ZEC/USDT": [
+        "ZEC/USDT:USDT": [
             {
                 'minNotional': 0,
                 'maxNotional': 50000,

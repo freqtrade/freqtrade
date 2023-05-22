@@ -3,11 +3,9 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Union
-from typing.io import IO
+from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -48,18 +46,6 @@ def round_coin_value(
     return val
 
 
-def shorten_date(_date: str) -> str:
-    """
-    Trim the date so it fits on small screens
-    """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
-    return new_date
-
-
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
     """
     Dump JSON data into a file
@@ -80,7 +66,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
     else:
         if log:
             logger.info(f'dumping json to "{filename}"')
-        with open(filename, 'w') as fp:
+        with filename.open('w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
@@ -97,12 +83,12 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
 
     if log:
         logger.info(f'dumping joblib to "{filename}"')
-    with open(filename, 'wb') as fp:
+    with filename.open('wb') as fp:
         joblib.dump(data, fp)
     logger.debug(f'done joblib dump to "{filename}"')
 
 
-def json_load(datafile: IO) -> Any:
+def json_load(datafile: Union[gzip.GzipFile, TextIO]) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -111,7 +97,7 @@ def json_load(datafile: IO) -> Any:
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
 
-def file_load_json(file):
+def file_load_json(file: Path):
 
     if file.suffix != ".gz":
         gzipfile = file.with_suffix(file.suffix + '.gz')
@@ -124,7 +110,7 @@ def file_load_json(file):
             pairdata = json_load(datafile)
     elif file.is_file():
         logger.debug(f"Loading historical data from file {file}")
-        with open(file) as datafile:
+        with file.open() as datafile:
             pairdata = json_load(datafile)
     else:
         return None
@@ -204,7 +190,7 @@ def safe_value_fallback2(dict1: dictMap, dict2: dictMap, key1: str, key2: str, d
     return default_value
 
 
-def plural(num: float, singular: str, plural: str = None) -> str:
+def plural(num: float, singular: str, plural: Optional[str] = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + 's'
 
 

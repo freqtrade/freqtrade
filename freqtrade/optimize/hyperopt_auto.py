@@ -91,5 +91,8 @@ class HyperOptAuto(IHyperOpt):
     def trailing_space(self) -> List['Dimension']:
         return self._get_func('trailing_space')()
 
+    def max_open_trades_space(self) -> List['Dimension']:
+        return self._get_func('max_open_trades_space')()
+
     def generate_estimator(self, dimensions: List['Dimension'], **kwargs) -> EstimatorType:
         return self._get_func('generate_estimator')(dimensions=dimensions, **kwargs)

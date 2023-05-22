@@ -5,13 +5,14 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
 
 from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
                             file_load_json, format_ms_time, json_to_dataframe, pair_to_filename,
                             parse_db_uri_for_logging, plural, render_template,
                             render_template_with_fallback, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2, shorten_date)
+                            safe_value_fallback2)
 
 
 def test_decimals_per_coin():
@@ -38,14 +39,8 @@ def test_round_coin_value():
     assert round_coin_value(222.2, 'USDT', False, True) == '222.200'
 
 
-def test_shorten_date() -> None:
-    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
-    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
-    assert shorten_date(str_data) == str_shorten_data
-
-
 def test_file_dump_json(mocker) -> None:
-    file_open = mocker.patch('freqtrade.misc.open', MagicMock())
+    file_open = mocker.patch('freqtrade.misc.Path.open', MagicMock())
     json_dump = mocker.patch('rapidjson.dump', MagicMock())
     file_dump_json(Path('somefile'), [1, 2, 3])
     assert file_open.call_count == 1
@@ -231,3 +226,7 @@ def test_dataframe_json(ohlcv_history):
     assert len(ohlcv_history) == len(dataframe)
 
     assert_frame_equal(ohlcv_history, dataframe)
+    ohlcv_history.at[1, 'date'] = pd.NaT
+    json = dataframe_to_json(ohlcv_history)
+
+    dataframe = json_to_dataframe(json)

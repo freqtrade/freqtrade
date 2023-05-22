@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-import arrow
 import pytest
 
 from freqtrade.persistence import PairLocks
 from freqtrade.persistence.models import PairLock
+from freqtrade.util import dt_now
 
 
 @pytest.mark.parametrize('use_db', (False, True))
@@ -14,26 +14,26 @@ def test_PairLocks(use_db):
     PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
     pair = 'ETH/BTC'
     assert not PairLocks.is_pair_locked(pair)
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=4))
     # ETH/BTC locked for 4 minutes (on both sides)
     assert PairLocks.is_pair_locked(pair)
     assert PairLocks.is_pair_locked(pair, side='long')
     assert PairLocks.is_pair_locked(pair, side='short')
 
     pair = 'BNB/BTC'
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime, side='long')
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=4), side='long')
     assert not PairLocks.is_pair_locked(pair)
     assert PairLocks.is_pair_locked(pair, side='long')
     assert not PairLocks.is_pair_locked(pair, side='short')
 
     pair = 'BNB/USDT'
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime, side='short')
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=4), side='short')
     assert not PairLocks.is_pair_locked(pair)
     assert not PairLocks.is_pair_locked(pair, side='long')
     assert PairLocks.is_pair_locked(pair, side='short')
@@ -44,7 +44,7 @@ def test_PairLocks(use_db):
     # Unlocking a pair that's not locked should not raise an error
     PairLocks.unlock_pair(pair)
 
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=4))
     assert PairLocks.is_pair_locked(pair)
 
     # Get both locks from above
@@ -88,13 +88,13 @@ def test_PairLocks(use_db):
 
     if use_db:
         locks = PairLocks.get_all_locks()
-        locks_db = PairLock.query.all()
+        locks_db = PairLock.get_all_locks().all()
         assert len(locks) == len(locks_db)
         assert len(locks_db) > 0
     else:
         # Nothing was pushed to the database
         assert len(PairLocks.get_all_locks()) > 0
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
     # Reset use-db variable
     PairLocks.reset_locks()
     PairLocks.use_db = True
@@ -107,26 +107,26 @@ def test_PairLocks_getlongestlock(use_db):
     # No lock should be present
     PairLocks.use_db = use_db
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
     pair = 'ETH/BTC'
     assert not PairLocks.is_pair_locked(pair)
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=4))
     # ETH/BTC locked for 4 minutes
     assert PairLocks.is_pair_locked(pair)
     lock = PairLocks.get_pair_longest_lock(pair)
 
-    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=3)
-    assert lock.lock_end_time.replace(tzinfo=timezone.utc) < arrow.utcnow().shift(minutes=14)
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > dt_now() + timedelta(minutes=3)
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) < dt_now() + timedelta(minutes=14)
 
-    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=15).datetime)
+    PairLocks.lock_pair(pair, dt_now() + timedelta(minutes=15))
     assert PairLocks.is_pair_locked(pair)
 
     lock = PairLocks.get_pair_longest_lock(pair)
     # Must be longer than above
-    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=14)
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > dt_now() + timedelta(minutes=14)
 
     PairLocks.reset_locks()
     PairLocks.use_db = True
@@ -139,12 +139,12 @@ def test_PairLocks_reason(use_db):
     PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
-        assert len(PairLock.query.all()) == 0
+        assert len(PairLock.get_all_locks().all()) == 0
 
     assert PairLocks.use_db == use_db
 
-    PairLocks.lock_pair('XRP/USDT', arrow.utcnow().shift(minutes=4).datetime, 'TestLock1')
-    PairLocks.lock_pair('ETH/USDT', arrow.utcnow().shift(minutes=4).datetime, 'TestLock2')
+    PairLocks.lock_pair('XRP/USDT', dt_now() + timedelta(minutes=4), 'TestLock1')
+    PairLocks.lock_pair('ETH/USDT', dt_now() + timedelta(minutes=4), 'TestLock2')
 
     assert PairLocks.is_pair_locked('XRP/USDT')
     assert PairLocks.is_pair_locked('ETH/USDT')

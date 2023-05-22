@@ -9,7 +9,7 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame, to_timedelta
+from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
@@ -18,8 +18,10 @@ from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.exchange.types import OrderBook
 from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
+from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg
 from freqtrade.util import PeriodicCache
 
 
@@ -117,8 +119,7 @@ class DataProvider:
         :param new_candle: This is a new candle
         """
         if self.__rpc:
-            self.__rpc.send_msg(
-                {
+            msg: RPCAnalyzedDFMsg = {
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
@@ -126,7 +127,7 @@ class DataProvider:
                         'la': datetime.now(timezone.utc)
                     }
                 }
-            )
+            self.__rpc.send_msg(msg)
             if new_candle:
                 self.__rpc.send_msg({
                         'type': RPCMessageType.NEW_CANDLE,
@@ -206,9 +207,11 @@ class DataProvider:
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
 
         # CHECK FOR MISSING CANDLES
-        timeframe_delta = to_timedelta(timeframe)  # Convert the timeframe to a timedelta for pandas
-        local_last = existing_df.iloc[-1]['date']  # We want the last date from our copy
-        incoming_first = dataframe.iloc[0]['date']  # We want the first date from the incoming
+        # Convert the timeframe to a timedelta for pandas
+        timeframe_delta: Timedelta = to_timedelta(timeframe)
+        local_last: Timestamp = existing_df.iloc[-1]['date']  # We want the last date from our copy
+        # We want the first date from the incoming
+        incoming_first: Timestamp = dataframe.iloc[0]['date']
 
         # Remove existing candles that are newer than the incoming first candle
         existing_df1 = existing_df[existing_df['date'] < incoming_first]
@@ -221,7 +224,7 @@ class DataProvider:
         # we missed some candles between our data and the incoming
         # so return False and candle_difference.
         if candle_difference > 1:
-            return (False, candle_difference)
+            return (False, int(candle_difference))
         if existing_df1.empty:
             appended_df = dataframe
         else:
@@ -281,7 +284,7 @@ class DataProvider:
     def historic_ohlcv(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -333,7 +336,7 @@ class DataProvider:
     def get_pair_dataframe(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -415,16 +418,14 @@ class DataProvider:
 
     def refresh(self,
                 pairlist: ListPairsWithTimeframes,
-                helping_pairs: ListPairsWithTimeframes = None) -> None:
+                helping_pairs: Optional[ListPairsWithTimeframes] = None) -> None:
         """
         Refresh data, called with each cycle
         """
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
-        if helping_pairs:
-            self._exchange.refresh_latest_ohlcv(pairlist + helping_pairs)
-        else:
-            self._exchange.refresh_latest_ohlcv(pairlist)
+        final_pairs = (pairlist + helping_pairs) if helping_pairs else pairlist
+        self._exchange.refresh_latest_ohlcv(final_pairs)
 
     @property
     def available_pairs(self) -> ListPairsWithTimeframes:
@@ -439,7 +440,7 @@ class DataProvider:
     def ohlcv(
         self,
         pair: str,
-        timeframe: str = None,
+        timeframe: Optional[str] = None,
         copy: bool = True,
         candle_type: str = ''
     ) -> DataFrame:
@@ -487,7 +488,7 @@ class DataProvider:
         except ExchangeError:
             return {}
 
-    def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:
+    def orderbook(self, pair: str, maximum: int) -> OrderBook:
         """
         Fetch latest l2 orderbook data
         Warning: Does a network request - so use with common sense.

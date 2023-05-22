@@ -43,7 +43,7 @@ class AwesomeStrategy(IStrategy):
         if self.config['runmode'].value in ('live', 'dry_run'):
             # Assign this to the class by using self.*
             # can then be used by populate_* methods
-            self.cust_remote_data = requests.get('https://some_remote_source.example.com')
+            self.custom_remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
 
@@ -51,7 +51,8 @@ During hyperopt, this runs only once at startup.
 
 ## Bot loop start
 
-A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
+A simple callback which is called once at the start of every bot throttling iteration in dry/live mode (roughly every 5
+seconds, unless configured differently) or once per candle in backtest/hyperopt mode.
 This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
 
 ``` python
@@ -61,11 +62,12 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def bot_loop_start(self, **kwargs) -> None:
+    def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
         (e.g. gather some remote resource for comparison)
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         if self.config['runmode'].value in ('live', 'dry_run'):
@@ -316,11 +318,11 @@ class AwesomeStrategy(IStrategy):
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
-            return stoploss_from_open(0.25, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.25, current_profit, is_short=trade.is_short, leverage=trade.leverage)
         elif current_profit > 0.25:
-            return stoploss_from_open(0.15, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.15, current_profit, is_short=trade.is_short, leverage=trade.leverage)
         elif current_profit > 0.20:
-            return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
+            return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
 
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
@@ -350,7 +352,7 @@ class AwesomeStrategy(IStrategy):
 
         # Convert absolute price to percentage relative to current_rate
         if stoploss_price < current_rate:
-            return (stoploss_price / current_rate) - 1
+            return stoploss_from_absolute(stoploss_price, current_rate, is_short=trade.is_short)
 
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
@@ -659,6 +661,7 @@ Position adjustments will always be applied in the direction of the trade, so a 
 
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
+    This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.
 
 ``` python
 from freqtrade.persistence import Trade
@@ -827,7 +830,7 @@ class AwesomeStrategy(IStrategy):
 
         """
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
-        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10)) > trade.open_date_utc:
             # just cancel the order if it has been filled more than half of the amount
             if order.filled > order.remaining:
                 return None

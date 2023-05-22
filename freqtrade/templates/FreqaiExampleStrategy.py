@@ -1,5 +1,6 @@
 import logging
 from functools import reduce
+from typing import Dict
 
 import talib.abstract as ta
 from pandas import DataFrame
@@ -14,12 +15,15 @@ logger = logging.getLogger(__name__)
 class FreqaiExampleStrategy(IStrategy):
     """
     Example strategy showing how the user connects their own
-    IFreqaiModel to the strategy. Namely, the user uses:
-    self.freqai.start(dataframe, metadata)
+    IFreqaiModel to the strategy.
 
-    to make predictions on their data. feature_engineering_*() automatically
-    generate the variety of features indicated by the user in the
-    canonical freqtrade configuration file under config['freqai'].
+    Warning! This is a showcase of functionality,
+    which means that it is designed to show various functions of FreqAI
+    and it runs on all computers. We use this showcase to help users
+    understand how to build a strategy, and we use it as a benchmark
+    to help debug possible problems.
+
+    This means this is *not* meant to be run live in production.
     """
 
     minimal_roi = {"0": 0.1, "240": -1}
@@ -46,7 +50,8 @@ class FreqaiExampleStrategy(IStrategy):
     std_dev_multiplier_sell = CategoricalParameter(
         [0.75, 1, 1.25, 1.5, 1.75], space="sell", default=1.25, optimize=True)
 
-    def feature_engineering_expand_all(self, dataframe, period, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
+                                       metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -58,6 +63,10 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair/timeframe with:
+
+        `metadata["pair"]` `metadata["tf"]`
+
         More details on how these config defined parameters accelerate feature engineering
         in the documentation at:
 
@@ -65,8 +74,9 @@ class FreqaiExampleStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
 
@@ -99,7 +109,8 @@ class FreqaiExampleStrategy(IStrategy):
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe, **kwargs):
+    def feature_engineering_expand_basic(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -114,6 +125,10 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair/timeframe with:
+
+        `metadata["pair"]` `metadata["tf"]`
+
         More details on how these config defined parameters accelerate feature engineering
         in the documentation at:
 
@@ -121,7 +136,8 @@ class FreqaiExampleStrategy(IStrategy):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
@@ -130,7 +146,8 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["%-raw_price"] = dataframe["close"]
         return dataframe
 
-    def feature_engineering_standard(self, dataframe, **kwargs):
+    def feature_engineering_standard(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -144,28 +161,38 @@ class FreqaiExampleStrategy(IStrategy):
 
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
+
         More details about feature engineering available:
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
         All targets must be prepended with `&` to be recognized by the FreqAI internals.
 
+        Access metadata such as the current pair with:
+
+        `metadata["pair"]`
+
         More details about feature engineering available:
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the targets
+        :param dataframe: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         dataframe["&-s_close"] = (

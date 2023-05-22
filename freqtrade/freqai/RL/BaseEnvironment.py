@@ -4,11 +4,11 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Optional, Type, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pandas as pd
-from gym import spaces
-from gym.utils import seeding
+from gymnasium import spaces
+from gymnasium.utils import seeding
 from pandas import DataFrame
 
 
@@ -45,7 +45,8 @@ class BaseEnvironment(gym.Env):
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
-                 fee: float = 0.0015, can_short: bool = False):
+                 fee: float = 0.0015, can_short: bool = False, pair: str = "",
+                 df_raw: DataFrame = DataFrame()):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -60,12 +61,14 @@ class BaseEnvironment(gym.Env):
         :param fee: The fee to use for environmental interactions.
         :param can_short: Whether or not the environment can short
         """
-        self.config = config
-        self.rl_config = config['freqai']['rl_config']
-        self.add_state_info = self.rl_config.get('add_state_info', False)
-        self.id = id
-        self.max_drawdown = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
-        self.compound_trades = config['stake_amount'] == 'unlimited'
+        self.config: dict = config
+        self.rl_config: dict = config['freqai']['rl_config']
+        self.add_state_info: bool = self.rl_config.get('add_state_info', False)
+        self.id: str = id
+        self.max_drawdown: float = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
+        self.compound_trades: bool = config['stake_amount'] == 'unlimited'
+        self.pair: str = pair
+        self.raw_features: DataFrame = df_raw
         if self.config.get('fee', None) is not None:
             self.fee = self.config['fee']
         else:
@@ -74,8 +77,8 @@ class BaseEnvironment(gym.Env):
         # set here to default 5Ac, but all children envs can override this
         self.actions: Type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
-        self.can_short = can_short
-        self.live = live
+        self.can_short: bool = can_short
+        self.live: bool = live
         if not self.live and self.add_state_info:
             self.add_state_info = False
             logger.warning("add_state_info is not available in backtesting. Deactivating.")
@@ -93,13 +96,12 @@ class BaseEnvironment(gym.Env):
         :param reward_kwargs: extra config settings assigned by user in `rl_config`
         :param starting_point: start at edge of window or not
         """
-        self.df = df
-        self.signal_features = self.df
-        self.prices = prices
-        self.window_size = window_size
-        self.starting_point = starting_point
-        self.rr = reward_kwargs["rr"]
-        self.profit_aim = reward_kwargs["profit_aim"]
+        self.signal_features: DataFrame = df
+        self.prices: DataFrame = prices
+        self.window_size: int = window_size
+        self.starting_point: bool = starting_point
+        self.rr: float = reward_kwargs["rr"]
+        self.profit_aim: float = reward_kwargs["profit_aim"]
 
         # # spaces
         if self.add_state_info:
@@ -125,6 +127,14 @@ class BaseEnvironment(gym.Env):
         self.history: dict = {}
         self.trade_history: list = []
 
+    def get_attr(self, attr: str):
+        """
+        Returns the attribute of the environment
+        :param attr: attribute to return
+        :return: attribute
+        """
+        return getattr(self, attr)
+
     @abstractmethod
     def set_action_space(self):
         """
@@ -135,7 +145,8 @@ class BaseEnvironment(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def tensorboard_log(self, metric: str, value: Union[int, float] = 1, inc: bool = True):
+    def tensorboard_log(self, metric: str, value: Optional[Union[int, float]] = None,
+                        inc: Optional[bool] = None, category: str = "custom"):
         """
         Function builds the tensorboard_metrics dictionary
         to be parsed by the TensorboardCallback. This
@@ -147,17 +158,24 @@ class BaseEnvironment(gym.Env):
 
         def calculate_reward(self, action: int) -> float:
             if not self._is_valid(action):
-                self.tensorboard_log("is_valid")
+                self.tensorboard_log("invalid")
                 return -2
 
         :param metric: metric to be tracked and incremented
-        :param value: value to increment `metric` by
-        :param inc: sets whether the `value` is incremented or not
+        :param value: `metric` value
+        :param inc: (deprecated) sets whether the `value` is incremented or not
+        :param category: `metric` category
         """
-        if not inc or metric not in self.tensorboard_metrics:
-            self.tensorboard_metrics[metric] = value
+        increment = True if value is None else False
+        value = 1 if increment else value
+
+        if category not in self.tensorboard_metrics:
+            self.tensorboard_metrics[category] = {}
+
+        if not increment or metric not in self.tensorboard_metrics[category]:
+            self.tensorboard_metrics[category][metric] = value
         else:
-            self.tensorboard_metrics[metric] += value
+            self.tensorboard_metrics[category][metric] += value
 
     def reset_tensorboard_log(self):
         self.tensorboard_metrics = {}
@@ -193,7 +211,7 @@ class BaseEnvironment(gym.Env):
         self.close_trade_profit = []
         self._total_unrealized_profit = 1
 
-        return self._get_observation()
+        return self._get_observation(), self.history
 
     @abstractmethod
     def step(self, action: int):
@@ -288,6 +306,12 @@ class BaseEnvironment(gym.Env):
         """
         An example reward function. This is the one function that users will likely
         wish to inject their own creativity into.
+
+        Warning!
+        This is function is a showcase of functionality designed to show as many possible
+        environment control features as possible. It is also designed to run quickly
+        on small computers. This is a benchmark, it is *not* for live production.
+
         :param action: int = The action made by the agent for the current candle.
         :return:
         float = the reward to give to the agent for current step (used for optimization

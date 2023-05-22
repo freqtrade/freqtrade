@@ -14,17 +14,18 @@ on:
     - cron:  '0 5 * * 4'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
-
+permissions:
+  repository-projects: read
 jobs:
   build_linux:
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
-        python-version: ["3.8", "3.9", "3.10"]
+        os: [ ubuntu-20.04, ubuntu-22.04 ]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -76,6 +77,17 @@ jobs:
         # Allow failure for coveralls
         coveralls || true
 
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
     - name: Backtesting (multi)
       run: |
         cp config_examples/config_bittrex.example.json config.json
@@ -90,13 +102,13 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -115,7 +127,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -173,6 +185,17 @@ jobs:
       run: |
         pytest --random-order
 
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
     - name: Backtesting
       run: |
         cp config_examples/config_bittrex.example.json config.json
@@ -186,13 +209,13 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
-      run: |
-        flake8
-
     - name: Sort imports (isort)
       run: |
         isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -212,7 +235,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -236,6 +259,18 @@ jobs:
       run: |
         pytest --random-order
 
+    - name: Check for repository changes
+      run: |
+        if (git status --porcelain) {
+          Write-Host "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        }
+        else {
+          Write-Host "Repository is clean, no changes detected."
+        }
+
     - name: Backtesting
       run: |
         cp config_examples/config_bittrex.example.json config.json
@@ -248,9 +283,9 @@ jobs:
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
-    - name: Flake8
+    - name: Run Ruff
       run: |
-        flake8
+        ruff check --format=github .
 
     - name: Mypy
       run: |
@@ -301,7 +336,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: "3.11"
 
     - name: Documentation build
       run: |
@@ -321,7 +356,6 @@ jobs:
   build_linux_online:
     # Run pytest with "live" checks
     runs-on: ubuntu-22.04
-    # permissions:
     steps:
     - uses: actions/checkout@v3
 
@@ -360,6 +394,8 @@ jobs:
         pip install -e .
 
     - name: Tests incl. ccxt compatibility tests
+      env:
+        CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
 
@@ -423,7 +459,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.6.4
+      uses: pypa/gh-action-pypi-publish@v1.8.6
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -431,7 +467,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.6.4
+      uses: pypa/gh-action-pypi-publish@v1.8.6
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -464,12 +500,13 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_multi.sh
 
   deploy_arm:
+    permissions:
+      packages: write
     needs: [ deploy ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
@@ -492,8 +529,9 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        IMAGE_NAME: freqtradeorg/freqtrade
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        GHCR_USERNAME: ${{ github.actor }}
+        GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         build_helpers/publish_docker_arm64.sh
 

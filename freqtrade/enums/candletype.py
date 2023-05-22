@@ -13,6 +13,9 @@ class CandleType(str, Enum):
     FUNDING_RATE = "funding_rate"
     # BORROW_RATE = "borrow_rate"  # * unimplemented
 
+    def __str__(self):
+        return f"{self.name.lower()}"
+
     @staticmethod
     def from_string(value: str) -> 'CandleType':
         if not value:

@@ -2,7 +2,7 @@
 
 ## Supported Markets
 
-Freqtrade supports spot trading only.
+Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
 
 ### Can my bot open short positions?
 
@@ -142,6 +142,13 @@ To fix this, redefine order types in the strategy to use "limit" instead of "mar
 
 The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.
 
+### I'm trying to start the bot live, but get an API permission error
+
+Errors like `Invalid API-key, IP, or permissions for action` mean exactly what they actually say.
+Your API key is either invalid (copy/paste error? check for leading/trailing spaces in the config), expired, or the IP you're running the bot from is not enabled in the Exchange's API console.
+Usually, the permission "Spot Trading" (or the equivalent in the exchange you use) will be necessary.
+Futures will usually have to be enabled specifically.
+
 ### How do I search the bot logs for something?
 
 By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility sub-commands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.
@@ -248,8 +255,26 @@ The Edge module is mostly a result of brainstorming of [@mishaker](https://githu
 You can find further info on expectancy, win rate, risk management and position size in the following sources:
 
 - https://www.tradeciety.com/ultimate-math-guide-for-traders/
-- http://www.vantharp.com/tharp-concepts/expectancy.asp
 - https://samuraitradingacademy.com/trading-expectancy/
 - https://www.learningmarkets.com/determining-expectancy-in-your-trading/
-- http://www.lonestocktrader.com/make-money-trading-positive-expectancy/
+- https://www.lonestocktrader.com/make-money-trading-positive-expectancy/
 - https://www.babypips.com/trading/trade-expectancy-matter
+
+## Official channels
+
+Freqtrade is using exclusively the following official channels:
+
+* [Freqtrade discord server](https://discord.gg/p7nuUNVfP7)
+* [Freqtrade documentation (https://freqtrade.io)](https://freqtrade.io)
+* [Freqtrade github organization](https://github.com/freqtrade)
+
+Nobody affiliated with the freqtrade project will ask you about your exchange keys or anything else exposing your funds to exploitation.
+Should you be asked to expose your exchange keys or send funds to some random wallet, then please don't follow these instructions.
+
+Failing to follow these guidelines will not be responsibility of freqtrade.
+
+## "Freqtrade token"
+
+Freqtrade does not have a Crypto token offering.
+
+Token offerings you find on the internet referring Freqtrade, FreqAI or freqUI must be considered to be a scam, trying to exploit freqtrade's popularity for their own, nefarious gains.

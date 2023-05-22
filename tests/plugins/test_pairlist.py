@@ -18,8 +18,8 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import (create_mock_trades_usdt, get_patched_exchange, get_patched_freqtradebot,
-                            log_has, log_has_re, num_log_has)
+from tests.conftest import (EXMS, create_mock_trades_usdt, get_patched_exchange,
+                            get_patched_freqtradebot, log_has, log_has_re, num_log_has)
 
 
 # Exclude RemotePairList from tests.
@@ -116,7 +116,7 @@ def static_pl_conf(whitelist_conf):
 
 
 def test_log_cached(mocker, static_pl_conf, markets, tickers):
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -139,7 +139,7 @@ def test_log_cached(mocker, static_pl_conf, markets, tickers):
 
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'. "
@@ -150,7 +150,7 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
 
 def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
+    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets_static))
     plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)
@@ -166,7 +166,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
 
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
 
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
     freqtrade.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
@@ -180,7 +180,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
 def test_refresh_static_pairlist(mocker, markets, static_pl_conf):
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
         markets=PropertyMock(return_value=markets),
     )
@@ -204,7 +204,7 @@ def test_refresh_static_pairlist_noexist(mocker, markets, static_pl_conf, pairs,
     static_pl_conf['exchange']['pair_whitelist'] += pairs
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
         markets=PropertyMock(return_value=markets),
     )
@@ -221,7 +221,7 @@ def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
     static_pl_conf['exchange']['pair_blacklist'] = ['*/BTC']
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
         markets=PropertyMock(return_value=markets),
     )
@@ -237,7 +237,7 @@ def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_c
     logger = logging.getLogger(__name__)
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
         markets=PropertyMock(return_value=markets),
     )
@@ -264,14 +264,14 @@ def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_c
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
 
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True),
     )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=shitcoinmarkets),
     )
     # argument: use the whitelist dynamically by exchange-volume
@@ -291,7 +291,7 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     tickers_dict = tickers()
 
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
     )
     # Remove caching of ticker data to emulate changing volume by the time of second call
@@ -302,7 +302,7 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_2)
     # Remock markets with shitcoinmarkets since get_patched_freqtradebot uses the markets fixture
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         markets=PropertyMock(return_value=shitcoinmarkets),
     )
 
@@ -320,11 +320,11 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         exchange_has=MagicMock(return_value=True),
     )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_empty))
+    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets_empty))
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = []
@@ -523,15 +523,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         ('HOT/BTC', '1d', CandleType.SPOT): ohlcv_history_high_vola,
     }
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           get_tickers=tickers,
                           markets=PropertyMock(return_value=shitcoinmarkets)
                           )
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
     )
 
@@ -649,7 +649,7 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
         ('HOT/BTC', '1d', CandleType.SPOT): ohlcv_history_high_volume,
     }
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     if volumefilter_result == 'default_refresh_too_short':
         with pytest.raises(OperationalException,
@@ -675,7 +675,7 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     else:
         freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
         mocker.patch.multiple(
-            'freqtrade.exchange.Exchange',
+            EXMS,
             get_tickers=tickers,
             markets=PropertyMock(return_value=shitcoinmarkets)
         )
@@ -687,7 +687,7 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
                 ohlcv_data = []
 
         mocker.patch.multiple(
-            'freqtrade.exchange.Exchange',
+            EXMS,
             refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
         )
 
@@ -702,7 +702,7 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}]
     del whitelist_conf['stoploss']
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     with pytest.raises(OperationalException,
                        match=r"PrecisionFilter can only work with stoploss defined\..*"):
@@ -711,9 +711,9 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
 
 def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
-    if hasattr(Trade, 'query'):
-        del Trade.query
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    if hasattr(Trade, 'session'):
+        del Trade.session
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
     pm = PairListManager(exchange, whitelist_conf, MagicMock())
     pm.refresh_pairlist()
@@ -755,7 +755,7 @@ def test_PerformanceFilter_lookback(mocker, default_conf_usdt, fee, caplog) -> N
         {"method": "StaticPairList"},
         {"method": "PerformanceFilter", "minutes": 60, "min_profit": 0.01}
     ]
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     pm = PairListManager(exchange, default_conf_usdt)
     pm.refresh_pairlist()
@@ -781,7 +781,7 @@ def test_PerformanceFilter_keep_mid_order(mocker, default_conf_usdt, fee, caplog
         {"method": "StaticPairList", "allow_inactive": True},
         {"method": "PerformanceFilter", "minutes": 60, }
     ]
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     pm = PairListManager(exchange, default_conf_usdt)
     pm.refresh_pairlist()
@@ -806,7 +806,7 @@ def test_PerformanceFilter_keep_mid_order(mocker, default_conf_usdt, fee, caplog
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           get_tickers=tickers,
                           exchange_has=MagicMock(return_value=False),
                           )
@@ -819,7 +819,7 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
 def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> None:
     default_conf['pairlists'] = [{'method': 'StaticPairList'}, {'method': 'SpreadFilter'}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           get_tickers=tickers,
                           exchange_has=MagicMock(return_value=False),
                           )
@@ -828,11 +828,17 @@ def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> N
                        match=r'Exchange does not support fetchTickers, .*'):
         get_patched_freqtradebot(mocker, default_conf)
 
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.get_option', MagicMock(return_value=False))
+    with pytest.raises(OperationalException,
+                       match=r'.*requires exchange to have bid/ask data'):
+        get_patched_freqtradebot(mocker, default_conf)
+
 
 @pytest.mark.parametrize("pairlist", TESTABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     whitelist_conf['pairlists'][0]['method'] = pairlist
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True)
                           )
@@ -861,7 +867,7 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
 def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist, whitelist, caplog,
                                        log_message, tickers):
     whitelist_conf['pairlists'][0]['method'] = pairlist
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -881,10 +887,10 @@ def test__whitelist_for_active_markets(mocker, whitelist_conf, markets, pairlist
 def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, tickers):
     whitelist_conf['pairlists'][0]['method'] = pairlist
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=None),
                           get_tickers=tickers
                           )
@@ -897,7 +903,7 @@ def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, t
 def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
     whitelist_conf['pairlists'][0].update({"sort_key": "asdf"})
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
     with pytest.raises(OperationalException,
                        match=r"key asdf not in .*"):
         get_patched_freqtradebot(mocker, whitelist_conf)
@@ -905,7 +911,7 @@ def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
 
 def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -925,7 +931,7 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': -1}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -941,7 +947,7 @@ def test_agefilter_max_days_lower_than_min_days(mocker, default_conf, markets, t
                                  {'method': 'AgeFilter', 'min_days_listed': 3,
                                  "max_days_listed": 2}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -956,7 +962,7 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'AgeFilter', 'min_days_listed': 99999}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -976,7 +982,7 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ('LTC/BTC', '1d', CandleType.SPOT): ohlcv_history,
         }
         mocker.patch.multiple(
-            'freqtrade.exchange.Exchange',
+            EXMS,
             markets=PropertyMock(return_value=markets),
             exchange_has=MagicMock(return_value=True),
             get_tickers=tickers,
@@ -1000,14 +1006,14 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ('LTC/BTC', '1d', CandleType.SPOT): ohlcv_history,
             ('XRP/BTC', '1d', CandleType.SPOT): ohlcv_history.iloc[[0]],
         }
-        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        mocker.patch(f'{EXMS}.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
 
         # Move to next day
         t.move_to("2021-09-02 01:00:00 +00:00")
-        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        mocker.patch(f'{EXMS}.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
@@ -1021,7 +1027,7 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ('LTC/BTC', '1d', CandleType.SPOT): ohlcv_history,
             ('XRP/BTC', '1d', CandleType.SPOT): ohlcv_history,
         }
-        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        mocker.patch(f'{EXMS}.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 4
         # Called once (only for XRP/BTC)
@@ -1033,7 +1039,7 @@ def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
         [{"method": "StaticPairList"}, {"method": "OffsetFilter", "offset": -1}]
     )
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     with pytest.raises(OperationalException,
                        match=r'OffsetFilter requires offset to be >= 0'):
@@ -1044,7 +1050,7 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'RangeStabilityFilter', 'lookback_days': 99999}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -1074,7 +1080,7 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
                                   'min_rate_of_change': min_rate_of_change,
                                   "max_rate_of_change": max_rate_of_change}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -1088,7 +1094,7 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
         ('BLK/BTC', '1d', CandleType.SPOT): ohlcv_history,
     }
     mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
+        EXMS,
         refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
     )
 
@@ -1109,7 +1115,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'SpreadFilter', 'max_spread_ratio': 0.1}]
 
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           get_tickers=tickers
@@ -1123,7 +1129,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
     tickers.return_value['ETH/BTC']['ask'] = 0.0
     del tickers.return_value['TKN/BTC']
     del tickers.return_value['LTC/BTC']
-    mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers)
+    mocker.patch.multiple(EXMS, get_tickers=tickers)
 
     ftbot.pairlists.refresh_pairlist()
     assert log_has_re(r'Removed .* invalid ticker data.*', caplog)
@@ -1197,7 +1203,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True)
                           )
@@ -1214,7 +1220,7 @@ def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
 
 
 def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     whitelist_conf['pairlists'] = []
 
@@ -1266,14 +1272,14 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
     allowlist_conf['pairlists'] = pairlists
     allowlist_conf['exchange']['pair_whitelist'] = pair_allowlist
 
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     freqtrade = get_patched_freqtradebot(mocker, allowlist_conf)
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           get_tickers=tickers,
                           markets=PropertyMock(return_value=markets)
                           )
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch.multiple(EXMS,
                           get_historic_ohlcv=MagicMock(return_value=ohlcv_history_list),
                           )
     mocker.patch.multiple('freqtrade.persistence.Trade',
@@ -1371,7 +1377,7 @@ def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
 
 
 def test_ProducerPairlist_no_emc(mocker, whitelist_conf):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     whitelist_conf['pairlists'] = [
         {
@@ -1388,8 +1394,8 @@ def test_ProducerPairlist_no_emc(mocker, whitelist_conf):
 
 
 def test_ProducerPairlist(mocker, whitelist_conf, markets):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    mocker.patch.multiple(EXMS,
                           markets=PropertyMock(return_value=markets),
                           exchange_has=MagicMock(return_value=True),
                           )

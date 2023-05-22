@@ -4,6 +4,7 @@ import time
 from functools import wraps
 from typing import Any, Callable, Optional, TypeVar, cast, overload
 
+from freqtrade.constants import ExchangeConfig
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
 from freqtrade.mixins import LoggingMixin
 
@@ -46,13 +47,13 @@ MAP_EXCHANGE_CHILDCLASS = {
     'binanceje': 'binance',
     'binanceusdm': 'binance',
     'okex': 'okx',
-    'gate': 'gateio',
+    'gateio': 'gate',
 }
 
 SUPPORTED_EXCHANGES = [
     'binance',
     'bittrex',
-    'gateio',
+    'gate',
     'huobi',
     'kraken',
     'okx',
@@ -84,20 +85,22 @@ EXCHANGE_HAS_OPTIONAL = [
     # 'fetchPositions',  # Futures trading
     # 'fetchLeverageTiers',  # Futures initialization
     # 'fetchMarketLeverageTiers',  # Futures initialization
+    # 'fetchOpenOrders', 'fetchClosedOrders',  # 'fetchOrders',  # Refinding balance...
 ]
 
 
-def remove_credentials(config) -> None:
+def remove_exchange_credentials(exchange_config: ExchangeConfig, dry_run: bool) -> None:
     """
     Removes exchange keys from the configuration and specifies dry-run
     Used for backtesting / hyperopt / edge and utils.
     Modifies the input dict!
     """
-    if config.get('dry_run', False):
-        config['exchange']['key'] = ''
-        config['exchange']['secret'] = ''
-        config['exchange']['password'] = ''
-        config['exchange']['uid'] = ''
+    if dry_run:
+        exchange_config['key'] = ''
+        exchange_config['apiKey'] = ''
+        exchange_config['secret'] = ''
+        exchange_config['password'] = ''
+        exchange_config['uid'] = ''
 
 
 def calculate_backoff(retrycount, max_retries):

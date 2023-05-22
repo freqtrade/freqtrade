@@ -1,5 +1,7 @@
+import platform
 from copy import deepcopy
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,6 +13,11 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
+
+
+def is_mac() -> bool:
+    machine = platform.system()
+    return "Darwin" in machine
 
 
 @pytest.fixture(scope="function")
@@ -27,7 +34,7 @@ def freqai_conf(default_conf, tmpdir):
             "timerange": "20180110-20180115",
             "freqai": {
                 "enabled": True,
-                "purge_old_models": True,
+                "purge_old_models": 2,
                 "train_period_days": 2,
                 "backtest_period_days": 10,
                 "live_retrain_hours": 0,
@@ -35,6 +42,7 @@ def freqai_conf(default_conf, tmpdir):
                 "identifier": "uniqe-id100",
                 "live_trained_timestamp": 0,
                 "data_kitchen_thread_count": 2,
+                "activate_tensorboard": False,
                 "feature_parameters": {
                     "include_timeframes": ["5m"],
                     "include_corr_pairlist": ["ADA/BTC"],
@@ -46,6 +54,8 @@ def freqai_conf(default_conf, tmpdir):
                     "use_SVM_to_remove_outliers": True,
                     "stratify_training_data": 0,
                     "indicator_periods_candles": [10],
+                    "shuffle_after_split": False,
+                    "buffer_train_data_candles": 0
                 },
                 "data_split_parameters": {"test_size": 0.33, "shuffle": False},
                 "model_training_parameters": {"n_estimators": 100},
@@ -76,9 +86,27 @@ def make_rl_config(conf):
             "rr": 1,
             "profit_aim": 0.02,
             "win_reward_factor": 2
-        }}
+        },
+        "drop_ohlc_from_features": False
+        }
 
     return conf
+
+
+def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
+    return {
+            "learning_rate": 3e-4,
+            "trainer_kwargs": {
+                "max_iters": 1,
+                "batch_size": 64,
+                "max_n_eval_batches": 1,
+            },
+            "model_kwargs": {
+                "hidden_dim": 32,
+                "dropout_percent": 0.2,
+                "n_layer": 1,
+            }
+        }
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
@@ -115,6 +143,7 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
@@ -148,6 +177,7 @@ def make_data_dictionary(mocker, freqai_conf):
     freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.live = True
     freqai.dk.pair = "ADA/BTC"
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)

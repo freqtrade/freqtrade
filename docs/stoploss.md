@@ -23,10 +23,22 @@ These modes can be configured with these values:
     'stoploss_on_exchange_limit_ratio': 0.99
 ```
 
-!!! Note
-    Stoploss on exchange is only supported for Binance (stop-loss-limit), Huobi (stop-limit), Kraken (stop-loss-market, stop-loss-limit), Gateio (stop-limit), and Kucoin (stop-limit and stop-market) as of now.  
-    <ins>Do not set too low/tight stoploss value if using stop loss on exchange!</ins>  
-    If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work.
+Stoploss on exchange is only supported for the following exchanges, and not all exchanges support both stop-limit and stop-market.
+The Order-type will be ignored if only one mode is available.
+
+| Exchange | stop-loss type |
+|----------|-------------|
+| Binance  | limit |
+| Binance Futures  | market, limit |
+| Huobi    | limit |
+| kraken   | market, limit |
+| Gate     | limit |
+| Okx      | limit |
+| Kucoin   | stop-limit, stop-market|
+
+!!! Note "Tight stoploss"
+    <ins>Do not set too low/tight stoploss value when using stop loss on exchange!</ins>  
+    If set to low/tight you will have greater risk of missing fill on the order and stoploss will not work.
 
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
@@ -51,6 +63,18 @@ In case of stoploss on exchange there is another parameter called `stoploss_on_e
 The bot cannot do these every 5 seconds (at each iteration), otherwise it would get banned by the exchange.
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
+
+### stoploss_price_type
+
+!!! Warning "Only applies to futures"
+    `stoploss_price_type` only applies to futures markets (on exchanges where it's available).
+    Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
+    Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.
+
+Stoploss on exchange on futures markets can trigger on different price types.
+The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".
+
+Acceptable values for this setting are `"last"`, `"mark"` and `"index"` - which freqtrade will transfer automatically to the corresponding API type, and place the [stoploss on exchange](#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio) order correspondingly.
 
 ### force_exit
 
@@ -184,11 +208,6 @@ You can also keep a static stoploss until the offset is reached, and then trail 
 
 If `trailing_only_offset_is_reached = True` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
 This option can be used with or without `trailing_stop_positive`, but uses `trailing_stop_positive_offset` as offset.
-
-``` python
-    trailing_stop_positive_offset = 0.011
-    trailing_only_offset_is_reached = True
-```
 
 Configuration (offset is buy-price + 3%):
 

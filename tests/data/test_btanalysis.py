@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from arrow import Arrow
 from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
@@ -18,6 +18,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_underwater, combine_dataframes_with_mean,
                                     create_cum_profit)
 from freqtrade.exceptions import OperationalException
+from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -98,7 +99,7 @@ def test_load_backtest_data_new_format(testdatadir):
     assert bt_data.equals(bt_data3)
 
     with pytest.raises(ValueError, match=r"File .* does not exist\."):
-        load_backtest_data(str("filename") + "nofile")
+        load_backtest_data("filename" + "nofile")
 
     with pytest.raises(ValueError, match=r"Unknown dataformat."):
         load_backtest_data(testdatadir / "backtest_results" / LAST_BT_RESULT_FN)
@@ -162,25 +163,25 @@ def test_extract_trades_of_period(testdatadir):
         {'pair': [pair, pair, pair, pair],
          'profit_ratio': [0.0, 0.1, -0.2, -0.5],
          'profit_abs': [0.0, 1, -2, -5],
-         'open_date': to_datetime([Arrow(2017, 11, 13, 15, 40, 0).datetime,
-                                   Arrow(2017, 11, 14, 9, 41, 0).datetime,
-                                   Arrow(2017, 11, 14, 14, 20, 0).datetime,
-                                   Arrow(2017, 11, 15, 3, 40, 0).datetime,
+         'open_date': to_datetime([datetime(2017, 11, 13, 15, 40, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 14, 9, 41, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 14, 14, 20, 0, tzinfo=timezone.utc),
+                                   datetime(2017, 11, 15, 3, 40, 0, tzinfo=timezone.utc),
                                    ], utc=True
                                   ),
-         'close_date': to_datetime([Arrow(2017, 11, 13, 16, 40, 0).datetime,
-                                    Arrow(2017, 11, 14, 10, 41, 0).datetime,
-                                    Arrow(2017, 11, 14, 15, 25, 0).datetime,
-                                    Arrow(2017, 11, 15, 3, 55, 0).datetime,
+         'close_date': to_datetime([datetime(2017, 11, 13, 16, 40, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 14, 10, 41, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 14, 15, 25, 0, tzinfo=timezone.utc),
+                                    datetime(2017, 11, 15, 3, 55, 0, tzinfo=timezone.utc),
                                     ], utc=True)
          })
     trades1 = extract_trades_of_period(data, trades)
     # First and last trade are dropped as they are out of range
     assert len(trades1) == 2
-    assert trades1.iloc[0].open_date == Arrow(2017, 11, 14, 9, 41, 0).datetime
-    assert trades1.iloc[0].close_date == Arrow(2017, 11, 14, 10, 41, 0).datetime
-    assert trades1.iloc[-1].open_date == Arrow(2017, 11, 14, 14, 20, 0).datetime
-    assert trades1.iloc[-1].close_date == Arrow(2017, 11, 14, 15, 25, 0).datetime
+    assert trades1.iloc[0].open_date == datetime(2017, 11, 14, 9, 41, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[0].close_date == datetime(2017, 11, 14, 10, 41, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[-1].open_date == datetime(2017, 11, 14, 14, 20, 0, tzinfo=timezone.utc)
+    assert trades1.iloc[-1].close_date == datetime(2017, 11, 14, 15, 25, 0, tzinfo=timezone.utc)
 
 
 def test_analyze_trade_parallelism(testdatadir):
@@ -420,7 +421,7 @@ def test_calculate_max_drawdown2():
               -0.025782, 0.010400, 0.012374, 0.012467, 0.114741, 0.010303, 0.010088,
               -0.033961, 0.010680, 0.010886, -0.029274, 0.011178, 0.010693, 0.010711]
 
-    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
+    dates = [dt_utc(2020, 1, 1) + timedelta(days=i) for i in range(len(values))]
     df = DataFrame(zip(values, dates), columns=['profit', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
@@ -454,8 +455,8 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
     [1000, 500,  1000, 11000, 10000] # absolute results
     [1000, 50%,  0%,   0%,       ~9%]   # Relative drawdowns
     """
-    init_date = Arrow(2020, 1, 1)
-    dates = [init_date.shift(days=i) for i in range(len(profits))]
+    init_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    dates = [init_date + timedelta(days=i) for i in range(len(profits))]
     df = DataFrame(zip(profits, dates), columns=['profit_abs', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit_abs').reset_index(drop=True)
@@ -467,8 +468,8 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
 
     assert isinstance(drawdown, float)
     assert isinstance(drawdown_rel, float)
-    assert hdate == init_date.shift(days=highd)
-    assert ldate == init_date.shift(days=lowd)
+    assert hdate == init_date + timedelta(days=highd)
+    assert ldate == init_date + timedelta(days=lowd)
 
     # High must be before low
     assert hdate < ldate

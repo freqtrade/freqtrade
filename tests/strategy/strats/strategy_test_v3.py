@@ -30,6 +30,9 @@ class StrategyTestV3(IStrategy):
         "0": 0.04
     }
 
+    # Optimal max_open_trades for the strategy
+    max_open_trades = -1
+
     # Optimal stoploss designed for the strategy
     stoploss = -0.10
 
@@ -194,7 +197,7 @@ class StrategyTestV3(IStrategy):
 
         if current_profit < -0.0075:
             orders = trade.select_filled_orders(trade.entry_side)
-            return round(orders[0].cost, 0)
+            return round(orders[0].safe_cost, 0)
 
         return None
 

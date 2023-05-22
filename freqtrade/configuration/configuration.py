@@ -28,7 +28,7 @@ class Configuration:
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
 
-    def __init__(self, args: Dict[str, Any], runmode: RunMode = None) -> None:
+    def __init__(self, args: Dict[str, Any], runmode: Optional[RunMode] = None) -> None:
         self.args = args
         self.config: Optional[Config] = None
         self.runmode = runmode
@@ -464,6 +464,15 @@ class Configuration:
 
         self._args_to_config(config, argname='timerange',
                              logstring='Filter trades by timerange: {}')
+
+        self._args_to_config(config, argname='analysis_rejected',
+                             logstring='Analyse rejected signals: {}')
+
+        self._args_to_config(config, argname='analysis_to_csv',
+                             logstring='Store analysis tables to CSV: {}')
+
+        self._args_to_config(config, argname='analysis_csv_path',
+                             logstring='Path to store analysis CSVs: {}')
 
     def _process_runmode(self, config: Config) -> None:
 

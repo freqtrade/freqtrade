@@ -12,6 +12,9 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 * **Indicators**: Technical indicators (SMA, EMA, RSI, ...).
 * **Limit order**: Limit orders which execute at the defined limit price or better.
 * **Market order**: Guaranteed to fill, may move price depending on the order size.
+* **Current Profit**: Currently pending (unrealized) profit for this trade. This is mainly used throughout the bot and UI.
+* **Realized Profit**: Already realized profit. Only relevant in combination with [partial exits](strategy-callbacks.md#adjust-trade-position) - which also explains the calculation logic for this.
+* **Total Profit**: Combined realized and unrealized profit. The relative number (%) is calculated against the total investment in this trade.
 
 ## Fee handling
 
@@ -57,10 +60,10 @@ This loop will be repeated again and again until the bot is stopped.
 
 * Load historic data for configured pairlist.
 * Calls `bot_start()` once.
-* Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
 * Calculate entry / exit signals (calls `populate_entry_trend()` and `populate_exit_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
+  * Calls `bot_loop_start()` strategy callback.
   * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
   * Calls `adjust_entry_price()` strategy callback for open entry orders.
   * Check for trade entry signals (`enter_long` / `enter_short` columns).
@@ -75,3 +78,7 @@ This loop will be repeated again and again until the bot is stopped.
 
 !!! Note
     Both Backtesting and Hyperopt include exchange default Fees in the calculation. Custom fees can be passed to backtesting / hyperopt by specifying the `--fee` argument.
+
+!!! Warning "Callback call frequency"
+    Backtesting will call each callback at max. once per candle (`--timeframe-detail` modifies this behavior to once per detailed candle).
+    Most callbacks will be called once per iteration in live (usually every ~5s) - which can cause backtesting mismatches.

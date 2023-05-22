@@ -18,7 +18,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     from freqtrade.plugins.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    exchange = ExchangeResolver.load_exchange(config, validate=False)
 
     quote_currencies = args.get('quote_currencies')
     if not quote_currencies:

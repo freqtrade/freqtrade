@@ -119,53 +119,88 @@ def test_merge_informative_pair_suffix_append_timeframe():
         merge_informative_pair(data, informative, '15m', '1h', suffix="suf")
 
 
-def test_stoploss_from_open():
+@pytest.mark.parametrize("side,profitrange", [
+    # profit range for long is [-1, inf] while for shorts is [-inf, 1]
+    ("long", [-0.99, 2, 30]),
+    ("short", [-2.0, 0.99, 30]),
+])
+def test_stoploss_from_open(side, profitrange):
     open_price_ranges = [
         [0.01, 1.00, 30],
         [1, 100, 30],
         [100, 10000, 30],
     ]
-    # profit range for long is [-1, inf] while for shorts is [-inf, 1]
-    current_profit_range_dict = {'long': [-0.99, 2, 30], 'short': [-2.0, 0.99, 30]}
-    desired_stop_range = [-0.50, 0.50, 30]
 
-    for side, current_profit_range in current_profit_range_dict.items():
-        for open_range in open_price_ranges:
-            for open_price in np.linspace(*open_range):
-                for desired_stop in np.linspace(*desired_stop_range):
+    for open_range in open_price_ranges:
+        for open_price in np.linspace(*open_range):
+            for desired_stop in np.linspace(-0.50, 0.50, 30):
 
+                if side == 'long':
+                    # -1 is not a valid current_profit, should return 1
+                    assert stoploss_from_open(desired_stop, -1) == 1
+                else:
+                    # 1 is not a valid current_profit for shorts, should return 1
+                    assert stoploss_from_open(desired_stop, 1, True) == 1
+
+                for current_profit in np.linspace(*profitrange):
                     if side == 'long':
-                        # -1 is not a valid current_profit, should return 1
-                        assert stoploss_from_open(desired_stop, -1) == 1
+                        current_price = open_price * (1 + current_profit)
+                        expected_stop_price = open_price * (1 + desired_stop)
+                        stoploss = stoploss_from_open(desired_stop, current_profit)
+                        stop_price = current_price * (1 - stoploss)
                     else:
-                        # 1 is not a valid current_profit for shorts, should return 1
-                        assert stoploss_from_open(desired_stop, 1, True) == 1
+                        current_price = open_price * (1 - current_profit)
+                        expected_stop_price = open_price * (1 - desired_stop)
+                        stoploss = stoploss_from_open(desired_stop, current_profit, True)
+                        stop_price = current_price * (1 + stoploss)
 
-                    for current_profit in np.linspace(*current_profit_range):
-                        if side == 'long':
-                            current_price = open_price * (1 + current_profit)
-                            expected_stop_price = open_price * (1 + desired_stop)
-                            stoploss = stoploss_from_open(desired_stop, current_profit)
-                            stop_price = current_price * (1 - stoploss)
-                        else:
-                            current_price = open_price * (1 - current_profit)
-                            expected_stop_price = open_price * (1 - desired_stop)
-                            stoploss = stoploss_from_open(desired_stop, current_profit, True)
-                            stop_price = current_price * (1 + stoploss)
+                    assert stoploss >= 0
+                    # Technically the formula can yield values greater than 1 for shorts
+                    # eventhough it doesn't make sense because the position would be liquidated
+                    if side == 'long':
+                        assert stoploss <= 1
 
-                        assert stoploss >= 0
-                        # Technically the formula can yield values greater than 1 for shorts
-                        # eventhough it doesn't make sense because the position would be liquidated
-                        if side == 'long':
-                            assert stoploss <= 1
+                    # there is no correct answer if the expected stop price is above
+                    # the current price
+                    if ((side == 'long' and expected_stop_price > current_price)
+                            or (side == 'short' and expected_stop_price < current_price)):
+                        assert stoploss == 0
+                    else:
+                        assert pytest.approx(stop_price) == expected_stop_price
 
-                        # there is no correct answer if the expected stop price is above
-                        # the current price
-                        if ((side == 'long' and expected_stop_price > current_price)
-                                or (side == 'short' and expected_stop_price < current_price)):
-                            assert stoploss == 0
-                        else:
-                            assert pytest.approx(stop_price) == expected_stop_price
+
+@pytest.mark.parametrize("side,rel_stop,curr_profit,leverage,expected", [
+    # profit range for long is [-1, inf] while for shorts is [-inf, 1]
+    ("long", 0, -1, 1, 1),
+    ("long", 0, 0.1, 1, 0.09090909),
+    ("long", -0.1, 0.1, 1, 0.18181818),
+    ("long", 0.1, 0.2, 1, 0.08333333),
+    ("long", 0.1, 0.5, 1, 0.266666666),
+    ("long", 0.1, 5, 1, 0.816666666),  # 500% profit, set stoploss to 10% above open price
+    ("long", 0, 5, 10,  3.3333333),  # 500% profit, set stoploss break even
+    ("long", 0.1, 5, 10,  3.26666666),  # 500% profit, set stoploss to 10% above open price
+    ("long", -0.1, 5, 10,  3.3999999),  # 500% profit, set stoploss to 10% belowopen price
+
+    ("short", 0, 0.1, 1, 0.1111111),
+    ("short", -0.1, 0.1, 1, 0.2222222),
+    ("short", 0.1, 0.2, 1, 0.125),
+    ("short", 0.1, 1, 1, 1),
+    ("short", -0.01, 5, 10, 10.01999999),  # 500% profit at 10x
+])
+def test_stoploss_from_open_leverage(side, rel_stop, curr_profit, leverage, expected):
+
+    stoploss = stoploss_from_open(rel_stop, curr_profit, side == 'short', leverage)
+    assert pytest.approx(stoploss) == expected
+    open_rate = 100
+    if stoploss != 1:
+        if side == 'long':
+            current_rate = open_rate * (1 + curr_profit / leverage)
+            stop = current_rate * (1 - stoploss / leverage)
+            assert pytest.approx(stop) == open_rate * (1 + rel_stop / leverage)
+        else:
+            current_rate = open_rate * (1 - curr_profit / leverage)
+            stop = current_rate * (1 + stoploss / leverage)
+            assert pytest.approx(stop) == open_rate * (1 - rel_stop / leverage)
 
 
 def test_stoploss_from_absolute():

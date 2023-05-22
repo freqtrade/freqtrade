@@ -4,7 +4,7 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any, Dict, List, Literal
 
 from cachetools import TTLCache
@@ -15,6 +15,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -161,13 +162,13 @@ class VolumePairList(IPairList):
             # get lookback period in ms, for exchange ohlcv fetch
             since_ms = int(timeframe_to_prev_date(
                 self._lookback_timeframe,
-                datetime.now(timezone.utc) + timedelta(
+                dt_now() + timedelta(
                     minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min)
                     ).timestamp()) * 1000
 
             to_ms = int(timeframe_to_prev_date(
                             self._lookback_timeframe,
-                            datetime.now(timezone.utc) - timedelta(minutes=self._tf_in_min)
+                            dt_now() - timedelta(minutes=self._tf_in_min)
                             ).timestamp()) * 1000
 
             # todo: utc date output for starting date

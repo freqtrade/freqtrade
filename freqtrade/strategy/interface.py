@@ -7,13 +7,12 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Union
 
-import arrow
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RunMode, SignalDirection,
-                             SignalTagType, SignalType, TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
+                             SignalDirection, SignalTagType, SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import remove_entry_exit_signals
@@ -23,11 +22,11 @@ from freqtrade.strategy.informative_decorator import (InformativeData, PopulateI
                                                       _create_and_merge_informative_pair,
                                                       _format_pair_name)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.util import dt_now
 from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
-CUSTOM_EXIT_MAX_LENGTH = 64
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -53,6 +52,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # associated stoploss
     stoploss: float
+
+    # max open trades for the strategy
+    max_open_trades:  IntOrInf
 
     # trailing stoploss
     trailing_stop: bool = False
@@ -118,6 +120,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
+
+    # A self set parameter that represents the market direction. filled from configuration
+    market_direction: MarketDirection = MarketDirection.NONE
 
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -245,11 +250,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pass
 
-    def bot_loop_start(self, **kwargs) -> None:
+    def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
         Called at the start of the bot iteration (one loop).
         Might be used to perform pair-independent tasks
         (e.g. gather some remote resource for comparison)
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
         pass
@@ -595,7 +601,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return None
 
     def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
-                                informative: DataFrame = None,
+                                informative: Optional[DataFrame] = None,
                                 set_generalized_indicators: bool = False) -> DataFrame:
         """
         DEPRECATED - USE FEATURE ENGINEERING FUNCTIONS INSTEAD
@@ -611,8 +617,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return df
 
-    def feature_engineering_expand_all(self, dataframe: DataFrame,
-                                       period: int, **kwargs):
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
+                                       metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -631,13 +637,15 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
         :param period: period of the indicator - usage example:
+        :param metadata: metadata of current pair
         dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)
         """
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs):
+    def feature_engineering_expand_basic(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This function will automatically expand the defined features on the config defined
@@ -659,13 +667,15 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)
         """
         return dataframe
 
-    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs):
+    def feature_engineering_standard(
+            self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         This optional function will be called once with the dataframe of the base timeframe.
@@ -683,12 +693,13 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the features
+        :param dataframe: strategy dataframe which will receive the features
+        :param metadata: metadata of current pair
         usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
         """
         return dataframe
 
-    def set_freqai_targets(self, dataframe, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
@@ -698,7 +709,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         https://www.freqtrade.io/en/latest/freqai-feature-engineering
 
-        :param df: strategy dataframe which will receive the targets
+        :param dataframe: strategy dataframe which will receive the targets
+        :param metadata: metadata of current pair
         usage example: dataframe["&-target"] = dataframe["close"].shift(-1) / dataframe["close"]
         """
         return dataframe
@@ -756,7 +768,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime, reason: str = None, side: str = '*') -> None:
+    def lock_pair(self, pair: str, until: datetime,
+                  reason: Optional[str] = None, side: str = '*') -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -788,7 +801,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
 
-    def is_pair_locked(self, pair: str, *, candle_date: datetime = None, side: str = '*') -> bool:
+    def is_pair_locked(self, pair: str, *, candle_date: Optional[datetime] = None,
+                       side: str = '*') -> bool:
         """
         Checks if a pair is currently locked
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
@@ -924,7 +938,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-    ) -> Tuple[Optional[DataFrame], Optional[arrow.Arrow]]:
+    ) -> Tuple[Optional[DataFrame], Optional[datetime]]:
         """
         Calculates current signal based based on the entry order or exit order
         columns of the dataframe.
@@ -940,16 +954,16 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
-        # Explicitly convert to arrow object to ensure the below comparison does not fail
-        latest_date = arrow.get(latest_date)
+        # Explicitly convert to datetime object to ensure the below comparison does not fail
+        latest_date = latest_date.to_pydatetime()
 
         # Check if dataframe is out of date
         timeframe_minutes = timeframe_to_minutes(timeframe)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
+        if latest_date < (dt_now() - timedelta(minutes=timeframe_minutes * 2 + offset)):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
-                pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
+                pair, int((dt_now() - latest_date).total_seconds() // 60)
             )
             return None, None
         return latest, latest_date
@@ -959,7 +973,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-        is_short: bool = None
+        is_short: Optional[bool] = None
     ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current exit signal based based on the dataframe
@@ -1032,8 +1046,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         timeframe_seconds = timeframe_to_seconds(timeframe)
 
         if self.ignore_expired_candle(
-            latest_date=latest_date.datetime,
-            current_time=datetime.now(timezone.utc),
+            latest_date=latest_date,
+            current_time=dt_now(),
             timeframe_seconds=timeframe_seconds,
             enter=bool(enter_signal)
         ):
@@ -1058,7 +1072,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
-                    low: float = None, high: float = None,
+                    low: Optional[float] = None, high: Optional[float] = None,
                     force_stoploss: float = 0) -> List[ExitCheckTuple]:
         """
         This function evaluates if one of the conditions required to trigger an exit order
@@ -1074,10 +1088,10 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=current_time,
-                                              current_profit=current_profit,
-                                              force_stoploss=force_stoploss, low=low, high=high)
+        stoplossflag = self.ft_stoploss_reached(current_rate=current_rate, trade=trade,
+                                                current_time=current_time,
+                                                current_profit=current_profit,
+                                                force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting exits
         current_rate = (low if trade.is_short else high) or rate
@@ -1105,11 +1119,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                     exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(reason_cust, str):
                         custom_reason = reason_cust
-                        if len(reason_cust) > CUSTOM_EXIT_MAX_LENGTH:
+                        if len(reason_cust) > CUSTOM_TAG_MAX_LENGTH:
                             logger.warning(f'Custom exit reason returned from '
                                            f'custom_exit is too long and was trimmed'
-                                           f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
-                            custom_reason = reason_cust[:CUSTOM_EXIT_MAX_LENGTH]
+                                           f'to {CUSTOM_TAG_MAX_LENGTH} characters.')
+                            custom_reason = reason_cust[:CUSTOM_TAG_MAX_LENGTH]
                     else:
                         custom_reason = ''
             if (
@@ -1144,13 +1158,12 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return exits
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade,
-                          current_time: datetime, current_profit: float,
-                          force_stoploss: float, low: float = None,
-                          high: float = None) -> ExitCheckTuple:
+    def ft_stoploss_adjust(self, current_rate: float, trade: Trade,
+                           current_time: datetime, current_profit: float,
+                           force_stoploss: float, low: Optional[float] = None,
+                           high: Optional[float] = None) -> None:
         """
-        Based on current profit of the trade and configured (trailing) stoploss,
-        decides to exit or not
+        Adjust stop-loss dynamically if configured to do so.
         :param current_profit: current profit as ratio
         :param low: Low value of this candle, only set in backtesting
         :param high: High value of this candle, only set in backtesting
@@ -1195,6 +1208,20 @@ class IStrategy(ABC, HyperStrategyMixin):
                                  f"offset: {sl_offset:.4g} profit: {bound_profit:.2%}")
 
                 trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
+
+    def ft_stoploss_reached(self, current_rate: float, trade: Trade,
+                            current_time: datetime, current_profit: float,
+                            force_stoploss: float, low: Optional[float] = None,
+                            high: Optional[float] = None) -> ExitCheckTuple:
+        """
+        Based on current profit of the trade and configured (trailing) stoploss,
+        decides to exit or not
+        :param current_profit: current profit as ratio
+        :param low: Low value of this candle, only set in backtesting
+        :param high: High value of this candle, only set in backtesting
+        """
+        self.ft_stoploss_adjust(current_rate, trade, current_time, current_profit,
+                                force_stoploss, low, high)
 
         sl_higher_long = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
         sl_lower_short = (trade.stop_loss <= (high or current_rate) and trade.is_short)

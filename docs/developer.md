@@ -24,7 +24,7 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
 Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
-This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+This will install all required tools for development, including `pytest`, `ruff`, `mypy`, and `coveralls`.
 
 Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
 This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
@@ -327,18 +327,18 @@ To check how the new exchange behaves, you can use the following snippet:
 
 ``` python
 import ccxt
-from datetime import datetime
+from datetime import datetime, timezone
 from freqtrade.data.converter import ohlcv_to_dataframe
-ct = ccxt.binance()
+ct = ccxt.binance()  # Use the exchange you're testing
 timeframe = "1d"
-pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
+pair = "BTC/USDT"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
 df1 = ohlcv_to_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1.tail(1))
-print(datetime.utcnow())
+print(datetime.now(timezone.utc))
 ```
 
 ``` output
@@ -363,7 +363,7 @@ from pathlib import Path
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
     'secret': '<secret>'
-    'options': {'defaultType': 'future'}
+    'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()
 

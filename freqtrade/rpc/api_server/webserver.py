@@ -1,6 +1,6 @@
 import logging
 from ipaddress import IPv4Address
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import orjson
 import uvicorn
@@ -13,6 +13,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -35,16 +36,8 @@ class ApiServer(RPCHandler):
     __initialized = False
 
     _rpc: RPC
-    # Backtesting type: Backtesting
-    _bt = None
-    _bt_data = None
-    _bt_timerange = None
-    _bt_last_config: Config = {}
     _has_rpc: bool = False
-    _bgtask_running: bool = False
     _config: Config = {}
-    # Exchange - only available in webserver mode.
-    _exchange = None
     # websocket message stuff
     _message_stream: Optional[MessageStream] = None
 
@@ -81,7 +74,7 @@ class ApiServer(RPCHandler):
         """
         Attach rpc handler
         """
-        if not self._has_rpc:
+        if not ApiServer._has_rpc:
             ApiServer._rpc = rpc
             ApiServer._has_rpc = True
         else:
@@ -105,7 +98,7 @@ class ApiServer(RPCHandler):
         cls._has_rpc = False
         cls._rpc = None
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """
         Publish the message to the message stream
         """

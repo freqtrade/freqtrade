@@ -1,15 +1,18 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+from importlib import import_module
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select, text
+from sqlalchemy.schema import CreateTable
 
 from freqtrade.constants import DEFAULT_DB_PROD_URL
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade, init_db
+from freqtrade.persistence.base import ModelBase
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from freqtrade.persistence.models import PairLock
 from tests.conftest import log_has
@@ -21,8 +24,8 @@ spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURE
 def test_init_create_session(default_conf):
     # Check if init create a session
     init_db(default_conf['db_url'])
-    assert hasattr(Trade, '_session')
-    assert 'scoped_session' in type(Trade._session).__name__
+    assert hasattr(Trade, 'session')
+    assert 'scoped_session' in type(Trade.session).__name__
 
 
 def test_init_custom_db_url(default_conf, tmpdir):
@@ -34,7 +37,7 @@ def test_init_custom_db_url(default_conf, tmpdir):
 
     init_db(default_conf['db_url'])
     assert Path(filename).is_file()
-    r = Trade._session.execute(text("PRAGMA journal_mode"))
+    r = Trade.session.execute(text("PRAGMA journal_mode"))
     assert r.first() == ('wal',)
 
 
@@ -235,8 +238,9 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     # Run init to test migration
     init_db(default_conf['db_url'])
 
-    assert len(Trade.query.filter(Trade.id == 1).all()) == 1
-    trade = Trade.query.filter(Trade.id == 1).first()
+    trades = Trade.session.scalars(select(Trade).filter(Trade.id == 1)).all()
+    assert len(trades) == 1
+    trade = trades[0]
     assert trade.fee_open == fee.return_value
     assert trade.fee_close == fee.return_value
     assert trade.open_rate_requested is None
@@ -404,9 +408,20 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
 
     init_db(default_conf['db_url'])
 
-    assert len(PairLock.query.all()) == 2
-    assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1
-    pairlocks = PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()
+    assert len(PairLock.get_all_locks().all()) == 2
+    assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == '*')).all()) == 1
+    pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == 'ETH/BTC')).all()
     assert len(pairlocks) == 1
     pairlocks[0].pair == 'ETH/BTC'
     pairlocks[0].side == '*'
+
+
+@pytest.mark.parametrize('dialect', [
+    'sqlite', 'postgresql', 'mysql', 'oracle', 'mssql',
+    ])
+def test_create_table_compiles(dialect):
+
+    dialect_mod = import_module(f"sqlalchemy.dialects.{dialect}")
+    for table in ModelBase.metadata.tables.values():
+        create_sql = str(CreateTable(table).compile(dialect=dialect_mod.dialect()))
+        assert 'CREATE TABLE' in create_sql

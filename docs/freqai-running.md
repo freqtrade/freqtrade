@@ -120,13 +120,19 @@ In the presented example config, the user will only allow predictions on models 
 
 Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the `model_training_parameters` dictionary in the config. The example config (found in `config_examples/config_freqai.example.json`) shows some of the example parameters associated with `Catboost` and `LightGBM`, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.
 
-Data split parameters are defined in `data_split_parameters` which can be any parameters associated with Scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [Scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
+Data split parameters are defined in `data_split_parameters` which can be any parameters associated with scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
 
 The FreqAI specific parameter `label_period_candles` defines the offset (number of candles into the future) used for the `labels`. In the presented [example config](freqai-configuration.md#setting-up-the-configuration-file), the user is asking for `labels` that are 24 candles in the future.
 
 ## Continual learning
 
 You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `False` which means that all new models are trained from scratch, without input from previous models.
+
+???+ danger "Continual learning enforces a constant parameter space"
+    Since `continual_learning` means that the model parameter space *cannot* change between trainings, `principal_component_analysis` is automatically disabled when `continual_learning` is enabled. Hint: PCA changes the parameter space and the number of features, learn more about PCA [here](freqai-feature-engineering.md#data-dimensionality-reduction-with-principal-component-analysis).
+
+???+ danger "Experimental functionality"
+    Beware that this is currently a naive approach to incremental learning, and it has a high probability of overfitting/getting stuck in local minima while the market moves away from your model. We have the mechanics available in FreqAI primarily for experimental purposes and so that it is ready for more mature approaches to continual learning in chaotic systems like the crypto market.
 
 ## Hyperopt
 
@@ -155,7 +161,14 @@ This specific hyperopt would help you understand the appropriate `DI_values` for
 
 ## Using Tensorboard
 
-CatBoost models benefit from tracking training metrics via Tensorboard. You can take advantage of the FreqAI integration to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
+!!! note "Availability"
+    FreqAI includes tensorboard for a variety of models, including XGBoost, all PyTorch models, Reinforcement Learning, and Catboost. If you would like to see Tensorboard integrated into another model type, please open an issue on the [Freqtrade GitHub](https://github.com/freqtrade/freqtrade/issues)
+
+!!! danger "Requirements"
+    Tensorboard logging requires the FreqAI torch installation/docker image.
+
+
+The easiest way to use tensorboard is to ensure `freqai.activate_tensorboard` is set to `True` (default setting) in your configuration file, run FreqAI, then open a separate shell and run:
 
 ```bash
 cd freqtrade
@@ -166,19 +179,6 @@ where `unique-id` is the `identifier` set in the `freqai` configuration file. Th
 
 ![tensorboard](assets/tensorboard.jpg)
 
-## Setting up a follower
 
-You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:
-
-```json
-    "freqai": {
-        "enabled": true,
-        "follow_mode": true,
-        "identifier": "example",
-        "feature_parameters": {
-        // leader bots feature_parameters inserted here 
-        },
-    }
-```
-
-In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models. The user will also need to duplicate the `feature_parameters` parameters from from the leaders freqai configuration file into the freqai section of the followers config. 
+!!! note "Deactivate for improved performance"
+    Tensorboard logging can slow down training and should be deactivated for production use.

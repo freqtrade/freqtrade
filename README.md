@@ -40,6 +40,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [OKX](https://okx.com/)
+- [X] [Bybit](https://bybit.com/)
 
 Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 
@@ -164,6 +165,10 @@ first. If it hasn't been reported, please
 ensure you follow the template guide so that the team can assist you as
 quickly as possible.
 
+For every [issue](https://github.com/freqtrade/freqtrade/issues/new/choose) created, kindly follow up and mark satisfaction or reminder to close issue when equilibrium ground is reached.
+
+--Maintain github's [community policy](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct)--
+
 ### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
 
 Have you a great idea to improve the bot you want to share? Please,
@@ -205,6 +210,6 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - [Python >= 3.8](http://docs.python-guide.org/en/latest/starting/installation/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-- [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
+- [TA-Lib](https://ta-lib.github.io/ta-lib-python/)
 - [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)

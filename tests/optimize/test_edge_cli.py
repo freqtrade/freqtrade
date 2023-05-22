@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
 from freqtrade.enums import RunMode
 from freqtrade.optimize.edge_cli import EdgeCli
-from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, patch_exchange,
+from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, log_has, patch_exchange,
                             patched_configuration_load_config_file)
 
 
@@ -71,7 +71,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
 
 def test_start(mocker, fee, edge_conf, caplog) -> None:
     start_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch(f'{EXMS}.get_fee', fee)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.edge_cli.EdgeCli.start', start_mock)
     patched_configuration_load_config_file(mocker, edge_conf)
@@ -101,7 +101,7 @@ def test_edge_init_fee(mocker, edge_conf) -> None:
     patch_exchange(mocker)
     edge_conf['fee'] = 0.1234
     edge_conf['stake_amount'] = 20
-    fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
+    fee_mock = mocker.patch(f'{EXMS}.get_fee', return_value=0.5)
     edge_cli = EdgeCli(edge_conf)
     assert edge_cli.edge.fee == 0.1234
     assert fee_mock.call_count == 0

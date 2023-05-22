@@ -1,10 +1,9 @@
 import logging
 import operator
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import arrow
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
@@ -28,8 +27,8 @@ def load_pair_history(pair: str,
                       fill_up_missing: bool = True,
                       drop_incomplete: bool = False,
                       startup_candles: int = 0,
-                      data_format: str = None,
-                      data_handler: IDataHandler = None,
+                      data_format: Optional[str] = None,
+                      data_handler: Optional[IDataHandler] = None,
                       candle_type: CandleType = CandleType.SPOT
                       ) -> DataFrame:
     """
@@ -69,7 +68,7 @@ def load_data(datadir: Path,
               fail_without_data: bool = False,
               data_format: str = 'json',
               candle_type: CandleType = CandleType.SPOT,
-              user_futures_funding_rate: int = None,
+              user_futures_funding_rate: Optional[int] = None,
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -116,7 +115,7 @@ def refresh_data(*, datadir: Path,
                  timeframe: str,
                  pairs: List[str],
                  exchange: Exchange,
-                 data_format: str = None,
+                 data_format: Optional[str] = None,
                  timerange: Optional[TimeRange] = None,
                  candle_type: CandleType,
                  ) -> None:
@@ -189,7 +188,7 @@ def _download_pair_history(pair: str, *,
                            timeframe: str = '5m',
                            process: str = '',
                            new_pairs_days: int = 30,
-                           data_handler: IDataHandler = None,
+                           data_handler: Optional[IDataHandler] = None,
                            timerange: Optional[TimeRange] = None,
                            candle_type: CandleType,
                            erase: bool = False,
@@ -236,8 +235,8 @@ def _download_pair_history(pair: str, *,
         new_data = exchange.get_historic_ohlcv(pair=pair,
                                                timeframe=timeframe,
                                                since_ms=since_ms if since_ms else
-                                               arrow.utcnow().shift(
-                                                   days=-new_pairs_days).int_timestamp * 1000,
+                                               int((datetime.now() - timedelta(days=new_pairs_days)
+                                                    ).timestamp()) * 1000,
                                                is_new_pair=data.empty,
                                                candle_type=candle_type,
                                                until_ms=until_ms if until_ms else None
@@ -272,7 +271,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                 datadir: Path, trading_mode: str,
                                 timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
-                                data_format: str = None,
+                                data_format: Optional[str] = None,
                                 prepend: bool = False,
                                 ) -> List[str]:
     """
@@ -349,7 +348,7 @@ def _download_trades_history(exchange: Exchange,
             trades = []
 
         if not since:
-            since = arrow.utcnow().shift(days=-new_pairs_days).int_timestamp * 1000
+            since = int((datetime.now() - timedelta(days=-new_pairs_days)).timestamp()) * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:

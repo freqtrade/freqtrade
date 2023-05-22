@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 10 9 8
+    for v in 11 10 9 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -49,48 +49,49 @@ function updateenv() {
     source .env/bin/activate
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
-    ${PYTHON} -m pip install --upgrade pip
-    read -p "Do you want to install dependencies for dev [y/N]? "
+    ${PYTHON} -m pip install --upgrade pip wheel setuptools
+    REQUIREMENTS_HYPEROPT=""
+    REQUIREMENTS_PLOT=""
+    REQUIREMENTS_FREQAI=""
+    REQUIREMENTS_FREQAI_RL=""
+    REQUIREMENTS=requirements.txt
+
+    read -p "Do you want to install dependencies for development (Performs a full install with all dependencies) [y/N]? "
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
     else
-        REQUIREMENTS=requirements.txt
-    fi
-    REQUIREMENTS_HYPEROPT=""
-    REQUIREMENTS_PLOT=""
-     read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        REQUIREMENTS_PLOT="-r requirements-plot.txt"
-    fi
-    if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
-        echo "Detected Raspberry, installing cython, skipping hyperopt installation."
-        ${PYTHON} -m pip install --upgrade cython
-    else
-        # Is not Raspberry
-        read -p "Do you want to install hyperopt dependencies [y/N]? "
+        # requirements-dev.txt includes all the below requirements already, so further questions are pointless.
+        read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
-            REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+            REQUIREMENTS_PLOT="-r requirements-plot.txt"
         fi
-    fi
+        if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
+            echo "Detected Raspberry, installing cython, skipping hyperopt installation."
+            ${PYTHON} -m pip install --upgrade cython
+        else
+            # Is not Raspberry
+            read -p "Do you want to install hyperopt dependencies [y/N]? "
+            if [[ $REPLY =~ ^[Yy]$ ]]
+            then
+                REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
+            fi
+        fi
 
-    REQUIREMENTS_FREQAI=""
-    REQUIREMENTS_FREQAI_RL=""
-    read -p "Do you want to install dependencies for freqai [y/N]? "
-    dev=$REPLY
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
-        read -p "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]? "
-        dev=$REPLY
+        read -p "Do you want to install dependencies for freqai [y/N]? "
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
-            REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"
+            REQUIREMENTS_FREQAI="-r requirements-freqai.txt --use-pep517"
+            read -p "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]? "
+            if [[ $REPLY =~ ^[Yy]$ ]]
+            then
+                REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"
+            fi
         fi
     fi
+    install_talib
 
     ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT} ${REQUIREMENTS_FREQAI} ${REQUIREMENTS_FREQAI_RL}
     if [ $? -ne 0 ]; then
@@ -168,21 +169,18 @@ function install_macos() {
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
     fi
-    install_talib
 }
 
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
     sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git curl $(echo lib${PYTHON}-dev ${PYTHON}-venv)
-    install_talib
 }
 
 # Install bot RedHat_CentOS
 function install_redhat() {
     sudo yum update
     sudo yum install -y gcc gcc-c++ make autoconf libtool pkg-config wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
-    install_talib
 }
 
 # Upgrade the bot
@@ -191,26 +189,37 @@ function update() {
     updateenv
 }
 
+function check_git_changes() {
+    if [ -z "$(git status --porcelain)" ]; then
+        echo "No changes in git directory"
+        return 1
+    else
+        echo "Changes in git directory"
+        return 0
+    fi
+}
+
 # Reset Develop or Stable branch
 function reset() {
     echo_block "Resetting branch and virtual env"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
+        if check_git_changes; then
+            read -p "Keep your local changes? (Otherwise will remove all changes you made!) [Y/n]? "
+            if [[ $REPLY =~ ^[Nn]$ ]]; then
 
-        read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+                git fetch -a
 
-            git fetch -a
-
-            if [ "1" == $(git branch -vv | grep -c "* develop") ]
-            then
-                echo "- Hard resetting of 'develop' branch."
-                git reset --hard origin/develop
-            elif [ "1" == $(git branch -vv | grep -c "* stable") ]
-            then
-                echo "- Hard resetting of 'stable' branch."
-                git reset --hard origin/stable
+                if [ "1" == $(git branch -vv | grep -c "* develop") ]
+                then
+                    echo "- Hard resetting of 'develop' branch."
+                    git reset --hard origin/develop
+                elif [ "1" == $(git branch -vv | grep -c "* stable") ]
+                then
+                    echo "- Hard resetting of 'stable' branch."
+                    git reset --hard origin/stable
+                fi
             fi
         fi
     else
@@ -249,7 +258,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.8 - 3.10, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.8 - 3.11, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi

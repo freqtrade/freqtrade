@@ -40,7 +40,13 @@ logger = logging.getLogger(__name__)
 # 2.20: Add websocket endpoints
 # 2.21: Add new_candle messagetype
 # 2.22: Add FreqAI to backtesting
-API_VERSION = 2.22
+# 2.23: Allow plot config request in webserver mode
+# 2.24: Add cancel_open_order endpoint
+# 2.25: Add several profit values to /status endpoint
+# 2.26: increase /balance output
+# 2.27: Add /trades/<id>/reload endpoint
+# 2.28: Switch reload endpoint to Post
+API_VERSION = 2.28
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -120,6 +126,18 @@ def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
 def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete(tradeid)
+
+
+@router.delete('/trades/{tradeid}/open-order', response_model=OpenTradeSchema,  tags=['trading'])
+def trade_cancel_open_order(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_cancel_open_order(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
+
+
+@router.post('/trades/{tradeid}/reload', response_model=OpenTradeSchema,  tags=['trading'])
+def trade_reload(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_reload_trade_from_exchange(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
 
 
 # TODO: Missing response model
@@ -237,19 +255,32 @@ def pair_candles(
 
 @router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
 def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
+                 freqaimodel: Optional[str] = None,
                  config=Depends(get_config), exchange=Depends(get_exchange)):
     # The initial call to this endpoint can be slow, as it may need to initialize
     # the exchange class.
     config = deepcopy(config)
     config.update({
         'strategy': strategy,
+        'timerange': timerange,
+        'freqaimodel': freqaimodel if freqaimodel else config.get('freqaimodel'),
     })
-    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange, exchange)
+    return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange)
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
-def plot_config(rpc: RPC = Depends(get_rpc)):
-    return PlotConfig.parse_obj(rpc._rpc_plot_config())
+def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
+                rpc: Optional[RPC] = Depends(get_rpc_optional)):
+    if not strategy:
+        if not rpc:
+            raise RPCException("Strategy is mandatory in webserver mode.")
+        return PlotConfig.parse_obj(rpc._rpc_plot_config())
+    else:
+        config1 = deepcopy(config)
+        config1.update({
+            'strategy': strategy
+        })
+        return PlotConfig.parse_obj(RPC._rpc_plot_config_with_strategy(config1))
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
@@ -284,11 +315,11 @@ def get_strategy(strategy: str, config=Depends(get_config)):
 @router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])
 def list_freqaimodels(config=Depends(get_config)):
     from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
-    strategies = FreqaiModelResolver.search_all_objects(
+    models = FreqaiModelResolver.search_all_objects(
         config, False)
-    strategies = sorted(strategies, key=lambda x: x['name'])
+    models = sorted(models, key=lambda x: x['name'])
 
-    return {'freqaimodels': [x['name'] for x in strategies]}
+    return {'freqaimodels': [x['name'] for x in models]}
 
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
@@ -328,4 +359,4 @@ def sysinfo():
 
 @router.get('/health', response_model=Health, tags=['info'])
 def health(rpc: RPC = Depends(get_rpc)):
-    return rpc._health()
+    return rpc.health()

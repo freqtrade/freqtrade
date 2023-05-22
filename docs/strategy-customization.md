@@ -881,13 +881,15 @@ All columns of the informative dataframe will be available on the returning data
 
 ### *stoploss_from_open()*
 
-Stoploss values returned from `custom_stoploss` must specify a percentage relative to `current_rate`, but sometimes you may want to specify a stoploss relative to the open price instead. `stoploss_from_open()` is a helper function to calculate a stoploss value that can be returned from `custom_stoploss` which will be equivalent to the desired percentage above the open price.
+Stoploss values returned from `custom_stoploss` must specify a percentage relative to `current_rate`, but sometimes you may want to specify a stoploss relative to the entry point instead. `stoploss_from_open()` is a helper function to calculate a stoploss value that can be returned from `custom_stoploss` which will be equivalent to the desired trade profit above the entry point.
 
 ??? Example "Returning a stoploss relative to the open price from the custom stoploss function"
 
     Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).  
 
     If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, current_profit, False)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+
+    This function will consider leverage - so at 10x leverage, the actual stoploss would be 0.7% above $100 (0.7% * 10x = 7%).
 
 
     ``` python
@@ -907,7 +909,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
             # once the profit has risen above 10%, keep the stoploss at 7% above the open price
             if current_profit > 0.10:
-                return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
+                return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
 
             return 1
 
@@ -954,12 +956,14 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ## Additional data (Wallets)
 
-The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
+The strategy provides access to the `wallets` object. This contains the current balances on the exchange.
 
-!!! Note
-    Wallets is not available during backtesting / hyperopt.
+!!! Note "Backtesting / Hyperopt"
+    Wallets behaves differently depending on the function it's called.
+    Within `populate_*()` methods, it'll return the full wallet as configured.
+    Within [callbacks](strategy-callbacks.md), you'll get the wallet state corresponding to the actual simulated wallet at that point in the simulation process.
 
-Please always check if `Wallets` is available to avoid failures during backtesting.
+Please always check if `wallets` is available to avoid failures during backtesting.
 
 ``` python
 if self.wallets:
@@ -1036,11 +1040,10 @@ from datetime import timedelta, datetime, timezone
 
 # Within populate indicators (or populate_buy):
 if self.config['runmode'].value in ('live', 'dry_run'):
-   # fetch closed trades for the last 2 days
-    trades = Trade.get_trades([Trade.pair == metadata['pair'],
-                               Trade.open_date > datetime.utcnow() - timedelta(days=2),
-                               Trade.is_open.is_(False),
-                ]).all()
+    # fetch closed trades for the last 2 days
+    trades = Trade.get_trades_proxy(
+        pair=metadata['pair'], is_open=False, 
+        open_date=datetime.now(timezone.utc) - timedelta(days=2))
     # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
     sumprofit = sum(trade.close_profit for trade in trades)
     if sumprofit < 0:

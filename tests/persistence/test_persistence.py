@@ -2,13 +2,14 @@
 from datetime import datetime, timedelta, timezone
 from types import FunctionType
 
-import arrow
 import pytest
+from sqlalchemy import select
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
+from freqtrade.util import dt_now
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
 
 
@@ -26,7 +27,7 @@ def test_enter_exit_side(fee, is_short):
         open_rate=0.01,
         amount=5,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -48,7 +49,7 @@ def test_set_stop_loss_liquidation(fee):
         open_rate=2.0,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -238,7 +239,7 @@ def test_interest(fee, exchange, is_short, lev, minutes, rate, interest,
         stake_amount=20.0,
         amount=30.0,
         open_rate=2.0,
-        open_date=datetime.utcnow() - timedelta(minutes=minutes),
+        open_date=datetime.now(timezone.utc) - timedelta(minutes=minutes),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange=exchange,
@@ -328,7 +329,7 @@ def test_borrowed(fee, is_short, lev, borrowed, trading_mode):
         open_rate=2.0,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -427,7 +428,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
         open_rate=open_rate,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -484,7 +485,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         exchange='binance',
         trading_mode=margin,
         leverage=1.0,
@@ -634,7 +635,7 @@ def test_trade_close(fee):
     assert pytest.approx(trade.close_profit) == 0.094513715
     assert trade.close_date is not None
 
-    new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    new_date = datetime(2020, 2, 2, 15, 6, 1),
     assert trade.close_date != new_date
     # Close should NOT update close_date if the trade has been closed already
     assert trade.is_open is False
@@ -1325,74 +1326,82 @@ def test_to_json(fee):
         amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         open_rate=0.123,
         exchange='binance',
         enter_tag=None,
-        open_order_id='dry_run_buy_12345'
+        open_order_id='dry_run_buy_12345',
+        precision_mode=1,
+        amount_precision=8.0,
+        price_precision=7.0,
     )
     result = trade.to_json()
     assert isinstance(result, dict)
 
-    assert result == {'trade_id': None,
-                      'pair': 'ADA/USDT',
-                      'base_currency': 'ADA',
-                      'quote_currency': 'USDT',
-                      'is_open': None,
-                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
-                      'open_timestamp': int(trade.open_date.timestamp() * 1000),
-                      'open_order_id': 'dry_run_buy_12345',
-                      'close_date': None,
-                      'close_timestamp': None,
-                      'open_rate': 0.123,
-                      'open_rate_requested': None,
-                      'open_trade_value': 15.1668225,
-                      'fee_close': 0.0025,
-                      'fee_close_cost': None,
-                      'fee_close_currency': None,
-                      'fee_open': 0.0025,
-                      'fee_open_cost': None,
-                      'fee_open_currency': None,
-                      'close_rate': None,
-                      'close_rate_requested': None,
-                      'amount': 123.0,
-                      'amount_requested': 123.0,
-                      'stake_amount': 0.001,
-                      'max_stake_amount': None,
-                      'trade_duration': None,
-                      'trade_duration_s': None,
-                      'realized_profit': 0.0,
-                      'close_profit': None,
-                      'close_profit_pct': None,
-                      'close_profit_abs': None,
-                      'profit_ratio': None,
-                      'profit_pct': None,
-                      'profit_abs': None,
-                      'exit_reason': None,
-                      'exit_order_status': None,
-                      'stop_loss_abs': None,
-                      'stop_loss_ratio': None,
-                      'stop_loss_pct': None,
-                      'stoploss_order_id': None,
-                      'stoploss_last_update': None,
-                      'stoploss_last_update_timestamp': None,
-                      'initial_stop_loss_abs': None,
-                      'initial_stop_loss_pct': None,
-                      'initial_stop_loss_ratio': None,
-                      'min_rate': None,
-                      'max_rate': None,
-                      'strategy': None,
-                      'enter_tag': None,
-                      'timeframe': None,
-                      'exchange': 'binance',
-                      'leverage': None,
-                      'interest_rate': None,
-                      'liquidation_price': None,
-                      'is_short': None,
-                      'trading_mode': None,
-                      'funding_fees': None,
-                      'orders': [],
-                      }
+    assert result == {
+        'trade_id': None,
+        'pair': 'ADA/USDT',
+        'base_currency': 'ADA',
+        'quote_currency': 'USDT',
+        'is_open': None,
+        'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
+        'open_timestamp': int(trade.open_date.timestamp() * 1000),
+        'open_order_id': 'dry_run_buy_12345',
+        'close_date': None,
+        'close_timestamp': None,
+        'open_rate': 0.123,
+        'open_rate_requested': None,
+        'open_trade_value': 15.1668225,
+        'fee_close': 0.0025,
+        'fee_close_cost': None,
+        'fee_close_currency': None,
+        'fee_open': 0.0025,
+        'fee_open_cost': None,
+        'fee_open_currency': None,
+        'close_rate': None,
+        'close_rate_requested': None,
+        'amount': 123.0,
+        'amount_requested': 123.0,
+        'stake_amount': 0.001,
+        'max_stake_amount': None,
+        'trade_duration': None,
+        'trade_duration_s': None,
+        'realized_profit': 0.0,
+        'realized_profit_ratio': None,
+        'close_profit': None,
+        'close_profit_pct': None,
+        'close_profit_abs': None,
+        'profit_ratio': None,
+        'profit_pct': None,
+        'profit_abs': None,
+        'exit_reason': None,
+        'exit_order_status': None,
+        'stop_loss_abs': None,
+        'stop_loss_ratio': None,
+        'stop_loss_pct': None,
+        'stoploss_order_id': None,
+        'stoploss_last_update': None,
+        'stoploss_last_update_timestamp': None,
+        'initial_stop_loss_abs': None,
+        'initial_stop_loss_pct': None,
+        'initial_stop_loss_ratio': None,
+        'min_rate': None,
+        'max_rate': None,
+        'strategy': None,
+        'enter_tag': None,
+        'timeframe': None,
+        'exchange': 'binance',
+        'leverage': None,
+        'interest_rate': None,
+        'liquidation_price': None,
+        'is_short': None,
+        'trading_mode': None,
+        'funding_fees': None,
+        'amount_precision': 8.0,
+        'price_precision': 7.0,
+        'precision_mode': 1,
+        'orders': [],
+    }
 
     # Simulate dry_run entries
     trade = Trade(
@@ -1402,75 +1411,83 @@ def test_to_json(fee):
         amount_requested=101.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
-        close_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=2),
+        close_date=dt_now() - timedelta(hours=1),
         open_rate=0.123,
         close_rate=0.125,
         enter_tag='buys_signal_001',
         exchange='binance',
+        precision_mode=2,
+        amount_precision=7.0,
+        price_precision=8.0,
     )
     result = trade.to_json()
     assert isinstance(result, dict)
 
-    assert result == {'trade_id': None,
-                      'pair': 'XRP/BTC',
-                      'base_currency': 'XRP',
-                      'quote_currency': 'BTC',
-                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
-                      'open_timestamp': int(trade.open_date.timestamp() * 1000),
-                      'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
-                      'close_timestamp': int(trade.close_date.timestamp() * 1000),
-                      'open_rate': 0.123,
-                      'close_rate': 0.125,
-                      'amount': 100.0,
-                      'amount_requested': 101.0,
-                      'stake_amount': 0.001,
-                      'max_stake_amount': None,
-                      'trade_duration': 60,
-                      'trade_duration_s': 3600,
-                      'stop_loss_abs': None,
-                      'stop_loss_pct': None,
-                      'stop_loss_ratio': None,
-                      'stoploss_order_id': None,
-                      'stoploss_last_update': None,
-                      'stoploss_last_update_timestamp': None,
-                      'initial_stop_loss_abs': None,
-                      'initial_stop_loss_pct': None,
-                      'initial_stop_loss_ratio': None,
-                      'realized_profit': 0.0,
-                      'close_profit': None,
-                      'close_profit_pct': None,
-                      'close_profit_abs': None,
-                      'profit_ratio': None,
-                      'profit_pct': None,
-                      'profit_abs': None,
-                      'close_rate_requested': None,
-                      'fee_close': 0.0025,
-                      'fee_close_cost': None,
-                      'fee_close_currency': None,
-                      'fee_open': 0.0025,
-                      'fee_open_cost': None,
-                      'fee_open_currency': None,
-                      'is_open': None,
-                      'max_rate': None,
-                      'min_rate': None,
-                      'open_order_id': None,
-                      'open_rate_requested': None,
-                      'open_trade_value': 12.33075,
-                      'exit_reason': None,
-                      'exit_order_status': None,
-                      'strategy': None,
-                      'enter_tag': 'buys_signal_001',
-                      'timeframe': None,
-                      'exchange': 'binance',
-                      'leverage': None,
-                      'interest_rate': None,
-                      'liquidation_price': None,
-                      'is_short': None,
-                      'trading_mode': None,
-                      'funding_fees': None,
-                      'orders': [],
-                      }
+    assert result == {
+        'trade_id': None,
+        'pair': 'XRP/BTC',
+        'base_currency': 'XRP',
+        'quote_currency': 'BTC',
+        'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
+        'open_timestamp': int(trade.open_date.timestamp() * 1000),
+        'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
+        'close_timestamp': int(trade.close_date.timestamp() * 1000),
+        'open_rate': 0.123,
+        'close_rate': 0.125,
+        'amount': 100.0,
+        'amount_requested': 101.0,
+        'stake_amount': 0.001,
+        'max_stake_amount': None,
+        'trade_duration': 60,
+        'trade_duration_s': 3600,
+        'stop_loss_abs': None,
+        'stop_loss_pct': None,
+        'stop_loss_ratio': None,
+        'stoploss_order_id': None,
+        'stoploss_last_update': None,
+        'stoploss_last_update_timestamp': None,
+        'initial_stop_loss_abs': None,
+        'initial_stop_loss_pct': None,
+        'initial_stop_loss_ratio': None,
+        'realized_profit': 0.0,
+        'realized_profit_ratio': None,
+        'close_profit': None,
+        'close_profit_pct': None,
+        'close_profit_abs': None,
+        'profit_ratio': None,
+        'profit_pct': None,
+        'profit_abs': None,
+        'close_rate_requested': None,
+        'fee_close': 0.0025,
+        'fee_close_cost': None,
+        'fee_close_currency': None,
+        'fee_open': 0.0025,
+        'fee_open_cost': None,
+        'fee_open_currency': None,
+        'is_open': None,
+        'max_rate': None,
+        'min_rate': None,
+        'open_order_id': None,
+        'open_rate_requested': None,
+        'open_trade_value': 12.33075,
+        'exit_reason': None,
+        'exit_order_status': None,
+        'strategy': None,
+        'enter_tag': 'buys_signal_001',
+        'timeframe': None,
+        'exchange': 'binance',
+        'leverage': None,
+        'interest_rate': None,
+        'liquidation_price': None,
+        'is_short': None,
+        'trading_mode': None,
+        'funding_fees': None,
+        'amount_precision': 7.0,
+        'price_precision': 8.0,
+        'precision_mode': 2,
+        'orders': [],
+    }
 
 
 def test_stoploss_reinitialization(default_conf, fee):
@@ -1479,7 +1496,7 @@ def test_stoploss_reinitialization(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1492,7 +1509,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1540,7 +1557,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1554,7 +1571,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 0.98
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
 
     # Lower stoploss
@@ -1602,7 +1619,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=0.001,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=10,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1616,7 +1633,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.02
     assert trade.initial_stop_loss_pct == -0.1
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
     Trade.commit()
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
@@ -1661,7 +1678,7 @@ def test_update_fee(fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1700,7 +1717,7 @@ def test_fee_updated(fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1791,17 +1808,17 @@ def test_get_trades_proxy(fee, use_db, is_short):
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
 def test_get_trades__query(fee, is_short):
-    query = Trade.get_trades([])
+    query = Trade.get_trades_query([])
     # without orders there should be no join issued.
-    query1 = Trade.get_trades([], include_orders=False)
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     # Empty "with-options -> default - selectin"
     assert query._with_options == ()
     assert query1._with_options != ()
 
     create_mock_trades(fee, is_short)
-    query = Trade.get_trades([])
-    query1 = Trade.get_trades([], include_orders=False)
+    query = Trade.get_trades_query([])
+    query1 = Trade.get_trades_query([], include_orders=False)
 
     assert query._with_options == ()
     assert query1._with_options != ()
@@ -1868,7 +1885,10 @@ def test_get_exit_order_count(fee, is_short):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_order_from_ccxt(caplog):
+def test_update_order_from_ccxt(caplog, time_machine):
+    start = datetime(2023, 1, 1, 4, tzinfo=timezone.utc)
+    time_machine.move_to(start, tick=False)
+
     # Most basic order return (only has orderid)
     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ADA/USDT', 'buy', 20.01, 1234.6)
     assert isinstance(o, Order)
@@ -1917,7 +1937,9 @@ def test_update_order_from_ccxt(caplog):
     assert o.filled == 20.0
     assert o.remaining == 0.0
     assert not o.ft_is_open
-    assert o.order_filled_date is not None
+    assert o.order_filled_date == start
+    # Move time
+    time_machine.move_to(start + timedelta(hours=1), tick=False)
 
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
@@ -1930,6 +1952,12 @@ def test_update_order_from_ccxt(caplog):
 
     # Call regular update - shouldn't fail.
     Order.update_orders([o], {'id': '1234'})
+    assert o.order_filled_date == start
+
+    # Fill order again - shouldn't update filled date
+    ccxt_order.update({'id': '1234'})
+    Order.update_orders([o], ccxt_order)
+    assert o.order_filled_date == start
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2003,11 +2031,13 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
+        'get_trades_query',
         'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
         'get_trading_volume',
         'from_json',
+        'validate_string_len',
     )
     EXCLUDES2 = ('trades', 'trades_open', 'bt_trades_open_pp', 'bt_open_open_trade_count',
                  'total_profit')
@@ -2026,6 +2056,31 @@ def test_Trade_object_idem():
             assert item in trade
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_truncates_string_fields():
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=20.0,
+        amount=30.0,
+        open_rate=2.0,
+        open_date=datetime.now(timezone.utc) - timedelta(minutes=20),
+        fee_open=0.001,
+        fee_close=0.001,
+        exchange='binance',
+        leverage=1.0,
+        trading_mode='futures',
+        enter_tag='a' * CUSTOM_TAG_MAX_LENGTH * 2,
+        exit_reason='b' * CUSTOM_TAG_MAX_LENGTH * 2,
+    )
+    Trade.session.add(trade)
+    Trade.commit()
+
+    trade1 = Trade.session.scalars(select(Trade)).first()
+
+    assert trade1.enter_tag == 'a' * CUSTOM_TAG_MAX_LENGTH
+    assert trade1.exit_reason == 'b' * CUSTOM_TAG_MAX_LENGTH
+
+
 def test_recalc_trade_from_orders(fee):
 
     o1_amount = 100
@@ -2037,7 +2092,7 @@ def test_recalc_trade_from_orders(fee):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=o1_cost,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=o1_amount,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -2112,8 +2167,8 @@ def test_recalc_trade_from_orders(fee):
         filled=o2_amount,
         remaining=0,
         cost=o2_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order2)
     trade.recalc_trade_from_orders()
@@ -2146,8 +2201,8 @@ def test_recalc_trade_from_orders(fee):
         filled=o3_amount,
         remaining=0,
         cost=o3_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order3)
     trade.recalc_trade_from_orders()
@@ -2202,7 +2257,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=o1_cost,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=o1_amount,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -2254,8 +2309,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=o1_amount,
         remaining=0,
         cost=o1_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order2)
     trade.recalc_trade_from_orders()
@@ -2282,8 +2337,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=0,
         remaining=4,
         cost=5,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order3)
     trade.recalc_trade_from_orders()
@@ -2309,8 +2364,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=o1_amount,
         remaining=0,
         cost=o1_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order4)
     trade.recalc_trade_from_orders()
@@ -2426,11 +2481,12 @@ def test_select_filled_orders(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_order_to_ccxt(limit_buy_order_open):
+def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
 
     order = Order.parse_from_ccxt_object(limit_buy_order_open, 'mocked', 'buy')
-    order.query.session.add(order)
-    Order.query.session.commit()
+    order.ft_trade_id = 1
+    order.session.add(order)
+    Order.session.commit()
 
     order_resp = Order.order_by_id(limit_buy_order_open['id'])
     assert order_resp
@@ -2439,10 +2495,22 @@ def test_order_to_ccxt(limit_buy_order_open):
     del raw_order['fee']
     del raw_order['datetime']
     del raw_order['info']
-    assert raw_order['stopPrice'] is None
-    del raw_order['stopPrice']
+    assert raw_order.get('stopPrice') is None
+    raw_order.pop('stopPrice', None)
     del limit_buy_order_open['datetime']
     assert raw_order == limit_buy_order_open
+
+    order1 = Order.parse_from_ccxt_object(limit_sell_order_usdt_open, 'mocked', 'sell')
+    order1.ft_order_side = 'stoploss'
+    order1.stop_price = order1.price * 0.9
+    order1.ft_trade_id = 1
+    order1.session.add(order1)
+    Order.session.commit()
+
+    order_resp1 = Order.order_by_id(limit_sell_order_usdt_open['id'])
+    raw_order1 = order_resp1.to_ccxt_object()
+
+    assert raw_order1.get('stopPrice') is not None
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2524,7 +2592,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         open_rate=data['orders'][0][0][2],
         amount=data['orders'][0][0][1],
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=data['fee'],
         fee_close=data['fee'],
         exchange='binance',
@@ -2532,7 +2600,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         leverage=1.0,
         trading_mode=TradingMode.SPOT
     )
-    Trade.query.session.add(trade)
+    Trade.session.add(trade)
 
     for idx, (order, result) in enumerate(data['orders']):
         amount = order[1]
@@ -2554,18 +2622,18 @@ def test_recalc_trade_from_orders_dca(data) -> None:
             filled=amount,
             remaining=0,
             cost=amount * price,
-            order_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
-            order_filled_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
+            order_date=dt_now() - timedelta(hours=10 + idx),
+            order_filled_date=dt_now() - timedelta(hours=10 + idx),
         )
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
         Trade.commit()
 
-        orders1 = Order.query.all()
+        orders1 = Order.session.scalars(select(Order)).all()
         assert orders1
         assert len(orders1) == idx + 1
 
-        trade = Trade.query.first()
+        trade = Trade.session.scalars(select(Trade)).first()
         assert trade
         assert len(trade.orders) == idx + 1
         if idx < len(data) - 1:
@@ -2582,6 +2650,6 @@ def test_recalc_trade_from_orders_dca(data) -> None:
     assert pytest.approx(trade.close_profit_abs) == data['end_profit']
     assert pytest.approx(trade.close_profit) == data['end_profit_ratio']
     assert not trade.is_open
-    trade = Trade.query.first()
+    trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.open_order_id is None

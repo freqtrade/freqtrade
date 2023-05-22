@@ -2,31 +2,34 @@
 Exchange support utils
 """
 from datetime import datetime, timedelta, timezone
-from math import ceil
+from math import ceil, floor
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
-from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
+from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
+                  TRUNCATE, decimal_to_precision)
 
 from freqtrade.exchange.common import BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED
 from freqtrade.util import FtPrecise
+from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
 
 CcxtModuleType = Any
 
 
-def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
+def is_exchange_known_ccxt(
+        exchange_name: str, ccxt_module: Optional[CcxtModuleType] = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 
 
-def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
+def ccxt_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
     """
     Return the list of all exchanges known to ccxt
     """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 
-def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
+def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
     """
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
@@ -86,7 +89,7 @@ def timeframe_to_msecs(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
-def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
+def timeframe_to_prev_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
     """
     Use Timeframe and determine the candle start date for this date.
     Does not round when given a candle start date.
@@ -97,12 +100,11 @@ def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     if not date:
         date = datetime.now(timezone.utc)
 
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_DOWN) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
+    return dt_from_ts(new_timestamp)
 
 
-def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
+def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
     """
     Use Timeframe and determine next candle.
     :param timeframe: timeframe in string format (e.g. "5m")
@@ -111,9 +113,8 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     """
     if not date:
         date = datetime.now(timezone.utc)
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_UP) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
+    return dt_from_ts(new_timestamp)
 
 
 def date_minus_candles(
@@ -218,35 +219,51 @@ def amount_to_contract_precision(
     return amount
 
 
-def price_to_precision(price: float, price_precision: Optional[float],
-                       precisionMode: Optional[int]) -> float:
+def price_to_precision(
+    price: float,
+    price_precision: Optional[float],
+    precisionMode: Optional[int],
+    *,
+    rounding_mode: int = ROUND,
+) -> float:
     """
-    Returns the price rounded up to the precision the Exchange accepts.
+    Returns the price rounded to the precision the Exchange accepts.
     Partial Re-implementation of ccxt internal method decimal_to_precision(),
-    which does not support rounding up
+    which does not support rounding up.
+    For stoploss calculations, must use ROUND_UP for longs, and ROUND_DOWN for shorts.
+
     TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
     align with amount_to_precision().
-    !!! Rounds up
     :param price: price to convert
     :param price_precision: price precision to use. Used from markets[pair]['precision']['price']
     :param precisionMode: precision mode to use. Should be used from precisionMode
                           one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :param rounding_mode: rounding mode to use. Defaults to ROUND
     :return: price rounded up to the precision the Exchange accepts
-
     """
     if price_precision is not None and precisionMode is not None:
-        # price = float(decimal_to_precision(price, rounding_mode=ROUND,
-        #                                    precision=price_precision,
-        #                                    counting_mode=self.precisionMode,
-        #                                    ))
         if precisionMode == TICK_SIZE:
+            if rounding_mode == ROUND:
+                ticks = price / price_precision
+                rounded_ticks = round(ticks)
+                return rounded_ticks * price_precision
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
             if not missing == FtPrecise("0"):
-                price = round(float(str(price_str - missing + precision)), 14)
-        else:
-            symbol_prec = price_precision
-            big_price = price * pow(10, symbol_prec)
-            price = ceil(big_price) / pow(10, symbol_prec)
+                return round(float(str(price_str - missing + precision)), 14)
+            return price
+        elif precisionMode in (SIGNIFICANT_DIGITS, DECIMAL_PLACES):
+            ndigits = round(price_precision)
+            if rounding_mode == ROUND:
+                return round(price, ndigits)
+            ticks = price * (10**ndigits)
+            if rounding_mode == ROUND_UP:
+                return ceil(ticks) / (10**ndigits)
+            if rounding_mode == TRUNCATE:
+                return int(ticks) / (10**ndigits)
+            if rounding_mode == ROUND_DOWN:
+                return floor(ticks) / (10**ndigits)
+            raise ValueError(f"Unknown rounding_mode {rounding_mode}")
+        raise ValueError(f"Unknown precisionMode {precisionMode}")
     return price

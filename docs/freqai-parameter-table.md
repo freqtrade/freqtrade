@@ -15,13 +15,13 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `identifier` | **Required.** <br> A unique ID for the current model. If models are saved to disk, the `identifier` allows for reloading specific pre-trained models/data. <br> **Datatype:** String.
 | `live_retrain_hours` | Frequency of retraining during dry/live runs. <br> **Datatype:** Float > 0. <br> Default: `0` (models retrain as often as possible).
 | `expiration_hours` | Avoid making predictions if a model is more than `expiration_hours` old. <br> **Datatype:** Positive integer. <br> Default: `0` (models never expire).
-| `purge_old_models` | Delete all unused models during live runs (not relevant to backtesting). If set to false (not default), dry/live runs will accumulate all unused models to disk. If <br> **Datatype:** Boolean. <br> Default: `True`.
+| `purge_old_models` | Number of models to keep on disk (not relevant to backtesting). Default is 2, which means that dry/live runs will keep the latest 2 models on disk. Setting to 0 keeps all models. This parameter also accepts a boolean to maintain backwards compatibility. <br> **Datatype:** Integer. <br> Default: `2`.
 | `save_backtest_models` | Save models to disk when running backtesting. Backtesting operates most efficiently by saving the prediction data and reusing them directly for subsequent runs (when you wish to tune entry/exit parameters). Saving backtesting models to disk also allows to use the same model files for starting a dry/live instance with the same model `identifier`. <br> **Datatype:** Boolean. <br> Default: `False` (no models are saved).
 | `fit_live_predictions_candles` | Number of historical candles to use for computing target (label) statistics from prediction data, instead of from the training dataset (more information can be found [here](freqai-configuration.md#creating-a-dynamic-target-threshold)). <br> **Datatype:** Positive integer.
-| `follow_mode` | Use a `follower` that will look for models associated with a specific `identifier` and load those for inferencing. A `follower` will **not** train new models. <br> **Datatype:** Boolean. <br> Default: `False`.
-| `continual_learning` | Use the final state of the most recently trained model as starting point for the new model, allowing for incremental learning (more information can be found [here](freqai-running.md#continual-learning)). <br> **Datatype:** Boolean. <br> Default: `False`.
+| `continual_learning` | Use the final state of the most recently trained model as starting point for the new model, allowing for incremental learning (more information can be found [here](freqai-running.md#continual-learning)). Beware that this is currently a naive approach to incremental learning, and it has a high probability of overfitting/getting stuck in local minima while the market moves away from your model. We have the connections here primarily for experimental purposes and so that it is ready for more mature approaches to continual learning in chaotic systems like the crypto market. <br> **Datatype:** Boolean. <br> Default: `False`.
 | `write_metrics_to_disk` | Collect train timings, inference timings and cpu usage in json file. <br> **Datatype:** Boolean. <br> Default: `False`
 | `data_kitchen_thread_count` | <br> Designate the number of threads you want to use for data processing (outlier methods, normalization, etc.). This has no impact on the number of threads used for training. If user does not set it (default), FreqAI will use max number of threads - 2 (leaving 1 physical core available for Freqtrade bot and FreqUI) <br> **Datatype:** Positive integer.
+| `activate_tensorboard` | <br> Indicate whether or not to activate tensorboard for the tensorboard enabled modules (currently Reinforcment Learning, XGBoost, Catboost, and PyTorch). Tensorboard needs Torch installed, which means you will need the torch/RL docker image or you need to answer "yes" to the install question about whether or not you wish to install Torch. <br> **Datatype:** Boolean. <br> Default: `True`.
 
 ### Feature parameters
 
@@ -46,13 +46,15 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `noise_standard_deviation` | If set, FreqAI adds noise to the training features with the aim of preventing overfitting. FreqAI generates random deviates from a gaussian distribution with a standard deviation of `noise_standard_deviation` and adds them to all data points. `noise_standard_deviation` should be kept relative to the normalized space, i.e., between -1 and 1. In other words, since data in FreqAI is always normalized to be between -1 and 1, `noise_standard_deviation: 0.05` would result in 32% of the data being randomly increased/decreased by more than 2.5% (i.e., the percent of data falling within the first standard deviation). <br> **Datatype:** Integer. <br> Default: `0`.
 | `outlier_protection_percentage` | Enable to prevent outlier detection methods from discarding too much data. If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection, i.e., the original dataset will be kept intact. If the outlier protection is triggered, no predictions will be made based on the training dataset. <br> **Datatype:** Float. <br> Default: `30`.
 | `reverse_train_test_order` | Split the feature dataset (see below) and use the latest data split for training and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, you should be careful to understand the unorthodox nature of this parameter before employing it. <br> **Datatype:** Boolean. <br> Default: `False` (no reversal).
+| `shuffle_after_split` | Split the data into train and test sets, and then shuffle both sets individually. <br> **Datatype:** Boolean. <br> Default: `False`.
+| `buffer_train_data_candles` | Cut `buffer_train_data_candles` off the beginning and end of the training data *after* the indicators were populated. The main example use is when predicting maxima and minima, the argrelextrema function  cannot know the maxima/minima at the edges of the timerange. To improve model accuracy, it is best to compute argrelextrema on the full timerange and then use this function to cut off the edges (buffer) by the kernel. In another case, if the targets are set to a shifted price movement, this buffer is unnecessary because the shifted candles at the end of the timerange will be NaN and FreqAI will automatically cut those off of the training dataset.<br> **Datatype:** Integer. <br> Default: `0`.
 
 ### Data split parameters
 
 |  Parameter | Description |
 |------------|-------------|
 |  |  **Data split parameters within the `freqai.data_split_parameters` sub dictionary**
-| `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
+| `data_split_parameters` | Include any additional parameters available from scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | The fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
 | `shuffle` | Shuffle the training data points during training. Typically, to not remove the chronological order of data in time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean. <br> Defaut: `False`.
 
@@ -83,12 +85,35 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `add_state_info` | Tell FreqAI to include state information in the feature set for training and inferencing. The current state variables include trade duration, current profit, trade position. This is only available in dry/live runs, and is automatically switched to false for backtesting. <br> **Datatype:** bool. <br> Default: `False`.
 | `net_arch` | Network architecture which is well described in [`stable_baselines3` doc](https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html#examples). In summary: `[<shared layers>, dict(vf=[<non-shared value network layers>], pi=[<non-shared policy network layers>])]`. By default this is set to `[128, 128]`, which defines 2 shared hidden layers with 128 units each.
 | `randomize_starting_position` | Randomize the starting point of each episode to avoid overfitting. <br> **Datatype:** bool. <br> Default: `False`.
+| `drop_ohlc_from_features` | Do not include the normalized ohlc data in the feature set passed to the agent during training (ohlc will still be used for driving the environment in all cases) <br> **Datatype:** Boolean. <br> **Default:** `False`
+| `progress_bar` | Display a progress bar with the current progress, elapsed time and estimated remaining time. <br> **Datatype:** Boolean. <br> Default: `False`.
+
+### PyTorch parameters
+
+#### general
+
+|  Parameter | Description |
+|------------|-------------|
+|  |  **Model training parameters within the `freqai.model_training_parameters` sub dictionary**
+| `learning_rate` | Learning rate to be passed to the optimizer. <br> **Datatype:** float. <br> Default: `3e-4`.
+| `model_kwargs` | Parameters to be passed to the model class. <br> **Datatype:** dict. <br> Default: `{}`.
+| `trainer_kwargs` | Parameters to be passed to the trainer class. <br> **Datatype:** dict. <br> Default: `{}`.
+
+#### trainer_kwargs
+
+|  Parameter | Description |
+|------------|-------------|
+|  |  **Model training parameters within the `freqai.model_training_parameters.model_kwargs` sub dictionary**
+| `max_iters` | The number of training iterations to run. iteration here refers to the number of times we call self.optimizer.step(). used to calculate n_epochs. <br> **Datatype:** int. <br> Default: `100`.
+| `batch_size` | The size of the batches to use during training.. <br> **Datatype:** int. <br> Default: `64`.
+| `max_n_eval_batches` | The maximum number batches to use for evaluation.. <br> **Datatype:** int, optional. <br> Default: `None`.
+
 
 ### Additional parameters
 
 |  Parameter | Description |
 |------------|-------------|
 |  |  **Extraneous parameters**
-| `freqai.keras` | If the selected model makes use of Keras (typical for Tensorflow-based prediction models), this flag needs to be activated so that the model save/loading follows Keras standards. <br> **Datatype:** Boolean. <br> Default: `False`.
-| `freqai.conv_width` | The width of a convolutional neural network input tensor. This replaces the need for shifting candles (`include_shifted_candles`) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> **Datatype:** Integer. <br> Default: `2`.
+| `freqai.keras` | If the selected model makes use of Keras (typical for TensorFlow-based prediction models), this flag needs to be activated so that the model save/loading follows Keras standards. <br> **Datatype:** Boolean. <br> Default: `False`.
+| `freqai.conv_width` | The width of a neural network input tensor. This replaces the need for shifting candles (`include_shifted_candles`) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> **Datatype:** Integer. <br> Default: `2`.
 | `freqai.reduce_df_footprint` | Recast all numeric columns to float32/int32, with the objective of reducing ram/disk usage and decreasing train/inference timing. This parameter is set in the main level of the Freqtrade configuration file (not inside FreqAI). <br> **Datatype:** Boolean. <br> Default: `False`.

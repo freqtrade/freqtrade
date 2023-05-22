@@ -1,11 +1,12 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Type
 
 import torch as th
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
+from freqtrade.freqai.RL.BaseEnvironment import BaseEnvironment
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 
 
@@ -57,10 +58,14 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=self.net_arch)
 
+        if self.activate_tensorboard:
+            tb_path = Path(dk.full_path / "tensorboard" / dk.pair.split('/')[0])
+        else:
+            tb_path = None
+
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                    tensorboard_log=Path(
-                                        dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
+                                    tensorboard_log=tb_path,
                                     **self.freqai_info.get('model_training_parameters', {})
                                     )
         else:
@@ -71,7 +76,8 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         model.learn(
             total_timesteps=int(total_timesteps),
-            callback=[self.eval_callback, self.tensorboard_callback]
+            callback=[self.eval_callback, self.tensorboard_callback],
+            progress_bar=self.rl_config.get('progress_bar', False)
         )
 
         if Path(dk.data_path / "best_model.zip").is_file():
@@ -83,7 +89,9 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         return model
 
-    class MyRLEnv(Base5ActionRLEnv):
+    MyRLEnv: Type[BaseEnvironment]
+
+    class MyRLEnv(Base5ActionRLEnv):  # type: ignore[no-redef]
         """
         User can override any function in BaseRLEnv and gym.Env. Here the user
         sets a custom reward based on profit and trade duration.
@@ -93,6 +101,12 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
+
+                        Warning!
+            This is function is a showcase of functionality designed to show as many possible
+            environment control features as possible. It is also designed to run quickly
+            on small computers. This is a benchmark, it is *not* for live production.
+
             :param action: int = The action made by the agent for the current candle.
             :return:
             float = the reward to give to the agent for current step (used for optimization
@@ -100,7 +114,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             """
             # first, penalize if the action is not valid
             if not self._is_valid(action):
-                self.tensorboard_log("is_valid")
+                self.tensorboard_log("invalid", category="actions")
                 return -2
 
             pnl = self.get_unrealized_profit()

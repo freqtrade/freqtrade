@@ -5,23 +5,24 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import ExitType
+from freqtrade.enums import ExitType, TradingMode
 from freqtrade.optimize.backtesting import Backtesting
-from tests.conftest import patch_exchange
+from freqtrade.util.datetime_helpers import dt_utc
+from tests.conftest import EXMS, patch_exchange
 
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    default_conf['max_open_trades'] = 10
+    mocker.patch(f'{EXMS}.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.amount_to_contract_precision',
                  lambda x, *args, **kwargs: round(x, 8))
-    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,
@@ -41,7 +42,6 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
         processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
-        max_open_trades=10,
     )
     results = result['results']
     assert not results.empty
@@ -52,11 +52,11 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'stake_amount': [500.0, 100.0],
          'max_stake_amount': [500.0, 100],
          'amount': [4806.87657523, 970.63960782],
-         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
-                                      Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
+         'open_date': pd.to_datetime([dt_utc(2018, 1, 29, 18, 40, 0),
+                                      dt_utc(2018, 1, 30, 3, 30, 0)], utc=True
                                      ),
-         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 00, 0).datetime,
-                                       Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'close_date': pd.to_datetime([dt_utc(2018, 1, 29, 22, 00, 0),
+                                       dt_utc(2018, 1, 30, 4, 10, 0)], utc=True),
          'open_rate': [0.10401764894444211, 0.10302485],
          'close_rate': [0.10453904066847439, 0.103541],
          'fee_open': [0.0025, 0.0025],
@@ -99,18 +99,19 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
 ])
 def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, leverage) -> None:
     default_conf['use_exit_signal'] = False
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=10)
-    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
-    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
+    mocker.patch(f'{EXMS}.get_fee', fee)
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=10)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
+    mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
 
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,
         "dry_run_wallet": 1000.0,
-        "strategy": "StrategyTestV3"
+        "strategy": "StrategyTestV3",
     })
     backtesting = Backtesting(default_conf)
+    backtesting.trading_mode = TradingMode.FUTURES
     backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'XRP/USDT'

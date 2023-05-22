@@ -143,6 +143,9 @@ class RemotePairList(IPairList):
 
         if self._init_done:
             pairlist = self._pair_cache.get('pairlist')
+            if pairlist == [None]:
+                # Valid but empty pairlist.
+                return []
         else:
             pairlist = []
 
@@ -157,7 +160,7 @@ class RemotePairList(IPairList):
                 file_path = Path(filename)
 
                 if file_path.exists():
-                    with open(filename) as json_file:
+                    with file_path.open() as json_file:
                         # Load the JSON data into a dictionary
                         jsonparse = json.load(json_file)
 
@@ -181,7 +184,11 @@ class RemotePairList(IPairList):
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
-        self._pair_cache['pairlist'] = pairlist.copy()
+        if pairlist:
+            self._pair_cache['pairlist'] = pairlist.copy()
+        else:
+            # If pairlist is empty, set a dummy value to avoid fetching again
+            self._pair_cache['pairlist'] = [None]
 
         if time_elapsed != 0.0:
             self.log_once(f'Pairlist Fetched in {time_elapsed} seconds.', logger.info)

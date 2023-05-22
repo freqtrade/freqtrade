@@ -7,8 +7,21 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+@pytest.mark.parametrize('side,type,time_in_force,expected', [
+    ('buy', 'limit', 'gtc', {'timeInForce': 'GTC'}),
+    ('buy', 'limit', 'IOC', {'timeInForce': 'IOC'}),
+    ('buy', 'market', 'IOC', {}),
+    ('buy', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'market', 'PO', {}),
+    ])
+def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    assert exchange._get_params(side, type, 1, False, time_in_force) == expected
 
 
 @pytest.mark.parametrize('trademode', [TradingMode.FUTURES, TradingMode.SPOT])
@@ -20,7 +33,7 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     (0.99, 220 * 1.01, "buy"),
     (0.98, 220 * 1.02, "buy"),
 ])
-def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
+def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'stop_loss_limit' if trademode == TradingMode.SPOT else 'stop'
@@ -34,13 +47,13 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     default_conf['dry_run'] = False
     default_conf['margin_mode'] = MarginMode.ISOLATED
     default_conf['trading_mode'] = trademode
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+    with pytest.raises(InvalidOrderException):
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
@@ -50,11 +63,11 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     api_mock.create_order.reset_mock()
-    order_types = {'stoploss': 'limit'}
+    order_types = {'stoploss': 'limit', 'stoploss_price_type': 'mark'}
     if limitratio is not None:
         order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
 
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -75,14 +88,14 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     if trademode == TradingMode.SPOT:
         params_dict = {'stopPrice': 220}
     else:
-        params_dict = {'stopPrice': 220, 'reduceOnly': True}
+        params_dict = {'stopPrice': 220, 'reduceOnly': True, 'workingType': 'MARK_PRICE'}
     assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -94,7 +107,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -104,22 +117,22 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "binance",
-                           "stoploss", "create_order", retries=1,
+                           "create_stoploss", "create_order", retries=1,
                            pair='ETH/BTC', amount=1, stop_price=220, order_types={},
                            side=side, leverage=1.0)
 
 
-def test_stoploss_order_dry_run_binance(default_conf, mocker):
+def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+    with pytest.raises(InvalidOrderException):
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
@@ -130,7 +143,7 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -495,7 +508,8 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     for key, value in leverage_tiers.items():
         v = exchange._leverage_tiers[key]
         assert isinstance(v, list)
-        assert len(v) == len(value)
+        # Assert if conftest leverage tiers have less or equal tiers than the exchange
+        assert len(v) >= len(value)
 
 
 def test_additional_exchange_init_binance(default_conf, mocker):
@@ -522,8 +536,15 @@ def test__set_leverage_binance(mocker, default_conf):
     api_mock.set_leverage = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
     default_conf['dry_run'] = False
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._set_leverage(3.0, trading_mode=TradingMode.MARGIN)
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange._set_leverage(3.2, 'BTC/USDT:USDT')
+    assert api_mock.set_leverage.call_count == 1
+    # Leverage is rounded to 3.
+    assert api_mock.set_leverage.call_args_list[0][1]['leverage'] == 3
+    assert api_mock.set_leverage.call_args_list[0][1]['symbol'] == 'BTC/USDT:USDT'
 
     ccxt_exceptionhandlers(
         mocker,
@@ -534,7 +555,6 @@ def test__set_leverage_binance(mocker, default_conf):
         "set_leverage",
         pair="XRP/USDT",
         leverage=5.0,
-        trading_mode=TradingMode.FUTURES
     )
 
 
@@ -575,25 +595,13 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
-@pytest.mark.parametrize("trading_mode,margin_mode,config", [
-    ("spot", "", {}),
-    ("margin", "cross", {"options": {"defaultType": "margin"}}),
-    ("futures", "isolated", {"options": {"defaultType": "future"}}),
-])
-def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = margin_mode
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange._ccxt_config == config
-
-
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
-    ("BNB/BUSD", 0.0, 0.025, 0),
-    ("BNB/USDT", 100.0, 0.0065, 0),
-    ("BTC/USDT", 170.30, 0.004, 0),
-    ("BNB/BUSD", 999999.9, 0.1, 27500.0),
-    ("BNB/USDT", 5000000.0, 0.15, 233035.0),
-    ("BTC/USDT", 600000000, 0.5, 1.997038E8),
+    ("BNB/BUSD:BUSD", 0.0, 0.025, 0),
+    ("BNB/USDT:USDT", 100.0, 0.0065, 0),
+    ("BTC/USDT:USDT", 170.30, 0.004, 0),
+    ("BNB/BUSD:BUSD", 999999.9, 0.1, 27500.0),
+    ("BNB/USDT:USDT", 5000000.0, 0.15, 233035.0),
+    ("BTC/USDT:USDT", 600000000, 0.5, 1.997038E8),
 ])
 def test_get_maintenance_ratio_and_amt_binance(
     default_conf,
@@ -604,7 +612,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     mm_ratio,
     amt,
 ):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
