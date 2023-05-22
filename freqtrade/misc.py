@@ -3,7 +3,6 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
@@ -46,18 +45,6 @@ def round_coin_value(
         val = f"{val} {coin}"
 
     return val
-
-
-def shorten_date(_date: str) -> str:
-    """
-    Trim the date so it fits on small screens
-    """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
-    return new_date
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:

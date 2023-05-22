@@ -4,9 +4,9 @@ Volatility pairlist filter
 import logging
 import sys
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-import arrow
 import numpy as np
 from cachetools import TTLCache
 from pandas import DataFrame
@@ -16,6 +16,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.util import dt_floor_day, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -97,10 +98,7 @@ class VolatilityFilter(IPairList):
         needed_pairs: ListPairsWithTimeframes = [
             (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
-        since_ms = (arrow.utcnow()
-                         .floor('day')
-                         .shift(days=-self._days - 1)
-                         .int_timestamp) * 1000
+        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days - 1))
         # Get all candles
         candles = {}
         if needed_pairs:
