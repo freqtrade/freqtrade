@@ -2,9 +2,10 @@
 This module loads custom exchanges
 """
 import logging
+from typing import Optional
 
 import freqtrade.exchange as exchanges
-from freqtrade.constants import Config
+from freqtrade.constants import Config, ExchangeConfig
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, Exchange
 from freqtrade.resolvers import IResolver
 
@@ -19,8 +20,8 @@ class ExchangeResolver(IResolver):
     object_type = Exchange
 
     @staticmethod
-    def load_exchange(config: Config, validate: bool = True,
-                      load_leverage_tiers: bool = False) -> Exchange:
+    def load_exchange(config: Config, *, exchange_config: Optional[ExchangeConfig] = None,
+                      validate: bool = True, load_leverage_tiers: bool = False) -> Exchange:
         """
         Load the custom class from config parameter
         :param exchange_name: name of the Exchange to load
@@ -37,13 +38,14 @@ class ExchangeResolver(IResolver):
                 kwargs={
                     'config': config,
                     'validate': validate,
+                    'exchange_config': exchange_config,
                     'load_leverage_tiers': load_leverage_tiers}
             )
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
         if not exchange:
-            exchange = Exchange(config, validate=validate)
+            exchange = Exchange(config, validate=validate, exchange_config=exchange_config,)
         return exchange
 
     @staticmethod
