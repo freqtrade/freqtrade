@@ -1650,7 +1650,7 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
 
     ApiBG.pairlist_running = True
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
-    assert_response(rc, 400)
+    assert_response(rc, 202)
     assert rc.json()['detail'] == 'Pairlist evaluation is currently running.'
 
     body = {

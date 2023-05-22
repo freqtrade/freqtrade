@@ -371,7 +371,7 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
 @router.get('/pairlists/evaluate', response_model=WhitelistResponse, tags=['pairlists'])
 def pairlists_evaluate_get():
     if ApiBG.pairlist_running:
-        raise HTTPException(status_code=400, detail='Pairlist evaluation is currently running.')
+        raise HTTPException(status_code=202, detail='Pairlist evaluation is currently running.')
 
     if not ApiBG.pairlist_result:
         raise HTTPException(status_code=400, detail='Pairlist evaluation not started yet.')
