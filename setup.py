@@ -72,7 +72,7 @@ setup(
         'ccxt>=3.0.0',
         'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=20.1',
-        'arrow>=0.17.0',
+        'arrow>=1.0.0',
         'cachetools',
         'requests',
         'urllib3',

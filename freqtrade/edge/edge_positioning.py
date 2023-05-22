@@ -3,9 +3,9 @@
 import logging
 from collections import defaultdict
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, NamedTuple
 
-import arrow
 import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
@@ -18,6 +18,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.strategy.interface import IStrategy
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,8 @@ class Edge:
             self._stoploss_range_step
         )
 
-        self._timerange: TimeRange = TimeRange.parse_timerange("%s-" % arrow.now().shift(
-            days=-1 * self._since_number_of_days).format('YYYYMMDD'))
+        self._timerange: TimeRange = TimeRange.parse_timerange(
+            f"{(dt_now() - timedelta(days=self._since_number_of_days)).strftime('%Y%m%d')}-")
         if config.get('fee'):
             self.fee = config['fee']
         else:
@@ -97,7 +98,7 @@ class Edge:
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (
-                self._last_updated + heartbeat > arrow.utcnow().int_timestamp):
+                self._last_updated + heartbeat > int(dt_now().timestamp())):
             return False
 
         data: Dict[str, Any] = {}
@@ -189,7 +190,7 @@ class Edge:
         # Fill missing, calculable columns, profit, duration , abs etc.
         trades_df = self._fill_calculable_fields(DataFrame(trades))
         self._cached_pairs = self._process_expectancy(trades_df)
-        self._last_updated = arrow.utcnow().int_timestamp
+        self._last_updated = int(dt_now().timestamp())
 
         return True
 

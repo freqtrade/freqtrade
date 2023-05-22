@@ -2,7 +2,6 @@
 from datetime import datetime, timedelta, timezone
 from types import FunctionType
 
-import arrow
 import pytest
 from sqlalchemy import select
 
@@ -10,6 +9,7 @@ from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
+from freqtrade.util import dt_now
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
 
 
@@ -27,7 +27,7 @@ def test_enter_exit_side(fee, is_short):
         open_rate=0.01,
         amount=5,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -49,7 +49,7 @@ def test_set_stop_loss_liquidation(fee):
         open_rate=2.0,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -329,7 +329,7 @@ def test_borrowed(fee, is_short, lev, borrowed, trading_mode):
         open_rate=2.0,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -428,7 +428,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
         open_rate=open_rate,
         amount=30.0,
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -485,7 +485,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         exchange='binance',
         trading_mode=margin,
         leverage=1.0,
@@ -635,7 +635,7 @@ def test_trade_close(fee):
     assert pytest.approx(trade.close_profit) == 0.094513715
     assert trade.close_date is not None
 
-    new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    new_date = datetime(2020, 2, 2, 15, 6, 1),
     assert trade.close_date != new_date
     # Close should NOT update close_date if the trade has been closed already
     assert trade.is_open is False
@@ -1326,7 +1326,7 @@ def test_to_json(fee):
         amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         open_rate=0.123,
         exchange='binance',
         enter_tag=None,
@@ -1411,8 +1411,8 @@ def test_to_json(fee):
         amount_requested=101.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
-        close_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=2),
+        close_date=dt_now() - timedelta(hours=1),
         open_rate=0.123,
         close_rate=0.125,
         enter_tag='buys_signal_001',
@@ -1496,7 +1496,7 @@ def test_stoploss_reinitialization(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1557,7 +1557,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1619,7 +1619,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
         pair='ADA/USDT',
         stake_amount=0.001,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=10,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1678,7 +1678,7 @@ def test_update_fee(fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -1717,7 +1717,7 @@ def test_fee_updated(fee):
         pair='ADA/USDT',
         stake_amount=30.0,
         fee_open=fee.return_value,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
@@ -2092,7 +2092,7 @@ def test_recalc_trade_from_orders(fee):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=o1_cost,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=o1_amount,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -2167,8 +2167,8 @@ def test_recalc_trade_from_orders(fee):
         filled=o2_amount,
         remaining=0,
         cost=o2_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order2)
     trade.recalc_trade_from_orders()
@@ -2201,8 +2201,8 @@ def test_recalc_trade_from_orders(fee):
         filled=o3_amount,
         remaining=0,
         cost=o3_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order3)
     trade.recalc_trade_from_orders()
@@ -2257,7 +2257,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=o1_cost,
-        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_date=dt_now() - timedelta(hours=2),
         amount=o1_amount,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -2309,8 +2309,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=o1_amount,
         remaining=0,
         cost=o1_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order2)
     trade.recalc_trade_from_orders()
@@ -2337,8 +2337,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=0,
         remaining=4,
         cost=5,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order3)
     trade.recalc_trade_from_orders()
@@ -2364,8 +2364,8 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         filled=o1_amount,
         remaining=0,
         cost=o1_cost,
-        order_date=arrow.utcnow().shift(hours=-1).datetime,
-        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_date=dt_now() - timedelta(hours=1),
+        order_filled_date=dt_now() - timedelta(hours=1),
     )
     trade.orders.append(order4)
     trade.recalc_trade_from_orders()
@@ -2592,7 +2592,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         open_rate=data['orders'][0][0][2],
         amount=data['orders'][0][0][1],
         is_open=True,
-        open_date=arrow.utcnow().datetime,
+        open_date=dt_now(),
         fee_open=data['fee'],
         fee_close=data['fee'],
         exchange='binance',
@@ -2622,8 +2622,8 @@ def test_recalc_trade_from_orders_dca(data) -> None:
             filled=amount,
             remaining=0,
             cost=amount * price,
-            order_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
-            order_filled_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
+            order_date=dt_now() - timedelta(hours=10 + idx),
+            order_filled_date=dt_now() - timedelta(hours=10 + idx),
         )
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()

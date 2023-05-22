@@ -6,7 +6,6 @@ from shutil import copyfile
 import joblib
 import pandas as pd
 import pytest
-from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
@@ -25,6 +24,8 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
+from freqtrade.util import dt_ts
+from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _clean_test_file
 
@@ -80,14 +81,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                           "UNITTEST/BTC", "UNITTEST/BTC"],
                                  "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
                                  "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                 "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                               Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                 "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                 "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                                               dt_utc(2017, 11, 14, 21, 36, 00),
+                                               dt_utc(2017, 11, 14, 22, 12, 00),
+                                               dt_utc(2017, 11, 14, 22, 44, 00)],
+                                 "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                                                dt_utc(2017, 11, 14, 22, 10, 00),
+                                                dt_utc(2017, 11, 14, 22, 43, 00),
+                                                dt_utc(2017, 11, 14, 22, 58, 00)],
                                  "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
@@ -106,14 +107,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '123',
         }
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
-    min_date = Arrow.fromtimestamp(1510688220)
-    max_date = Arrow.fromtimestamp(1510700340)
+    min_date = dt_from_ts(1510688220)
+    max_date = dt_from_ts(1510700340)
     btdata = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                                fill_up_missing=True)
 
@@ -135,14 +136,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
             {"pair": ["UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC"],
              "profit_ratio": [0.003312, 0.010801, -0.013803, 0.002780],
              "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
-             "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                           Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                           Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                           Arrow(2017, 11, 14, 22, 44, 00).datetime],
-             "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 58, 00).datetime],
+             "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                           dt_utc(2017, 11, 14, 21, 36, 00),
+                           dt_utc(2017, 11, 14, 22, 12, 00),
+                           dt_utc(2017, 11, 14, 22, 44, 00)],
+             "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                            dt_utc(2017, 11, 14, 22, 10, 00),
+                            dt_utc(2017, 11, 14, 22, 43, 00),
+                            dt_utc(2017, 11, 14, 22, 58, 00)],
              "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
              "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
              "trade_duration": [123, 34, 31, 14],
@@ -161,8 +162,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '124',
         }
     }

@@ -6,7 +6,6 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
-from arrow import Arrow
 from filelock import Timeout
 from skopt.space import Integer
 
@@ -20,6 +19,7 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IntParameter
+from freqtrade.util import dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, get_markets, log_has, log_has_re,
                             patch_exchange, patched_configuration_load_config_file)
 
@@ -349,14 +349,14 @@ def test_hyperopt_format_results(hyperopt):
                                           "UNITTEST/BTC", "UNITTEST/BTC"],
                                  "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
                                  "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                 "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                               Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                 "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                 "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                                               dt_utc(2017, 11, 14, 21, 36, 00),
+                                               dt_utc(2017, 11, 14, 22, 12, 00),
+                                               dt_utc(2017, 11, 14, 22, 44, 00)],
+                                 "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                                                dt_utc(2017, 11, 14, 22, 10, 00),
+                                                dt_utc(2017, 11, 14, 22, 43, 00),
+                                                dt_utc(2017, 11, 14, 22, 58, 00)],
                                  "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
@@ -379,8 +379,8 @@ def test_hyperopt_format_results(hyperopt):
         'backtest_end_time': 1619718665,
     }
     results_metrics = generate_strategy_stats(['XRP/BTC'], '', bt_result,
-                                              Arrow(2017, 11, 14, 19, 32, 00),
-                                              Arrow(2017, 12, 14, 19, 32, 00), market_change=0)
+                                              dt_utc(2017, 11, 14, 19, 32, 00),
+                                              dt_utc(2017, 12, 14, 19, 32, 00), market_change=0)
 
     results_explanation = HyperoptTools.format_results_explanation_string(results_metrics, 'BTC')
     total_profit = results_metrics['profit_total_abs']
@@ -423,14 +423,14 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                           "UNITTEST/BTC", "UNITTEST/BTC"],
                                  "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
                                  "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                 "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                               Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                 "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                 "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                                               dt_utc(2017, 11, 14, 21, 36, 00),
+                                               dt_utc(2017, 11, 14, 22, 12, 00),
+                                               dt_utc(2017, 11, 14, 22, 44, 00)],
+                                 "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                                                dt_utc(2017, 11, 14, 22, 10, 00),
+                                                dt_utc(2017, 11, 14, 22, 43, 00),
+                                                dt_utc(2017, 11, 14, 22, 58, 00)],
                                  "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
@@ -453,7 +453,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
 
     mocker.patch('freqtrade.optimize.hyperopt.Backtesting.backtest', return_value=backtest_result)
     mocker.patch('freqtrade.optimize.hyperopt.get_timerange',
-                 return_value=(Arrow(2017, 12, 10), Arrow(2017, 12, 13)))
+                 return_value=(dt_utc(2017, 12, 10), dt_utc(2017, 12, 13)))
     patch_exchange(mocker)
     mocker.patch.object(Path, 'open')
     mocker.patch('freqtrade.configuration.config_validation.validate_config_schema')
@@ -513,8 +513,8 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
     }
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.min_date = Arrow(2017, 12, 10)
-    hyperopt.max_date = Arrow(2017, 12, 13)
+    hyperopt.min_date = dt_utc(2017, 12, 10)
+    hyperopt.max_date = dt_utc(2017, 12, 13)
     hyperopt.init_spaces()
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected

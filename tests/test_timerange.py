@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 from datetime import datetime, timezone
 
-import arrow
 import pytest
 
 from freqtrade.configuration import TimeRange
@@ -69,7 +68,7 @@ def test_subtract_start():
 
 
 def test_adjust_start_if_necessary():
-    min_date = arrow.Arrow(2017, 11, 14, 21, 15, 00)
+    min_date = datetime(2017, 11, 14, 21, 15, 00, tzinfo=timezone.utc)
 
     x = TimeRange('date', 'date', 1510694100, 1510780500)
     # Adjust by 20 candles - min_date == startts

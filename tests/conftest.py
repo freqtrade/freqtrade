@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
-import arrow
 import numpy as np
 import pandas as pd
 import pytest
@@ -23,6 +22,8 @@ from freqtrade.exchange.exchange import timeframe_to_minutes
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.util import dt_ts
+from freqtrade.util.datetime_helpers import dt_now
 from freqtrade.worker import Worker
 from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
                                    mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
@@ -1663,8 +1664,8 @@ def limit_buy_order_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 0.00001099,
         'average': 0.00001099,
         'amount': 90.99181073,
@@ -1691,8 +1692,8 @@ def limit_buy_order_old():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -1708,8 +1709,8 @@ def limit_sell_order_old():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'ETH/BTC',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -1725,8 +1726,8 @@ def limit_buy_order_old_partial():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'ETH/BTC',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 23.0,
@@ -1756,8 +1757,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': 'AZNPFF-4AC4N-7MKTAT',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'status': 'canceled',
             'symbol': 'LTC/USDT',
@@ -1777,8 +1778,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1798,8 +1799,8 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1823,8 +1824,8 @@ def limit_sell_order_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 0.00001173,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -2486,8 +2487,8 @@ def buy_order_fee():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
+        'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
         'price': 0.245441,
         'amount': 8.0,
         'cost': 1.963528,
@@ -2596,7 +2597,7 @@ def open_trade():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=1,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
@@ -2634,7 +2635,7 @@ def open_trade_usdt():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=60.0,
-        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        open_date=dt_now() - timedelta(minutes=601),
         is_open=True
     )
     trade.orders = [
@@ -2838,8 +2839,8 @@ def limit_buy_order_usdt_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 2.00,
         'average': 2.00,
         'amount': 30.0,
@@ -2866,8 +2867,8 @@ def limit_sell_order_usdt_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
+        'datetime': dt_now().isoformat(),
+        'timestamp': dt_ts(),
         'price': 2.20,
         'amount': 30.0,
         'cost': 66.0,
@@ -2893,8 +2894,8 @@ def market_buy_order_usdt():
         'type': 'market',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 2.00,
         'amount': 30.0,
         'filled': 30.0,
@@ -2950,8 +2951,8 @@ def market_sell_order_usdt():
         'type': 'market',
         'side': 'sell',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': dt_ts(),
+        'datetime': dt_now().isoformat(),
         'price': 2.20,
         'amount': 30.0,
         'filled': 30.0,
