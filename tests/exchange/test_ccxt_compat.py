@@ -226,6 +226,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
+        'use_ci_proxy': True,
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
