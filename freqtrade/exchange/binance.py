@@ -65,7 +65,7 @@ class Binance(Exchange):
         """
         try:
             if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
-                position_side = self._api.fapiPrivateGetPositionsideDual()
+                position_side = self._api.fapiPrivateGetPositionSideDual()
                 self._log_exchange_response('position_side_setting', position_side)
                 assets_margin = self._api.fapiPrivateGetMultiAssetsMargin()
                 self._log_exchange_response('multi_asset_margin', assets_margin)
