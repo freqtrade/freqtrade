@@ -1645,13 +1645,13 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
 
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
 
-    assert_response(rc, 400)
-    assert rc.json()['detail'] == 'Pairlist evaluation not started yet.'
+    assert_response(rc)
+    assert rc.json()['status'] == 'pending'
 
     ApiBG.pairlist_running = True
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
-    assert_response(rc, 202)
-    assert rc.json()['detail'] == 'Pairlist evaluation is currently running.'
+    assert_response(rc)
+    assert rc.json()['status'] == 'running'
 
     body = {
         "pairlists": [
@@ -1675,8 +1675,8 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
     assert_response(rc)
     response = rc.json()
-    assert response['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
-    assert response['length'] == 4
+    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
+    assert response['result']['length'] == 4
 
     # Restart with additional filter, reducing the list to 2
     body['pairlists'].append({"method": "OffsetFilter", "number_assets": 2})
@@ -1687,8 +1687,8 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
     assert_response(rc)
     response = rc.json()
-    assert response['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
-    assert response['length'] == 2
+    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
+    assert response['result']['length'] == 2
 
 
 def test_list_available_pairs(botclient):

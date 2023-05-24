@@ -21,7 +21,8 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   PairListsResponse, PerformanceEntry, Ping,
                                                   PlotConfig, Profit, ResultMsg, ShowConfig, Stats,
                                                   StatusMsg, StrategyListResponse, StrategyResponse,
-                                                  SysInfo, Version, WhitelistResponse)
+                                                  SysInfo, Version, WhitelistEvaluateResponse,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
@@ -372,19 +373,24 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
     }
 
 
-@router.get('/pairlists/evaluate', response_model=WhitelistResponse, tags=['pairlists'])
+@router.get('/pairlists/evaluate', response_model=WhitelistEvaluateResponse, tags=['pairlists'])
 def pairlists_evaluate_get():
-    if ApiBG.pairlist_error:
-        raise HTTPException(status_code=500,
-                            detail='Pairlist evaluation failed: ' + ApiBG.pairlist_error)
 
     if ApiBG.pairlist_running:
-        raise HTTPException(status_code=202, detail='Pairlist evaluation is currently running.')
+        return {'status': 'running'}
+    if ApiBG.pairlist_error:
+        return {
+            'status': 'failed',
+            'error': ApiBG.pairlist_error
+        }
 
     if not ApiBG.pairlist_result:
-        raise HTTPException(status_code=400, detail='Pairlist evaluation not started yet.')
+        return {'status': 'pending'}
 
-    return ApiBG.pairlist_result
+    return {
+        'status': 'success',
+        'result': ApiBG.pairlist_result
+    }
 
 
 @router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])
