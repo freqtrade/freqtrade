@@ -1,5 +1,5 @@
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class ApiBG():
@@ -15,5 +15,6 @@ class ApiBG():
     # Exchange - only available in webserver mode.
     exchange = None
     # Pairlist evaluate things
+    pairlist_error: Optional[str] = None
     pairlist_running: bool = False
     pairlist_result: Dict[str, Any] = {}

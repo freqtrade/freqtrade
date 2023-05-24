@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from fastapi.exceptions import HTTPException
+from sympy import O
 
 from freqtrade import __version__
 from freqtrade.constants import Config
@@ -343,7 +344,9 @@ def __run_pairlist(config_loc: Config):
                 'length': len(pairlists.whitelist),
                 'whitelist': pairlists.whitelist
             }
-
+    except (OperationalException, Exception) as e:
+        logger.exception(e)
+        ApiBG.pairlist_error = str(e)
     finally:
         ApiBG.pairlist_running = False
 
@@ -360,7 +363,8 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
     # TODO: overwrite blacklist? make it optional and fall back to the one in config?
     # Outcome depends on the UI approach.
     config_loc['exchange']['pair_blacklist'] = payload.blacklist
-
+    ApiBG.pairlist_error = None
+    ApiBG.pairlist_result = {}
     background_tasks.add_task(__run_pairlist, config_loc)
     ApiBG.pairlist_running = True
     return {
@@ -370,6 +374,10 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
 
 @router.get('/pairlists/evaluate', response_model=WhitelistResponse, tags=['pairlists'])
 def pairlists_evaluate_get():
+    if ApiBG.pairlist_error:
+        raise HTTPException(status_code=500,
+                            detail='Pairlist evaluation failed: ' + ApiBG.pairlist_error)
+
     if ApiBG.pairlist_running:
         raise HTTPException(status_code=202, detail='Pairlist evaluation is currently running.')
 
