@@ -23,6 +23,8 @@ from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
+from datasieve.pipeline import Pipeline
+import datasieve.transforms as ds
 
 
 pd.options.mode.chained_assignment = None
@@ -565,6 +567,32 @@ class IFreqaiModel(ABC):
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
+
+    def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
+        ft_params = self.freqai_info["feature_parameters"]
+        dk.pipeline = Pipeline([('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
+
+        if ft_params.get("principal_component_analysis", False):
+            dk.pipeline.steps += [('pca', ds.DataSievePCA())]
+            dk.pipeline.steps += [('post-pca-scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))]
+
+        if ft_params.get("use_SVM_to_remove_outliers", False):
+            dk.pipeline.steps += [('svm', ds.SVMOutlierExtractor())]
+
+        if ft_params.get("DI_threshold", 0):
+            dk.pipeline.steps += [('di', ds.DissimilarityIndex())]
+
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
+            dk.pipeline.steps += [('dbscan', ds.DataSieveDBSCAN())]
+
+        dk.pipeline.fitparams = dk.pipeline._validate_fitparams({}, dk.pipeline.steps)
+
+        # if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
+        #     dk.pipeline.extend(('noise', ds.Noise()))
+
+    def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
+
+        dk.label_pipeline = Pipeline([('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """

@@ -49,21 +49,34 @@ class BaseRegressionModel(IFreqaiModel):
         logger.info(f"-------------------- Training on data from {start_date} to "
                     f"{end_date} --------------------")
         # split data into train/test data.
-        data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        d = dk.make_train_test_datasets(features_filtered, labels_filtered)
         if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
-        # normalize all data based on train_dataset only
-        data_dictionary = dk.normalize_data(data_dictionary)
 
-        # optional additional data cleaning/analysis
-        self.data_cleaning_train(dk)
+        self.define_data_pipeline(dk)
+        self.define_label_pipeline(dk)
+
+        d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
+        d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
+
+        (d["train_features"],
+         d["train_labels"],
+         d["train_weights"]) = dk.pipeline.fit_transform(d["train_features"],
+                                                         d["train_labels"],
+                                                         d["train_weights"])
+
+        (d["test_features"],
+         d["test_labels"],
+         d["test_weights"]) = dk.pipeline.transform(d["test_features"],
+                                                    d["test_labels"],
+                                                    d["test_weights"])
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
         )
-        logger.info(f"Training model on {len(data_dictionary['train_features'])} data points")
+        logger.info(f"Training model on {len(d['train_features'])} data points")
 
-        model = self.fit(data_dictionary, dk)
+        model = self.fit(d, dk)
 
         end_time = time()
 
@@ -88,11 +101,11 @@ class BaseRegressionModel(IFreqaiModel):
         filtered_df, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
-        filtered_df = dk.normalize_data_from_metadata(filtered_df)
+        # filtered_df = dk.normalize_data_from_metadata(filtered_df)
         dk.data_dictionary["prediction_features"] = filtered_df
 
-        # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk)
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
         if self.CONV_WIDTH == 1:
@@ -100,6 +113,8 @@ class BaseRegressionModel(IFreqaiModel):
 
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
-        pred_df = dk.denormalize_labels_from_metadata(pred_df)
+        pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
+        dk.DI_values = dk.label_pipeline.get_step("di").di_values
+        dk.do_predict = outliers.to_numpy()
 
         return (pred_df, dk.do_predict)

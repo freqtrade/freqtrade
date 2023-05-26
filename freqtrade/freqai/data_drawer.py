@@ -460,6 +460,13 @@ class FreqaiDataDrawer:
         with (save_path / f"{dk.model_filename}_metadata.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
+        # save the pipelines to pickle files
+        with (save_path / f"{dk.model_filename}_pipeline.pkl").open("wb") as fp:
+            cloudpickle.dump(dk.pipeline, fp)
+
+        with (save_path / f"{dk.model_filename}_label_pipeline.pkl").open("wb") as fp:
+            cloudpickle.dump(dk.label_pipeline, fp)
+
         # save the train data to file so we can check preds for area of applicability later
         dk.data_dictionary["train_features"].to_pickle(
             save_path / f"{dk.model_filename}_trained_df.pkl"
@@ -482,6 +489,8 @@ class FreqaiDataDrawer:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
         self.meta_data_dictionary[coin]["meta_data"] = dk.data
+        self.meta_data_dictionary[coin]["pipeline"] = dk.pipeline
+        self.meta_data_dictionary[coin]["label_pipeline"] = dk.label_pipeline
         self.save_drawer_to_disk()
 
         return
@@ -513,6 +522,8 @@ class FreqaiDataDrawer:
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
             dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin]["train_df"]
+            dk.pipeline = self.meta_data_dictionary[coin]["pipeline"]
+            dk.label_pipeline = self.meta_data_dictionary[coin]["label_pipeline"]
         else:
             with (dk.data_path / f"{dk.model_filename}_metadata.json").open("r") as fp:
                 dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
@@ -520,6 +531,10 @@ class FreqaiDataDrawer:
             dk.data_dictionary["train_features"] = pd.read_pickle(
                 dk.data_path / f"{dk.model_filename}_trained_df.pkl"
             )
+            with (dk.data_path / f"{dk.model_filename}_pipeline.pkl").open("rb") as fp:
+                dk.pipeline = cloudpickle.load(fp)
+            with (dk.data_path / f"{dk.model_filename}_label_pipeline.pkl").open("rb") as fp:
+                dk.label_pipeline = cloudpickle.load(fp)
 
         dk.training_features_list = dk.data["training_features_list"]
         dk.label_list = dk.data["label_list"]
