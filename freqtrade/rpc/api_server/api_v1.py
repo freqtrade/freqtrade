@@ -4,7 +4,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from fastapi.exceptions import HTTPException
-from sympy import O
 
 from freqtrade import __version__
 from freqtrade.constants import Config
