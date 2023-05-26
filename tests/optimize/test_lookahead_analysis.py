@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -9,7 +9,7 @@ import pytest
 from freqtrade.commands.optimize_commands import start_lookahead_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
+from freqtrade.optimize.lookahead_analysis import Analysis, LookaheadAnalysis
 from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
 from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
@@ -32,7 +32,7 @@ def test_start_lookahead_analysis(mocker):
         'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
         initialize_single_lookahead_analysis=single_mock,
         text_table_lookahead_analysis_instances=text_table_mock,
-        )
+    )
     args = [
         "lookahead-analysis",
         "--strategy",
@@ -60,7 +60,7 @@ def test_start_lookahead_analysis(mocker):
         "10",
         "--minimum-trade-amount",
         "20",
-        ]
+    ]
     pargs = get_args(args)
     pargs['config'] = None
     with pytest.raises(OperationalException,
@@ -87,10 +87,10 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
-            'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
-            initialize_single_lookahead_analysis=single_mock,
-            text_table_lookahead_analysis_instances=text_table_mock,
-        )
+        'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
+        initialize_single_lookahead_analysis=single_mock,
+        text_table_lookahead_analysis_instances=text_table_mock,
+    )
     LookaheadAnalysisSubFunctions.start(lookahead_conf)
     assert single_mock.call_count == 1
     assert text_table_mock.call_count == 1
@@ -99,9 +99,52 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     text_table_mock.reset_mock()
 
 
-def test_lookahead_helper_text_table_lookahead_analysis_instances():
-    # TODO
-    pytest.skip("TODO")
+def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf, caplog):
+    analysis = Analysis()
+    analysis.total_signals = 5
+    analysis.has_bias = True
+    analysis.false_entry_signals = 4
+    analysis.false_exit_signals = 3
+
+    strategy_obj = \
+        {
+            'name': "strategy_test_v3_with_lookahead_bias",
+            'location': PurePosixPath(lookahead_conf['strategy_path'],
+                                      f"{lookahead_conf['strategy']}.py")
+        }
+
+    instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
+    instance.current_analysis = analysis
+    table, headers, data = (LookaheadAnalysisSubFunctions.
+                            text_table_lookahead_analysis_instances([instance]))
+
+    # check amount of returning rows
+    assert len(data) == 1
+
+    # check row contents for a try that errored out
+    assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
+    assert data[0][1] == 'strategy_test_v3_with_lookahead_bias'
+    assert data[0][2].__contains__('error')
+    assert len(data[0]) == 3
+
+    # edit it into not showing an error
+    instance.failed_bias_check = False
+    table, headers, data = (LookaheadAnalysisSubFunctions.
+                            text_table_lookahead_analysis_instances([instance]))
+    assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
+    assert data[0][1] == 'strategy_test_v3_with_lookahead_bias'
+    assert data[0][2]  # True
+    assert data[0][3] == 5
+    assert data[0][4] == 4
+    assert data[0][5] == 3
+    assert data[0][6] == ''
+
+    analysis.false_indicators.append('falseIndicator1')
+    analysis.false_indicators.append('falseIndicator2')
+    table, headers, data = (LookaheadAnalysisSubFunctions.
+                            text_table_lookahead_analysis_instances([instance]))
+
+    assert data[0][6] == 'falseIndicator1, falseIndicator2'
 
 
 def test_lookahead_helper_export_to_csv():
@@ -118,7 +161,6 @@ def test_initialize_single_lookahead_analysis():
     'no_bias', 'bias1'
 ])
 def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
-
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.00001)
@@ -136,7 +178,7 @@ def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
                  return_value={
                      'params': {
                          "buy": {
-                                "scenario": scenario
+                             "scenario": scenario
                          }
                      }
                  })

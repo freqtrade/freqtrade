@@ -44,6 +44,7 @@ class LookaheadAnalysisSubFunctions:
         from tabulate import tabulate
         table = tabulate(data, headers=headers, tablefmt="orgtbl")
         print(table)
+        return table, headers, data
 
     @staticmethod
     def export_to_csv(config: Dict[str, Any], lookahead_analysis: List[LookaheadAnalysis]):
