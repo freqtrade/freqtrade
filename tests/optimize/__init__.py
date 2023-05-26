@@ -1,13 +1,14 @@
+from datetime import timedelta
 from typing import Dict, List, NamedTuple, Optional
 
-import arrow
 from pandas import DataFrame
 
 from freqtrade.enums import ExitType
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.util.datetime_helpers import dt_utc
 
 
-tests_start_time = arrow.get(2018, 10, 3)
+tests_start_time = dt_utc(2018, 10, 3)
 tests_timeframe = '1h'
 
 
@@ -46,7 +47,7 @@ class BTContainer(NamedTuple):
 
 def _get_frame_time_from_offset(offset):
     minutes = offset * timeframe_to_minutes(tests_timeframe)
-    return tests_start_time.shift(minutes=minutes).datetime
+    return tests_start_time + timedelta(minutes=minutes)
 
 
 def _build_backtest_dataframe(data):

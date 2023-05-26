@@ -1,10 +1,9 @@
 """ Binance exchange subclass """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import arrow
 import ccxt
 
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
@@ -66,7 +65,7 @@ class Binance(Exchange):
         """
         try:
             if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
-                position_side = self._api.fapiPrivateGetPositionsideDual()
+                position_side = self._api.fapiPrivateGetPositionSideDual()
                 self._log_exchange_response('position_side_setting', position_side)
                 assets_margin = self._api.fapiPrivateGetMultiAssetsMargin()
                 self._log_exchange_response('multi_asset_margin', assets_margin)
@@ -105,8 +104,9 @@ class Binance(Exchange):
             if x and x[3] and x[3][0] and x[3][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[3][0][0]
-                logger.info(f"Candle-data for {pair} available starting with "
-                            f"{arrow.get(since_ms // 1000).isoformat()}.")
+                logger.info(
+                    f"Candle-data for {pair} available starting with "
+                    f"{datetime.fromtimestamp(since_ms // 1000, tz=timezone.utc).isoformat()}.")
 
         return await super()._async_get_historic_ohlcv(
             pair=pair,

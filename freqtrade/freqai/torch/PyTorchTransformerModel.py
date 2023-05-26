@@ -1,7 +1,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 """
@@ -68,7 +68,7 @@ class PyTorchTransformerModel(nn.Module):
         return x
 
 
-class PositionalEncoding(torch.nn.Module):
+class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=5000):
         """
         Args

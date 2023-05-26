@@ -180,7 +180,7 @@ class BaseEnvironment(gym.Env):
     def reset_tensorboard_log(self):
         self.tensorboard_metrics = {}
 
-    def reset(self):
+    def reset(self, seed=None):
         """
         Reset is called at the beginning of every episode
         """

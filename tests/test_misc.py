@@ -12,7 +12,7 @@ from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dic
                             file_load_json, format_ms_time, json_to_dataframe, pair_to_filename,
                             parse_db_uri_for_logging, plural, render_template,
                             render_template_with_fallback, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2, shorten_date)
+                            safe_value_fallback2)
 
 
 def test_decimals_per_coin():
@@ -37,12 +37,6 @@ def test_round_coin_value():
     assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
     assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
     assert round_coin_value(222.2, 'USDT', False, True) == '222.200'
-
-
-def test_shorten_date() -> None:
-    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
-    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
-    assert shorten_date(str_data) == str_shorten_data
 
 
 def test_file_dump_json(mocker) -> None:

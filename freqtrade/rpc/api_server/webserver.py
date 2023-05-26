@@ -1,6 +1,6 @@
 import logging
 from ipaddress import IPv4Address
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import orjson
 import uvicorn
@@ -36,19 +36,8 @@ class ApiServer(RPCHandler):
     __initialized = False
 
     _rpc: RPC
-    # Backtesting type: Backtesting
-    _bt: Dict[str, Any] = {
-        'bt': None,
-        'data': None,
-        'timerange': None,
-        'last_config': {},
-        'bt_error': None,
-    }
     _has_rpc: bool = False
-    _bgtask_running: bool = False
     _config: Config = {}
-    # Exchange - only available in webserver mode.
-    _exchange = None
     # websocket message stuff
     _message_stream: Optional[MessageStream] = None
 
@@ -85,7 +74,7 @@ class ApiServer(RPCHandler):
         """
         Attach rpc handler
         """
-        if not self._has_rpc:
+        if not ApiServer._has_rpc:
             ApiServer._rpc = rpc
             ApiServer._has_rpc = True
         else:

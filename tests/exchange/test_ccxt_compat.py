@@ -43,6 +43,10 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+        'private_methods': [
+            'fapiPrivateGetPositionSideDual',
+            'fapiPrivateGetMultiAssetsMargin'
+        ],
         'sample_order': [{
             "symbol": "SOLUSDT",
             "orderId": 3551312894,
@@ -221,11 +225,13 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': False,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
+        'private_methods': ['fetch_accounts'],
     },
     'bybit': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
+        'use_ci_proxy': True,
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
@@ -755,3 +761,8 @@ class TestCCXTExchange():
             max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
             assert (isinstance(max_stake_amount, float))
             assert max_stake_amount >= 0.0
+
+    def test_private_method_presence(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange
+        for method in EXCHANGES[exchangename].get('private_methods', []):
+            assert hasattr(exch._api, method)

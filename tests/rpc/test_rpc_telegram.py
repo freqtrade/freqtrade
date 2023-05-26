@@ -12,7 +12,6 @@ from random import choice, randint
 from string import ascii_uppercase
 from unittest.mock import ANY, AsyncMock, MagicMock
 
-import arrow
 import pytest
 import time_machine
 from pandas import DataFrame
@@ -33,6 +32,7 @@ from freqtrade.persistence.models import Order
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
+from freqtrade.util.datetime_helpers import dt_now
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades,
                             create_mock_trades_usdt, get_patched_freqtradebot, log_has, log_has_re,
                             patch_exchange, patch_get_signal, patch_whitelist)
@@ -259,7 +259,7 @@ async def test_telegram_status(default_conf, update, mocker) -> None:
             'pair': 'ETH/BTC',
             'base_currency': 'ETH',
             'quote_currency': 'BTC',
-            'open_date': arrow.utcnow(),
+            'open_date': dt_now(),
             'close_date': None,
             'open_rate': 1.099e-05,
             'close_rate': None,
@@ -1518,8 +1518,8 @@ async def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -
 
     msg_mock.reset_mock()
 
-    PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
-    PairLocks.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
+    PairLocks.lock_pair('ETH/BTC', dt_now() + timedelta(minutes=4), 'randreason')
+    PairLocks.lock_pair('XRP/BTC', dt_now() + timedelta(minutes=20), 'deadbeef')
 
     await telegram._locks(update=update, context=MagicMock())
 
@@ -1898,7 +1898,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
         'analyzed_candle': {'open': 1.1, 'high': 2.2, 'low': 1.0, 'close': 1.5},
-        'open_date': arrow.utcnow().shift(hours=-1)
+        'open_date': dt_now() + timedelta(hours=-1)
     }
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -1959,7 +1959,7 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     time_machine.move_to("2021-09-01 05:00:00 +00:00")
-    lock = PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=6).datetime, 'randreason')
+    lock = PairLocks.lock_pair('ETH/BTC', dt_now() + timedelta(minutes=6), 'randreason')
     msg = {
         'type': RPCMessageType.PROTECTION_TRIGGER,
     }
@@ -1974,7 +1974,7 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
     msg = {
         'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
     }
-    lock = PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=100).datetime, 'randreason')
+    lock = PairLocks.lock_pair('*', dt_now() + timedelta(minutes=100), 'randreason')
     msg.update(lock.to_json())
     telegram.send_msg(msg)
     assert (msg_mock.call_args[0][0] == "*Protection* triggered due to randreason. "
@@ -2005,7 +2005,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
         'amount': 1333.3333333333335,
-        'open_date': arrow.utcnow().shift(hours=-1)
+        'open_date': dt_now() - timedelta(hours=1)
     })
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
@@ -2032,7 +2032,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
         'amount': 1333.3333333333335,
-        'open_date': arrow.utcnow().shift(hours=-1)
+        'open_date': dt_now() - timedelta(hours=1)
     })
 
     assert msg_mock.call_args[0][0] == (
@@ -2071,8 +2071,8 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'fiat_currency': 'USD',
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
-            'open_date': arrow.utcnow().shift(hours=-1),
-            'close_date': arrow.utcnow(),
+            'open_date': dt_now() - timedelta(hours=1),
+            'close_date': dt_now(),
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
@@ -2107,8 +2107,8 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'fiat_currency': 'USD',
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
-            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-            'close_date': arrow.utcnow(),
+            'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
+            'close_date': dt_now(),
             'stake_amount': 0.01,
             'sub_trade': True,
         })
@@ -2144,8 +2144,8 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             'stake_currency': 'ETH',
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
-            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-            'close_date': arrow.utcnow(),
+            'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
+            'close_date': dt_now(),
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
@@ -2226,8 +2226,8 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
             'stake_currency': 'ETH',
             'enter_tag': enter_signal,
             'exit_reason': ExitType.STOP_LOSS.value,
-            'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
-            'close_date': arrow.utcnow(),
+            'open_date': dt_now() - timedelta(days=1, hours=2, minutes=30),
+            'close_date': dt_now(),
         })
 
         leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
@@ -2317,7 +2317,7 @@ def test_send_msg_buy_notification_no_fiat(
         'fiat_currency': None,
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
-        'open_date': arrow.utcnow().shift(hours=-1)
+        'open_date': dt_now() - timedelta(hours=1)
     })
 
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
@@ -2363,8 +2363,8 @@ def test_send_msg_sell_notification_no_fiat(
         'fiat_currency': 'USD',
         'enter_tag': enter_signal,
         'exit_reason': ExitType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
-        'close_date': arrow.utcnow(),
+        'open_date': dt_now() - timedelta(hours=2, minutes=35, seconds=3),
+        'close_date': dt_now(),
     })
 
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
