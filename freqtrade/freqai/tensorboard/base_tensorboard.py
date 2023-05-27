@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 class BaseTensorboardLogger:
     def __init__(self, logdir: Path, activate: bool = True):
-        logger.warning("Tensorboard is not installed, no logs will be written."
-                       "Ensure torch is installed, or use the torch/RL docker images")
+        pass
 
     def log_scalar(self, tag: str, scalar_value: Any, step: int):
         return
@@ -23,8 +22,7 @@ class BaseTensorboardLogger:
 class BaseTensorBoardCallback(TrainingCallback):
 
     def __init__(self, logdir: Path, activate: bool = True):
-        logger.warning("Tensorboard is not installed, no logs will be written."
-                       "Ensure torch is installed, or use the torch/RL docker images")
+        pass
 
     def after_iteration(
         self, model, epoch: int, evals_log: TrainingCallback.EvalsLog

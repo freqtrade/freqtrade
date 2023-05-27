@@ -6,8 +6,6 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
-import arrow
-
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
 
@@ -139,7 +137,8 @@ class TimeRange:
                 if stype[0]:
                     starts = rvals[index]
                     if stype[0] == 'date' and len(starts) == 8:
-                        start = arrow.get(starts, 'YYYYMMDD').int_timestamp
+                        start = int(datetime.strptime(starts, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(starts) == 13:
                         start = int(starts) // 1000
                     else:
@@ -148,7 +147,8 @@ class TimeRange:
                 if stype[1]:
                     stops = rvals[index]
                     if stype[1] == 'date' and len(stops) == 8:
-                        stop = arrow.get(stops, 'YYYYMMDD').int_timestamp
+                        stop = int(datetime.strptime(stops, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(stops) == 13:
                         stop = int(stops) // 1000
                     else:

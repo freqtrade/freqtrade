@@ -1,10 +1,9 @@
 import logging
 import operator
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import arrow
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
@@ -236,8 +235,8 @@ def _download_pair_history(pair: str, *,
         new_data = exchange.get_historic_ohlcv(pair=pair,
                                                timeframe=timeframe,
                                                since_ms=since_ms if since_ms else
-                                               arrow.utcnow().shift(
-                                                   days=-new_pairs_days).int_timestamp * 1000,
+                                               int((datetime.now() - timedelta(days=new_pairs_days)
+                                                    ).timestamp()) * 1000,
                                                is_new_pair=data.empty,
                                                candle_type=candle_type,
                                                until_ms=until_ms if until_ms else None
@@ -349,7 +348,7 @@ def _download_trades_history(exchange: Exchange,
             trades = []
 
         if not since:
-            since = arrow.utcnow().shift(days=-new_pairs_days).int_timestamp * 1000
+            since = int((datetime.now() - timedelta(days=-new_pairs_days)).timestamp()) * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:

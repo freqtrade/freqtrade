@@ -21,11 +21,13 @@ from freqtrade.__init__ import __version__
 from freqtrade.enums import CandleType, RunMode, State, TradingMode
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
+from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades, get_mock_coro,
                             get_patched_freqtradebot, log_has, log_has_re, patch_get_signal)
 
@@ -1665,137 +1667,140 @@ def test_sysinfo(botclient):
 
 
 def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
-    ftbot, client = botclient
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    try:
+        ftbot, client = botclient
+        mocker.patch(f'{EXMS}.get_fee', fee)
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    # Backtest prevented in default mode
-    assert_response(rc, 502)
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        # Backtest prevented in default mode
+        assert_response(rc, 502)
 
-    ftbot.config['runmode'] = RunMode.WEBSERVER
-    # Backtesting not started yet
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        ftbot.config['runmode'] = RunMode.WEBSERVER
+        # Backtesting not started yet
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'not_started'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest not yet executed'
-    assert result['progress'] == 0
+        result = rc.json()
+        assert result['status'] == 'not_started'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest not yet executed'
+        assert result['progress'] == 0
 
-    # Reset backtesting
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'reset'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest reset'
-    ftbot.config['export'] = 'trades'
-    ftbot.config['backtest_cache'] = 'day'
-    ftbot.config['user_data_dir'] = Path(tmpdir)
-    ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
-    ftbot.config['exportfilename'].mkdir()
+        # Reset backtesting
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'reset'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest reset'
+        ftbot.config['export'] = 'trades'
+        ftbot.config['backtest_cache'] = 'day'
+        ftbot.config['user_data_dir'] = Path(tmpdir)
+        ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
+        ftbot.config['exportfilename'].mkdir()
 
-    # start backtesting
-    data = {
-        "strategy": CURRENT_TEST_STRATEGY,
-        "timeframe": "5m",
-        "timerange": "20180110-20180111",
-        "max_open_trades": 3,
-        "stake_amount": 100,
-        "dry_run_wallet": 1000,
-        "enable_protections": False
-    }
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc)
-    result = rc.json()
+        # start backtesting
+        data = {
+            "strategy": CURRENT_TEST_STRATEGY,
+            "timeframe": "5m",
+            "timerange": "20180110-20180111",
+            "max_open_trades": 3,
+            "stake_amount": 100,
+            "dry_run_wallet": 1000,
+            "enable_protections": False
+        }
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        result = rc.json()
 
-    assert result['status'] == 'running'
-    assert result['progress'] == 0
-    assert result['running']
-    assert result['status_msg'] == 'Backtest started'
+        assert result['status'] == 'running'
+        assert result['progress'] == 0
+        assert result['running']
+        assert result['status_msg'] == 'Backtest started'
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'ended'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
-    assert result['progress'] == 1
-    assert result['backtest_result']
+        result = rc.json()
+        assert result['status'] == 'ended'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
+        assert result['progress'] == 1
+        assert result['backtest_result']
 
-    rc = client_get(client, f"{BASE_URI}/backtest/abort")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'not_running'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
+        rc = client_get(client, f"{BASE_URI}/backtest/abort")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'not_running'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
 
-    # Simulate running backtest
-    ApiServer._bgtask_running = True
-    rc = client_get(client, f"{BASE_URI}/backtest/abort")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'stopping'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
+        # Simulate running backtest
+        ApiBG.bgtask_running = True
+        rc = client_get(client, f"{BASE_URI}/backtest/abort")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'stopping'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
 
-    # Get running backtest...
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'running'
-    assert result['running']
-    assert result['step'] == "backtest"
-    assert result['status_msg'] == "Backtest running"
+        # Get running backtest...
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'running'
+        assert result['running']
+        assert result['step'] == "backtest"
+        assert result['status_msg'] == "Backtest running"
 
-    # Try delete with task still running
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'running'
+        # Try delete with task still running
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'running'
 
-    # Post to backtest that's still running
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc, 502)
-    result = rc.json()
-    assert 'Bot Background task already running' in result['error']
+        # Post to backtest that's still running
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc, 502)
+        result = rc.json()
+        assert 'Bot Background task already running' in result['error']
 
-    ApiServer._bgtask_running = False
+        ApiBG.bgtask_running = False
 
-    # Rerun backtest (should get previous result)
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc)
-    result = rc.json()
-    assert log_has_re('Reusing result of previous backtest.*', caplog)
+        # Rerun backtest (should get previous result)
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        result = rc.json()
+        assert log_has_re('Reusing result of previous backtest.*', caplog)
 
-    data['stake_amount'] = 101
+        data['stake_amount'] = 101
 
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-                 side_effect=DependencyException('DeadBeef'))
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert log_has("Backtesting caused an error: DeadBeef", caplog)
+        mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+                     side_effect=DependencyException('DeadBeef'))
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert log_has("Backtesting caused an error: DeadBeef", caplog)
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'error'
-    assert 'Backtest failed' in result['status_msg']
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'error'
+        assert 'Backtest failed' in result['status_msg']
 
-    # Delete backtesting to avoid leakage since the backtest-object may stick around.
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        # Delete backtesting to avoid leakage since the backtest-object may stick around.
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'reset'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest reset'
+        result = rc.json()
+        assert result['status'] == 'reset'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest reset'
 
-    # Disallow base64 strategies
-    data['strategy'] = "xx:cHJpbnQoImhlbGxvIHdvcmxkIik="
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc, 500)
+        # Disallow base64 strategies
+        data['strategy'] = "xx:cHJpbnQoImhlbGxvIHdvcmxkIik="
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc, 500)
+    finally:
+        Backtesting.cleanup()
 
 
 def test_api_backtest_history(botclient, mocker, testdatadir):
