@@ -173,9 +173,9 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
 
     strategy_obj1 = {
-            'name': "strat1",
-            'location': PurePosixPath("file1.py"),
-        }
+        'name': "strat1",
+        'location': PurePosixPath("file1.py"),
+    }
 
     instance1 = LookaheadAnalysis(lookahead_conf, strategy_obj1)
     instance1.current_analysis = analysis1
@@ -270,9 +270,24 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
         Path(lookahead_conf['lookahead_analysis_exportfilename']).unlink()
 
 
-def test_initialize_single_lookahead_analysis():
-    # TODO
-    pytest.skip("TODO")
+def test_initialize_single_lookahead_analysis(lookahead_conf, mocker):
+    mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
+    mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
+    mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.00001)
+    mocker.patch(f'{EXMS}.get_max_pair_stake_amount', return_value=float('inf'))
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
+    lookahead_conf['pairs'] = ['UNITTEST/USDT']
+
+    lookahead_conf['timeframe'] = '5m'
+    lookahead_conf['timerange'] = '20180119-20180122'
+    strategy_obj = {
+        'name': "strat1",
+        'location': PurePosixPath("file1.py"),
+    }
+    LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
+        strategy_obj, lookahead_conf)
 
 
 @pytest.mark.parametrize('scenario', [
@@ -307,10 +322,10 @@ def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
     instance.start()
     # Assert init correct
     assert log_has_re(f"Strategy Parameter: scenario = {scenario}", caplog)
-    # Assert bias detected
-    assert log_has_re(r".*bias detected.*", caplog)
-    # TODO: assert something ... most likely output (?) or instance state?
 
-    # Assert False to see full logs in output
-    # assert False
-    # Run with `pytest tests/optimize/test_lookahead_analysis.py  -k test_biased_strategy`
+    # check non-biased strategy
+    if scenario == "no_bias":
+        assert not instance.current_analysis.has_bias
+    # check biased strategy
+    elif scenario == "bias1":
+        assert instance.current_analysis.has_bias

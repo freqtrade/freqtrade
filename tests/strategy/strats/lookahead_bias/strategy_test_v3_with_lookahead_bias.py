@@ -29,12 +29,13 @@ class strategy_test_v3_with_lookahead_bias(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # bias is introduced here
-        ichi = ichimoku(dataframe,
-                        conversion_line_period=20,
-                        base_line_periods=60,
-                        laggin_span=120,
-                        displacement=30)
-        dataframe['chikou_span'] = ichi['chikou_span']
+        if self.scenario.value != 'no_bias':
+            ichi = ichimoku(dataframe,
+                            conversion_line_period=20,
+                            base_line_periods=60,
+                            laggin_span=120,
+                            displacement=30)
+            dataframe['chikou_span'] = ichi['chikou_span']
 
         return dataframe
 
