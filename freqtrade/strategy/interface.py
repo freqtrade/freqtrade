@@ -48,7 +48,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     _ft_params_from_file: Dict
     # associated minimal roi
-    minimal_roi: Dict = {"0": 10.0}
+    minimal_roi: Dict = {}
 
     # associated stoploss
     stoploss: float
