@@ -704,7 +704,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "lookahead_analysis_exportfilename": Arg(
         '--lookahead-analysis-exportfilename',
-        help="Use this filename to store lookahead-analysis-results",
+        help="Use this csv-filename to store lookahead-analysis-results",
         type=str
     ),
 }

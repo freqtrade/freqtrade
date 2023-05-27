@@ -110,6 +110,17 @@ class LookaheadAnalysisSubFunctions:
                 "targeted trade amount can't be smaller than minimum trade amount."
             )
 
+        # enforce cache to be 'none', shift it to 'none' if not already
+        # (since the default value is 'day')
+        if config.get('backtest_cache') is None:
+            config['backtest_cache'] = 'none'
+        elif config['backtest_cache'] != 'none':
+            logger.info(f"backtest_cache = "
+                        f"{config['backtest_cache']} detected. "
+                        f"Inside lookahead-analysis it is enforced to be 'none'. "
+                        f"Changed it to 'none'")
+            config['backtest_cache'] = 'none'
+
         strategy_objs = StrategyResolver.search_all_objects(
                 config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
 
