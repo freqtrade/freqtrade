@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
-
 from copy import deepcopy
 from pathlib import Path, PurePosixPath
 from unittest.mock import MagicMock, PropertyMock
@@ -101,8 +100,8 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
 
 def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf, caplog):
     analysis = Analysis()
-    analysis.total_signals = 5
     analysis.has_bias = True
+    analysis.total_signals = 5
     analysis.false_entry_signals = 4
     analysis.false_exit_signals = 3
 
@@ -117,9 +116,6 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     instance.current_analysis = analysis
     table, headers, data = (LookaheadAnalysisSubFunctions.
                             text_table_lookahead_analysis_instances([instance]))
-
-    # check amount of returning rows
-    assert len(data) == 1
 
     # check row contents for a try that errored out
     assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
@@ -146,10 +142,132 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     assert data[0][6] == 'falseIndicator1, falseIndicator2'
 
+    # check amount of returning rows
+    assert len(data) == 1
 
-def test_lookahead_helper_export_to_csv():
-    # TODO
-    pytest.skip("TODO")
+    # check amount of multiple rows
+    table, headers, data = (LookaheadAnalysisSubFunctions.
+                            text_table_lookahead_analysis_instances([instance, instance, instance]))
+    assert len(data) == 3
+
+
+def test_lookahead_helper_export_to_csv(lookahead_conf):
+    import pandas as pd
+    lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
+
+    # just to be sure the test won't fail: remove file if exists for some reason
+    # (repeat this at the end once again to clean up)
+    if Path(lookahead_conf['lookahead_analysis_exportfilename']).exists():
+        Path(lookahead_conf['lookahead_analysis_exportfilename']).unlink()
+
+    # before we can start we have to delete the
+
+    # 1st check: create a new file and verify its contents
+    analysis1 = Analysis()
+    analysis1.has_bias = True
+    analysis1.total_signals = 5
+    analysis1.false_entry_signals = 4
+    analysis1.false_exit_signals = 3
+    analysis1.false_indicators.append('falseIndicator1')
+    analysis1.false_indicators.append('falseIndicator2')
+    lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
+
+    strategy_obj1 = {
+            'name': "strat1",
+            'location': PurePosixPath("file1.py"),
+        }
+
+    instance1 = LookaheadAnalysis(lookahead_conf, strategy_obj1)
+    instance1.current_analysis = analysis1
+
+    LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance1])
+    saved_data1 = pd.read_csv(lookahead_conf['lookahead_analysis_exportfilename'])
+
+    expected_values1 = [
+        [
+            'file1.py', 'strat1', True,
+            5, 4, 3,
+            "falseIndicator1,falseIndicator2"
+        ],
+    ]
+    expected_columns = ['filename', 'strategy', 'has_bias',
+                        'total_signals', 'biased_entry_signals', 'biased_exit_signals',
+                        'biased_indicators']
+    expected_data1 = pd.DataFrame(expected_values1, columns=expected_columns)
+
+    assert Path(lookahead_conf['lookahead_analysis_exportfilename']).exists()
+    assert expected_data1.equals(saved_data1)
+
+    # 2nd check: update the same strategy (which internally changed or is being retested)
+    expected_values2 = [
+        [
+            'file1.py', 'strat1', False,
+            10, 11, 12,
+            "falseIndicator3,falseIndicator4"
+        ],
+    ]
+    expected_data2 = pd.DataFrame(expected_values2, columns=expected_columns)
+
+    analysis2 = Analysis()
+    analysis2.has_bias = False
+    analysis2.total_signals = 10
+    analysis2.false_entry_signals = 11
+    analysis2.false_exit_signals = 12
+    analysis2.false_indicators.append('falseIndicator3')
+    analysis2.false_indicators.append('falseIndicator4')
+
+    strategy_obj2 = {
+        'name': "strat1",
+        'location': PurePosixPath("file1.py"),
+    }
+
+    instance2 = LookaheadAnalysis(lookahead_conf, strategy_obj2)
+    instance2.current_analysis = analysis2
+
+    LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance2])
+    saved_data2 = pd.read_csv(lookahead_conf['lookahead_analysis_exportfilename'])
+
+    assert expected_data2.equals(saved_data2)
+
+    # 3rd check: now we add a new row to an already existing file
+    expected_values3 = [
+        [
+            'file1.py', 'strat1', False,
+            10, 11, 12,
+            "falseIndicator3,falseIndicator4"
+        ],
+        [
+            'file3.py', 'strat3', True,
+            20, 21, 22, "falseIndicator5,falseIndicator6"
+        ],
+    ]
+
+    expected_data3 = pd.DataFrame(expected_values3, columns=expected_columns)
+
+    analysis3 = Analysis()
+    analysis3.has_bias = True
+    analysis3.total_signals = 20
+    analysis3.false_entry_signals = 21
+    analysis3.false_exit_signals = 22
+    analysis3.false_indicators.append('falseIndicator5')
+    analysis3.false_indicators.append('falseIndicator6')
+    lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
+
+    strategy_obj3 = {
+        'name': "strat3",
+        'location': PurePosixPath("file3.py"),
+    }
+
+    instance3 = LookaheadAnalysis(lookahead_conf, strategy_obj3)
+    instance3.current_analysis = analysis3
+
+    LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance3])
+    saved_data3 = pd.read_csv(lookahead_conf['lookahead_analysis_exportfilename'])
+    assert expected_data3.equals(saved_data3)
+
+    # remove csv file after the test is done
+    if Path(lookahead_conf['lookahead_analysis_exportfilename']).exists():
+        Path(lookahead_conf['lookahead_analysis_exportfilename']).unlink()
 
 
 def test_initialize_single_lookahead_analysis():
