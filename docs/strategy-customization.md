@@ -342,15 +342,11 @@ The above configuration would therefore mean:
 
 The calculation does include fees.
 
-To disable ROI completely, set it to an insanely high number:
+To disable ROI completely, set it to an empty dictionary:
 
 ```python
-minimal_roi = {
-    "0": 100
-}
+minimal_roi = {}
 ```
-
-While technically not completely disabled, this would exit once the trade reaches 10000% Profit.
 
 To use times based on candle duration (timeframe), the following snippet can be handy.
 This will allow you to change the timeframe for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
