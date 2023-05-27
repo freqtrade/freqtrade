@@ -282,12 +282,10 @@ def test_initialize_single_lookahead_analysis(lookahead_conf, mocker):
 
     lookahead_conf['timeframe'] = '5m'
     lookahead_conf['timerange'] = '20180119-20180122'
-    strategy_obj = {
-        'name': "strat1",
-        'location': PurePosixPath("file1.py"),
-    }
-    LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
-        strategy_obj, lookahead_conf)
+    strategy_obj = {'name': "strategy_test_v3_with_lookahead_bias"}
+
+    instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
+    assert instance.strategy_obj['name'] == "strategy_test_v3_with_lookahead_bias"
 
 
 @pytest.mark.parametrize('scenario', [
@@ -316,8 +314,7 @@ def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
                      }
                  })
 
-    strategy_obj = {}
-    strategy_obj['name'] = "strategy_test_v3_with_lookahead_bias"
+    strategy_obj = {'name': "strategy_test_v3_with_lookahead_bias"}
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.start()
     # Assert init correct
