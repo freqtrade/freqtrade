@@ -1265,7 +1265,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: minimal ROI entry value or None if none proper ROI entry was found.
         """
         # Get highest entry in ROI dict where key <= trade-duration
-        roi_list = list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
+        roi_list = [x for x in self.minimal_roi.keys() if x <= trade_dur]
         if not roi_list:
             return None, None
         roi_entry = max(roi_list)
