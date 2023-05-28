@@ -11,6 +11,7 @@ from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGIT
 
 from freqtrade.exchange.common import BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED
 from freqtrade.util import FtPrecise
+from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
 
 CcxtModuleType = Any
@@ -99,9 +100,8 @@ def timeframe_to_prev_date(timeframe: str, date: Optional[datetime] = None) -> d
     if not date:
         date = datetime.now(timezone.utc)
 
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_DOWN) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
+    return dt_from_ts(new_timestamp)
 
 
 def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
@@ -113,9 +113,8 @@ def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> d
     """
     if not date:
         date = datetime.now(timezone.utc)
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_UP) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
+    return dt_from_ts(new_timestamp)
 
 
 def date_minus_candles(

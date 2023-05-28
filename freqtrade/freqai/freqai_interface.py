@@ -21,7 +21,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance, record_params
+from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -80,6 +80,7 @@ class IFreqaiModel(ABC):
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
+
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
@@ -109,6 +110,7 @@ class IFreqaiModel(ABC):
         if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
+        self.activate_tensorboard: bool = self.freqai_info.get('activate_tensorboard', True)
 
         record_params(config, self.full_path)
 
@@ -242,8 +244,8 @@ class IFreqaiModel(ABC):
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                 except Exception as msg:
-                    logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
-                                   f"Message: {msg}, skipping.")
+                    logger.exception(f"Training {pair} raised exception {msg.__class__.__name__}. "
+                                     f"Message: {msg}, skipping.")
 
                 self.train_timer('stop', pair)
 
@@ -306,10 +308,11 @@ class IFreqaiModel(ABC):
             if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
                 if check_features:
                     self.dd.load_metadata(dk)
-                    dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
+                    df_fts = self.dk.use_strategy_to_populate_indicators(
                         strategy, prediction_dataframe=dataframe.tail(1), pair=pair
                     )
-                    dk.find_features(dataframe_dummy_features)
+                    df_fts = dk.remove_special_chars_from_feature_names(df_fts)
+                    dk.find_features(df_fts)
                     self.check_if_feature_list_matches_strategy(dk)
                     check_features = False
                 append_df = dk.get_backtesting_prediction()
@@ -342,7 +345,10 @@ class IFreqaiModel(ABC):
                     dk.find_labels(dataframe_train)
 
                     try:
+                        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                                       self.activate_tensorboard)
                         self.model = self.train(dataframe_train, pair, dk)
+                        self.tb_logger.close()
                     except Exception as msg:
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
@@ -489,9 +495,9 @@ class IFreqaiModel(ABC):
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
-                "but found different features furnished by current strategy."
-                "Change `identifier` to train from scratch, or ensure the"
-                "strategy is furnishing the same features as the pretrained"
+                "but found different features furnished by current strategy. "
+                "Change `identifier` to train from scratch, or ensure the "
+                "strategy is furnishing the same features as the pretrained "
                 "model. In case of --strategy-list, please be aware that FreqAI "
                 "requires all strategies to maintain identical "
                 "feature_engineering_* functions"
@@ -620,18 +626,23 @@ class IFreqaiModel(ABC):
             strategy, corr_dataframes, base_dataframes, pair
         )
 
-        new_trained_timerange = dk.buffer_timerange(new_trained_timerange)
+        trained_timestamp = new_trained_timerange.stopts
 
-        unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
+        buffered_timerange = dk.buffer_timerange(new_trained_timerange)
+
+        unfiltered_dataframe = dk.slice_dataframe(buffered_timerange, unfiltered_dataframe)
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
         dk.find_labels(unfiltered_dataframe)
 
+        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                       self.activate_tensorboard)
         model = self.train(unfiltered_dataframe, pair, dk)
+        self.tb_logger.close()
 
-        self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
-        dk.set_new_model_names(pair, new_trained_timerange.stopts)
+        self.dd.pair_dict[pair]["trained_timestamp"] = trained_timestamp
+        dk.set_new_model_names(pair, trained_timestamp)
         self.dd.save_data(model, pair, dk)
 
         if self.plot_features:

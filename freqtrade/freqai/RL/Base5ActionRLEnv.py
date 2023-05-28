@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 
-from gym import spaces
+from gymnasium import spaces
 
 from freqtrade.freqai.RL.BaseEnvironment import BaseEnvironment, Positions
 
@@ -101,10 +101,12 @@ class Base5ActionRLEnv(BaseEnvironment):
         )
 
         observation = self._get_observation()
+        # user can play with time if they want
+        truncated = False
 
         self._update_history(info)
 
-        return observation, step_reward, self._done, info
+        return observation, step_reward, self._done, truncated, info
 
     def is_tradesignal(self, action: int) -> bool:
         """

@@ -27,6 +27,7 @@ class BasePyTorchModel(IFreqaiModel, ABC):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         test_size = self.freqai_info.get('data_split_parameters', {}).get('test_size')
         self.splits = ["train", "test"] if test_size != 0 else ["train"]
+        self.window_size = self.freqai_info.get("conv_width", 1)
 
     def train(
         self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs

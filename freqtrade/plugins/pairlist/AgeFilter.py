@@ -3,9 +3,9 @@ Minimum age (days listed) pair list filter
 """
 import logging
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-import arrow
 from pandas import DataFrame
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
@@ -13,7 +13,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
-from freqtrade.util import PeriodicCache
+from freqtrade.util import PeriodicCache, dt_floor_day, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -84,10 +84,7 @@ class AgeFilter(IPairList):
         since_days = -(
             self._max_days_listed if self._max_days_listed else self._min_days_listed
         ) - 1
-        since_ms = int(arrow.utcnow()
-                       .floor('day')
-                       .shift(days=since_days)
-                       .float_timestamp) * 1000
+        since_ms = dt_ts(dt_floor_day(dt_now()) + timedelta(days=since_days))
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
             for p in deepcopy(pairlist):
@@ -116,7 +113,7 @@ class AgeFilter(IPairList):
             ):
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
-                self._symbolsChecked[pair] = arrow.utcnow().int_timestamp * 1000
+                self._symbolsChecked[pair] = dt_ts()
                 return True
             else:
                 self.log_once((
@@ -127,6 +124,6 @@ class AgeFilter(IPairList):
                     " or more than "
                     f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
                 ) if self._max_days_listed else ''), logger.info)
-                self._symbolsCheckFailed[pair] = arrow.utcnow().int_timestamp * 1000
+                self._symbolsCheckFailed[pair] = dt_ts()
                 return False
         return False

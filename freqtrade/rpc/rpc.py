@@ -7,7 +7,6 @@ from datetime import date, datetime, timedelta, timezone
 from math import isnan
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
-import arrow
 import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
@@ -26,12 +25,13 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin, shorten_date
+from freqtrade.misc import decimals_per_coin
 from freqtrade.persistence import KeyStoreKeys, KeyValueStore, Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
+from freqtrade.util import dt_humanize, dt_now, shorten_date
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -292,7 +292,7 @@ class RPC:
                                   and open_order.ft_order_side == trade.entry_side) else '')
                     + ('**' if (open_order and
                                 open_order.ft_order_side == trade.exit_side is not None) else ''),
-                    shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                    shorten_date(dt_humanize(trade.open_date, only_distance=True)),
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
@@ -420,16 +420,15 @@ class RPC:
             else:
                 return 'draws'
         trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
-        # Sell reason
+        # Duration
+        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
+        # Exit reason
         exit_reasons = {}
         for trade in trades:
             if trade.exit_reason not in exit_reasons:
                 exit_reasons[trade.exit_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
             exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
-        # Duration
-        dur: Dict[str, List[float]] = {'wins': [], 'draws': [], 'losses': []}
-        for trade in trades:
             if trade.close_date is not None and trade.open_date is not None:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
                 dur[trade_win_loss(trade)].append(trade_dur)
@@ -541,8 +540,8 @@ class RPC:
             fiat_display_currency
         ) if self._fiat_converter else 0
 
-        first_date = trades[0].open_date if trades else None
-        last_date = trades[-1].open_date if trades else None
+        first_date = trades[0].open_date_utc if trades else None
+        last_date = trades[-1].open_date_utc if trades else None
         num = float(len(durations) or 1)
         bot_start = KeyValueStore.get_datetime_value(KeyStoreKeys.BOT_START_TIME)
         return {
@@ -564,9 +563,11 @@ class RPC:
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
-            'first_trade_date': arrow.get(first_date).humanize() if first_date else '',
+            'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
+            'first_trade_humanized': dt_humanize(first_date) if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
-            'latest_trade_date': arrow.get(last_date).humanize() if last_date else '',
+            'latest_trade_date': last_date.strftime(DATETIME_PRINT_FORMAT) if last_date else '',
+            'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
             'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
@@ -583,13 +584,16 @@ class RPC:
         }
 
     def __balance_get_est_stake(
-            self, coin: str, stake_currency: str, balance: Wallet, tickers) -> float:
+            self, coin: str, stake_currency: str, amount: float,
+            balance: Wallet, tickers) -> Tuple[float, float]:
         est_stake = 0.0
+        est_bot_stake = 0.0
         if coin == stake_currency:
             est_stake = balance.total
             if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
                 # in Futures, "total" includes the locked stake, and therefore all positions
                 est_stake = balance.free
+            est_bot_stake = amount
         else:
             try:
                 pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
@@ -598,11 +602,12 @@ class RPC:
                     if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                         rate = 1.0 / rate
                     est_stake = rate * balance.total
+                    est_bot_stake = rate * amount
             except (ExchangeError):
                 logger.warning(f"Could not get rate for pair {coin}.")
                 raise ValueError()
 
-        return est_stake
+        return est_stake, est_bot_stake
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
@@ -615,7 +620,7 @@ class RPC:
             raise RPCException('Error getting current tickers.')
 
         open_trades: List[Trade] = Trade.get_open_trades()
-        open_assets = [t.base_currency for t in open_trades]
+        open_assets: Dict[str, Trade] = {t.safe_base_currency: t for t in open_trades}
         self._freqtrade.wallets.update(require_update=False)
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
@@ -625,30 +630,43 @@ class RPC:
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
+
+            trade = open_assets.get(coin, None)
+            is_bot_managed = coin == stake_currency or trade is not None
+            trade_amount = trade.amount if trade else 0
+            if coin == stake_currency:
+                trade_amount = self._freqtrade.wallets.get_available_stake_amount()
+
             try:
-                est_stake = self.__balance_get_est_stake(coin, stake_currency, balance, tickers)
+                est_stake, est_stake_bot = self.__balance_get_est_stake(
+                    coin, stake_currency, trade_amount, balance, tickers)
             except ValueError:
                 continue
 
             total += est_stake
-            if coin == stake_currency or coin in open_assets:
-                total_bot += est_stake
+
+            if is_bot_managed:
+                total_bot += est_stake_bot
             currencies.append({
                 'currency': coin,
                 'free': balance.free,
                 'balance': balance.total,
                 'used': balance.used,
+                'bot_owned': trade_amount,
                 'est_stake': est_stake or 0,
+                'est_stake_bot': est_stake_bot if is_bot_managed else 0,
                 'stake': stake_currency,
                 'side': 'long',
                 'leverage': 1,
                 'position': 0,
+                'is_bot_managed': is_bot_managed,
                 'is_position': False,
             })
         symbol: str
         position: PositionWallet
         for symbol, position in self._freqtrade.wallets.get_all_positions().items():
             total += position.collateral
+            total_bot += position.collateral
 
             currencies.append({
                 'currency': symbol,
@@ -657,9 +675,11 @@ class RPC:
                 'used': 0,
                 'position': position.position,
                 'est_stake': position.collateral,
+                'est_stake_bot': position.collateral,
                 'stake': stake_currency,
                 'leverage': position.leverage,
                 'side': position.side,
+                'is_bot_managed': True,
                 'is_position': True
             })
 
@@ -675,8 +695,10 @@ class RPC:
         return {
             'currencies': currencies,
             'total': total,
+            'total_bot': total_bot,
             'symbol': fiat_display_currency,
             'value': value,
+            'value_bot': value_bot,
             'stake': stake_currency,
             'starting_capital': starting_capital,
             'starting_capital_ratio': starting_capital_ratio,
@@ -719,6 +741,18 @@ class RPC:
             self._freqtrade.strategy.max_open_trades = 0
 
         return {'status': 'No more entries will occur from now. Run /reload_config to reset.'}
+
+    def _rpc_reload_trade_from_exchange(self, trade_id: int) -> Dict[str, str]:
+        """
+        Handler for reload_trade_from_exchange.
+        Reloads a trade from it's orders, should manual interaction have happened.
+        """
+        trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+        if not trade:
+            raise RPCException(f"Could not find trade with id {trade_id}.")
+
+        self._freqtrade.handle_onexchange_order(trade)
+        return {'status': 'Reloaded from orders from exchange'}
 
     def __exec_force_exit(self, trade: Trade, ordertype: Optional[str],
                           amount: Optional[float] = None) -> None:
@@ -1195,8 +1229,8 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config: Config, pair: str, timeframe: str,
-                                   timerange: str, exchange) -> Dict[str, Any]:
-        timerange_parsed = TimeRange.parse_timerange(timerange)
+                                   exchange) -> Dict[str, Any]:
+        timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
         _data = load_data(
             datadir=config["datadir"],
@@ -1207,7 +1241,8 @@ class RPC:
             candle_type=config.get('candle_type_def', CandleType.SPOT)
         )
         if pair not in _data:
-            raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
+            raise RPCException(
+                f"No data for {pair}, {timeframe} in {config.get('timerange')} found.")
         from freqtrade.data.dataprovider import DataProvider
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
@@ -1217,7 +1252,7 @@ class RPC:
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed, arrow.Arrow.utcnow().datetime)
+                                              df_analyzed, dt_now())
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and

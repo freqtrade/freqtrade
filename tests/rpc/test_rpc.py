@@ -261,8 +261,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
-                              limit_buy_order, limit_sell_order, markets, mocker) -> None:
+def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,
@@ -295,7 +294,7 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
         assert day['starting_balance'] in (pytest.approx(1062.37), pytest.approx(1066.46))
         assert day['fiat_value'] in (0.0, )
     # ensure first day is current date
-    assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
+    assert str(days['data'][0]['date']) == str(datetime.now(timezone.utc).date())
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
@@ -415,8 +414,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
@@ -426,8 +425,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
                  MagicMock(side_effect=ExchangeError("Pair 'XRP/USDT' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['first_trade_humanized'] == '2 days ago'
+    assert stats['latest_trade_humanized'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
@@ -546,53 +545,67 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'free': 10.0,
             'balance': 12.0,
             'used': 2.0,
+            'bot_owned': 9.9,  # available stake - reducing by reserved amount
             'est_stake': 10.0,  # In futures mode, "free" is used here.
+            'est_stake_bot': 9.9,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': True,
         },
         {
             'free': 1.0,
             'balance': 5.0,
             'currency': 'ETH',
+            'bot_owned': 0,
             'est_stake': 0.30794,
+            'est_stake_bot': 0,
             'used': 4.0,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
-
+            'is_bot_managed': False,
         },
         {
             'free': 5.0,
             'balance': 10.0,
             'currency': 'USDT',
+            'bot_owned': 0,
             'est_stake': 0.0011562404610161968,
+            'est_stake_bot': 0,
             'used': 5.0,
             'stake': 'BTC',
             'is_position': False,
             'leverage': 1.0,
             'position': 0.0,
             'side': 'long',
+            'is_bot_managed': False,
         },
         {
             'free': 0.0,
             'balance': 0.0,
             'currency': 'ETH/USDT:USDT',
             'est_stake': 20,
+            'est_stake_bot': 20,
             'used': 0,
             'stake': 'BTC',
             'is_position': True,
             'leverage': 5.0,
             'position': 1000.0,
             'side': 'short',
+            'is_bot_managed': True,
         }
     ]
+    assert pytest.approx(result['total_bot']) == 29.9
+    assert pytest.approx(result['total']) == 30.309096
     assert result['starting_capital'] == 10
-    assert result['starting_capital_ratio'] == 0.0
+    # Very high starting capital ratio, because the futures position really has the wrong unit.
+    # TODO: improve this test (see comment above)
+    assert result['starting_capital_ratio'] == pytest.approx(1.98999999)
 
 
 def test_rpc_start(mocker, default_conf) -> None:

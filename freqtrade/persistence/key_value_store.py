@@ -36,7 +36,7 @@ class _KeyValueStoreModel(ModelBase):
 
     value_type: Mapped[ValueTypesEnum] = mapped_column(String(20), nullable=False)
 
-    string_value: Mapped[Optional[str]]
+    string_value: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     datetime_value: Mapped[Optional[datetime]]
     float_value: Mapped[Optional[float]]
     int_value: Mapped[Optional[int]]

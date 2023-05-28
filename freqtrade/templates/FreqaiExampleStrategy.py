@@ -15,12 +15,15 @@ logger = logging.getLogger(__name__)
 class FreqaiExampleStrategy(IStrategy):
     """
     Example strategy showing how the user connects their own
-    IFreqaiModel to the strategy. Namely, the user uses:
-    self.freqai.start(dataframe, metadata)
+    IFreqaiModel to the strategy.
 
-    to make predictions on their data. feature_engineering_*() automatically
-    generate the variety of features indicated by the user in the
-    canonical freqtrade configuration file under config['freqai'].
+    Warning! This is a showcase of functionality,
+    which means that it is designed to show various functions of FreqAI
+    and it runs on all computers. We use this showcase to help users
+    understand how to build a strategy, and we use it as a benchmark
+    to help debug possible problems.
+
+    This means this is *not* meant to be run live in production.
     """
 
     minimal_roi = {"0": 0.1, "240": -1}

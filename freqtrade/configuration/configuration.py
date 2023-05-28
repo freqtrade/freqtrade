@@ -465,6 +465,15 @@ class Configuration:
         self._args_to_config(config, argname='timerange',
                              logstring='Filter trades by timerange: {}')
 
+        self._args_to_config(config, argname='analysis_rejected',
+                             logstring='Analyse rejected signals: {}')
+
+        self._args_to_config(config, argname='analysis_to_csv',
+                             logstring='Store analysis tables to CSV: {}')
+
+        self._args_to_config(config, argname='analysis_csv_path',
+                             logstring='Path to store analysis CSVs: {}')
+
     def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',

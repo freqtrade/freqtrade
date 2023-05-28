@@ -327,18 +327,18 @@ To check how the new exchange behaves, you can use the following snippet:
 
 ``` python
 import ccxt
-from datetime import datetime
+from datetime import datetime, timezone
 from freqtrade.data.converter import ohlcv_to_dataframe
-ct = ccxt.binance()
+ct = ccxt.binance()  # Use the exchange you're testing
 timeframe = "1d"
-pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
+pair = "BTC/USDT"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
 df1 = ohlcv_to_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1.tail(1))
-print(datetime.utcnow())
+print(datetime.now(timezone.utc))
 ```
 
 ``` output

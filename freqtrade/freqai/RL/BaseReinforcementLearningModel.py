@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -16,14 +16,14 @@ from pandas import DataFrame
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv
-from freqtrade.freqai.RL.BaseEnvironment import BaseActions, Positions
-from freqtrade.freqai.RL.TensorboardCallback import TensorboardCallback
+from freqtrade.freqai.RL.BaseEnvironment import BaseActions, BaseEnvironment, Positions
+from freqtrade.freqai.tensorboard.TensorboardCallback import TensorboardCallback
 from freqtrade.persistence import Trade
 
 
@@ -46,8 +46,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             'cpu_count', 1), max(int(self.max_system_threads / 2), 1))
         th.set_num_threads(self.max_threads)
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
-        self.train_env: Union[SubprocVecEnv, Type[gym.Env]] = gym.Env()
-        self.eval_env: Union[SubprocVecEnv, Type[gym.Env]] = gym.Env()
+        self.train_env: Union[VecMonitor, SubprocVecEnv, gym.Env] = gym.Env()
+        self.eval_env: Union[VecMonitor, SubprocVecEnv, gym.Env] = gym.Env()
         self.eval_callback: Optional[EvalCallback] = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
@@ -371,6 +371,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
+
+            Warning!
+            This is function is a showcase of functionality designed to show as many possible
+            environment control features as possible. It is also designed to run quickly
+            on small computers. This is a benchmark, it is *not* for live production.
+
             :param action: int = The action made by the agent for the current candle.
             :return:
             float = the reward to give to the agent for current step (used for optimization
@@ -431,9 +437,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             return 0.
 
 
-def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
+def make_env(MyRLEnv: Type[BaseEnvironment], env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
-             monitor: bool = False,
              env_info: Dict[str, Any] = {}) -> Callable:
     """
     Utility function for multiprocessed env.
@@ -450,8 +455,7 @@ def make_env(MyRLEnv: Type[gym.Env], env_id: str, rank: int,
 
         env = MyRLEnv(df=train_df, prices=price, id=env_id, seed=seed + rank,
                       **env_info)
-        if monitor:
-            env = Monitor(env)
+
         return env
     set_random_seed(seed)
     return _init

@@ -636,29 +636,44 @@ AVAILABLE_CLI_OPTIONS = {
               "4: by pair, enter_ and exit_tag (this can get quite large), "
               "5: by exit_tag"),
         nargs='+',
-        default=['0', '1', '2'],
+        default=[],
         choices=['0', '1', '2', '3', '4', '5'],
     ),
     "enter_reason_list": Arg(
         "--enter-reason-list",
-        help=("Comma separated list of entry signals to analyse. Default: all. "
-              "e.g. 'entry_tag_a,entry_tag_b'"),
+        help=("Space separated list of entry signals to analyse. Default: all. "
+              "e.g. 'entry_tag_a entry_tag_b'"),
         nargs='+',
         default=['all'],
     ),
     "exit_reason_list": Arg(
         "--exit-reason-list",
-        help=("Comma separated list of exit signals to analyse. Default: all. "
-              "e.g. 'exit_tag_a,roi,stop_loss,trailing_stop_loss'"),
+        help=("Space separated list of exit signals to analyse. Default: all. "
+              "e.g. 'exit_tag_a roi stop_loss trailing_stop_loss'"),
         nargs='+',
         default=['all'],
     ),
     "indicator_list": Arg(
         "--indicator-list",
-        help=("Comma separated list of indicators to analyse. "
-              "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
+        help=("Space separated list of indicators to analyse. "
+              "e.g. 'close rsi bb_lowerband profit_abs'"),
         nargs='+',
         default=[],
+    ),
+    "analysis_rejected": Arg(
+        '--rejected-signals',
+        help='Analyse rejected signals',
+        action='store_true',
+    ),
+    "analysis_to_csv": Arg(
+        '--analysis-to-csv',
+        help='Save selected analysis tables to individual CSVs',
+        action='store_true',
+    ),
+    "analysis_csv_path": Arg(
+        '--analysis-csv-path',
+        help=("Specify a path to save the analysis CSVs "
+              "if --analysis-to-csv is enabled. Default: user_data/basktesting_results/"),
     ),
     "freqaimodel": Arg(
         '--freqaimodel',

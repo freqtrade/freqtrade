@@ -3,13 +3,11 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
 
-import orjson
 import pandas as pd
 import rapidjson
 
@@ -46,18 +44,6 @@ def round_coin_value(
         val = f"{val} {coin}"
 
     return val
-
-
-def shorten_date(_date: str) -> str:
-    """
-    Trim the date so it fits on small screens
-    """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
-    return new_date
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
@@ -262,17 +248,7 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
-    # https://github.com/pandas-dev/pandas/issues/24889
-    # https://github.com/pandas-dev/pandas/issues/40443
-    # We need to convert to a dict to avoid mem leak
-    def default(z):
-        if isinstance(z, pd.Timestamp):
-            return z.timestamp() * 1e3
-        if z is pd.NaT:
-            return 'NaT'
-        raise TypeError
-
-    return str(orjson.dumps(dataframe.to_dict(orient='split'), default=default), 'utf-8')
+    return dataframe.to_json(orient='split')
 
 
 def json_to_dataframe(data: str) -> pd.DataFrame:

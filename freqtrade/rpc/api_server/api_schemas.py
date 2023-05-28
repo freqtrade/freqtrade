@@ -36,20 +36,25 @@ class Balance(BaseModel):
     free: float
     balance: float
     used: float
+    bot_owned: Optional[float]
     est_stake: float
+    est_stake_bot: Optional[float]
     stake: str
     # Starting with 2.x
     side: str
     leverage: float
     is_position: bool
     position: float
+    is_bot_managed: bool
 
 
 class Balances(BaseModel):
     currencies: List[Balance]
     total: float
+    total_bot: float
     symbol: str
     value: float
+    value_bot: float
     stake: str
     note: str
     starting_capital: float
@@ -95,8 +100,10 @@ class Profit(BaseModel):
     trade_count: int
     closed_trade_count: int
     first_trade_date: str
+    first_trade_humanized: str
     first_trade_timestamp: int
     latest_trade_date: str
+    latest_trade_humanized: str
     latest_trade_timestamp: int
     avg_duration: str
     best_pair: str

@@ -3,9 +3,9 @@
 
 import logging
 import math
+from datetime import timedelta
 from unittest.mock import MagicMock
 
-import arrow
 import numpy as np
 import pytest
 from pandas import DataFrame
@@ -14,6 +14,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
+from freqtrade.util.datetime_helpers import dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset)
@@ -27,7 +28,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 # 5) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
-tests_start_time = arrow.get(2018, 10, 3)
+tests_start_time = dt_utc(2018, 10, 3)
 timeframe_in_minute = 60
 
 # End helper functions
@@ -220,7 +221,7 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
     heartbeat = edge_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
-    edge._last_updated = arrow.utcnow().int_timestamp - heartbeat + 1
+    edge._last_updated = dt_ts() - heartbeat + 1
 
     assert edge.calculate(edge_conf['exchange']['pair_whitelist']) is False
 
@@ -232,7 +233,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
 
     NEOBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
+            dt_ts(tests_start_time + timedelta(minutes=(x * timeframe_in_minute))),
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -244,7 +245,7 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
     base = 0.002
     LTCBTC = [
         [
-            tests_start_time.shift(minutes=(x * timeframe_in_minute)).int_timestamp * 1000,
+            dt_ts(tests_start_time + timedelta(minutes=(x * timeframe_in_minute))),
             math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
@@ -268,7 +269,7 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
 
     assert edge.calculate(edge_conf['exchange']['pair_whitelist'])
     assert len(edge._cached_pairs) == 2
-    assert edge._last_updated <= arrow.utcnow().int_timestamp + 2
+    assert edge._last_updated <= dt_ts() + 2
 
 
 def test_edge_process_no_data(mocker, edge_conf, caplog):

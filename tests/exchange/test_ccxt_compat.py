@@ -43,6 +43,10 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+        'private_methods': [
+            'fapiPrivateGetPositionSideDual',
+            'fapiPrivateGetMultiAssetsMargin'
+        ],
         'sample_order': [{
             "symbol": "SOLUSDT",
             "orderId": 3551312894,
@@ -221,11 +225,13 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': False,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
+        'private_methods': ['fetch_accounts'],
     },
     'bybit': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
+        'use_ci_proxy': True,
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
@@ -302,7 +308,7 @@ def exchange(request, exchange_conf):
         exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
     exchange_conf['exchange']['name'] = request.param
     exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
-    exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True)
 
     yield exchange, request.param
 
@@ -330,7 +336,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(
-            request.param, exchange_conf, validate=True, load_leverage_tiers=True)
+            exchange_conf, validate=True, load_leverage_tiers=True)
 
         yield exchange, request.param
 
@@ -755,3 +761,8 @@ class TestCCXTExchange():
             max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
             assert (isinstance(max_stake_amount, float))
             assert max_stake_amount >= 0.0
+
+    def test_private_method_presence(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange
+        for method in EXCHANGES[exchangename].get('private_methods', []):
+            assert hasattr(exch._api, method)

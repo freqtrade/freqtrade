@@ -21,11 +21,13 @@ from freqtrade.__init__ import __version__
 from freqtrade.enums import CandleType, RunMode, State, TradingMode
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
+from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades, get_mock_coro,
                             get_patched_freqtradebot, log_has, log_has_re, patch_get_signal)
 
@@ -283,7 +285,7 @@ def test_api__init__(default_conf, mocker):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
     mocker.patch('freqtrade.rpc.api_server.webserver.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
@@ -341,7 +343,7 @@ def test_api_run(default_conf, mocker, caplog):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
 
     server_inst_mock = MagicMock()
     server_inst_mock.run_in_thread = MagicMock()
@@ -419,7 +421,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
                                         "username": "TestUser",
                                         "password": "testPass",
                                         }})
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
 
     server_mock = MagicMock()
     server_mock.cleanup = MagicMock()
@@ -480,13 +482,18 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'free': 12.0,
         'balance': 12.0,
         'used': 0.0,
+        'bot_owned': pytest.approx(11.879999),
         'est_stake': 12.0,
+        'est_stake_bot': pytest.approx(11.879999),
         'stake': 'BTC',
         'is_position': False,
         'leverage': 1.0,
         'position': 0.0,
         'side': 'long',
+        'is_bot_managed': True,
     }
+    assert response['total'] == 12.159513094
+    assert response['total_bot'] == pytest.approx(11.879999)
     assert 'starting_capital' in response
     assert 'starting_capital_fiat' in response
     assert 'starting_capital_pct' in response
@@ -596,7 +603,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert len(rc.json()['data']) == 7
     assert rc.json()['stake_currency'] == 'BTC'
     assert rc.json()['fiat_display_currency'] == 'USD'
-    assert rc.json()['data'][0]['date'] == str(datetime.utcnow().date())
+    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -735,6 +742,33 @@ def test_api_delete_open_order(botclient, mocker, fee, markets, ticker, is_short
     assert cancel_mock.call_count == 1
 
 
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_trade_reload_trade(botclient, mocker, fee, markets, ticker, is_short):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
+    stoploss_mock = MagicMock()
+    cancel_mock = MagicMock()
+    ftbot.handle_onexchange_order = MagicMock()
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+        cancel_order=cancel_mock,
+        cancel_stoploss_order=stoploss_mock,
+    )
+
+    rc = client_post(client, f"{BASE_URI}/trades/10/reload")
+    assert_response(rc, 502)
+    assert 'Could not find trade with id 10.' in rc.json()['error']
+    assert ftbot.handle_onexchange_order.call_count == 0
+
+    create_mock_trades(fee, is_short=is_short)
+    Trade.commit()
+
+    rc = client_post(client, f"{BASE_URI}/trades/5/reload")
+    assert ftbot.handle_onexchange_order.call_count == 1
+
+
 def test_api_logs(botclient):
     ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/logs")
@@ -856,8 +890,10 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'best_pair_profit_ratio': expected['best_pair_profit_ratio'],
         'best_rate': expected['best_rate'],
         'first_trade_date': ANY,
+        'first_trade_humanized': ANY,
         'first_trade_timestamp': ANY,
-        'latest_trade_date': '5 minutes ago',
+        'latest_trade_date': ANY,
+        'latest_trade_humanized': '5 minutes ago',
         'latest_trade_timestamp': ANY,
         'profit_all_coin': pytest.approx(expected['profit_all_coin']),
         'profit_all_fiat': pytest.approx(expected['profit_all_fiat']),
@@ -1192,7 +1228,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         stake_amount=1,
         open_rate=0.245441,
         open_order_id="123456",
-        open_date=datetime.utcnow(),
+        open_date=datetime.now(timezone.utc),
         is_open=False,
         is_short=False,
         fee_close=fee.return_value,
@@ -1631,137 +1667,140 @@ def test_sysinfo(botclient):
 
 
 def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
-    ftbot, client = botclient
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    try:
+        ftbot, client = botclient
+        mocker.patch(f'{EXMS}.get_fee', fee)
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    # Backtest prevented in default mode
-    assert_response(rc, 502)
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        # Backtest prevented in default mode
+        assert_response(rc, 502)
 
-    ftbot.config['runmode'] = RunMode.WEBSERVER
-    # Backtesting not started yet
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        ftbot.config['runmode'] = RunMode.WEBSERVER
+        # Backtesting not started yet
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'not_started'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest not yet executed'
-    assert result['progress'] == 0
+        result = rc.json()
+        assert result['status'] == 'not_started'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest not yet executed'
+        assert result['progress'] == 0
 
-    # Reset backtesting
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'reset'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest reset'
-    ftbot.config['export'] = 'trades'
-    ftbot.config['backtest_cache'] = 'day'
-    ftbot.config['user_data_dir'] = Path(tmpdir)
-    ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
-    ftbot.config['exportfilename'].mkdir()
+        # Reset backtesting
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'reset'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest reset'
+        ftbot.config['export'] = 'trades'
+        ftbot.config['backtest_cache'] = 'day'
+        ftbot.config['user_data_dir'] = Path(tmpdir)
+        ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
+        ftbot.config['exportfilename'].mkdir()
 
-    # start backtesting
-    data = {
-        "strategy": CURRENT_TEST_STRATEGY,
-        "timeframe": "5m",
-        "timerange": "20180110-20180111",
-        "max_open_trades": 3,
-        "stake_amount": 100,
-        "dry_run_wallet": 1000,
-        "enable_protections": False
-    }
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc)
-    result = rc.json()
+        # start backtesting
+        data = {
+            "strategy": CURRENT_TEST_STRATEGY,
+            "timeframe": "5m",
+            "timerange": "20180110-20180111",
+            "max_open_trades": 3,
+            "stake_amount": 100,
+            "dry_run_wallet": 1000,
+            "enable_protections": False
+        }
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        result = rc.json()
 
-    assert result['status'] == 'running'
-    assert result['progress'] == 0
-    assert result['running']
-    assert result['status_msg'] == 'Backtest started'
+        assert result['status'] == 'running'
+        assert result['progress'] == 0
+        assert result['running']
+        assert result['status_msg'] == 'Backtest started'
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'ended'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
-    assert result['progress'] == 1
-    assert result['backtest_result']
+        result = rc.json()
+        assert result['status'] == 'ended'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
+        assert result['progress'] == 1
+        assert result['backtest_result']
 
-    rc = client_get(client, f"{BASE_URI}/backtest/abort")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'not_running'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
+        rc = client_get(client, f"{BASE_URI}/backtest/abort")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'not_running'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
 
-    # Simulate running backtest
-    ApiServer._bgtask_running = True
-    rc = client_get(client, f"{BASE_URI}/backtest/abort")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'stopping'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest ended'
+        # Simulate running backtest
+        ApiBG.bgtask_running = True
+        rc = client_get(client, f"{BASE_URI}/backtest/abort")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'stopping'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest ended'
 
-    # Get running backtest...
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'running'
-    assert result['running']
-    assert result['step'] == "backtest"
-    assert result['status_msg'] == "Backtest running"
+        # Get running backtest...
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'running'
+        assert result['running']
+        assert result['step'] == "backtest"
+        assert result['status_msg'] == "Backtest running"
 
-    # Try delete with task still running
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'running'
+        # Try delete with task still running
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'running'
 
-    # Post to backtest that's still running
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc, 502)
-    result = rc.json()
-    assert 'Bot Background task already running' in result['error']
+        # Post to backtest that's still running
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc, 502)
+        result = rc.json()
+        assert 'Bot Background task already running' in result['error']
 
-    ApiServer._bgtask_running = False
+        ApiBG.bgtask_running = False
 
-    # Rerun backtest (should get previous result)
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc)
-    result = rc.json()
-    assert log_has_re('Reusing result of previous backtest.*', caplog)
+        # Rerun backtest (should get previous result)
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        result = rc.json()
+        assert log_has_re('Reusing result of previous backtest.*', caplog)
 
-    data['stake_amount'] = 101
+        data['stake_amount'] = 101
 
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-                 side_effect=DependencyException('DeadBeef'))
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert log_has("Backtesting caused an error: DeadBeef", caplog)
+        mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+                     side_effect=DependencyException('DeadBeef'))
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert log_has("Backtesting caused an error: DeadBeef", caplog)
 
-    rc = client_get(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
-    result = rc.json()
-    assert result['status'] == 'error'
-    assert 'Backtest failed' in result['status_msg']
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result['status'] == 'error'
+        assert 'Backtest failed' in result['status_msg']
 
-    # Delete backtesting to avoid leakage since the backtest-object may stick around.
-    rc = client_delete(client, f"{BASE_URI}/backtest")
-    assert_response(rc)
+        # Delete backtesting to avoid leakage since the backtest-object may stick around.
+        rc = client_delete(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
 
-    result = rc.json()
-    assert result['status'] == 'reset'
-    assert not result['running']
-    assert result['status_msg'] == 'Backtest reset'
+        result = rc.json()
+        assert result['status'] == 'reset'
+        assert not result['running']
+        assert result['status_msg'] == 'Backtest reset'
 
-    # Disallow base64 strategies
-    data['strategy'] = "xx:cHJpbnQoImhlbGxvIHdvcmxkIik="
-    rc = client_post(client, f"{BASE_URI}/backtest", data=data)
-    assert_response(rc, 500)
+        # Disallow base64 strategies
+        data['strategy'] = "xx:cHJpbnQoImhlbGxvIHdvcmxkIik="
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc, 500)
+    finally:
+        Backtesting.cleanup()
 
 
 def test_api_backtest_history(botclient, mocker, testdatadir):
@@ -1872,7 +1911,7 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
                                             "password": _TEST_PASS,
                                             "ws_token": _TEST_WS_TOKEN
                                             }})
-        mocker.patch('freqtrade.rpc.telegram.Updater')
+        mocker.patch('freqtrade.rpc.telegram.Telegram._init')
         mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api')
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))

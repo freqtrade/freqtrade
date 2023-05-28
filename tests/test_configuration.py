@@ -1271,7 +1271,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
         configuration.get_config()
 
 
-def test_pairlist_resolving_fallback(mocker):
+def test_pairlist_resolving_fallback(mocker, tmpdir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
     mocker.patch("freqtrade.configuration.configuration.load_file",
@@ -1290,7 +1290,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == Path.cwd() / "user_data/data/binance"
+    assert config['datadir'] == Path(tmpdir) / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [

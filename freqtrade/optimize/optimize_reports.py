@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, concat, to_datetime
 from tabulate import tabulate
 
 from freqtrade.constants import (BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN,
@@ -46,27 +46,78 @@ def store_backtest_stats(
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_signal_candles(
-        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
+def _store_backtest_analysis_data(
+        recordfilename: Path, data: Dict[str, Dict],
+        dtappendix: str, name: str) -> Path:
     """
-    Stores backtest trade signal candles
+    Stores backtest trade candles for analysis
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
-        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
+        while for directories, <directory>/backtest-result-<datetime>_<name>.pkl will be used
         as filename
-    :param stats: Dict containing the backtesting signal candles
+    :param candles: Dict containing the backtesting data for analysis
     :param dtappendix: Datetime to use for the filename
+    :param name: Name to use for the file, e.g. signals, rejected
     """
     if recordfilename.is_dir():
-        filename = (recordfilename / f'backtest-result-{dtappendix}_signals.pkl')
+        filename = (recordfilename / f'backtest-result-{dtappendix}_{name}.pkl')
     else:
         filename = Path.joinpath(
-            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_signals.pkl'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_{name}.pkl'
         )
 
-    file_dump_joblib(filename, candles)
+    file_dump_joblib(filename, data)
 
     return filename
+
+
+def store_backtest_analysis_results(
+        recordfilename: Path, candles: Dict[str, Dict], trades: Dict[str, Dict],
+        dtappendix: str) -> None:
+    _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
+    _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
+
+
+def generate_trade_signal_candles(preprocessed_df: Dict[str, DataFrame],
+                                  bt_results: Dict[str, Any]) -> DataFrame:
+    signal_candles_only = {}
+    for pair in preprocessed_df.keys():
+        signal_candles_only_df = DataFrame()
+
+        pairdf = preprocessed_df[pair]
+        resdf = bt_results['results']
+        pairresults = resdf.loc[(resdf["pair"] == pair)]
+
+        if pairdf.shape[0] > 0:
+            for t, v in pairresults.open_date.items():
+                allinds = pairdf.loc[(pairdf['date'] < v)]
+                signal_inds = allinds.iloc[[-1]]
+                signal_candles_only_df = concat([
+                    signal_candles_only_df.infer_objects(),
+                    signal_inds.infer_objects()])
+
+            signal_candles_only[pair] = signal_candles_only_df
+    return signal_candles_only
+
+
+def generate_rejected_signals(preprocessed_df: Dict[str, DataFrame],
+                              rejected_dict: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    rejected_candles_only = {}
+    for pair, signals in rejected_dict.items():
+        rejected_signals_only_df = DataFrame()
+        pairdf = preprocessed_df[pair]
+
+        for t in signals:
+            data_df_row = pairdf.loc[(pairdf['date'] == t[0])].copy()
+            data_df_row['pair'] = pair
+            data_df_row['enter_tag'] = t[1]
+
+            rejected_signals_only_df = concat([
+                rejected_signals_only_df.infer_objects(),
+                data_df_row.infer_objects()])
+
+        rejected_candles_only[pair] = rejected_signals_only_df
+    return rejected_candles_only
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:

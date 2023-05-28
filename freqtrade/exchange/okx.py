@@ -169,6 +169,22 @@ class Okx(Exchange):
             params['posSide'] = self._get_posSide(side, True)
         return params
 
+    def _convert_stop_order(self, pair: str, order_id: str, order: Dict) -> Dict:
+        if (
+            order['status'] == 'closed'
+            and (real_order_id := order.get('info', {}).get('ordId')) is not None
+        ):
+            # Once a order triggered, we fetch the regular followup order.
+            order_reg = self.fetch_order(real_order_id, pair)
+            self._log_exchange_response('fetch_stoploss_order1', order_reg)
+            order_reg['id_stop'] = order_reg['id']
+            order_reg['id'] = order_id
+            order_reg['type'] = 'stoploss'
+            order_reg['status_stop'] = 'triggered'
+            return order_reg
+        order['type'] = 'stoploss'
+        return order
+
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
@@ -177,7 +193,7 @@ class Okx(Exchange):
             params1 = {'stop': True}
             order_reg = self._api.fetch_order(order_id, pair, params=params1)
             self._log_exchange_response('fetch_stoploss_order', order_reg)
-            return order_reg
+            return self._convert_stop_order(pair, order_id, order_reg)
         except ccxt.OrderNotFound:
             pass
         params2 = {'stop': True, 'ordType': 'conditional'}
@@ -188,18 +204,7 @@ class Okx(Exchange):
                 orders_f = [order for order in orders if order['id'] == order_id]
                 if orders_f:
                     order = orders_f[0]
-                    if (order['status'] == 'closed'
-                            and (real_order_id := order.get('info', {}).get('ordId')) is not None):
-                        # Once a order triggered, we fetch the regular followup order.
-                        order_reg = self.fetch_order(real_order_id, pair)
-                        self._log_exchange_response('fetch_stoploss_order1', order_reg)
-                        order_reg['id_stop'] = order_reg['id']
-                        order_reg['id'] = order_id
-                        order_reg['type'] = 'stoploss'
-                        order_reg['status_stop'] = 'triggered'
-                        return order_reg
-                    order['type'] = 'stoploss'
-                    return order
+                    return self._convert_stop_order(pair, order_id, order)
             except ccxt.BaseError:
                 pass
         raise RetryableOrderError(

@@ -29,7 +29,7 @@ If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl`
 `user_data/backtest_results` folder.
 
 To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command
-with `--analysis-groups` option provided with space-separated arguments (default `0 1 2`):
+with `--analysis-groups` option provided with space-separated arguments:
 
 ``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4 5
@@ -39,6 +39,7 @@ This command will read from the last backtesting results. The `--analysis-groups
 used to specify the various tabular outputs showing the profit fo each group or trade,
 ranging from the simplest (0) to the most detailed per pair, per buy and per sell tag (4):
 
+* 0: overall winrate and profit summary by enter_tag
 * 1: profit summaries grouped by enter_tag
 * 2: profit summaries grouped by enter_tag and exit_tag
 * 3: profit summaries grouped by pair and enter_tag
@@ -114,4 +115,39 @@ For example, if your backtest timerange was `20220101-20221231` but you only wan
 
 ```bash
 freqtrade backtesting-analysis -c <config.json> --timerange 20220101-20220201
+```
+
+### Printing out rejected signals
+
+Use the `--rejected-signals` option to print out rejected signals.
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --rejected-signals
+```
+
+### Writing tables to CSV
+
+Some of the tabular outputs can become large, so printing them out to the terminal is not preferable.
+Use the `--analysis-to-csv` option to disable printing out of tables to standard out and write them to CSV files.
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --analysis-to-csv
+```
+
+By default this will write one file per output table you specified in the `backtesting-analysis` command, e.g.
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --rejected-signals --analysis-groups 0 1
+```
+
+This will write to `user_data/backtest_results`:
+
+* rejected_signals.csv
+* group_0.csv
+* group_1.csv
+
+To override where the files will be written, also specify the `--analysis-csv-path` option.
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --analysis-csv-path another/data/path/
 ```
