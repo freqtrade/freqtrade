@@ -250,12 +250,19 @@ class LookaheadAnalysis:
             self.analyze_row(idx, result_row)
 
         # check and report signals
-        if (self.current_analysis.false_entry_signals > 0 or
-                self.current_analysis.false_exit_signals > 0 or
-                len(self.current_analysis.false_indicators) > 0):
-            logger.info(f" => {self.local_config['strategy']} + : bias detected!")
+        if self.current_analysis.total_signals < self.local_config['minimum_trade_amount']:
+            logger.info(f" -> {self.local_config['strategy']} : too few trades. "
+                        f"We only found {self.current_analysis.total_signals} trades. "
+                        f"Hint: Extend the timerange "
+                        f"to get at least {self.local_config['minimum_trade_amount']} "
+                        f"or lower the value of minimum_trade_amount.")
+            self.failed_bias_check = True
+        elif (self.current_analysis.false_entry_signals > 0 or
+              self.current_analysis.false_exit_signals > 0 or
+              len(self.current_analysis.false_indicators) > 0):
+            logger.info(f" => {self.local_config['strategy']} : bias detected!")
             self.current_analysis.has_bias = True
+            self.failed_bias_check = False
         else:
             logger.info(self.local_config['strategy'] + ": no bias detected")
-
-        self.failed_bias_check = False
+            self.failed_bias_check = False

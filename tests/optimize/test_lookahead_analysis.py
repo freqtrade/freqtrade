@@ -115,30 +115,40 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis
     table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances([instance]))
+                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
 
-    # check row contents for a try that errored out
+    # check row contents for a try that has too few signals
     assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
     assert data[0][1] == 'strategy_test_v3_with_lookahead_bias'
-    assert data[0][2].__contains__('error')
+    assert data[0][2].__contains__('too few trades')
     assert len(data[0]) == 3
+
+    # now check for an error which occured after enough trades
+    analysis.total_signals = 12
+    analysis.false_entry_signals = 11
+    analysis.false_exit_signals = 10
+    instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
+    instance.current_analysis = analysis
+    table, headers, data = (LookaheadAnalysisSubFunctions.
+                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
+    assert data[0][2].__contains__("error")
 
     # edit it into not showing an error
     instance.failed_bias_check = False
     table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances([instance]))
+                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
     assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
     assert data[0][1] == 'strategy_test_v3_with_lookahead_bias'
     assert data[0][2]  # True
-    assert data[0][3] == 5
-    assert data[0][4] == 4
-    assert data[0][5] == 3
+    assert data[0][3] == 12
+    assert data[0][4] == 11
+    assert data[0][5] == 10
     assert data[0][6] == ''
 
     analysis.false_indicators.append('falseIndicator1')
     analysis.false_indicators.append('falseIndicator2')
     table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances([instance]))
+                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
 
     assert data[0][6] == 'falseIndicator1, falseIndicator2'
 
@@ -146,8 +156,8 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert len(data) == 1
 
     # check amount of multiple rows
-    table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances([instance, instance, instance]))
+    table, headers, data = (LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+        lookahead_conf, [instance, instance, instance]))
     assert len(data) == 3
 
 
@@ -165,9 +175,9 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     # 1st check: create a new file and verify its contents
     analysis1 = Analysis()
     analysis1.has_bias = True
-    analysis1.total_signals = 5
-    analysis1.false_entry_signals = 4
-    analysis1.false_exit_signals = 3
+    analysis1.total_signals = 12
+    analysis1.false_entry_signals = 11
+    analysis1.false_exit_signals = 10
     analysis1.false_indicators.append('falseIndicator1')
     analysis1.false_indicators.append('falseIndicator2')
     lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
@@ -178,6 +188,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     }
 
     instance1 = LookaheadAnalysis(lookahead_conf, strategy_obj1)
+    instance1.failed_bias_check = False
     instance1.current_analysis = analysis1
 
     LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance1])
@@ -186,7 +197,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     expected_values1 = [
         [
             'file1.py', 'strat1', True,
-            5, 4, 3,
+            12, 11, 10,
             "falseIndicator1,falseIndicator2"
         ],
     ]
@@ -202,7 +213,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     expected_values2 = [
         [
             'file1.py', 'strat1', False,
-            10, 11, 12,
+            22, 21, 20,
             "falseIndicator3,falseIndicator4"
         ],
     ]
@@ -210,9 +221,9 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
 
     analysis2 = Analysis()
     analysis2.has_bias = False
-    analysis2.total_signals = 10
-    analysis2.false_entry_signals = 11
-    analysis2.false_exit_signals = 12
+    analysis2.total_signals = 22
+    analysis2.false_entry_signals = 21
+    analysis2.false_exit_signals = 20
     analysis2.false_indicators.append('falseIndicator3')
     analysis2.false_indicators.append('falseIndicator4')
 
@@ -222,6 +233,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     }
 
     instance2 = LookaheadAnalysis(lookahead_conf, strategy_obj2)
+    instance2.failed_bias_check = False
     instance2.current_analysis = analysis2
 
     LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance2])
@@ -233,12 +245,12 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     expected_values3 = [
         [
             'file1.py', 'strat1', False,
-            10, 11, 12,
+            22, 21, 20,
             "falseIndicator3,falseIndicator4"
         ],
         [
             'file3.py', 'strat3', True,
-            20, 21, 22, "falseIndicator5,falseIndicator6"
+            32, 31, 30, "falseIndicator5,falseIndicator6"
         ],
     ]
 
@@ -246,9 +258,9 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
 
     analysis3 = Analysis()
     analysis3.has_bias = True
-    analysis3.total_signals = 20
-    analysis3.false_entry_signals = 21
-    analysis3.false_exit_signals = 22
+    analysis3.total_signals = 32
+    analysis3.false_entry_signals = 31
+    analysis3.false_exit_signals = 30
     analysis3.false_indicators.append('falseIndicator5')
     analysis3.false_indicators.append('falseIndicator6')
     lookahead_conf['lookahead_analysis_exportfilename'] = "temp_csv_lookahead_analysis.csv"
@@ -259,6 +271,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
     }
 
     instance3 = LookaheadAnalysis(lookahead_conf, strategy_obj3)
+    instance3.failed_bias_check = False
     instance3.current_analysis = analysis3
 
     LookaheadAnalysisSubFunctions.export_to_csv(lookahead_conf, [instance3])
