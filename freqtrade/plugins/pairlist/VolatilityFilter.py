@@ -74,7 +74,7 @@ class VolatilityFilter(IPairList):
         needed_pairs: ListPairsWithTimeframes = [
             (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
-        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days - 1))
+        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days))
         # Get all candles
         candles = {}
         if needed_pairs:
@@ -103,7 +103,7 @@ class VolatilityFilter(IPairList):
 
         result = False
         if daily_candles is not None and not daily_candles.empty:
-            returns = (np.log(daily_candles.close / daily_candles.close.shift(-1)))
+            returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
             returns.fillna(0, inplace=True)
 
             volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
