@@ -12,7 +12,7 @@ python-telegram-bot==20.3
 httpx>=0.23.3
 arrow==1.2.3
 cachetools==5.3.0
-requests==2.30.0
+requests==2.31.0
 urllib3==2.0.2
 jsonschema==4.17.3
 TA-Lib==0.4.26

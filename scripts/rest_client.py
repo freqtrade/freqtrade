@@ -279,8 +279,9 @@ class FtRestClient():
         """
         data = {"pair": pair,
                 "side": side,
-                "price": price,
                 }
+        if price:
+            data['price'] = price
         return self._post("forceenter", data=data)
 
     def forceexit(self, tradeid, ordertype=None, amount=None):
