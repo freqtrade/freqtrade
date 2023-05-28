@@ -105,6 +105,16 @@ class LookaheadAnalysisSubFunctions:
                                     ",".join(inst.current_analysis.false_indicators)}
                 csv_df = add_or_update_row(csv_df, new_row_data)
 
+        # Fill NaN values with a default value (e.g., 0)
+        csv_df['total_signals'] = csv_df['total_signals'].fillna(0)
+        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].fillna(0)
+        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].fillna(0)
+
+        # Convert columns to integers
+        csv_df['total_signals'] = csv_df['total_signals'].astype(int)
+        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].astype(int)
+        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].astype(int)
+
         logger.info(f"saving {config['lookahead_analysis_exportfilename']}")
         csv_df.to_csv(config['lookahead_analysis_exportfilename'], index=False)
 
