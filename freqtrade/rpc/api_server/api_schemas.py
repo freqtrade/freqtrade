@@ -404,6 +404,7 @@ class StrategyListResponse(BaseModel):
 
 class PairListResponse(BaseModel):
     name: str
+    description: str
     is_pairlist_generator: bool
     params: Dict[str, Any]
 
@@ -416,10 +417,6 @@ class PairListsPayload(BaseModel):
     pairlists: List[Dict[str, Any]]
     blacklist: List[str]
     stake_currency: str
-
-
-class PairListsTest(BaseModel):
-    pairlists: List[PairListResponse]
 
 
 class FreqAIModelListResponse(BaseModel):

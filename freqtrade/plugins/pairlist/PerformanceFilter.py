@@ -41,6 +41,10 @@ class PerformanceFilter(IPairList):
         return f"{self.name} - Sorting pairs by performance."
 
     @staticmethod
+    def description() -> str:
+        return "Filter pairs by performance."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "minutes": {

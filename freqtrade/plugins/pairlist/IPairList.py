@@ -89,6 +89,16 @@ class IPairList(LoggingMixin, ABC):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
+        return False
+
+    @staticmethod
+    @abstractmethod
+    def description() -> str:
+        """
+        Return description of this Pairlist Handler
+        -> Please overwrite in subclasses
+        """
+        return ""
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:

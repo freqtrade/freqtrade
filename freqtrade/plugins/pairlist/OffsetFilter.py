@@ -44,6 +44,10 @@ class OffsetFilter(IPairList):
         return f"{self.name} - Offsetting pairs by {self._offset}."
 
     @staticmethod
+    def description() -> str:
+        return "Offset pair list filter."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "offset": {

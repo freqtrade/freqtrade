@@ -66,6 +66,10 @@ class PriceFilter(IPairList):
         return f"{self.name} - No price filters configured."
 
     @staticmethod
+    def description() -> str:
+        return "Filter pairs by price."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "low_price_ratio": {

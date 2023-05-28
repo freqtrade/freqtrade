@@ -46,6 +46,10 @@ class SpreadFilter(IPairList):
                 f"{self._max_spread_ratio:.2%}.")
 
     @staticmethod
+    def description() -> str:
+        return "Filter by bid/ask difference."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "max_spread_ratio": {

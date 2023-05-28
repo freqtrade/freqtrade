@@ -43,6 +43,10 @@ class StaticPairList(IPairList):
         return f"{self.name}"
 
     @staticmethod
+    def description() -> str:
+        return "Use pairlist as configured in config."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "allow_inactive": {

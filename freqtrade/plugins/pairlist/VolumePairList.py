@@ -115,6 +115,10 @@ class VolumePairList(IPairList):
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
     @staticmethod
+    def description() -> str:
+        return "Provides dynamic pair list based on trade volumes."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "number_assets": {

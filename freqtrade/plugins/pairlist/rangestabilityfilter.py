@@ -63,6 +63,10 @@ class RangeStabilityFilter(IPairList):
                 f"last {plural(self._days, 'day')}.")
 
     @staticmethod
+    def description() -> str:
+        return "Filters pairs by their rate of change."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "lookback_days": {

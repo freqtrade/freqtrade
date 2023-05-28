@@ -66,6 +66,10 @@ class RemotePairList(IPairList):
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
 
     @staticmethod
+    def description() -> str:
+        return "Retrieve pairs from a remote API."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "number_assets": {

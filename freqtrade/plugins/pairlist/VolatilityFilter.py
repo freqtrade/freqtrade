@@ -65,6 +65,10 @@ class VolatilityFilter(IPairList):
                 f" the last {self._days} {plural(self._days, 'day')}.")
 
     @staticmethod
+    def description() -> str:
+        return "Filter pairs by their recent volatility."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "lookback_days": {

@@ -58,6 +58,10 @@ class ProducerPairList(IPairList):
         return f"{self.name} - {self._producer_name}"
 
     @staticmethod
+    def description() -> str:
+        return "Get a pairlist from an upstream bot."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "number_assets": {

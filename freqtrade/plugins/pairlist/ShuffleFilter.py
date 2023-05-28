@@ -56,6 +56,10 @@ class ShuffleFilter(IPairList):
                 (f", seed = {self._seed}." if self._seed is not None else "."))
 
     @staticmethod
+    def description() -> str:
+        return "Randomize pairlist order."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "shuffle_frequency": {

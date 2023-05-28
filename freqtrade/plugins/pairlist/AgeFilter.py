@@ -69,6 +69,10 @@ class AgeFilter(IPairList):
         ) if self._max_days_listed else '')
 
     @staticmethod
+    def description() -> str:
+        return "Filter pairs by age (days listed)."
+
+    @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
             "min_days_listed": {
