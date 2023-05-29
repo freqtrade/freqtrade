@@ -209,15 +209,67 @@ Another example, where the user wants to use live metrics from the trade databas
 
 You need to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the pre-set values are what will be returned.
 
-## Feature normalization
+### Weighting features for temporal importance
 
-FreqAI is strict when it comes to data normalization. The train features, $X^{train}$, are always normalized to [-1, 1] using a shifted min-max normalization:
+FreqAI allows you to set a `weight_factor` to weight recent data more strongly than past data via an exponential function:
 
-$$X^{train}_{norm} = 2 * \frac{X^{train} - X^{train}.min()}{X^{train}.max() - X^{train}.min()} - 1$$
+$$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
-All other data (test data and unseen prediction data in dry/live/backtest) is always automatically normalized to the training feature space according to industry standards. FreqAI stores all the metadata required to ensure that test and prediction features will be properly normalized and that predictions are properly denormalized. For this reason, it is not recommended to eschew industry standards and modify FreqAI internals - however - advanced users can do so by inheriting `train()` in their custom `IFreqaiModel` and using their own normalization functions.
+where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. Below is a figure showing the effect of different weight factors on the data points in a feature set.
 
-## Data dimensionality reduction with Principal Component Analysis
+![weight-factor](assets/freqai_weight-factor.jpg)
+
+# Building the data pipeline
+
+FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, and feature removal feature name following. 
+
+This means that users can use/customize any SKLearn modules and easily add them to their FreqAI data pipeline. By default, FreqAI builds the following pipeline:
+
+```py
+dk.feature_pipeline = Pipeline([
+    ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1))),
+    ('di', ds.DissimilarityIndex(di_threshold=1)),
+    ])
+```
+
+But users will find that they can add PCA and other steps just by changing their configuration settings, for example, if you add `"principal_component_analysis": true` to the `feature_parameters` dict in the `freqai` config, then FreqAI will add the PCA step for you resulting in the following pipeline:
+
+```py
+dk.feature_pipeline = Pipeline([
+    ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1))),
+    ('pca', ds.DataSievePCA()),
+    ('post-pca-scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+    ('di', ds.DissimilarityIndex(di_threshold=1)),
+    ])
+```
+
+The same concept follows if users activate other config options like `"use_SVM_to_remove_outliers": true` or `"use_DBSCAN_to_remove_outliers": true`. FreqAI will add the appropriate steps to the pipeline for you.
+
+## Customizing the pipeline
+
+Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by overriding `define_data_pipeline` in their `IFreqaiModel`. For example:
+
+```py
+    def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
+        """
+        User defines their custom eature pipeline here (if they wish)
+        """
+        from freqtrade.freqai.transforms import FreqaiQuantileTransformer
+        dk.feature_pipeline = Pipeline([
+            ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+        ])
+
+        return
+```
+
+Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. If you have a custom step that you would like to add to the pipeline, you simply create a class that follows the DataSieve/SKLearn API. That means your step must have a `fit()`, `transform()`, `fit_transform()`, and `inverse_transform()` method. You can see examples of this in the `freqtrade.freqai.transforms` module where we use SKLearn `QuantileNormalization` to create a new step for the pipeline.
+
+As there is the `feature_pipeline`, there also exists a definition for the `label_pipeline` which can be defined the same way as the `feature_pipeline`, by overriding `define_label_pipeline`.
+
+!!! note "Inheritence required"
+    While most SKLearn methods are very easy to override, as shown in freqtrade/freqai/transforms/quantile_transform.py, they still need to include passing X, y, and sample_weights through all `fit()`, `transform()`, `fit_transform()` and `inverse_transform()` functions, even if that means a direct pass through without modifications.
+
+<!-- ## Data dimensionality reduction with Principal Component Analysis
 
 You can reduce the dimensionality of your features by activating the `principal_component_analysis` in the config:
 
@@ -241,17 +293,7 @@ You define the lookback window by setting `inlier_metric_window` and FreqAI comp
 
 FreqAI adds the `inlier_metric` to the training features and hence gives the model access to a novel type of temporal information. 
 
-This function does **not** remove outliers from the data set.
-
-## Weighting features for temporal importance
-
-FreqAI allows you to set a `weight_factor` to weight recent data more strongly than past data via an exponential function:
-
-$$ W_i = \exp(\frac{-i}{\alpha*n}) $$
-
-where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. Below is a figure showing the effect of different weight factors on the data points in a feature set.
-
-![weight-factor](assets/freqai_weight-factor.jpg)
+This function does **not** remove outliers from the data set. -->
 
 ## Outlier detection
 
@@ -259,7 +301,7 @@ Equity and crypto markets suffer from a high level of non-patterned noise in the
 
 ### Identifying outliers with the Dissimilarity Index (DI)
 
- The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. 
+The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. 
 
 You can tell FreqAI to remove outlier data points from the training/test data sets using the DI by including the following statement in the config:
 
@@ -271,7 +313,7 @@ You can tell FreqAI to remove outlier data points from the training/test data se
     }
 ```
 
- The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
+Which will add `DissimilarityIndex` step to your `feature_pipeline` and set the threshold to 1. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
 
 $$ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} $$
 
@@ -305,9 +347,9 @@ You can tell FreqAI to remove outlier data points from the training/test data se
     }
 ```
 
-The SVM will be trained on the training data and any data point that the SVM deems to be beyond the feature space will be removed.
+Which will add `SVMOutlierExtractor` step to your `feature_pipeline`. The SVM will be trained on the training data and any data point that the SVM deems to be beyond the feature space will be removed.
 
-FreqAI uses `sklearn.linear_model.SGDOneClassSVM` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDOneClassSVM.html) (external website)) and you can elect to provide additional parameters for the SVM, such as `shuffle`, and `nu`.
+You can elect to provide additional parameters for the SVM, such as `shuffle`, and `nu` via the `feature_parameters.svm_params` dictionary in the config.
 
 The parameter `shuffle` is by default set to `False` to ensure consistent results. If it is set to `True`, running the SVM multiple times on the same data set might result in different outcomes due to `max_iter` being to low for the algorithm to reach the demanded `tol`. Increasing `max_iter` solves this issue but causes the procedure to take longer time.
 
@@ -325,7 +367,7 @@ You can configure FreqAI to use DBSCAN to cluster and remove outliers from the t
     }
 ```
 
-DBSCAN is an unsupervised machine learning algorithm that clusters data without needing to know how many clusters there should be.
+Which will add the `DataSieveDBSCAN` step to your `feature_pipeline`. This is an unsupervised machine learning algorithm that clusters data without needing to know how many clusters there should be.
 
 Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters the data set by setting all data points that have $N-1$ other data points within a distance of $\varepsilon$ as *core points*. A data point that is within a distance of $\varepsilon$ from a *core point* but that does not have $N-1$ other data points within a distance of $\varepsilon$ from itself is considered an *edge point*. A cluster is then the collection of *core points* and *edge points*. Data points that have no other data points at a distance $<\varepsilon$ are considered outliers. The figure below shows a cluster with $N = 3$.
 

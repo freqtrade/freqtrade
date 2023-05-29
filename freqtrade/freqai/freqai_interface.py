@@ -7,9 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
+import datasieve.transforms as ds
 import numpy as np
 import pandas as pd
 import psutil
+from datasieve.pipeline import Pipeline
 from numpy.typing import NDArray
 from pandas import DataFrame
 
@@ -23,8 +25,6 @@ from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
-from datasieve.pipeline import Pipeline
-import datasieve.transforms as ds
 
 
 pd.options.mode.chained_assignment = None
@@ -505,94 +505,39 @@ class IFreqaiModel(ABC):
                 "feature_engineering_* functions"
             )
 
-    def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
-        """
-        Base data cleaning method for train.
-        Functions here improve/modify the input data by identifying outliers,
-        computing additional metrics, adding noise, reducing dimensionality etc.
-        """
-
-        ft_params = self.freqai_info["feature_parameters"]
-
-        if ft_params.get('inlier_metric_window', 0):
-            dk.compute_inlier_metric(set_='train')
-            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
-                dk.compute_inlier_metric(set_='test')
-
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.principal_component_analysis()
-
-        if ft_params.get("use_SVM_to_remove_outliers", False):
-            dk.use_SVM_to_remove_outliers(predict=False)
-
-        if ft_params.get("DI_threshold", 0):
-            dk.data["avg_mean_dist"] = dk.compute_distances()
-
-        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            if dk.pair in self.dd.old_DBSCAN_eps:
-                eps = self.dd.old_DBSCAN_eps[dk.pair]
-            else:
-                eps = None
-            dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
-            self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
-
-        if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
-            dk.add_noise_to_training_features()
-
-    def data_cleaning_predict(self, dk: FreqaiDataKitchen) -> None:
-        """
-        Base data cleaning method for predict.
-        Functions here are complementary to the functions of data_cleaning_train.
-        """
-        ft_params = self.freqai_info["feature_parameters"]
-
-        # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk)
-
-        if ft_params.get('inlier_metric_window', 0):
-            dk.compute_inlier_metric(set_='predict')
-
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.pca_transform(dk.data_dictionary['prediction_features'])
-
-        if ft_params.get("use_SVM_to_remove_outliers", False):
-            dk.use_SVM_to_remove_outliers(predict=True)
-
-        if ft_params.get("DI_threshold", 0):
-            dk.check_if_pred_in_training_spaces()
-
-        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.use_DBSCAN_to_remove_outliers(predict=True)
-
     def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
         ft_params = self.freqai_info["feature_parameters"]
-        dk.pipeline = Pipeline([('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
+        dk.feature_pipeline = Pipeline(
+            [('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
 
         if ft_params.get("principal_component_analysis", False):
-            dk.pipeline.steps += [('pca', ds.DataSievePCA())]
-            dk.pipeline.steps += [('post-pca-scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))]
+            dk.feature_pipeline.steps += [('pca', ds.DataSievePCA())]
+            dk.feature_pipeline.steps += [('post-pca-scaler',
+                                           ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))]
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
-            dk.pipeline.steps += [('svm', ds.SVMOutlierExtractor())]
+            svm_params = ft_params.get(
+                "svm_params", {"shuffle": False, "nu": 0.01})
+            dk.feature_pipeline.steps += [('svm', ds.SVMOutlierExtractor(**svm_params))]
 
-        if ft_params.get("DI_threshold", 0):
-            dk.pipeline.steps += [('di', ds.DissimilarityIndex())]
+        di = ft_params.get("DI_threshold", 0)
+        if di:
+            dk.feature_pipeline.steps += [('di', ds.DissimilarityIndex(di_threshold=di))]
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.pipeline.steps += [('dbscan', ds.DataSieveDBSCAN())]
+            dk.feature_pipeline.steps += [('dbscan', ds.DataSieveDBSCAN())]
 
-        dk.pipeline.fitparams = dk.pipeline._validate_fitparams({}, dk.pipeline.steps)
+        dk.feature_pipeline.fitparams = dk.feature_pipeline._validate_fitparams(
+            {}, dk.feature_pipeline.steps)
 
         # if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
         #     dk.pipeline.extend(('noise', ds.Noise()))
 
     def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
 
-        dk.label_pipeline = Pipeline([('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
+        dk.label_pipeline = Pipeline([
+            ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+            ])
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """

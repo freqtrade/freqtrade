@@ -74,6 +74,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
         freqai_conf = make_rl_config(freqai_conf)
         # test the RL guardrails
         freqai_conf['freqai']['feature_parameters'].update({"use_SVM_to_remove_outliers": True})
+        freqai_conf['freqai']['feature_parameters'].update({"DI_threshold": 2})
         freqai_conf['freqai']['data_split_parameters'].update({'shuffle': True})
 
     if 'test_3ac' in model or 'test_4ac' in model:
@@ -162,7 +163,6 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
     assert len(freqai.dk.data['training_features_list']) == 14
 
     shutil.rmtree(Path(freqai.dk.full_path))
@@ -218,7 +218,6 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
                 f"{freqai.dk.model_filename}_model{model_file_extension}").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").exists()
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -283,9 +282,6 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
     df = base_df[freqai_conf["timeframe"]]
 
-    for i in range(5):
-        df[f'%-constant_{i}'] = i
-
     metadata = {"pair": "LTC/BTC"}
     freqai.dk.set_paths('LTC/BTC', None)
     freqai.start_backtesting(df, metadata, freqai.dk, strategy)
@@ -293,14 +289,6 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
     assert len(model_folders) == num_files
     Trade.use_db = True
-    assert log_has_re(
-        "Removed features ",
-        caplog,
-    )
-    assert log_has_re(
-        "Removed 5 features from prediction features, ",
-        caplog,
-    )
     Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -422,36 +410,6 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
     freqai.backtesting_fit_live_predictions(freqai.dk)
     assert "&-s_close_mean" in freqai.dk.full_df.columns
     assert "&-s_close_std" in freqai.dk.full_df.columns
-    shutil.rmtree(Path(freqai.dk.full_path))
-
-
-def test_principal_component_analysis(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
-        {"princpial_component_analysis": "true"})
-
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    freqai.dk.live = True
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-
-    freqai.dd.pair_dict = MagicMock()
-
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
-    freqai.dk.set_paths('ADA/BTC', None)
-
-    freqai.extract_data_and_train_model(
-        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
-
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_pca_object.pkl")
-
     shutil.rmtree(Path(freqai.dk.full_path))
 
 

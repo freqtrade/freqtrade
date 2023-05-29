@@ -8,6 +8,9 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.tensorboard import TBCallback
 
 
+# from datasieve.pipeline import Pipeline
+# from freqtrade.freqai.transforms import FreqaiQuantileTransformer
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,3 +55,23 @@ class XGBoostRegressor(BaseRegressionModel):
         model.set_params(callbacks=[])
 
         return model
+
+    # def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
+    #     """
+    #     User defines their custom eature pipeline here (if they wish)
+    #     """
+    #     dk.feature_pipeline = Pipeline([
+    #         ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+    #     ])
+
+    #     return
+
+    # def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
+    #     """
+    #     User defines their custom label pipeline here (if they wish)
+    #     """
+    #     dk.label_pipeline = Pipeline([
+    #         ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+    #     ])
+
+    #     return

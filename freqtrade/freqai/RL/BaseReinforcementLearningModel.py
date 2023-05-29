@@ -82,6 +82,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         if self.ft_params.get('use_DBSCAN_to_remove_outliers', False):
             self.ft_params.update({'use_DBSCAN_to_remove_outliers': False})
             logger.warning('User tried to use DBSCAN with RL. Deactivating DBSCAN.')
+        if self.ft_params.get('DI_threshold', False):
+            self.ft_params.update({'DI_threshold': False})
+            logger.warning('User tried to use DI_threshold with RL. Deactivating DI_threshold.')
         if self.freqai_info['data_split_parameters'].get('shuffle', False):
             self.freqai_info['data_split_parameters'].update({'shuffle': False})
             logger.warning('User tried to shuffle training data. Setting shuffle to False')
@@ -107,27 +110,40 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             training_filter=True,
         )
 
-        data_dictionary: Dict[str, Any] = dk.make_train_test_datasets(
+        d: Dict[str, Any] = dk.make_train_test_datasets(
             features_filtered, labels_filtered)
-        self.df_raw = copy.deepcopy(data_dictionary["train_features"])
+        self.df_raw = copy.deepcopy(d["train_features"])
         dk.fit_labels()  # FIXME useless for now, but just satiating append methods
 
         # normalize all data based on train_dataset only
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
 
-        data_dictionary = dk.normalize_data(data_dictionary)
+        self.define_data_pipeline(dk)
+        self.define_label_pipeline(dk)
 
-        # data cleaning/analysis
-        self.data_cleaning_train(dk)
+        # d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
+        # d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
+
+        (d["train_features"],
+         d["train_labels"],
+         d["train_weights"]) = dk.feature_pipeline.fit_transform(d["train_features"],
+                                                                 d["train_labels"],
+                                                                 d["train_weights"])
+
+        (d["test_features"],
+         d["test_labels"],
+         d["test_weights"]) = dk.feature_pipeline.transform(d["test_features"],
+                                                            d["test_labels"],
+                                                            d["test_weights"])
 
         logger.info(
             f'Training model on {len(dk.data_dictionary["train_features"].columns)}'
-            f' features and {len(data_dictionary["train_features"])} data points'
+            f' features and {len(d["train_features"])} data points'
         )
 
-        self.set_train_and_eval_environments(data_dictionary, prices_train, prices_test, dk)
+        self.set_train_and_eval_environments(d, prices_train, prices_test, dk)
 
-        model = self.fit(data_dictionary, dk)
+        model = self.fit(d, dk)
 
         logger.info(f"--------------------done training {pair}--------------------")
 
@@ -236,17 +252,18 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             unfiltered_df, dk.training_features_list, training_filter=False
         )
 
-        filtered_dataframe = self.drop_ohlc_from_df(filtered_dataframe, dk)
+        dk.data_dictionary["prediction_features"] = self.drop_ohlc_from_df(filtered_dataframe, dk)
 
-        filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
-        dk.data_dictionary["prediction_features"] = filtered_dataframe
-
-        # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk)
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
 
         pred_df = self.rl_model_predict(
             dk.data_dictionary["prediction_features"], dk, self.model)
         pred_df.fillna(0, inplace=True)
+
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        dk.do_predict = outliers.to_numpy()
 
         return (pred_df, dk.do_predict)
 

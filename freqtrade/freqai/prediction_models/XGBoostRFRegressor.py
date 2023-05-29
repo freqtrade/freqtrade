@@ -5,6 +5,7 @@ from xgboost import XGBRFRegressor
 
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.tensorboard import TBCallback
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,10 @@ class XGBoostRFRegressor(BaseRegressionModel):
 
         model = XGBRFRegressor(**self.model_training_parameters)
 
+        model.set_params(callbacks=[TBCallback(dk.data_path)], activate=self.activate_tensorboard)
         model.fit(X=X, y=y, sample_weight=sample_weight, eval_set=eval_set,
                   sample_weight_eval_set=eval_weights, xgb_model=xgb_model)
+        # set the callbacks to empty so that we can serialize to disk later
+        model.set_params(callbacks=[])
 
         return model

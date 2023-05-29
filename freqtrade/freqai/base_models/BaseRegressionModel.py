@@ -56,20 +56,20 @@ class BaseRegressionModel(IFreqaiModel):
         self.define_data_pipeline(dk)
         self.define_label_pipeline(dk)
 
-        d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
-        d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
-
         (d["train_features"],
          d["train_labels"],
-         d["train_weights"]) = dk.pipeline.fit_transform(d["train_features"],
-                                                         d["train_labels"],
-                                                         d["train_weights"])
+         d["train_weights"]) = dk.feature_pipeline.fit_transform(d["train_features"],
+                                                                 d["train_labels"],
+                                                                 d["train_weights"])
 
         (d["test_features"],
          d["test_labels"],
-         d["test_weights"]) = dk.pipeline.transform(d["test_features"],
-                                                    d["test_labels"],
-                                                    d["test_weights"])
+         d["test_weights"]) = dk.feature_pipeline.transform(d["test_features"],
+                                                            d["test_labels"],
+                                                            d["test_weights"])
+
+        d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
+        d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
@@ -98,13 +98,11 @@ class BaseRegressionModel(IFreqaiModel):
         """
 
         dk.find_features(unfiltered_df)
-        filtered_df, _ = dk.filter_features(
+        dk.data_dictionary["prediction_features"], _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
-        # filtered_df = dk.normalize_data_from_metadata(filtered_df)
-        dk.data_dictionary["prediction_features"] = filtered_df
 
-        dk.data_dictionary["prediction_features"], outliers, _ = dk.pipeline.transform(
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
             dk.data_dictionary["prediction_features"], outlier_check=True)
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
@@ -114,7 +112,10 @@ class BaseRegressionModel(IFreqaiModel):
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
         pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
-        dk.DI_values = dk.label_pipeline.get_step("di").di_values
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(len(outliers.index))
         dk.do_predict = outliers.to_numpy()
 
         return (pred_df, dk.do_predict)

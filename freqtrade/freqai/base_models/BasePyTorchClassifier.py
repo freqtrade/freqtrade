@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, List, Tuple
+from time import time
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -68,9 +69,12 @@ class BasePyTorchClassifier(BasePyTorchModel):
         filtered_df, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
-        filtered_df = dk.normalize_data_from_metadata(filtered_df)
+
         dk.data_dictionary["prediction_features"] = filtered_df
-        self.data_cleaning_predict(dk)
+
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
+
         x = self.data_convertor.convert_x(
             dk.data_dictionary["prediction_features"],
             device=self.device
@@ -85,6 +89,13 @@ class BasePyTorchClassifier(BasePyTorchModel):
         pred_df_prob = DataFrame(probs.detach().tolist(), columns=class_names)
         pred_df = DataFrame(predicted_classes_str, columns=[dk.label_list[0]])
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
+
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(len(outliers.index))
+        dk.do_predict = outliers.to_numpy()
+
         return (pred_df, dk.do_predict)
 
     def encode_class_names(
@@ -149,3 +160,58 @@ class BasePyTorchClassifier(BasePyTorchModel):
             )
 
         return self.class_names
+
+    def train(
+        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
+    ) -> Any:
+        """
+        Filter the training data and train a model to it. Train makes heavy use of the datakitchen
+        for storing, saving, loading, and analyzing the data.
+        :param unfiltered_df: Full dataframe for the current training period
+        :return:
+        :model: Trained model which can be used to inference (self.predict)
+        """
+
+        logger.info(f"-------------------- Starting training {pair} --------------------")
+
+        start_time = time()
+
+        features_filtered, labels_filtered = dk.filter_features(
+            unfiltered_df,
+            dk.training_features_list,
+            dk.label_list,
+            training_filter=True,
+        )
+
+        # split data into train/test data.
+        d = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        if not self.freqai_info.get("fit_live_predictions", 0) or not self.live:
+            dk.fit_labels()
+
+        d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
+        d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
+
+        (d["train_features"],
+         d["train_labels"],
+         d["train_weights"]) = dk.feature_pipeline.fit_transform(d["train_features"],
+                                                                 d["train_labels"],
+                                                                 d["train_weights"])
+
+        (d["test_features"],
+         d["test_labels"],
+         d["test_weights"]) = dk.feature_pipeline.transform(d["test_features"],
+                                                            d["test_labels"],
+                                                            d["test_weights"])
+
+        logger.info(
+            f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
+        )
+        logger.info(f"Training model on {len(d['train_features'])} data points")
+
+        model = self.fit(d, dk)
+        end_time = time()
+
+        logger.info(f"-------------------- Done training {pair} "
+                    f"({end_time - start_time:.2f} secs) --------------------")
+
+        return model

@@ -449,9 +449,6 @@ class FreqaiDataDrawer:
         elif self.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
-        if dk.svm_model is not None:
-            dump(dk.svm_model, save_path / f"{dk.model_filename}_svm_model.joblib")
-
         dk.data["data_path"] = str(dk.data_path)
         dk.data["model_filename"] = str(dk.model_filename)
         dk.data["training_features_list"] = dk.training_features_list
@@ -461,8 +458,8 @@ class FreqaiDataDrawer:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
         # save the pipelines to pickle files
-        with (save_path / f"{dk.model_filename}_pipeline.pkl").open("wb") as fp:
-            cloudpickle.dump(dk.pipeline, fp)
+        with (save_path / f"{dk.model_filename}_feature_pipeline.pkl").open("wb") as fp:
+            cloudpickle.dump(dk.feature_pipeline, fp)
 
         with (save_path / f"{dk.model_filename}_label_pipeline.pkl").open("wb") as fp:
             cloudpickle.dump(dk.label_pipeline, fp)
@@ -476,11 +473,6 @@ class FreqaiDataDrawer:
             save_path / f"{dk.model_filename}_trained_dates_df.pkl"
         )
 
-        if self.freqai_info["feature_parameters"].get("principal_component_analysis"):
-            cloudpickle.dump(
-                dk.pca, (dk.data_path / f"{dk.model_filename}_pca_object.pkl").open("wb")
-            )
-
         self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
@@ -489,7 +481,7 @@ class FreqaiDataDrawer:
             self.meta_data_dictionary[coin] = {}
         self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
         self.meta_data_dictionary[coin]["meta_data"] = dk.data
-        self.meta_data_dictionary[coin]["pipeline"] = dk.pipeline
+        self.meta_data_dictionary[coin]["feature_pipeline"] = dk.feature_pipeline
         self.meta_data_dictionary[coin]["label_pipeline"] = dk.label_pipeline
         self.save_drawer_to_disk()
 
@@ -522,7 +514,7 @@ class FreqaiDataDrawer:
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin]["meta_data"]
             dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin]["train_df"]
-            dk.pipeline = self.meta_data_dictionary[coin]["pipeline"]
+            dk.feature_pipeline = self.meta_data_dictionary[coin]["feature_pipeline"]
             dk.label_pipeline = self.meta_data_dictionary[coin]["label_pipeline"]
         else:
             with (dk.data_path / f"{dk.model_filename}_metadata.json").open("r") as fp:
@@ -532,7 +524,7 @@ class FreqaiDataDrawer:
                 dk.data_path / f"{dk.model_filename}_trained_df.pkl"
             )
             with (dk.data_path / f"{dk.model_filename}_pipeline.pkl").open("rb") as fp:
-                dk.pipeline = cloudpickle.load(fp)
+                dk.feature_pipeline = cloudpickle.load(fp)
             with (dk.data_path / f"{dk.model_filename}_label_pipeline.pkl").open("rb") as fp:
                 dk.label_pipeline = cloudpickle.load(fp)
 
@@ -544,9 +536,6 @@ class FreqaiDataDrawer:
             model = self.model_dictionary[coin]
         elif self.model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
-        elif self.model_type == 'keras':
-            from tensorflow import keras
-            model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
         elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
             mod = importlib.import_module(
                 self.model_type, self.freqai_info['rl_config']['model_type'])
@@ -558,9 +547,6 @@ class FreqaiDataDrawer:
             model = zip["pytrainer"]
             model = model.load_from_checkpoint(zip)
 
-        if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
-            dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
-
         if not model:
             raise OperationalException(
                 f"Unable to load model, ensure model exists at " f"{dk.data_path} "
@@ -569,11 +555,6 @@ class FreqaiDataDrawer:
         # load it into ram if it was loaded from disk
         if coin not in self.model_dictionary:
             self.model_dictionary[coin] = model
-
-        if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
-            dk.pca = cloudpickle.load(
-                (dk.data_path / f"{dk.model_filename}_pca_object.pkl").open("rb")
-            )
 
         return model
 
