@@ -11,7 +11,7 @@ python-telegram-bot==20.3
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.23.3
 arrow==1.2.3
-cachetools==5.3.0
+cachetools==5.3.1
 requests==2.31.0
 urllib3==2.0.2
 jsonschema==4.17.3
