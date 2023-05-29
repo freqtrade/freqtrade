@@ -123,7 +123,7 @@ class VolumePairList(IPairList):
         return {
             "number_assets": {
                 "type": "number",
-                "default": 0,
+                "default": 30,
                 "description": "Number of assets",
                 "help": "Number of assets to use from the pairlist",
             },
@@ -143,13 +143,13 @@ class VolumePairList(IPairList):
             **IPairList.refresh_period_parameter(),
             "lookback_days": {
                 "type": "number",
-                "default": 10,
+                "default": 0,
                 "description": "Lookback Days",
                 "help": "Number of days to look back at.",
             },
             "lookback_timeframe": {
                 "type": "string",
-                "default": "1d",
+                "default": "",
                 "description": "Lookback Timeframe",
                 "help": "Timeframe to use for lookback.",
             },
