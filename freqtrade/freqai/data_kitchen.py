@@ -77,8 +77,6 @@ class FreqaiDataKitchen:
         self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
-
-        # self.svm_model: linear_model.SGDOneClassSVM = None
         self.keras: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
         self.backtest_live_models = config.get("freqai_backtest_live_models", False)
@@ -225,13 +223,6 @@ class FreqaiDataKitchen:
         drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (training_filter):
-            # const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
-            # if const_cols:
-            #     filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
-            #     self.data['constant_features_list'] = const_cols
-            #     logger.warning(f"Removed features {const_cols} with constant values.")
-            # else:
-            #     self.data['constant_features_list'] = []
 
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
@@ -263,9 +254,6 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
-
-            # if 'constant_features_list' in self.data and len(self.data['constant_features_list']):
-            #     filtered_df = self.check_pred_labels(filtered_df)
 
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
@@ -307,107 +295,6 @@ class FreqaiDataKitchen:
         }
 
         return self.data_dictionary
-
-    # def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
-    #     """
-    #     Normalize all data in the data_dictionary according to the training dataset
-    #     :param data_dictionary: dictionary containing the cleaned and
-    #                             split training/test data/labels
-    #     :returns:
-    #     :data_dictionary: updated dictionary with standardized values.
-    #     """
-
-    #     # standardize the data by training stats
-    #     train_max = data_dictionary["train_features"].max()
-    #     train_min = data_dictionary["train_features"].min()
-    #     data_dictionary["train_features"] = (
-    #         2 * (data_dictionary["train_features"] - train_min) / (train_max - train_min) - 1
-    #     )
-    #     data_dictionary["test_features"] = (
-    #         2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
-    #     )
-
-    #     for item in train_max.keys():
-    #         self.data[item + "_max"] = train_max[item]
-    #         self.data[item + "_min"] = train_min[item]
-
-    #     for item in data_dictionary["train_labels"].keys():
-    #         if data_dictionary["train_labels"][item].dtype == object:
-    #             continue
-    #         train_labels_max = data_dictionary["train_labels"][item].max()
-    #         train_labels_min = data_dictionary["train_labels"][item].min()
-    #         data_dictionary["train_labels"][item] = (
-    #             2
-    #             * (data_dictionary["train_labels"][item] - train_labels_min)
-    #             / (train_labels_max - train_labels_min)
-    #             - 1
-    #         )
-    #         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
-    #             data_dictionary["test_labels"][item] = (
-    #                 2
-    #                 * (data_dictionary["test_labels"][item] - train_labels_min)
-    #                 / (train_labels_max - train_labels_min)
-    #                 - 1
-    #             )
-
-    #         self.data[f"{item}_max"] = train_labels_max
-    #         self.data[f"{item}_min"] = train_labels_min
-    #     return data_dictionary
-
-    # def normalize_single_dataframe(self, df: DataFrame) -> DataFrame:
-
-    #     train_max = df.max()
-    #     train_min = df.min()
-    #     df = (
-    #         2 * (df - train_min) / (train_max - train_min) - 1
-    #     )
-
-    #     for item in train_max.keys():
-    #         self.data[item + "_max"] = train_max[item]
-    #         self.data[item + "_min"] = train_min[item]
-
-    #     return df
-
-    # def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
-    #     """
-    #     Normalize a set of data using the mean and standard deviation from
-    #     the associated training data.
-    #     :param df: Dataframe to be standardized
-    #     """
-
-    #     train_max = [None] * len(df.keys())
-    #     train_min = [None] * len(df.keys())
-
-    #     for i, item in enumerate(df.keys()):
-    #         train_max[i] = self.data[f"{item}_max"]
-    #         train_min[i] = self.data[f"{item}_min"]
-
-    #     train_max_series = pd.Series(train_max, index=df.keys())
-    #     train_min_series = pd.Series(train_min, index=df.keys())
-
-    #     df = (
-    #         2 * (df - train_min_series) / (train_max_series - train_min_series) - 1
-    #     )
-
-    #     return df
-
-    # def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
-    #     """
-    #     Denormalize a set of data using the mean and standard deviation from
-    #     the associated training data.
-    #     :param df: Dataframe of predictions to be denormalized
-    #     """
-
-    #     for label in df.columns:
-    #         if df[label].dtype == object or label in self.unique_class_list:
-    #             continue
-    #         df[label] = (
-    #             (df[label] + 1)
-    #             * (self.data[f"{label}_max"] - self.data[f"{label}_min"])
-    #             / 2
-    #         ) + self.data[f"{label}_min"]
-
-    #     return df
 
     def split_timerange(
         self, tr: str, train_split: int = 28, bt_split: float = 7
@@ -453,9 +340,7 @@ class FreqaiDataKitchen:
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
             # associated backtest period
-
             timerange_backtest.startts = timerange_train.stopts
-
             timerange_backtest.stopts = timerange_backtest.startts + int(bt_period)
 
             if timerange_backtest.stopts > config_timerange.stopts:

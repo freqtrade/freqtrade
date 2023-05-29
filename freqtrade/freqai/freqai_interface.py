@@ -507,8 +507,10 @@ class IFreqaiModel(ABC):
 
     def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
         ft_params = self.freqai_info["feature_parameters"]
-        dk.feature_pipeline = Pipeline(
-            [('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))])
+        dk.feature_pipeline = Pipeline([
+            ('const', ds.DataSieveVarianceThreshold(threshold=0)),
+            ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+            ])
 
         if ft_params.get("principal_component_analysis", False):
             dk.feature_pipeline.steps += [('pca', ds.DataSievePCA())]
