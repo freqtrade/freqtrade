@@ -1662,8 +1662,6 @@ class Exchange:
 
         price_side = self._get_price_side(side, is_short, conf_strategy)
 
-        price_side_word = price_side.capitalize()
-
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
@@ -1672,7 +1670,7 @@ class Exchange:
             rate = self._get_rate_from_ob(pair, side, order_book, name, price_side,
                                           order_book_top)
         else:
-            logger.debug(f"Using Last {price_side_word} / Last Price")
+            logger.debug(f"Using Last {price_side.capitalize()} / Last Price")
             if ticker is None:
                 ticker = self.fetch_ticker(pair)
             rate = self._get_rate_from_ticker(side, ticker, conf_strategy, price_side)
