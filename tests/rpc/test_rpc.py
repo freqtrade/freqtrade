@@ -765,7 +765,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     cancel_order_mock.reset_mock()
     trade = Trade.session.scalars(select(Trade).filter(Trade.id == '3')).first()
     amount = trade.amount
-    # make an limit-sell open trade
+    # make an limit-sell open order trade
     mocker.patch(
         f'{EXMS}.fetch_order',
         return_value={
@@ -778,12 +778,24 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'id': trade.orders[0].order_id,
         }
     )
+    cancel_order_3 = mocker.patch(
+        f'{EXMS}.cancel_order_with_result',
+        return_value={
+            'status': 'canceled',
+            'type': 'limit',
+            'side': 'sell',
+            'amount': amount,
+            'remaining': amount,
+            'filled': 0.0,
+            'id': trade.orders[0].order_id,
+        }
+    )
     msg = rpc._rpc_force_exit('3')
     assert msg == {'result': 'Created exit order for trade 3.'}
     # status quo, no exchange calls
-    assert cancel_order_mock.call_count == 1
+    assert cancel_order_3.call_count == 1
+    assert cancel_order_mock.call_count == 0
 
-    cancel_order_mock.reset_mock()
     trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
@@ -796,10 +808,23 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'filled': None
         }
     )
+    cancel_order_4 = mocker.patch(
+            f'{EXMS}.cancel_order_with_result',
+            return_value={
+                'status': 'canceled',
+                'type': 'limit',
+                'side': 'sell',
+                'amount': amount,
+                'remaining': 0.0,
+                'filled': amount,
+                'id': trade.orders[0].order_id,
+                }
+            )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     msg = rpc._rpc_force_exit('4')
     assert msg == {'result': 'Created exit order for trade 4.'}
-    assert cancel_order_mock.call_count == 1
+    assert cancel_order_4.call_count == 1
+    assert cancel_order_mock.call_count == 0
     assert trade.amount == amount
 
 
