@@ -703,15 +703,15 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
         rpc._rpc_force_exit(None)
 
     msg = rpc._rpc_force_exit('all')
-    assert msg == {'result': 'Created sell orders for all open trades.'}
+    assert msg == {'result': 'Created exit orders for all open trades.'}
 
     freqtradebot.enter_positions()
     msg = rpc._rpc_force_exit('all')
-    assert msg == {'result': 'Created sell orders for all open trades.'}
+    assert msg == {'result': 'Created exit orders for all open trades.'}
 
     freqtradebot.enter_positions()
     msg = rpc._rpc_force_exit('2')
-    assert msg == {'result': 'Created sell order for trade 2.'}
+    assert msg == {'result': 'Created exit order for trade 2.'}
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
@@ -775,7 +775,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     msg = rpc._rpc_force_exit('4')
-    assert msg == {'result': 'Created sell order for trade 4.'}
+    assert msg == {'result': 'Created exit order for trade 4.'}
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
@@ -795,7 +795,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
         }
     )
     msg = rpc._rpc_force_exit('3')
-    assert msg == {'result': 'Created sell order for trade 3.'}
+    assert msg == {'result': 'Created exit order for trade 3.'}
     # status quo, no exchange calls
     assert cancel_order_mock.call_count == 3
 

@@ -1333,7 +1333,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5", "ordertype": "market", "amount": 23})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1343,7 +1343,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5"})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()

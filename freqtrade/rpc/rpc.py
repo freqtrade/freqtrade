@@ -802,12 +802,12 @@ class RPC:
 
         with self._freqtrade._exit_lock:
             if trade_id == 'all':
-                # Execute sell for all open orders
+                # Execute exit for all open orders
                 for trade in Trade.get_open_trades():
                     self.__exec_force_exit(trade, ordertype)
                 Trade.commit()
                 self._freqtrade.wallets.update()
-                return {'result': 'Created sell orders for all open trades.'}
+                return {'result': 'Created exit orders for all open trades.'}
 
             # Query for trade
             trade = Trade.get_trades(
@@ -820,7 +820,7 @@ class RPC:
             self.__exec_force_exit(trade, ordertype, amount)
             Trade.commit()
             self._freqtrade.wallets.update()
-            return {'result': f'Created sell order for trade {trade_id}.'}
+            return {'result': f'Created exit order for trade {trade_id}.'}
 
     def _force_entry_validations(self, pair: str, order_side: SignalDirection):
         if not self._freqtrade.config.get('force_entry_enable', False):
