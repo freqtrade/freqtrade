@@ -418,7 +418,7 @@ def background_job(jobid: str):
 
     return {
         'job_id': jobid,
-        # 'type': job['job_type'],
+        'job_category': job['category'],
         'status': job['status'],
         'running': job['is_running'],
         'progress': job.get('progress'),

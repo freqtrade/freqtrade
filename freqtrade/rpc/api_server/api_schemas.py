@@ -32,6 +32,8 @@ class BgJobStarted(StatusMsg):
 
 
 class BackgroundTaskStatus(BaseModel):
+    job_id: str
+    job_category: str
     status: str
     running: bool
     progress: Optional[float]

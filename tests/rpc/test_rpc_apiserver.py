@@ -1643,15 +1643,10 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
 
-    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
 
-    assert_response(rc)
-    assert rc.json()['status'] == 'pending'
-
-    ApiBG.pairlist_running = True
-    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
-    assert_response(rc)
-    assert rc.json()['status'] == 'running'
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Job not found.'
 
     body = {
         "pairlists": [
@@ -1662,6 +1657,7 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
         "stake_currency": "BTC"
     }
     # Fail, already running
+    ApiBG.pairlist_running = True
     rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
     assert_response(rc, 400)
     assert rc.json()['detail'] == 'Pairlist evaluation is already running.'
@@ -1671,8 +1667,19 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
     assert_response(rc)
     assert rc.json()['status'] == 'Pairlist evaluation started in background.'
+    job_id = rc.json()['job_id']
 
-    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    rc = client_get(client, f"{BASE_URI}/background/RandomJob")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Job not found.'
+
+    rc = client_get(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response['job_id'] == job_id
+    assert response['job_category'] == 'pairlist'
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
     assert_response(rc)
     response = rc.json()
     assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
@@ -1683,8 +1690,9 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
     assert_response(rc)
     assert rc.json()['status'] == 'Pairlist evaluation started in background.'
-    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
-    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate")
+    job_id = rc.json()['job_id']
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
     assert_response(rc)
     response = rc.json()
     assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
