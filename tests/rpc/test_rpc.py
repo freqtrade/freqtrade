@@ -763,25 +763,6 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.enter_positions()
 
     cancel_order_mock.reset_mock()
-    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
-    amount = trade.amount
-    # make an limit-buy open trade, if there is no 'filled', don't sell it
-    mocker.patch(
-        f'{EXMS}.fetch_order',
-        return_value={
-            'status': 'open',
-            'type': 'limit',
-            'side': 'buy',
-            'filled': None
-        }
-    )
-    # check that the trade is called, which is done by ensuring exchange.cancel_order is called
-    msg = rpc._rpc_force_exit('4')
-    assert msg == {'result': 'Created exit order for trade 4.'}
-    assert cancel_order_mock.call_count == 1
-    assert trade.amount == amount
-
-    cancel_order_mock.reset_mock()
     trade = Trade.session.scalars(select(Trade).filter(Trade.id == '3')).first()
     amount = trade.amount
     # make an limit-sell open trade
@@ -801,6 +782,25 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert msg == {'result': 'Created exit order for trade 3.'}
     # status quo, no exchange calls
     assert cancel_order_mock.call_count == 1
+
+    cancel_order_mock.reset_mock()
+    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
+    amount = trade.amount
+    # make an limit-buy open trade, if there is no 'filled', don't sell it
+    mocker.patch(
+        f'{EXMS}.fetch_order',
+        return_value={
+            'status': 'open',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': None
+        }
+    )
+    # check that the trade is called, which is done by ensuring exchange.cancel_order is called
+    msg = rpc._rpc_force_exit('4')
+    assert msg == {'result': 'Created exit order for trade 4.'}
+    assert cancel_order_mock.call_count == 1
+    assert trade.amount == amount
 
 
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
