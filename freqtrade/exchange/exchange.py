@@ -191,7 +191,7 @@ class Exchange:
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_conf.get(
-            "markets_refresh_interval", 60) * 60
+            "markets_refresh_interval", 60) * 60 * 1000
 
         if self.trading_mode != TradingMode.SPOT and load_leverage_tiers:
             self.fill_leverage_tiers()
