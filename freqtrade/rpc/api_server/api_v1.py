@@ -11,16 +11,17 @@ from freqtrade.data.history import get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceEnterPayload,
-                                                  ForceEnterResponse, ForceExitPayload,
-                                                  FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PairListsPayload,
-                                                  PairListsResponse, PerformanceEntry, Ping,
-                                                  PlotConfig, Profit, ResultMsg, ShowConfig, Stats,
-                                                  StatusMsg, StrategyListResponse, StrategyResponse,
-                                                  SysInfo, Version, WhitelistEvaluateResponse,
+from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, BackgroundTaskStatus, Balances,
+                                                  BgJobStarted, BlacklistPayload, BlacklistResponse,
+                                                  Count, Daily, DeleteLockRequest, DeleteTrade,
+                                                  ForceEnterPayload, ForceEnterResponse,
+                                                  ForceExitPayload, FreqAIModelListResponse, Health,
+                                                  Locks, Logs, OpenTradeSchema, PairHistory,
+                                                  PairListsPayload, PairListsResponse,
+                                                  PerformanceEntry, Ping, PlotConfig, Profit,
+                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistEvaluateResponse,
                                                   WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
@@ -333,26 +334,30 @@ def list_pairlists(config=Depends(get_config)):
     ]}
 
 
-def __run_pairlist(config_loc: Config):
+def __run_pairlist(job_id: str, config_loc: Config):
     try:
+
+        ApiBG.jobs[job_id]['is_running'] = True
         from freqtrade.plugins.pairlistmanager import PairListManager
 
         exchange = get_exchange(config_loc)
         pairlists = PairListManager(exchange, config_loc)
         pairlists.refresh_pairlist()
-        ApiBG.pairlist_result = {
+        ApiBG.jobs[job_id]['result'] = {
                 'method': pairlists.name_list,
                 'length': len(pairlists.whitelist),
                 'whitelist': pairlists.whitelist
             }
+        ApiBG.jobs[job_id]['status'] = 'success'
     except (OperationalException, Exception) as e:
         logger.exception(e)
-        ApiBG.pairlist_error = str(e)
+        ApiBG.jobs[job_id]['error'] = str(e)
     finally:
+        ApiBG.jobs[job_id]['is_running'] = False
         ApiBG.pairlist_running = False
 
 
-@router.post('/pairlists/evaluate', response_model=StatusMsg, tags=['pairlists'])
+@router.post('/pairlists/evaluate', response_model=BgJobStarted, tags=['pairlists'])
 def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTasks,
                        config=Depends(get_config)):
     if ApiBG.pairlist_running:
@@ -364,32 +369,60 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
     # TODO: overwrite blacklist? make it optional and fall back to the one in config?
     # Outcome depends on the UI approach.
     config_loc['exchange']['pair_blacklist'] = payload.blacklist
-    ApiBG.pairlist_error = None
-    ApiBG.pairlist_result = {}
-    background_tasks.add_task(__run_pairlist, config_loc)
+    # Random job id
+    job_id = ApiBG.get_job_id()
+
+    ApiBG.jobs[job_id] = {
+        'category': 'pairlist',
+        'status': 'pending',
+        'progress': None,
+        'is_running': False,
+        'result': {},
+        'error': None,
+    }
+    ApiBG.running_jobs.append(job_id)
+    background_tasks.add_task(__run_pairlist, job_id, config_loc)
     ApiBG.pairlist_running = True
+
     return {
-        'status': 'Pairlist evaluation started in background.'
+        'status': 'Pairlist evaluation started in background.',
+        'job_id': job_id,
     }
 
 
-@router.get('/pairlists/evaluate', response_model=WhitelistEvaluateResponse, tags=['pairlists'])
-def pairlists_evaluate_get():
+@router.get('/pairlists/evaluate/{jobid}', response_model=WhitelistEvaluateResponse,
+            tags=['pairlists'])
+def pairlists_evaluate_get(jobid: str):
+    if not (job := ApiBG.jobs.get(jobid)):
+        raise HTTPException(status_code=404, detail='Job not found.')
 
-    if ApiBG.pairlist_running:
-        return {'status': 'running'}
-    if ApiBG.pairlist_error:
+    if job['is_running']:
+        raise HTTPException(status_code=400, detail='Job not finished yet.')
+
+    if error := job['error']:
         return {
             'status': 'failed',
-            'error': ApiBG.pairlist_error
+            'error': error,
         }
-
-    if not ApiBG.pairlist_result:
-        return {'status': 'pending'}
 
     return {
         'status': 'success',
-        'result': ApiBG.pairlist_result
+        'result': job['result'],
+    }
+
+
+@router.get('/background/{jobid}', response_model=BackgroundTaskStatus, tags=['webserver'])
+def background_job(jobid: str):
+    if not (job := ApiBG.jobs.get(jobid)):
+        raise HTTPException(status_code=404, detail='Job not found.')
+
+    return {
+        'job_id': jobid,
+        # 'type': job['job_type'],
+        'status': job['status'],
+        'running': job['is_running'],
+        'progress': job.get('progress'),
+        # 'job_error': job['error'],
     }
 
 

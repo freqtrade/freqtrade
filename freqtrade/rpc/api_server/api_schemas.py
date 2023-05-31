@@ -27,6 +27,21 @@ class StatusMsg(BaseModel):
     status: str
 
 
+class BgJobStarted(StatusMsg):
+    job_id: str
+
+
+class BackgroundTaskStatus(BaseModel):
+    status: str
+    running: bool
+    progress: Optional[float]
+
+
+class BackgroundTaskResult(BaseModel):
+    error: Optional[str]
+    status: str
+
+
 class ResultMsg(BaseModel):
     result: str
 
@@ -376,10 +391,8 @@ class WhitelistResponse(BaseModel):
     method: List[str]
 
 
-class WhitelistEvaluateResponse(BaseModel):
+class WhitelistEvaluateResponse(BackgroundTaskResult):
     result: Optional[WhitelistResponse]
-    error: Optional[str]
-    status: str
 
 
 class DeleteTrade(BaseModel):
