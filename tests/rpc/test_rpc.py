@@ -761,6 +761,8 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.config['max_open_trades'] = 3
     freqtradebot.enter_positions()
+
+    cancel_order_mock.reset_mock()
     trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
@@ -776,11 +778,12 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     msg = rpc._rpc_force_exit('4')
     assert msg == {'result': 'Created exit order for trade 4.'}
-    assert cancel_order_mock.call_count == 2
+    assert cancel_order_mock.call_count == 1
     assert trade.amount == amount
 
+    cancel_order_mock.reset_mock()
     trade = Trade.session.scalars(select(Trade).filter(Trade.id == '3')).first()
-
+    amount = trade.amount
     # make an limit-sell open trade
     mocker.patch(
         f'{EXMS}.fetch_order',
@@ -797,7 +800,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     msg = rpc._rpc_force_exit('3')
     assert msg == {'result': 'Created exit order for trade 3.'}
     # status quo, no exchange calls
-    assert cancel_order_mock.call_count == 3
+    assert cancel_order_mock.call_count == 1
 
 
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
