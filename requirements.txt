@@ -9,7 +9,7 @@ aiohttp==3.8.4
 SQLAlchemy==2.0.15
 python-telegram-bot==20.3
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
-httpx>=0.23.3
+httpx>=0.24.1
 arrow==1.2.3
 cachetools==5.3.1
 requests==2.31.0
