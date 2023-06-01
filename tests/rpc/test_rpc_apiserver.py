@@ -1622,6 +1622,12 @@ def test_api_pairlists_available(botclient, tmpdir):
 
     rc = client_get(client, f"{BASE_URI}/pairlists/available")
 
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/available")
     assert_response(rc)
     response = rc.json()
     assert isinstance(response['pairlists'], list)
@@ -1645,6 +1651,12 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
 
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
 
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Job not found.'
 
