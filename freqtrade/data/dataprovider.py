@@ -446,10 +446,22 @@ class DataProvider:
         final_pairs = (pairlist + helping_pairs) if helping_pairs else pairlist
         # refresh latest ohlcv data
         self._exchange.refresh_latest_ohlcv(final_pairs)
-        # refresh latest trades data (if enabled)
-        self._exchange.refresh_latest_trades(final_pairs, 
-                                             get_datahandler(self._config['datadir'], 
-                                             data_format=self._config['dataformat_trades']))
+        # refresh latest trades data
+        self.refresh_latest_trades(final_pairs)
+
+    def refresh_latest_trades(self,
+                              pairlist: ListPairsWithTimeframes) -> None:
+        """
+        Refresh latest trades data (if enabled in config)
+        """
+
+        use_public_trades = self._config.get(
+            'exchange', {}).get('use_public_trades', False)
+        if use_public_trades:
+            return self._exchange.refresh_latest_trades(pairlist,
+                                                        get_datahandler(self._config['datadir'],
+                                                                        data_format=self._config['dataformat_trades']))
+        return {}
 
     @property
     def available_pairs(self) -> ListPairsWithTimeframes:

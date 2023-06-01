@@ -2297,20 +2297,7 @@ class Exchange:
         now = timeframe_to_next_date(timeframe)
         return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
 
-
     def refresh_latest_trades(self, 
-                              pair_list: ListPairsWithTimeframes ,
-                              data_handler: Callable,# IDataHandler, 
-                              *, 
-                              cache: bool = True, 
-                              ) -> Dict[PairWithTimeframe, DataFrame]:
-        use_public_trades = self._config.get(
-            'exchange', {}).get('use_public_trades', False)
-        if use_public_trades:
-            return self._refresh_latest_trades(pair_list, data_handler, cache=cache)
-        return {}
-
-    def _refresh_latest_trades(self, 
                               pair_list: ListPairsWithTimeframes ,
                               data_handler: Callable,# IDataHandler, 
                               *, 
