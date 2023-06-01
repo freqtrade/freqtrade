@@ -107,7 +107,7 @@ setup(
         'ast-comments',
         'aiohttp',
         'cryptography',
-        'httpx',
+        'httpx>=0.24.1',
         'python-dateutil',
         'packaging',
     ],

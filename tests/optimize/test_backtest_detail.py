@@ -820,7 +820,7 @@ tc52 = BTContainer(data=[
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0],  # stoploss hit?
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.03, roi={"0": 0.10}, profit_perc=-0.03,
+    stop_loss=-0.03, roi={}, profit_perc=-0.03,
     use_exit_signal=True, timeout=1000,
     custom_entry_price=4200, adjust_entry_price=5200,
     trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2, is_short=False)]
