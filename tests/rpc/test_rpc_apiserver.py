@@ -1673,7 +1673,8 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
 
         rc = client_get(client, f"{BASE_URI}/backtest")
         # Backtest prevented in default mode
-        assert_response(rc, 502)
+        assert_response(rc, 503)
+        assert rc.json()['detail'] == 'Bot is not in the correct state.'
 
         ftbot.config['runmode'] = RunMode.WEBSERVER
         # Backtesting not started yet
@@ -1812,7 +1813,9 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
                      ])
 
     rc = client_get(client, f"{BASE_URI}/backtest/history")
-    assert_response(rc, 502)
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
     ftbot.config['user_data_dir'] = testdatadir
     ftbot.config['runmode'] = RunMode.WEBSERVER
 

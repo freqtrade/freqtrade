@@ -1,7 +1,7 @@
 from typing import Any, AsyncIterator, Dict, Optional
 from uuid import uuid4
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 
 from freqtrade.enums import RunMode
 from freqtrade.persistence import Trade
@@ -57,5 +57,6 @@ def get_message_stream():
 
 def is_webserver_mode(config=Depends(get_config)):
     if config['runmode'] != RunMode.WEBSERVER:
-        raise RPCException('Bot is not in the correct state')
+        raise HTTPException(status_code=503,
+                            detail='Bot is not in the correct state.')
     return None
