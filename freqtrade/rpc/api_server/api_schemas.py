@@ -432,6 +432,8 @@ class PairListsPayload(BaseModel):
     pairlists: List[Dict[str, Any]]
     blacklist: List[str]
     stake_currency: str
+    trading_mode: Optional[TradingMode]
+    exchange: Optional[str]
 
 
 class FreqAIModelListResponse(BaseModel):

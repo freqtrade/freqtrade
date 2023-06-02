@@ -84,6 +84,10 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
     config_loc = deepcopy(config)
     config_loc['stake_currency'] = payload.stake_currency
     config_loc['pairlists'] = payload.pairlists
+    if payload.exchange:
+        config_loc['exchange']['name'] = payload.exchange
+    if payload.trading_mode:
+        config_loc['trading_mode'] = payload.trading_mode
     # TODO: overwrite blacklist? make it optional and fall back to the one in config?
     # Outcome depends on the UI approach.
     config_loc['exchange']['pair_blacklist'] = payload.blacklist

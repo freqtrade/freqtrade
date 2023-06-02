@@ -1645,7 +1645,7 @@ def test_api_pairlists_available(botclient, tmpdir):
     assert len(volumepl['params']) > 2
 
 
-def test_api_pairlists_evaluate(botclient, tmpdir):
+def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
 
@@ -1709,6 +1709,24 @@ def test_api_pairlists_evaluate(botclient, tmpdir):
     response = rc.json()
     assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
     assert response['result']['length'] == 2
+    # Patch __run_pairlists
+    plm = mocker.patch('freqtrade.rpc.api_server.api_background_tasks.__run_pairlist', return_value=None)
+    body = {
+        "pairlists": [
+            {"method": "StaticPairList", },
+        ],
+        "blacklist": [
+        ],
+        "stake_currency": "BTC",
+        "exchange": "randomExchange",
+        "trading_mode": "futures",
+    }
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert plm.call_count == 1
+    call_config = plm.call_args_list[0][0][1]
+    assert call_config['exchange']['name'] == 'randomExchange'
+    assert call_config['trading_mode'] == 'futures'
 
 
 def test_list_available_pairs(botclient):
