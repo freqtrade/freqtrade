@@ -98,7 +98,6 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
         'result': {},
         'error': None,
     }
-    ApiBG.running_jobs.append(job_id)
     background_tasks.add_task(__run_pairlist, job_id, config_loc)
     ApiBG.pairlist_running = True
 

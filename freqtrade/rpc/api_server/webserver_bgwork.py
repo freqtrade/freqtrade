@@ -1,6 +1,8 @@
 
-from typing import Any, Dict, List, Literal, Optional, TypedDict
+from typing import Any, Dict, Literal, Optional, TypedDict
 from uuid import uuid4
+
+from freqtrade.exchange.exchange import Exchange
 
 
 class JobsContainer(TypedDict):
@@ -23,10 +25,10 @@ class ApiBG():
     }
     bgtask_running: bool = False
     # Exchange - only available in webserver mode.
-    exchange = None
+    exchanges: Dict[str, Exchange] = {}
 
     # Generic background jobs
-    running_jobs: List[str] = []
+
     # TODO: Change this to TTLCache
     jobs: Dict[str, JobsContainer] = {}
     # Pairlist evaluate things
