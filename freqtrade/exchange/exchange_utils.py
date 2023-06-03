@@ -79,7 +79,7 @@ def build_exchange_list_entry(
     return result
 
 
-def validate_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
+def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
     """
     :return: List of tuples with exchangename, valid, reason.
     """

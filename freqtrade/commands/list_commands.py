@@ -11,7 +11,7 @@ from tabulate import tabulate
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import market_is_active, validate_exchanges
+from freqtrade.exchange import list_available_exchanges, market_is_active
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
@@ -25,7 +25,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = validate_exchanges(args['list_exchanges_all'])
+    exchanges = list_available_exchanges(args['list_exchanges_all'])
 
     if args['print_one_column']:
         print('\n'.join([e['name'] for e in exchanges]))
