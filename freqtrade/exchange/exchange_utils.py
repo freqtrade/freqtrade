@@ -11,7 +11,7 @@ from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGIT
 
 from freqtrade.exchange.common import (BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        SUPPORTED_EXCHANGES)
-from freqtrade.exchange.types import ValidExchangesType
+from freqtrade.types import ValidExchangesType
 from freqtrade.util import FtPrecise
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
