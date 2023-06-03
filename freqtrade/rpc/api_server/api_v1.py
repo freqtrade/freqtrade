@@ -47,7 +47,8 @@ logger = logging.getLogger(__name__)
 # 2.26: increase /balance output
 # 2.27: Add /trades/<id>/reload endpoint
 # 2.28: Switch reload endpoint to Post
-API_VERSION = 2.28
+# 2.29: Add /exchanges endpoint
+API_VERSION = 2.29
 
 # Public API, requires no auth.
 router_public = APIRouter()
