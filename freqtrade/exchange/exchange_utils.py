@@ -9,7 +9,8 @@ import ccxt
 from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
                   TRUNCATE, decimal_to_precision)
 
-from freqtrade.exchange.common import BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED
+from freqtrade.exchange.common import (BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
+                                       SUPPORTED_EXCHANGES)
 from freqtrade.exchange.types import ValidExchangesType
 from freqtrade.util import FtPrecise
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
@@ -56,15 +57,39 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     return True, ''
 
 
+def build_exchange_list_entry(
+        exchange_name: str, exchangeClasses: Dict[str, Any]) -> ValidExchangesType:
+    valid, comment = validate_exchange(exchange_name)
+    result = {
+        'name': exchange_name,
+        'valid': valid,
+        'supported': exchange_name.lower() in SUPPORTED_EXCHANGES,
+        'comment': comment,
+        'trade_modes': ['spot'],
+    }
+    if resolved := exchangeClasses.get(exchange_name.lower()):
+        supported_modes = ['spot'] + [
+            f"{mm.value} {tm.value}"
+            for tm, mm in resolved['class']._supported_trading_mode_margin_pairs
+        ]
+        result.update({
+            'trade_modes': supported_modes,
+        })
+
+    return result
+
+
 def validate_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
     """
     :return: List of tuples with exchangename, valid, reason.
     """
     exchanges = ccxt_exchanges() if all_exchanges else available_exchanges()
+    from freqtrade.resolvers.exchange_resolver import ExchangeResolver
+
+    subclassed = {e['name'].lower(): e for e in ExchangeResolver.search_all_objects({}, False)}
 
     exchanges_valid: List[ValidExchangesType] = [
-        {'name': e, 'valid': valid, 'comment': comment}
-        for e, valid, comment in ((e, *validate_exchange(e)) for e in exchanges)
+        build_exchange_list_entry(e, subclassed) for e in exchanges
     ]
 
     return exchanges_valid

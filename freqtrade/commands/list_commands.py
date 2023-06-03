@@ -30,18 +30,34 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join([e['name'] for e in exchanges]))
     else:
-        if args['list_exchanges_all']:
-            print("All exchanges supported by the ccxt library:")
-        else:
-            print("Exchanges available for Freqtrade:")
-            exchanges = [e for e in exchanges if e['valid'] is not False]
-
         headers = {
             'name': 'Exchange name',
             'valid': 'Valid',
-            'comment': 'reason',
-        }
-        print(tabulate(exchanges, headers=headers))
+            'supported': 'Supported',
+            'trade_modes': 'Markets',
+            'comment': 'Reason',
+            }
+
+        def build_entry(exchange, valid):
+            valid_entry = {'valid': exchange['valid']} if valid else {}
+            result = {
+                'name': exchange['name'],
+                **valid_entry,
+                'supported': 'Official' if exchange['supported'] else '',
+                'trade_modes': ', '.join(exchange['trade_modes']),
+                'comment': exchange['comment'],
+            }
+
+            return result
+
+        if args['list_exchanges_all']:
+            print("All exchanges supported by the ccxt library:")
+            exchanges = [build_entry(e, True) for e in exchanges]
+        else:
+            print("Exchanges available for Freqtrade:")
+            exchanges = [build_entry(e, False) for e in exchanges if e['valid'] is not False]
+
+        print(tabulate(exchanges, headers=headers, ))
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
