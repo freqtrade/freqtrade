@@ -57,10 +57,10 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     return True, ''
 
 
-def build_exchange_list_entry(
+def _build_exchange_list_entry(
         exchange_name: str, exchangeClasses: Dict[str, Any]) -> ValidExchangesType:
     valid, comment = validate_exchange(exchange_name)
-    result = {
+    result: ValidExchangesType = {
         'name': exchange_name,
         'valid': valid,
         'supported': exchange_name.lower() in SUPPORTED_EXCHANGES,
@@ -89,7 +89,7 @@ def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
     subclassed = {e['name'].lower(): e for e in ExchangeResolver.search_all_objects({}, False)}
 
     exchanges_valid: List[ValidExchangesType] = [
-        build_exchange_list_entry(e, subclassed) for e in exchanges
+        _build_exchange_list_entry(e, subclassed) for e in exchanges
     ]
 
     return exchanges_valid

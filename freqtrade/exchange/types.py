@@ -31,7 +31,9 @@ Tickers = Dict[str, Ticker]
 class ValidExchangesType(TypedDict):
     name: str
     valid: bool
+    supported: bool
     comment: str
+    trade_modes: List[str]
 
 
 # pair, timeframe, candleType, OHLCV, drop last?,
