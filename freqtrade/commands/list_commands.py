@@ -1,7 +1,7 @@
 import csv
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import rapidjson
 from colorama import Fore, Style
@@ -14,6 +14,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import list_available_exchanges, market_is_active
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.types import ValidExchangesType
 
 
 logger = logging.getLogger(__name__)
@@ -38,13 +39,16 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             'comment': 'Reason',
             }
 
-        def build_entry(exchange, valid):
+        def build_entry(exchange: ValidExchangesType, valid: bool):
             valid_entry = {'valid': exchange['valid']} if valid else {}
-            result = {
+            result: Dict[str, Union[str, bool]] = {
                 'name': exchange['name'],
                 **valid_entry,
                 'supported': 'Official' if exchange['supported'] else '',
-                'trade_modes': ', '.join(exchange['trade_modes']),
+                'trade_modes': ', '.join(
+                    (f"{a['margin_mode']} " if a['margin_mode'] else '') + a['trading_mode']
+                    for a in exchange['trade_modes']
+                ),
                 'comment': exchange['comment'],
             }
 

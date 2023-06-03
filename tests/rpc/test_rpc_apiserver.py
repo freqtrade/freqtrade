@@ -1593,8 +1593,14 @@ def test_api_exchanges(botclient):
         "supported": True,
         "comment": "",
         "trade_modes": [
-            "spot",
-            "isolated futures",
+            {
+                "trading_mode": "spot",
+                "margin_mode": ""
+            },
+            {
+                "trading_mode": "futures",
+                "margin_mode": "isolated"
+            }
         ]
     }
 
@@ -1605,8 +1611,11 @@ def test_api_exchanges(botclient):
         "supported": False,
         "comment": "",
         "trade_modes": [
-            "spot",
-        ]
+                {
+                    "trading_mode": "spot",
+                    "margin_mode": ""
+                }
+            ]
     }
 
 

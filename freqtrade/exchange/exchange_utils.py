@@ -65,11 +65,11 @@ def _build_exchange_list_entry(
         'valid': valid,
         'supported': exchange_name.lower() in SUPPORTED_EXCHANGES,
         'comment': comment,
-        'trade_modes': ['spot'],
+        'trade_modes': [{'trading_mode': 'spot', 'margin_mode': ''}],
     }
     if resolved := exchangeClasses.get(exchange_name.lower()):
-        supported_modes = ['spot'] + [
-            f"{mm.value} {tm.value}"
+        supported_modes = [{'trading_mode': 'spot', 'margin_mode': ''}] + [
+            {'trading_mode': tm.value, 'margin_mode': mm.value}
             for tm, mm in resolved['class']._supported_trading_mode_margin_pairs
         ]
         result.update({
