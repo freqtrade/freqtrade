@@ -26,5 +26,13 @@ class OrderBook(TypedDict):
 
 Tickers = Dict[str, Ticker]
 
+
+# Used for list-exchanges
+class ValidExchangesType(TypedDict):
+    name: str
+    valid: bool
+    comment: str
+
+
 # pair, timeframe, candleType, OHLCV, drop last?,
 OHLCVResponse = Tuple[str, str, CandleType, List, bool]

@@ -28,15 +28,20 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     exchanges = validate_exchanges(args['list_exchanges_all'])
 
     if args['print_one_column']:
-        print('\n'.join([e[0] for e in exchanges]))
+        print('\n'.join([e['name'] for e in exchanges]))
     else:
         if args['list_exchanges_all']:
             print("All exchanges supported by the ccxt library:")
         else:
             print("Exchanges available for Freqtrade:")
-            exchanges = [e for e in exchanges if e[1] is not False]
+            exchanges = [e for e in exchanges if e['valid'] is not False]
 
-        print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
+        headers = {
+            'name': 'Exchange name',
+            'valid': 'Valid',
+            'comment': 'reason',
+        }
+        print(tabulate(exchanges, headers=headers))
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
