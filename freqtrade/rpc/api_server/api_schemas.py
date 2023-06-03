@@ -7,6 +7,11 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
 
 
+class ExchangeModePayloadMixin(BaseModel):
+    trading_mode: Optional[TradingMode]
+    exchange: Optional[str]
+
+
 class Ping(BaseModel):
     status: str
 
@@ -428,12 +433,10 @@ class PairListsResponse(BaseModel):
     pairlists: List[PairListResponse]
 
 
-class PairListsPayload(BaseModel):
+class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
     pairlists: List[Dict[str, Any]]
     blacklist: List[str]
     stake_currency: str
-    trading_mode: Optional[TradingMode]
-    exchange: Optional[str]
 
 
 class FreqAIModelListResponse(BaseModel):

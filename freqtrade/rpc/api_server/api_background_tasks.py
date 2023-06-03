@@ -8,8 +8,8 @@ from freqtrade.constants import Config
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.api_schemas import (BackgroundTaskStatus, BgJobStarted,
-                                                  PairListsPayload, PairListsResponse,
-                                                  WhitelistEvaluateResponse)
+                                                  ExchangeModePayloadMixin, PairListsPayload,
+                                                  PairListsResponse, WhitelistEvaluateResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 
@@ -85,12 +85,7 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
     config_loc = deepcopy(config)
     config_loc['stake_currency'] = payload.stake_currency
     config_loc['pairlists'] = payload.pairlists
-    if payload.exchange:
-        config_loc['exchange']['name'] = payload.exchange
-    if payload.trading_mode:
-        config_loc['trading_mode'] = payload.trading_mode
-        config_loc['candle_type_def'] = CandleType.get_default(
-            config_loc.get('trading_mode', 'spot') or 'spot')
+    handleExchangePayload(payload, config_loc)
     # TODO: overwrite blacklist? make it optional and fall back to the one in config?
     # Outcome depends on the UI approach.
     config_loc['exchange']['pair_blacklist'] = payload.blacklist
@@ -112,6 +107,19 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
         'status': 'Pairlist evaluation started in background.',
         'job_id': job_id,
     }
+
+
+def handleExchangePayload(payload: ExchangeModePayloadMixin, config_loc: Config):
+    """
+    Handle exchange and trading mode payload.
+    Updates the configuration with the payload values.
+    """
+    if payload.exchange:
+        config_loc['exchange']['name'] = payload.exchange
+    if payload.trading_mode:
+        config_loc['trading_mode'] = payload.trading_mode
+        config_loc['candle_type_def'] = CandleType.get_default(
+            config_loc.get('trading_mode', 'spot') or 'spot')
 
 
 @router.get('/pairlists/evaluate/{jobid}', response_model=WhitelistEvaluateResponse,
