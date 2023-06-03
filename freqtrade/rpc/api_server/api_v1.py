@@ -12,7 +12,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceEnterPayload,
+                                                  DeleteLockRequest, DeleteTrade,
+                                                  ExchangeListResponse, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
@@ -309,6 +310,15 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     return {
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
+    }
+
+
+@router.get('/exchanges', response_model=ExchangeListResponse, tags=[])
+def list_exchanges(config=Depends(get_config)):
+    from freqtrade.exchange import list_available_exchanges
+    exchanges = list_available_exchanges(config)
+    return {
+        'exchanges': exchanges,
     }
 
 
