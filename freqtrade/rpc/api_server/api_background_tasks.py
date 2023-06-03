@@ -5,6 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.exceptions import HTTPException
 
 from freqtrade.constants import Config
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.api_schemas import (BackgroundTaskStatus, BgJobStarted,
                                                   PairListsPayload, PairListsResponse,
@@ -88,6 +89,8 @@ def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTa
         config_loc['exchange']['name'] = payload.exchange
     if payload.trading_mode:
         config_loc['trading_mode'] = payload.trading_mode
+        config_loc['candle_type_def'] = CandleType.get_default(
+            config_loc.get('trading_mode', 'spot') or 'spot')
     # TODO: overwrite blacklist? make it optional and fall back to the one in config?
     # Outcome depends on the UI approach.
     config_loc['exchange']['pair_blacklist'] = payload.blacklist
