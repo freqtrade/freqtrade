@@ -2,7 +2,8 @@
 This module loads custom exchanges
 """
 import logging
-from typing import Optional
+from inspect import isclass
+from typing import Any, Dict, List, Optional
 
 import freqtrade.exchange as exchanges
 from freqtrade.constants import Config, ExchangeConfig
@@ -72,3 +73,26 @@ class ExchangeResolver(IResolver):
             f"Impossible to load Exchange '{exchange_name}'. This class does not exist "
             "or contains Python code errors."
         )
+
+    @classmethod
+    def search_all_objects(cls, config: Config, enum_failed: bool,
+                           recursive: bool = False) -> List[Dict[str, Any]]:
+        """
+        Searches for valid objects
+        :param config: Config object
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
+        :param recursive: Recursively walk directory tree searching for strategies
+        :return: List of dicts containing 'name', 'class' and 'location' entries
+        """
+        result = []
+        for exchange_name in dir(exchanges):
+            exchange = getattr(exchanges, exchange_name)
+            if isclass(exchange) and issubclass(exchange, Exchange):
+                result.append({
+                    'name': exchange_name,
+                    'class': exchange,
+                    'location': exchange.__module__,
+                    'location_rel: ': exchange.__module__.replace('freqtrade.', ''),
+                })
+        return result

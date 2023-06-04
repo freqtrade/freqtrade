@@ -1578,6 +1578,47 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
+def test_api_exchanges(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/exchanges")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response['exchanges'], list)
+    assert len(response['exchanges']) > 20
+    okx = [x for x in response['exchanges'] if x['name'] == 'okx'][0]
+    assert okx == {
+        "name": "okx",
+        "valid": True,
+        "supported": True,
+        "comment": "",
+        "trade_modes": [
+            {
+                "trading_mode": "spot",
+                "margin_mode": ""
+            },
+            {
+                "trading_mode": "futures",
+                "margin_mode": "isolated"
+            }
+        ]
+    }
+
+    mexc = [x for x in response['exchanges'] if x['name'] == 'mexc'][0]
+    assert mexc == {
+        "name": "mexc",
+        "valid": True,
+        "supported": False,
+        "comment": "",
+        "trade_modes": [
+                {
+                    "trading_mode": "spot",
+                    "margin_mode": ""
+                }
+            ]
+    }
+
+
 def test_api_freqaimodels(botclient, tmpdir, mocker):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
@@ -2046,4 +2087,5 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
             assert first_waiter != second_waiter
 
     finally:
+        ApiServer.shutdown()
         ApiServer.shutdown()
