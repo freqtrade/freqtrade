@@ -4,12 +4,13 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
-from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
+from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
 from freqtrade.types import ValidExchangesType
 
 
 class ExchangeModePayloadMixin(BaseModel):
     trading_mode: Optional[TradingMode]
+    margin_mode: Optional[MarginMode]
     exchange: Optional[str]
 
 

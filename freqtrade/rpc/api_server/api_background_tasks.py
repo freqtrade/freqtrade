@@ -120,6 +120,8 @@ def handleExchangePayload(payload: ExchangeModePayloadMixin, config_loc: Config)
         config_loc['trading_mode'] = payload.trading_mode
         config_loc['candle_type_def'] = CandleType.get_default(
             config_loc.get('trading_mode', 'spot') or 'spot')
+    if payload.margin_mode:
+        config_loc['margin_mode'] = payload.margin_mode
 
 
 @router.get('/pairlists/evaluate/{jobid}', response_model=WhitelistEvaluateResponse,

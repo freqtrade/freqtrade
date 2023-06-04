@@ -1762,6 +1762,7 @@ def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
         "stake_currency": "BTC",
         "exchange": "randomExchange",
         "trading_mode": "futures",
+        "margin_mode": "isolated",
     }
     rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
     assert_response(rc)
@@ -1769,6 +1770,7 @@ def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
     call_config = plm.call_args_list[0][0][1]
     assert call_config['exchange']['name'] == 'randomExchange'
     assert call_config['trading_mode'] == 'futures'
+    assert call_config['margin_mode'] == 'isolated'
 
 
 def test_list_available_pairs(botclient):
