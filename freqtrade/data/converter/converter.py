@@ -203,7 +203,7 @@ def public_trades_to_dataframe(trades: list, timeframe: str, pair: str, *,
     cols = DEFAULT_TRADES_COLUMNS
     df = DataFrame(trades, columns=cols)
     df['date'] = pd.to_datetime(
-        df['timestamp'], unit='ms', utc=True, infer_datetime_format=True)
+        df['timestamp'], unit='ms', utc=True)
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
