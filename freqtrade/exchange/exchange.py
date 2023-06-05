@@ -2337,11 +2337,10 @@ class Exchange:
                         from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
 
                         last_candle_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), arrow.utcnow().int_timestamp)
-                        until = last_candle_refresh * 1000
+                        until = int(timeframe_to_prev_date(timeframe, datetime.fromtimestamp(last_candle_refresh)).timestamp()) * 1000
 
                     else: 
-                        next_closed_candle_time = timeframe_to_next_date(timeframe)
-                        until = int(next_closed_candle_time.timestamp()) * 1000
+                        until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
                         all_stored_ticks = data_handler.trades_load(f"{pair}-cached")
                         if all_stored_ticks:
                             if all_stored_ticks[0][0] <= first_candle_ms:
@@ -2383,15 +2382,15 @@ class Exchange:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
-        # current,active candle open date
-        now = int(timeframe_to_prev_date(timeframe).timestamp())
+        now = arrow.utcnow().int_timestamp
         return plr < now
 
     def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType, refresh_earlier_seconds=5) -> bool:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
-        return plr < arrow.utcnow().int_timestamp - refresh_earlier_seconds
+        now = arrow.utcnow().int_timestamp
+        return plr < now - refresh_earlier_seconds
 
     @retrier_async
     async def _async_get_candle_history(

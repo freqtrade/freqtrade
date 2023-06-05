@@ -458,9 +458,9 @@ class DataProvider:
         use_public_trades = self._config.get(
             'exchange', {}).get('use_public_trades', False)
         if use_public_trades:
-            return self._exchange.refresh_latest_trades(pairlist,
-                                                        get_datahandler(self._config['datadir'],
-                                                                        data_format=self._config['dataformat_trades']))
+            datahandler = get_datahandler(
+                self._config['datadir'], data_format=self._config['dataformat_trades'])
+            return self._exchange.refresh_latest_trades(pairlist, datahandler)
         return {}
 
     @property

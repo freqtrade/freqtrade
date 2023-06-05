@@ -122,9 +122,8 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
                 # skip if there are no trades at next candle because that this candle isn't finished yet
                 # if not np.any((candle_next == df.candle_start)):
                 if not candle_next in trades_grouped_by_candle_start.groups:
-                    logger.debug(
-                        f"Skipping candle at {candle_start} with {len(trades_grouped_df)} trades, because no finished trades at {candle_next}")
-                    continue
+                    logger.warning(
+                        f"candle at {candle_start} with {len(trades_grouped_df)} trades might be unfinished, because no finished trades at {candle_next}")
 
                 # add trades to each candle
                 df.loc[is_between, 'trades'] = df.loc[is_between,
