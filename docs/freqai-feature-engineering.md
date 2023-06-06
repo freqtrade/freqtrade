@@ -254,46 +254,17 @@ Users are encouraged to customize the data pipeline to their needs by building t
         """
         User defines their custom eature pipeline here (if they wish)
         """
-        from freqtrade.freqai.transforms import FreqaiQuantileTransformer
+        from sklearn.preprocessing import QuantileTransformer
         dk.feature_pipeline = Pipeline([
-            ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+            ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
         ])
 
         return
 ```
 
-Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. If you have a custom step that you would like to add to the pipeline, you simply create a class that follows the DataSieve/SKLearn API. That means your step must have a `fit()`, `transform()`, `fit_transform()`, and `inverse_transform()` method. You can see examples of this in the `freqtrade.freqai.transforms` module where we use SKLearn `QuantileNormalization` to create a new step for the pipeline.
+Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. Here you can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class.
 
 As there is the `feature_pipeline`, there also exists a definition for the `label_pipeline` which can be defined the same way as the `feature_pipeline`, by overriding `define_label_pipeline`.
-
-!!! note "Inheritence required"
-    While most SKLearn methods are very easy to override, as shown in freqtrade/freqai/transforms/quantile_transform.py, they still need to include passing X, y, and sample_weights through all `fit()`, `transform()`, `fit_transform()` and `inverse_transform()` functions, even if that means a direct pass through without modifications.
-
-<!-- ## Data dimensionality reduction with Principal Component Analysis
-
-You can reduce the dimensionality of your features by activating the `principal_component_analysis` in the config:
-
-```json
-    "freqai": {
-        "feature_parameters" : {
-            "principal_component_analysis": true
-        }
-    }
-```
-
-This will perform PCA on the features and reduce their dimensionality so that the explained variance of the data set is >= 0.999. Reducing data dimensionality makes training the model faster and hence allows for more up-to-date models. 
-
-## Inlier metric
-
-The `inlier_metric` is a metric aimed at quantifying how similar the features of a data point are to the most recent historical data points. 
-
-You define the lookback window by setting `inlier_metric_window` and FreqAI computes the distance between the present time point and each of the previous `inlier_metric_window` lookback points. A Weibull function is fit to each of the lookback distributions and its cumulative distribution function (CDF) is used to produce a quantile for each lookback point. The `inlier_metric` is then computed for each time point as the average of the corresponding lookback quantiles. The figure below explains the concept for an `inlier_metric_window` of 5.
-
-![inlier-metric](assets/freqai_inlier-metric.jpg)
-
-FreqAI adds the `inlier_metric` to the training features and hence gives the model access to a novel type of temporal information. 
-
-This function does **not** remove outliers from the data set. -->
 
 ## Outlier detection
 

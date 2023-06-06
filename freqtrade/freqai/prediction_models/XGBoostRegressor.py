@@ -9,7 +9,7 @@ from freqtrade.freqai.tensorboard import TBCallback
 
 
 # from datasieve.pipeline import Pipeline
-# from freqtrade.freqai.transforms import FreqaiQuantileTransformer
+# from sklearn.preprocessing import QuantileTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class XGBoostRegressor(BaseRegressionModel):
     #     User defines their custom eature pipeline here (if they wish)
     #     """
     #     dk.feature_pipeline = Pipeline([
-    #         ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+    #         ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
     #     ])
 
     #     return
@@ -71,7 +71,7 @@ class XGBoostRegressor(BaseRegressionModel):
     #     User defines their custom label pipeline here (if they wish)
     #     """
     #     dk.label_pipeline = Pipeline([
-    #         ('qt', FreqaiQuantileTransformer(output_distribution='normal'))
+    #          ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
     #     ])
 
     #     return

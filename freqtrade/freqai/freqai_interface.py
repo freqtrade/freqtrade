@@ -12,8 +12,10 @@ import numpy as np
 import pandas as pd
 import psutil
 from datasieve.pipeline import Pipeline
+from datasieve.transforms import SKLearnWrapper
 from numpy.typing import NDArray
 from pandas import DataFrame
+from sklearn.preprocessing import MinMaxScaler
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
@@ -509,25 +511,25 @@ class IFreqaiModel(ABC):
         ft_params = self.freqai_info["feature_parameters"]
         dk.feature_pipeline = Pipeline([
             ('const', ds.DataSieveVarianceThreshold(threshold=0)),
-            ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
             ])
 
         if ft_params.get("principal_component_analysis", False):
-            dk.feature_pipeline.steps += [('pca', ds.DataSievePCA())]
-            dk.feature_pipeline.steps += [('post-pca-scaler',
-                                           ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))]
+            dk.feature_pipeline.append(('pca', ds.DataSievePCA()))
+            dk.feature_pipeline.append(('post-pca-scaler',
+                                        SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
             svm_params = ft_params.get(
                 "svm_params", {"shuffle": False, "nu": 0.01})
-            dk.feature_pipeline.steps += [('svm', ds.SVMOutlierExtractor(**svm_params))]
+            dk.feature_pipeline.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
 
         di = ft_params.get("DI_threshold", 0)
         if di:
-            dk.feature_pipeline.steps += [('di', ds.DissimilarityIndex(di_threshold=di))]
+            dk.feature_pipeline.append(('di', ds.DissimilarityIndex(di_threshold=di)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.feature_pipeline.steps += [('dbscan', ds.DataSieveDBSCAN())]
+            dk.feature_pipeline.append(('dbscan', ds.DataSieveDBSCAN()))
 
         dk.feature_pipeline.fitparams = dk.feature_pipeline._validate_fitparams(
             {}, dk.feature_pipeline.steps)
@@ -538,7 +540,7 @@ class IFreqaiModel(ABC):
     def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
 
         dk.label_pipeline = Pipeline([
-            ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
             ])
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
@@ -551,8 +553,6 @@ class IFreqaiModel(ABC):
         """
         if self.dd.model_type == 'joblib':
             file_type = ".joblib"
-        elif self.dd.model_type == 'keras':
-            file_type = ".h5"
         elif self.dd.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             file_type = ".zip"
 
@@ -676,7 +676,7 @@ class IFreqaiModel(ABC):
 
         # # for keras type models, the conv_window needs to be prepended so
         # # viewing is correct in frequi
-        if self.freqai_info.get('keras', False) or self.ft_params.get('inlier_metric_window', 0):
+        if self.ft_params.get('inlier_metric_window', 0):
             n_lost_points = self.freqai_info.get('conv_width', 2)
             zeros_df = DataFrame(np.zeros((n_lost_points, len(hist_preds_df.columns))),
                                  columns=hist_preds_df.columns)
