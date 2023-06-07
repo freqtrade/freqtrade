@@ -257,16 +257,16 @@ Users are encouraged to customize the data pipeline to their needs by building t
     from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
     from datasieve.pipeline import Pipeline
     from sklearn.preprocessing import QuantileTransformer
-    def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
+    def define_data_pipeline(self) -> Pipeline:
         """
         User defines their custom eature pipeline here (if they wish)
         """
-        dk.feature_pipeline = Pipeline([
+        feature_pipeline = Pipeline([
             ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal'))),
             ('di', ds.DissimilarityIndex(di_threshold=1)
         ])
 
-        return
+        return feature_pipeline
 ```
 
 Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. Here you can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class.
