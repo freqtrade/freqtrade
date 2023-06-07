@@ -8,14 +8,14 @@ repos:
         # stages: [push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.0.1"
+    rev: "v1.3.0"
     hooks:
       - id: mypy
         exclude: build_helpers
         additional_dependencies:
           - types-cachetools==5.3.0.5
           - types-filelock==3.2.7
-          - types-requests==2.30.0.0
+          - types-requests==2.31.0.1
           - types-tabulate==0.9.0.2
           - types-python-dateutil==2.8.19.13
           - SQLAlchemy==2.0.15
@@ -30,7 +30,7 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.263'
+    rev: 'v0.0.270'
     hooks:
       - id: ruff
 

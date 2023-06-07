@@ -118,7 +118,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
 def test_main_operational_exception1(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch(
-        'freqtrade.commands.list_commands.validate_exchanges',
+        'freqtrade.commands.list_commands.list_available_exchanges',
         MagicMock(side_effect=ValueError('Oh snap!'))
     )
     patched_configuration_load_config_file(mocker, default_conf)
@@ -132,7 +132,7 @@ def test_main_operational_exception1(mocker, default_conf, caplog) -> None:
     assert log_has('Fatal exception!', caplog)
     assert not log_has_re(r'SIGINT.*', caplog)
     mocker.patch(
-        'freqtrade.commands.list_commands.validate_exchanges',
+        'freqtrade.commands.list_commands.list_available_exchanges',
         MagicMock(side_effect=KeyboardInterrupt)
     )
     with pytest.raises(SystemExit):

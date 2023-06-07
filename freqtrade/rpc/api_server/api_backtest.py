@@ -16,14 +16,14 @@ from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
                                                   BacktestResponse)
-from freqtrade.rpc.api_server.deps import get_config, is_webserver_mode
+from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
 
 
 logger = logging.getLogger(__name__)
 
-# Private API, protected by authentication
+# Private API, protected by authentication and webserver_mode dependency
 router = APIRouter()
 
 
@@ -102,7 +102,7 @@ def __run_backtest_bg(btconfig: Config):
 @router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
 async def api_start_backtest(
         bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
-        config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+        config=Depends(get_config)):
     ApiBG.bt['bt_error'] = None
     """Start backtesting if not done so already"""
     if ApiBG.bgtask_running:
@@ -143,7 +143,7 @@ async def api_start_backtest(
 
 
 @router.get('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
+def api_get_backtest():
     """
     Get backtesting result.
     Returns Result after backtesting has been ran.
@@ -188,7 +188,7 @@ def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
 
 
 @router.delete('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_delete_backtest(ws_mode=Depends(is_webserver_mode)):
+def api_delete_backtest():
     """Reset backtesting"""
     if ApiBG.bgtask_running:
         return {
@@ -215,7 +215,7 @@ def api_delete_backtest(ws_mode=Depends(is_webserver_mode)):
 
 
 @router.get('/backtest/abort', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
+def api_backtest_abort():
     if not ApiBG.bgtask_running:
         return {
             "status": "not_running",
@@ -236,15 +236,14 @@ def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
 
 @router.get('/backtest/history', response_model=List[BacktestHistoryEntry],
             tags=['webserver', 'backtest'])
-def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+def api_backtest_history(config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
 
 
 @router.get('/backtest/history/result', response_model=BacktestResponse,
             tags=['webserver', 'backtest'])
-def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config),
-                                ws_mode=Depends(is_webserver_mode)):
+def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     fn = config['user_data_dir'] / 'backtest_results' / filename
     results: Dict[str, Any] = {

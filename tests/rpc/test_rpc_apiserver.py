@@ -1333,7 +1333,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5", "ordertype": "market", "amount": 23})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1343,7 +1343,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5"})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1578,6 +1578,47 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
+def test_api_exchanges(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/exchanges")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response['exchanges'], list)
+    assert len(response['exchanges']) > 20
+    okx = [x for x in response['exchanges'] if x['name'] == 'okx'][0]
+    assert okx == {
+        "name": "okx",
+        "valid": True,
+        "supported": True,
+        "comment": "",
+        "trade_modes": [
+            {
+                "trading_mode": "spot",
+                "margin_mode": ""
+            },
+            {
+                "trading_mode": "futures",
+                "margin_mode": "isolated"
+            }
+        ]
+    }
+
+    mexc = [x for x in response['exchanges'] if x['name'] == 'mexc'][0]
+    assert mexc == {
+        "name": "mexc",
+        "valid": True,
+        "supported": False,
+        "comment": "",
+        "trade_modes": [
+                {
+                    "trading_mode": "spot",
+                    "margin_mode": ""
+                }
+            ]
+    }
+
+
 def test_api_freqaimodels(botclient, tmpdir, mocker):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
@@ -1673,7 +1714,8 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
 
         rc = client_get(client, f"{BASE_URI}/backtest")
         # Backtest prevented in default mode
-        assert_response(rc, 502)
+        assert_response(rc, 503)
+        assert rc.json()['detail'] == 'Bot is not in the correct state.'
 
         ftbot.config['runmode'] = RunMode.WEBSERVER
         # Backtesting not started yet
@@ -1812,7 +1854,9 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
                      ])
 
     rc = client_get(client, f"{BASE_URI}/backtest/history")
-    assert_response(rc, 502)
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
     ftbot.config['user_data_dir'] = testdatadir
     ftbot.config['runmode'] = RunMode.WEBSERVER
 
@@ -1929,4 +1973,5 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
             assert first_waiter != second_waiter
 
     finally:
+        ApiServer.shutdown()
         ApiServer.shutdown()
