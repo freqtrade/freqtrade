@@ -510,12 +510,12 @@ class IFreqaiModel(ABC):
     def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
         ft_params = self.freqai_info["feature_parameters"]
         dk.feature_pipeline = Pipeline([
-            ('const', ds.DataSieveVarianceThreshold(threshold=0)),
+            ('const', ds.VarianceThreshold(threshold=0)),
             ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
             ])
 
         if ft_params.get("principal_component_analysis", False):
-            dk.feature_pipeline.append(('pca', ds.DataSievePCA()))
+            dk.feature_pipeline.append(('pca', ds.PCA()))
             dk.feature_pipeline.append(('post-pca-scaler',
                                         SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
@@ -529,13 +529,14 @@ class IFreqaiModel(ABC):
             dk.feature_pipeline.append(('di', ds.DissimilarityIndex(di_threshold=di)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.feature_pipeline.append(('dbscan', ds.DataSieveDBSCAN()))
+            dk.feature_pipeline.append(('dbscan', ds.DBSCAN()))
+
+        sigma = self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0)
+        if sigma:
+            dk.feature_pipeline.append(('noise', ds.Noise(sigma=sigma)))
 
         dk.feature_pipeline.fitparams = dk.feature_pipeline._validate_fitparams(
             {}, dk.feature_pipeline.steps)
-
-        # if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
-        #     dk.pipeline.extend(('noise', ds.Noise()))
 
     def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
 

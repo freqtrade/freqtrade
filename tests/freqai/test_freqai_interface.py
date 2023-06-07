@@ -37,21 +37,22 @@ def can_run_model(model: str) -> None:
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
 
-@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer', [
-    ('LightGBMRegressor', True, False, True, True, False, 0),
-    ('XGBoostRegressor', False, True, False, True, False, 10),
-    ('XGBoostRFRegressor', False, False, False, True, False, 0),
-    ('CatboostRegressor', False, False, False, True, True, 0),
-    ('PyTorchMLPRegressor', False, False, False, False, False, 0),
-    ('PyTorchTransformerRegressor', False, False, False, False, False, 0),
-    ('ReinforcementLearner', False, True, False, True, False, 0),
-    ('ReinforcementLearner_multiproc', False, False, False, True, False, 0),
-    ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0),
-    ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0),
-    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0),
+@pytest.mark.parametrize('model, pca, dbscan, float32, can_short, shuffle, buffer, noise', [
+    ('LightGBMRegressor', True, False, True, True, False, 0, 0),
+    ('XGBoostRegressor', False, True, False, True, False, 10, 0.05),
+    ('XGBoostRFRegressor', False, False, False, True, False, 0, 0),
+    ('CatboostRegressor', False, False, False, True, True, 0, 0),
+    ('PyTorchMLPRegressor', False, False, False, False, False, 0, 0),
+    ('PyTorchTransformerRegressor', False, False, False, False, False, 0, 0),
+    ('ReinforcementLearner', False, True, False, True, False, 0, 0),
+    ('ReinforcementLearner_multiproc', False, False, False, True, False, 0, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0, 0),
+    ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0, 0),
+    ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0, 0),
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
-                                               dbscan, float32, can_short, shuffle, buffer):
+                                               dbscan, float32, can_short, shuffle,
+                                               buffer, noise):
 
     can_run_model(model)
 
@@ -68,6 +69,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     freqai_conf.update({"reduce_df_footprint": float32})
     freqai_conf['freqai']['feature_parameters'].update({"shuffle_after_split": shuffle})
     freqai_conf['freqai']['feature_parameters'].update({"buffer_train_data_candles": buffer})
+    freqai_conf['freqai']['feature_parameters'].update({"noise_standard_deviation": noise})
 
     if 'ReinforcementLearner' in model:
         model_save_ext = 'zip'
