@@ -523,7 +523,7 @@ class FreqaiDataDrawer:
             dk.data_dictionary["train_features"] = pd.read_pickle(
                 dk.data_path / f"{dk.model_filename}_trained_df.pkl"
             )
-            with (dk.data_path / f"{dk.model_filename}_pipeline.pkl").open("rb") as fp:
+            with (dk.data_path / f"{dk.model_filename}_feature_pipeline.pkl").open("rb") as fp:
                 dk.feature_pipeline = cloudpickle.load(fp)
             with (dk.data_path / f"{dk.model_filename}_label_pipeline.pkl").open("rb") as fp:
                 dk.label_pipeline = cloudpickle.load(fp)
