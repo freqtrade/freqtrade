@@ -1085,6 +1085,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         exits: List[ExitCheckTuple] = []
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
+        current_profit_best = current_profit
+        if low is not None or high is not None:
+            # Set current rate to high for backtesting ROI exits
+            current_rate_best = (low if trade.is_short else high) or rate
+            current_profit_best = trade.calc_profit_ratio(current_rate_best)
 
         trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
@@ -1093,20 +1098,13 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                 current_profit=current_profit,
                                                 force_stoploss=force_stoploss, low=low, high=high)
 
-        # Set current rate to high for backtesting exits
-        current_rate = (low if trade.is_short else high) or rate
-        current_profit = trade.calc_profit_ratio(current_rate)
-
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
         roi_reached = (not (enter and self.ignore_roi_if_entry_signal)
-                       and self.min_roi_reached(trade=trade, current_profit=current_profit,
+                       and self.min_roi_reached(trade=trade, current_profit=current_profit_best,
                                                 current_time=current_time))
 
         exit_signal = ExitType.NONE
         custom_reason = ''
-        # use provided rate in backtesting, not high/low.
-        current_rate = rate
-        current_profit = trade.calc_profit_ratio(current_rate)
 
         if self.use_exit_signal:
             if exit_ and not enter:
