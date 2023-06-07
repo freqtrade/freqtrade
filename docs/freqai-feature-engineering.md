@@ -226,8 +226,10 @@ FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) 
 This means that users can use/customize any SKLearn modules and easily add them to their FreqAI data pipeline. By default, FreqAI builds the following pipeline:
 
 ```py
+from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
+from datasieve.pipeline import Pipeline
 dk.feature_pipeline = Pipeline([
-    ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1))),
+    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))),
     ('di', ds.DissimilarityIndex(di_threshold=1)),
     ])
 ```
@@ -235,10 +237,12 @@ dk.feature_pipeline = Pipeline([
 But users will find that they can add PCA and other steps just by changing their configuration settings, for example, if you add `"principal_component_analysis": true` to the `feature_parameters` dict in the `freqai` config, then FreqAI will add the PCA step for you resulting in the following pipeline:
 
 ```py
+from datasieve.transforms import SKLearnWrapper, DissimilarityIndex, PCA
+from datasieve.pipeline import Pipeline
 dk.feature_pipeline = Pipeline([
-    ('scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1))),
-    ('pca', ds.DataSievePCA()),
-    ('post-pca-scaler', ds.DataSieveMinMaxScaler(feature_range=(-1, 1)))
+    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))),
+    ('pca', ds.PCA()),
+    ('post-pca-scaler', ds.MinMaxScaler(feature_range=(-1, 1)))
     ('di', ds.DissimilarityIndex(di_threshold=1)),
     ])
 ```
@@ -247,16 +251,19 @@ The same concept follows if users activate other config options like `"use_SVM_t
 
 ## Customizing the pipeline
 
-Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by overriding `define_data_pipeline` in their `IFreqaiModel`. For example:
+Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by simply setting `dk.feature_pipeline` to their desired `Pipeline` object inside their `IFreqaiModel` `train()` function, or if they prefer not to touch the `train()` function, they can override `define_data_pipeline` in their `IFreqaiModel`:
 
 ```py
+    from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
+    from datasieve.pipeline import Pipeline
+    from sklearn.preprocessing import QuantileTransformer
     def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
         """
         User defines their custom eature pipeline here (if they wish)
         """
-        from sklearn.preprocessing import QuantileTransformer
         dk.feature_pipeline = Pipeline([
-            ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
+            ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal'))),
+            ('di', ds.DissimilarityIndex(di_threshold=1)
         ])
 
         return

@@ -507,42 +507,46 @@ class IFreqaiModel(ABC):
                 "feature_engineering_* functions"
             )
 
-    def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
+    def define_data_pipeline(self) -> Pipeline:
         ft_params = self.freqai_info["feature_parameters"]
-        dk.feature_pipeline = Pipeline([
+        feature_pipeline = Pipeline([
             ('const', ds.VarianceThreshold(threshold=0)),
             ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
             ])
 
         if ft_params.get("principal_component_analysis", False):
-            dk.feature_pipeline.append(('pca', ds.PCA()))
-            dk.feature_pipeline.append(('post-pca-scaler',
-                                        SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
+            feature_pipeline.append(('pca', ds.PCA()))
+            feature_pipeline.append(('post-pca-scaler',
+                                     SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
             svm_params = ft_params.get(
                 "svm_params", {"shuffle": False, "nu": 0.01})
-            dk.feature_pipeline.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
+            feature_pipeline.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
 
         di = ft_params.get("DI_threshold", 0)
         if di:
-            dk.feature_pipeline.append(('di', ds.DissimilarityIndex(di_threshold=di)))
+            feature_pipeline.append(('di', ds.DissimilarityIndex(di_threshold=di)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.feature_pipeline.append(('dbscan', ds.DBSCAN()))
+            feature_pipeline.append(('dbscan', ds.DBSCAN()))
 
         sigma = self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0)
         if sigma:
-            dk.feature_pipeline.append(('noise', ds.Noise(sigma=sigma)))
+            feature_pipeline.append(('noise', ds.Noise(sigma=sigma)))
 
-        dk.feature_pipeline.fitparams = dk.feature_pipeline._validate_fitparams(
-            {}, dk.feature_pipeline.steps)
+        feature_pipeline.fitparams = feature_pipeline._validate_fitparams(
+            {}, feature_pipeline.steps)
 
-    def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
+        return feature_pipeline
 
-        dk.label_pipeline = Pipeline([
+    def define_label_pipeline(self) -> Pipeline:
+
+        label_pipeline = Pipeline([
             ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
             ])
+
+        return label_pipeline
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """

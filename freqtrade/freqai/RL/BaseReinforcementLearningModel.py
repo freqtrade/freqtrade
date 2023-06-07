@@ -110,40 +110,37 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             training_filter=True,
         )
 
-        d: Dict[str, Any] = dk.make_train_test_datasets(
+        dd: Dict[str, Any] = dk.make_train_test_datasets(
             features_filtered, labels_filtered)
-        self.df_raw = copy.deepcopy(d["train_features"])
+        self.df_raw = copy.deepcopy(dd["train_features"])
         dk.fit_labels()  # FIXME useless for now, but just satiating append methods
 
         # normalize all data based on train_dataset only
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
 
-        self.define_data_pipeline(dk)
-        self.define_label_pipeline(dk)
+        dk.feature_pipeline = self.define_data_pipeline()
+        dk.label_pipeline = self.define_label_pipeline()
 
-        # d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
-        # d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
 
-        (d["train_features"],
-         d["train_labels"],
-         d["train_weights"]) = dk.feature_pipeline.fit_transform(d["train_features"],
-                                                                 d["train_labels"],
-                                                                 d["train_weights"])
-
-        (d["test_features"],
-         d["test_labels"],
-         d["test_weights"]) = dk.feature_pipeline.transform(d["test_features"],
-                                                            d["test_labels"],
-                                                            d["test_weights"])
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                             dd["test_labels"],
+                                                             dd["test_weights"])
 
         logger.info(
             f'Training model on {len(dk.data_dictionary["train_features"].columns)}'
-            f' features and {len(d["train_features"])} data points'
+            f' features and {len(dd["train_features"])} data points'
         )
 
-        self.set_train_and_eval_environments(d, prices_train, prices_test, dk)
+        self.set_train_and_eval_environments(dd, prices_train, prices_test, dk)
 
-        model = self.fit(d, dk)
+        model = self.fit(dd, dk)
 
         logger.info(f"--------------------done training {pair}--------------------")
 

@@ -18,6 +18,7 @@ class BasePyTorchRegressor(BasePyTorchModel):
     A PyTorch implementation of a regressor.
     User must implement fit method
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -81,34 +82,33 @@ class BasePyTorchRegressor(BasePyTorchModel):
         )
 
         # split data into train/test data.
-        d = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        if not self.freqai_info.get("fit_live_predictions", 0) or not self.live:
+        dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
+        dk.feature_pipeline = self.define_data_pipeline()
+        dk.label_pipeline = self.define_label_pipeline()
 
-        self.define_data_pipeline(dk)
-        self.define_label_pipeline(dk)
+        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
+        dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
 
-        d["train_labels"], _, _ = dk.label_pipeline.fit_transform(d["train_labels"])
-        d["test_labels"], _, _ = dk.label_pipeline.transform(d["test_labels"])
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
 
-        (d["train_features"],
-         d["train_labels"],
-         d["train_weights"]) = dk.feature_pipeline.fit_transform(d["train_features"],
-                                                                 d["train_labels"],
-                                                                 d["train_weights"])
-
-        (d["test_features"],
-         d["test_labels"],
-         d["test_weights"]) = dk.feature_pipeline.transform(d["test_features"],
-                                                            d["test_labels"],
-                                                            d["test_weights"])
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                             dd["test_labels"],
+                                                             dd["test_weights"])
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
         )
-        logger.info(f"Training model on {len(d['train_features'])} data points")
+        logger.info(f"Training model on {len(dd['train_features'])} data points")
 
-        model = self.fit(d, dk)
+        model = self.fit(dd, dk)
         end_time = time()
 
         logger.info(f"-------------------- Done training {pair} "
