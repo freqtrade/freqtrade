@@ -61,7 +61,7 @@ class LookaheadAnalysis:
         return timestamp
 
     @staticmethod
-    def get_result(backtesting, processed: pd.DataFrame):
+    def get_result(backtesting: Backtesting, processed: pd.DataFrame):
         min_date, max_date = get_timerange(processed)
 
         result = backtesting.backtest(
@@ -143,15 +143,15 @@ class LookaheadAnalysis:
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
-        self.backtesting = Backtesting(prepare_data_config)
-        self.backtesting._set_strategy(self.backtesting.strategylist[0])
+        backtesting = Backtesting(prepare_data_config)
+        backtesting._set_strategy(backtesting.strategylist[0])
 
-        varholder.data, varholder.timerange = self.backtesting.load_bt_data()
-        self.backtesting.load_bt_data_detail()
-        varholder.timeframe = self.backtesting.timeframe
+        varholder.data, varholder.timerange = backtesting.load_bt_data()
+        backtesting.load_bt_data_detail()
+        varholder.timeframe = backtesting.timeframe
 
-        varholder.indicators = self.backtesting.strategy.advise_all_indicators(varholder.data)
-        varholder.result = self.get_result(self.backtesting, varholder.indicators)
+        varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
+        varholder.result = self.get_result(backtesting, varholder.indicators)
 
     def fill_full_varholder(self):
         self.full_varHolder = VarHolder()
