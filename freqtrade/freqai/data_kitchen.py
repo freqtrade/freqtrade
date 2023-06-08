@@ -13,7 +13,6 @@ import pandas as pd
 import psutil
 from datasieve.pipeline import Pipeline
 from pandas import DataFrame
-from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
 
 from freqtrade.configuration import TimeRange
@@ -82,6 +81,7 @@ class FreqaiDataKitchen:
         self.backtest_live_models = config.get("freqai_backtest_live_models", False)
         self.feature_pipeline = Pipeline()
         self.label_pipeline = Pipeline()
+        self.DI_values: npt.NDArray = np.array([])
 
         if not self.live:
             self.full_path = self.get_full_models_path(self.config)
@@ -390,37 +390,6 @@ class FreqaiDataKitchen:
         column_names = dataframe.columns
         labels = [c for c in column_names if "&" in c]
         self.label_list = labels
-
-    def check_if_pred_in_training_spaces(self) -> None:
-        """
-        Compares the distance from each prediction point to each training data
-        point. It uses this information to estimate a Dissimilarity Index (DI)
-        and avoid making predictions on any points that are too far away
-        from the training data set.
-        """
-
-        distance = pairwise_distances(
-            self.data_dictionary["train_features"],
-            self.data_dictionary["prediction_features"],
-            n_jobs=self.thread_count,
-        )
-
-        self.DI_values = distance.min(axis=0) / self.data["avg_mean_dist"]
-
-        do_predict = np.where(
-            self.DI_values < self.freqai_config["feature_parameters"]["DI_threshold"],
-            1,
-            0,
-        )
-
-        if (len(do_predict) - do_predict.sum()) > 0:
-            logger.info(
-                f"{self.pair}: DI tossed {len(do_predict) - do_predict.sum()} predictions for "
-                "being too far from training data."
-            )
-
-        self.do_predict += do_predict
-        self.do_predict -= 1
 
     def set_weights_higher_recent(self, num_weights: int) -> npt.ArrayLike:
         """

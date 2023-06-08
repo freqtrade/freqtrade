@@ -27,6 +27,11 @@ from freqtrade.strategy.interface import IStrategy
 
 logger = logging.getLogger(__name__)
 
+FEATURE_PIPELINE = "feature_pipeline"
+LABEL_PIPELINE = "label_pipeline"
+TRAINDF = "trained_df"
+METADATA = "metadata"
+
 
 class pair_info(TypedDict):
     model_filename: str
@@ -424,7 +429,7 @@ class FreqaiDataDrawer:
         dk.data["training_features_list"] = list(dk.data_dictionary["train_features"].columns)
         dk.data["label_list"] = dk.label_list
 
-        with (save_path / f"{dk.model_filename}_metadata.json").open("w") as fp:
+        with (save_path / f"{dk.model_filename}_{METADATA}.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
         return
@@ -454,19 +459,19 @@ class FreqaiDataDrawer:
         dk.data["training_features_list"] = dk.training_features_list
         dk.data["label_list"] = dk.label_list
         # store the metadata
-        with (save_path / f"{dk.model_filename}_metadata.json").open("w") as fp:
+        with (save_path / f"{dk.model_filename}_{METADATA}.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
         # save the pipelines to pickle files
-        with (save_path / f"{dk.model_filename}_feature_pipeline.pkl").open("wb") as fp:
+        with (save_path / f"{dk.model_filename}_{FEATURE_PIPELINE}.pkl").open("wb") as fp:
             cloudpickle.dump(dk.feature_pipeline, fp)
 
-        with (save_path / f"{dk.model_filename}_label_pipeline.pkl").open("wb") as fp:
+        with (save_path / f"{dk.model_filename}_{LABEL_PIPELINE}.pkl").open("wb") as fp:
             cloudpickle.dump(dk.label_pipeline, fp)
 
         # save the train data to file so we can check preds for area of applicability later
         dk.data_dictionary["train_features"].to_pickle(
-            save_path / f"{dk.model_filename}_trained_df.pkl"
+            save_path / f"{dk.model_filename}_{TRAINDF}.pkl"
         )
 
         dk.data_dictionary["train_dates"].to_pickle(
@@ -479,10 +484,10 @@ class FreqaiDataDrawer:
 
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
-        self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
-        self.meta_data_dictionary[coin]["meta_data"] = dk.data
-        self.meta_data_dictionary[coin]["feature_pipeline"] = dk.feature_pipeline
-        self.meta_data_dictionary[coin]["label_pipeline"] = dk.label_pipeline
+        self.meta_data_dictionary[coin][TRAINDF] = dk.data_dictionary["train_features"]
+        self.meta_data_dictionary[coin][METADATA] = dk.data
+        self.meta_data_dictionary[coin][FEATURE_PIPELINE] = dk.feature_pipeline
+        self.meta_data_dictionary[coin][LABEL_PIPELINE] = dk.label_pipeline
         self.save_drawer_to_disk()
 
         return
@@ -492,7 +497,7 @@ class FreqaiDataDrawer:
         Load only metadata into datakitchen to increase performance during
         presaved backtesting (prediction file loading).
         """
-        with (dk.data_path / f"{dk.model_filename}_metadata.json").open("r") as fp:
+        with (dk.data_path / f"{dk.model_filename}_{METADATA}.json").open("r") as fp:
             dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
@@ -512,20 +517,20 @@ class FreqaiDataDrawer:
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
 
         if coin in self.meta_data_dictionary:
-            dk.data = self.meta_data_dictionary[coin]["meta_data"]
-            dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin]["train_df"]
-            dk.feature_pipeline = self.meta_data_dictionary[coin]["feature_pipeline"]
-            dk.label_pipeline = self.meta_data_dictionary[coin]["label_pipeline"]
+            dk.data = self.meta_data_dictionary[coin][METADATA]
+            dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin][TRAINDF]
+            dk.feature_pipeline = self.meta_data_dictionary[coin][FEATURE_PIPELINE]
+            dk.label_pipeline = self.meta_data_dictionary[coin][LABEL_PIPELINE]
         else:
-            with (dk.data_path / f"{dk.model_filename}_metadata.json").open("r") as fp:
+            with (dk.data_path / f"{dk.model_filename}_{METADATA}.json").open("r") as fp:
                 dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
 
             dk.data_dictionary["train_features"] = pd.read_pickle(
-                dk.data_path / f"{dk.model_filename}_trained_df.pkl"
+                dk.data_path / f"{dk.model_filename}_{TRAINDF}.pkl"
             )
-            with (dk.data_path / f"{dk.model_filename}_feature_pipeline.pkl").open("rb") as fp:
+            with (dk.data_path / f"{dk.model_filename}_{FEATURE_PIPELINE}.pkl").open("rb") as fp:
                 dk.feature_pipeline = cloudpickle.load(fp)
-            with (dk.data_path / f"{dk.model_filename}_label_pipeline.pkl").open("rb") as fp:
+            with (dk.data_path / f"{dk.model_filename}_{LABEL_PIPELINE}.pkl").open("rb") as fp:
                 dk.label_pipeline = cloudpickle.load(fp)
 
         dk.training_features_list = dk.data["training_features_list"]
