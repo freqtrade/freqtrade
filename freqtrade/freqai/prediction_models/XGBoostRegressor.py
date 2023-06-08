@@ -8,9 +8,6 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.tensorboard import TBCallback
 
 
-# from datasieve.pipeline import Pipeline
-# from sklearn.preprocessing import QuantileTransformer
-
 logger = logging.getLogger(__name__)
 
 

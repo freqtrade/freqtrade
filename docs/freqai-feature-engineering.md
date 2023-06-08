@@ -221,20 +221,20 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. B
 
 # Building the data pipeline
 
-FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, and feature removal feature name following. 
+FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, feature removal, feature name following. 
 
-This means that users can use/customize any SKLearn modules and easily add them to their FreqAI data pipeline. By default, FreqAI builds the following pipeline:
+By default, FreqAI builds the following pipeline inside the `IFreqaiModel` `train()` method:
 
 ```py
 from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
 from datasieve.pipeline import Pipeline
 dk.feature_pipeline = Pipeline([
-    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))),
+    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))),
     ('di', ds.DissimilarityIndex(di_threshold=1)),
     ])
 ```
 
-But users will find that they can add PCA and other steps just by changing their configuration settings, for example, if you add `"principal_component_analysis": true` to the `feature_parameters` dict in the `freqai` config, then FreqAI will add the PCA step for you resulting in the following pipeline:
+But users will find that they can add PCA and other steps just by changing their configuration settings, for example, if you add `"principal_component_analysis": true` to the `feature_parameters` dict in the `freqai` config, then FreqAI will automatically add the PCA step for you resulting in the following pipeline:
 
 ```py
 from datasieve.transforms import SKLearnWrapper, DissimilarityIndex, PCA
@@ -251,15 +251,29 @@ The same concept follows if users activate other config options like `"use_SVM_t
 
 ## Customizing the pipeline
 
-Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by simply setting `dk.feature_pipeline` to their desired `Pipeline` object inside their `IFreqaiModel` `train()` function, or if they prefer not to touch the `train()` function, they can override `define_data_pipeline` in their `IFreqaiModel`:
+Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by simply setting `dk.feature_pipeline` to their desired `Pipeline` object inside their `IFreqaiModel` `train()` function, or if they prefer not to touch the `train()` function, they can override `define_data_pipeline`/`define_label_pipeline` functions in their `IFreqaiModel`:
 
 ```py
-    from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
-    from datasieve.pipeline import Pipeline
-    from sklearn.preprocessing import QuantileTransformer
+from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
+from datasieve.pipeline import Pipeline
+from sklearn.preprocessing import QuantileTransformer, StandardScaler
+from freqai.base_models import BaseRegressionModel
+
+
+class MyFreqaiModel(BaseRegressionModel):
+    """
+    Some cool custom model
+    """
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+        """
+        My custom fit function
+        """
+        model = cool_model.fit()
+        return model
+
     def define_data_pipeline(self) -> Pipeline:
         """
-        User defines their custom eature pipeline here (if they wish)
+        User defines their custom feature pipeline here (if they wish)
         """
         feature_pipeline = Pipeline([
             ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal'))),
@@ -267,11 +281,19 @@ Users are encouraged to customize the data pipeline to their needs by building t
         ])
 
         return feature_pipeline
+    
+    def define_label_pipeline(self) -> Pipeline:
+        """
+        User defines their custom label pipeline here (if they wish)
+        """
+        feature_pipeline = Pipeline([
+            ('qt', SKLearnWrapper(StandardScaler())),
+        ])
+
+        return feature_pipeline
 ```
 
-Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. Here you can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class.
-
-As there is the `feature_pipeline`, there also exists a definition for the `label_pipeline` which can be defined the same way as the `feature_pipeline`, by overriding `define_label_pipeline`.
+Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. You can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class as shown above.
 
 ## Outlier detection
 
