@@ -189,7 +189,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
 
-        dk.feature_pipeline = self.define_data_pipeline()
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
 
         (dd["train_features"],
          dd["train_labels"],

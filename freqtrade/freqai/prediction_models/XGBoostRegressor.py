@@ -52,23 +52,3 @@ class XGBoostRegressor(BaseRegressionModel):
         model.set_params(callbacks=[])
 
         return model
-
-    # def define_data_pipeline(self, dk: FreqaiDataKitchen) -> None:
-    #     """
-    #     User defines their custom eature pipeline here (if they wish)
-    #     """
-    #     dk.feature_pipeline = Pipeline([
-    #         ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
-    #     ])
-
-    #     return
-
-    # def define_label_pipeline(self, dk: FreqaiDataKitchen) -> None:
-    #     """
-    #     User defines their custom label pipeline here (if they wish)
-    #     """
-    #     dk.label_pipeline = Pipeline([
-    #          ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal')))
-    #     ])
-
-    #     return

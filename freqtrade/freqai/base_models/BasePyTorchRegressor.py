@@ -85,8 +85,8 @@ class BasePyTorchRegressor(BasePyTorchModel):
         dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
         if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
-        dk.feature_pipeline = self.define_data_pipeline()
-        dk.label_pipeline = self.define_label_pipeline()
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+        dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
 
         dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
         dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
