@@ -1114,7 +1114,9 @@ class Telegram(RPCHandler):
     async def _force_exit_action(self, trade_id):
         if trade_id != 'cancel':
             try:
-                self._rpc._rpc_force_exit(trade_id)
+                loop = asyncio.get_running_loop()
+                # Workaround to avoid nested loops
+                await loop.run_in_executor(None, self._rpc._rpc_force_exit, trade_id)
             except RPCException as e:
                 await self._send_msg(str(e))
 
@@ -1140,7 +1142,11 @@ class Telegram(RPCHandler):
     async def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
             try:
-                self._rpc._rpc_force_entry(pair, price, order_side=order_side)
+                def _force_enter():
+                    self._rpc._rpc_force_entry(pair, price, order_side=order_side)
+                loop = asyncio.get_running_loop()
+                # Workaround to avoid nested loops
+                await loop.run_in_executor(None, _force_enter)
             except RPCException as e:
                 logger.exception("Forcebuy error!")
                 await self._send_msg(str(e), ParseMode.HTML)
