@@ -46,6 +46,7 @@ class LookaheadAnalysis:
 
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
+        self.exchange = None
 
         # pull variables the scope of the lookahead_analysis-instance
         self.local_config = deepcopy(config)
@@ -143,7 +144,8 @@ class LookaheadAnalysis:
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
-        backtesting = Backtesting(prepare_data_config)
+        backtesting = Backtesting(prepare_data_config, self.exchange)
+        self.exchange = backtesting.exchange
         backtesting._set_strategy(backtesting.strategylist[0])
 
         varholder.data, varholder.timerange = backtesting.load_bt_data()
