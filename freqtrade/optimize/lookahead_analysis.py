@@ -11,6 +11,8 @@ import pandas as pd
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import get_timerange
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
+                                              restore_verbosity_for_bias_tester)
 from freqtrade.optimize.backtesting import Backtesting
 
 
@@ -231,6 +233,8 @@ class LookaheadAnalysis:
         # first make a single backtest
         self.fill_full_varholder()
 
+        reduce_verbosity_for_bias_tester()
+
         # check if requirements have been met of full_varholder
         found_signals: int = self.full_varHolder.result['results'].shape[0] + 1
         if found_signals >= self.targeted_trade_amount:
@@ -251,6 +255,8 @@ class LookaheadAnalysis:
                 break
             self.analyze_row(idx, result_row)
 
+        # Restore verbosity, so it's not too quiet for the next strategy
+        restore_verbosity_for_bias_tester()
         # check and report signals
         if self.current_analysis.total_signals < self.local_config['minimum_trade_amount']:
             logger.info(f" -> {self.local_config['strategy']} : too few trades. "

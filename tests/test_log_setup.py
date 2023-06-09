@@ -7,6 +7,8 @@ import pytest
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import (FTBufferingHandler, FTStdErrStreamHandler, set_loggers,
                                setup_logging, setup_logging_pre)
+from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
+                                              restore_verbosity_for_bias_tester)
 
 
 def test_set_loggers() -> None:
@@ -128,3 +130,19 @@ def test_set_loggers_journald_importerror(import_fails):
                        match=r'You need the cysystemd python package.*'):
         setup_logging(config)
     logger.handlers = orig_handlers
+
+
+def test_reduce_verbosity():
+    reduce_verbosity_for_bias_tester()
+
+    assert logging.getLogger('freqtrade.resolvers').level is logging.WARNING
+    assert logging.getLogger('freqtrade.strategy.hyper').level is logging.WARNING
+    # base level wasn't changed
+    assert logging.getLogger('freqtrade').level is logging.INFO
+
+    restore_verbosity_for_bias_tester()
+
+    assert logging.getLogger('freqtrade.resolvers').level is logging.INFO
+    assert logging.getLogger('freqtrade.strategy.hyper').level is logging.INFO
+    assert logging.getLogger('freqtrade').level is logging.INFO
+    # base level wasn't changed
