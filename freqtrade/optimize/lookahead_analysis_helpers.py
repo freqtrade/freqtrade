@@ -119,25 +119,22 @@ class LookaheadAnalysisSubFunctions:
         csv_df.to_csv(config['lookahead_analysis_exportfilename'], index=False)
 
     @staticmethod
-    def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any]):
-
-        logger.info(f"Bias test of {Path(strategy_obj['location']).name} started.")
-        start = time.perf_counter()
-        current_instance = LookaheadAnalysis(config, strategy_obj)
-        current_instance.start()
-        elapsed = time.perf_counter() - start
-        logger.info(f"checking look ahead bias via backtests "
-                    f"of {Path(strategy_obj['location']).name} "
-                    f"took {elapsed:.0f} seconds.")
-        return current_instance
-
-    @staticmethod
-    def start(config: Config):
+    def calculate_config_overrides(config: Config):
         if config['targeted_trade_amount'] < config['minimum_trade_amount']:
             # this combo doesn't make any sense.
             raise OperationalException(
-                "targeted trade amount can't be smaller than minimum trade amount."
+                "Targeted trade amount can't be smaller than minimum trade amount."
             )
+        if len(config['pairs']) > config['max_open_trades']:
+            logger.info('Max_open_trades were less than amount of pairs. '
+                        'Set max_open_trades to amount of pairs just to avoid false positives.')
+            config['max_open_trades'] = len(config['pairs'])
+
+        min_dry_run_wallet = 1000000000
+        if config['dry_run_wallet'] < min_dry_run_wallet:
+            logger.info('Dry run wallet was not set to 1 billion, pushing it up there '
+                        'just to avoid false positives')
+            config['dry_run_wallet'] = min_dry_run_wallet
 
         # enforce cache to be 'none', shift it to 'none' if not already
         # (since the default value is 'day')
@@ -149,6 +146,24 @@ class LookaheadAnalysisSubFunctions:
                         f"Inside lookahead-analysis it is enforced to be 'none'. "
                         f"Changed it to 'none'")
             config['backtest_cache'] = 'none'
+        return config
+
+    @staticmethod
+    def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any]):
+
+        logger.info(f"Bias test of {Path(strategy_obj['location']).name} started.")
+        start = time.perf_counter()
+        current_instance = LookaheadAnalysis(config, strategy_obj)
+        current_instance.start()
+        elapsed = time.perf_counter() - start
+        logger.info(f"Checking look ahead bias via backtests "
+                    f"of {Path(strategy_obj['location']).name} "
+                    f"took {elapsed:.0f} seconds.")
+        return current_instance
+
+    @staticmethod
+    def start(config: Config):
+        config = LookaheadAnalysisSubFunctions.calculate_config_overrides(config)
 
         strategy_objs = StrategyResolver.search_all_objects(
             config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
