@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.loggers import (FTBufferingHandler, FTStdErrStreamHandler, _set_loggers,
+from freqtrade.loggers import (FTBufferingHandler, FTStdErrStreamHandler, set_loggers,
                                setup_logging, setup_logging_pre)
 
 
@@ -20,7 +20,7 @@ def test_set_loggers() -> None:
     previous_value2 = logging.getLogger('ccxt.base.exchange').level
     previous_value3 = logging.getLogger('telegram').level
 
-    _set_loggers()
+    set_loggers()
 
     value1 = logging.getLogger('requests').level
     assert previous_value1 is not value1
@@ -34,14 +34,14 @@ def test_set_loggers() -> None:
     assert previous_value3 is not value3
     assert value3 is logging.INFO
 
-    _set_loggers(verbosity=2)
+    set_loggers(verbosity=2)
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
     assert logging.getLogger('telegram').level is logging.INFO
     assert logging.getLogger('werkzeug').level is logging.INFO
 
-    _set_loggers(verbosity=3, api_verbosity='error')
+    set_loggers(verbosity=3, api_verbosity='error')
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG

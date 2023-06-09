@@ -590,7 +590,7 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     # Prevent setting loggers
-    mocker.patch('freqtrade.loggers._set_loggers', MagicMock)
+    mocker.patch('freqtrade.loggers.set_loggers', MagicMock)
     arglist = ['trade', '-vvv']
     args = Arguments(arglist).get_parsed_arg()
 
