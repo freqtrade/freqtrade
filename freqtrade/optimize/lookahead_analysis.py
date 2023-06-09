@@ -4,7 +4,7 @@ import pathlib
 import shutil
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -48,7 +48,7 @@ class LookaheadAnalysis:
 
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
-        self.exchange = None
+        self.exchange: Optional[Any] = None
 
         # pull variables the scope of the lookahead_analysis-instance
         self.local_config = deepcopy(config)
