@@ -608,3 +608,13 @@ def test_stoploss_cancel_okx(mocker, default_conf):
     assert exchange.cancel_order.call_args_list[0][1]['order_id'] == '1234'
     assert exchange.cancel_order.call_args_list[0][1]['pair'] == 'ETH/USDT'
     assert exchange.cancel_order.call_args_list[0][1]['params'] == {'stop': True}
+
+
+def test__get_stop_params_okx(mocker, default_conf):
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id='okx')
+    params = exchange._get_stop_params('ETH/USDT:USDT', 1500, 'sell')
+
+    assert params['tdMode'] == 'isolated'
+    assert params['posSide'] == 'net'
