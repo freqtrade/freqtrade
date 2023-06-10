@@ -125,6 +125,20 @@ class Okx(Exchange):
             params['posSide'] = self._get_posSide(side, reduceOnly)
         return params
 
+    def __fetch_leverage_already_set(self, pair: str, leverage: float, side: BuySell) -> bool:
+        try:
+            res_lev = self._api.fetch_leverage(symbol=pair, params={
+                    "mgnMode": self.margin_mode.value,
+                    "posSide": self._get_posSide(side, False),
+                })
+            self._log_exchange_response('get_leverage', res_lev)
+            already_set = all(float(x['lever']) == leverage for x in res_lev['data'])
+            return already_set
+
+        except ccxt.BaseError:
+            # Assume all errors as "not set yet"
+            return False
+
     @retrier
     def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
@@ -141,8 +155,11 @@ class Okx(Exchange):
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+                already_set = self.__fetch_leverage_already_set(pair, leverage, side)
+                if not already_set:
+                    raise TemporaryError(
+                        f'Could not set leverage due to {e.__class__.__name__}. Message: {e}'
+                        ) from e
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
