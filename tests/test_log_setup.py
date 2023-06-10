@@ -133,16 +133,17 @@ def test_set_loggers_journald_importerror(import_fails):
 
 
 def test_reduce_verbosity():
+    setup_logging_pre()
     reduce_verbosity_for_bias_tester()
 
-    assert logging.getLogger('freqtrade.resolvers').level is logging.WARNING
-    assert logging.getLogger('freqtrade.strategy.hyper').level is logging.WARNING
+    assert logging.getLogger('freqtrade.resolvers').getEffectiveLevel() is logging.WARNING
+    assert logging.getLogger('freqtrade.strategy.hyper').getEffectiveLevel() is logging.WARNING
     # base level wasn't changed
-    assert logging.getLogger('freqtrade').level is logging.INFO
+    assert logging.getLogger('freqtrade').getEffectiveLevel() is logging.INFO
 
     restore_verbosity_for_bias_tester()
 
-    assert logging.getLogger('freqtrade.resolvers').level is logging.INFO
-    assert logging.getLogger('freqtrade.strategy.hyper').level is logging.INFO
-    assert logging.getLogger('freqtrade').level is logging.INFO
+    assert logging.getLogger('freqtrade.resolvers').getEffectiveLevel() is logging.INFO
+    assert logging.getLogger('freqtrade.strategy.hyper').getEffectiveLevel() is logging.INFO
+    assert logging.getLogger('freqtrade').getEffectiveLevel() is logging.INFO
     # base level wasn't changed
