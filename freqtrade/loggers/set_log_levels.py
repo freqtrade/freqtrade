@@ -50,6 +50,6 @@ def restore_verbosity_for_bias_tester() -> None:
     Restore verbosity after bias tester.
     """
     logger.info("Restoring log verbosity.")
-    log_level = logging.getLogger('freqtrade').getEffectiveLevel()
+    log_level = logging.NOTSET
     for logger_name in __BIAS_TESTER_LOGGERS:
         logging.getLogger(logger_name).setLevel(log_level)
