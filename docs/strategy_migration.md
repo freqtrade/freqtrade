@@ -736,7 +736,7 @@ If you have created your own custom `IFreqaiModel` with a custom `train()`/`pred
 
 The conversion involves first removing `data_cleaning_train/predict()` and replacing them with a `define_data_pipeline()` and `define_label_pipeline()` function to your `IFreqaiModel` class:
 
-```python  linenums="1" hl_lines="11-14 43-44 51-52"
+```python  linenums="1" hl_lines="11-14 47-49 55-57"
 class MyCoolFreqaiModel(BaseRegressionModel):
     """
     Some cool custom IFreqaiModel you made before Freqtrade version 2023.6
@@ -773,9 +773,13 @@ class MyCoolFreqaiModel(BaseRegressionModel):
         dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
         dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
 
+        # ... your custom code
+
+        return model
+
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]: # 37
+    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
 
         # ... your custom stuff
 
@@ -798,6 +802,9 @@ class MyCoolFreqaiModel(BaseRegressionModel):
         else:
             dk.DI_values = np.zeros(len(outliers.index))
         dk.do_predict = outliers.to_numpy()
+
+        # ... your custom code
+        return (pred_df, dk.do_predict)
 ```
 
 
