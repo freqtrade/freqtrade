@@ -596,3 +596,15 @@ def test_stoploss_adjust_okx(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
+
+
+def test_stoploss_cancel_okx(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='okx')
+
+    exchange.cancel_order = MagicMock()
+
+    exchange.cancel_stoploss_order('1234', 'ETH/USDT')
+    assert exchange.cancel_order.call_count == 1
+    assert exchange.cancel_order.call_args_list[0][1]['order_id'] == '1234'
+    assert exchange.cancel_order.call_args_list[0][1]['pair'] == 'ETH/USDT'
+    assert exchange.cancel_order.call_args_list[0][1]['params'] == {'stop': True}
