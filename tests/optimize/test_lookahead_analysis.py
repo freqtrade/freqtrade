@@ -20,6 +20,8 @@ def lookahead_conf(default_conf_usdt):
     default_conf_usdt['strategy_path'] = str(
         Path(__file__).parent.parent / "strategy/strats/lookahead_bias")
     default_conf_usdt['strategy'] = 'strategy_test_v3_with_lookahead_bias'
+    default_conf_usdt['max_open_trades'] = 1
+    default_conf_usdt['dry_run_wallet'] = 1000000000
 
     return default_conf_usdt
 
@@ -339,3 +341,13 @@ def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
     # check biased strategy
     elif scenario == "bias1":
         assert instance.current_analysis.has_bias
+
+
+def test_config_overrides(lookahead_conf):
+    lookahead_conf['max_open_trades'] = 0
+    lookahead_conf['dry_run_wallet'] = 1
+    lookahead_conf['pairs'] = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+    lookahead_conf = LookaheadAnalysisSubFunctions.calculate_config_overrides(lookahead_conf)
+
+    assert lookahead_conf['dry_run_wallet'] == 1000000000
+    assert lookahead_conf['max_open_trades'] == 3
