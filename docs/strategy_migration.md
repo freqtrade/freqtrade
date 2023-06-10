@@ -736,7 +736,7 @@ If you have created your own custom `IFreqaiModel` with a custom `train()`/`pred
 
 The conversion involves first removing `data_cleaning_train/predict()` and replacing them with a `define_data_pipeline()` and `define_label_pipeline()` function to your `IFreqaiModel` class:
 
-```python  linenums="1" hl_lines="10-13 41-42 48-49"
+```python  linenums="1" hl_lines="11-14 43-44 51-52"
 class MyCoolFreqaiModel(BaseRegressionModel):
     """
     Some cool custom IFreqaiModel you made before Freqtrade version 2023.6
@@ -751,6 +751,7 @@ class MyCoolFreqaiModel(BaseRegressionModel):
         # data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
         # self.data_cleaning_train(dk)
         # data_dictionary = dk.normalize_data(data_dictionary)
+        # (1)
 
         # Add these lines. Now we control the pipeline fit/transform ourselves
         dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
@@ -780,6 +781,7 @@ class MyCoolFreqaiModel(BaseRegressionModel):
 
         # Remove these lines:
         # self.data_cleaning_predict(dk)
+        # (2)
 
         # Add these lines:
         dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
@@ -787,6 +789,7 @@ class MyCoolFreqaiModel(BaseRegressionModel):
 
         # Remove this line
         # pred_df = dk.denormalize_labels_from_metadata(pred_df)
+        # (3)
 
         # Replace with these lines
         pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
@@ -798,7 +801,6 @@ class MyCoolFreqaiModel(BaseRegressionModel):
 ```
 
 
-1. Features - Move to `feature_engineering_expand_all`
-2. Basic features, not expanded across `include_periods_candles` - move to`feature_engineering_expand_basic()`.
-3. Standard features which should not be expanded - move to `feature_engineering_standard()`.
-4. Targets - Move this part to `set_freqai_targets()`.
+1. Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new `define_data_pipeline()` and `define_label_pipeline()` functions. The `data_cleaning_train()` and `data_cleaning_predict()` functions are no longer used. You can override `define_data_pipeline()` to create your own custom pipeline if you wish.
+2. Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new `define_data_pipeline()` and `define_label_pipeline()` functions. The `data_cleaning_train()` and `data_cleaning_predict()` functions are no longer used. You can override `define_data_pipeline()` to create your own custom pipeline if you wish.
+3. Data denormalization is done with the new pipeline. Replace this with the lines below.
