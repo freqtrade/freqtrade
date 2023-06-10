@@ -499,7 +499,11 @@ def test__set_leverage_okx(mocker, default_conf):
     assert api_mock.set_leverage.call_args_list[0][1]['params'] == {
         'mgnMode': 'isolated',
         'posSide': 'net'}
+    api_mock.set_leverage = MagicMock(side_effect=ccxt.NetworkError())
+    exchange._lev_prep('BTC/USDT:USDT', 3.2, 'buy')
+    api_mock.fetch_leverage.call_count == 1
 
+    api_mock.fetch_leverage = MagicMock(side_effect=ccxt.NetworkError())
     ccxt_exceptionhandlers(
         mocker,
         default_conf,
