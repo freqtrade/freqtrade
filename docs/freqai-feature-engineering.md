@@ -221,39 +221,20 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. B
 
 # Building the data pipeline
 
-FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, feature removal, feature name following. 
+By default, FreqAI builds a dynamic pipeline based on user congfiguration settings. The default settings are robust and designed to work with a variety of methods. These two steps are a `MinMaxScaler(-1,1)` and a `VarianceThreshold` which removes any column that has 0 variance. Users can activate other steps with more configuration parameters. For example if users add `use_SVM_to_remove_outliers: true` to the `freqai` config, then FreqAI will automatically add the [`SVMOutlierExtractor`](#identifying-outliers-using-a-support-vector-machine-svm) to the pipeline. Likewise, users can add `principal_component_analysis: true` to the `freqai` config to activate PCA. The [DissimilarityIndex](#identifying-outliers-with-the-dissimilarity-index-di) is activated with `DI_threshold: 1`. Finally, noise can also be added to the data with `noise_standard_deviation: 0.1`. Finally, users can add [DBSCAN](#identifying-outliers-with-dbscan) outlier removal with `use_DBSCAN_to_remove_outliers: true`.
 
-By default, FreqAI builds the following pipeline inside the `IFreqaiModel` `train()` method:
+!!! note "More information available"
+    Please review the [parameter table](freqai-parameter-table.md) for more information on these parameters.
 
-```py
-from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
-from datasieve.pipeline import Pipeline
-dk.feature_pipeline = Pipeline([
-    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))),
-    ('di', ds.DissimilarityIndex(di_threshold=1)),
-    ])
-```
-
-But users will find that they can add PCA and other steps just by changing their configuration settings, for example, if you add `"principal_component_analysis": true` to the `feature_parameters` dict in the `freqai` config, then FreqAI will automatically add the PCA step for you resulting in the following pipeline:
-
-```py
-from datasieve.transforms import SKLearnWrapper, DissimilarityIndex, PCA
-from datasieve.pipeline import Pipeline
-dk.feature_pipeline = Pipeline([
-    ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))),
-    ('pca', ds.PCA()),
-    ('post-pca-scaler', ds.MinMaxScaler(feature_range=(-1, 1)))
-    ('di', ds.DissimilarityIndex(di_threshold=1)),
-    ])
-```
-
-The same concept follows if users activate other config options like `"use_SVM_to_remove_outliers": true` or `"use_DBSCAN_to_remove_outliers": true`. FreqAI will add the appropriate steps to the pipeline for you.
 
 ## Customizing the pipeline
 
 Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by simply setting `dk.feature_pipeline` to their desired `Pipeline` object inside their `IFreqaiModel` `train()` function, or if they prefer not to touch the `train()` function, they can override `define_data_pipeline`/`define_label_pipeline` functions in their `IFreqaiModel`:
 
-```py
+!!! note "More information available"
+    FreqAI uses the the [`DataSieve`](https://github.com/emergentmethods/datasieve) pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, feature removal, feature name following. 
+
+```python
 from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
 from datasieve.pipeline import Pipeline
 from sklearn.preprocessing import QuantileTransformer, StandardScaler
@@ -286,14 +267,42 @@ class MyFreqaiModel(BaseRegressionModel):
         """
         User defines their custom label pipeline here (if they wish)
         """
-        feature_pipeline = Pipeline([
+        label_pipeline = Pipeline([
             ('qt', SKLearnWrapper(StandardScaler())),
         ])
 
-        return feature_pipeline
+        return label_pipeline
 ```
 
-Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. You can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class as shown above.
+Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. You can use *most* SKLearn transformation steps by wrapping them in the `SKLearnWrapper` class as shown above. In addition, you can use any of the transformations available in the [`DataSieve` library](https://github.com/emergentmethods/datasieve). 
+
+You can easily add your own transformation by creating a class that inherits from the datasieve `BaseTransform` and implementing your `fit()`, `transform()` and `inverse_transform()` methods:
+
+```python
+from datasieve.transforms.base_transform import BaseTransform
+# import whatever else you need
+
+class MyCoolTransform(BaseTransform):
+    def __init__(self, **kwargs):
+        self.param1 = kwargs.get('param1', 1)
+
+    def fit(self, X, y=None, sample_weight=None, feature_list=None, **kwargs):
+        # do something with X, y, sample_weight, or/and feature_list
+        return X, y, sample_weight, feature_list
+
+    def transform(self, X, y=None, sample_weight=None,
+                  feature_list=None, outlier_check=False, **kwargs):
+        # do something with X, y, sample_weight, or/and feature_list
+        return X, y, sample_weight, feature_list
+
+    def inverse_transform(self, X, y=None, sample_weight=None, feature_list=None, **kwargs):
+        # do/dont do something with X, y, sample_weight, or/and feature_list
+        return X, y, sample_weight, feature_list
+```
+
+!!! note "Hint"
+    You can define this custom class in the same file as your `IFreqaiModel`.
+
 
 ## Outlier detection
 

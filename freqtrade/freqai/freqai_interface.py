@@ -509,36 +509,33 @@ class IFreqaiModel(ABC):
 
     def define_data_pipeline(self, threads=-1) -> Pipeline:
         ft_params = self.freqai_info["feature_parameters"]
-        feature_pipeline = Pipeline([
+        pipe_steps = [
             ('const', ds.VarianceThreshold(threshold=0)),
             ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
-            ])
+            ]
 
         if ft_params.get("principal_component_analysis", False):
-            feature_pipeline.append(('pca', ds.PCA()))
-            feature_pipeline.append(('post-pca-scaler',
-                                     SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
+            pipe_steps.append(('pca', ds.PCA()))
+            pipe_steps.append(('post-pca-scaler',
+                               SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
             svm_params = ft_params.get(
                 "svm_params", {"shuffle": False, "nu": 0.01})
-            feature_pipeline.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
+            pipe_steps.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
 
         di = ft_params.get("DI_threshold", 0)
         if di:
-            feature_pipeline.append(('di', ds.DissimilarityIndex(di_threshold=di, n_jobs=threads)))
+            pipe_steps.append(('di', ds.DissimilarityIndex(di_threshold=di, n_jobs=threads)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            feature_pipeline.append(('dbscan', ds.DBSCAN(n_jobs=threads)))
+            pipe_steps.append(('dbscan', ds.DBSCAN(n_jobs=threads)))
 
         sigma = self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0)
         if sigma:
-            feature_pipeline.append(('noise', ds.Noise(sigma=sigma)))
+            pipe_steps.append(('noise', ds.Noise(sigma=sigma)))
 
-        feature_pipeline.fitparams = feature_pipeline._validate_fitparams(
-            {}, feature_pipeline.steps)
-
-        return feature_pipeline
+        return Pipeline(pipe_steps)
 
     def define_label_pipeline(self, threads=-1) -> Pipeline:
 
