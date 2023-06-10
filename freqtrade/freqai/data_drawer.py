@@ -469,7 +469,7 @@ class FreqaiDataDrawer:
         with (save_path / f"{dk.model_filename}_{LABEL_PIPELINE}.pkl").open("wb") as fp:
             cloudpickle.dump(dk.label_pipeline, fp)
 
-        # save the train data to file so we can check preds for area of applicability later
+        # save the train data to file for post processing if desired
         dk.data_dictionary["train_features"].to_pickle(
             save_path / f"{dk.model_filename}_{TRAINDF}.pkl"
         )
@@ -484,7 +484,6 @@ class FreqaiDataDrawer:
 
         if coin not in self.meta_data_dictionary:
             self.meta_data_dictionary[coin] = {}
-        self.meta_data_dictionary[coin][TRAINDF] = dk.data_dictionary["train_features"]
         self.meta_data_dictionary[coin][METADATA] = dk.data
         self.meta_data_dictionary[coin][FEATURE_PIPELINE] = dk.feature_pipeline
         self.meta_data_dictionary[coin][LABEL_PIPELINE] = dk.label_pipeline
@@ -518,16 +517,12 @@ class FreqaiDataDrawer:
 
         if coin in self.meta_data_dictionary:
             dk.data = self.meta_data_dictionary[coin][METADATA]
-            dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin][TRAINDF]
             dk.feature_pipeline = self.meta_data_dictionary[coin][FEATURE_PIPELINE]
             dk.label_pipeline = self.meta_data_dictionary[coin][LABEL_PIPELINE]
         else:
             with (dk.data_path / f"{dk.model_filename}_{METADATA}.json").open("r") as fp:
                 dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
 
-            dk.data_dictionary["train_features"] = pd.read_pickle(
-                dk.data_path / f"{dk.model_filename}_{TRAINDF}.pkl"
-            )
             with (dk.data_path / f"{dk.model_filename}_{FEATURE_PIPELINE}.pkl").open("rb") as fp:
                 dk.feature_pipeline = cloudpickle.load(fp)
             with (dk.data_path / f"{dk.model_filename}_{LABEL_PIPELINE}.pkl").open("rb") as fp:
