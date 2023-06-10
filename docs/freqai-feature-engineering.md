@@ -219,7 +219,7 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. B
 
 ![weight-factor](assets/freqai_weight-factor.jpg)
 
-# Building the data pipeline
+## Building the data pipeline
 
 By default, FreqAI builds a dynamic pipeline based on user congfiguration settings. The default settings are robust and designed to work with a variety of methods. These two steps are a `MinMaxScaler(-1,1)` and a `VarianceThreshold` which removes any column that has 0 variance. Users can activate other steps with more configuration parameters. For example if users add `use_SVM_to_remove_outliers: true` to the `freqai` config, then FreqAI will automatically add the [`SVMOutlierExtractor`](#identifying-outliers-using-a-support-vector-machine-svm) to the pipeline. Likewise, users can add `principal_component_analysis: true` to the `freqai` config to activate PCA. The [DissimilarityIndex](#identifying-outliers-with-the-dissimilarity-index-di) is activated with `DI_threshold: 1`. Finally, noise can also be added to the data with `noise_standard_deviation: 0.1`. Finally, users can add [DBSCAN](#identifying-outliers-with-dbscan) outlier removal with `use_DBSCAN_to_remove_outliers: true`.
 
@@ -227,7 +227,7 @@ By default, FreqAI builds a dynamic pipeline based on user congfiguration settin
     Please review the [parameter table](freqai-parameter-table.md) for more information on these parameters.
 
 
-## Customizing the pipeline
+### Customizing the pipeline
 
 Users are encouraged to customize the data pipeline to their needs by building their own data pipeline. This can be done by simply setting `dk.feature_pipeline` to their desired `Pipeline` object inside their `IFreqaiModel` `train()` function, or if they prefer not to touch the `train()` function, they can override `define_data_pipeline`/`define_label_pipeline` functions in their `IFreqaiModel`:
 
@@ -303,6 +303,68 @@ class MyCoolTransform(BaseTransform):
 !!! note "Hint"
     You can define this custom class in the same file as your `IFreqaiModel`.
 
+### Migrating a custom `IFreqaiModel` to the new Pipeline
+
+If you have created your own custom `IFreqaiModel` with a custom `train()`/`predict()` function, *and* you still rely on `data_cleaning_train/predict()`, then you will need to migrate to the new pipeline. If your model does *not* rely on `data_cleaning_train/predict()`, then you do not need to worry about this migration.
+
+The conversion involves first removing `data_cleaning_train/predict()` and replacing them with a `define_data_pipeline()` and `define_label_pipeline()` function to your `IFreqaiModel` class:
+
+```python
+class MyCoolFreqaiModel(BaseRegressionModel):
+    def train(
+        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
+    ) -> Any:
+
+        # ... your custom stuff
+
+        # Remove these lines
+        # data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        # self.data_cleaning_train(dk)
+        # data_dictionary = dk.normalize_data(data_dictionary)
+
+        # Add these lines. Now we control the pipeline fit/transform ourselves
+        dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+        dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
+
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
+
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                             dd["test_labels"],
+                                                             dd["test_weights"])
+
+        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
+        dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
+
+    def predict(
+        self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
+    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
+
+        # ... your custom stuff
+
+        # Remove these lines:
+        # self.data_cleaning_predict(dk)
+
+        # Add these lines:
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
+
+        # Remove this line
+        # pred_df = dk.denormalize_labels_from_metadata(pred_df)
+
+        # Replace with these lines
+        pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(len(outliers.index))
+        dk.do_predict = outliers.to_numpy()
 
 ## Outlier detection
 

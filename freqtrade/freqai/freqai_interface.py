@@ -968,3 +968,26 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
+
+    # deprecated functions
+    def data_cleaning_train(self, dk: FreqaiDataKitchen, pair: str):
+        """
+        throw deprecation warning if this function is called
+        """
+        ft = "https://www.freqtrade.io/en/latest"
+        logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{ft}/strategy_migration/#freqai-new-data-pipeline")
+        return
+
+    def data_cleaning_predict(self, dk: FreqaiDataKitchen, pair: str):
+        """
+        throw deprecation warning if this function is called
+        """
+        ft = "https://www.freqtrade.io/en/latest"
+        logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{ft}/strategy_migration/#freqai-new-data-pipeline")
+        return

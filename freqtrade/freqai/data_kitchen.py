@@ -12,6 +12,7 @@ import numpy.typing as npt
 import pandas as pd
 import psutil
 from datasieve.pipeline import Pipeline
+from datasieve.transforms import SKLearnWrapper
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
@@ -950,3 +951,66 @@ class FreqaiDataKitchen:
             timerange.startts += buffer * timeframe_to_seconds(self.config["timeframe"])
 
         return timerange
+
+    # deprecated functions
+    def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
+        """
+        Deprecation warning, migration assistance
+        """
+        ft = "https://www.freqtrade.io/en/latest"
+        logger.warning(f"Your custom IFreqaiModel relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{ft}/strategy_migration/#freqai-new-data-pipeline "
+                       "We added a basic pipeline for you, but this will be removed "
+                       "in a future version.\n"
+                       "This version does not include any outlier configurations")
+
+        import datasieve.transforms as ds
+        from sklearn.preprocessing import MinMaxScaler
+        dd = data_dictionary
+
+        self.feature_pipeline = Pipeline([
+            ('variance_threshold', ds.VarianceThreshold()),
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
+            ])
+
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = self.feature_pipeline.fit_transform(dd["train_features"],
+                                                                    dd["train_labels"],
+                                                                    dd["train_weights"])
+
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = self.feature_pipeline.transform(dd["test_features"],
+                                                               dd["test_labels"],
+                                                               dd["test_weights"])
+
+        self.label_pipeline = Pipeline([
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
+            ])
+
+        dd["train_labels"], _, _ = self.label_pipeline.fit_transform(dd["train_labels"])
+        dd["test_labels"], _, _ = self.label_pipeline.transform(dd["test_labels"])
+
+        return dd
+
+    def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
+        """
+        Deprecation warning, migration assistance
+        """
+        ft = "https://www.freqtrade.io/en/latest"
+        logger.warning(f"Your custom IFreqaiModel relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{ft}/strategy_migration/#freqai-new-data-pipeline "
+                       "We added a basic pipeline for you, but this will be removed "
+                       "in a future version.\n"
+                       "This version does not include any outlier configurations")
+
+        pred_df, _, _ = self.label_pipeline.inverse_transform(df)
+        self.DI_values = np.zeros(len(pred_df.index))
+        self.do_predict = np.ones(len(pred_df.index))
+
+        return pred_df
