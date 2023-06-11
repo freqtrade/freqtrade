@@ -141,6 +141,9 @@ class BaseEnvironment(gym.Env):
         Unique to the environment action count. Must be inherited.
         """
 
+    def action_masks(self) -> list[bool]:
+        return [self._is_valid(action.value) for action in self.actions]
+
     def seed(self, seed: int = 1):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
