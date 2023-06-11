@@ -22,7 +22,7 @@ def lookahead_conf(default_conf_usdt):
     default_conf_usdt['strategy'] = 'strategy_test_v3_with_lookahead_bias'
     default_conf_usdt['max_open_trades'] = 1
     default_conf_usdt['dry_run_wallet'] = 1000000000
-
+    default_conf_usdt['pairs'] = ['UNITTEST/USDT']
     return default_conf_usdt
 
 
@@ -40,6 +40,10 @@ def test_start_lookahead_analysis(mocker):
         "strategy_test_v3_with_lookahead_bias",
         "--strategy-path",
         str(Path(__file__).parent.parent / "strategy/strats/lookahead_bias"),
+        "--pairs",
+        "UNITTEST/BTC",
+        "--max-open-trades",
+        "1"
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -65,19 +69,22 @@ def test_start_lookahead_analysis(mocker):
     pargs = get_args(args)
     pargs['config'] = None
     with pytest.raises(OperationalException,
-                       match=r"targeted trade amount can't be smaller than .*"):
+                       match=r"Targeted trade amount can't be smaller than minimum trade amount.*"):
         start_lookahead_analysis(pargs)
 
 
-def test_lookahead_helper_invalid_config(lookahead_conf, mocker, caplog) -> None:
+def test_lookahead_helper_invalid_config(lookahead_conf, caplog) -> None:
     conf = deepcopy(lookahead_conf)
     conf['targeted_trade_amount'] = 10
     conf['minimum_trade_amount'] = 40
     with pytest.raises(OperationalException,
-                       match=r"targeted trade amount can't be smaller than .*"):
+                       match=r"Targeted trade amount can't be smaller than minimum trade amount.*"):
         LookaheadAnalysisSubFunctions.start(conf)
 
+
+def test_lookahead_helper_no_strategy_defined(lookahead_conf, caplog):
     conf = deepcopy(lookahead_conf)
+    conf['pairs'] = ['UNITTEST/USDT']
     del conf['strategy']
     with pytest.raises(OperationalException,
                        match=r"No Strategy specified"):
