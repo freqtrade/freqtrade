@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ class ProducerPairList(IPairList):
             }
         ],
     """
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
@@ -55,6 +56,28 @@ class ProducerPairList(IPairList):
         -> Please overwrite in subclasses
         """
         return f"{self.name} - {self._producer_name}"
+
+    @staticmethod
+    def description() -> str:
+        return "Get a pairlist from an upstream bot."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "number_assets": {
+                "type": "number",
+                "default": 0,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist",
+            },
+            "producer_name": {
+                "type": "string",
+                "default": "default",
+                "description": "Producer name",
+                "help": ("Name of the producer to use. Requires additional "
+                         "external_message_consumer configuration.")
+            },
+        }
 
     def _filter_pairlist(self, pairlist: Optional[List[str]]):
         upstream_pairlist = self._pairlistmanager._dataprovider.get_producer_pairs(

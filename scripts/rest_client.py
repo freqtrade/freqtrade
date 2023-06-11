@@ -314,6 +314,13 @@ class FtRestClient():
         """
         return self._get(f"strategy/{strategy}")
 
+    def pairlists_available(self):
+        """Lists available pairlist providers
+
+        :return: json object
+        """
+        return self._get("pairlists/available")
+
     def plot_config(self):
         """Return plot configuration if the strategy defines one.
 

@@ -14,7 +14,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import format_ms_time
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 from freqtrade.util import dt_now
 
 
@@ -25,6 +25,8 @@ SORT_VALUES = ['quoteVolume']
 
 
 class VolumePairList(IPairList):
+
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -111,6 +113,53 @@ class VolumePairList(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
+
+    @staticmethod
+    def description() -> str:
+        return "Provides dynamic pair list based on trade volumes."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "number_assets": {
+                "type": "number",
+                "default": 30,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist",
+            },
+            "sort_key": {
+                "type": "option",
+                "default": "quoteVolume",
+                "options": SORT_VALUES,
+                "description": "Sort key",
+                "help": "Sort key to use for sorting the pairlist.",
+            },
+            "min_value": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum value",
+                "help": "Minimum value to use for filtering the pairlist.",
+            },
+            **IPairList.refresh_period_parameter(),
+            "lookback_days": {
+                "type": "number",
+                "default": 0,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": 0,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
+            },
+        }
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """

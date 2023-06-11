@@ -9,13 +9,15 @@ from typing import Any, Dict, List
 
 from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
 
 
 class StaticPairList(IPairList):
+
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -39,6 +41,21 @@ class StaticPairList(IPairList):
         -> Please overwrite in subclasses
         """
         return f"{self.name}"
+
+    @staticmethod
+    def description() -> str:
+        return "Use pairlist as configured in config."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "allow_inactive": {
+                "type": "boolean",
+                "default": False,
+                "description": "Allow inactive pairs",
+                "help": "Allow inactive pairs to be in the whitelist.",
+            },
+        }
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """

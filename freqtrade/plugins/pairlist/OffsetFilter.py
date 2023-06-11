@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,27 @@ class OffsetFilter(IPairList):
         if self._number_pairs:
             return f"{self.name} - Taking {self._number_pairs} Pairs, starting from {self._offset}."
         return f"{self.name} - Offsetting pairs by {self._offset}."
+
+    @staticmethod
+    def description() -> str:
+        return "Offset pair list filter."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "offset": {
+                "type": "number",
+                "default": 0,
+                "description": "Offset",
+                "help": "Offset of the pairlist.",
+            },
+            "number_assets": {
+                "type": "number",
+                "default": 0,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist, starting from offset.",
+            },
+        }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
