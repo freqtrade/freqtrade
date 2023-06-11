@@ -20,6 +20,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
 from freqtrade.data.history import load_pair_history
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
@@ -639,7 +640,7 @@ class FreqaiDataDrawer:
                     pair=pair,
                     timerange=timerange,
                     data_format=self.config.get("dataformat_ohlcv", "json"),
-                    candle_type=self.config.get("trading_mode", "spot"),
+                    candle_type=self.config.get("candle_type_def", CandleType.SPOT),
                 )
 
     def get_base_and_corr_dataframes(
