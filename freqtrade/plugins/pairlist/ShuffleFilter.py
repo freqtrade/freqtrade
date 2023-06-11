@@ -9,7 +9,7 @@ from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 from freqtrade.util.periodic_cache import PeriodicCache
 
 
@@ -54,6 +54,28 @@ class ShuffleFilter(IPairList):
         """
         return (f"{self.name} - Shuffling pairs every {self._shuffle_freq}" +
                 (f", seed = {self._seed}." if self._seed is not None else "."))
+
+    @staticmethod
+    def description() -> str:
+        return "Randomize pairlist order."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "shuffle_frequency": {
+                "type": "option",
+                "default": "candle",
+                "options": ["candle", "iteration"],
+                "description": "Shuffle frequency",
+                "help": "Shuffle frequency. Can be either 'candle' or 'iteration'.",
+            },
+            "seed": {
+                "type": "number",
+                "default": None,
+                "description": "Random Seed",
+                "help": "Seed for random number generator. Not used in live mode.",
+            },
+        }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
