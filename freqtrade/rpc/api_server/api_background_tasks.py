@@ -76,7 +76,7 @@ def __run_pairlist(job_id: str, config_loc: Config):
         ApiBG.pairlist_running = False
 
 
-@router.post('/pairlists/evaluate', response_model=BgJobStarted, tags=['pairlists'])
+@router.post('/pairlists/evaluate', response_model=BgJobStarted, tags=['pairlists', 'webserver'])
 def pairlists_evaluate(payload: PairListsPayload, background_tasks: BackgroundTasks,
                        config=Depends(get_config)):
     if ApiBG.pairlist_running:
@@ -125,7 +125,7 @@ def handleExchangePayload(payload: ExchangeModePayloadMixin, config_loc: Config)
 
 
 @router.get('/pairlists/evaluate/{jobid}', response_model=WhitelistEvaluateResponse,
-            tags=['pairlists'])
+            tags=['pairlists', 'webserver'])
 def pairlists_evaluate_get(jobid: str):
     if not (job := ApiBG.jobs.get(jobid)):
         raise HTTPException(status_code=404, detail='Job not found.')
