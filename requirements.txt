@@ -2,7 +2,7 @@ numpy==1.24.3
 pandas==2.0.2
 pandas-ta==0.3.14b
 
-ccxt==3.1.23
+ccxt==3.1.34
 cryptography==41.0.1; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.4
