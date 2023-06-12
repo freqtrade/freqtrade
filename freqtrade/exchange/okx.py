@@ -199,6 +199,7 @@ class Okx(Exchange):
             order_reg['type'] = 'stoploss'
             order_reg['status_stop'] = 'triggered'
             return order_reg
+        order = self._order_contracts_to_amount(order)
         order['type'] = 'stoploss'
         return order
 
