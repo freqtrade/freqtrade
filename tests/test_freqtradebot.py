@@ -1241,6 +1241,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
+        'filled': enter_order['amount'],
+        'remaining': 0,
         'amount': enter_order['amount'],
     })
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
