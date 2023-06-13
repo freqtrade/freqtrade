@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
@@ -327,7 +328,7 @@ class LocalTrade():
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
-    open_order_id: Optional[str] = None
+    open_orders: List[Order] = []
     # absolute value of the stop loss
     stop_loss: float = 0.0
     # percentage value of the stop loss
@@ -467,6 +468,14 @@ class LocalTrade():
             return self.stake_currency or self.pair.split('/')[1].split(':')[0]
         except IndexError:
             return ''
+
+    @hybrid_property
+    def open_orders_count(self) -> int:
+        return len(self.open_orders)
+
+    @hybrid_property
+    def open_orders_ids(self) -> list:
+        return [open_order.order_id for open_order in self.open_orders]
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -680,12 +689,21 @@ class LocalTrade():
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
+
+            # TODO WIP but to rm if useless
+            # condition to avoid reset value when updating fees (new)
+            # if order.order_id in self.open_orders_ids:
+            #    self.open_order_id = None
+            # else:
+            #    logger.warning(
+            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+            # TODO validate if this is still relevant
             # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+            # if self.open_order_id == order.order_id:
+            #    self.open_order_id = None
+            # else:
+            #    logger.warning(
+            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
@@ -693,11 +711,11 @@ class LocalTrade():
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
             # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+            # if self.open_order_id == order.order_id:
+            #    self.open_order_id = None
+            # else:
+            #    logger.warning(
+            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
             self.stoploss_order_id = None
@@ -1244,7 +1262,6 @@ class Trade(ModelBase, LocalTrade):
     open_date: Mapped[datetime] = mapped_column(
         nullable=False, default=datetime.utcnow)  # type: ignore
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
-    open_order_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
     # percentage value of the stop loss
@@ -1295,6 +1312,10 @@ class Trade(ModelBase, LocalTrade):
     # Futures properties
     funding_fees: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=None)  # type: ignore
+
+    @hybrid_property
+    def open_orders(self):
+        return [order for order in self.orders if order.ft_is_open]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
