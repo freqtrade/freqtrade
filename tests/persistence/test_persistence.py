@@ -441,7 +441,6 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    trade.open_orders.append(enter_order)
     oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', entry_side)
     trade.orders.append(oobj)
     trade.update_trade(oobj)
@@ -456,7 +455,6 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
                       caplog)
 
     caplog.clear()
-    trade.open_orders.append(enter_order)
     time_machine.move_to("2022-03-31 21:45:05 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
     trade.orders.append(oobj)
