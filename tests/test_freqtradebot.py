@@ -872,7 +872,8 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert trade
     assert trade.is_open is True
-    assert trade.open_order_id == '22'
+    assert trade.open_orders_count > 0
+    assert '22' in trade.open_orders_ids
 
     # Test calling with price
     open_order['id'] = '33'
@@ -898,7 +899,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.session.scalars(select(Trade)).all()[2]
     trade.is_short = is_short
     assert trade
-    assert trade.open_order_id is None
+    assert trade.open_orders_count == 0
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['average'] * order['filled'] / leverage, 8)
     assert pytest.approx(trade.liquidation_price) == liq_price
@@ -916,7 +917,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.session.scalars(select(Trade)).all()[3]
     trade.is_short = is_short
     assert trade
-    assert trade.open_order_id is None
+    assert trade.open_orders_count == 0
     assert trade.open_rate == 0.5
     assert trade.stake_amount == round(order['average'] * order['filled'] / leverage, 8)
 

@@ -844,7 +844,6 @@ class FreqtradeBot(LoggingMixin):
                 open_rate_requested=enter_limit_requested,
                 open_date=open_date,
                 exchange=self.exchange.id,
-                open_order_id=order_id,
                 strategy=self.strategy.get_strategy_name(),
                 enter_tag=enter_tag,
                 timeframe=timeframe_to_minutes(self.config['timeframe']),
@@ -865,7 +864,6 @@ class FreqtradeBot(LoggingMixin):
             trade.is_open = True
             trade.fee_open_currency = None
             trade.open_rate_requested = enter_limit_requested
-            trade.open_order_id = order_id
 
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
@@ -1905,11 +1903,11 @@ class FreqtradeBot(LoggingMixin):
                                 trade.amount, abs_tol=constants.MATH_CLOSE_PREC)
         if order.ft_order_side == trade.exit_side:
             # Exit notification
-            if send_msg and not stoploss_order and not trade.open_order_id:
+            if send_msg and not stoploss_order and order.order_id not in trade.open_orders_ids:
                 self._notify_exit(trade, '', fill=True, sub_trade=sub_trade, order=order)
             if not trade.is_open:
                 self.handle_protections(trade.pair, trade.trade_direction)
-        elif send_msg and not trade.open_order_id and not stoploss_order:
+        elif send_msg and order.order_id not in trade.open_orders_ids and not stoploss_order:
             # Enter fill
             self._notify_enter(trade, order, order.order_type, fill=True, sub_trade=sub_trade)
 

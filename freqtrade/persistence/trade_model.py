@@ -1440,7 +1440,7 @@ class Trade(ModelBase, LocalTrade):
         Returns all open trades
         NOTE: Not supported in Backtesting.
         """
-        return cast(List[Trade], Trade.get_trades(Trade.open_order_id.isnot(None)).all())
+        return cast(List[Trade], Trade.get_trades(Trade.open_orders_count.isnot(0)).all())
 
     @staticmethod
     def get_open_trades_without_assigned_fees():
