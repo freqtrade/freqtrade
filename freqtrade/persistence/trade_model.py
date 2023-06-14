@@ -495,8 +495,10 @@ class LocalTrade():
         )
 
     def to_json(self, minified: bool = False) -> Dict[str, Any]:
-        filled_orders = self.select_filled_or_open_orders()
-        orders = [order.to_json(self.entry_side, minified) for order in filled_orders]
+        filled_or_open_orders = self.select_filled_or_open_orders()
+        orders_json = [order.to_json(self.entry_side, minified) for order in filled_or_open_orders]
+        open_orders = self.select_open_orders()
+        open_orders_json = [order.to_json(self.entry_side, minified) for order in open_orders]
 
         return {
             'trade_id': self.id,
@@ -572,11 +574,11 @@ class LocalTrade():
             'is_short': self.is_short,
             'trading_mode': self.trading_mode,
             'funding_fees': self.funding_fees,
-            'open_order_id': self.open_order_id,
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
-            'orders': orders,
+            'orders': orders_json,
+            'open_orders': open_orders_json
         }
 
     @staticmethod
@@ -1064,6 +1066,16 @@ class LocalTrade():
                 or (o.ft_is_open is True and o.status is not None)
                 ]
 
+    def select_open_orders(self) -> List['Order']:
+        """
+        Finds open orders
+        :param order_side: Side of the order (either 'buy', 'sell', or None)
+        :return: array of Order objects
+        """
+        return [o for o in self.orders if
+                (o.ft_is_open is True and o.status is not None)
+                ]
+
     @property
     def nr_of_successful_entries(self) -> int:
         """
@@ -1316,6 +1328,14 @@ class Trade(ModelBase, LocalTrade):
     @hybrid_property
     def open_orders(self):
         return [order for order in self.orders if order.ft_is_open]
+
+    @hybrid_property
+    def open_orders_count(self) -> int:
+        return len(self.open_orders)
+
+    @hybrid_property
+    def open_orders_ids(self) -> list:
+        return [open_order.order_id for open_order in self.open_orders]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
