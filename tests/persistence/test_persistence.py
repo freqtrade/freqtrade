@@ -558,7 +558,6 @@ def test_calc_open_close_trade_price(
     )
     entry_order = limit_order[trade.entry_side]
     exit_order = limit_order[trade.exit_side]
-    # trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
 
     oobj = Order.parse_from_ccxt_object(entry_order, 'ADA/USDT', trade.entry_side)
     oobj.trade = trade
@@ -656,7 +655,6 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
         leverage=1.0,
     )
 
-    # trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
     assert trade.calc_close_trade_value(trade.close_rate) == 0.0
@@ -756,7 +754,6 @@ def test_calc_open_trade_value(
         is_short=is_short,
         trading_mode=trading_mode
     )
-    # trade.open_order_id = 'open_trade'
     oobj = Order.parse_from_ccxt_object(
         limit_buy_order_usdt, 'ADA/USDT', 'sell' if is_short else 'buy')
     trade.update_trade(oobj)  # Buy @ 2.0
@@ -811,7 +808,6 @@ def test_calc_close_trade_price(
         trading_mode=trading_mode,
         funding_fees=funding_fees
     )
-    # trade.open_order_id = 'close_trade'
     assert round(trade.calc_close_trade_value(rate=close_rate), 8) == result
 
 
@@ -1133,7 +1129,6 @@ def test_calc_profit(
         trading_mode=trading_mode,
         funding_fees=funding_fees
     )
-    # trade.open_order_id = 'something'
 
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
@@ -1328,7 +1323,6 @@ def test_to_json(fee):
         open_rate=0.123,
         exchange='binance',
         enter_tag=None,
-        # open_order_id='dry_run_buy_12345',
         precision_mode=1,
         amount_precision=8.0,
         price_precision=7.0,
@@ -1344,7 +1338,6 @@ def test_to_json(fee):
         'is_open': None,
         'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
         'open_timestamp': int(trade.open_date.timestamp() * 1000),
-        # 'open_order_id': trade.open_orders_count,
         'close_date': None,
         'close_timestamp': None,
         'open_rate': 0.123,
@@ -1467,7 +1460,6 @@ def test_to_json(fee):
         'is_open': None,
         'max_rate': None,
         'min_rate': None,
-        # 'open_order_id': None,
         'open_rate_requested': None,
         'open_trade_value': 12.33075,
         'exit_reason': None,
