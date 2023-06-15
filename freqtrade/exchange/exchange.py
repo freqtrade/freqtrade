@@ -2326,7 +2326,7 @@ class Exchange:
             # b. no cache used
             # c. need new data
             is_in_cache = (pair, timeframe, candle_type) in self._trades
-            if ( not is_in_cache or not cache or self._now_is_time_to_refresh_trades(pair, timeframe, candle_type, 0)):
+            if ( not is_in_cache or not cache or self._now_is_time_to_refresh_trades(pair, timeframe, candle_type)):
                 logger.debug(f"Refreshing TRADES data for {pair}")
                 # fetch trades since latest _trades and
                 # store together with existing trades
@@ -2336,8 +2336,7 @@ class Exchange:
                     if is_in_cache:
                         from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
 
-                        last_candle_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), arrow.utcnow().int_timestamp)
-                        until = int(timeframe_to_prev_date(timeframe, datetime.fromtimestamp(last_candle_refresh)).timestamp()) * 1000
+                        until = arrow.utcnow().int_timestamp * 1000
 
                     else: 
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
@@ -2385,12 +2384,14 @@ class Exchange:
         now = arrow.utcnow().int_timestamp
         return plr < now
 
-    def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType, refresh_earlier_seconds=5) -> bool:
+    def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         # Timeframe in seconds
+        df = self.klines((pair, timeframe, candle_type), True)
+        _calculate_ohlcv_candle_start_and_end(df, timeframe)
         interval_in_sec = timeframe_to_seconds(timeframe)
-        plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        plr = round(df.iloc[-1]["candle_end"].timestamp())
         now = arrow.utcnow().int_timestamp
-        return plr < now - refresh_earlier_seconds
+        return plr < now
 
     @retrier_async
     async def _async_get_candle_history(
