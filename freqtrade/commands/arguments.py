@@ -124,10 +124,6 @@ ARGS_LOOKAHEAD_ANALYSIS = ARGS_BACKTEST + ["minimum_trade_amount",
                                            "lookahead_analysis_exportfilename"]
 
 
-# + ["target_trades", "minimum_trades",
-# "target_trades", "exportfilename"]
-# will be added when the base version works.
-
 class Arguments:
     """
     Arguments Class. Manage the arguments received by the cli
@@ -460,14 +456,14 @@ class Arguments:
                                                           'files to the current version',
                                                      parents=[_common_parser])
         strategy_updater_cmd.set_defaults(func=start_strategy_update)
-        self._build_args(optionlist=ARGS_STRATEGY_UPDATER,
-                         parser=strategy_updater_cmd)
+        self._build_args(optionlist=ARGS_STRATEGY_UPDATER, parser=strategy_updater_cmd)
 
         # Add lookahead_analysis subcommand
-        lookahead_analayis_cmd = \
-            subparsers.add_parser('lookahead-analysis',
-                                  help="checks for potential look ahead bias",
-                                  parents=[_common_parser, _strategy_parser])
+        lookahead_analayis_cmd = subparsers.add_parser(
+            'lookahead-analysis',
+            help="Check for potential look ahead bias.",
+            parents=[_common_parser, _strategy_parser])
+
         lookahead_analayis_cmd.set_defaults(func=start_lookahead_analysis)
 
         self._build_args(optionlist=ARGS_LOOKAHEAD_ANALYSIS,
