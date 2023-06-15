@@ -1119,7 +1119,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     freqtrade.enter_positions()
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = None
     trade.is_open = True
     trades = [trade]
@@ -1164,7 +1164,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = None
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
@@ -1175,7 +1175,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # should do nothing and return false
     stop_order_dict.update({'id': "102"})
     trade.is_open = True
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = "102"
     trade.orders.append(
         Order(
@@ -1199,7 +1199,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # should set a stoploss immediately and return False
     caplog.clear()
     trade.is_open = True
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = "102"
 
     canceled_stoploss_order = MagicMock(return_value={'id': '103_1', 'status': 'canceled'})
@@ -1224,7 +1224,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = "104"
     trade.orders.append(Order(
         ft_order_side='stoploss',
@@ -3332,32 +3332,34 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
-    assert freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert cancel_order_mock.call_count == 1
 
     cancel_order_mock.reset_mock()
     caplog.clear()
     l_order['filled'] = 0.01
-    assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert not freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert cancel_order_mock.call_count == 0
     assert log_has_re("Order .* for .* not cancelled, as the filled amount.* unexitable.*", caplog)
 
     caplog.clear()
     cancel_order_mock.reset_mock()
     l_order['filled'] = 2
-    assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert not freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert cancel_order_mock.call_count == 1
 
     # Order remained open for some reason (cancel failed)
     cancel_buy_order['status'] = 'open'
     cancel_order_mock = MagicMock(return_value=cancel_buy_order)
-    trade.open_order_id = 'some_open_order'
+    # trade.open_order_id = 'some_open_order'
     mocker.patch(f'{EXMS}.cancel_order_with_result', cancel_order_mock)
-    assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert not freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
     # min_pair_stake empty should not crash
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=None)
-    assert not freqtrade.handle_cancel_enter(trade, limit_order[entry_side(is_short)], reason)
+    assert not freqtrade.handle_cancel_enter(
+        trade, limit_order[entry_side(is_short)], trade.open_orders_ids[0], reason
+    )
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -3378,7 +3380,9 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_sho
     trade = mock_trade_usdt_4(fee, is_short)
     Trade.session.add(trade)
     Trade.commit()
-    assert freqtrade.handle_cancel_enter(trade, limit_buy_order_canceled_empty, reason)
+    assert freqtrade.handle_cancel_enter(
+        trade, limit_buy_order_canceled_empty, trade.open_orders_ids[0], reason
+    )
     assert cancel_order_mock.call_count == 0
     assert log_has_re(
         f'{trade.entry_side.capitalize()} order fully cancelled. '
@@ -3415,7 +3419,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
-    assert freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert cancel_order_mock.call_count == 1
 
     cancel_order_mock.reset_mock()
@@ -3423,7 +3427,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     order = deepcopy(l_order)
     order['status'] = 'canceled'
     mocker.patch(f'{EXMS}.fetch_order', return_value=order)
-    assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
+    assert not freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
     assert cancel_order_mock.call_count == 1
 
 
@@ -4002,7 +4006,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     freqtrade.exit_positions(trades)
     assert trade
     assert trade.stoploss_order_id == '123'
-    assert trade.open_order_id is None
+    # assert trade.open_order_id is None
 
     # Assuming stoploss on exchange is hit
     # stoploss_order_id should become None
@@ -4745,7 +4749,7 @@ def test_get_real_amount(
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.245441,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -5034,7 +5038,7 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     order = Order(
         ft_order_side='buy',
