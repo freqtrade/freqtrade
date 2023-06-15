@@ -469,11 +469,11 @@ class LocalTrade():
         except IndexError:
             return ''
 
-    @hybrid_property
+    @property
     def open_orders_count(self) -> int:
         return len(self.open_orders)
 
-    @hybrid_property
+    @property
     def open_entry_or_exit_orders_count(self) -> int:
         open_buy_or_sell_orders = []
         for oo in self.open_orders:
@@ -482,7 +482,7 @@ class LocalTrade():
 
         return len(open_buy_or_sell_orders)
 
-    @hybrid_property
+    @property
     def open_orders_ids(self) -> list:
         return [open_order.order_id for open_order in self.open_orders]
 
