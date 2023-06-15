@@ -1484,7 +1484,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     trade.is_open = True
-    trade.open_order_id = None
+    # trade.open_order_id = None
     trade.stoploss_order_id = "100"
     trade.orders.append(
         Order(
@@ -1659,7 +1659,6 @@ def test_handle_stoploss_on_exchange_trailing(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.open_order_id = None
     trade.stoploss_order_id = '100'
     trade.stoploss_last_update = dt_now() - timedelta(minutes=20)
     trade.orders.append(
@@ -2324,7 +2323,6 @@ def test_update_trade_state_withorderdict(
         open_date=dt_now(),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id=order_id,
         is_open=True,
         leverage=1,
         is_short=is_short,
