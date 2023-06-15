@@ -114,12 +114,11 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     analysis.false_entry_signals = 4
     analysis.false_exit_signals = 3
 
-    strategy_obj = \
-        {
-            'name': "strategy_test_v3_with_lookahead_bias",
-            'location': PurePosixPath(lookahead_conf['strategy_path'],
-                                      f"{lookahead_conf['strategy']}.py")
-        }
+    strategy_obj = {
+        'name': "strategy_test_v3_with_lookahead_bias",
+        'location': PurePosixPath(lookahead_conf['strategy_path'],
+                                  f"{lookahead_conf['strategy']}.py")
+    }
 
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis

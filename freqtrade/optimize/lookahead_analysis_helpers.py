@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class LookaheadAnalysisSubFunctions:
+
     @staticmethod
     def text_table_lookahead_analysis_instances(
             config: Dict[str, Any],
