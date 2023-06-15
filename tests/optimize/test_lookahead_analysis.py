@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 from copy import deepcopy
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -73,7 +73,7 @@ def test_start_lookahead_analysis(mocker):
         start_lookahead_analysis(pargs)
 
 
-def test_lookahead_helper_invalid_config(lookahead_conf, caplog) -> None:
+def test_lookahead_helper_invalid_config(lookahead_conf) -> None:
     conf = deepcopy(lookahead_conf)
     conf['targeted_trade_amount'] = 10
     conf['minimum_trade_amount'] = 40
@@ -82,7 +82,7 @@ def test_lookahead_helper_invalid_config(lookahead_conf, caplog) -> None:
         LookaheadAnalysisSubFunctions.start(conf)
 
 
-def test_lookahead_helper_no_strategy_defined(lookahead_conf, caplog):
+def test_lookahead_helper_no_strategy_defined(lookahead_conf):
     conf = deepcopy(lookahead_conf)
     conf['pairs'] = ['UNITTEST/USDT']
     del conf['strategy']
@@ -91,7 +91,7 @@ def test_lookahead_helper_no_strategy_defined(lookahead_conf, caplog):
         LookaheadAnalysisSubFunctions.start(conf)
 
 
-def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
+def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
@@ -107,7 +107,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     text_table_mock.reset_mock()
 
 
-def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf, caplog):
+def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf):
     analysis = Analysis()
     analysis.has_bias = True
     analysis.total_signals = 5
@@ -116,8 +116,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     strategy_obj = {
         'name': "strategy_test_v3_with_lookahead_bias",
-        'location': PurePosixPath(lookahead_conf['strategy_path'],
-                                  f"{lookahead_conf['strategy']}.py")
+        'location': Path(lookahead_conf['strategy_path'], f"{lookahead_conf['strategy']}.py")
     }
 
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
@@ -192,7 +191,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
 
     strategy_obj1 = {
         'name': "strat1",
-        'location': PurePosixPath("file1.py"),
+        'location': Path("file1.py"),
     }
 
     instance1 = LookaheadAnalysis(lookahead_conf, strategy_obj1)
@@ -237,7 +236,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
 
     strategy_obj2 = {
         'name': "strat1",
-        'location': PurePosixPath("file1.py"),
+        'location': Path("file1.py"),
     }
 
     instance2 = LookaheadAnalysis(lookahead_conf, strategy_obj2)
@@ -275,7 +274,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
 
     strategy_obj3 = {
         'name': "strat3",
-        'location': PurePosixPath("file3.py"),
+        'location': Path("file3.py"),
     }
 
     instance3 = LookaheadAnalysis(lookahead_conf, strategy_obj3)
