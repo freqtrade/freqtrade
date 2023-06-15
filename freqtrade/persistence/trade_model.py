@@ -701,32 +701,12 @@ class LocalTrade():
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
 
-            # TODO WIP but to rm if useless
-            # condition to avoid reset value when updating fees (new)
-            # if order.order_id in self.open_orders_ids:
-            #    self.open_order_id = None
-            # else:
-            #    logger.warning(
-            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
-            # TODO validate if this is still relevant
-            # condition to avoid reset value when updating fees
-            # if self.open_order_id == order.order_id:
-            #    self.open_order_id = None
-            # else:
-            #    logger.warning(
-            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            # if self.open_order_id == order.order_id:
-            #    self.open_order_id = None
-            # else:
-            #    logger.warning(
-            #        f'Got different open_order_id {self.open_order_id} != {order.order_id}')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
             self.stoploss_order_id = None
