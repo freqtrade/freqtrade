@@ -474,6 +474,15 @@ class LocalTrade():
         return len(self.open_orders)
 
     @hybrid_property
+    def open_entry_or_exit_orders_count(self) -> int:
+        open_buy_or_sell_orders = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side in ['buy', 'sell']):
+                open_buy_or_sell_orders.append(oo)
+
+        return len(open_buy_or_sell_orders)
+
+    @hybrid_property
     def open_orders_ids(self) -> list:
         return [open_order.order_id for open_order in self.open_orders]
 
@@ -1350,6 +1359,24 @@ class Trade(ModelBase, LocalTrade):
         return (
             select(func.count(Order.order_id))
             .where(Order.ft_is_open is True)
+            .where(Order.ft_trade_id == cls.id)
+            .subquery()
+        )
+
+    @hybrid_property
+    def open_entry_or_exit_orders_count(self) -> int:
+        open_buy_or_sell_orders = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side in ['buy', 'sell']):
+                open_buy_or_sell_orders.append(oo)
+
+        return len(open_buy_or_sell_orders)
+
+    @open_entry_or_exit_orders_count.expression
+    def open_entry_or_exit_orders_count(cls):
+        return (
+            select(func.count(Order.order_id))
+            .where(Order.ft_order_side.contains(['buy', 'sell']))
             .where(Order.ft_trade_id == cls.id)
             .subquery()
         )

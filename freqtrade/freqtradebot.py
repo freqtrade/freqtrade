@@ -1236,7 +1236,7 @@ class FreqtradeBot(LoggingMixin):
             self.handle_protections(trade.pair, trade.trade_direction)
             return True
 
-        if trade.open_orders_count != 0 or not trade.is_open:
+        if trade.open_entry_or_exit_orders_count != 0 or not trade.is_open:
             # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
             # as the Amount on the exchange is tied up in another trade.
             # The trade can be closed already (sell-order fill confirmation came in this iteration)
