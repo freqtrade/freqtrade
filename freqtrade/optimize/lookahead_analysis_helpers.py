@@ -150,7 +150,7 @@ class LookaheadAnalysisSubFunctions:
         return config
 
     @staticmethod
-    def initialize_single_lookahead_analysis(strategy_obj: Dict[str, Any], config: Dict[str, Any]):
+    def initialize_single_lookahead_analysis(config: Config, strategy_obj: Dict[str, Any]):
 
         logger.info(f"Bias test of {Path(strategy_obj['location']).name} started.")
         start = time.perf_counter()
@@ -186,7 +186,7 @@ class LookaheadAnalysisSubFunctions:
                 if strategy_obj['name'] == strat and strategy_obj not in strategy_list:
                     lookaheadAnalysis_instances.append(
                         LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
-                            strategy_obj, config))
+                            config, strategy_obj))
                     break
 
         # report the results

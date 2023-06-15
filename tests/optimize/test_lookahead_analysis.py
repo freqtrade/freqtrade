@@ -291,7 +291,7 @@ def test_lookahead_helper_export_to_csv(lookahead_conf):
         Path(lookahead_conf['lookahead_analysis_exportfilename']).unlink()
 
 
-def test_initialize_single_lookahead_analysis(lookahead_conf, mocker):
+def test_initialize_single_lookahead_analysis(lookahead_conf, mocker, caplog):
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.00001)
@@ -303,9 +303,17 @@ def test_initialize_single_lookahead_analysis(lookahead_conf, mocker):
 
     lookahead_conf['timeframe'] = '5m'
     lookahead_conf['timerange'] = '20180119-20180122'
-    strategy_obj = {'name': "strategy_test_v3_with_lookahead_bias"}
+    start_mock = mocker.patch('freqtrade.optimize.lookahead_analysis.LookaheadAnalysis.start')
+    strategy_obj = {
+        'name': "strategy_test_v3_with_lookahead_bias",
+        'location': Path(lookahead_conf['strategy_path'], f"{lookahead_conf['strategy']}.py")
+    }
 
-    instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
+    instance = LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
+        lookahead_conf, strategy_obj)
+    assert log_has_re(r"Bias test of .* started\.", caplog)
+    assert start_mock.call_count == 1
+
     assert instance.strategy_obj['name'] == "strategy_test_v3_with_lookahead_bias"
 
 
