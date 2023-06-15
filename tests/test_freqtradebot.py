@@ -3143,7 +3143,8 @@ def test_manage_open_orders_partial(
     open_trade.is_short = is_short
     open_trade.leverage = leverage
     open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
-    limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    # limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial['id'] = open_trade.orders[0].order_id
     limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
     limit_buy_canceled['status'] = 'canceled'
@@ -3167,7 +3168,8 @@ def test_manage_open_orders_partial(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade).filter(Trade.open_orders_count != 0)
+    ).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount / leverage

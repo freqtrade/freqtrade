@@ -1329,13 +1329,43 @@ class Trade(ModelBase, LocalTrade):
     def open_orders(self):
         return [order for order in self.orders if order.ft_is_open]
 
+    @open_orders.expression
+    def open_orders(cls):
+        return (
+            select(Order).where(Order.ft_is_open is True)
+            .where(
+                Order.order_id.in_(
+                    select(Order.order_id)
+                    .where(Order.ft_trade_id == cls.id)
+                )
+            )
+        )
+
     @hybrid_property
     def open_orders_count(self) -> int:
         return len(self.open_orders)
 
+    @open_orders_count.expression
+    def open_orders_count(cls):
+        return (
+            select(func.count(Order.order_id))
+            .where(Order.ft_is_open is True)
+            .where(Order.ft_trade_id == cls.id)
+            .subquery()
+        )
+
     @hybrid_property
     def open_orders_ids(self) -> list:
         return [open_order.order_id for open_order in self.open_orders]
+
+    @open_orders_ids.expression
+    def open_orders_ids(cls):
+        return (
+            select(Order.order_id)
+            .where(Order.ft_is_open is True)
+            .where(Order.ft_trade_id == cls.id)
+            .subquery()
+        )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1440,7 +1470,7 @@ class Trade(ModelBase, LocalTrade):
         Returns all open trades
         NOTE: Not supported in Backtesting.
         """
-        return cast(List[Trade], Trade.get_trades(Trade.open_orders_count.isnot(0)).all())
+        return cast(List[Trade], Trade.get_trades([Trade.open_orders_count != 0]).all())
 
     @staticmethod
     def get_open_trades_without_assigned_fees():

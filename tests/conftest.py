@@ -2592,7 +2592,6 @@ def open_trade():
         pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='binance',
-        open_order_id='123456789',
         amount=90.99181073,
         fee_open=0.0,
         fee_close=0.0,
@@ -2604,7 +2603,7 @@ def open_trade():
         Order(
             ft_order_side='buy',
             ft_pair=trade.pair,
-            ft_is_open=False,
+            ft_is_open=True,
             ft_amount=trade.amount,
             ft_price=trade.open_rate,
             order_id='123456789',
