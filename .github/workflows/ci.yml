@@ -136,6 +136,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        check-latest: true
 
     - name: Cache_dependencies
       uses: actions/cache@v3
