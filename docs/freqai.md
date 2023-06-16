@@ -107,6 +107,13 @@ This is for performance reasons - FreqAI relies on making quick predictions/retr
 it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
 new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
 
+## Additional learning materials
+
+Here we compile some external materials that provide deeper looks into various components of FreqAI:
+
+- [Real-time head-to-head: Adaptive modeling of financial market data using XGBoost and CatBoost](https://emergentmethods.medium.com/real-time-head-to-head-adaptive-modeling-of-financial-market-data-using-xgboost-and-catboost-995a115a7495)
+- [FreqAI - from price to prediction](https://emergentmethods.medium.com/freqai-from-price-to-prediction-6fadac18b665)
+
 ## Credits
 
 FreqAI is developed by a group of individuals who all contribute specific skillsets to the project.
