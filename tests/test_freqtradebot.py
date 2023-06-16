@@ -2252,7 +2252,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
     caplog.clear()
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.amount == order['amount']
 
     trade.open_order_id = order_id
@@ -2261,7 +2261,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     # test amount modified by fee-logic
     freqtrade.update_trade_state(trade, order_id)
     assert trade.amount == 29.99
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
 
     trade.is_open = True
     # Assert we call handle_trade() if trade is feasible for execution
@@ -3485,7 +3485,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
     assert trade.exit_reason is None
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
 
     send_msg_mock.reset_mock()
 
@@ -3984,7 +3984,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     freqtrade.exit_positions(trades)
     assert trade
     assert trade.stoploss_order_id == '123'
-    # assert trade.open_entry_or_exit_orders_count == 0
+    # assert not trade.has_open_orders
 
     # Assuming stoploss on exchange is hit
     # stoploss_order_id should become None
@@ -5485,7 +5485,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # No open order
     trade = trades[0]
     reset_open_orders(trade)
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5494,7 +5494,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 0
     assert mock_uts.call_count == 0
     # No change to orderid - as update_trade_state is mocked
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     caplog.clear()
@@ -5503,7 +5503,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # Open buy order
     trade = trades[3]
     reset_open_orders(trade)
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5521,7 +5521,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # Open stoploss order
     trade = trades[4]
     reset_open_orders(trade)
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5530,7 +5530,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 2
     # stoploss_order_id is "refound" and added to the trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is not None
 
     caplog.clear()
@@ -5540,7 +5540,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # Open sell order
     trade = trades[5]
     reset_open_orders(trade)
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5900,7 +5900,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 11
     assert trade.stake_amount == 110
 
@@ -5910,7 +5910,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 11
     assert trade.stake_amount == 110
     assert not trade.fee_updated('buy')
@@ -5920,7 +5920,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 11
     assert trade.stake_amount == 110
     assert not trade.fee_updated('buy')
@@ -6022,7 +6022,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Assert trade is as expected (averaged dca)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert pytest.approx(trade.open_rate) == 9.90909090909
     assert trade.amount == 22
     assert pytest.approx(trade.stake_amount) == 218
@@ -6064,7 +6064,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Assert trade is as expected (averaged dca)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert pytest.approx(trade.open_rate) == 8.729729729729
     assert trade.amount == 37
     assert trade.stake_amount == 323
@@ -6102,7 +6102,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Assert trade is as expected (averaged dca)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.is_open
     assert trade.amount == 22
     assert trade.stake_amount == 192.05405405405406
@@ -6179,7 +6179,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == bid
     assert trade.stake_amount == bid * amount
 
@@ -6189,7 +6189,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == bid
     assert trade.stake_amount == bid * amount
     assert not trade.fee_updated(trade.entry_side)
@@ -6199,7 +6199,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
     assert trade.is_open is True
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == bid
     assert trade.stake_amount == bid * amount
     assert not trade.fee_updated(trade.entry_side)
@@ -6234,7 +6234,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.amount == 50
     assert trade.open_rate == 11
     assert trade.stake_amount == 550
@@ -6276,7 +6276,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.amount == 50
     assert trade.open_rate == 11
     assert trade.stake_amount == 550
@@ -6376,7 +6376,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
         assert trade
         if idx < len(data) - 1:
             assert trade.is_open is True
-        assert trade.open_entry_or_exit_orders_count == 0
+        assert not trade.has_open_orders
         assert trade.amount == result[0]
         assert trade.open_rate == result[1]
         assert trade.stake_amount == result[2]
@@ -6389,7 +6389,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_entry_or_exit_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.is_open is False
 
 
