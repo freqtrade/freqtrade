@@ -979,6 +979,23 @@ class IFreqaiModel(ABC):
                        " This can be achieved by following the migration guide at "
                        f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
         dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+        dd = dk.data_dictionary
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
+
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                             dd["test_labels"],
+                                                             dd["test_weights"])
+
+        dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
+
+        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
+        dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
         return
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, pair: str):
@@ -989,5 +1006,12 @@ class IFreqaiModel(ABC):
                        " data pipeline. Please update your model to use the new data pipeline."
                        " This can be achieved by following the migration guide at "
                        f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
-        dk.label_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+        dd = dk.data_dictionary
+        dd["predict_features"], outliers, _ = dk.feature_pipeline.transform(
+            dd["predict_features"], outlier_check=True)
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(len(outliers.index))
+        dk.do_predict = outliers.to_numpy()
         return

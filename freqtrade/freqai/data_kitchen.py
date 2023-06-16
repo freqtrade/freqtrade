@@ -962,8 +962,7 @@ class FreqaiDataKitchen:
                        " This can be achieved by following the migration guide at "
                        f"{ft}/strategy_migration/#freqai-new-data-pipeline "
                        "We added a basic pipeline for you, but this will be removed "
-                       "in a future version.\n"
-                       "This version does not include any outlier configurations")
+                       "in a future version.")
 
         return data_dictionary
 
@@ -977,11 +976,8 @@ class FreqaiDataKitchen:
                        " This can be achieved by following the migration guide at "
                        f"{ft}/strategy_migration/#freqai-new-data-pipeline "
                        "We added a basic pipeline for you, but this will be removed "
-                       "in a future version.\n"
-                       "This version does not include any outlier configurations")
+                       "in a future version.")
 
         pred_df, _, _ = self.label_pipeline.inverse_transform(df)
-        self.DI_values = np.zeros(len(pred_df.index))
-        self.do_predict = np.ones(len(pred_df.index))
 
         return pred_df
