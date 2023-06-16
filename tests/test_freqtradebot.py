@@ -2402,7 +2402,7 @@ def test_update_trade_state_sell(
     order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', exit_side(is_short))
     trade.orders.append(order)
     assert order.status == 'open'
-    freqtrade.update_trade_state(trade, trade.open_order_id, l_order)
+    freqtrade.update_trade_state(trade, trade.open_orders_ids[-1], l_order)
     assert trade.amount == l_order['amount']
     # Wallet needs to be updated after closing a limit-sell order to reenable buying
     assert wallet_mock.call_count == 1
@@ -2683,7 +2683,7 @@ def test_manage_open_orders_entry_usercustom(
 ) -> None:
 
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
-    old_order['id'] = open_trade.open_order_id
+    old_order['id'] = open_trade.open_orders_ids[0]
 
     default_conf_usdt["unfilledtimeout"] = {"entry": 1400, "exit": 30}
 
@@ -2718,7 +2718,11 @@ def test_manage_open_orders_entry_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     nb_trades = len(trades)
     assert nb_trades == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 1
@@ -2727,7 +2731,11 @@ def test_manage_open_orders_entry_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     nb_trades = len(trades)
     assert nb_trades == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 1
@@ -2738,7 +2746,11 @@ def test_manage_open_orders_entry_usercustom(
     assert cancel_order_wr_mock.call_count == 1
     assert rpc_mock.call_count == 2
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     nb_trades = len(trades)
     assert nb_trades == 0
     assert freqtrade.strategy.check_entry_timeout.call_count == 1
@@ -3527,13 +3539,13 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
 
     # TODO: should not be magicmock
     trade = MagicMock()
-    trade.open_order_id = '125'
+    order_id = '125'
     reason = CANCEL_REASON['TIMEOUT']
     order = {'remaining': 1,
              'id': '125',
              'amount': 1,
              'status': "open"}
-    assert not freqtrade.handle_cancel_exit(trade, order, reason)
+    assert not freqtrade.handle_cancel_exit(trade, order, order_id, reason)
 
     # mocker.patch(f'{EXMS}.cancel_order_with_result', return_value=order)
     # assert not freqtrade.handle_cancel_exit(trade, order, reason)
