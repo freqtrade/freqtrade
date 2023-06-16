@@ -615,7 +615,8 @@ class FreqtradeBot(LoggingMixin):
         # Walk through each pair and check if it needs changes
         for trade in Trade.get_open_trades():
             # If there is any open orders, wait for them to finish.
-            if trade.open_order_id is None:
+            # TODO Remove to allow mul open orders
+            if trade.open_entry_or_exit_orders_count == 0:
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
@@ -1213,7 +1214,6 @@ class FreqtradeBot(LoggingMixin):
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
-
         stoploss_order = None
 
         try:
@@ -1236,16 +1236,11 @@ class FreqtradeBot(LoggingMixin):
             self.handle_protections(trade.pair, trade.trade_direction)
             return True
 
-        print("***************open_orders DEBUG***************")
-        print(f"trade.open_orders: {trade.open_orders}")
-        print(f"trade.open_orders_count: {trade.open_orders_count}")
-        print(f"trade.open_entry_or_exit_orders_count: {trade.open_entry_or_exit_orders_count}")
-
-        # if trade.open_entry_or_exit_orders_count != 0 or not trade.is_open:
-        # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
-        # as the Amount on the exchange is tied up in another trade.
-        # The trade can be closed already (sell-order fill confirmation came in this iteration)
-        # return False
+        if trade.open_entry_or_exit_orders_count != 0 or not trade.is_open:
+            # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
+            # as the Amount on the exchange is tied up in another trade.
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
+            return False
 
         # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
         if not stoploss_order:

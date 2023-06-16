@@ -5958,7 +5958,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert len(orders) == 2
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_order_id == '651'
+    assert '651' in trade.open_orders_ids
     assert trade.open_rate == 11
     assert trade.amount == 10
     assert trade.stake_amount == 110
@@ -5995,7 +5995,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Assert trade is as expected
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert trade.open_order_id == '651'
+    assert '651' in trade.open_orders_ids
     assert trade.open_rate == 11
     assert trade.amount == 10
     assert trade.stake_amount == 110
