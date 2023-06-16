@@ -1356,7 +1356,7 @@ class FreqtradeBot(LoggingMixin):
         if order['side'] == trade.entry_side:
             self.handle_cancel_enter(trade, order, order_id, reason)
         else:
-            canceled = self.handle_cancel_exit(trade, order, reason)
+            canceled = self.handle_cancel_exit(trade, order, order_id, reason)
             canceled_count = trade.get_exit_order_count()
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
             if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:

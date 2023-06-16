@@ -2391,7 +2391,6 @@ def test_update_trade_state_sell(
         fee_open=0.0025,
         fee_close=0.0025,
         open_date=dt_now(),
-        open_order_id=open_order['id'],
         is_open=True,
         interest_rate=0.0005,
         leverage=1,
@@ -2795,7 +2794,7 @@ def test_adjust_entry_cancel(
 ) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
-    old_order['id'] = open_trade.open_order_id
+    old_order['id'] = open_trade.open_orders[0].order_id
     limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
@@ -2818,7 +2817,7 @@ def test_adjust_entry_cancel(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=None)
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_orders[0].order_id))).all()
     assert len(trades) == 0
     assert len(Order.session.scalars(select(Order)).all()) == 0
     assert log_has_re(
@@ -3043,7 +3042,7 @@ def test_manage_open_orders_exit(
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
-    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+    limit_sell_order_old['id'] = '123456789_exit'
     limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3085,7 +3084,7 @@ def test_check_handle_cancelled_exit(
     cancel_order_mock = MagicMock()
     limit_sell_order_old.update({"status": "canceled", 'filled': 0.0})
     limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
-    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+    limit_sell_order_old['id'] = open_trade_usdt.open_orders[0].order_id
 
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3430,7 +3429,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         amount=2,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="sell_123456",
+        # open_order_id="sell_123456",
         open_date=dt_now() - timedelta(days=2),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -3481,7 +3480,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
     send_msg_mock.reset_mock()
-    assert freqtrade.handle_cancel_exit(trade, order, reason)
+    assert freqtrade.handle_cancel_exit(trade, order, order.id, reason)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
@@ -3493,14 +3492,14 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     # Partial exit - below exit threshold
     order['amount'] = 2
     order['filled'] = 1.9
-    assert not freqtrade.handle_cancel_exit(trade, order, reason)
+    assert not freqtrade.handle_cancel_exit(trade, order, order.id, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
 
-    assert not freqtrade.handle_cancel_exit(trade, order, reason)
+    assert not freqtrade.handle_cancel_exit(trade, order, order.id, reason)
 
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
@@ -3512,7 +3511,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     send_msg_mock.reset_mock()
 
     order['filled'] = 1
-    assert freqtrade.handle_cancel_exit(trade, order, reason)
+    assert freqtrade.handle_cancel_exit(trade, order, order.id, reason)
     assert send_msg_mock.call_count == 1
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED'])
@@ -4280,7 +4279,6 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="123456",
         fee_open=fee.return_value,
         fee_close=fee.return_value,
     )
@@ -4623,7 +4621,7 @@ def test_get_real_amount_quote(default_conf_usdt, trades_for_order, buy_order_fe
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4651,7 +4649,7 @@ def test_get_real_amount_quote_dust(default_conf_usdt, trades_for_order, buy_ord
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4675,7 +4673,7 @@ def test_get_real_amount_no_trade(default_conf_usdt, buy_order_fee, caplog, mock
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4820,7 +4818,7 @@ def test_get_real_amount_invalid_order(default_conf_usdt, trades_for_order, buy_
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.245441,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4842,7 +4840,7 @@ def test_get_real_amount_fees_order(default_conf_usdt, market_buy_order_usdt_dou
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.245441,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4869,7 +4867,7 @@ def test_get_real_amount_wrong_amount(default_conf_usdt, trades_for_order, buy_o
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4894,7 +4892,7 @@ def test_get_real_amount_wrong_amount_rounding(default_conf_usdt, trades_for_ord
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.245441,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4913,7 +4911,7 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
         open_rate=0.245441,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456"
+        # open_order_id="123456"
     )
     order = {
         'id': 'mocked_order',
@@ -4973,8 +4971,7 @@ def test_get_real_amount_in_point(default_conf_usdt, buy_order_fee, fee, mocker,
         exchange='binance',
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_rate=0.245441,
-        open_order_id="123456"
+        open_rate=0.245441
     )
     limit_buy_order_usdt['amount'] = amount
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
