@@ -2944,10 +2944,7 @@ def test_manage_open_orders_buy_exception(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
-    nb_trades = len(trades)
-    assert nb_trades == 1
+    assert open_trade.open_entry_or_exit_orders_count == 1
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -3167,7 +3164,7 @@ def test_manage_open_orders_partial_fee(
     open_trade.is_short = is_short
     open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     rpc_mock = patch_RPCManager(mocker)
-    limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial['id'] = open_trade.orders[0].order_id
     limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
     limit_buy_order_old_partial_canceled['side'] = 'sell' if is_short else 'buy'
@@ -4778,8 +4775,7 @@ def test_get_real_amount_multi(
         exchange='binance',
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_rate=0.245441,
-        open_order_id="123456"
+        open_rate=0.245441
     )
 
     # Fake markets entry to enable fee parsing
