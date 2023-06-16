@@ -180,6 +180,9 @@ You can ask for each of the defined features to be included also for informative
 
 In total, the number of features the user of the presented example strat has created is: length of `include_timeframes` * no. features in `feature_engineering_expand_*()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
  $= 3 * 3 * 3 * 2 * 2 = 108$.
+ 
+ !!! note "Learn more about creative feature engineering"
+    Check out our [medium article](https://emergentmethods.medium.com/freqai-from-price-to-prediction-6fadac18b665) geared toward helping users learn how to creatively engineer features.
 
 ### Gain finer control over `feature_engineering_*` functions with `metadata`
 
