@@ -119,9 +119,9 @@ NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
 ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_search"]
 
-ARGS_LOOKAHEAD_ANALYSIS = ARGS_BACKTEST + ["minimum_trade_amount",
-                                           "targeted_trade_amount",
-                                           "lookahead_analysis_exportfilename"]
+ARGS_LOOKAHEAD_ANALYSIS = [
+    a for a in ARGS_BACKTEST if a not in ("position_stacking", "use_max_market_positions", 'cache')
+    ] + ["minimum_trade_amount", "targeted_trade_amount", "lookahead_analysis_exportfilename"]
 
 
 class Arguments:
