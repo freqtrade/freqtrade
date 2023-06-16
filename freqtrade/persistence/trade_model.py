@@ -470,6 +470,15 @@ class LocalTrade():
             return ''
 
     @property
+    def has_open_orders(self) -> int:
+        open_orders_wo_sl = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side not in ['stoploss']):
+                open_orders_wo_sl.append(oo)
+
+        return (len(open_orders_wo_sl) > 0)
+
+    @property
     def open_orders_count(self) -> int:
         return len(self.open_orders)
 
@@ -1328,6 +1337,25 @@ class Trade(ModelBase, LocalTrade):
                     .where(Order.ft_trade_id == cls.id)
                 )
             )
+        )
+
+    @hybrid_property
+    def has_open_orders(self) -> int:
+        open_orders_wo_sl = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side not in ['stoploss']):
+                open_orders_wo_sl.append(oo)
+
+        return (len(open_orders_wo_sl) > 0)
+
+    @has_open_orders.expression
+    def has_open_orders(cls) -> int:
+        return (
+            select(func.exists())
+            .where(Order.ft_is_open.is_(True))
+            .where(Order.ft_order_side != "stoploss")
+            .where(Order.ft_trade_id == cls.id)
+            .as_scalar()
         )
 
     @hybrid_property
