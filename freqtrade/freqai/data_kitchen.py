@@ -12,7 +12,6 @@ import numpy.typing as npt
 import pandas as pd
 import psutil
 from datasieve.pipeline import Pipeline
-from datasieve.transforms import SKLearnWrapper
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
@@ -966,35 +965,7 @@ class FreqaiDataKitchen:
                        "in a future version.\n"
                        "This version does not include any outlier configurations")
 
-        import datasieve.transforms as ds
-        from sklearn.preprocessing import MinMaxScaler
-        dd = data_dictionary
-
-        self.feature_pipeline = Pipeline([
-            ('variance_threshold', ds.VarianceThreshold()),
-            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
-            ])
-
-        (dd["train_features"],
-         dd["train_labels"],
-         dd["train_weights"]) = self.feature_pipeline.fit_transform(dd["train_features"],
-                                                                    dd["train_labels"],
-                                                                    dd["train_weights"])
-
-        (dd["test_features"],
-         dd["test_labels"],
-         dd["test_weights"]) = self.feature_pipeline.transform(dd["test_features"],
-                                                               dd["test_labels"],
-                                                               dd["test_weights"])
-
-        self.label_pipeline = Pipeline([
-            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
-            ])
-
-        dd["train_labels"], _, _ = self.label_pipeline.fit_transform(dd["train_labels"])
-        dd["test_labels"], _, _ = self.label_pipeline.transform(dd["test_labels"])
-
-        return dd
+        return data_dictionary
 
     def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
         """

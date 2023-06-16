@@ -119,7 +119,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
 
         dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
-        dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
 
         (dd["train_features"],
          dd["train_labels"],

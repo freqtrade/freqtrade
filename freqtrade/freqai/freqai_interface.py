@@ -18,7 +18,7 @@ from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import Config
+from freqtrade.constants import DOCS_LINK, Config
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -974,20 +974,20 @@ class IFreqaiModel(ABC):
         """
         throw deprecation warning if this function is called
         """
-        ft = "https://www.freqtrade.io/en/latest"
         logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
                        " data pipeline. Please update your model to use the new data pipeline."
                        " This can be achieved by following the migration guide at "
-                       f"{ft}/strategy_migration/#freqai-new-data-pipeline")
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
         return
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, pair: str):
         """
         throw deprecation warning if this function is called
         """
-        ft = "https://www.freqtrade.io/en/latest"
         logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
                        " data pipeline. Please update your model to use the new data pipeline."
                        " This can be achieved by following the migration guide at "
-                       f"{ft}/strategy_migration/#freqai-new-data-pipeline")
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
+        dk.label_pipeline = self.define_data_pipeline(threads=dk.thread_count)
         return

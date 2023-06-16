@@ -16,7 +16,8 @@ freqai = [
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
     'xgboost',
-    'tensorboard'
+    'tensorboard',
+    'datasieve>=0.1.4'
 ]
 
 freqai_rl = [
