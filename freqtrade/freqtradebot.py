@@ -1429,20 +1429,23 @@ class FreqtradeBot(LoggingMixin):
         """
 
         for trade in Trade.get_open_order_trades():
-            if not trade.open_order_id:
-                continue
-            try:
-                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (ExchangeError):
-                logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
-                continue
+            for open_order in trade.open_orders:
+                try:
+                    order = self.exchange.fetch_order(open_order.order_id, trade.pair)
+                except (ExchangeError):
+                    logger.info("Can't query order for %s due to %s", trade, traceback.format_exc())
+                    continue
 
-            if order['side'] == trade.entry_side:
-                self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+                if order['side'] == trade.entry_side:
+                    self.handle_cancel_enter(
+                        trade, order, open_order.order_id, constants.CANCEL_REASON['ALL_CANCELLED']
+                    )
 
-            elif order['side'] == trade.exit_side:
-                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
-        Trade.commit()
+                elif order['side'] == trade.exit_side:
+                    self.handle_cancel_exit(
+                        trade, order, open_order.order_id, constants.CANCEL_REASON['ALL_CANCELLED']
+                    )
+            Trade.commit()
 
     def handle_cancel_enter(
             self, trade: Trade, order: Dict, order_id: str,
