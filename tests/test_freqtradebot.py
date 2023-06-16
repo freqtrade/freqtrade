@@ -2763,7 +2763,7 @@ def test_manage_open_orders_entry(
 ) -> None:
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     rpc_mock = patch_RPCManager(mocker)
-    open_trade.open_order_id = old_order['id']
+    # open_trade.open_order_id = old_order['id']
     order = Order.parse_from_ccxt_object(old_order, 'mocked', 'buy')
     open_trade.orders[0] = order
     limit_buy_cancel = deepcopy(old_order)
@@ -2790,7 +2790,11 @@ def test_manage_open_orders_entry(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     nb_trades = len(trades)
     assert nb_trades == 0
     # Custom user buy-timeout is never called
@@ -2829,7 +2833,10 @@ def test_adjust_entry_cancel(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=None)
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_orders[0].order_id))).all()
+        select(Trade)
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
+
     assert len(trades) == 0
     assert len(Order.session.scalars(select(Order)).all()) == 0
     assert log_has_re(
@@ -3176,7 +3183,7 @@ def test_manage_open_orders_partial_fee(
     open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial['id'] = open_trade.orders[0].order_id
-    limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial_canceled['id'] = open_trade.open_orders_ids[0]
     limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
     limit_buy_order_old_partial_canceled['side'] = 'sell' if is_short else 'buy'
 
@@ -3207,12 +3214,14 @@ def test_manage_open_orders_partial_fee(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
     # Verify that trade has been updated
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
                                 limit_buy_order_old_partial['remaining']) - 0.023
-    assert trades[0].open_order_id is None
+    assert not trades[0].has_open_orders
     assert trades[0].fee_updated(open_trade.entry_side)
     assert pytest.approx(trades[0].fee_open) == 0.001
 
@@ -3226,8 +3235,8 @@ def test_manage_open_orders_partial_except(
     open_trade.is_short = is_short
     open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     rpc_mock = patch_RPCManager(mocker)
-    limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
-    limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial_canceled['id'] = open_trade.open_orders_ids[0]
+    limit_buy_order_old_partial['id'] = open_trade.open_orders_ids[0]
     if is_short:
         limit_buy_order_old_partial['side'] = 'sell'
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
@@ -3258,13 +3267,14 @@ def test_manage_open_orders_partial_except(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade).where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
     # Verify that trade has been updated
 
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
                                 limit_buy_order_old_partial['remaining'])
-    assert trades[0].open_order_id is None
+    assert not trades[0].has_open_orders
     assert trades[0].fee_open == fee()
 
 
