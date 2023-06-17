@@ -1,3 +1,4 @@
+import logging
 import platform
 import shutil
 import sys
@@ -540,6 +541,7 @@ def test_get_required_data_timerange(mocker, freqai_conf):
 
 
 def test_download_all_data_for_training(mocker, freqai_conf, caplog, tmpdir):
+    caplog.set_level(logging.DEBUG)
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     pairlist = PairListManager(exchange, freqai_conf)
