@@ -232,7 +232,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         # All indicators must be populated by feature_engineering_*() functions
 
-        # the model will return all labels created by user in `feature_engineering_*`
+        # the model will return all labels created by user in `set_freqai_targets()`
         # (& appended targets), an indication of whether or not the prediction should be accepted,
         # the target mean/std values for each of the labels created by user in
         # `set_freqai_targets()` for each training period.

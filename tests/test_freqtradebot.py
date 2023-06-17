@@ -1241,6 +1241,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
+        'filled': enter_order['amount'],
+        'remaining': 0,
         'amount': enter_order['amount'],
     })
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
@@ -3009,8 +3011,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert freqtrade.strategy.check_exit_timeout.call_count == 1
-    assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
 
     freqtrade.strategy.check_exit_timeout = MagicMock(side_effect=KeyError)
     freqtrade.strategy.check_entry_timeout = MagicMock(side_effect=KeyError)
@@ -3018,8 +3020,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert freqtrade.strategy.check_exit_timeout.call_count == 1
-    assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
 
     # Return True - sells!
     freqtrade.strategy.check_exit_timeout = MagicMock(return_value=True)
@@ -3027,8 +3029,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
-    assert freqtrade.strategy.check_exit_timeout.call_count == 1
-    assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
     trade = Trade.session.scalars(select(Trade)).first()
     # cancelling didn't succeed - order-id remains open.
     assert trade.open_order_id is not None
