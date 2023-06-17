@@ -26,24 +26,42 @@ It also supports the lookahead-analysis of freqai strategies.
 ## Lookahead-analysis command reference
 
 ```
-usage: freqtrade lookahead-analysis [-h] [-v] [-V] 
-                             [--minimum-trade-amount INT]
-                             [--targeted-trade-amount INT]
-                             [--lookahead-analysis-exportfilename PATH]
+usage: freqtrade lookahead-analysis [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                    [-d PATH] [--userdir PATH] [-s NAME]
+                                    [--strategy-path PATH]
+                                    [--recursive-strategy-search]
+                                    [--freqaimodel NAME]
+                                    [--freqaimodel-path PATH] [-i TIMEFRAME]
+                                    [--timerange TIMERANGE]
+                                    [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
+                                    [--max-open-trades INT]
+                                    [--stake-amount STAKE_AMOUNT]
+                                    [--fee FLOAT] [-p PAIRS [PAIRS ...]]
+                                    [--enable-protections]
+                                    [--dry-run-wallet DRY_RUN_WALLET]
+                                    [--timeframe-detail TIMEFRAME_DETAIL]
+                                    [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                                    [--export {none,trades,signals}]
+                                    [--export-filename PATH]
+                                    [--breakdown {day,week,month} [{day,week,month} ...]]
+                                    [--cache {none,day,week,month}]
+                                    [--freqai-backtest-live-models]
+                                    [--minimum-trade-amount INT]
+                                    [--targeted-trade-amount INT]
+                                    [--lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME]
 
-optional arguments:
-  -h, --help            show this help message and exit
+options:
   --minimum-trade-amount INT
-                        Override the value of the `minimum_trade_amount` configuration
-                        setting
-                        Requires `--targeted-trade-amount` to be larger or equal to --minimum-trade-amount.
-                        (default: 10)
+                        Minimum trade amount for lookahead-analysis
   --targeted-trade-amount INT
-                        Override the value of the `minimum_trade_amount` configuration
-                        (default: 20)
-  --lookahead-analysis-exportfilename PATH
-                        Use this filename to save your lookahead-analysis-results to a csv file
+                        Targeted trade amount for lookahead analysis
+  --lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME
+                        Use this csv-filename to store lookahead-analysis-
+                        results
 ```
+
+!!! Note ""
+    The above Output was reduced to options `lookahead-analysis` adds on top of regular backtesting commands.
 
 ### Summary
 
@@ -69,15 +87,14 @@ After the backtest ran, it will look if the `minimum-trade-amount` is met
 and if not cancel the lookahead-analysis for this strategy.
 
 After setting the baseline it will then do additional runs for every entry and exit separately.
-When a verification-backtest is done, it will compare the indicators as the signal (either entry or exit) 
-and report the bias.
+When a verification-backtest is done, it will compare the indicators as the signal (either entry or exit) and report the bias.
 After all signals have been verified or falsified a result-table will be generated for the user to see.
 
 ### Caveats
 
-- `lookahead-analysis` can only verify / falsify the trades it calculated through.
-If there was a strategy with signals that were not triggered during the lookahead-analysis, then it will not have it verified that entry/exit signal either.
-This could then lead to a false-negative (the strategy will then be reported as non-biased).
+- `lookahead-analysis` can only verify / falsify the trades it calculated and verified.
+If the strategy has many different signals / signal types, it's up to you to select appropriate parameters to ensure that all signals have triggered at least once. Not triggered signals will not have been verified.
+This could lead to a false-negative (the strategy will then be reported as non-biased).
 - `lookahead-analysis` has access to everything that backtesting has too.
 Please don't provoke any configs like enabling position stacking.
 If you decide to do so, then make doubly sure that you won't ever run out of `max_open_trades` amount and neither leftover money in your wallet.
