@@ -1391,7 +1391,10 @@ class Trade(ModelBase, LocalTrade):
                              e.g. `(trade_filter=Trade.id == trade_id)`
         :return: unsorted query object
         """
-        return Trade.session.scalars(Trade.get_trades_query(trade_filter, include_orders))
+        query = Trade.get_trades_query(trade_filter, include_orders)
+        # this sholud remain split. if use_db is False, session is not available and the above will
+        # raise an exception.
+        return Trade.session.scalars(query)
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:
