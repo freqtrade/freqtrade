@@ -493,7 +493,11 @@ class LocalTrade():
 
     @property
     def open_orders_ids(self) -> list:
-        return [open_order.order_id for open_order in self.open_orders]
+        open_orders_ids_wo_sl = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side not in ['stoploss']):
+                open_orders_ids_wo_sl.append(oo.order_id)
+        return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -1391,13 +1395,18 @@ class Trade(ModelBase, LocalTrade):
 
     @hybrid_property
     def open_orders_ids(self) -> list:
-        return [open_order.order_id for open_order in self.open_orders]
+        open_orders_ids_wo_sl = []
+        for oo in self.open_orders:
+            if (oo.ft_order_side not in ['stoploss']):
+                open_orders_ids_wo_sl.append(oo.order_id)
+        return open_orders_ids_wo_sl
 
     @open_orders_ids.expression
     def open_orders_ids(cls):
         return (
             select(Order.order_id)
             .where(Order.ft_is_open is True)
+            .where(Order.ft_order_side != "stoploss")
             .where(Order.ft_trade_id == cls.id)
             .subquery()
         )

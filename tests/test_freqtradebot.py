@@ -2339,15 +2339,15 @@ def test_update_trade_state_exception(mocker, default_conf_usdt, is_short, limit
 
     # TODO: should not be magicmock
     trade = MagicMock()
-    trade.open_order_id = '123'
     trade.amount = 123
+    open_order_id = '123'
 
     # Test raise of OperationalException exception
     mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
         side_effect=DependencyException()
     )
-    freqtrade.update_trade_state(trade, trade.open_order_id)
+    freqtrade.update_trade_state(trade, open_order_id)
     assert log_has('Could not update trade amount: ', caplog)
 
 
@@ -2357,13 +2357,13 @@ def test_update_trade_state_orderexception(mocker, default_conf_usdt, caplog) ->
 
     # TODO: should not be magicmock
     trade = MagicMock()
-    trade.open_order_id = '123'
+    open_order_id = '123'
 
     # Test raise of OperationalException exception
     grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
-    freqtrade.update_trade_state(trade, trade.open_order_id)
+    freqtrade.update_trade_state(trade, open_order_id)
     assert grm_mock.call_count == 0
-    assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog)
+    assert log_has(f'Unable to fetch order {open_order_id}: ', caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2848,7 +2848,7 @@ def test_adjust_entry_cancel(
     assert freqtrade.strategy.adjust_entry_price.call_count == 1
 
 
-@pytest.mark.parametrize("is_short", [False])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_adjust_entry_maintain_replace(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short

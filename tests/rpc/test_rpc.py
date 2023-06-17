@@ -42,7 +42,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'strategy': ANY,
         'enter_tag': ANY,
         'timeframe': 5,
-        'open_order_id': ANY,
         'close_date': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
@@ -1093,7 +1092,8 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
     assert trade.buy_tag == 'force_entry'
-    assert trade.open_order_id == 'mocked_limit_buy'
+    # assert trade.open_order_id == 'mocked_limit_buy'
+    assert trade.open_orders_ids[-1] == 'mocked_limit_buy'
 
     freqtradebot.strategy.position_adjustment_enable = True
     with pytest.raises(RPCException, match=r'position for LTC/BTC already open.*open order.*'):
