@@ -2855,7 +2855,7 @@ def test_adjust_entry_maintain_replace(
 ) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
-    old_order['id'] = open_trade.open_order_id
+    old_order['id'] = open_trade.open_orders_ids[0]
     limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
@@ -2878,7 +2878,9 @@ def test_adjust_entry_maintain_replace(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=old_order['price'])
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
     assert len(Order.get_open_orders()) == 1
     # Entry adjustment is called
@@ -2889,7 +2891,9 @@ def test_adjust_entry_maintain_replace(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
     nb_all_orders = len(Order.session.scalars(select(Order)).all())
     assert nb_all_orders == 2
@@ -2913,6 +2917,8 @@ def test_check_handle_cancelled_buy(
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
     old_order.update({"status": "canceled", 'filled': 0.0})
+    old_order['side'] = 'buy' if is_short else 'sell'
+    old_order['id'] = open_trade.open_orders[0].order_id
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
@@ -2921,7 +2927,7 @@ def test_check_handle_cancelled_buy(
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    open_trade.orders = []
+    # open_trade.orders = []
     open_trade.is_short = is_short
     Trade.session.add(open_trade)
     Trade.commit()
@@ -2931,10 +2937,14 @@ def test_check_handle_cancelled_buy(
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 2
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 0
+    exit_name = 'Buy' if is_short else 'Sell'
     assert log_has_re(
-        f"{'Sell' if is_short else 'Buy'} order cancelled on exchange for Trade.*", caplog)
+        f"{exit_name} order cancelled on exchange for Trade.*", caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
