@@ -505,10 +505,10 @@ def download_data_main(config: Config) -> None:
     # Init exchange
     from freqtrade.resolvers.exchange_resolver import ExchangeResolver
     exchange = ExchangeResolver.load_exchange(config, validate=False)
-    markets = [p for p, m in exchange.markets.items() if market_is_active(m)
-               or config.get('include_inactive')]
+    available_pairs = [p for p, m in exchange.markets.items() if market_is_active(m)
+                       or config.get('include_inactive')]
 
-    expanded_pairs = dynamic_expand_pairlist(config, markets)
+    expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
 
     # Manual validations of relevant settings
     if not config['exchange'].get('skip_pair_validation', False):
