@@ -43,7 +43,7 @@ class LookaheadAnalysis:
 
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
         self.failed_bias_check = True
-        self.full_varHolder = VarHolder
+        self.full_varHolder = VarHolder()
 
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
@@ -90,7 +90,7 @@ class LookaheadAnalysis:
         return False
 
     # analyzes two data frames with processed indicators and shows differences between them.
-    def analyze_indicators(self, full_vars: VarHolder, cut_vars: VarHolder, current_pair):
+    def analyze_indicators(self, full_vars: VarHolder, cut_vars: VarHolder, current_pair: str):
         # extract dataframes
         cut_df: DataFrame = cut_vars.indicators[current_pair]
         full_df: DataFrame = full_vars.indicators[current_pair]
@@ -103,29 +103,30 @@ class LookaheadAnalysis:
             (cut_df.date == cut_vars.compared_dt)
         ].reset_index(drop=True)
 
-        # compare dataframes
-        if full_df_cut.shape[0] != 0:
-            if cut_df_cut.shape[0] != 0:
-                compare_df = full_df_cut.compare(cut_df_cut)
+        # check if dataframes are not empty
+        if full_df_cut.shape[0] != 0 and cut_df_cut.shape[0] != 0:
 
-                if compare_df.shape[0] > 0:
-                    for col_name, values in compare_df.items():
-                        col_idx = compare_df.columns.get_loc(col_name)
-                        compare_df_row = compare_df.iloc[0]
-                        # compare_df now comprises tuples with [1] having either 'self' or 'other'
-                        if 'other' in col_name[1]:
-                            continue
-                        self_value = compare_df_row[col_idx]
-                        other_value = compare_df_row[col_idx + 1]
+            # compare dataframes
+            compare_df = full_df_cut.compare(cut_df_cut)
 
-                        # output differences
-                        if self_value != other_value:
+            if compare_df.shape[0] > 0:
+                for col_name, values in compare_df.items():
+                    col_idx = compare_df.columns.get_loc(col_name)
+                    compare_df_row = compare_df.iloc[0]
+                    # compare_df now comprises tuples with [1] having either 'self' or 'other'
+                    if 'other' in col_name[1]:
+                        continue
+                    self_value = compare_df_row[col_idx]
+                    other_value = compare_df_row[col_idx + 1]
 
-                            if not self.current_analysis.false_indicators.__contains__(col_name[0]):
-                                self.current_analysis.false_indicators.append(col_name[0])
-                                logger.info(f"=> found look ahead bias in indicator "
-                                            f"{col_name[0]}. "
-                                            f"{str(self_value)} != {str(other_value)}")
+                    # output differences
+                    if self_value != other_value:
+
+                        if not self.current_analysis.false_indicators.__contains__(col_name[0]):
+                            self.current_analysis.false_indicators.append(col_name[0])
+                            logger.info(f"=> found look ahead bias in indicator "
+                                        f"{col_name[0]}. "
+                                        f"{str(self_value)} != {str(other_value)}")
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
 
