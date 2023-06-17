@@ -16,7 +16,7 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import Config
+from freqtrade.constants import DOCS_LINK, Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -760,9 +760,9 @@ class FreqaiDataKitchen:
                 " which was deprecated on March 1, 2023. Please refer "
                 "to the strategy migration guide to use the new "
                 "feature_engineering_* methods: \n"
-                "https://www.freqtrade.io/en/stable/strategy_migration/#freqai-strategy \n"
+                f"{DOCS_LINK}/strategy_migration/#freqai-strategy \n"
                 "And the feature_engineering_* documentation: \n"
-                "https://www.freqtrade.io/en/latest/freqai-feature-engineering/"
+                f"{DOCS_LINK}/freqai-feature-engineering/"
                 )
 
         tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
@@ -956,11 +956,10 @@ class FreqaiDataKitchen:
         """
         Deprecation warning, migration assistance
         """
-        ft = "https://www.freqtrade.io/en/latest"
         logger.warning(f"Your custom IFreqaiModel relies on the deprecated"
                        " data pipeline. Please update your model to use the new data pipeline."
                        " This can be achieved by following the migration guide at "
-                       f"{ft}/strategy_migration/#freqai-new-data-pipeline "
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline "
                        "We added a basic pipeline for you, but this will be removed "
                        "in a future version.")
 
@@ -970,11 +969,10 @@ class FreqaiDataKitchen:
         """
         Deprecation warning, migration assistance
         """
-        ft = "https://www.freqtrade.io/en/latest"
         logger.warning(f"Your custom IFreqaiModel relies on the deprecated"
                        " data pipeline. Please update your model to use the new data pipeline."
                        " This can be achieved by following the migration guide at "
-                       f"{ft}/strategy_migration/#freqai-new-data-pipeline "
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline "
                        "We added a basic pipeline for you, but this will be removed "
                        "in a future version.")
 
