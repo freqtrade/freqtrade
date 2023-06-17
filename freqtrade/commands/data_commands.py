@@ -20,7 +20,7 @@ from freqtrade.util.binance_mig import migrate_binance_futures_data
 logger = logging.getLogger(__name__)
 
 
-def _data_download_sanity(config: Config) -> None:
+def _check_data_config_download_sanity(config: Config) -> None:
     if 'days' in config and 'timerange' in config:
         raise OperationalException("--days and --timerange are mutually exclusive. "
                                    "You can only specify one or the other.")
@@ -37,7 +37,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
-    _data_download_sanity(config)
+    _check_data_config_download_sanity(config)
     timerange = TimeRange()
     if 'days' in config:
         time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
