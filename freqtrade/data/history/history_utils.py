@@ -294,7 +294,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            logger.info(f'Downloading pair {pair}, interval {timeframe}.')
+            logger.debug(f'Downloading pair {pair}, {candle_type}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
