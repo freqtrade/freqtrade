@@ -641,7 +641,7 @@ def test_get_ui_download_url_direct(mocker):
 
 
 def test_download_data_keyboardInterrupt(mocker, markets):
-    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.download_data_main',
                            MagicMock(side_effect=KeyboardInterrupt))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
@@ -660,7 +660,7 @@ def test_download_data_keyboardInterrupt(mocker, markets):
 
 
 def test_download_data_timerange(mocker, markets):
-    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
@@ -708,7 +708,7 @@ def test_download_data_timerange(mocker, markets):
 
 
 def test_download_data_no_markets(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker, id='binance')
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
@@ -724,7 +724,7 @@ def test_download_data_no_markets(mocker, caplog):
 
 
 def test_download_data_no_exchange(mocker, caplog):
-    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
@@ -740,7 +740,7 @@ def test_download_data_no_exchange(mocker, caplog):
 
 def test_download_data_no_pairs(mocker):
 
-    mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
@@ -758,7 +758,7 @@ def test_download_data_no_pairs(mocker):
 
 def test_download_data_all_pairs(mocker, markets):
 
-    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
@@ -793,9 +793,9 @@ def test_download_data_all_pairs(mocker, markets):
 
 
 def test_download_data_trades(mocker, caplog):
-    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_trades_data',
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_trades_data',
                            MagicMock(return_value=[]))
-    convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
+    convert_mock = mocker.patch('freqtrade.data.history.history_utils.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
