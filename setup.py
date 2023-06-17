@@ -17,7 +17,7 @@ freqai = [
     'lightgbm',
     'xgboost',
     'tensorboard',
-    'datasieve>=0.1.4'
+    'datasieve>=0.1.5'
 ]
 
 freqai_rl = [
