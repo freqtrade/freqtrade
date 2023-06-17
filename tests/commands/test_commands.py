@@ -711,7 +711,7 @@ def test_download_data_no_markets(mocker, caplog):
     dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker, id='binance')
-    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
+    mocker.patch(f'{EXMS}.get_markets', return_value={})
     args = [
         "download-data",
         "--exchange", "binance",
@@ -723,11 +723,11 @@ def test_download_data_no_markets(mocker, caplog):
     assert log_has("Pairs [ETH/BTC,XRP/BTC] not available on exchange Binance.", caplog)
 
 
-def test_download_data_no_exchange(mocker, caplog):
+def test_download_data_no_exchange(mocker):
     mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data',
                  MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
-    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
+    mocker.patch(f'{EXMS}.get_markets', return_value={})
     args = [
         "download-data",
     ]
@@ -792,13 +792,13 @@ def test_download_data_all_pairs(mocker, markets):
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
 
 
-def test_download_data_trades(mocker, caplog):
+def test_download_data_trades(mocker):
     dl_mock = mocker.patch('freqtrade.data.history.history_utils.refresh_backtest_trades_data',
                            MagicMock(return_value=[]))
     convert_mock = mocker.patch('freqtrade.data.history.history_utils.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
-    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
+    mocker.patch(f'{EXMS}.get_markets', return_value={})
     args = [
         "download-data",
         "--exchange", "kraken",
@@ -829,7 +829,7 @@ def test_download_data_trades(mocker, caplog):
 
 def test_download_data_data_invalid(mocker):
     patch_exchange(mocker, id="kraken")
-    mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
+    mocker.patch(f'{EXMS}.get_markets', return_value={})
     args = [
         "download-data",
         "--exchange", "kraken",
