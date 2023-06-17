@@ -52,7 +52,7 @@ class BasePyTorchRegressor(BasePyTorchModel):
         pred_df = DataFrame(y.detach().tolist(), columns=[dk.label_list[0]])
         pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
 
-        if self.freqai_info.get("DI_threshold", 0) > 0:
+        if dk.feature_pipeline["di"]:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
             dk.DI_values = np.zeros(len(outliers.index))

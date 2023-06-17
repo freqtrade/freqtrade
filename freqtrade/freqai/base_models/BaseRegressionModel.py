@@ -111,7 +111,7 @@ class BaseRegressionModel(IFreqaiModel):
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
         pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
-        if self.freqai_info.get("DI_threshold", 0) > 0:
+        if dk.feature_pipeline["di"]:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
             dk.DI_values = np.zeros(len(outliers.index))

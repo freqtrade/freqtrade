@@ -250,16 +250,12 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         dk.data_dictionary["prediction_features"] = self.drop_ohlc_from_df(filtered_dataframe, dk)
 
-        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+        dk.data_dictionary["prediction_features"], _, _ = dk.feature_pipeline.transform(
             dk.data_dictionary["prediction_features"], outlier_check=True)
 
         pred_df = self.rl_model_predict(
             dk.data_dictionary["prediction_features"], dk, self.model)
         pred_df.fillna(0, inplace=True)
-
-        if self.freqai_info.get("DI_threshold", 0) > 0:
-            dk.DI_values = dk.feature_pipeline["di"].di_values
-        dk.do_predict = outliers.to_numpy()
 
         return (pred_df, dk.do_predict)
 
