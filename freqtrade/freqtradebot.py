@@ -443,13 +443,6 @@ class FreqtradeBot(LoggingMixin):
                     if fo and fo['status'] == 'open':
                         # Assume this as the open stoploss order
                         trade.stoploss_order_id = order.order_id
-                elif order.ft_order_side == trade.exit_side:
-                    if fo and fo['status'] == 'open':
-                        # Assume this as the open order
-                        trade.open_order_id = order.order_id
-                elif order.ft_order_side == trade.entry_side:
-                    if fo and fo['status'] == 'open':
-                        trade.open_order_id = order.order_id
                 if fo:
                     logger.info(f"Found {order} for trade {trade}.")
                     self.update_trade_state(trade, order.order_id, fo,
@@ -1700,7 +1693,7 @@ class FreqtradeBot(LoggingMixin):
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side, amount, limit)
         trade.orders.append(order_obj)
 
-        trade.open_order_id = order['id']
+        # trade.open_order_id = order['id']
         trade.exit_order_status = ''
         trade.close_rate_requested = limit
         trade.exit_reason = exit_reason
@@ -1708,7 +1701,7 @@ class FreqtradeBot(LoggingMixin):
         self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order_obj)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
-            self.update_trade_state(trade, trade.open_order_id, order)
+            self.update_trade_state(trade, order_obj.order_id, order)
         Trade.commit()
 
         return True

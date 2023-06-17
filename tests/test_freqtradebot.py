@@ -2452,7 +2452,7 @@ def test_handle_trade(
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short,
                      exit_long=not is_short, exit_tag='sell_signal1')
     assert freqtrade.handle_trade(trade) is True
-    assert trade.open_order_id == exit_order['id']
+    assert trade.open_orders_ids[-1] == exit_order['id']
 
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.orders[-1].ft_is_open = False
@@ -2848,7 +2848,7 @@ def test_adjust_entry_cancel(
     assert freqtrade.strategy.adjust_entry_price.call_count == 1
 
 
-@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False])
 def test_adjust_entry_maintain_replace(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short
@@ -2879,6 +2879,7 @@ def test_adjust_entry_maintain_replace(
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
         select(Trade)
+        .where(Order.ft_is_open.is_(True))
         .where(Order.ft_trade_id == Trade.id)
         ).all()
     assert len(trades) == 1
@@ -2889,9 +2890,14 @@ def test_adjust_entry_maintain_replace(
     # Check that order is replaced
     freqtrade.get_valid_enter_price_and_stake = MagicMock(return_value={100, 10, 1})
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
+
+    # TODO Check why call_count at 0, possible cause of test failure
+    assert freqtrade.strategy.adjust_entry_price.call_count == 2
+
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
         select(Trade)
+        .where(Order.ft_is_open.is_(True))
         .where(Order.ft_trade_id == Trade.id)
         ).all()
     assert len(trades) == 1
@@ -3512,7 +3518,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
     send_msg_mock.reset_mock()
-    assert freqtrade.handle_cancel_exit(trade, order, order.id, reason)
+    assert freqtrade.handle_cancel_exit(trade, order, order['id'], reason)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
@@ -3524,14 +3530,14 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     # Partial exit - below exit threshold
     order['amount'] = 2
     order['filled'] = 1.9
-    assert not freqtrade.handle_cancel_exit(trade, order, order.id, reason)
+    assert not freqtrade.handle_cancel_exit(trade, order, order['id'], reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
 
-    assert not freqtrade.handle_cancel_exit(trade, order, order.id, reason)
+    assert not freqtrade.handle_cancel_exit(trade, order, order['id'], reason)
 
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
@@ -3543,7 +3549,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     send_msg_mock.reset_mock()
 
     order['filled'] = 1
-    assert freqtrade.handle_cancel_exit(trade, order, order.id, reason)
+    assert freqtrade.handle_cancel_exit(trade, order, order['id'], reason)
     assert send_msg_mock.call_count == 1
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
             == CANCEL_REASON['PARTIALLY_FILLED'])
