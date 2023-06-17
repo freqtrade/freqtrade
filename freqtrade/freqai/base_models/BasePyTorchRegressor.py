@@ -96,12 +96,15 @@ class BasePyTorchRegressor(BasePyTorchModel):
          dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
                                                                   dd["train_labels"],
                                                                   dd["train_weights"])
+        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
 
-        (dd["test_features"],
-         dd["test_labels"],
-         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
-                                                             dd["test_labels"],
-                                                             dd["test_weights"])
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            (dd["test_features"],
+             dd["test_labels"],
+             dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                                 dd["test_labels"],
+                                                                 dd["test_weights"])
+            dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
