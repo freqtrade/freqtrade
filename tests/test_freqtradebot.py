@@ -2888,11 +2888,15 @@ def test_adjust_entry_maintain_replace(
     assert freqtrade.strategy.adjust_entry_price.call_count == 1
 
     # Check that order is replaced
+    # TODO replace order at a price that can't be fullfilled
     freqtrade.get_valid_enter_price_and_stake = MagicMock(return_value={100, 10, 1})
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
+    freqtrade.process()
+    assert len(Order.get_open_orders()) == 1
 
     # TODO Check why call_count at 0, possible cause of test failure
-    assert freqtrade.strategy.adjust_entry_price.call_count == 2
+    # WHY? : Because the order is fullfilled
+    assert freqtrade.strategy.adjust_entry_price.call_count == 2  # Failing test
 
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
