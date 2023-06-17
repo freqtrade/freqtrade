@@ -13,7 +13,7 @@ from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import Exchange, market_is_active
+from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.util.binance_mig import migrate_binance_futures_data
@@ -505,8 +505,11 @@ def download_data_main(config: Config) -> None:
     # Init exchange
     from freqtrade.resolvers.exchange_resolver import ExchangeResolver
     exchange = ExchangeResolver.load_exchange(config, validate=False)
-    available_pairs = [p for p, m in exchange.markets.items() if market_is_active(m)
-                       or config.get('include_inactive')]
+    available_pairs = [
+        p for p in exchange.get_markets(
+            tradable_only=True, active_only=not config.get('include_inactive')
+            ).keys()
+    ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
 
