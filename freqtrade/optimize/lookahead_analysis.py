@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
+from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import get_timerange
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 class VarHolder:
     timerange: TimeRange
-    data: pd.DataFrame
-    indicators: pd.DataFrame
-    result: pd.DataFrame
-    compared: pd.DataFrame
+    data: DataFrame
+    indicators: Dict[str, DataFrame]
+    result: DataFrame
+    compared: DataFrame
     from_dt: datetime
     to_dt: datetime
     compared_dt: datetime
@@ -63,7 +63,7 @@ class LookaheadAnalysis:
         return timestamp
 
     @staticmethod
-    def get_result(backtesting: Backtesting, processed: pd.DataFrame):
+    def get_result(backtesting: Backtesting, processed: DataFrame):
         min_date, max_date = get_timerange(processed)
 
         result = backtesting.backtest(
@@ -92,8 +92,8 @@ class LookaheadAnalysis:
     # analyzes two data frames with processed indicators and shows differences between them.
     def analyze_indicators(self, full_vars: VarHolder, cut_vars: VarHolder, current_pair):
         # extract dataframes
-        cut_df = cut_vars.indicators[current_pair]
-        full_df = full_vars.indicators[current_pair]
+        cut_df: DataFrame = cut_vars.indicators[current_pair]
+        full_df: DataFrame = full_vars.indicators[current_pair]
 
         # cut longer dataframe to length of the shorter
         full_df_cut = full_df[
@@ -127,7 +127,7 @@ class LookaheadAnalysis:
                                             f"{col_name[0]}. "
                                             f"{str(self_value)} != {str(other_value)}")
 
-    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[pd.DataFrame]):
+    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
 
         if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
             # purge previous data if the freqai model is defined
