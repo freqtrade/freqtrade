@@ -91,7 +91,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         pred_df = DataFrame(predicted_classes_str, columns=[dk.label_list[0]])
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
 
-        if self.freqai_info.get("DI_threshold", 0) > 0:
+        if dk.feature_pipeline["di"]:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
             dk.DI_values = np.zeros(len(outliers.index))
