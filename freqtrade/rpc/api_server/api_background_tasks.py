@@ -70,9 +70,9 @@ def __run_pairlist(job_id: str, config_loc: Config):
     except (OperationalException, Exception) as e:
         logger.exception(e)
         ApiBG.jobs[job_id]['error'] = str(e)
+        ApiBG.jobs[job_id]['status'] = 'failed'
     finally:
         ApiBG.jobs[job_id]['is_running'] = False
-        ApiBG.jobs[job_id]['status'] = 'failed'
         ApiBG.pairlist_running = False
 
 
