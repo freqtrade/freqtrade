@@ -9,7 +9,6 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
@@ -472,9 +471,9 @@ class LocalTrade():
     @property
     def has_open_orders(self) -> int:
         open_orders_wo_sl = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side not in ['stoploss']):
-                open_orders_wo_sl.append(oo)
+        for o in self.orders:
+            if (o.ft_order_side not in ['stoploss']) & (o.ft_is_open):
+                open_orders_wo_sl.append(o)
 
         return (len(open_orders_wo_sl) > 0)
 
@@ -1327,55 +1326,24 @@ class Trade(ModelBase, LocalTrade):
     funding_fees: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=None)  # type: ignore
 
-    @hybrid_property
+    @property
     def open_orders(self):
         return [order for order in self.orders if order.ft_is_open]
 
-    @open_orders.expression
-    def open_orders(cls):
-        return (
-            select(Order).where(Order.ft_is_open is True)
-            .where(
-                Order.order_id.in_(
-                    select(Order.order_id)
-                    .where(Order.ft_trade_id == cls.id)
-                )
-            )
-        )
-
-    @hybrid_property
+    @property
     def has_open_orders(self) -> int:
         open_orders_wo_sl = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side not in ['stoploss']):
-                open_orders_wo_sl.append(oo)
+        for o in self.orders:
+            if (o.ft_order_side not in ['stoploss']) & (o.ft_is_open):
+                open_orders_wo_sl.append(o)
 
         return (len(open_orders_wo_sl) > 0)
 
-    @has_open_orders.expression
-    def has_open_orders(cls) -> int:
-        return (
-            select(func.exists())
-            .where(Order.ft_is_open.is_(True))
-            .where(Order.ft_order_side != "stoploss")
-            .where(Order.ft_trade_id == cls.id)
-            .as_scalar()
-        )
-
-    @hybrid_property
+    @property
     def open_orders_count(self) -> int:
         return len(self.open_orders)
 
-    @open_orders_count.expression
-    def open_orders_count(cls):
-        return (
-            select(func.count(Order.order_id))
-            .where(Order.ft_is_open is True)
-            .where(Order.ft_trade_id == cls.id)
-            .subquery()
-        )
-
-    @hybrid_property
+    @property
     def open_entry_or_exit_orders_count(self) -> int:
         open_buy_or_sell_orders = []
         for oo in self.open_orders:
@@ -1384,32 +1352,13 @@ class Trade(ModelBase, LocalTrade):
 
         return len(open_buy_or_sell_orders)
 
-    @open_entry_or_exit_orders_count.expression
-    def open_entry_or_exit_orders_count(cls):
-        return (
-            select(func.count(Order.order_id))
-            .where(Order.ft_order_side.contains(['buy', 'sell']))
-            .where(Order.ft_trade_id == cls.id)
-            .subquery()
-        )
-
-    @hybrid_property
+    @property
     def open_orders_ids(self) -> list:
         open_orders_ids_wo_sl = []
         for oo in self.open_orders:
             if (oo.ft_order_side not in ['stoploss']):
                 open_orders_ids_wo_sl.append(oo.order_id)
         return open_orders_ids_wo_sl
-
-    @open_orders_ids.expression
-    def open_orders_ids(cls):
-        return (
-            select(Order.order_id)
-            .where(Order.ft_is_open is True)
-            .where(Order.ft_order_side != "stoploss")
-            .where(Order.ft_trade_id == cls.id)
-            .subquery()
-        )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
