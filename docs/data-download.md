@@ -93,44 +93,6 @@ Common arguments:
 
     For that reason, `download-data` does not care about the "startup-period" defined in a strategy. It's up to the user to download additional days if the backtest should start at a specific point in time (while respecting startup period).
 
-### Pairs file
-
-In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
-If you are using Binance for example:
-
-- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
-- update the `pairs.json` file to contain the currency pairs you are interested in.
-
-```bash
-mkdir -p user_data/data/binance
-touch user_data/data/binance/pairs.json
-```
-
-The format of the `pairs.json` file is a simple json list.
-Mixing different stake-currencies is allowed for this file, since it's only used for downloading.
-
-``` json
-[
-    "ETH/BTC",
-    "ETH/USDT",
-    "BTC/USDT",
-    "XRP/ETH"
-]
-```
-
-??? Note "Permission denied errors"
-    If your configuration directory `user_data` was made by docker, you may get the following error:
-
-    ```
-    cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
-    ```
-
-    You can fix the permissions of your user-data directory as follows:
-
-    ```
-    sudo chown -R $UID:$GID user_data
-    ```
-
 ### Start download
 
 Then run:
@@ -162,6 +124,19 @@ freqtrade download-data --exchange binance --pairs .*/USDT
 - To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020.
 - Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
+
+??? Note "Permission denied errors"
+    If your configuration directory `user_data` was made by docker, you may get the following error:
+
+    ```
+    cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
+    ```
+
+    You can fix the permissions of your user-data directory as follows:
+
+    ```
+    sudo chown -R $UID:$GID user_data
+    ```
 
 #### Download additional data before the current timerange
 
@@ -238,7 +213,32 @@ Size has been taken from the BTC/USDT 1m spot combination for the timerange spec
 
 To have a best performance/size mix, we recommend the use of either feather or parquet.
 
-#### Sub-command convert data
+### Pairs file
+
+In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
+If you are using Binance for example:
+
+- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
+- update the `pairs.json` file to contain the currency pairs you are interested in.
+
+```bash
+mkdir -p user_data/data/binance
+touch user_data/data/binance/pairs.json
+```
+
+The format of the `pairs.json` file is a simple json list.
+Mixing different stake-currencies is allowed for this file, since it's only used for downloading.
+
+``` json
+[
+    "ETH/BTC",
+    "ETH/USDT",
+    "BTC/USDT",
+    "XRP/ETH"
+]
+```
+
+## Sub-command convert data
 
 ```
 usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
@@ -290,7 +290,7 @@ Common arguments:
 
 ```
 
-##### Example converting data
+### Example converting data
 
 The following command will convert all candle (OHLCV) data available in `~/.freqtrade/data/binance` from json to jsongz, saving diskspace in the process.
 It'll also remove original json data files (`--erase` parameter).
@@ -299,7 +299,7 @@ It'll also remove original json data files (`--erase` parameter).
 freqtrade convert-data --format-from json --format-to jsongz --datadir ~/.freqtrade/data/binance -t 5m 15m --erase
 ```
 
-#### Sub-command convert trade data
+## Sub-command convert trade data
 
 ```
 usage: freqtrade convert-trade-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
@@ -342,7 +342,7 @@ Common arguments:
 
 ```
 
-##### Example converting trades
+### Example converting trades
 
 The following command will convert all available trade-data in `~/.freqtrade/data/kraken` from jsongz to json.
 It'll also remove original jsongz data files (`--erase` parameter).
@@ -351,7 +351,7 @@ It'll also remove original jsongz data files (`--erase` parameter).
 freqtrade convert-trade-data --format-from jsongz --format-to json --datadir ~/.freqtrade/data/kraken --erase
 ```
 
-### Sub-command trades to ohlcv
+## Sub-command trades to ohlcv
 
 When you need to use `--dl-trades` (kraken only) to download data, conversion of trades data to ohlcv data is the last step.
 This command will allow you to repeat this last step for additional timeframes without re-downloading the data.
@@ -400,13 +400,13 @@ Common arguments:
 
 ```
 
-#### Example trade-to-ohlcv conversion
+### Example trade-to-ohlcv conversion
 
 ``` bash
 freqtrade trades-to-ohlcv --exchange kraken -t 5m 1h 1d --pairs BTC/EUR ETH/EUR
 ```
 
-### Sub-command list-data
+## Sub-command list-data
 
 You can get a list of downloaded data using the `list-data` sub-command.
 
@@ -451,7 +451,7 @@ Common arguments:
 
 ```
 
-#### Example list-data
+### Example list-data
 
 ```bash
 > freqtrade list-data --userdir ~/.freqtrade/user_data/
@@ -465,7 +465,7 @@ ETH/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
 ETH/USDT    5m, 15m, 30m, 1h, 2h, 4h
 ```
 
-### Trades (tick) data
+## Trades (tick) data
 
 By default, `download-data` sub-command downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
 This data can be useful if you need many different timeframes, since it is only downloaded once, and then resampled locally to the desired timeframes.
