@@ -1605,13 +1605,13 @@ def test_create_stoploss_order_insufficient_funds(
     assert mock_insuf.call_count == 1
 
 
-@pytest.mark.parametrize("is_short,bid,ask,stop_price,amt,hang_price", [
-    (False, [4.38, 4.16], [4.4, 4.17], ['2.0805', 4.4 * 0.95], 27.39726027, 3),
-    (True, [1.09, 1.21], [1.1, 1.22], ['2.321', 1.09 * 1.05], 27.27272727, 1.5),
+@pytest.mark.parametrize("is_short,bid,ask,stop_price,hang_price", [
+    (False, [4.38, 4.16], [4.4, 4.17], ['2.0805', 4.4 * 0.95], 3),
+    (True, [1.09, 1.21], [1.1, 1.22], ['2.321', 1.09 * 1.05], 1.5),
 ])
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(
-    mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, amt, hang_price
+    mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, hang_price
 ) -> None:
     # When trailing stoploss is set
     enter_order = limit_order[entry_side(is_short)]
@@ -1626,8 +1626,8 @@ def test_handle_stoploss_on_exchange_trailing(
             'last': 2.19,
         }),
         create_order=MagicMock(side_effect=[
-            {'id': enter_order['id']},
-            {'id': exit_order['id']},
+            enter_order,
+            exit_order,
         ]),
         get_fee=fee,
     )
@@ -1723,7 +1723,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     cancel_order_mock.assert_called_once_with('100', 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=pytest.approx(amt),
+        amount=30,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=stop_price[1],
