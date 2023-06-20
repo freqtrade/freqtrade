@@ -1992,7 +1992,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
 
     enter_order = limit_order['buy']
     exit_order = limit_order['sell']
-
+    enter_order['average'] = 2.19
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': '13434334', 'status': 'open'})
     patch_RPCManager(mocker)
@@ -2009,8 +2009,8 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
             'last': 2.19
         }),
         create_order=MagicMock(side_effect=[
-            {'id': enter_order['id']},
-            {'id': exit_order['id']},
+            enter_order,
+            exit_order,
         ]),
         get_fee=fee,
         create_stoploss=stoploss,
@@ -2106,7 +2106,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, limit_orde
     assert trade.stop_loss == 4.4 * 0.99
     cancel_order_mock.assert_called_once_with('100', 'NEO/BTC')
     stoploss_order_mock.assert_called_once_with(
-        amount=pytest.approx(11.41438356),
+        amount=30,
         pair='NEO/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.99,
