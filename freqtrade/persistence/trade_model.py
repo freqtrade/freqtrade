@@ -327,7 +327,6 @@ class LocalTrade():
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
-    open_orders: List[Order] = []
     # absolute value of the stop loss
     stop_loss: float = 0.0
     # percentage value of the stop loss
@@ -469,17 +468,16 @@ class LocalTrade():
             return ''
 
     @property
-    def open_orders(self):
+    def open_orders(self) -> List[Order]:
         return [order for order in self.orders if order.ft_is_open]
 
     @property
     def has_open_orders(self) -> int:
-        open_orders_wo_sl = []
-        for o in self.orders:
-            if (o.ft_order_side not in ['stoploss']) & (o.ft_is_open):
-                open_orders_wo_sl.append(o)
-
-        return (len(open_orders_wo_sl) > 0)
+        open_orders_wo_sl = [
+            o for o in self.orders
+            if o.ft_order_side not in ['stoploss'] and o.ft_is_open
+        ]
+        return len(open_orders_wo_sl) > 0
 
     @property
     def open_orders_count(self) -> int:
@@ -487,19 +485,19 @@ class LocalTrade():
 
     @property
     def open_entry_or_exit_orders_count(self) -> int:
-        open_buy_or_sell_orders = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side in ['buy', 'sell']):
-                open_buy_or_sell_orders.append(oo)
 
+        open_buy_or_sell_orders = [
+            oo for oo in self.open_orders
+            if oo.ft_order_side in ['buy', 'sell']
+        ]
         return len(open_buy_or_sell_orders)
 
     @property
     def open_orders_ids(self) -> list:
-        open_orders_ids_wo_sl = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side not in ['stoploss']):
-                open_orders_ids_wo_sl.append(oo.order_id)
+        open_orders_ids_wo_sl = [
+            oo.order_id for oo in self.open_orders
+            if oo.ft_order_side not in ['stoploss']
+        ]
         return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
