@@ -469,6 +469,10 @@ class LocalTrade():
             return ''
 
     @property
+    def open_orders(self):
+        return [order for order in self.orders if order.ft_is_open]
+
+    @property
     def has_open_orders(self) -> int:
         open_orders_wo_sl = []
         for o in self.orders:
@@ -1325,40 +1329,6 @@ class Trade(ModelBase, LocalTrade):
     # Futures properties
     funding_fees: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=None)  # type: ignore
-
-    @property
-    def open_orders(self):
-        return [order for order in self.orders if order.ft_is_open]
-
-    @property
-    def has_open_orders(self) -> int:
-        open_orders_wo_sl = []
-        for o in self.orders:
-            if (o.ft_order_side not in ['stoploss']) & (o.ft_is_open):
-                open_orders_wo_sl.append(o)
-
-        return (len(open_orders_wo_sl) > 0)
-
-    @property
-    def open_orders_count(self) -> int:
-        return len(self.open_orders)
-
-    @property
-    def open_entry_or_exit_orders_count(self) -> int:
-        open_buy_or_sell_orders = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side in ['buy', 'sell']):
-                open_buy_or_sell_orders.append(oo)
-
-        return len(open_buy_or_sell_orders)
-
-    @property
-    def open_orders_ids(self) -> list:
-        open_orders_ids_wo_sl = []
-        for oo in self.open_orders:
-            if (oo.ft_order_side not in ['stoploss']):
-                open_orders_ids_wo_sl.append(oo.order_id)
-        return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
