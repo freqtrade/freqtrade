@@ -2199,6 +2199,7 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog
         ft_amount=trade.amount,
         ft_price=trade.open_rate,
         order_id=order_id,
+        ft_is_open=False,
 
     ))
     Trade.session.add(trade)
