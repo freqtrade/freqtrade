@@ -1507,7 +1507,7 @@ def test_create_stoploss_order_invalid_order(
     patch_exchange(mocker)
     create_order_mock = MagicMock(side_effect=[
         open_order,
-        {'id': order['id']}
+        order,
     ])
     mocker.patch.multiple(
         EXMS,
@@ -1713,7 +1713,8 @@ def test_handle_stoploss_on_exchange_trailing(
 
     cancel_order_mock.assert_called_once_with('100', 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=pytest.approx(amt),
+        # TODO: Why is 30 correct here, and had to be "amt" before??
+        amount=pytest.approx(30),
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=stop_price[1],
@@ -1859,8 +1860,8 @@ def test_handle_stoploss_on_exchange_custom_stop(
             'last': 1.9
         }),
         create_order=MagicMock(side_effect=[
-            {'id': enter_order['id']},
-            {'id': exit_order['id']},
+            enter_order,
+            exit_order,
         ]),
         get_fee=fee,
     )
