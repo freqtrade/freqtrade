@@ -117,13 +117,13 @@ freqtrade download-data --exchange binance --pairs .*/USDT
 
 ### Other Notes
 
-- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
-- To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
-- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
-- To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
-- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020.
-- Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
-- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
+* To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
+* To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
+* To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
+* To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
+* To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020.
+* Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
+* To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 
 ??? Note "Permission denied errors"
     If your configuration directory `user_data` was made by docker, you may get the following error:
@@ -138,7 +138,7 @@ freqtrade download-data --exchange binance --pairs .*/USDT
     sudo chown -R $UID:$GID user_data
     ```
 
-#### Download additional data before the current timerange
+### Download additional data before the current timerange
 
 Assuming you downloaded all data from 2022 (`--timerange 20220101-`) - but you'd now like to also backtest with earlier data.
 You can do so by using the `--prepend` flag, combined with `--timerange` - specifying an end-date.
@@ -218,8 +218,8 @@ To have a best performance/size mix, we recommend the use of either feather or p
 In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
 If you are using Binance for example:
 
-- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
-- update the `pairs.json` file to contain the currency pairs you are interested in.
+* create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
+* update the `pairs.json` file to contain the currency pairs you are interested in.
 
 ```bash
 mkdir -p user_data/data/binance
