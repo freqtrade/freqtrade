@@ -2996,11 +2996,12 @@ def test_manage_open_orders_exit_usercustom(
 ) -> None:
     default_conf_usdt["unfilledtimeout"] = {"entry": 1440, "exit": 1440, "exit_timeout_count": 1}
     open_trade_usdt.open_order_id = limit_sell_order_old['id']
-    order = Order.parse_from_ccxt_object(limit_sell_order_old, 'mocked', 'sell')
-    open_trade_usdt.orders[0] = order
     if is_short:
         limit_sell_order_old['side'] = 'buy'
         open_trade_usdt.is_short = is_short
+    open_exit_order = Order.parse_from_ccxt_object(limit_sell_order_old, 'mocked',
+                                                   'buy' if is_short else 'sell')
+    open_trade_usdt.orders[-1] = open_exit_order
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -3031,8 +3032,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
-    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
+    assert freqtrade.strategy.check_exit_timeout.call_count == 1
+    assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
     freqtrade.strategy.check_exit_timeout = MagicMock(side_effect=KeyError)
     freqtrade.strategy.check_entry_timeout = MagicMock(side_effect=KeyError)
@@ -3040,8 +3041,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
-    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
+    assert freqtrade.strategy.check_exit_timeout.call_count == 1
+    assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
     # Return True - sells!
     freqtrade.strategy.check_exit_timeout = MagicMock(return_value=True)
@@ -3049,8 +3050,8 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
-    assert freqtrade.strategy.check_exit_timeout.call_count == (0 if is_short else 1)
-    assert freqtrade.strategy.check_entry_timeout.call_count == (1 if is_short else 0)
+    assert freqtrade.strategy.check_exit_timeout.call_count == 1
+    assert freqtrade.strategy.check_entry_timeout.call_count == 0
     trade = Trade.session.scalars(select(Trade)).first()
     # cancelling didn't succeed - order-id remains open.
     assert trade.open_order_id is not None
