@@ -83,6 +83,11 @@ Common arguments:
 
 ```
 
+!!! Tip "Downloading all data for one quote currency"
+    Often, you'll want to download data for all pairs of a specific quote-currency. In such cases, you can use the following shorthand:
+    `freqtrade download-data --exchange binance --pairs .*/USDT <...>`. The provided "pairs" string will be expanded to contain all active pairs on the exchange.
+    To also download data for inactive (delisted) pairs, add `--include-inactive-pairs` to the command.
+
 !!! Note "Startup period"
     `download-data` is a strategy-independent command. The idea is to download a big chunk of data once, and then iteratively increase the amount of data stored.
 
@@ -112,11 +117,6 @@ Mixing different stake-currencies is allowed for this file, since it's only used
     "XRP/ETH"
 ]
 ```
-
-!!! Tip "Downloading all data for one quote currency"
-    Often, you'll want to download data for all pairs of a specific quote-currency. In such cases, you can use the following shorthand:
-    `freqtrade download-data --exchange binance --pairs .*/USDT <...>`. The provided "pairs" string will be expanded to contain all active pairs on the exchange.
-    To also download data for inactive (delisted) pairs, add `--include-inactive-pairs` to the command.
 
 ??? Note "Permission denied errors"
     If your configuration directory `user_data` was made by docker, you may get the following error:
