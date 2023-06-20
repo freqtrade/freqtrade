@@ -1460,8 +1460,8 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
             'last': 1.9
         }),
         create_order=MagicMock(side_effect=[
-            {'id': enter_order['id']},
-            {'id': exit_order['id']},
+            enter_order,
+            exit_order,
         ]),
         get_fee=fee,
     )
