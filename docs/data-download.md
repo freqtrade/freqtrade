@@ -238,6 +238,10 @@ Mixing different stake-currencies is allowed for this file, since it's only used
 ]
 ```
 
+!!! Note
+    The `pairs.json` file is only used when no configuration is loaded (implicitly by naming, or via `--config` flag).
+    You can force the usage of this file via `--pairs-file pairs.json` - however we recommend to use the pairlist from within the configuration, either via `exchange.pair_whitelist` or `pairs` setting in the configuration.
+
 ## Sub-command convert data
 
 ```
