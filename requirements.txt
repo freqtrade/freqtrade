@@ -2,7 +2,7 @@ numpy==1.24.3
 pandas==2.0.2
 pandas-ta==0.3.14b
 
-ccxt==3.1.34
+ccxt==3.1.44
 cryptography==41.0.1; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.4
@@ -23,7 +23,7 @@ jinja2==3.1.2
 tables==3.8.0
 blosc==1.11.1
 joblib==1.2.0
-rich==13.4.1
+rich==13.4.2
 pyarrow==12.0.0; platform_machine != 'armv7l'
 
 # find first, C search in arrays
@@ -38,7 +38,7 @@ orjson==3.9.1
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.96.0
+fastapi==0.97.0
 pydantic==1.10.9
 uvicorn==0.22.0
 pyjwt==2.7.0

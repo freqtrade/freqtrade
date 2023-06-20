@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Tuple
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 
+DOCS_LINK = "https://www.freqtrade.io/en/stable"
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
@@ -163,6 +164,9 @@ CONF_SCHEMA = {
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
         'reduce_df_footprint': {'type': 'boolean', 'default': False},
+        'minimum_trade_amount': {'type': 'number', 'default': 10},
+        'targeted_trade_amount': {'type': 'number', 'default': 20},
+        'lookahead_analysis_exportfilename': {'type': 'string'},
         'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',

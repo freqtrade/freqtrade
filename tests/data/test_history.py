@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import json
+import logging
 import uuid
 from pathlib import Path
 from shutil import copyfile
@@ -503,9 +504,10 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 ])
 def test_refresh_backtest_ohlcv_data(
         mocker, default_conf, markets, caplog, testdatadir, trademode, callcount):
-    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history',
-                           MagicMock())
+    caplog.set_level(logging.DEBUG)
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history')
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
+
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "unlink", MagicMock())
 
@@ -520,7 +522,7 @@ def test_refresh_backtest_ohlcv_data(
     assert dl_mock.call_count == callcount
     assert dl_mock.call_args[1]['timerange'].starttype == 'date'
 
-    assert log_has("Downloading pair ETH/BTC, interval 1m.", caplog)
+    assert log_has_re(r"Downloading pair ETH/BTC, .* interval 1m\.", caplog)
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):

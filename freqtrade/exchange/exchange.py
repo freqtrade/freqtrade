@@ -301,7 +301,7 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
-    def markets(self) -> Dict:
+    def markets(self) -> Dict[str, Any]:
         """exchange ccxt markets"""
         if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")

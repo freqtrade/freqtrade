@@ -690,4 +690,21 @@ AVAILABLE_CLI_OPTIONS = {
         help='Run backtest with ready models.',
         action='store_true'
     ),
+    "minimum_trade_amount": Arg(
+        '--minimum-trade-amount',
+        help='Minimum trade amount for lookahead-analysis',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "targeted_trade_amount": Arg(
+        '--targeted-trade-amount',
+        help='Targeted trade amount for lookahead analysis',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "lookahead_analysis_exportfilename": Arg(
+        '--lookahead-analysis-exportfilename',
+        help="Use this csv-filename to store lookahead-analysis-results",
+        type=str
+    ),
 }

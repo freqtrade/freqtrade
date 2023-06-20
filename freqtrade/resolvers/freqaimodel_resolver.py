@@ -34,7 +34,7 @@ class FreqaiModelResolver(IResolver):
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
-        disallowed_models = ["BaseRegressionModel", "BaseTensorFlowModel"]
+        disallowed_models = ["BaseRegressionModel"]
 
         freqaimodel_name = config.get("freqaimodel")
         if not freqaimodel_name:

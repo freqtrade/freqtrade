@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
@@ -15,6 +15,8 @@ from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
+from freqtrade.util.binance_mig import migrate_binance_futures_data
 
 
 logger = logging.getLogger(__name__)
@@ -294,7 +296,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            logger.info(f'Downloading pair {pair}, interval {timeframe}.')
+            logger.debug(f'Downloading pair {pair}, {candle_type}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
@@ -483,3 +485,77 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
         logger.warning("%s has missing frames: expected %s, got %s, that's %s missing values",
                        pair, expected_frames, dflen, expected_frames - dflen)
     return found_missing
+
+
+def download_data_main(config: Config) -> None:
+
+    timerange = TimeRange()
+    if 'days' in config:
+        time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
+        timerange = TimeRange.parse_timerange(f'{time_since}-')
+
+    if 'timerange' in config:
+        timerange = timerange.parse_timerange(config['timerange'])
+
+    # Remove stake-currency to skip checks which are not relevant for datadownload
+    config['stake_currency'] = ''
+
+    pairs_not_available: List[str] = []
+
+    # Init exchange
+    from freqtrade.resolvers.exchange_resolver import ExchangeResolver
+    exchange = ExchangeResolver.load_exchange(config, validate=False)
+    available_pairs = [
+        p for p in exchange.get_markets(
+            tradable_only=True, active_only=not config.get('include_inactive')
+            ).keys()
+    ]
+
+    expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
+
+    # Manual validations of relevant settings
+    if not config['exchange'].get('skip_pair_validation', False):
+        exchange.validate_pairs(expanded_pairs)
+    logger.info(f"About to download pairs: {expanded_pairs}, "
+                f"intervals: {config['timeframes']} to {config['datadir']}")
+
+    for timeframe in config['timeframes']:
+        exchange.validate_timeframes(timeframe)
+
+    # Start downloading
+    try:
+        if config.get('download_trades'):
+            if config.get('trading_mode') == 'futures':
+                raise OperationalException("Trade download not supported for futures.")
+            pairs_not_available = refresh_backtest_trades_data(
+                exchange, pairs=expanded_pairs, datadir=config['datadir'],
+                timerange=timerange, new_pairs_days=config['new_pairs_days'],
+                erase=bool(config.get('erase')), data_format=config['dataformat_trades'])
+
+            # Convert downloaded trade data to different timeframes
+            convert_trades_to_ohlcv(
+                pairs=expanded_pairs, timeframes=config['timeframes'],
+                datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
+                data_format_ohlcv=config['dataformat_ohlcv'],
+                data_format_trades=config['dataformat_trades'],
+            )
+        else:
+            if not exchange.get_option('ohlcv_has_history', True):
+                raise OperationalException(
+                    f"Historic klines not available for {exchange.name}. "
+                    "Please use `--dl-trades` instead for this exchange "
+                    "(will unfortunately take a long time)."
+                    )
+            migrate_binance_futures_data(config)
+            pairs_not_available = refresh_backtest_ohlcv_data(
+                exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
+                datadir=config['datadir'], timerange=timerange,
+                new_pairs_days=config['new_pairs_days'],
+                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
+                trading_mode=config.get('trading_mode', 'spot'),
+                prepend=config.get('prepend_data', False)
+            )
+    finally:
+        if pairs_not_available:
+            logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
+                        f"on exchange {exchange.name}.")

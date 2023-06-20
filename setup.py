@@ -5,7 +5,7 @@ from setuptools import setup
 plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',
-    'scikit-learn',
+    'scikit-learn<=1.1.3',
     'scikit-optimize>=0.7.0',
     'filelock',
 ]
@@ -16,7 +16,8 @@ freqai = [
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
     'xgboost',
-    'tensorboard'
+    'tensorboard',
+    'datasieve>=0.1.5'
 ]
 
 freqai_rl = [

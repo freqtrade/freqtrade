@@ -534,10 +534,10 @@ class Telegram(RPCHandler):
             if order_nr == 1:
                 lines.append(f"*{wording} #{order_nr}:*")
                 lines.append(
-                    f"*Amount:* {cur_entry_amount} "
+                    f"*Amount:* {cur_entry_amount:.8g} "
                     f"({round_coin_value(order['cost'], quote_currency)})"
                 )
-                lines.append(f"*Average Price:* {cur_entry_average}")
+                lines.append(f"*Average Price:* {cur_entry_average:.8g}")
             else:
                 sum_stake = 0
                 sum_amount = 0
@@ -560,9 +560,9 @@ class Telegram(RPCHandler):
                 if is_open:
                     lines.append("({})".format(dt_humanize(order["order_filled_date"],
                                                            granularity=["day", "hour", "minute"])))
-                lines.append(f"*Amount:* {cur_entry_amount} "
+                lines.append(f"*Amount:* {cur_entry_amount:.8g} "
                              f"({round_coin_value(order['cost'], quote_currency)})")
-                lines.append(f"*Average {wording} Price:* {cur_entry_average} "
+                lines.append(f"*Average {wording} Price:* {cur_entry_average:.8g} "
                              f"({price_to_1st_entry:.2%} from 1st entry Rate)")
                 lines.append(f"*Order filled:* {order['order_filled_date']}")
 
@@ -633,11 +633,11 @@ class Telegram(RPCHandler):
                 ])
 
             lines.extend([
-                "*Open Rate:* `{open_rate:.8f}`",
-                "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
+                "*Open Rate:* `{open_rate:.8g}`",
+                "*Close Rate:* `{close_rate:.8g}`" if r['close_rate'] else "",
                 "*Open Date:* `{open_date}`",
                 "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                " \n*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
+                " \n*Current Rate:* `{current_rate:.8g}`" if r['is_open'] else "",
                 ("*Unrealized Profit:* " if r['is_open'] else "*Close Profit: *")
                 + "`{profit_ratio:.2%}` `({profit_abs_r})`",
             ])
@@ -658,9 +658,9 @@ class Telegram(RPCHandler):
                                  "`({initial_stop_loss_ratio:.2%})`")
 
                 # Adding stoploss and stoploss percentage only if it is not None
-                lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
+                lines.append("*Stoploss:* `{stop_loss_abs:.8g}` " +
                              ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
-                lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
+                lines.append("*Stoploss distance:* `{stoploss_current_dist:.8g}` "
                              "`({stoploss_current_dist_ratio:.2%})`")
                 if r['open_order']:
                     lines.append(
