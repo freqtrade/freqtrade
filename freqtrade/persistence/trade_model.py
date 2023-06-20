@@ -1730,7 +1730,6 @@ class Trade(ModelBase, LocalTrade):
             is_short=data["is_short"],
             trading_mode=data["trading_mode"],
             funding_fees=data["funding_fees"],
-            open_order_id=data["open_order_id"],
         )
         for order in data["orders"]:
 
