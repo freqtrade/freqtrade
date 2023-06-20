@@ -6,7 +6,7 @@ To download data (candles / OHLCV) needed for backtesting and hyperoptimization 
 
 If no additional parameter is specified, freqtrade will download data for `"1m"` and `"5m"` timeframes for the last 30 days.
 Exchange and pairs will come from `config.json` (if specified using `-c/--config`).
-Otherwise `--exchange` becomes mandatory.
+Without provided configuration, `--exchange` becomes mandatory.
 
 You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101-`). For incremental downloads, the relative approach should be used.
 
@@ -95,13 +95,13 @@ Common arguments:
 
 ### Start download
 
-Then run:
+A very simple command (assuming an available `config.json` file) can look as follows.
 
 ```bash
 freqtrade download-data --exchange binance
 ```
 
-This will download historical candle (OHLCV) data for all the currency pairs you defined in `pairs.json`.
+This will download historical candle (OHLCV) data for all the currency pairs defined in the configuration.
 
 Alternatively, specify the pairs directly
 
@@ -109,7 +109,7 @@ Alternatively, specify the pairs directly
 freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT
 ```
 
-or as regex (to download all active USDT pairs)
+or as regex (in this case, to download all active USDT pairs)
 
 ```bash
 freqtrade download-data --exchange binance --pairs .*/USDT
