@@ -764,20 +764,23 @@ class RPC:
     def __exec_force_exit(self, trade: Trade, ordertype: Optional[str],
                           amount: Optional[float] = None) -> bool:
         # Check if there is there is open orders
-        fully_canceled = False
+        trade_entry_cancelation_registry = []
         for oo in trade.open_orders:
+            trade_entry_cancelation_res = {'order_id': oo.order_id, 'cancel_state': False}
             order = self._freqtrade.exchange.fetch_order(oo.order_id, trade.pair)
 
             if order['side'] == trade.entry_side:
                 fully_canceled = self._freqtrade.handle_cancel_enter(
                     trade, order, oo.order_id, CANCEL_REASON['FORCE_EXIT'])
+                trade_entry_cancelation_res['cancel_state'] = fully_canceled
+                trade_entry_cancelation_registry.append(trade_entry_cancelation_res)
 
             if order['side'] == trade.exit_side:
                 # Cancel order - so it is placed anew with a fresh price.
                 self._freqtrade.handle_cancel_exit(
                     trade, order, oo.order_id, CANCEL_REASON['FORCE_EXIT'])
 
-        if not fully_canceled:
+        if any(not tocr['cancel_state'] for tocr in trade_entry_cancelation_registry):
             if trade.has_open_orders:
                 # Order cancellation failed, so we can't exit.
                 return False
