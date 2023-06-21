@@ -286,18 +286,22 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
-                open_order = (trade.select_order_by_order_id(
-                    trade.open_order_id) if trade.open_order_id else None)
+
+                active_attempt_side_symbols = [
+                    '*' if (oo and oo.ft_order_side == trade.entry_side) else '**'
+                    for oo in trade.open_orders
+                ]
+
+                # exemple: '*.**.**' trying to enter, exit and exit with 3 different orders
+                active_attempt_side_symbols_str = '.'.join(map(str, active_attempt_side_symbols))
 
                 detail_trade = [
                     f'{trade.id} {direction_str}',
-                    trade.pair + ('*' if (open_order
-                                  and open_order.ft_order_side == trade.entry_side) else '')
-                    + ('**' if (open_order and
-                                open_order.ft_order_side == trade.exit_side is not None) else ''),
+                    trade.pair + active_attempt_side_symbols_str,
                     shorten_date(dt_humanize(trade.open_date, only_distance=True)),
                     profit_str
                 ]
+
                 if self._config.get('position_adjustment_enable', False):
                     max_entry_str = ''
                     if self._config.get('max_entry_position_adjustment', -1) > 0:
