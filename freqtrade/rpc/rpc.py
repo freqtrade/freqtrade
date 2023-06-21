@@ -26,7 +26,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin
-from freqtrade.persistence import KeyStoreKeys, KeyValueStore, Order, PairLocks, Trade
+from freqtrade.persistence import KeyStoreKeys, KeyValueStore, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -171,11 +171,18 @@ class RPC:
         else:
             results = []
             for trade in trades:
-                order: Optional[Order] = None
                 current_profit_fiat: Optional[float] = None
                 total_profit_fiat: Optional[float] = None
-                if trade.open_order_id:
-                    order = trade.select_order_by_order_id(trade.open_order_id)
+
+                # prepare open orders details
+                oo_details: Optional[str] = ""
+                oo_details_lst = [
+                    f'({oo.order_type} {oo.side} rem={oo.safe_remaining:.8f})'
+                    for oo in trade.open_orders
+                    if oo.ft_order_side not in ['stoploss']
+                ]
+                oo_details = ''.join(map(str, oo_details_lst))
+
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
@@ -230,7 +237,6 @@ class RPC:
                     profit_pct=round(current_profit * 100, 2),
                     profit_abs=current_profit_abs,
                     profit_fiat=current_profit_fiat,
-
                     total_profit_abs=total_profit_abs,
                     total_profit_fiat=total_profit_fiat,
                     total_profit_ratio=total_profit_ratio,
@@ -239,10 +245,7 @@ class RPC:
                     stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                    open_order=(
-                        f'({order.order_type} {order.side} rem={order.safe_remaining:.8f})' if
-                        order else None
-                    ),
+                    open_orders=oo_details
                 ))
                 results.append(trade_dict)
             return results
