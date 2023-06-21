@@ -927,7 +927,8 @@ class RPC:
                 except ExchangeError as e:
                     logger.info(f"Cannot query order for {trade} due to {e}.", exc_info=True)
                     raise RPCException("Order not found.")
-                self._freqtrade.handle_cancel_order(order, trade, CANCEL_REASON['USER_CANCEL'])
+                self._freqtrade.handle_cancel_order(
+                    order, open_order.order_id, trade, CANCEL_REASON['USER_CANCEL'])
                 Trade.commit()
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
