@@ -106,7 +106,7 @@ class ProfitSquareSortinoSpringEfficiencyHyperOptLoss(IHyperOptLoss):
             max_drawdown = abs(min(drawdown_df['drawdown']))
 
             # Calculate Average Drawdown (absolute and relative)
-            avg_max_drawdown, _ = calculate_average_drawdown(drawdown_df)
+            avg_drawdown, _ = calculate_average_drawdown(drawdown_df)
 
             # PSSE Loss Function
             if profit > 0:
@@ -115,25 +115,22 @@ class ProfitSquareSortinoSpringEfficiencyHyperOptLoss(IHyperOptLoss):
                     sortino_ratio = 1
 
                 # Geometric mean of drawdown penalties
-                geometric_drawdown_penalty = math.sqrt(
-                    (1 + max_drawdown) * (1 + avg_max_drawdown))
+                geometric_drawdown = math.sqrt((1 + max_drawdown) * (1 + avg_drawdown))
 
                 # Harmonic mean of drawdown penalties
-                harmonic_drawdown_penalty = 2 / \
-                    ((1 / (1 + max_drawdown)) + (1 / (1 + avg_max_drawdown)))
+                harmonic_drawdown = (2 / ((1 / (1 + max_drawdown)) + (1 / (1 + avg_drawdown))))
 
                 # Hybrid drawdown penalty (geometric mean combined with harmonic mean)
-                hybrid_drawdown_penalty = math.sqrt(
-                    geometric_drawdown_penalty * harmonic_drawdown_penalty)
+                hybrid_drawdown = math.sqrt(
+                    geometric_drawdown * harmonic_drawdown)
 
                 # Combine quadratic profit with Sortino ratio and hybrid drawdown penalty
-                loss = -1 * ((profit ** 2) + (profit * sortino_ratio) / hybrid_drawdown_penalty)
+                loss = -1 * ((profit ** 2) + (profit * sortino_ratio) / hybrid_drawdown)
             else:  # profit < 0
                 loss = -profit
 
             return loss
 
         # Handle any exception that may occur during loss calculation
-        except Exception:
-            traceback.print_exc()
-            return 1000000
+        except (Exception, ValueError):
+            return -profit
