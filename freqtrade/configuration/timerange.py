@@ -6,6 +6,8 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
+from typing_extensions import Self
+
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
 
@@ -107,15 +109,15 @@ class TimeRange:
             self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
             self.starttype = 'date'
 
-    @staticmethod
-    def parse_timerange(text: Optional[str]) -> 'TimeRange':
+    @classmethod
+    def parse_timerange(cls, text: Optional[str]) -> Self:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
         :return: Start and End range period
         """
         if not text:
-            return TimeRange(None, None, 0, 0)
+            return cls(None, None, 0, 0)
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
@@ -156,5 +158,5 @@ class TimeRange:
                 if start > stop > 0:
                     raise OperationalException(
                         f'Start date is after stop date for timerange "{text}"')
-                return TimeRange(stype[0], stype[1], start, stop)
+                return cls(stype[0], stype[1], start, stop)
         raise OperationalException(f'Incorrect syntax for timerange "{text}"')
