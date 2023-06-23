@@ -10,6 +10,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
+from typing_extensions import Self
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
                                  NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
@@ -246,15 +247,15 @@ class Order(ModelBase):
         else:
             logger.warning(f"Did not find order for {order}.")
 
-    @staticmethod
+    @classmethod
     def parse_from_ccxt_object(
-            order: Dict[str, Any], pair: str, side: str,
-            amount: Optional[float] = None, price: Optional[float] = None) -> 'Order':
+            cls, order: Dict[str, Any], pair: str, side: str,
+            amount: Optional[float] = None, price: Optional[float] = None) -> Self:
         """
         Parse an order from a ccxt object and return a new order Object.
         Optional support for overriding amount and price is only used for test simplification.
         """
-        o = Order(
+        o = cls(
             order_id=str(order['id']),
             ft_order_side=side,
             ft_pair=pair,
@@ -1641,8 +1642,8 @@ class Trade(ModelBase, LocalTrade):
             )).scalar_one()
         return trading_volume
 
-    @staticmethod
-    def from_json(json_str: str) -> 'Trade':
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
         """
         Create a Trade instance from a json string.
 
@@ -1652,7 +1653,7 @@ class Trade(ModelBase, LocalTrade):
         """
         import rapidjson
         data = rapidjson.loads(json_str)
-        trade = Trade(
+        trade = cls(
             id=data["trade_id"],
             pair=data["pair"],
             base_currency=data["base_currency"],
