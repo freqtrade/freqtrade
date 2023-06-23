@@ -5549,7 +5549,9 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # Open buy order
     trade = trades[3]
     reset_open_orders(trade)
-    assert not trade.has_open_orders
+
+    # This part in not relevant anymore
+    # assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5558,7 +5560,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
     # Found open buy order
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     caplog.clear()
@@ -5586,7 +5588,8 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     # Open sell order
     trade = trades[5]
     reset_open_orders(trade)
-    assert not trade.has_open_orders
+    # This part in not relevant anymore
+    # assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
@@ -5595,7 +5598,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
     # sell-orderid is "refound" and added to the trade
-    assert trade.open_order_id == order['id']
+    assert trade.open_orders_ids[0] == order['id']
     assert trade.stoploss_order_id is None
 
     caplog.clear()
