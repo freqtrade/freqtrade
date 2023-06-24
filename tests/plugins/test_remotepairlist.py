@@ -16,11 +16,12 @@ def rpl_config(default_conf):
 
     default_conf['exchange']['pair_whitelist'] = [
         'ETH/USDT',
-        'BTC/USDT',
+        'XRP/USDT',
     ]
     default_conf['exchange']['pair_blacklist'] = [
         'BLK/USDT'
     ]
+
     return default_conf
 
 
@@ -183,3 +184,67 @@ def test_fetch_pairlist_mock_response_valid(mocker, rpl_config):
     assert pairs == ["ETH/USDT", "XRP/USDT", "LTC/USDT", "EOS/USDT"]
     assert time_elapsed == 0.4
     assert remote_pairlist._refresh_period == 60
+
+
+def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
+
+    rpl_config['pairlists'] = [
+        {
+            "method": "RemotePairList",
+            "mode": "blacklis",
+            "number_assets": 20,
+            "pairlist_url": "http://example.com/pairlist",
+            "keep_pairlist_on_failure": True,
+        }
+    ]
+
+    get_patched_exchange(mocker, rpl_config)
+    with pytest.raises(OperationalException, match=r'`mode` not configured correctly.'
+                       r' Supported Modes are "whitelist","blacklist"'):
+        get_patched_freqtradebot(mocker, rpl_config)
+
+
+def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
+
+    mock_response = MagicMock()
+
+    mock_response.json.return_value = {
+        "pairs": ["XRP/USDT"],
+        "refresh_period": 60
+    }
+
+    mock_response.headers = {
+        "content-type": "application/json"
+    }
+
+    rpl_config['pairlists'] = [
+        {
+            "method": "RemotePairList",
+            "mode": "blacklist",
+            "pairlist_url": "http://example.com/pairlist",
+            "number_assets": 3
+        }
+    ]
+
+    mocker.patch("freqtrade.plugins.pairlist.RemotePairList.requests.get",
+                 return_value=mock_response)
+
+    exchange = get_patched_exchange(mocker, rpl_config)
+
+    freqtrade = get_patched_freqtradebot(mocker, rpl_config)
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = freqtrade.pairlists.whitelist
+
+    pairlistmanager = PairListManager(exchange, rpl_config)
+
+    remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
+                                     rpl_config['pairlists'][0], 0)
+
+    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+
+    assert pairs == ["XRP/USDT"]
+
+    whitelist = remote_pairlist.filter_pairlist(["XRP/USDT", "ETH/USDT"], {})
+    assert whitelist == ["ETH/USDT"]
+
+    assert log_has(f"Blacklist - Filtered out pairs: {pairs}", caplog)

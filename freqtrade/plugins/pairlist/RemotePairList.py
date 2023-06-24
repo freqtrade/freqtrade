@@ -51,6 +51,11 @@ class RemotePairList(IPairList):
         self._init_done = False
         self._last_pairlist: List[Any] = list()
 
+        if self._mode not in ['whitelist', 'blacklist']:
+            raise OperationalException(
+                '`mode` not configured correctly. Supported Modes '
+                'are "whitelist","blacklist"')
+
     @property
     def needstickers(self) -> bool:
         """
@@ -257,7 +262,7 @@ class RemotePairList(IPairList):
         if self._mode == "whitelist":
             merged_list = pairlist + rpl_pairlist
             merged_list = sorted(set(merged_list), key=merged_list.index)
-        elif self._mode == "blacklist":
+        else:
             for pair in pairlist:
                 if pair not in rpl_pairlist:
                     merged_list.append(pair)
@@ -265,11 +270,6 @@ class RemotePairList(IPairList):
                     filtered.append(pair)
             if filtered:
                 self.log_once(f"Blacklist - Filtered out pairs: {filtered}", logger.info)
-
-        else:
-            raise OperationalException(
-                '`mode` not configured correctly. Supported Modes: '
-                'are "whitelist","blacklist"')
 
         merged_list = merged_list[:self._number_pairs]
         return merged_list
