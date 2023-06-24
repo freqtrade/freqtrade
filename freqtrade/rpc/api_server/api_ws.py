@@ -7,12 +7,14 @@ from fastapi.websockets import WebSocket
 from pydantic import ValidationError
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.exceptions import FreqtradeException
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_message_stream, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
-from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
-                                                 WSRequestSchema, WSWhitelistMessage)
+from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSErrorMessage,
+                                                 WSMessageSchema, WSRequestSchema,
+                                                 WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC
 
 
@@ -27,7 +29,13 @@ async def channel_reader(channel: WebSocketChannel, rpc: RPC):
     Iterate over the messages from the channel and process the request
     """
     async for message in channel:
-        await _process_consumer_request(message, channel, rpc)
+        try:
+            await _process_consumer_request(message, channel, rpc)
+        except FreqtradeException:
+            logger.exception(f"Error processing request from {channel}")
+            response = WSErrorMessage(data='Error processing request')
+
+            await channel.send(response.dict(exclude_none=True))
 
 
 async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream):
