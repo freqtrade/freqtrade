@@ -469,7 +469,7 @@ class LocalTrade():
 
     @property
     def open_orders(self) -> List[Order]:
-        return [order for order in self.orders if order.ft_is_open]
+        return [o for o in self.orders if o.ft_is_open and o.ft_order_side != 'stoploss']
 
     @property
     def has_open_orders(self) -> int:
