@@ -10,7 +10,8 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.util import dt_now
-from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt,
+                            create_mock_trades_with_leverage, log_has, log_has_re)
 
 
 spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES
@@ -1302,6 +1303,23 @@ def test_get_open_lev(fee, use_db):
     create_mock_trades_with_leverage(fee, use_db)
     assert len(Trade.get_open_trades()) == 5
     assert Trade.get_open_trade_count() == 5
+
+    Trade.use_db = True
+
+
+@pytest.mark.parametrize('is_short', [True, False])
+@pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+def test_get_open_orders(fee, is_short, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+
+    create_mock_trades_usdt(fee, is_short, use_db)
+    # Trade.commit()
+    trade = Trade.get_trades_proxy(pair="XRP/USDT")[0]
+    # assert trade.id == 3
+    assert len(trade.orders) == 2
+    assert len(trade.open_orders) == 0
 
     Trade.use_db = True
 
