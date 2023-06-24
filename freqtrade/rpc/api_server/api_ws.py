@@ -62,13 +62,13 @@ async def _process_consumer_request(
         logger.error(f"Invalid request from {channel}: {e}")
         return
 
-    type, data = websocket_request.type, websocket_request.data
+    type_, data = websocket_request.type, websocket_request.data
     response: WSMessageSchema
 
-    logger.debug(f"Request of type {type} from {channel}")
+    logger.debug(f"Request of type {type_} from {channel}")
 
     # If we have a request of type SUBSCRIBE, set the topics in this channel
-    if type == RPCRequestType.SUBSCRIBE:
+    if type_ == RPCRequestType.SUBSCRIBE:
         # If the request is empty, do nothing
         if not data:
             return
@@ -80,7 +80,7 @@ async def _process_consumer_request(
         # We don't send a response for subscriptions
         return
 
-    elif type == RPCRequestType.WHITELIST:
+    elif type_ == RPCRequestType.WHITELIST:
         # Get whitelist
         whitelist = rpc._ws_request_whitelist()
 
@@ -88,7 +88,7 @@ async def _process_consumer_request(
         response = WSWhitelistMessage(data=whitelist)
         await channel.send(response.dict(exclude_none=True))
 
-    elif type == RPCRequestType.ANALYZED_DF:
+    elif type_ == RPCRequestType.ANALYZED_DF:
         # Limit the amount of candles per dataframe to 'limit' or 1500
         limit = int(min(data.get('limit', 1500), 1500)) if data else None
         pair = data.get('pair', None) if data else None
