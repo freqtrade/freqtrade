@@ -40,6 +40,7 @@ class RemotePairList(IPairList):
                 '`pairlist_url` not specified. Please check your configuration '
                 'for "pairlist.config.pairlist_url"')
 
+        self._mode = self._pairlistconfig.get('mode', 'whitelist')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._refresh_period: int = self._pairlistconfig.get('refresh_period', 1800)
         self._keep_pairlist_on_failure = self._pairlistconfig.get('keep_pairlist_on_failure', True)
@@ -250,6 +251,25 @@ class RemotePairList(IPairList):
         :return: new whitelist
         """
         rpl_pairlist = self.gen_pairlist(tickers)
-        merged_list = pairlist + rpl_pairlist
-        merged_list = sorted(set(merged_list), key=merged_list.index)
+        merged_list = []
+        filtered = []
+
+        if self._mode == "whitelist":
+            merged_list = pairlist + rpl_pairlist
+            merged_list = sorted(set(merged_list), key=merged_list.index)
+        elif self._mode == "blacklist":
+            for pair in pairlist:
+                if pair not in rpl_pairlist:
+                    merged_list.append(pair)
+                else:
+                    filtered.append(pair)
+            if filtered:
+                self.log_once(f"Blacklist - Filtered out pairs: {filtered}", logger.info)
+
+        else:
+            raise OperationalException(
+                '`mode` not configured correctly. Supported Modes: '
+                'are "whitelist","blacklist"')
+
+        merged_list = merged_list[:self._number_pairs]
         return merged_list

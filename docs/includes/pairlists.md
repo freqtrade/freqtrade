@@ -184,6 +184,7 @@ The RemotePairList is defined in the pairlists section of the configuration sett
 "pairlists": [
     {
         "method": "RemotePairList",
+        "mode": "whitelist",
         "pairlist_url": "https://example.com/pairlist",
         "number_assets": 10,
         "refresh_period": 1800,
@@ -193,6 +194,8 @@ The RemotePairList is defined in the pairlists section of the configuration sett
     }
 ]
 ```
+
+The `mode` option specifies if the pairlist should be used as a `blacklist` or as a `whitelist`. The default value is "whitelist".
 
 The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
 
