@@ -231,10 +231,6 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
 
     exchange = get_patched_exchange(mocker, rpl_config)
 
-    freqtrade = get_patched_freqtradebot(mocker, rpl_config)
-    freqtrade.pairlists.refresh_pairlist()
-    whitelist = freqtrade.pairlists.whitelist
-
     pairlistmanager = PairListManager(exchange, rpl_config)
 
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
@@ -244,7 +240,7 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
 
     assert pairs == ["XRP/USDT"]
 
-    whitelist = remote_pairlist.filter_pairlist(["XRP/USDT", "ETH/USDT"], {})
+    whitelist = remote_pairlist.filter_pairlist(rpl_config['exchange']['pair_whitelist'], {})
     assert whitelist == ["ETH/USDT"]
 
     assert log_has(f"Blacklist - Filtered out pairs: {pairs}", caplog)
