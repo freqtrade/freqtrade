@@ -16,6 +16,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 logger = logging.getLogger(__name__)
@@ -229,6 +230,7 @@ class RemotePairList(IPairList):
 
         self.log_once(f"Fetched pairs: {pairlist}", logger.debug)
 
+        pairlist = expand_pairlist(pairlist, list(self._exchange.get_markets().keys()))
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
