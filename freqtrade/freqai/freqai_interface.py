@@ -1012,6 +1012,6 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("DI_threshold", 0) > 0:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
-            dk.DI_values = np.zeros(len(outliers.index))
+            dk.DI_values = np.zeros(outliers.shape[0])
         dk.do_predict = outliers
         return
