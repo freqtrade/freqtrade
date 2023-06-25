@@ -210,7 +210,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
 
 def test_store_backtest_stats(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.optimize_reports.file_dump_json')
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.bt_storage.file_dump_json')
 
     store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
 
@@ -230,7 +230,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 def test_store_backtest_candles(testdatadir, mocker):
 
     dump_mock = mocker.patch(
-        'freqtrade.optimize.optimize_reports.optimize_reports.file_dump_joblib')
+        'freqtrade.optimize.optimize_reports.bt_storage.file_dump_joblib')
 
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
