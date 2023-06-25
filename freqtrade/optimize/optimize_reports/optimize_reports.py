@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Union
 
 from pandas import DataFrame, concat, to_datetime
-from tabulate import tabulate
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
@@ -213,31 +212,6 @@ def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
         tabular_data[-1]['max_drawdown_abs'] = round_coin_value(
             result['max_drawdown_abs'], result['stake_currency'], False)
     return tabular_data
-
-
-def generate_edge_table(results: dict) -> str:
-    floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', 'd', 'd')
-    tabular_data = []
-    headers = ['Pair', 'Stoploss', 'Win Rate', 'Risk Reward Ratio',
-               'Required Risk Reward', 'Expectancy', 'Total Number of Trades',
-               'Average Duration (min)']
-
-    for result in results.items():
-        if result[1].nb_trades > 0:
-            tabular_data.append([
-                result[0],
-                result[1].stoploss,
-                result[1].winrate,
-                result[1].risk_reward_ratio,
-                result[1].required_risk_reward,
-                result[1].expectancy,
-                result[1].nb_trades,
-                round(result[1].avg_trade_duration)
-            ])
-
-    # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
 def _get_resample_from_period(period: str) -> str:
