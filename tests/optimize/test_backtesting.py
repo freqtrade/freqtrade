@@ -1437,9 +1437,11 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     strattable_mock = MagicMock()
     strat_summary = MagicMock()
 
-    mocker.patch.multiple('freqtrade.optimize.optimize_reports.optimize_reports',
+    mocker.patch.multiple('freqtrade.optimize.optimize_reports.visualization',
                           text_table_bt_results=text_table_mock,
                           text_table_strategy=strattable_mock,
+                          )
+    mocker.patch.multiple('freqtrade.optimize.optimize_reports.optimize_reports',
                           generate_pair_metrics=MagicMock(),
                           generate_exit_reason_stats=sell_reason_mock,
                           generate_strategy_comparison=strat_summary,
