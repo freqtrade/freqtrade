@@ -801,7 +801,7 @@ class MyCoolFreqaiModel(BaseRegressionModel):
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
             dk.DI_values = np.zeros(len(outliers.index))
-        dk.do_predict = outliers.to_numpy()
+        dk.do_predict = outliers
 
         # ... your custom code
         return (pred_df, dk.do_predict)
