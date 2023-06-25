@@ -136,8 +136,8 @@ class PyTorchTransformerRegressor(BasePyTorchRegressor):
         if self.freqai_info.get("DI_threshold", 0) > 0:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
-            dk.DI_values = np.zeros(len(outliers.index))
-        dk.do_predict = outliers.to_numpy()
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
 
         if x.shape[1] > 1:
             zeros_df = pd.DataFrame(np.zeros((x.shape[1] - len(pred_df), len(pred_df.columns))),
