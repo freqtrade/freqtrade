@@ -14,15 +14,16 @@ from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backte
                                        load_backtest_stats)
 from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
-from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
-                                                 generate_daily_stats, generate_edge_table,
-                                                 generate_exit_reason_stats, generate_pair_metrics,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
+                                                 generate_edge_table, generate_exit_reason_stats,
+                                                 generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
+from freqtrade.optimize.optimize_reports.optimize_reports import _get_resample_from_period
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
@@ -209,7 +210,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
 
 def test_store_backtest_stats(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.bt_storage.file_dump_json')
 
     store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
 
@@ -228,7 +229,8 @@ def test_store_backtest_stats(testdatadir, mocker):
 
 def test_store_backtest_candles(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_joblib')
+    dump_mock = mocker.patch(
+        'freqtrade.optimize.optimize_reports.bt_storage.file_dump_joblib')
 
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
