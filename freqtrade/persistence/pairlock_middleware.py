@@ -11,7 +11,7 @@ from freqtrade.persistence.models import PairLock
 logger = logging.getLogger(__name__)
 
 
-class PairLocks():
+class PairLocks:
     """
     Pairlocks middleware class
     Abstracts the database layer away so it becomes optional - which will be necessary to support

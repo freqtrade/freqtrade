@@ -3,7 +3,7 @@ from typing import Callable
 from cachetools import TTLCache, cached
 
 
-class LoggingMixin():
+class LoggingMixin:
     """
     Logging Mixin
     Shows similar messages only once every `refresh_period`.

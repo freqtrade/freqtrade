@@ -342,7 +342,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
 
 
 @pytest.mark.longrun
-class TestCCXTExchange():
+class TestCCXTExchange:
 
     def test_load_markets(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
