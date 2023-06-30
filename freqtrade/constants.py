@@ -112,6 +112,8 @@ MINIMAL_CONFIG = {
     }
 }
 
+__MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {'type': 'object'} for x in RPCMessageType}
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
@@ -354,7 +356,8 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
-                **dict([(x, {'type': 'object'}) for x in RPCMessageType]),
+                **__MESSAGE_TYPE_DICT,
+                # **{x: {'type': 'object'} for x in RPCMessageType},
                 # Below -> Deprecated
                 'webhookentry': {'type': 'object'},
                 'webhookentrycancel': {'type': 'object'},
