@@ -515,7 +515,7 @@ class IFreqaiModel(ABC):
             ]
 
         if ft_params.get("principal_component_analysis", False):
-            pipe_steps.append(('pca', ds.PCA()))
+            pipe_steps.append(('pca', ds.PCA(n_components=0.999)))
             pipe_steps.append(('post-pca-scaler',
                                SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
