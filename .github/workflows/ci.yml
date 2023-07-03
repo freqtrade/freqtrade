@@ -460,7 +460,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.6
+      uses: pypa/gh-action-pypi-publish@v1.8.7
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -468,7 +468,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.6
+      uses: pypa/gh-action-pypi-publish@v1.8.7
       if: (github.event_name == 'release')
       with:
         user: __token__
