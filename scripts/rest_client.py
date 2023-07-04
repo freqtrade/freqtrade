@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger("ft_rest_client")
 
 
-class FtRestClient():
+class FtRestClient:
 
     def __init__(self, serverurl, username=None, password=None):
 

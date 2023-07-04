@@ -35,7 +35,7 @@ def hyperopt_serializer(x):
     return str(x)
 
 
-class HyperoptStateContainer():
+class HyperoptStateContainer:
     """ Singleton class to track state of hyperopt"""
     state: HyperoptState = HyperoptState.OPTIMIZE
 
@@ -44,7 +44,7 @@ class HyperoptStateContainer():
         cls.state = value
 
 
-class HyperoptTools():
+class HyperoptTools:
 
     @staticmethod
     def get_strategy_filename(config: Config, strategy_name: str) -> Optional[Path]:

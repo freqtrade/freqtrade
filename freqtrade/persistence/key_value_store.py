@@ -42,7 +42,7 @@ class _KeyValueStoreModel(ModelBase):
     int_value: Mapped[Optional[int]]
 
 
-class KeyValueStore():
+class KeyValueStore:
     """
     Generic bot-wide, persistent key-value store
     Can be used to store generic values, e.g. very first bot startup time.

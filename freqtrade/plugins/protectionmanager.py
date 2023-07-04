@@ -15,7 +15,7 @@ from freqtrade.resolvers import ProtectionResolver
 logger = logging.getLogger(__name__)
 
 
-class ProtectionManager():
+class ProtectionManager:
 
     def __init__(self, config: Config, protections: List) -> None:
         self._config = config
