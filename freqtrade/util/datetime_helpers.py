@@ -61,3 +61,11 @@ def dt_humanize(dt: datetime, **kwargs) -> str:
     :param kwargs: kwargs to pass to arrow's humanize()
     """
     return arrow.get(dt).humanize(**kwargs)
+
+
+def format_ms_time(date: int) -> str:
+    """
+    convert MS date to readable format.
+    : epoch-string in ms
+    """
+    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')

@@ -14,8 +14,8 @@ from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
-from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
+from freqtrade.util import format_ms_time
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 
 

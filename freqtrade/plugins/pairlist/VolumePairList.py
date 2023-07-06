@@ -13,9 +13,8 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
-from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
-from freqtrade.util import dt_now
+from freqtrade.util import dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
