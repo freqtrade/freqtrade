@@ -160,7 +160,8 @@ jobs:
     - name: Installation - macOS
       if: runner.os == 'macOS'
       run: |
-        brew update
+        # brew update
+        # TODO: Should be the brew upgrade
         # homebrew fails to update python due to unlinking failures
         # https://github.com/actions/runner-images/issues/6817
         rm /usr/local/bin/2to3 || true
