@@ -1,4 +1,5 @@
-numpy==1.25.0
+numpy==1.25.0; python_version > '3.8'
+numpy==1.24.3; python_version <= '3.8'
 pandas==2.0.2
 pandas-ta==0.3.14b
 
