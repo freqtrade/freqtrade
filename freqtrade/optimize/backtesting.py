@@ -24,6 +24,7 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, price_to_precision,
                                 timeframe_to_minutes, timeframe_to_seconds)
+from freqtrade.exchange.exchange import Exchange
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -72,7 +73,7 @@ class Backtesting:
     backtesting.start()
     """
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, exchange: Optional[Exchange] = None) -> None:
 
         LoggingMixin.show_output = False
         self.config = config
@@ -89,7 +90,10 @@ class Backtesting:
         self.rejected_df: Dict[str, Dict] = {}
 
         self._exchange_name = self.config['exchange']['name']
-        self.exchange = ExchangeResolver.load_exchange(self.config, load_leverage_tiers=True)
+        if not exchange:
+            exchange = ExchangeResolver.load_exchange(self.config, load_leverage_tiers=True)
+        self.exchange = exchange
+
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         if self.config.get('strategy_list'):
@@ -114,16 +118,7 @@ class Backtesting:
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
-        if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting. "
-                                       "Please use StaticPairList instead.")
-        if 'PerformanceFilter' in self.pairlists.name_list:
-            raise OperationalException("PerformanceFilter not allowed for backtesting.")
-
-        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
-            raise OperationalException(
-                "PrecisionFilter not allowed for backtesting multiple strategies."
-            )
+        self._validate_pairlists_for_backtesting()
 
         self.dataprovider.add_pairlisthandler(self.pairlists)
         self.pairlists.refresh_pairlist()
@@ -163,6 +158,18 @@ class Backtesting:
         migrate_binance_futures_data(config)
 
         self.init_backtest()
+
+    def _validate_pairlists_for_backtesting(self):
+        if 'VolumePairList' in self.pairlists.name_list:
+            raise OperationalException("VolumePairList not allowed for backtesting. "
+                                       "Please use StaticPairList instead.")
+        if 'PerformanceFilter' in self.pairlists.name_list:
+            raise OperationalException("PerformanceFilter not allowed for backtesting.")
+
+        if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
+            raise OperationalException(
+                "PrecisionFilter not allowed for backtesting multiple strategies."
+            )
 
     @staticmethod
     def cleanup():

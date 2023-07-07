@@ -1333,7 +1333,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5", "ordertype": "market", "amount": 23})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1343,7 +1343,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     rc = client_post(client, f"{BASE_URI}/forceexit",
                      data={"tradeid": "5"})
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    assert rc.json() == {'result': 'Created exit order for trade 5.'}
     Trade.rollback()
 
     trade = Trade.get_trades([Trade.id == 5]).first()
@@ -1578,6 +1578,47 @@ def test_api_strategy(botclient):
     assert_response(rc, 500)
 
 
+def test_api_exchanges(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/exchanges")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response['exchanges'], list)
+    assert len(response['exchanges']) > 20
+    okx = [x for x in response['exchanges'] if x['name'] == 'okx'][0]
+    assert okx == {
+        "name": "okx",
+        "valid": True,
+        "supported": True,
+        "comment": "",
+        "trade_modes": [
+            {
+                "trading_mode": "spot",
+                "margin_mode": ""
+            },
+            {
+                "trading_mode": "futures",
+                "margin_mode": "isolated"
+            }
+        ]
+    }
+
+    mexc = [x for x in response['exchanges'] if x['name'] == 'mexc'][0]
+    assert mexc == {
+        "name": "mexc",
+        "valid": True,
+        "supported": False,
+        "comment": "",
+        "trade_modes": [
+                {
+                    "trading_mode": "spot",
+                    "margin_mode": ""
+                }
+            ]
+    }
+
+
 def test_api_freqaimodels(botclient, tmpdir, mocker):
     ftbot, client = botclient
     ftbot.config['user_data_dir'] = Path(tmpdir)
@@ -1614,6 +1655,122 @@ def test_api_freqaimodels(botclient, tmpdir, mocker):
         'XGBoostRegressor',
         'XGBoostRegressorMultiTarget'
     ]}
+
+
+def test_api_pairlists_available(botclient, tmpdir):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/available")
+
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/available")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response['pairlists'], list)
+    assert len(response['pairlists']) > 0
+
+    assert len([r for r in response['pairlists'] if r['name'] == 'AgeFilter']) == 1
+    assert len([r for r in response['pairlists'] if r['name'] == 'VolumePairList']) == 1
+    assert len([r for r in response['pairlists'] if r['name'] == 'StaticPairList']) == 1
+
+    volumepl = [r for r in response['pairlists'] if r['name'] == 'VolumePairList'][0]
+    assert volumepl['is_pairlist_generator'] is True
+    assert len(volumepl['params']) > 1
+    age_pl = [r for r in response['pairlists'] if r['name'] == 'AgeFilter'][0]
+    assert age_pl['is_pairlist_generator'] is False
+    assert len(volumepl['params']) > 2
+
+
+def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
+    ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
+
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Job not found.'
+
+    body = {
+        "pairlists": [
+            {"method": "StaticPairList", },
+        ],
+        "blacklist": [
+        ],
+        "stake_currency": "BTC"
+    }
+    # Fail, already running
+    ApiBG.pairlist_running = True
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc, 400)
+    assert rc.json()['detail'] == 'Pairlist evaluation is already running.'
+
+    # should start the run
+    ApiBG.pairlist_running = False
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert rc.json()['status'] == 'Pairlist evaluation started in background.'
+    job_id = rc.json()['job_id']
+
+    rc = client_get(client, f"{BASE_URI}/background/RandomJob")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Job not found.'
+
+    rc = client_get(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response['job_id'] == job_id
+    assert response['job_category'] == 'pairlist'
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
+    assert response['result']['length'] == 4
+
+    # Restart with additional filter, reducing the list to 2
+    body['pairlists'].append({"method": "OffsetFilter", "number_assets": 2})
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert rc.json()['status'] == 'Pairlist evaluation started in background.'
+    job_id = rc.json()['job_id']
+
+    rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', ]
+    assert response['result']['length'] == 2
+    # Patch __run_pairlists
+    plm = mocker.patch('freqtrade.rpc.api_server.api_background_tasks.__run_pairlist',
+                       return_value=None)
+    body = {
+        "pairlists": [
+            {"method": "StaticPairList", },
+        ],
+        "blacklist": [
+        ],
+        "stake_currency": "BTC",
+        "exchange": "randomExchange",
+        "trading_mode": "futures",
+        "margin_mode": "isolated",
+    }
+    rc = client_post(client, f"{BASE_URI}/pairlists/evaluate", body)
+    assert_response(rc)
+    assert plm.call_count == 1
+    call_config = plm.call_args_list[0][0][1]
+    assert call_config['exchange']['name'] == 'randomExchange'
+    assert call_config['trading_mode'] == 'futures'
+    assert call_config['margin_mode'] == 'isolated'
 
 
 def test_list_available_pairs(botclient):
@@ -1673,7 +1830,8 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
 
         rc = client_get(client, f"{BASE_URI}/backtest")
         # Backtest prevented in default mode
-        assert_response(rc, 502)
+        assert_response(rc, 503)
+        assert rc.json()['detail'] == 'Bot is not in the correct state.'
 
         ftbot.config['runmode'] = RunMode.WEBSERVER
         # Backtesting not started yet
@@ -1812,7 +1970,9 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
                      ])
 
     rc = client_get(client, f"{BASE_URI}/backtest/history")
-    assert_response(rc, 502)
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
     ftbot.config['user_data_dir'] = testdatadir
     ftbot.config['runmode'] = RunMode.WEBSERVER
 
@@ -1929,4 +2089,5 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
             assert first_waiter != second_waiter
 
     finally:
+        ApiServer.shutdown()
         ApiServer.shutdown()

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Ticker
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,40 @@ class PriceFilter(IPairList):
             return f"{self.name} - Filtering pairs priced {' or '.join(active_price_filters)}."
 
         return f"{self.name} - No price filters configured."
+
+    @staticmethod
+    def description() -> str:
+        return "Filter pairs by price."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "low_price_ratio": {
+                "type": "number",
+                "default": 0,
+                "description": "Low price ratio",
+                "help": ("Remove pairs where a price move of 1 price unit (pip) "
+                         "is above this ratio."),
+            },
+            "min_price": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum price",
+                "help": "Remove pairs with a price below this value.",
+            },
+            "max_price": {
+                "type": "number",
+                "default": 0,
+                "description": "Maximum price",
+                "help": "Remove pairs with a price above this value.",
+            },
+            "max_value": {
+                "type": "number",
+                "default": 0,
+                "description": "Maximum value",
+                "help": "Remove pairs with a value (price * amount) above this value.",
+            },
+        }
 
     def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """

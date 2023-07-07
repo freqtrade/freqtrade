@@ -1,11 +1,12 @@
-FROM freqtradeorg/freqtrade:develop
+FROM freqtradeorg/freqtrade:develop_freqairl
 
 USER root
 # Install dependencies
 COPY requirements-dev.txt /freqtrade/
 
 RUN apt-get update \
-    && apt-get -y install git mercurial sudo vim build-essential \
+    && apt-get -y install --no-install-recommends apt-utils dialog \
+    && apt-get -y install --no-install-recommends git sudo vim build-essential \
     && apt-get clean \
     && mkdir -p /home/ftuser/.vscode-server /home/ftuser/.vscode-server-insiders /home/ftuser/commandhistory \
     && echo "export PROMPT_COMMAND='history -a'" >> /home/ftuser/.bashrc \

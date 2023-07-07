@@ -76,7 +76,7 @@ pip install -r requirements-freqai.txt
 
 ### Usage with docker
 
-If you are using docker, a dedicated tag with FreqAI dependencies is available as `:freqai`. As such - you can replace the image line in your docker compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular FreqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices.
+If you are using docker, a dedicated tag with FreqAI dependencies is available as `:freqai`. As such - you can replace the image line in your docker compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular FreqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices. If you would like to use PyTorch or Reinforcement learning, you should use the torch or RL tags, `image: freqtradeorg/freqtrade:develop_freqaitorch`, `image: freqtradeorg/freqtrade:develop_freqairl`.
 
 !!! note "docker-compose-freqai.yml"
    We do provide an explicit docker-compose file for this in `docker/docker-compose-freqai.yml` - which can be used via `docker compose -f docker/docker-compose-freqai.yml run ...` - or can be copied to replace the original docker file. This docker-compose file also contains a (disabled) section to enable GPU resources within docker containers. This obviously assumes the system has GPU resources available.
@@ -106,6 +106,13 @@ FreqAI cannot be combined with dynamic `VolumePairlists` (or any pairlist filter
 This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively,
 it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
 new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
+
+## Additional learning materials
+
+Here we compile some external materials that provide deeper looks into various components of FreqAI:
+
+- [Real-time head-to-head: Adaptive modeling of financial market data using XGBoost and CatBoost](https://emergentmethods.medium.com/real-time-head-to-head-adaptive-modeling-of-financial-market-data-using-xgboost-and-catboost-995a115a7495)
+- [FreqAI - from price to prediction](https://emergentmethods.medium.com/freqai-from-price-to-prediction-6fadac18b665)
 
 ## Credits
 

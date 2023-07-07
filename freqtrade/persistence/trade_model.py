@@ -10,6 +10,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
+from typing_extensions import Self
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
                                  NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
@@ -97,7 +98,7 @@ class Order(ModelBase):
 
     @property
     def safe_filled(self) -> float:
-        return self.filled if self.filled is not None else self.amount or 0.0
+        return self.filled if self.filled is not None else 0.0
 
     @property
     def safe_cost(self) -> float:
@@ -246,15 +247,15 @@ class Order(ModelBase):
         else:
             logger.warning(f"Did not find order for {order}.")
 
-    @staticmethod
+    @classmethod
     def parse_from_ccxt_object(
-            order: Dict[str, Any], pair: str, side: str,
-            amount: Optional[float] = None, price: Optional[float] = None) -> 'Order':
+            cls, order: Dict[str, Any], pair: str, side: str,
+            amount: Optional[float] = None, price: Optional[float] = None) -> Self:
         """
         Parse an order from a ccxt object and return a new order Object.
         Optional support for overriding amount and price is only used for test simplification.
         """
-        o = Order(
+        o = cls(
             order_id=str(order['id']),
             ft_order_side=side,
             ft_pair=pair,
@@ -282,7 +283,7 @@ class Order(ModelBase):
         return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
 
 
-class LocalTrade():
+class LocalTrade:
     """
     Trade database model.
     Used in backtesting - must be aligned to Trade model!
@@ -703,7 +704,7 @@ class LocalTrade():
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-            if self.is_open:
+            if self.is_open and order.safe_filled > 0:
                 logger.info(f'{order.order_type.upper()} is hit for {self}.')
         else:
             raise ValueError(f'Unknown order type: {order.order_type}')
@@ -1391,7 +1392,10 @@ class Trade(ModelBase, LocalTrade):
                              e.g. `(trade_filter=Trade.id == trade_id)`
         :return: unsorted query object
         """
-        return Trade.session.scalars(Trade.get_trades_query(trade_filter, include_orders))
+        query = Trade.get_trades_query(trade_filter, include_orders)
+        # this sholud remain split. if use_db is False, session is not available and the above will
+        # raise an exception.
+        return Trade.session.scalars(query)
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:
@@ -1638,8 +1642,8 @@ class Trade(ModelBase, LocalTrade):
             )).scalar_one()
         return trading_volume
 
-    @staticmethod
-    def from_json(json_str: str) -> 'Trade':
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
         """
         Create a Trade instance from a json string.
 
@@ -1649,7 +1653,7 @@ class Trade(ModelBase, LocalTrade):
         """
         import rapidjson
         data = rapidjson.loads(json_str)
-        trade = Trade(
+        trade = cls(
             id=data["trade_id"],
             pair=data["pair"],
             base_currency=data["base_currency"],

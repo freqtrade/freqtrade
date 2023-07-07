@@ -41,7 +41,7 @@ class IResolver:
     object_type: Type[Any]
     object_type_str: str
     user_subdir: Optional[str] = None
-    initial_search_path: Optional[Path]
+    initial_search_path: Optional[Path] = None
     # Optional config setting containing a path (strategy_path, freqaimodel_path)
     extra_path: Optional[str] = None
 

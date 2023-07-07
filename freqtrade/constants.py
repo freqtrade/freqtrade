@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Tuple
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 
+DOCS_LINK = "https://www.freqtrade.io/en/stable"
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
@@ -111,6 +112,8 @@ MINIMAL_CONFIG = {
     }
 }
 
+__MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {'type': 'object'} for x in RPCMessageType}
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
@@ -148,7 +151,6 @@ CONF_SCHEMA = {
             'patternProperties': {
                 '^[0-9.]+$': {'type': 'number'}
             },
-            'minProperties': 1
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True, 'minimum': -1},
@@ -164,6 +166,9 @@ CONF_SCHEMA = {
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
         'reduce_df_footprint': {'type': 'boolean', 'default': False},
+        'minimum_trade_amount': {'type': 'number', 'default': 10},
+        'targeted_trade_amount': {'type': 'number', 'default': 20},
+        'lookahead_analysis_exportfilename': {'type': 'string'},
         'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
@@ -351,7 +356,8 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
-                **dict([(x, {'type': 'object'}) for x in RPCMessageType]),
+                **__MESSAGE_TYPE_DICT,
+                # **{x: {'type': 'object'} for x in RPCMessageType},
                 # Below -> Deprecated
                 'webhookentry': {'type': 'object'},
                 'webhookentrycancel': {'type': 'object'},

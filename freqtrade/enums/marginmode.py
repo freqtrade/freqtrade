@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class MarginMode(Enum):
+class MarginMode(str, Enum):
     """
     Enum to distinguish between
     cross margin/futures margin_mode and

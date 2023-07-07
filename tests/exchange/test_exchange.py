@@ -3489,6 +3489,27 @@ def test_stoploss_order_unsupported_exchange(default_conf, mocker):
         exchange.stoploss_adjust(1, {}, side="sell")
 
 
+@pytest.mark.parametrize('side,ratio,expected', [
+    ('sell', 0.99, 99.0),  # Default
+    ('sell', 0.999, 99.9),
+    ('sell', 1, 100),
+    ('sell', 1.1, InvalidOrderException),
+    ('buy', 0.99, 101.0),  # Default
+    ('buy', 0.999, 100.1),
+    ('buy', 1, 100),
+    ('buy', 1.1, InvalidOrderException),
+    ])
+def test__get_stop_limit_rate(default_conf_usdt, mocker, side, ratio, expected):
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id='binance')
+
+    order_types = {'stoploss_on_exchange_limit_ratio': ratio}
+    if isinstance(expected, type) and issubclass(expected, Exception):
+        with pytest.raises(expected):
+            exchange._get_stop_limit_rate(100, order_types, side)
+    else:
+        assert exchange._get_stop_limit_rate(100, order_types, side) == expected
+
+
 def test_merge_ft_has_dict(default_conf, mocker):
     mocker.patch.multiple(EXMS,
                           _init_ccxt=MagicMock(return_value=MagicMock()),

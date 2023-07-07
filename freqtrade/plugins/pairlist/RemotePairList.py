@@ -15,13 +15,15 @@ from freqtrade import __version__
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
 
 
 class RemotePairList(IPairList):
+
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -62,6 +64,46 @@ class RemotePairList(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
+
+    @staticmethod
+    def description() -> str:
+        return "Retrieve pairs from a remote API."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "number_assets": {
+                "type": "number",
+                "default": 0,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist.",
+            },
+            "pairlist_url": {
+                "type": "string",
+                "default": "",
+                "description": "URL to fetch pairlist from",
+                "help": "URL to fetch pairlist from",
+            },
+            **IPairList.refresh_period_parameter(),
+            "keep_pairlist_on_failure": {
+                "type": "boolean",
+                "default": True,
+                "description": "Keep last pairlist on failure",
+                "help": "Keep last pairlist on failure",
+            },
+            "read_timeout": {
+                "type": "number",
+                "default": 60,
+                "description": "Read timeout",
+                "help": "Request timeout for remote pairlist",
+            },
+            "bearer_token": {
+                "type": "string",
+                "default": "",
+                "description": "Bearer token",
+                "help": "Bearer token - used for auth against the upstream service.",
+            },
+        }
 
     def process_json(self, jsonparse) -> List[str]:
 

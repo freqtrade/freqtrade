@@ -301,7 +301,7 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
-    def markets(self) -> Dict:
+    def markets(self) -> Dict[str, Any]:
         """exchange ccxt markets"""
         if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")
@@ -1148,8 +1148,8 @@ class Exchange:
         else:
             limit_rate = stop_price * (2 - limit_price_pct)
 
-        bad_stop_price = ((stop_price <= limit_rate) if side ==
-                          "sell" else (stop_price >= limit_rate))
+        bad_stop_price = ((stop_price < limit_rate) if side ==
+                          "sell" else (stop_price > limit_rate))
         # Ensure rate is less than stop price
         if bad_stop_price:
             # This can for example happen if the stop / liquidation price is set to 0
@@ -1662,45 +1662,61 @@ class Exchange:
 
         price_side = self._get_price_side(side, is_short, conf_strategy)
 
-        price_side_word = price_side.capitalize()
-
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             if order_book is None:
                 order_book = self.fetch_l2_order_book(pair, order_book_top)
-            logger.debug('order_book %s', order_book)
-            # top 1 = index 0
-            try:
-                obside: OBLiteral = 'bids' if price_side == 'bid' else 'asks'
-                rate = order_book[obside][order_book_top - 1][0]
-            except (IndexError, KeyError) as e:
-                logger.warning(
-                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
-                    f"could not be determined. Orderbook: {order_book}"
-                )
-                raise PricingError from e
-            logger.debug(f"{pair} - {name} price from orderbook {price_side_word}"
-                         f"side - top {order_book_top} order book {side} rate {rate:.8f}")
+            rate = self._get_rate_from_ob(pair, side, order_book, name, price_side,
+                                          order_book_top)
         else:
-            logger.debug(f"Using Last {price_side_word} / Last Price")
+            logger.debug(f"Using Last {price_side.capitalize()} / Last Price")
             if ticker is None:
                 ticker = self.fetch_ticker(pair)
-            ticker_rate = ticker[price_side]
-            if ticker['last'] and ticker_rate:
-                if side == 'entry' and ticker_rate > ticker['last']:
-                    balance = conf_strategy.get('price_last_balance', 0.0)
-                    ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
-                elif side == 'exit' and ticker_rate < ticker['last']:
-                    balance = conf_strategy.get('price_last_balance', 0.0)
-                    ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
-            rate = ticker_rate
+            rate = self._get_rate_from_ticker(side, ticker, conf_strategy, price_side)
 
         if rate is None:
             raise PricingError(f"{name}-Rate for {pair} was empty.")
         with self._cache_lock:
             cache_rate[pair] = rate
 
+        return rate
+
+    def _get_rate_from_ticker(self, side: EntryExit, ticker: Ticker, conf_strategy: Dict[str, Any],
+                              price_side: BidAsk) -> Optional[float]:
+        """
+        Get rate from ticker.
+        """
+        ticker_rate = ticker[price_side]
+        if ticker['last'] and ticker_rate:
+            if side == 'entry' and ticker_rate > ticker['last']:
+                balance = conf_strategy.get('price_last_balance', 0.0)
+                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
+            elif side == 'exit' and ticker_rate < ticker['last']:
+                balance = conf_strategy.get('price_last_balance', 0.0)
+                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
+        rate = ticker_rate
+        return rate
+
+    def _get_rate_from_ob(self, pair: str, side: EntryExit, order_book: OrderBook, name: str,
+                          price_side: BidAsk, order_book_top: int) -> float:
+        """
+        Get rate from orderbook
+        :raises: PricingError if rate could not be determined.
+        """
+        logger.debug('order_book %s', order_book)
+        # top 1 = index 0
+        try:
+            obside: OBLiteral = 'bids' if price_side == 'bid' else 'asks'
+            rate = order_book[obside][order_book_top - 1][0]
+        except (IndexError, KeyError) as e:
+            logger.warning(
+                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
+                    f"could not be determined. Orderbook: {order_book}"
+                )
+            raise PricingError from e
+        logger.debug(f"{pair} - {name} price from orderbook {price_side.capitalize()}"
+                     f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         return rate
 
     def get_rates(self, pair: str, refresh: bool, is_short: bool) -> Tuple[float, float]:

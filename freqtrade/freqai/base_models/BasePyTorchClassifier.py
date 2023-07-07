@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, List, Tuple
+from time import time
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -35,6 +36,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
             return dataframe
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.class_name_to_index = None
@@ -68,9 +70,12 @@ class BasePyTorchClassifier(BasePyTorchModel):
         filtered_df, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
-        filtered_df = dk.normalize_data_from_metadata(filtered_df)
+
         dk.data_dictionary["prediction_features"] = filtered_df
-        self.data_cleaning_predict(dk)
+
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
+
         x = self.data_convertor.convert_x(
             dk.data_dictionary["prediction_features"],
             device=self.device
@@ -85,6 +90,13 @@ class BasePyTorchClassifier(BasePyTorchModel):
         pred_df_prob = DataFrame(probs.detach().tolist(), columns=class_names)
         pred_df = DataFrame(predicted_classes_str, columns=[dk.label_list[0]])
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
+
+        if dk.feature_pipeline["di"]:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
+
         return (pred_df, dk.do_predict)
 
     def encode_class_names(
@@ -149,3 +161,58 @@ class BasePyTorchClassifier(BasePyTorchModel):
             )
 
         return self.class_names
+
+    def train(
+        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
+    ) -> Any:
+        """
+        Filter the training data and train a model to it. Train makes heavy use of the datakitchen
+        for storing, saving, loading, and analyzing the data.
+        :param unfiltered_df: Full dataframe for the current training period
+        :return:
+        :model: Trained model which can be used to inference (self.predict)
+        """
+
+        logger.info(f"-------------------- Starting training {pair} --------------------")
+
+        start_time = time()
+
+        features_filtered, labels_filtered = dk.filter_features(
+            unfiltered_df,
+            dk.training_features_list,
+            dk.label_list,
+            training_filter=True,
+        )
+
+        # split data into train/test data.
+        dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
+            dk.fit_labels()
+
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
+
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            (dd["test_features"],
+             dd["test_labels"],
+             dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                                 dd["test_labels"],
+                                                                 dd["test_weights"])
+
+        logger.info(
+            f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
+        )
+        logger.info(f"Training model on {len(dd['train_features'])} data points")
+
+        model = self.fit(dd, dk)
+        end_time = time()
+
+        logger.info(f"-------------------- Done training {pair} "
+                    f"({end_time - start_time:.2f} secs) --------------------")
+
+        return model

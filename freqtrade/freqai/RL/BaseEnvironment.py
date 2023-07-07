@@ -2,7 +2,7 @@ import logging
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional, Type, Union
+from typing import List, Optional, Type, Union
 
 import gymnasium as gym
 import numpy as np
@@ -140,6 +140,9 @@ class BaseEnvironment(gym.Env):
         """
         Unique to the environment action count. Must be inherited.
         """
+
+    def action_masks(self) -> List[bool]:
+        return [self._is_valid(action.value) for action in self.actions]
 
     def seed(self, seed: int = 1):
         self.np_random, seed = seeding.np_random(seed)
