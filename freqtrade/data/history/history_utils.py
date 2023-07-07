@@ -354,7 +354,7 @@ def _download_trades_history(exchange: Exchange,
             trades = []
 
         if not since:
-            since = int((datetime.now() - timedelta(days=-new_pairs_days)).timestamp()) * 1000
+            since = int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:
