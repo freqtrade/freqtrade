@@ -93,8 +93,8 @@ EXCHANGES = {
         }]
     },
     'kraken': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
+        'pair': 'BTC/USD',
+        'stake_currency': 'USD',
         'hasQuoteVolume': True,
         'timeframe': '1h',
         'leverage_tiers_public': False,
