@@ -515,7 +515,7 @@ class IFreqaiModel(ABC):
             ]
 
         if ft_params.get("principal_component_analysis", False):
-            pipe_steps.append(('pca', ds.PCA()))
+            pipe_steps.append(('pca', ds.PCA(n_components=0.999)))
             pipe_steps.append(('post-pca-scaler',
                                SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
@@ -1012,6 +1012,6 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("DI_threshold", 0) > 0:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
-            dk.DI_values = np.zeros(len(outliers.index))
-        dk.do_predict = outliers.to_numpy()
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
         return

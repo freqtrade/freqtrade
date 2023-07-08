@@ -7,12 +7,14 @@ from fastapi.websockets import WebSocket
 from pydantic import ValidationError
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.exceptions import FreqtradeException
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_message_stream, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
-from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
-                                                 WSRequestSchema, WSWhitelistMessage)
+from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSErrorMessage,
+                                                 WSMessageSchema, WSRequestSchema,
+                                                 WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC
 
 
@@ -27,7 +29,13 @@ async def channel_reader(channel: WebSocketChannel, rpc: RPC):
     Iterate over the messages from the channel and process the request
     """
     async for message in channel:
-        await _process_consumer_request(message, channel, rpc)
+        try:
+            await _process_consumer_request(message, channel, rpc)
+        except FreqtradeException:
+            logger.exception(f"Error processing request from {channel}")
+            response = WSErrorMessage(data='Error processing request')
+
+            await channel.send(response.dict(exclude_none=True))
 
 
 async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream):
@@ -62,13 +70,13 @@ async def _process_consumer_request(
         logger.error(f"Invalid request from {channel}: {e}")
         return
 
-    type, data = websocket_request.type, websocket_request.data
+    type_, data = websocket_request.type, websocket_request.data
     response: WSMessageSchema
 
-    logger.debug(f"Request of type {type} from {channel}")
+    logger.debug(f"Request of type {type_} from {channel}")
 
     # If we have a request of type SUBSCRIBE, set the topics in this channel
-    if type == RPCRequestType.SUBSCRIBE:
+    if type_ == RPCRequestType.SUBSCRIBE:
         # If the request is empty, do nothing
         if not data:
             return
@@ -80,7 +88,7 @@ async def _process_consumer_request(
         # We don't send a response for subscriptions
         return
 
-    elif type == RPCRequestType.WHITELIST:
+    elif type_ == RPCRequestType.WHITELIST:
         # Get whitelist
         whitelist = rpc._ws_request_whitelist()
 
@@ -88,7 +96,7 @@ async def _process_consumer_request(
         response = WSWhitelistMessage(data=whitelist)
         await channel.send(response.dict(exclude_none=True))
 
-    elif type == RPCRequestType.ANALYZED_DF:
+    elif type_ == RPCRequestType.ANALYZED_DF:
         # Limit the amount of candles per dataframe to 'limit' or 1500
         limit = int(min(data.get('limit', 1500), 1500)) if data else None
         pair = data.get('pair', None) if data else None

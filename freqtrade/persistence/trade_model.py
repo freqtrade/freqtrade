@@ -283,7 +283,7 @@ class Order(ModelBase):
         return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
 
 
-class LocalTrade():
+class LocalTrade:
     """
     Trade database model.
     Used in backtesting - must be aligned to Trade model!

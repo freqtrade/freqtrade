@@ -168,7 +168,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 download_all_data_for_training(self.dp, self.config)
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
-            class DummyClass():
+            class DummyClass:
                 def start(self, *args, **kwargs):
                     raise OperationalException(
                         'freqAI is not enabled. '
