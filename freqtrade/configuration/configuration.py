@@ -568,6 +568,7 @@ class Configuration:
             # Fall back to /dl_path/pairs.json
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
+                logger.info(f'Reading pairs file "{pairs_file}".')
                 config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config and isinstance(config['pairs'], list):
                     config['pairs'].sort()

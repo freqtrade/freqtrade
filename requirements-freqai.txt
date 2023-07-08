@@ -9,4 +9,4 @@ catboost==1.2; 'arm' not in platform_machine
 lightgbm==3.3.5
 xgboost==1.7.6
 tensorboard==2.13.0
-datasieve==0.1.5
+datasieve==0.1.7

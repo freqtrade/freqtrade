@@ -33,11 +33,11 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     else:
         headers = {
             'name': 'Exchange name',
-            'valid': 'Valid',
             'supported': 'Supported',
             'trade_modes': 'Markets',
             'comment': 'Reason',
             }
+        headers.update({'valid': 'Valid'} if args['list_exchanges_all'] else {})
 
         def build_entry(exchange: ValidExchangesType, valid: bool):
             valid_entry = {'valid': exchange['valid']} if valid else {}

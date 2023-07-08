@@ -3,7 +3,6 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
@@ -121,14 +120,6 @@ def pair_to_filename(pair: str) -> str:
     for ch in ['/', ' ', '.', '@', '$', '+', ':']:
         pair = pair.replace(ch, '_')
     return pair
-
-
-def format_ms_time(date: int) -> str:
-    """
-    convert MS date to readable format.
-    : epoch-string in ms
-    """
-    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):

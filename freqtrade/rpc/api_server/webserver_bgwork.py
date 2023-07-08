@@ -14,7 +14,7 @@ class JobsContainer(TypedDict):
     error: Optional[str]
 
 
-class ApiBG():
+class ApiBG:
     # Backtesting type: Backtesting
     bt: Dict[str, Any] = {
         'bt': None,

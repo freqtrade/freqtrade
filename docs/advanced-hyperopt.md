@@ -136,7 +136,7 @@ class MyAwesomeStrategy(IStrategy):
 
 ### Dynamic parameters
 
-Parameters can also be defined dynamically, but must be available to the instance once the * [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
+Parameters can also be defined dynamically, but must be available to the instance once the [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
 
 ``` python
 

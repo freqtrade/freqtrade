@@ -14,8 +14,8 @@ from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
-from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
+from freqtrade.util import format_ms_time
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 
 
@@ -354,7 +354,7 @@ def _download_trades_history(exchange: Exchange,
             trades = []
 
         if not since:
-            since = int((datetime.now() - timedelta(days=-new_pairs_days)).timestamp()) * 1000
+            since = int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:

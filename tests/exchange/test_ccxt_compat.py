@@ -43,6 +43,7 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+        'trades_lookback_hours': 4,
         'private_methods': [
             'fapiPrivateGetPositionSideDual',
             'fapiPrivateGetMultiAssetsMargin'
@@ -98,6 +99,7 @@ EXCHANGES = {
         'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
+        'trades_lookback_hours': 12,
     },
     'kucoin': {
         'pair': 'XRP/USDT',
@@ -342,7 +344,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
 
 
 @pytest.mark.longrun
-class TestCCXTExchange():
+class TestCCXTExchange:
 
     def test_load_markets(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
@@ -640,7 +642,21 @@ class TestCCXTExchange():
         assert isinstance(funding_fee, float)
         # assert funding_fee > 0
 
-    # TODO: tests fetch_trades (?)
+    def test_ccxt__async_get_trade_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange
+        if not (lookback := EXCHANGES[exchangename].get('trades_lookback_hours')):
+            pytest.skip('test_fetch_trades not enabled for this exchange')
+        pair = EXCHANGES[exchangename]['pair']
+        since = int((datetime.now(timezone.utc) - timedelta(hours=lookback)).timestamp() * 1000)
+        res = exch.loop.run_until_complete(
+            exch._async_get_trade_history(pair, since, None, None)
+        )
+        assert len(res) == 2
+        res_pair, res_trades = res
+        assert res_pair == pair
+        assert isinstance(res_trades, list)
+        assert res_trades[0][0] >= since
+        assert len(res_trades) > 1200
 
     def test_ccxt_get_fee(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
