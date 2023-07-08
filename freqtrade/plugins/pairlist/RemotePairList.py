@@ -79,6 +79,13 @@ class RemotePairList(IPairList):
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
+            "mode": {
+                "type": "option",
+                "default": "whitelist",
+                "options": ["whitelist", "blacklist"],
+                "description": "Pairlist mode",
+                "help": "Should this pairlist operate as a whitelist or blacklist?",
+            },
             "number_assets": {
                 "type": "number",
                 "default": 0,
