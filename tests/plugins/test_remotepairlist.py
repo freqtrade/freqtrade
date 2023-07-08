@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 import requests
@@ -7,7 +7,7 @@ import requests
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.RemotePairList import RemotePairList
 from freqtrade.plugins.pairlistmanager import PairListManager
-from tests.conftest import get_patched_exchange, get_patched_freqtradebot, log_has
+from tests.conftest import EXMS, get_patched_exchange, get_patched_freqtradebot, log_has
 
 
 @pytest.fixture(scope="function")
@@ -187,7 +187,6 @@ def test_fetch_pairlist_mock_response_valid(mocker, rpl_config):
 
 
 def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
-
     rpl_config['pairlists'] = [
         {
             "method": "RemotePairList",
@@ -199,12 +198,34 @@ def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
     ]
 
     get_patched_exchange(mocker, rpl_config)
-    with pytest.raises(OperationalException, match=r'`mode` not configured correctly.'
-                       r' Supported Modes are "whitelist","blacklist"'):
+    with pytest.raises(
+        OperationalException,
+        match=r'`mode` not configured correctly. Supported Modes are "whitelist","blacklist"'
+    ):
         get_patched_freqtradebot(mocker, rpl_config)
 
 
-def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
+def test_remote_pairlist_init_wrong_proc_mode(mocker, rpl_config):
+    rpl_config['pairlists'] = [
+        {
+            "method": "RemotePairList",
+            "processing_mode": "filler",
+            "mode": "whitelist",
+            "number_assets": 20,
+            "pairlist_url": "http://example.com/pairlist",
+            "keep_pairlist_on_failure": True,
+        }
+    ]
+
+    get_patched_exchange(mocker, rpl_config)
+    with pytest.raises(
+        OperationalException,
+        match=r'`processing_mode` not configured correctly. Supported Modes are "filter","append"'
+    ):
+        get_patched_freqtradebot(mocker, rpl_config)
+
+
+def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers):
 
     mock_response = MagicMock()
 
@@ -218,6 +239,7 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
     }
 
     rpl_config['pairlists'] = [
+        {'method': 'StaticPairList'},
         {
             "method": "RemotePairList",
             "mode": "blacklist",
@@ -225,6 +247,12 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
             "number_assets": 3
         }
     ]
+
+    mocker.patch.multiple(EXMS,
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
 
     mocker.patch("freqtrade.plugins.pairlist.RemotePairList.requests.get",
                  return_value=mock_response)
@@ -234,7 +262,7 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog):
     pairlistmanager = PairListManager(exchange, rpl_config)
 
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
-                                     rpl_config['pairlists'][0], 0)
+                                     rpl_config['pairlists'][1], 0)
 
     pairs, time_elapsed = remote_pairlist.fetch_pairlist()
 

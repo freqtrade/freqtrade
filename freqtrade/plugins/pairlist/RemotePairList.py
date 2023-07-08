@@ -42,6 +42,7 @@ class RemotePairList(IPairList):
                 'for "pairlist.config.pairlist_url"')
 
         self._mode = self._pairlistconfig.get('mode', 'whitelist')
+        self._processing_mode = self._pairlistconfig.get('processing_mode', 'filter')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._refresh_period: int = self._pairlistconfig.get('refresh_period', 1800)
         self._keep_pairlist_on_failure = self._pairlistconfig.get('keep_pairlist_on_failure', True)
@@ -56,6 +57,23 @@ class RemotePairList(IPairList):
             raise OperationalException(
                 '`mode` not configured correctly. Supported Modes '
                 'are "whitelist","blacklist"')
+
+        if self._processing_mode not in ['filter', 'append']:
+            raise OperationalException(
+                '`processing_mode` not configured correctly. Supported Modes '
+                'are "filter","append"')
+
+        pairlists = self._config['pairlists']
+
+        if len(pairlists) == 1 and self._mode == 'blacklist':
+            raise OperationalException(
+                'At `blacklist` mode RemotePairList requires an additional '
+                'Pairlist and cannot be used on its own.')
+
+        if pairlists[0]['method'] == "RemotePairList" and self._mode == 'blacklist':
+            raise OperationalException(
+                'At `blacklist` mode RemotePairList can not be on the first '
+                'position of your pairlist.')
 
     @property
     def needstickers(self) -> bool:
@@ -269,7 +287,10 @@ class RemotePairList(IPairList):
         filtered = []
 
         if self._mode == "whitelist":
-            merged_list = pairlist + rpl_pairlist
+            if self._processing_mode == "filter":
+                merged_list = [pair for pair in pairlist if pair in rpl_pairlist]
+            elif self._processing_mode == "append":
+                merged_list = pairlist + rpl_pairlist
             merged_list = sorted(set(merged_list), key=merged_list.index)
         else:
             for pair in pairlist:
