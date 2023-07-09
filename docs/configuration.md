@@ -682,15 +682,13 @@ To use a proxy for exchange connections - you will have to define the proxies as
 { 
   "exchange": {
     "ccxt_config": {
-      "aiohttp_proxy": "http://addr:port",
-      "proxies": {
-        "http": "http://addr:port",
-        "https": "http://addr:port"
-      },
+      "httpsProxy": "http://addr:port",
     }
   }
 }
 ```
+
+For more information on available proxy types, please consult the [ccxt proxy documentation](https://docs.ccxt.com/#/README?id=proxy).
 
 ## Next step
 
