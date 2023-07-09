@@ -90,6 +90,18 @@ class RemotePairList(IPairList):
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
+            "pairlist_url": {
+                "type": "string",
+                "default": "",
+                "description": "URL to fetch pairlist from",
+                "help": "URL to fetch pairlist from",
+            },
+            "number_assets": {
+                "type": "number",
+                "default": 30,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist.",
+            },
             "mode": {
                 "type": "option",
                 "default": "whitelist",
@@ -97,17 +109,12 @@ class RemotePairList(IPairList):
                 "description": "Pairlist mode",
                 "help": "Should this pairlist operate as a whitelist or blacklist?",
             },
-            "number_assets": {
-                "type": "number",
-                "default": 0,
-                "description": "Number of assets",
-                "help": "Number of assets to use from the pairlist.",
-            },
-            "pairlist_url": {
-                "type": "string",
-                "default": "",
-                "description": "URL to fetch pairlist from",
-                "help": "URL to fetch pairlist from",
+            "processing_mode": {
+                "type": "option",
+                "default": "filter",
+                "options": ["filter", "append"],
+                "description": "Processing mode",
+                "help": "Append pairs to incomming pairlist or filter them?",
             },
             **IPairList.refresh_period_parameter(),
             "keep_pairlist_on_failure": {
