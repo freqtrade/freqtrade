@@ -649,8 +649,8 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     df_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
     df_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
 
-    assert df_1m.equals(dfbak_1m)
-    assert df_5m.equals(dfbak_5m)
+    assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
+    assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
 
     assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
 
