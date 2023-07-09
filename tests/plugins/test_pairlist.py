@@ -1200,6 +1200,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      "[{'ProducerPairList': 'ProducerPairList - default'}]",
      None
      ),
+    ({"method": "RemotePairList", "number_assets": 10, "pairlist_url": "https://example.com"},
+     "[{'RemotePairList': 'RemotePairList - 10 pairs from RemotePairlist.'}]",
+     None
+     ),
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
