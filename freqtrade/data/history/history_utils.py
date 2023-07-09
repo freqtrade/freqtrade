@@ -7,7 +7,8 @@ from typing import Dict, List, Optional, Tuple
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS, Config
+from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
+                                 DL_DATA_TIMEFRAMES, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
@@ -512,6 +513,8 @@ def download_data_main(config: Config) -> None:
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
+    if 'timeframes' not in config:
+        config['timeframes'] = DL_DATA_TIMEFRAMES
 
     # Manual validations of relevant settings
     if not config['exchange'].get('skip_pair_validation', False):

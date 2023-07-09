@@ -457,7 +457,6 @@ AVAILABLE_CLI_OPTIONS = {
         '-t', '--timeframes',
         help='Specify which tickers to download. Space-separated list. '
         'Default: `1m 5m`.',
-        default=['1m', '5m'],
         nargs='+',
     ),
     "prepend_data": Arg(

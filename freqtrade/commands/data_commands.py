@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Any, Dict
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
-from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
+from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Config
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import convert_trades_to_ohlcv, download_data_main
 from freqtrade.enums import CandleType, RunMode, TradingMode
@@ -57,6 +57,8 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
         raise OperationalException(
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
+    if 'timeframes' not in config:
+        config['timeframes'] = DL_DATA_TIMEFRAMES
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config, validate=False)
