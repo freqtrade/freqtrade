@@ -157,7 +157,7 @@ Freqtrade currently supports the following data-formats:
 * `json` -  plain "text" json files
 * `jsongz` - a gzip-zipped version of json files
 * `hdf5` - a high performance datastore
-* `feather` - a dataformat based on Apache Arrow (OHLCV only)
+* `feather` - a dataformat based on Apache Arrow
 * `parquet` - columnar datastore (OHLCV only)
 
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
