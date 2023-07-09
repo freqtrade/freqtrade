@@ -7,4 +7,4 @@ This section will highlight a few projects from members of the community.
 - [Online pairlist generator](http://pairlist.robot.co.network/) (by Blood4rc).
 - [Freqtrade analysis notebook](https://github.com/froggleston/freqtrade_analysis_notebook) (by Froggleston).
 - [TUI for freqtrade](https://github.com/froggleston/freqtrade-frogtrade9000) (by Froggleston).
-- [Learn Cryptobot](https://learncryptobot.wordpress.com/) (by stash86) - Blog about crypto projects.
+- [Bot Academy](https://botacademy.ddns.net/) (by stash86) - Blog about crypto bot projects.
