@@ -231,7 +231,7 @@ class FreqtradeBot(LoggingMixin):
             self.manage_open_orders()
 
         # Protect from collisions with force_exit.
-        # Without this, freqtrade my try to recreate stoploss_on_exchange orders
+        # Without this, freqtrade may try to recreate stoploss_on_exchange orders
         # while exiting is in process, since telegram messages arrive in an different thread.
         with self._exit_lock:
             trades = Trade.get_open_trades()
