@@ -381,7 +381,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "candle_types": Arg(
         '--candle-types',
-        help='Select candle type to use',
+        help='Select candle type to convert. Defaults to all available types.',
         choices=[c.value for c in CandleType],
         nargs='+',
     ),
