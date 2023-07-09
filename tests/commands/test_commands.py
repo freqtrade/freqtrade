@@ -1396,7 +1396,7 @@ def test_start_list_data(testdatadir, capsys):
     pargs['config'] = None
     start_list_data(pargs)
     captured = capsys.readouterr()
-    assert "Found 17 pair / timeframe combinations." in captured.out
+    assert "Found 16 pair / timeframe combinations." in captured.out
     assert "\n|         Pair |       Timeframe |   Type |\n" in captured.out
     assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |   spot |\n" in captured.out
 
