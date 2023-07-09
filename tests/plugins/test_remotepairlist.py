@@ -266,8 +266,6 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers)
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config["pairlists"][1], 1)
 
-    print(remote_pairlist._pairlistconfig)
-
     pairs, time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["XRP/USDT"]
