@@ -50,7 +50,7 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
         timerange=timerange,
         new_pairs_days=new_pairs_days,
         erase=False,
-        data_format=config.get("dataformat_ohlcv", "json"),
+        data_format=config.get("dataformat_ohlcv", "feather"),
         trading_mode=config.get("trading_mode", "spot"),
         prepend=config.get("prepend_data", False),
     )

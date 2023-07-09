@@ -64,7 +64,7 @@ def migrate_binance_futures_data(config: Config):
         return
 
     from freqtrade.data.history.idatahandler import get_datahandler
-    dhc = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', 'json'))
+    dhc = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', 'feather'))
 
     paircombs = dhc.ohlcv_get_available_data(
         config['datadir'],

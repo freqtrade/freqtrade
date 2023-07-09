@@ -206,6 +206,6 @@
     "recursive_strategy_search": false,
     "add_config_files": [],
     "reduce_df_footprint": false,
-    "dataformat_ohlcv": "json",
-    "dataformat_trades": "jsongz"
+    "dataformat_ohlcv": "feather",
+    "dataformat_trades": "feather"
 }

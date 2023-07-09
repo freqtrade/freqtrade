@@ -1245,7 +1245,7 @@ class RPC:
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
-            data_format=config.get('dataformat_ohlcv', 'json'),
+            data_format=config.get('dataformat_ohlcv', 'feather'),
             candle_type=config.get('candle_type_def', CandleType.SPOT)
         )
         if pair not in _data:

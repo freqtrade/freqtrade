@@ -635,7 +635,7 @@ class FreqaiDataDrawer:
                     timeframe=tf,
                     pair=pair,
                     timerange=timerange,
-                    data_format=self.config.get("dataformat_ohlcv", "json"),
+                    data_format=self.config.get("dataformat_ohlcv", "feather"),
                     candle_type=self.config.get("candle_type_def", CandleType.SPOT),
                 )
 
