@@ -89,7 +89,8 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     if ohlcv:
         migrate_binance_futures_data(config)
         convert_ohlcv_format(config,
-                             convert_from=args['format_from'], convert_to=args['format_to'],
+                             convert_from=args['format_from'],
+                             convert_to=args['format_to'],
                              erase=args['erase'])
     else:
         convert_trades_format(config,
