@@ -280,10 +280,10 @@ def test_download_pair_history(
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     tmpdir1 = Path(tmpdir)
-    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.json'
-    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.json'
-    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.json'
-    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.json'
+    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.feather'
+    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.feather'
+    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.feather'
+    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.feather'
 
     assert not file1_1.is_file()
     assert not file2_1.is_file()
@@ -641,6 +641,7 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     tr = TimeRange.parse_timerange('20191011-20191012')
 
     convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
 
     assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
@@ -654,5 +655,6 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
     assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
