@@ -27,11 +27,11 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--exchange EXCHANGE]
                                [-t TIMEFRAMES [TIMEFRAMES ...]] [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
-                               [--data-format-trades {json,jsongz,hdf5}]
+                               [--data-format-trades {json,jsongz,hdf5,feather}]
                                [--trading-mode {spot,margin,futures}]
                                [--prepend]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
@@ -48,8 +48,7 @@ optional arguments:
   --dl-trades           Download trades instead of OHLCV data. The bot will
                         resample trades to the desired timeframe as specified
                         as --timeframes/-t.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   -t TIMEFRAMES [TIMEFRAMES ...], --timeframes TIMEFRAMES [TIMEFRAMES ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
@@ -57,17 +56,18 @@ optional arguments:
                         exchange/pairs/timeframes.
   --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
-  --data-format-trades {json,jsongz,hdf5}
+                        (default: `feather`).
+  --data-format-trades {json,jsongz,hdf5,feather}
                         Storage format for downloaded trades data. (default:
-                        `jsongz`).
+                        `feather`).
   --trading-mode {spot,margin,futures}, --tradingmode {spot,margin,futures}
                         Select Trading mode
   --prepend             Allow data prepending. (Data-appending is disabled)
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
@@ -255,7 +255,7 @@ usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [--trading-mode {spot,margin,futures}]
                               [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
@@ -266,19 +266,20 @@ optional arguments:
                         Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   -t TIMEFRAMES [TIMEFRAMES ...], --timeframes TIMEFRAMES [TIMEFRAMES ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
   --trading-mode {spot,margin,futures}, --tradingmode {spot,margin,futures}
                         Select Trading mode
   --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]
-                        Select candle type to use
+                        Select candle type to convert. Defaults to all
+                        available types.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
@@ -291,7 +292,6 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
-
 ```
 
 ### Example converting data
@@ -314,7 +314,7 @@ usage: freqtrade convert-trade-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                     {json,jsongz,hdf5,feather,parquet}
                                     [--erase] [--exchange EXCHANGE]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
@@ -325,12 +325,12 @@ optional arguments:
                         Destination format for data conversion.
   --erase               Clean all existing data for the selected
                         exchange/pairs/timeframes.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
@@ -367,9 +367,9 @@ usage: freqtrade trades-to-ohlcv [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                  [-t TIMEFRAMES [TIMEFRAMES ...]]
                                  [--exchange EXCHANGE]
                                  [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
-                                 [--data-format-trades {json,jsongz,hdf5}]
+                                 [--data-format-trades {json,jsongz,hdf5,feather}]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
@@ -377,18 +377,18 @@ optional arguments:
   -t TIMEFRAMES [TIMEFRAMES ...], --timeframes TIMEFRAMES [TIMEFRAMES ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
-  --data-format-trades {json,jsongz,hdf5}
+                        (default: `feather`).
+  --data-format-trades {json,jsongz,hdf5,feather}
                         Storage format for downloaded trades data. (default:
-                        `jsongz`).
+                        `feather`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
@@ -422,13 +422,12 @@ usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--trading-mode {spot,margin,futures}]
                            [--show-timerange]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
+                        (default: `feather`).
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
                         separated.
@@ -439,7 +438,8 @@ optional arguments:
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
@@ -474,7 +474,7 @@ ETH/USDT    5m, 15m, 30m, 1h, 2h, 4h
 By default, `download-data` sub-command downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
 This data can be useful if you need many different timeframes, since it is only downloaded once, and then resampled locally to the desired timeframes.
 
-Since this data is large by default, the files use gzip by default. They are stored in your data-directory with the naming convention of `<pair>-trades.json.gz` (`ETH_BTC-trades.json.gz`). Incremental mode is also supported, as for historic OHLCV data, so downloading the data once per week with `--days 8` will create an incremental data-repository.
+Since this data is large by default, the files use the feather fileformat by default. They are stored in your data-directory with the naming convention of `<pair>-trades.feather` (`ETH_BTC-trades.feather`). Incremental mode is also supported, as for historic OHLCV data, so downloading the data once per week with `--days 8` will create an incremental data-repository.
 
 To use this mode, simply add `--dl-trades` to your call. This will swap the download method to download trades, and resamples the data locally.
 
