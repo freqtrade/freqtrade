@@ -197,10 +197,25 @@ def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
         }
     ]
 
-    get_patched_exchange(mocker, rpl_config)
     with pytest.raises(
         OperationalException,
         match=r'`mode` not configured correctly. Supported Modes are "whitelist","blacklist"'
+    ):
+        get_patched_freqtradebot(mocker, rpl_config)
+
+    rpl_config['pairlists'] = [
+        {
+            "method": "RemotePairList",
+            "mode": "blacklist",
+            "number_assets": 20,
+            "pairlist_url": "http://example.com/pairlist",
+            "keep_pairlist_on_failure": True,
+        }
+    ]
+
+    with pytest.raises(
+            OperationalException,
+            match=r'A `blacklist` mode RemotePairList can not be.*first.*'
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 

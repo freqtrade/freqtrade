@@ -65,7 +65,7 @@ class RemotePairList(IPairList):
 
         if self._pairlist_pos == 0 and self._mode == 'blacklist':
             raise OperationalException(
-                'At `blacklist` mode RemotePairList can not be on the first '
+                'A `blacklist` mode RemotePairList can not be on the first '
                 'position of your pairlist.')
 
     @property
@@ -85,7 +85,7 @@ class RemotePairList(IPairList):
 
     @staticmethod
     def description() -> str:
-        return "Retrieve pairs from a remote API."
+        return "Retrieve pairs from a remote API or local file."
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
