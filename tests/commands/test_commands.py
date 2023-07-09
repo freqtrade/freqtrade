@@ -1389,8 +1389,6 @@ def test_convert_data_trades(mocker, testdatadir):
 def test_start_list_data(testdatadir, capsys):
     args = [
         "list-data",
-        "--data-format-ohlcv",
-        "json",
         "--datadir",
         str(testdatadir),
     ]
@@ -1405,7 +1403,7 @@ def test_start_list_data(testdatadir, capsys):
     args = [
         "list-data",
         "--data-format-ohlcv",
-        "json",
+        "feather",
         "--pairs", "XRP/ETH",
         "--datadir",
         str(testdatadir),
@@ -1421,8 +1419,6 @@ def test_start_list_data(testdatadir, capsys):
 
     args = [
         "list-data",
-        "--data-format-ohlcv",
-        "json",
         "--trading-mode", "futures",
         "--datadir",
         str(testdatadir),
@@ -1439,8 +1435,6 @@ def test_start_list_data(testdatadir, capsys):
 
     args = [
         "list-data",
-        "--data-format-ohlcv",
-        "json",
         "--pairs", "XRP/ETH",
         "--datadir",
         str(testdatadir),
