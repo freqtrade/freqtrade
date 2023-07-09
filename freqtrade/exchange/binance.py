@@ -22,7 +22,9 @@ class Binance(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "takeprofit_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
+        "takeprofit_order_types": {"limit": "limit"},
         "order_time_in_force": ['GTC', 'FOK', 'IOC'],
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
@@ -31,6 +33,7 @@ class Binance(Exchange):
     }
     _ft_has_futures: Dict = {
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
+        "takeprofit_order_types": {"limit": "limit"},
         "tickers_have_price": False,
         "floor_leverage": True,
         "stop_price_type_field": "workingType",

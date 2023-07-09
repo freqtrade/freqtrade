@@ -8,23 +8,36 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
+import numpy as np
 from pandas import DataFrame
 
 from freqtrade.constants import Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
-                             SignalDirection, SignalTagType, SignalType, TradingMode)
+from freqtrade.enums import (
+    CandleType,
+    ExitCheckTuple,
+    ExitType,
+    RunMode,
+    SignalDirection,
+    SignalTagType,
+    SignalType,
+    TradingMode,
+)
+from freqtrade.enums import MarketDirection
+from freqtrade.enums.strategy_dataframe_types import ColumnNames
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
-from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
-                                                      _create_and_merge_informative_pair,
-                                                      _format_pair_name)
+from freqtrade.strategy.informative_decorator import (
+    InformativeData,
+    PopulateIndicators,
+    _create_and_merge_informative_pair,
+    _format_pair_name,
+)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 CUSTOM_EXIT_MAX_LENGTH = 64
@@ -950,8 +963,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return None, None
 
-        latest_date = dataframe['date'].max()
-        latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
+        latest_date = dataframe[ColumnNames.DATE].max()
+        latest = dataframe.loc[dataframe[ColumnNames.DATE] == latest_date].iloc[-1]
         # Explicitly convert to arrow object to ensure the below comparison does not fail
         latest_date = arrow.get(latest_date)
 
@@ -989,13 +1002,13 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False, False, None
 
         if is_short:
-            enter = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
-            exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+            enter = latest.get(SignalType.ENTER_SHORT, 0) == 1
+            exit_ = latest.get(SignalType.EXIT_SHORT, 0) == 1
 
         else:
-            enter = latest[SignalType.ENTER_LONG.value] == 1
-            exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
+            enter = latest[SignalType.ENTER_LONG] == 1
+            exit_ = latest.get(SignalType.EXIT_LONG, 0) == 1
+        exit_tag = latest.get(SignalTagType.EXIT_TAG, None)
         # Tags can be None, which does not resolve to False.
         exit_tag = exit_tag if isinstance(exit_tag, str) else None
 
@@ -1011,7 +1024,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe: DataFrame,
     ) -> Tuple[Optional[SignalDirection], Optional[str]]:
         """
-        Calculates current entry signal based based on the dataframe signals
+        Calculates current entry signal based on the dataframe signals
         columns of the dataframe.
         Used by Bot to get the signal to enter trades.
         :param pair: pair in format ANT/BTC
@@ -1023,21 +1036,21 @@ class IStrategy(ABC, HyperStrategyMixin):
         if latest is None or latest_date is None:
             return None, None
 
-        enter_long = latest[SignalType.ENTER_LONG.value] == 1
-        exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
-        exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+        enter_long = latest[SignalType.ENTER_LONG] == 1
+        exit_long = latest.get(SignalType.EXIT_LONG, 0) == 1
+        enter_short = latest.get(SignalType.ENTER_SHORT, 0) == 1
+        exit_short = latest.get(SignalType.EXIT_SHORT, 0) == 1
 
         enter_signal: Optional[SignalDirection] = None
         enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG, None)
         if (self.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
                 and self.can_short
                 and enter_short == 1 and not any([exit_short, enter_long])):
             enter_signal = SignalDirection.SHORT
-            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG, None)
 
         enter_tag_value = enter_tag_value if isinstance(enter_tag_value, str) else None
 
@@ -1045,9 +1058,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         if self.ignore_expired_candle(
             latest_date=latest_date.datetime,
-            current_time=datetime.now(timezone.utc),
-            timeframe_seconds=timeframe_seconds,
-            enter=bool(enter_signal)
+                current_time=datetime.now(timezone.utc),
+                timeframe_seconds=timeframe_seconds,
+                enter=bool(enter_signal)
         ):
             return None, enter_tag_value
 
@@ -1055,12 +1068,52 @@ class IStrategy(ABC, HyperStrategyMixin):
                      f"enter={enter_long} enter_tag_value={enter_tag_value}")
         return enter_signal, enter_tag_value
 
+    def get_entry_tp(self, pair: str, timeframe: str, dataframe: DataFrame) -> Optional[float]:
+        """
+        Returns the TakeProfit price level for the current entry signal.
+        The TakeProfit value should be in the DataFrame in the column named SignalType.TP_PRICE
+        The TP_PRICE value should be a float indicating the price level for the TakeProfit order.
+        If the TP_PRICE value is NaN, then the TakeProfit order will not be placed.
+        :param pair: pair in format ANT/BTC
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
+        :return: Optional[float] indicating the price level for the TakeProfit order.
+        """
+        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        if latest is None or latest_date is None:
+            return None
+
+        tp_price = latest.get(SignalType.TP_PRICE, np.NaN)
+        if np.isnan(tp_price):
+            return None
+        return tp_price
+
+    def get_entry_sl(self, pair: str, timeframe: str, dataframe: DataFrame) -> Optional[float]:
+        """
+        Returns the StopLoss price level for the current entry signal.
+        The StopLoss value should be in the DataFrame in the column named SignalType.SL_PRICE
+        The SL_PRICE value should be a float indicating the price level for the TakeProfit order.
+        If the SL_PRICE value is NaN, then the StopLoss order will not be placed.
+        :param pair: pair in format ANT/BTC
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
+        :return: Optional[float] indicating the price level for the StopLoss order.
+        """
+        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        if latest is None or latest_date is None:
+            return None
+
+        sl_price = latest.get(SignalType.SL_PRICE, np.NaN)
+        if np.isnan(sl_price):
+            return None
+        return sl_price
+
     def ignore_expired_candle(
-        self,
-        latest_date: datetime,
-        current_time: datetime,
-        timeframe_seconds: int,
-        enter: bool
+            self,
+            latest_date: datetime,
+            current_time: datetime,
+            timeframe_seconds: int,
+            enter: bool
     ):
         if self.ignore_buying_expired_candle_after and enter:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))

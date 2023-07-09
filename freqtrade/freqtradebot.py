@@ -17,10 +17,24 @@ from freqtrade.constants import BuySell, Config, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, SignalDirection,
-                             State, TradingMode)
-from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, PricingError)
+from freqtrade.enums import (
+    ExitCheckTuple,
+    ExitType,
+    RPCMessageType,
+    RunMode,
+    SignalDirection,
+    State,
+    TradingMode,
+)
+from freqtrade.enums.strategy_dataframe_types import ColumnNames
+from freqtrade.exceptions import (
+    DependencyException,
+    ExchangeError,
+    InsufficientFundsError,
+    InvalidOrderException,
+    PricingError,
+    OperationalException,
+)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -35,7 +49,6 @@ from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
 from freqtrade.util.binance_mig import migrate_binance_futures_names
 from freqtrade.wallets import Wallets
-
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +234,7 @@ class FreqtradeBot(LoggingMixin):
             self.manage_open_orders()
 
         # Protect from collisions with force_exit.
-        # Without this, freqtrade my try to recreate stoploss_on_exchange orders
+        # Without this, freqtrade may try to recreate stoploss_on_exchange orders
         # while exiting is in process, since telegram messages arrive in an different thread.
         with self._exit_lock:
             trades = Trade.get_open_trades()
@@ -505,7 +518,7 @@ class FreqtradeBot(LoggingMixin):
         logger.debug(f"create_trade for pair {pair}")
 
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
-        nowtime = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
+        nowtime = analyzed_df.iloc[-1][ColumnNames.DATE] if len(analyzed_df) > 0 else None
 
         # get_free_open_trades is checked before create_trade is called
         # but it is still used here to prevent opening too many trades within one iteration
@@ -514,44 +527,48 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (signal, enter_tag) = self.strategy.get_entry_signal(
-            pair,
-            self.strategy.timeframe,
-            analyzed_df
-        )
+        (signal, enter_tag) = self.strategy.get_entry_signal(pair, self.strategy.timeframe, analyzed_df)
+        tp_price = self.strategy.get_entry_tp(pair, self.strategy.timeframe, analyzed_df)
+        sl_price = self.strategy.get_entry_sl(pair, self.strategy.timeframe, analyzed_df)
+
+        # entry_signal = self.strategy.get_position_entry_signal(pair,self.strategy.timeframe,analyzed_df)
+        # (direction, tag) = entry_signal.direction, entry_signal.tag
 
         if signal:
             if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
                 lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
                 if lock:
-                    self.log_once(f"Pair {pair} {lock.side} is locked until "
-                                  f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
-                                  f"due to {lock.reason}.",
-                                  logger.info)
+                    self.log_once(
+                        f"Pair {pair} {lock.side} is locked until "
+                        f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
+                        f"due to {lock.reason}.",
+                        logger.info,
+                    )
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
-            bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})
-            if ((bid_check_dom.get('enabled', False)) and
-                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
-                if self._check_depth_of_market(pair, bid_check_dom, side=signal):
-                    return self.execute_entry(
-                        pair,
-                        stake_amount,
-                        enter_tag=enter_tag,
-                        is_short=(signal == SignalDirection.SHORT)
-                    )
-                else:
-                    return False
+            bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
 
-            return self.execute_entry(
-                pair,
-                stake_amount,
-                enter_tag=enter_tag,
-                is_short=(signal == SignalDirection.SHORT)
+            check_dom_enabled = bid_check_dom.get("enabled", False)
+            positive_bid_to_ask_delta = bid_check_dom.get("bids_to_ask_delta", 0) > 0
+            if (
+                check_dom_enabled
+                and positive_bid_to_ask_delta
+                and not self._check_depth_of_market(pair, bid_check_dom, side=signal)
+            ):
+                return False
+
+            entry_trade = self._execute_entry(
+                pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
             )
+            if entry_trade is not None:
+                if sl_price is not None:
+                    sl_placed = self.create_stoploss_order(entry_trade, stop_price=sl_price)
+                if tp_price is not None:
+                    tp_placed = self.create_takeprofit_order(entry_trade, limit_price=tp_price)
+                return True
         else:
             return False
 
@@ -673,7 +690,7 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def execute_entry(
+    def _execute_entry(
         self,
         pair: str,
         stake_amount: float,
@@ -685,42 +702,52 @@ class FreqtradeBot(LoggingMixin):
         trade: Optional[Trade] = None,
         order_adjust: bool = False,
         leverage_: Optional[float] = None,
-    ) -> bool:
+    ) -> Optional[Trade]:
         """
-        Executes a limit buy for the given pair
+        Executes a limit buy for the given pair and returns the Trade object
         :param pair: pair for which we want to create a LIMIT_BUY
         :param stake_amount: amount of stake-currency for the pair
         :return: True if a buy order is created, false if it fails.
         """
-        time_in_force = self.strategy.order_time_in_force['entry']
+        time_in_force = self.strategy.order_time_in_force["entry"]
 
-        side: BuySell = 'sell' if is_short else 'buy'
-        name = 'Short' if is_short else 'Long'
-        trade_side: LongShort = 'short' if is_short else 'long'
+        side: BuySell = "sell" if is_short else "buy"
+        name = "Short" if is_short else "Long"
+        trade_side: LongShort = "short" if is_short else "long"
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_)
+            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_
+        )
 
         if not stake_amount:
-            return False
+            return None
 
-        msg = (f"Position adjust: about to create a new order for {pair} with stake: "
-               f"{stake_amount} for {trade}" if pos_adjust
-               else
-               f"{name} signal found: about create a new trade for {pair} with stake_amount: "
-               f"{stake_amount} ...")
+        msg = (
+            f"Position adjust: about to create a new order for {pair} with stake: "
+            f"{stake_amount} for {trade}"
+            if pos_adjust
+            else f"{name} signal found: about create a new trade for {pair} with stake_amount: "
+            f"{stake_amount} ..."
+        )
         logger.info(msg)
         amount = (stake_amount / enter_limit_requested) * leverage
-        order_type = ordertype or self.strategy.order_types['entry']
+        order_type = ordertype or self.strategy.order_types["entry"]
 
         if not pos_adjust and not strategy_safe_wrapper(
-                self.strategy.confirm_trade_entry, default_retval=True)(
-                pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
-                entry_tag=enter_tag, side=trade_side):
+            self.strategy.confirm_trade_entry, default_retval=True
+        )(
+            pair=pair,
+            order_type=order_type,
+            amount=amount,
+            rate=enter_limit_requested,
+            time_in_force=time_in_force,
+            current_time=datetime.now(timezone.utc),
+            entry_tag=enter_tag,
+            side=trade_side,
+        ):
             logger.info(f"User denied entry for {pair}.")
-            return False
+            return None
         order = self.exchange.create_order(
             pair=pair,
             ordertype=order_type,
@@ -729,47 +756,57 @@ class FreqtradeBot(LoggingMixin):
             rate=enter_limit_requested,
             reduceOnly=False,
             time_in_force=time_in_force,
-            leverage=leverage
+            leverage=leverage,
         )
         order_obj = Order.parse_from_ccxt_object(order, pair, side, amount, enter_limit_requested)
-        order_id = order['id']
-        order_status = order.get('status')
+        order_id = order["id"]
+        order_status = order.get("status")
         logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
 
         # we assume the order is executed at the price requested
         enter_limit_filled_price = enter_limit_requested
         amount_requested = amount
 
-        if order_status == 'expired' or order_status == 'rejected':
-
+        if order_status == "expired" or order_status == "rejected":
             # return false if the order is not filled
-            if float(order['filled']) == 0:
-                logger.warning(f'{name} {time_in_force} order with time in force {order_type} '
-                               f'for {pair} is {order_status} by {self.exchange.name}.'
-                               ' zero amount is fulfilled.')
-                return False
+            if float(order["filled"]) == 0:
+                logger.warning(
+                    f"{name} {time_in_force} order with time in force {order_type} "
+                    f"for {pair} is {order_status} by {self.exchange.name}."
+                    " zero amount is fulfilled."
+                )
+                return None
             else:
                 # the order is partially fulfilled
                 # in case of IOC orders we can check immediately
                 # if the order is fulfilled fully or partially
-                logger.warning('%s %s order with time in force %s for %s is %s by %s.'
-                               ' %s amount fulfilled out of %s (%s remaining which is canceled).',
-                               name, time_in_force, order_type, pair, order_status,
-                               self.exchange.name, order['filled'], order['amount'],
-                               order['remaining']
-                               )
-                amount = safe_value_fallback(order, 'filled', 'amount', amount)
+                logger.warning(
+                    "%s %s order with time in force %s for %s is %s by %s."
+                    " %s amount fulfilled out of %s (%s remaining which is canceled).",
+                    name,
+                    time_in_force,
+                    order_type,
+                    pair,
+                    order_status,
+                    self.exchange.name,
+                    order["filled"],
+                    order["amount"],
+                    order["remaining"],
+                )
+                amount = safe_value_fallback(order, "filled", "amount", amount)
                 enter_limit_filled_price = safe_value_fallback(
-                    order, 'average', 'price', enter_limit_filled_price)
+                    order, "average", "price", enter_limit_filled_price
+                )
 
         # in case of FOK the order may be filled immediately and fully
-        elif order_status == 'closed':
-            amount = safe_value_fallback(order, 'filled', 'amount', amount)
+        elif order_status == "closed":
+            amount = safe_value_fallback(order, "filled", "amount", amount)
             enter_limit_filled_price = safe_value_fallback(
-                order, 'average', 'price', enter_limit_requested)
+                order, "average", "price", enter_limit_requested
+            )
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        fee = self.exchange.get_fee(symbol=pair, taker_or_maker="maker")
         base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
 
@@ -778,14 +815,15 @@ class FreqtradeBot(LoggingMixin):
             funding_fees = 0.0
             try:
                 funding_fees = self.exchange.get_funding_fees(
-                    pair=pair, amount=amount, is_short=is_short, open_date=open_date)
+                    pair=pair, amount=amount, is_short=is_short, open_date=open_date
+                )
             except ExchangeError:
                 logger.warning("Could not find funding fee.")
 
             trade = Trade(
                 pair=pair,
                 base_currency=base_currency,
-                stake_currency=self.config['stake_currency'],
+                stake_currency=self.config["stake_currency"],
                 stake_amount=stake_amount,
                 amount=amount,
                 is_open=True,
@@ -799,7 +837,7 @@ class FreqtradeBot(LoggingMixin):
                 open_order_id=order_id,
                 strategy=self.strategy.get_strategy_name(),
                 enter_tag=enter_tag,
-                timeframe=timeframe_to_minutes(self.config['timeframe']),
+                timeframe=timeframe_to_minutes(self.config["timeframe"]),
                 leverage=leverage,
                 is_short=is_short,
                 trading_mode=self.trading_mode,
@@ -827,7 +865,7 @@ class FreqtradeBot(LoggingMixin):
         self._notify_enter(trade, order_obj, order_type, sub_trade=pos_adjust)
 
         if pos_adjust:
-            if order_status == 'closed':
+            if order_status == "closed":
                 logger.info(f"DCA order closed, trade should be up to date: {trade}")
                 trade = self.cancel_stoploss_on_exchange(trade)
             else:
@@ -837,7 +875,40 @@ class FreqtradeBot(LoggingMixin):
         if order_status in constants.NON_OPEN_EXCHANGE_STATES:
             self.update_trade_state(trade, order_id, order)
 
-        return True
+        return trade
+
+    def execute_entry(
+            self,
+            pair: str,
+            stake_amount: float,
+            price: Optional[float] = None,
+            *,
+            is_short: bool = False,
+            ordertype: Optional[str] = None,
+            enter_tag: Optional[str] = None,
+            trade: Optional[Trade] = None,
+            order_adjust: bool = False,
+            leverage_: Optional[float] = None,
+    ) -> bool:
+        """
+        Executes a limit buy for the given pair
+        :param pair: pair for which we want to create a LIMIT_BUY
+        :param stake_amount: amount of stake-currency for the pair
+        :return: True if a buy order is created, false if it fails.
+        """
+        trade = self._execute_entry(
+            pair,
+            stake_amount,
+            price,
+            is_short=is_short,
+            ordertype=ordertype,
+            enter_tag=enter_tag,
+            trade=trade,
+            order_adjust=order_adjust,
+            leverage_=leverage_,
+        )
+
+        return trade is not None
 
     def cancel_stoploss_on_exchange(self, trade: Trade) -> Trade:
         # First cancelling stoploss on exchange ...
@@ -1013,9 +1084,62 @@ class FreqtradeBot(LoggingMixin):
         trades_closed = 0
         for trade in trades:
             try:
+                # below check is required for the situation when a position was closed by a TP/SL order on exchange,
+                # and the trade still apears as active position in the bot, and the broker fails to place SL order
+                # for the closed position and this enters an infinite loop of trying to place SL order
+                active_positions = self.exchange.fetch_active_positions(trade.pair)
+                if not active_positions:
+                    # The trade has been close on Exchange, so we should check the TP/SL reduce orders
+                    tp_reduced = False
+                    sl_reduced = False
+                    tp_order = self.exchange.fetch_order(order_id=trade.takeprofit_order_id, pair=trade.pair)
+                    if tp_order['status'] == 'closed':  # order has been filled
+                        if tp_order['filled'] != trade.amount:
+                            error_msg = (f'TakeProfit order {trade.takeprofit_order_id} for {trade.pair} '
+                                         f'has been partially filled. Expected {trade.amount} but got {tp_order["filled"]}.')
+                            raise OperationalException(error_msg)
+                        trade.takeprofit_last_update = datetime.now(timezone.utc)
+                        close_price = tp_order['price']
+                        # trade.update_order(tp_order)
+                        # trade.update_trade(tp_order)
+                        # trade.close(close_price)
+                        tp_reduced = True
+                    elif tp_order['status'] == 'open':
+                        self.exchange.cancel_order(order_id=trade.takeprofit_order_id, pair=trade.pair)
 
-                if (self.strategy.order_types.get('stoploss_on_exchange') and
-                        self.handle_stoploss_on_exchange(trade)):
+                    if tp_order.get('status', 'unknown') in ('closed', 'expired'):
+                        self.update_trade_state(trade, trade.takeprofit_order_id, tp_order)
+
+
+                    sl_order = self.exchange.fetch_order(order_id=trade.stoploss_order_id, pair=trade.pair)
+                    if sl_order['status'] == 'closed':  # order has been filled
+                        if sl_order['filled'] != trade.amount:
+                            error_msg = (f'StopLoss order {trade.stoploss_order_id} for {trade.pair} '
+                                         f'has been partially filled. Expected {trade.amount} but got {sl_order["filled"]}.')
+                            raise OperationalException(error_msg)
+                        trade.stoploss_last_update = datetime.now(timezone.utc)
+                        close_price = sl_order['price']
+                        # trade.close(close_price)
+                        sl_reduced = True
+                    elif sl_order['status'] == 'open':
+                        self.exchange.cancel_order(order_id=trade.stoploss_order_id, pair=trade.pair)
+
+                    if tp_reduced and sl_reduced:
+                        logging.exception(
+                            f'Both TP and SL orders have been filled for {trade.pair}. This should not happen.')
+                        logging.exception(f'TP order: {tp_order}\n SL order: {sl_order}')
+                        raise OperationalException(
+                            'Both TP and SL orders have been filled. This should not happen.')
+
+                    if sl_order.get('status', 'unknown') in ('closed', 'expired'):
+                        self.update_trade_state(trade, trade.stoploss_order_id, sl_order)
+
+
+                    trades_closed += 1
+                    Trade.commit()
+                    continue
+                if active_positions and (self.strategy.order_types.get('stoploss_on_exchange') and
+                                         self.handle_stoploss_on_exchange(trade)):
                     trades_closed += 1
                     Trade.commit()
                     continue
@@ -1128,6 +1252,46 @@ class FreqtradeBot(LoggingMixin):
         except ExchangeError:
             trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
+        return False
+
+    def create_takeprofit_order(self, trade: Trade, limit_price: float) -> bool:
+        """
+        Abstracts creating takeprofit orders from the logic.
+        Handles errors and updates the trade database object.
+        Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
+        :return: True if the order succeeded, and False in case of problems.
+        """
+        try:
+            takeprofit_order = self.exchange.create_takeprofit(
+                pair=trade.pair,
+                amount=trade.amount,
+                limit_price=limit_price,
+                order_types=self.strategy.order_types,
+                side=trade.exit_side,
+                leverage=trade.leverage
+            )
+
+            order_obj = Order.parse_from_ccxt_object(takeprofit_order, trade.pair, 'takeprofit',
+                                                     trade.amount, limit_price)
+            trade.orders.append(order_obj)
+            trade.takeprofit_order_id = str(takeprofit_order['id'])
+            trade.takeprofit_last_update = datetime.now(timezone.utc)
+            return True
+        except InsufficientFundsError as e:
+            logger.warning(f"Unable to place takeprofit order {e}.")
+            # Try to figure out what went wrong
+            self.handle_insufficient_funds(trade)
+
+        except InvalidOrderException as e:
+            trade.takeprofit_order_id = None
+            logger.error(f'Unable to place a takeprofit order on exchange. {e}')
+            logger.warning('Exiting the trade forcefully')
+            self.execute_trade_exit(trade, limit_price, exit_check=ExitCheckTuple(
+                exit_type=ExitType.EMERGENCY_EXIT))
+
+        except ExchangeError:
+            trade.takeprofit_order_id = None
+            logger.exception('Unable to place a takeprofit order on exchange.')
         return False
 
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
@@ -1302,7 +1466,7 @@ class FreqtradeBot(LoggingMixin):
         """
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                   self.strategy.timeframe)
-        latest_candle_open_date = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
+        latest_candle_open_date = analyzed_df.iloc[-1][ColumnNames.DATE] if len(analyzed_df) > 0 else None
         latest_candle_close_date = timeframe_to_next_date(self.strategy.timeframe,
                                                           latest_candle_open_date)
         # Check if new candle

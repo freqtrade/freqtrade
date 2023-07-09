@@ -27,7 +27,9 @@ class Gate(Exchange):
         "ohlcv_candle_limit": 1000,
         "order_time_in_force": ['GTC', 'IOC'],
         "stoploss_order_types": {"limit": "limit"},
+        "takeprofit_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
+        "takeprofit_on_exchange": True,
     }
 
     _ft_has_futures: Dict = {

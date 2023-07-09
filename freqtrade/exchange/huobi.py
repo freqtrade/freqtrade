@@ -17,7 +17,9 @@ class Huobi(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "takeprofit_on_exchange": True,
         "stoploss_order_types": {"limit": "stop-limit"},
+        "takeprofit_order_types": {"limit":"limit"},
         "ohlcv_candle_limit": 1000,
         "l2_limit_range": [5, 10, 20],
         "l2_limit_range_required": False,

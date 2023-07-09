@@ -1,7 +1,8 @@
-from enum import Enum
+from dataclasses import dataclass
+from typing import Optional
+from strenum import StrEnum
 
-
-class SignalType(Enum):
+class SignalType(StrEnum):
     """
     Enum to distinguish between enter and exit signals
     """
@@ -9,25 +10,29 @@ class SignalType(Enum):
     EXIT_LONG = "exit_long"
     ENTER_SHORT = "enter_short"
     EXIT_SHORT = "exit_short"
+    TP_PRICE = "tp_price"
+    SL_PRICE = "sl_price"
 
-    def __str__(self):
-        return f"{self.name.lower()}"
 
-
-class SignalTagType(Enum):
+class SignalTagType(StrEnum):
     """
     Enum for signal columns
     """
     ENTER_TAG = "enter_tag"
     EXIT_TAG = "exit_tag"
 
-    def __str__(self):
-        return f"{self.name.lower()}"
 
-
-class SignalDirection(str, Enum):
+class SignalDirection(StrEnum):
     LONG = 'long'
     SHORT = 'short'
 
-    def __str__(self):
-        return f"{self.name.lower()}"
+@dataclass(frozen=True)
+class EntrySignal:
+    """
+    Class to hold an entry signal and its associated metadata
+    """
+    direction: SignalDirection
+    tag: str
+    TP_price: Optional[float] = None
+    SL_price: Optional[float] = None
+    ttl_ms: Optional[int] = None  # Time to live in milliseconds

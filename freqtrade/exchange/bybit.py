@@ -35,7 +35,9 @@ class Bybit(Exchange):
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
         "stoploss_on_exchange": True,
+        "takeprofit_on_exchange": True,
         "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "takeprofit_order_types": {"limit": "limit"},
         "stop_price_type_field": "triggerBy",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "LastPrice",

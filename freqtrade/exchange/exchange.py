@@ -42,7 +42,6 @@ from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -59,6 +58,7 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
+        "takeprofit_on_exchange": True,
         "order_time_in_force": ["GTC"],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
@@ -1125,6 +1125,18 @@ class Exchange:
             user_order_type = list(available_order_Types.keys())[0]
         return ordertype, user_order_type
 
+    def _get_takeprofit_order_type(self, user_order_type) -> Tuple[str, str]:
+
+        available_order_Types: Dict[str, str] = self._ft_has["takeprofit_order_types"]
+
+        if user_order_type in available_order_Types.keys():
+            ordertype = available_order_Types[user_order_type]
+        else:
+            # Otherwise pick only one available
+            ordertype = list(available_order_Types.values())[0]
+            user_order_type = list(available_order_Types.keys())[0]
+        return ordertype, user_order_type
+
     def _get_stop_limit_rate(self, stop_price: float, order_types: Dict, side: str) -> float:
         # Limit price threshold: As limit price should always be below stop-price
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
@@ -1226,6 +1238,75 @@ class Exchange:
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f"Could not place stoploss order due to {e.__class__.__name__}. "
+                f"Message: {e}") from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier(retries=0)
+    def create_takeprofit(self, pair: str, amount: float, limit_price: float, order_types: Dict,
+                          side: BuySell, leverage: float) -> Dict:
+        """
+        creates a TakeProfit order.
+        requires `_ft_has['takeprofit_order_types']` to be set as a dict mapping limit and market
+            to the corresponding exchange type.
+        For the moment it supports only limit orders, as for the TakeProfit order there's no much sense to use other
+            types of odredrs, especially as the Maker fees are lower on most of the exchanges.
+
+        The precise ordertype is determined by the order_types dict or exchange default.
+
+        The exception below should never raise, since we disallow
+        starting the bot in validate_ordertypes()
+
+        This may work with a limited number of other exchanges, but correct working
+            needs to be tested individually.
+        """
+        if not self._ft_has['takeprofit_on_exchange']:
+            raise OperationalException(f"takeprofit is not implemented for {self.name}.")
+
+        user_order_type = order_types.get('takeprofit')  # anyway it defaults to "limit"
+        ordertype, user_order_type = self._get_takeprofit_order_type(user_order_type)
+
+        limit_price_norm = self.price_to_precision(pair, limit_price)
+        if self._config['dry_run']:
+            dry_order = self.create_dry_run_order(
+                pair,
+                ordertype,
+                side,
+                amount,
+                limit_price_norm,
+                leverage=leverage,
+            )
+            return dry_order
+
+        try:
+            params = {'reduceOnly': True}
+            amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
+
+            self._lev_prep(pair, leverage, side)
+            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
+                                           amount=amount, price=limit_price_norm, params=params)
+            self._log_exchange_response(endpoint='create_takeprofit_order', response=order)
+            order = self._order_contracts_to_amount(order)
+            logger.info(f"takeprofit {user_order_type} order added for {pair}. "
+                        f"limit price: {limit_price}")
+            return order
+        except ccxt.InsufficientFunds as e:
+            raise InsufficientFundsError(
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
+                f'Tried to close amount {amount} at price {limit_price_norm}. '
+                f'Message: {e}') from e
+        except ccxt.InvalidOrder as e:
+            # Errors:
+            # `Order would trigger immediately.`
+            raise InvalidOrderException(
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to close position with amount {amount} at price {limit_price_norm}. '
+                f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Could not place takeprofit order due to {e.__class__.__name__}. "
                 f"Message: {e}") from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
@@ -1392,6 +1473,7 @@ class Exchange:
         """
         Fetch positions from the exchange.
         If no pair is given, all positions are returned.
+        Note: if there's no active position, this method will return a risk-info position, as it is returned by default by ccxt.
         :param pair: Pair for the query
         """
         if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
@@ -1403,6 +1485,31 @@ class Exchange:
             positions: List[Dict] = self._api.fetch_positions(symbols)
             self._log_exchange_response('fetch_positions', positions)
             return positions
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get positions due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def fetch_active_positions(self, pair: Optional[str] = None) -> List[Dict]:
+        """
+        Fetch positions from the exchange.
+        If no pair is given, all positions are returned.
+        :param pair: Pair for the query
+        """
+        if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
+            return []
+        try:
+            symbols = []
+            if pair:
+                symbols.append(pair)
+            positions: List[Dict] = self._api.fetch_positions(symbols)
+            active_positions = [position for position in positions if position["contracts"] > 0]
+            self._log_exchange_response('fetch_positions', active_positions)
+            return active_positions
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

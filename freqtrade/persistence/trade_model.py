@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, cast
 
-from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func
+from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint, desc, func, Column, DateTime
 from sqlalchemy.orm import (Mapped, Query, QueryPropertyDescriptor, lazyload, mapped_column,
                             relationship)
 
@@ -699,12 +699,20 @@ class LocalTrade():
         elif order.ft_order_side == 'stoploss' and order.status not in ('canceled', 'open'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
+            self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE
             if self.is_open:
                 logger.info(f'{order.order_type.upper()} is hit for {self}.')
             self.close(order.safe_price)
+        elif order.ft_order_side == 'takeprofit' and order.status not in ('canceled','open'):
+            tp_price_level = price_to_precision(order.average, self.price_precision, self.precision_mode)
+            self.close_rate_requested = tp_price_level
+            self.exit_reason = ExitType.TAKE_PROFIT_ON_EXCHANGE
+            if self.is_open:
+                logger.info(f'{order.order_type.upper()} is hit for {self}.')
+            self.close(order.safe_price)
+
         else:
-            raise ValueError(f'Unknown order type: {order.order_type}')
+            raise ValueError(f'Unknown ft_order_side: {order.ft_order_side!s} order type: {order.order_type!s}')
         Trade.commit()
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
@@ -1157,6 +1165,8 @@ class LocalTrade():
         """
         Adjust initial Stoploss to desired stoploss for all open trades.
         """
+        # ToDo: this functon doesn't check for existing positions on Binance, and updates StopLoss for non-existing positions.
+
         for trade in Trade.get_open_trades():
             logger.info("Found open trade: %s", trade)
 
@@ -1228,7 +1238,10 @@ class Trade(ModelBase, LocalTrade):
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
     # percentage value of the stop loss
-    stop_loss_pct: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
+    stop_loss_pct = Column(Float(), nullable=True)
+    # absolute value of the take profit
+    take_profit = Column(Float(), nullable=True, default=0.0)
+
     # absolute value of the initial stop loss
     initial_stop_loss: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=0.0)  # type: ignore
@@ -1236,10 +1249,13 @@ class Trade(ModelBase, LocalTrade):
     initial_stop_loss_pct: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True)  # type: ignore
     # stoploss order id which is on exchange
-    stoploss_order_id: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, index=True)  # type: ignore
+    stoploss_order_id = Column(String(255), nullable=True, index=True)
+    # take profit order id which is on exchange
+    takeprofit_order_id = Column(String(255), nullable=True, index=True)
     # last update time of the stoploss order on exchange
-    stoploss_last_update: Mapped[Optional[datetime]] = mapped_column(nullable=True)  # type: ignore
+    stoploss_last_update = Column(DateTime(), nullable=True)
+    # last update time of the take profit order on exchange
+    takeprofit_last_update = Column(DateTime(), nullable=True)
     # absolute value of the highest reached price
     max_rate: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=0.0)  # type: ignore

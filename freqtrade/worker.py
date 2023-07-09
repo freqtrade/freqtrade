@@ -5,7 +5,7 @@ import logging
 import time
 import traceback
 from os import getpid
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Type
 
 import sdnotify
 
@@ -26,7 +26,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Optional[Config] = None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Optional[Config] = None, bot_class: Type[FreqtradeBot] = FreqtradeBot) -> None:
         """
         Init all variables and objects the bot needs to work
         """
@@ -34,6 +34,7 @@ class Worker:
 
         self._args = args
         self._config = config
+        self._bot_class = bot_class
         self._init(False)
 
         self._heartbeat_msg: float = 0
@@ -50,7 +51,7 @@ class Worker:
             self._config = Configuration(self._args, None).get_config()
 
         # Init the instance of the bot
-        self.freqtrade = FreqtradeBot(self._config)
+        self.freqtrade = self._bot_class(self._config)
 
         internals_config = self._config.get('internals', {})
         self._throttle_secs = internals_config.get('process_throttle_secs',
