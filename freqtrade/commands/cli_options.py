@@ -450,8 +450,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exchange": Arg(
         '--exchange',
-        help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
-        f'Only valid if no config is provided.',
+        help='Exchange name. Only valid if no config is provided.',
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
