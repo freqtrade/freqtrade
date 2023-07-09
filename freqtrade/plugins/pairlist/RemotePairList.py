@@ -63,14 +63,7 @@ class RemotePairList(IPairList):
                 '`processing_mode` not configured correctly. Supported Modes '
                 'are "filter","append"')
 
-        pairlists = self._config['pairlists']
-
-        if len(pairlists) == 1 and self._mode == 'blacklist':
-            raise OperationalException(
-                'At `blacklist` mode RemotePairList requires an additional '
-                'Pairlist and cannot be used on its own.')
-
-        if pairlists[0]['method'] == "RemotePairList" and self._mode == 'blacklist':
+        if self._pairlist_pos == 0 and self._mode == 'blacklist':
             raise OperationalException(
                 'At `blacklist` mode RemotePairList can not be on the first '
                 'position of your pairlist.')

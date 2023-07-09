@@ -239,7 +239,9 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers)
     }
 
     rpl_config['pairlists'] = [
-        {'method': 'StaticPairList'},
+        {
+            "method": "StaticPairList",
+        },
         {
             "method": "RemotePairList",
             "mode": "blacklist",
@@ -262,7 +264,9 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers)
     pairlistmanager = PairListManager(exchange, rpl_config)
 
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
-                                     rpl_config['pairlists'][1], 0)
+                                     rpl_config["pairlists"][1], 1)
+
+    print(remote_pairlist._pairlistconfig)
 
     pairs, time_elapsed = remote_pairlist.fetch_pairlist()
 
