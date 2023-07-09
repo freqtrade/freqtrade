@@ -315,6 +315,8 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         files_new.append(file_new)
 
     default_conf['datadir'] = tmpdir1
+    default_conf['candle_types'] = [candletype]
+
     if candletype == CandleType.SPOT:
         default_conf['pairs'] = ['XRP/ETH', 'XRP/USDT', 'UNITTEST/USDT']
     else:
@@ -328,7 +330,6 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         convert_from='json',
         convert_to='jsongz',
         erase=False,
-        candle_type=candletype
     )
     for file in (files_temp + files_new):
         assert file.exists()
@@ -342,7 +343,6 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         convert_from='jsongz',
         convert_to='json',
         erase=True,
-        candle_type=candletype
     )
     for file in (files_temp):
         assert file.exists()
