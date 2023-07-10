@@ -212,6 +212,7 @@ class Order(ModelBase):
                 'order_type': self.order_type,
                 'price': self.price,
                 'remaining': self.remaining,
+                'ft_fee_base': self.ft_fee_base,
             })
         return resp
 

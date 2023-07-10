@@ -97,7 +97,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
             'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
-            'remaining': ANY, 'status': ANY, 'ft_is_entry': True,
+            'remaining': ANY, 'status': ANY, 'ft_is_entry': True, 'ft_fee_base': None,
         }],
     }
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())

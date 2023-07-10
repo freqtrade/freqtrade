@@ -238,6 +238,7 @@ class OrderSchema(BaseModel):
     is_open: bool
     order_timestamp: Optional[int]
     order_filled_timestamp: Optional[int]
+    ft_fee_base: Optional[float]
 
 
 class TradeSchema(BaseModel):
