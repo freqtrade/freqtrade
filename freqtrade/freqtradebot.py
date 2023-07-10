@@ -1939,6 +1939,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Applies the fee to amount (either from Order or from Trades).
         Can eat into dust if more than the required asset is available.
+        In case of trade adjustment orders, trade.amount will not have been adjusted yet.
         Can't happen in Futures mode - where Fees are always in settlement currency,
         never in base currency.
         """
@@ -1947,6 +1948,10 @@ class FreqtradeBot(LoggingMixin):
         if order_obj.ft_order_side == trade.exit_side or order_obj.ft_order_side == 'stoploss':
             # check against remaining amount!
             amount_ = trade.amount - amount
+
+        if trade.nr_of_successful_entries >= 1 and order_obj.ft_order_side == trade.entry_side:
+            # In case of rebuy's, trade.amount doesn't contain the amount of the last entry.
+            amount_ = trade.amount + amount
 
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
             # Eat into dust if we own more than base currency
