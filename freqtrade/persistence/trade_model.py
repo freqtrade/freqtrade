@@ -47,7 +47,7 @@ class Order(ModelBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     ft_trade_id: Mapped[int] = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
-    trade: Mapped[List["Trade"]] = relationship("Trade", back_populates="orders")
+    trade: Mapped["Trade"] = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
     ft_order_side: Mapped[str] = mapped_column(String(25), nullable=False)
