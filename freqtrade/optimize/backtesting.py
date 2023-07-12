@@ -239,7 +239,7 @@ class Backtesting:
             timerange=self.timerange,
             startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
-            data_format=self.config.get('dataformat_ohlcv', 'feather'),
+            data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
         )
 
@@ -268,7 +268,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'feather'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=self.config.get('candle_type_def', CandleType.SPOT)
             )
         else:
@@ -282,7 +282,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'feather'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.FUNDING_RATE
             )
 
@@ -294,7 +294,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'feather'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.from_string(self.exchange.get_option("mark_ohlcv_price"))
             )
             # Combine data to avoid combining the data per trade.

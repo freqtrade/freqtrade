@@ -55,7 +55,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         timeframe=config['timeframe'],
         timerange=timerange,
         startup_candles=startup_candles,
-        data_format=config.get('dataformat_ohlcv', 'feather'),
+        data_format=config['dataformat_ohlcv'],
         candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
