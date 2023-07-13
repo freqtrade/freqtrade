@@ -1982,7 +1982,11 @@ class FreqtradeBot(LoggingMixin):
         # Init variables
         order_amount = safe_value_fallback(order, 'filled', 'amount')
         # Only run for closed orders
-        if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
+        if (
+            trade.fee_updated(order.get('side', ''))
+            or order['status'] == 'open'
+            or order_obj.ft_fee_base
+        ):
             return None
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
