@@ -99,7 +99,7 @@ def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
             "trainer_kwargs": {
                 "max_iters": 1,
                 "batch_size": 64,
-                "max_n_eval_batches": 1,
+                "n_epochs": None,
             },
             "model_kwargs": {
                 "hidden_dim": 32,

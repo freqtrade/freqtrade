@@ -40,10 +40,10 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         :param model_meta_data: Additional metadata about the model (optional).
         :param data_convertor: convertor from pd.DataFrame to torch.tensor.
         :param max_iters: The number of training iterations to run.
-            iteration here refers to the number of times we call
-            self.optimizer.step(). used to calculate n_epochs.
+            iteration here refers to the number of times optimizer.step() is called,
+            used to calculate n_epochs. ignored if n_epochs is set.
+        :param n_epochs: The maximum number batches to use for evaluation.
         :param batch_size: The size of the batches to use during training.
-        :param max_n_eval_batches: The maximum number batches to use for evaluation.
         """
         self.model = model
         self.optimizer = optimizer
@@ -51,8 +51,8 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.model_meta_data = model_meta_data
         self.device = device
         self.max_iters: int = kwargs.get("max_iters", 100)
+        self.n_epochs: Optional[int] = kwargs.get("n_epochs", None)
         self.batch_size: int = kwargs.get("batch_size", 64)
-        self.max_n_eval_batches: Optional[int] = kwargs.get("max_n_eval_batches", None)  # TODO change this to n_batches
         self.data_convertor = data_convertor
         self.window_size: int = window_size
         self.tb_logger = tb_logger
@@ -71,16 +71,13 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
            backpropagation.
          - Updates the model's parameters using an optimizer.
         """
-        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary, splits)
-        epochs = self.calc_n_epochs(
-            n_obs=len(data_dictionary["train_features"]),
-            batch_size=self.batch_size,
-            n_iters=self.max_iters
-        )
         self.model.train()
+
+        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary, splits)
+        n_obs = len(data_dictionary["train_features"])
+        epochs = self.n_epochs or self.calc_n_epochs(n_obs=n_obs, batch_size=self.batch_size, n_iters=self.max_iters)
         for epoch in range(1, epochs + 1):
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
-
                 xb, yb = batch_data
                 xb = xb.to(self.device)
                 yb = yb.to(self.device)
