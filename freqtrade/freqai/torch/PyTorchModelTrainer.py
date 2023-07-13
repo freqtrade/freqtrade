@@ -83,8 +83,8 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             for i, batch_data in enumerate(data_loaders_dictionary["train"]):
 
                 xb, yb = batch_data
-                xb.to(self.device)
-                yb.to(self.device)
+                xb = xb.to(self.device)
+                yb = yb.to(self.device)
                 yb_pred = self.model(xb)
                 loss = self.criterion(yb_pred, yb)
 
