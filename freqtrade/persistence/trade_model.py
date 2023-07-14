@@ -1302,6 +1302,9 @@ class Trade(ModelBase, LocalTrade):
         super().__init__(**kwargs)
         self.realized_profit = 0
         self.recalc_open_trade_value()
+        if 'realized_profit' in kwargs:
+            # reset realized profit for from_json calls
+            self.realized_profit = kwargs['realized_profit']
 
     @validates('enter_tag', 'exit_reason')
     def validate_string_len(self, key, value):
