@@ -743,6 +743,8 @@ def test_telegram_profit_handle(
     assert '*Best Performing:* `ETH/USDT: 9.45%`' in msg_mock.call_args_list[-1][0][0]
     assert '*Max Drawdown:*' in msg_mock.call_args_list[-1][0][0]
     assert '*Profit factor:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Winrate:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Expectancy (Rate):*' in msg_mock.call_args_list[-1][0][0]
     assert '*Trading volume:* `126 USDT`' in msg_mock.call_args_list[-1][0][0]
 
 

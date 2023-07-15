@@ -403,6 +403,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert res['first_trade_timestamp'] == 0
     assert res['latest_trade_date'] == ''
     assert res['latest_trade_timestamp'] == 0
+    assert res['expectancy'] == 0
+    assert res['expectancy_rate'] == 0
 
     # Create some test data
     create_mock_trades_usdt(fee)
@@ -414,12 +416,15 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_all_coin']) == -77.45964918
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
+    assert pytest.approx(stats['winrate']) == 66.666666667
     assert stats['trade_count'] == 7
     assert stats['first_trade_date'] == '2 days ago'
     assert stats['latest_trade_date'] == '17 minutes ago'
     assert stats['avg_duration'] in ('0:17:40')
     assert stats['best_pair'] == 'XRP/USDT'
     assert stats['best_rate'] == 10.0
+    assert stats['expectancy'] == 1.0
+    assert stats['expectancy_rate'] == 3.64
 
     # Test non-available pair
     mocker.patch(f'{EXMS}.get_rate',

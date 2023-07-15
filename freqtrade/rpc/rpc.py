@@ -494,6 +494,8 @@ class RPC:
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
 
+        closed_trade_count = len([t for t in trades if not t.is_open])
+
         best_pair = Trade.get_best_pair(start_date)
         trading_volume = Trade.get_trading_volume(start_date)
 
@@ -524,18 +526,18 @@ class RPC:
         mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
         mean_losing_profit = (losing_profit / losing_trades) if losing_trades > 0 else 0
 
-        winrate = winning_trades / closed_trade_count if closed_trade_count > 0 else 0
-        loserate = 100 - winrate
+        winrate = (winning_trades / closed_trade_count)*100 if closed_trade_count > 0 else 0
+        loserate = (100 - winrate)
         
-        expectancy = 1
+        expectancy = 1.0
         if mean_winning_profit > 0 and mean_losing_profit > 0:
             expectancy = (1 + (mean_winning_profit / mean_losing_profit)) * (winrate / 100) - 1
         else:
             if mean_winning_profit == 0:
-                expectancy = 0
+                expectancy = 0.0
         
         expectancy_rate = (
-            ((winrate/100) * mean_winning_profit) - 
+            ((winrate/100) * mean_winning_profit) -
             ((loserate/100) * mean_losing_profit)
         )
 
@@ -580,7 +582,7 @@ class RPC:
             'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
-            'closed_trade_count': len([t for t in trades if not t.is_open]),
+            'closed_trade_count': closed_trade_count,
             'first_trade_date': arrow.get(first_date).humanize() if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
             'latest_trade_date': arrow.get(last_date).humanize() if last_date else '',
