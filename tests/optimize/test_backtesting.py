@@ -601,6 +601,8 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
 
     trade = backtesting._enter_trade(pair, row=row, direction='short')
     assert pytest.approx(trade.liquidation_price) == 0.11787191
+    assert pytest.approx(trade.orders[0].cost) == (
+        trade.stake_amount * trade.leverage + trade.fee_open)
 
     # Stake-amount too high!
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=600.0)
