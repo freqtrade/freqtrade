@@ -526,19 +526,19 @@ class RPC:
         mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
         mean_losing_profit = (losing_profit / losing_trades) if losing_trades > 0 else 0
 
-        winrate = (winning_trades / closed_trade_count)*100 if closed_trade_count > 0 else 0
+        winrate = (winning_trades / closed_trade_count) * 100 if closed_trade_count > 0 else 0
         loserate = (100 - winrate)
-        
+
         expectancy = 1.0
         if mean_winning_profit > 0 and mean_losing_profit > 0:
             expectancy = (1 + (mean_winning_profit / mean_losing_profit)) * (winrate / 100) - 1
         else:
             if mean_winning_profit == 0:
                 expectancy = 0.0
-        
+
         expectancy_rate = (
-            ((winrate/100) * mean_winning_profit) -
-            ((loserate/100) * mean_losing_profit)
+            ((winrate / 100) * mean_winning_profit) -
+            ((loserate / 100) * mean_losing_profit)
         )
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
