@@ -530,8 +530,8 @@ class RPC:
         loserate = (100 - winrate)
 
         expectancy = 1.0
-        if mean_winning_profit > 0 and mean_losing_profit > 0:
-            expectancy = (1 + (mean_winning_profit / mean_losing_profit)) * (winrate / 100) - 1
+        if mean_winning_profit > 0 and abs(mean_losing_profit) > 0:
+            expectancy = (1 + (mean_winning_profit / abs(mean_losing_profit))) * (winrate / 100) - 1
         else:
             if mean_winning_profit == 0:
                 expectancy = 0.0
