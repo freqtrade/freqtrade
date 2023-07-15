@@ -521,6 +521,24 @@ class RPC:
 
         profit_factor = winning_profit / abs(losing_profit) if losing_profit else float('inf')
 
+        mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
+        mean_losing_profit = (losing_profit / losing_trades) if losing_trades > 0 else 0
+
+        winrate = winning_trades / closed_trade_count if closed_trade_count > 0 else 0
+        loserate = 100 - winrate
+        
+        expectancy = 1
+        if mean_winning_profit > 0 and mean_losing_profit > 0:
+            expectancy = (1 + (mean_winning_profit / mean_losing_profit)) * (winrate / 100) - 1
+        else:
+            if mean_winning_profit == 0:
+                expectancy = 0
+        
+        expectancy_rate = (
+            ((winrate/100) * mean_winning_profit) - 
+            ((loserate/100) * mean_losing_profit)
+        )
+
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
@@ -574,6 +592,9 @@ class RPC:
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
             'profit_factor': profit_factor,
+            'winrate': winrate,
+            'expectancy': expectancy,
+            'expectancy_rate': expectancy_rate,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
