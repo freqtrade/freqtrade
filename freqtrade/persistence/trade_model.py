@@ -1299,12 +1299,12 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True, default=None)  # type: ignore
 
     def __init__(self, **kwargs):
+        from_json = kwargs.pop('__FROM_JSON', None)
         super().__init__(**kwargs)
-        self.realized_profit = 0
-        self.recalc_open_trade_value()
-        if 'realized_profit' in kwargs:
-            # reset realized profit for from_json calls
-            self.realized_profit = kwargs['realized_profit']
+        if not from_json:
+            # Skip recalculation when loading from json
+            self.realized_profit = 0
+            self.recalc_open_trade_value()
 
     @validates('enter_tag', 'exit_reason')
     def validate_string_len(self, key, value):
@@ -1658,6 +1658,7 @@ class Trade(ModelBase, LocalTrade):
         import rapidjson
         data = rapidjson.loads(json_str)
         trade = cls(
+            __FROM_JSON=True,
             id=data["trade_id"],
             pair=data["pair"],
             base_currency=data["base_currency"],
