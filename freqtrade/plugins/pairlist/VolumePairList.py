@@ -4,7 +4,7 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any, Dict, List, Literal
 
 from cachetools import TTLCache
@@ -13,8 +13,8 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
-from freqtrade.misc import format_ms_time
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.util import dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,8 @@ SORT_VALUES = ['quoteVolume']
 
 
 class VolumePairList(IPairList):
+
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -111,6 +113,53 @@ class VolumePairList(IPairList):
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
+    @staticmethod
+    def description() -> str:
+        return "Provides dynamic pair list based on trade volumes."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "number_assets": {
+                "type": "number",
+                "default": 30,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist",
+            },
+            "sort_key": {
+                "type": "option",
+                "default": "quoteVolume",
+                "options": SORT_VALUES,
+                "description": "Sort key",
+                "help": "Sort key to use for sorting the pairlist.",
+            },
+            "min_value": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum value",
+                "help": "Minimum value to use for filtering the pairlist.",
+            },
+            **IPairList.refresh_period_parameter(),
+            "lookback_days": {
+                "type": "number",
+                "default": 0,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": 0,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
+            },
+        }
+
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
         Generate the pairlist
@@ -161,13 +210,13 @@ class VolumePairList(IPairList):
             # get lookback period in ms, for exchange ohlcv fetch
             since_ms = int(timeframe_to_prev_date(
                 self._lookback_timeframe,
-                datetime.now(timezone.utc) + timedelta(
+                dt_now() + timedelta(
                     minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min)
                     ).timestamp()) * 1000
 
             to_ms = int(timeframe_to_prev_date(
                             self._lookback_timeframe,
-                            datetime.now(timezone.utc) - timedelta(minutes=self._tf_in_min)
+                            dt_now() - timedelta(minutes=self._tf_in_min)
                             ).timestamp()) * 1000
 
             # todo: utc date output for starting date

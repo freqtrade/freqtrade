@@ -6,25 +6,27 @@ from shutil import copyfile
 import joblib
 import pandas as pd
 import pytest
-from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
 from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
-from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
-                                                 generate_daily_stats, generate_edge_table,
-                                                 generate_exit_reason_stats, generate_pair_metrics,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
+                                                 generate_edge_table, generate_exit_reason_stats,
+                                                 generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
-                                                 store_backtest_signal_candles,
+                                                 store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
+from freqtrade.optimize.optimize_reports.optimize_reports import _get_resample_from_period
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
+from freqtrade.util import dt_ts
+from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _clean_test_file
 
@@ -80,14 +82,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                           "UNITTEST/BTC", "UNITTEST/BTC"],
                                  "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
                                  "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                 "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                               Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                               Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                 "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                 "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                                               dt_utc(2017, 11, 14, 21, 36, 00),
+                                               dt_utc(2017, 11, 14, 22, 12, 00),
+                                               dt_utc(2017, 11, 14, 22, 44, 00)],
+                                 "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                                                dt_utc(2017, 11, 14, 22, 10, 00),
+                                                dt_utc(2017, 11, 14, 22, 43, 00),
+                                                dt_utc(2017, 11, 14, 22, 58, 00)],
                                  "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
@@ -106,14 +108,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '123',
         }
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
-    min_date = Arrow.fromtimestamp(1510688220)
-    max_date = Arrow.fromtimestamp(1510700340)
+    min_date = dt_from_ts(1510688220)
+    max_date = dt_from_ts(1510700340)
     btdata = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                                fill_up_missing=True)
 
@@ -135,14 +137,14 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
             {"pair": ["UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC"],
              "profit_ratio": [0.003312, 0.010801, -0.013803, 0.002780],
              "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
-             "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                           Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                           Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                           Arrow(2017, 11, 14, 22, 44, 00).datetime],
-             "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                            Arrow(2017, 11, 14, 22, 58, 00).datetime],
+             "open_date": [dt_utc(2017, 11, 14, 19, 32, 00),
+                           dt_utc(2017, 11, 14, 21, 36, 00),
+                           dt_utc(2017, 11, 14, 22, 12, 00),
+                           dt_utc(2017, 11, 14, 22, 44, 00)],
+             "close_date": [dt_utc(2017, 11, 14, 21, 35, 00),
+                            dt_utc(2017, 11, 14, 22, 10, 00),
+                            dt_utc(2017, 11, 14, 22, 43, 00),
+                            dt_utc(2017, 11, 14, 22, 58, 00)],
              "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
              "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
              "trade_duration": [123, 34, 31, 14],
@@ -161,8 +163,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'canceled_trade_entries': 0,
         'canceled_entry_orders': 0,
         'replaced_entry_orders': 0,
-        'backtest_start_time': Arrow.utcnow().int_timestamp,
-        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'backtest_start_time': dt_ts() // 1000,
+        'backtest_end_time': dt_ts() // 1000,
         'run_id': '124',
         }
     }
@@ -208,7 +210,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
 
 def test_store_backtest_stats(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.bt_storage.file_dump_json')
 
     store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
 
@@ -227,22 +229,23 @@ def test_store_backtest_stats(testdatadir, mocker):
 
 def test_store_backtest_candles(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_joblib')
+    dump_mock = mocker.patch(
+        'freqtrade.optimize.optimize_reports.bt_storage.file_dump_joblib')
 
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # mock directory exporting
-    store_backtest_signal_candles(testdatadir, candle_dict, '2022_01_01_15_05_13')
+    store_backtest_analysis_results(testdatadir, candle_dict, {}, '2022_01_01_15_05_13')
 
-    assert dump_mock.call_count == 1
+    assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
 
     dump_mock.reset_mock()
     # mock file exporting
     filename = Path(testdatadir / 'testresult')
-    store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
-    assert dump_mock.call_count == 1
+    store_backtest_analysis_results(filename, candle_dict, {}, '2022_01_01_15_05_13')
+    assert dump_mock.call_count == 2
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
     assert str(dump_mock.call_args_list[0][0][0]).endswith('_signals.pkl')
@@ -254,10 +257,11 @@ def test_write_read_backtest_candles(tmpdir):
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # test directory exporting
-    stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict, '2022_01_01_15_05_13')
-    scp = stored_file.open("rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    sample_date = '2022_01_01_15_05_13'
+    store_backtest_analysis_results(Path(tmpdir), candle_dict, {}, sample_date)
+    stored_file = Path(tmpdir / f'backtest-result-{sample_date}_signals.pkl')
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -268,10 +272,10 @@ def test_write_read_backtest_candles(tmpdir):
 
     # test file exporting
     filename = Path(tmpdir / 'testresult')
-    stored_file = store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
-    scp = stored_file.open("rb")
-    pickled_signal_candles = joblib.load(scp)
-    scp.close()
+    store_backtest_analysis_results(filename, candle_dict, {}, sample_date)
+    stored_file = Path(tmpdir / f'testresult-{sample_date}_signals.pkl')
+    with stored_file.open("rb") as scp:
+        pickled_signal_candles = joblib.load(scp)
 
     assert pickled_signal_candles.keys() == candle_dict.keys()
     assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
@@ -465,10 +469,13 @@ def test_generate_periodic_breakdown_stats(testdatadir):
 def test__get_resample_from_period():
 
     assert _get_resample_from_period('day') == '1d'
-    assert _get_resample_from_period('week') == '1w'
+    assert _get_resample_from_period('week') == '1W-MON'
     assert _get_resample_from_period('month') == '1M'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')
+
+    for period in BACKTEST_BREAKDOWNS:
+        assert isinstance(_get_resample_from_period(period), str)
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):

@@ -9,8 +9,11 @@ import ccxt
 from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
                   TRUNCATE, decimal_to_precision)
 
-from freqtrade.exchange.common import BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED
+from freqtrade.exchange.common import (BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
+                                       SUPPORTED_EXCHANGES)
+from freqtrade.types import ValidExchangesType
 from freqtrade.util import FtPrecise
+from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
 
 CcxtModuleType = Any
@@ -54,14 +57,41 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     return True, ''
 
 
-def validate_exchanges(all_exchanges: bool) -> List[Tuple[str, bool, str]]:
+def _build_exchange_list_entry(
+        exchange_name: str, exchangeClasses: Dict[str, Any]) -> ValidExchangesType:
+    valid, comment = validate_exchange(exchange_name)
+    result: ValidExchangesType = {
+        'name': exchange_name,
+        'valid': valid,
+        'supported': exchange_name.lower() in SUPPORTED_EXCHANGES,
+        'comment': comment,
+        'trade_modes': [{'trading_mode': 'spot', 'margin_mode': ''}],
+    }
+    if resolved := exchangeClasses.get(exchange_name.lower()):
+        supported_modes = [{'trading_mode': 'spot', 'margin_mode': ''}] + [
+            {'trading_mode': tm.value, 'margin_mode': mm.value}
+            for tm, mm in resolved['class']._supported_trading_mode_margin_pairs
+        ]
+        result.update({
+            'trade_modes': supported_modes,
+        })
+
+    return result
+
+
+def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
     """
     :return: List of tuples with exchangename, valid, reason.
     """
     exchanges = ccxt_exchanges() if all_exchanges else available_exchanges()
-    exchanges_valid = [
-        (e, *validate_exchange(e)) for e in exchanges
+    from freqtrade.resolvers.exchange_resolver import ExchangeResolver
+
+    subclassed = {e['name'].lower(): e for e in ExchangeResolver.search_all_objects({}, False)}
+
+    exchanges_valid: List[ValidExchangesType] = [
+        _build_exchange_list_entry(e, subclassed) for e in exchanges
     ]
+
     return exchanges_valid
 
 
@@ -99,9 +129,8 @@ def timeframe_to_prev_date(timeframe: str, date: Optional[datetime] = None) -> d
     if not date:
         date = datetime.now(timezone.utc)
 
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_DOWN) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
+    return dt_from_ts(new_timestamp)
 
 
 def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
@@ -113,9 +142,8 @@ def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> d
     """
     if not date:
         date = datetime.now(timezone.utc)
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
-                                                  ROUND_UP) // 1000
-    return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
+    return dt_from_ts(new_timestamp)
 
 
 def date_minus_candles(

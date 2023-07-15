@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
-import arrow
+from typing_extensions import Self
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
@@ -109,15 +109,15 @@ class TimeRange:
             self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
             self.starttype = 'date'
 
-    @staticmethod
-    def parse_timerange(text: Optional[str]) -> 'TimeRange':
+    @classmethod
+    def parse_timerange(cls, text: Optional[str]) -> Self:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
         :return: Start and End range period
         """
         if not text:
-            return TimeRange(None, None, 0, 0)
+            return cls(None, None, 0, 0)
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
@@ -139,7 +139,8 @@ class TimeRange:
                 if stype[0]:
                     starts = rvals[index]
                     if stype[0] == 'date' and len(starts) == 8:
-                        start = arrow.get(starts, 'YYYYMMDD').int_timestamp
+                        start = int(datetime.strptime(starts, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(starts) == 13:
                         start = int(starts) // 1000
                     else:
@@ -148,7 +149,8 @@ class TimeRange:
                 if stype[1]:
                     stops = rvals[index]
                     if stype[1] == 'date' and len(stops) == 8:
-                        stop = arrow.get(stops, 'YYYYMMDD').int_timestamp
+                        stop = int(datetime.strptime(stops, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(stops) == 13:
                         stop = int(stops) // 1000
                     else:
@@ -156,5 +158,5 @@ class TimeRange:
                 if start > stop > 0:
                     raise OperationalException(
                         f'Start date is after stop date for timerange "{text}"')
-                return TimeRange(stype[0], stype[1], start, stop)
+                return cls(stype[0], stype[1], start, stop)
         raise OperationalException(f'Incorrect syntax for timerange "{text}"')

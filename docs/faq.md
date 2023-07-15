@@ -142,6 +142,13 @@ To fix this, redefine order types in the strategy to use "limit" instead of "mar
 
 The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.
 
+### I'm trying to start the bot live, but get an API permission error
+
+Errors like `Invalid API-key, IP, or permissions for action` mean exactly what they actually say.
+Your API key is either invalid (copy/paste error? check for leading/trailing spaces in the config), expired, or the IP you're running the bot from is not enabled in the Exchange's API console.
+Usually, the permission "Spot Trading" (or the equivalent in the exchange you use) will be necessary.
+Futures will usually have to be enabled specifically.
+
 ### How do I search the bot logs for something?
 
 By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility sub-commands, as well as from the output of your custom `print()`'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.

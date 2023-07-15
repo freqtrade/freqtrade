@@ -66,4 +66,9 @@ class WSAnalyzedDFMessage(WSMessageSchema):
     type: RPCMessageType = RPCMessageType.ANALYZED_DF
     data: AnalyzedDFData
 
+
+class WSErrorMessage(WSMessageSchema):
+    type: RPCMessageType = RPCMessageType.EXCEPTION
+    data: str
+
 # --------------------------------------------------------------------------

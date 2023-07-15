@@ -379,7 +379,8 @@ class Hyperopt:
 
         strat_stats = generate_strategy_stats(
             self.pairlist, self.backtesting.strategy.get_strategy_name(),
-            backtesting_results, min_date, max_date, market_change=self.market_change
+            backtesting_results, min_date, max_date, market_change=self.market_change,
+            is_hyperopt=True,
         )
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])

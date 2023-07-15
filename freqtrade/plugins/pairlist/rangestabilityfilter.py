@@ -3,9 +3,9 @@ Rate of change pairlist filter
 """
 import logging
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-import arrow
 from cachetools import TTLCache
 from pandas import DataFrame
 
@@ -13,7 +13,8 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.util import dt_floor_day, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,34 @@ class RangeStabilityFilter(IPairList):
                 f"{self._min_rate_of_change}{max_rate_desc} over the "
                 f"last {plural(self._days, 'day')}.")
 
+    @staticmethod
+    def description() -> str:
+        return "Filters pairs by their rate of change."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "lookback_days": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "min_rate_of_change": {
+                "type": "number",
+                "default": 0.01,
+                "description": "Minimum Rate of Change",
+                "help": "Minimum rate of change to filter pairs.",
+            },
+            "max_rate_of_change": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum Rate of Change",
+                "help": "Maximum rate of change to filter pairs.",
+            },
+            **IPairList.refresh_period_parameter()
+        }
+
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Validate trading range
@@ -71,10 +100,7 @@ class RangeStabilityFilter(IPairList):
         needed_pairs: ListPairsWithTimeframes = [
             (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
-        since_ms = (arrow.utcnow()
-                         .floor('day')
-                         .shift(days=-self._days - 1)
-                         .int_timestamp) * 1000
+        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days - 1))
         # Get all candles
         candles = {}
         if needed_pairs:

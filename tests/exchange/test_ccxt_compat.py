@@ -43,6 +43,11 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': True,
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+        'trades_lookback_hours': 4,
+        'private_methods': [
+            'fapiPrivateGetPositionSideDual',
+            'fapiPrivateGetMultiAssetsMargin'
+        ],
         'sample_order': [{
             "symbol": "SOLUSDT",
             "orderId": 3551312894,
@@ -88,12 +93,13 @@ EXCHANGES = {
         }]
     },
     'kraken': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
+        'pair': 'BTC/USD',
+        'stake_currency': 'USD',
         'hasQuoteVolume': True,
         'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': True,
+        'trades_lookback_hours': 12,
     },
     'kucoin': {
         'pair': 'XRP/USDT',
@@ -221,11 +227,13 @@ EXCHANGES = {
         'hasQuoteVolumeFutures': False,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
+        'private_methods': ['fetch_accounts'],
     },
     'bybit': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
+        'use_ci_proxy': True,
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
@@ -285,11 +293,7 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
     if use_proxy and (proxy := os.environ.get('CI_WEB_PROXY')):
         config1 = deepcopy(config)
         config1['exchange']['ccxt_config'] = {
-            "aiohttp_proxy": proxy,
-            'proxies': {
-                'https': proxy,
-                'http': proxy,
-            }
+            "httpsProxy": proxy,
         }
         return config1
 
@@ -302,7 +306,7 @@ def exchange(request, exchange_conf):
         exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
     exchange_conf['exchange']['name'] = request.param
     exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
-    exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True)
 
     yield exchange, request.param
 
@@ -330,13 +334,13 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(
-            request.param, exchange_conf, validate=True, load_leverage_tiers=True)
+            exchange_conf, validate=True, load_leverage_tiers=True)
 
         yield exchange, request.param
 
 
 @pytest.mark.longrun
-class TestCCXTExchange():
+class TestCCXTExchange:
 
     def test_load_markets(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
@@ -634,7 +638,21 @@ class TestCCXTExchange():
         assert isinstance(funding_fee, float)
         # assert funding_fee > 0
 
-    # TODO: tests fetch_trades (?)
+    def test_ccxt__async_get_trade_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange
+        if not (lookback := EXCHANGES[exchangename].get('trades_lookback_hours')):
+            pytest.skip('test_fetch_trades not enabled for this exchange')
+        pair = EXCHANGES[exchangename]['pair']
+        since = int((datetime.now(timezone.utc) - timedelta(hours=lookback)).timestamp() * 1000)
+        res = exch.loop.run_until_complete(
+            exch._async_get_trade_history(pair, since, None, None)
+        )
+        assert len(res) == 2
+        res_pair, res_trades = res
+        assert res_pair == pair
+        assert isinstance(res_trades, list)
+        assert res_trades[0][0] >= since
+        assert len(res_trades) > 1200
 
     def test_ccxt_get_fee(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
@@ -755,3 +773,8 @@ class TestCCXTExchange():
             max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
             assert (isinstance(max_stake_amount, float))
             assert max_stake_amount >= 0.0
+
+    def test_private_method_presence(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchangename = exchange
+        for method in EXCHANGES[exchangename].get('private_methods', []):
+            assert hasattr(exch._api, method)

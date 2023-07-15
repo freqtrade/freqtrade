@@ -1,3 +1,4 @@
+import platform
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
@@ -12,6 +13,11 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
+
+
+def is_mac() -> bool:
+    machine = platform.system()
+    return "Darwin" in machine
 
 
 @pytest.fixture(scope="function")
@@ -36,6 +42,7 @@ def freqai_conf(default_conf, tmpdir):
                 "identifier": "uniqe-id100",
                 "live_trained_timestamp": 0,
                 "data_kitchen_thread_count": 2,
+                "activate_tensorboard": False,
                 "feature_parameters": {
                     "include_timeframes": ["5m"],
                     "include_corr_pairlist": ["ADA/BTC"],

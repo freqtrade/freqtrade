@@ -187,11 +187,13 @@ official commands. You can ask at any moment for help with `/help`.
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `/reload_trade <trade_id>` | Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
 | `/cancel_open_order <trade_id> | /coo <trade_id>` | Cancel an open order for a trade.
 | **Metrics** |
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/performance` | Show performance of each finished trade grouped by pair
-| `/balance` | Show account balance per currency
+| `/balance` | Show bot managed balance per currency
+| `/balance full` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
 | `/weekly <n>` | Shows profit or loss per week, over the last n weeks (n defaults to 8)
 | `/monthly <n>` | Shows profit or loss per month, over the last n months (n defaults to 6)
@@ -201,7 +203,6 @@ official commands. You can ask at any moment for help with `/help`.
 | `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
-
 
 ## Telegram commands in action
 

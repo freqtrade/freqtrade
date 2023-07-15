@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.exceptions import RetryableOrderError
+from freqtrade.exceptions import RetryableOrderError, TemporaryError
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
+from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -278,7 +278,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
         'fetchLeverageTiers': False,
         'fetchMarketLeverageTiers': True,
     })
-    api_mock.fetch_market_leverage_tiers = get_mock_coro(side_effect=[
+    api_mock.fetch_market_leverage_tiers = AsyncMock(side_effect=[
         [
             {
                 'tier': 1,
@@ -341,6 +341,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
                 }
             },
         ],
+        TemporaryError("this Failed"),
         [
             {
                 'tier': 1,
@@ -498,7 +499,11 @@ def test__set_leverage_okx(mocker, default_conf):
     assert api_mock.set_leverage.call_args_list[0][1]['params'] == {
         'mgnMode': 'isolated',
         'posSide': 'net'}
+    api_mock.set_leverage = MagicMock(side_effect=ccxt.NetworkError())
+    exchange._lev_prep('BTC/USDT:USDT', 3.2, 'buy')
+    api_mock.fetch_leverage.call_count == 1
 
+    api_mock.fetch_leverage = MagicMock(side_effect=ccxt.NetworkError())
     ccxt_exceptionhandlers(
         mocker,
         default_conf,
@@ -591,3 +596,25 @@ def test_stoploss_adjust_okx(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
+
+
+def test_stoploss_cancel_okx(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='okx')
+
+    exchange.cancel_order = MagicMock()
+
+    exchange.cancel_stoploss_order('1234', 'ETH/USDT')
+    assert exchange.cancel_order.call_count == 1
+    assert exchange.cancel_order.call_args_list[0][1]['order_id'] == '1234'
+    assert exchange.cancel_order.call_args_list[0][1]['pair'] == 'ETH/USDT'
+    assert exchange.cancel_order.call_args_list[0][1]['params'] == {'stop': True}
+
+
+def test__get_stop_params_okx(mocker, default_conf):
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id='okx')
+    params = exchange._get_stop_params('ETH/USDT:USDT', 1500, 'sell')
+
+    assert params['tdMode'] == 'isolated'
+    assert params['posSide'] == 'net'

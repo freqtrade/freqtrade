@@ -9,7 +9,7 @@ import pandas as pd
 from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.persistence import Trade
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,27 @@ class PerformanceFilter(IPairList):
         """
         return f"{self.name} - Sorting pairs by performance."
 
+    @staticmethod
+    def description() -> str:
+        return "Filter pairs by performance."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "minutes": {
+                "type": "number",
+                "default": 0,
+                "description": "Minutes",
+                "help": "Consider trades from the last X minutes. 0 means all trades.",
+            },
+            "min_profit": {
+                "type": "number",
+                "default": None,
+                "description": "Minimum profit",
+                "help": "Minimum profit in percent. Pairs with less profit are removed.",
+            },
+        }
+
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Filters and sorts pairlist and returns the allowlist again.
@@ -68,10 +89,10 @@ class PerformanceFilter(IPairList):
         # Sort the list using:
         #  - primarily performance (high to low)
         #  - then count (low to high, so as to favor same performance with fewer trades)
-        #  - then pair name alphametically
+        #  - then by prior index, keeping original sorting order
         sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['count', 'prior_idx'], ascending=True)\
-            .sort_values(by=['profit_ratio'], ascending=False)
+            .fillna(0).sort_values(by=['profit_ratio', 'count', 'prior_idx'],
+                                   ascending=[False, True, True])
         if self._min_profit is not None:
             removed = sorted_df[sorted_df['profit_ratio'] < self._min_profit]
             for _, row in removed.iterrows():

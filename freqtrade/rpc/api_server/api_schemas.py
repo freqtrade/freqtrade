@@ -4,7 +4,14 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
-from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
+from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
+from freqtrade.types import ValidExchangesType
+
+
+class ExchangeModePayloadMixin(BaseModel):
+    trading_mode: Optional[TradingMode]
+    margin_mode: Optional[MarginMode]
+    exchange: Optional[str]
 
 
 class Ping(BaseModel):
@@ -27,6 +34,23 @@ class StatusMsg(BaseModel):
     status: str
 
 
+class BgJobStarted(StatusMsg):
+    job_id: str
+
+
+class BackgroundTaskStatus(BaseModel):
+    job_id: str
+    job_category: str
+    status: str
+    running: bool
+    progress: Optional[float]
+
+
+class BackgroundTaskResult(BaseModel):
+    error: Optional[str]
+    status: str
+
+
 class ResultMsg(BaseModel):
     result: str
 
@@ -36,20 +60,25 @@ class Balance(BaseModel):
     free: float
     balance: float
     used: float
+    bot_owned: Optional[float]
     est_stake: float
+    est_stake_bot: Optional[float]
     stake: str
     # Starting with 2.x
     side: str
     leverage: float
     is_position: bool
     position: float
+    is_bot_managed: bool
 
 
 class Balances(BaseModel):
     currencies: List[Balance]
     total: float
+    total_bot: float
     symbol: str
     value: float
+    value_bot: float
     stake: str
     note: str
     starting_capital: float
@@ -95,8 +124,10 @@ class Profit(BaseModel):
     trade_count: int
     closed_trade_count: int
     first_trade_date: str
+    first_trade_humanized: str
     first_trade_timestamp: int
     latest_trade_date: str
+    latest_trade_humanized: str
     latest_trade_timestamp: int
     avg_duration: str
     best_pair: str
@@ -207,6 +238,7 @@ class OrderSchema(BaseModel):
     is_open: bool
     order_timestamp: Optional[int]
     order_filled_timestamp: Optional[int]
+    ft_fee_base: Optional[float]
 
 
 class TradeSchema(BaseModel):
@@ -369,6 +401,10 @@ class WhitelistResponse(BaseModel):
     method: List[str]
 
 
+class WhitelistEvaluateResponse(BackgroundTaskResult):
+    result: Optional[WhitelistResponse]
+
+
 class DeleteTrade(BaseModel):
     cancel_order_count: int
     result: str
@@ -387,6 +423,27 @@ class PlotConfig(BaseModel):
 
 class StrategyListResponse(BaseModel):
     strategies: List[str]
+
+
+class ExchangeListResponse(BaseModel):
+    exchanges: List[ValidExchangesType]
+
+
+class PairListResponse(BaseModel):
+    name: str
+    description: str
+    is_pairlist_generator: bool
+    params: Dict[str, Any]
+
+
+class PairListsResponse(BaseModel):
+    pairlists: List[PairListResponse]
+
+
+class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
+    pairlists: List[Dict[str, Any]]
+    blacklist: List[str]
+    stake_currency: str
 
 
 class FreqAIModelListResponse(BaseModel):

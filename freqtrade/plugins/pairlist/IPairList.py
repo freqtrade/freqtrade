@@ -4,7 +4,7 @@ PairList Handler base class
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -16,7 +16,43 @@ from freqtrade.mixins import LoggingMixin
 logger = logging.getLogger(__name__)
 
 
+class __PairlistParameterBase(TypedDict):
+    description: str
+    help: str
+
+
+class __NumberPairlistParameter(__PairlistParameterBase):
+    type: Literal["number"]
+    default: Union[int, float, None]
+
+
+class __StringPairlistParameter(__PairlistParameterBase):
+    type: Literal["string"]
+    default: Union[str, None]
+
+
+class __OptionPairlistParameter(__PairlistParameterBase):
+    type: Literal["option"]
+    default: Union[str, None]
+    options: List[str]
+
+
+class __BoolPairlistParameter(__PairlistParameterBase):
+    type: Literal["boolean"]
+    default: Union[bool, None]
+
+
+PairlistParameter = Union[
+    __NumberPairlistParameter,
+    __StringPairlistParameter,
+    __OptionPairlistParameter,
+    __BoolPairlistParameter
+    ]
+
+
 class IPairList(LoggingMixin, ABC):
+
+    is_pairlist_generator = False
 
     def __init__(self, exchange: Exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -53,6 +89,37 @@ class IPairList(LoggingMixin, ABC):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
+        return False
+
+    @staticmethod
+    @abstractmethod
+    def description() -> str:
+        """
+        Return description of this Pairlist Handler
+        -> Please overwrite in subclasses
+        """
+        return ""
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        """
+        Return parameters used by this Pairlist Handler, and their type
+        contains a dictionary with the parameter name as key, and a dictionary
+        with the type and default value.
+        -> Please overwrite in subclasses
+        """
+        return {}
+
+    @staticmethod
+    def refresh_period_parameter() -> Dict[str, PairlistParameter]:
+        return {
+            "refresh_period": {
+                "type": "number",
+                "default": 1800,
+                "description": "Refresh period",
+                "help": "Refresh period in seconds",
+            }
+        }
 
     @abstractmethod
     def short_desc(self) -> str:

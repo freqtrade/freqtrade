@@ -203,7 +203,7 @@ class Configuration:
         # This will override the strategy configuration
         self._args_to_config(config, argname='timeframe',
                              logstring='Parameter -i/--timeframe detected ... '
-                             'Using timeframe: {} ...')
+                                       'Using timeframe: {} ...')
 
         self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
@@ -299,6 +299,9 @@ class Configuration:
 
         self._args_to_config(config, argname='hyperoptexportfilename',
                              logstring='Using hyperopt file: {}')
+
+        self._args_to_config(config, argname='lookahead_analysis_exportfilename',
+                             logstring='Saving lookahead analysis results into {} ...')
 
         self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '
@@ -465,6 +468,28 @@ class Configuration:
         self._args_to_config(config, argname='timerange',
                              logstring='Filter trades by timerange: {}')
 
+        self._args_to_config(config, argname='analysis_rejected',
+                             logstring='Analyse rejected signals: {}')
+
+        self._args_to_config(config, argname='analysis_to_csv',
+                             logstring='Store analysis tables to CSV: {}')
+
+        self._args_to_config(config, argname='analysis_csv_path',
+                             logstring='Path to store analysis CSVs: {}')
+
+        self._args_to_config(config, argname='analysis_csv_path',
+                             logstring='Path to store analysis CSVs: {}')
+
+        # Lookahead analysis results
+        self._args_to_config(config, argname='targeted_trade_amount',
+                             logstring='Targeted Trade amount: {}')
+
+        self._args_to_config(config, argname='minimum_trade_amount',
+                             logstring='Minimum Trade amount: {}')
+
+        self._args_to_config(config, argname='lookahead_analysis_exportfilename',
+                             logstring='Path to store lookahead-analysis-results: {}')
+
     def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',
@@ -543,6 +568,7 @@ class Configuration:
             # Fall back to /dl_path/pairs.json
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
+                logger.info(f'Reading pairs file "{pairs_file}".')
                 config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config and isinstance(config['pairs'], list):
                     config['pairs'].sort()

@@ -1,7 +1,7 @@
 import csv
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import rapidjson
 from colorama import Fore, Style
@@ -11,9 +11,10 @@ from tabulate import tabulate
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import market_is_active, validate_exchanges
+from freqtrade.exchange import list_available_exchanges, market_is_active
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
+from freqtrade.types import ValidExchangesType
 
 
 logger = logging.getLogger(__name__)
@@ -25,18 +26,42 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = validate_exchanges(args['list_exchanges_all'])
+    exchanges = list_available_exchanges(args['list_exchanges_all'])
 
     if args['print_one_column']:
-        print('\n'.join([e[0] for e in exchanges]))
+        print('\n'.join([e['name'] for e in exchanges]))
     else:
+        headers = {
+            'name': 'Exchange name',
+            'supported': 'Supported',
+            'trade_modes': 'Markets',
+            'comment': 'Reason',
+            }
+        headers.update({'valid': 'Valid'} if args['list_exchanges_all'] else {})
+
+        def build_entry(exchange: ValidExchangesType, valid: bool):
+            valid_entry = {'valid': exchange['valid']} if valid else {}
+            result: Dict[str, Union[str, bool]] = {
+                'name': exchange['name'],
+                **valid_entry,
+                'supported': 'Official' if exchange['supported'] else '',
+                'trade_modes': ', '.join(
+                    (f"{a['margin_mode']} " if a['margin_mode'] else '') + a['trading_mode']
+                    for a in exchange['trade_modes']
+                ),
+                'comment': exchange['comment'],
+            }
+
+            return result
+
         if args['list_exchanges_all']:
             print("All exchanges supported by the ccxt library:")
+            exchanges = [build_entry(e, True) for e in exchanges]
         else:
             print("Exchanges available for Freqtrade:")
-            exchanges = [e for e in exchanges if e[1] is not False]
+            exchanges = [build_entry(e, False) for e in exchanges if e['valid'] is not False]
 
-        print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
+        print(tabulate(exchanges, headers=headers, ))
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
@@ -114,7 +139,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
     config['timeframe'] = None
 
     # Init exchange
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    exchange = ExchangeResolver.load_exchange(config, validate=False)
 
     if args['print_one_column']:
         print('\n'.join(exchange.timeframes))
@@ -133,7 +158,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     # Init exchange
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    exchange = ExchangeResolver.load_exchange(config, validate=False)
 
     # By default only active pairs/markets are to be shown
     active_only = not args.get('list_pairs_all', False)

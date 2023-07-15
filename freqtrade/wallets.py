@@ -3,15 +3,16 @@
 
 import logging
 from copy import deepcopy
+from datetime import datetime, timedelta
 from typing import Dict, NamedTuple, Optional
-
-import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence import LocalTrade, Trade
+from freqtrade.util.datetime_helpers import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class Wallets:
         self._wallets: Dict[str, Wallet] = {}
         self._positions: Dict[str, PositionWallet] = {}
         self.start_cap = config['dry_run_wallet']
-        self._last_wallet_refresh = 0
+        self._last_wallet_refresh: Optional[datetime] = None
         self.update()
 
     def get_free(self, currency: str) -> float:
@@ -148,7 +149,7 @@ class Wallets:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position['contracts'])
-            collateral = position['collateral'] or 0.0
+            collateral = safe_value_fallback(position, 'collateral', 'initialMargin', 0.0)
             leverage = position['leverage']
             self._positions[symbol] = PositionWallet(
                 symbol, position=size,
@@ -165,20 +166,54 @@ class Wallets:
         for trading operations, the latest balance is needed.
         :param require_update: Allow skipping an update if balances were recently refreshed
         """
-        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().int_timestamp)):
+        now = dt_now()
+        if (
+            require_update
+            or self._last_wallet_refresh is None
+            or (self._last_wallet_refresh + timedelta(seconds=3600) < now)
+        ):
             if (not self._config['dry_run'] or self._config.get('runmode') == RunMode.LIVE):
                 self._update_live()
             else:
                 self._update_dry()
             if self._log:
                 logger.info('Wallets synced.')
-            self._last_wallet_refresh = arrow.utcnow().int_timestamp
+            self._last_wallet_refresh = dt_now()
 
     def get_all_balances(self) -> Dict[str, Wallet]:
         return self._wallets
 
     def get_all_positions(self) -> Dict[str, PositionWallet]:
         return self._positions
+
+    def _check_exit_amount(self, trade: Trade) -> bool:
+        if trade.trading_mode != TradingMode.FUTURES:
+            # Slightly higher offset than in safe_exit_amount.
+            wallet_amount: float = self.get_total(trade.safe_base_currency) * (2 - 0.981)
+        else:
+            # wallet_amount: float = self.wallets.get_free(trade.safe_base_currency)
+            position = self._positions.get(trade.pair)
+            if position is None:
+                # We don't own anything :O
+                return False
+            wallet_amount = position.position
+
+        if wallet_amount >= trade.amount:
+            return True
+        return False
+
+    def check_exit_amount(self, trade: Trade) -> bool:
+        """
+        Checks if the exit amount is available in the wallet.
+        :param trade: Trade to check
+        :return: True if the exit amount is available, False otherwise
+        """
+        if not self._check_exit_amount(trade):
+            # Update wallets just to make sure
+            self.update()
+            return self._check_exit_amount(trade)
+
+        return True
 
     def get_starting_balance(self) -> float:
         """

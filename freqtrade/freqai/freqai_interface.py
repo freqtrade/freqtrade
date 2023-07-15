@@ -7,21 +7,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
+import datasieve.transforms as ds
 import numpy as np
 import pandas as pd
 import psutil
+from datasieve.pipeline import Pipeline
+from datasieve.transforms import SKLearnWrapper
 from numpy.typing import NDArray
 from pandas import DataFrame
+from sklearn.preprocessing import MinMaxScaler
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import Config
+from freqtrade.constants import DOCS_LINK, Config
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance, record_params
+from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -80,6 +84,7 @@ class IFreqaiModel(ABC):
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
+
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
         if self.ft_params.get("inlier_metric_window", 0):
             self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
@@ -109,6 +114,7 @@ class IFreqaiModel(ABC):
         if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
+        self.activate_tensorboard: bool = self.freqai_info.get('activate_tensorboard', True)
 
         record_params(config, self.full_path)
 
@@ -242,8 +248,8 @@ class IFreqaiModel(ABC):
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                 except Exception as msg:
-                    logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
-                                   f"Message: {msg}, skipping.")
+                    logger.exception(f"Training {pair} raised exception {msg.__class__.__name__}. "
+                                     f"Message: {msg}, skipping.")
 
                 self.train_timer('stop', pair)
 
@@ -306,10 +312,11 @@ class IFreqaiModel(ABC):
             if dk.check_if_backtest_prediction_is_valid(len_backtest_df):
                 if check_features:
                     self.dd.load_metadata(dk)
-                    dataframe_dummy_features = self.dk.use_strategy_to_populate_indicators(
+                    df_fts = self.dk.use_strategy_to_populate_indicators(
                         strategy, prediction_dataframe=dataframe.tail(1), pair=pair
                     )
-                    dk.find_features(dataframe_dummy_features)
+                    df_fts = dk.remove_special_chars_from_feature_names(df_fts)
+                    dk.find_features(df_fts)
                     self.check_if_feature_list_matches_strategy(dk)
                     check_features = False
                 append_df = dk.get_backtesting_prediction()
@@ -342,7 +349,10 @@ class IFreqaiModel(ABC):
                     dk.find_labels(dataframe_train)
 
                     try:
+                        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                                       self.activate_tensorboard)
                         self.model = self.train(dataframe_train, pair, dk)
+                        self.tb_logger.close()
                     except Exception as msg:
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
@@ -489,76 +499,51 @@ class IFreqaiModel(ABC):
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
-                "but found different features furnished by current strategy."
-                "Change `identifier` to train from scratch, or ensure the"
-                "strategy is furnishing the same features as the pretrained"
+                "but found different features furnished by current strategy. "
+                "Change `identifier` to train from scratch, or ensure the "
+                "strategy is furnishing the same features as the pretrained "
                 "model. In case of --strategy-list, please be aware that FreqAI "
                 "requires all strategies to maintain identical "
                 "feature_engineering_* functions"
             )
 
-    def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
-        """
-        Base data cleaning method for train.
-        Functions here improve/modify the input data by identifying outliers,
-        computing additional metrics, adding noise, reducing dimensionality etc.
-        """
-
+    def define_data_pipeline(self, threads=-1) -> Pipeline:
         ft_params = self.freqai_info["feature_parameters"]
+        pipe_steps = [
+            ('const', ds.VarianceThreshold(threshold=0)),
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
+            ]
 
-        if ft_params.get('inlier_metric_window', 0):
-            dk.compute_inlier_metric(set_='train')
-            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
-                dk.compute_inlier_metric(set_='test')
-
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.principal_component_analysis()
+        if ft_params.get("principal_component_analysis", False):
+            pipe_steps.append(('pca', ds.PCA(n_components=0.999)))
+            pipe_steps.append(('post-pca-scaler',
+                               SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
-            dk.use_SVM_to_remove_outliers(predict=False)
+            svm_params = ft_params.get(
+                "svm_params", {"shuffle": False, "nu": 0.01})
+            pipe_steps.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
 
-        if ft_params.get("DI_threshold", 0):
-            dk.data["avg_mean_dist"] = dk.compute_distances()
-
-        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            if dk.pair in self.dd.old_DBSCAN_eps:
-                eps = self.dd.old_DBSCAN_eps[dk.pair]
-            else:
-                eps = None
-            dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
-            self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
-
-        if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
-            dk.add_noise_to_training_features()
-
-    def data_cleaning_predict(self, dk: FreqaiDataKitchen) -> None:
-        """
-        Base data cleaning method for predict.
-        Functions here are complementary to the functions of data_cleaning_train.
-        """
-        ft_params = self.freqai_info["feature_parameters"]
-
-        # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk)
-
-        if ft_params.get('inlier_metric_window', 0):
-            dk.compute_inlier_metric(set_='predict')
-
-        if ft_params.get(
-            "principal_component_analysis", False
-        ):
-            dk.pca_transform(dk.data_dictionary['prediction_features'])
-
-        if ft_params.get("use_SVM_to_remove_outliers", False):
-            dk.use_SVM_to_remove_outliers(predict=True)
-
-        if ft_params.get("DI_threshold", 0):
-            dk.check_if_pred_in_training_spaces()
+        di = ft_params.get("DI_threshold", 0)
+        if di:
+            pipe_steps.append(('di', ds.DissimilarityIndex(di_threshold=di, n_jobs=threads)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
-            dk.use_DBSCAN_to_remove_outliers(predict=True)
+            pipe_steps.append(('dbscan', ds.DBSCAN(n_jobs=threads)))
+
+        sigma = self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0)
+        if sigma:
+            pipe_steps.append(('noise', ds.Noise(sigma=sigma)))
+
+        return Pipeline(pipe_steps)
+
+    def define_label_pipeline(self, threads=-1) -> Pipeline:
+
+        label_pipeline = Pipeline([
+            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
+            ])
+
+        return label_pipeline
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """
@@ -570,8 +555,6 @@ class IFreqaiModel(ABC):
         """
         if self.dd.model_type == 'joblib':
             file_type = ".joblib"
-        elif self.dd.model_type == 'keras':
-            file_type = ".h5"
         elif self.dd.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             file_type = ".zip"
 
@@ -620,18 +603,23 @@ class IFreqaiModel(ABC):
             strategy, corr_dataframes, base_dataframes, pair
         )
 
-        new_trained_timerange = dk.buffer_timerange(new_trained_timerange)
+        trained_timestamp = new_trained_timerange.stopts
 
-        unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
+        buffered_timerange = dk.buffer_timerange(new_trained_timerange)
+
+        unfiltered_dataframe = dk.slice_dataframe(buffered_timerange, unfiltered_dataframe)
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
         dk.find_labels(unfiltered_dataframe)
 
+        self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
+                                       self.activate_tensorboard)
         model = self.train(unfiltered_dataframe, pair, dk)
+        self.tb_logger.close()
 
-        self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
-        dk.set_new_model_names(pair, new_trained_timerange.stopts)
+        self.dd.pair_dict[pair]["trained_timestamp"] = trained_timestamp
+        dk.set_new_model_names(pair, trained_timestamp)
         self.dd.save_data(model, pair, dk)
 
         if self.plot_features:
@@ -690,7 +678,7 @@ class IFreqaiModel(ABC):
 
         # # for keras type models, the conv_window needs to be prepended so
         # # viewing is correct in frequi
-        if self.freqai_info.get('keras', False) or self.ft_params.get('inlier_metric_window', 0):
+        if self.ft_params.get('inlier_metric_window', 0):
             n_lost_points = self.freqai_info.get('conv_width', 2)
             zeros_df = DataFrame(np.zeros((n_lost_points, len(hist_preds_df.columns))),
                                  columns=hist_preds_df.columns)
@@ -980,3 +968,50 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
+
+    # deprecated functions
+    def data_cleaning_train(self, dk: FreqaiDataKitchen, pair: str):
+        """
+        throw deprecation warning if this function is called
+        """
+        logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+        dd = dk.data_dictionary
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
+
+        (dd["test_features"],
+         dd["test_labels"],
+         dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                             dd["test_labels"],
+                                                             dd["test_weights"])
+
+        dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
+
+        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
+        dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
+        return
+
+    def data_cleaning_predict(self, dk: FreqaiDataKitchen, pair: str):
+        """
+        throw deprecation warning if this function is called
+        """
+        logger.warning(f"Your model {self.__class__.__name__} relies on the deprecated"
+                       " data pipeline. Please update your model to use the new data pipeline."
+                       " This can be achieved by following the migration guide at "
+                       f"{DOCS_LINK}/strategy_migration/#freqai-new-data-pipeline")
+        dd = dk.data_dictionary
+        dd["predict_features"], outliers, _ = dk.feature_pipeline.transform(
+            dd["predict_features"], outlier_check=True)
+        if self.freqai_info.get("DI_threshold", 0) > 0:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
+        return

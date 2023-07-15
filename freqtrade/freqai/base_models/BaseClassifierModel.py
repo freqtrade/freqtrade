@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class BaseClassifierModel(IFreqaiModel):
     """
     Base class for regression type models (e.g. Catboost, LightGBM, XGboost etc.).
-    User *must* inherit from this class and set fit() and predict(). See example scripts
-    such as prediction_models/CatboostPredictionModel.py for guidance.
+    User *must* inherit from this class and set fit(). See example scripts
+    such as prediction_models/CatboostClassifier.py for guidance.
     """
 
     def train(
@@ -50,21 +50,30 @@ class BaseClassifierModel(IFreqaiModel):
         logger.info(f"-------------------- Training on data from {start_date} to "
                     f"{end_date} --------------------")
         # split data into train/test data.
-        data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
         if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
-        # normalize all data based on train_dataset only
-        data_dictionary = dk.normalize_data(data_dictionary)
+        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
 
-        # optional additional data cleaning/analysis
-        self.data_cleaning_train(dk)
+        (dd["train_features"],
+         dd["train_labels"],
+         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
+                                                                  dd["train_labels"],
+                                                                  dd["train_weights"])
+
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            (dd["test_features"],
+             dd["test_labels"],
+             dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
+                                                                 dd["test_labels"],
+                                                                 dd["test_weights"])
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
         )
-        logger.info(f"Training model on {len(data_dictionary['train_features'])} data points")
+        logger.info(f"Training model on {len(dd['train_features'])} data points")
 
-        model = self.fit(data_dictionary, dk)
+        model = self.fit(dd, dk)
 
         end_time = time()
 
@@ -89,10 +98,11 @@ class BaseClassifierModel(IFreqaiModel):
         filtered_df, _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
-        filtered_df = dk.normalize_data_from_metadata(filtered_df)
+
         dk.data_dictionary["prediction_features"] = filtered_df
 
-        self.data_cleaning_predict(dk)
+        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
+            dk.data_dictionary["prediction_features"], outlier_check=True)
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
         if self.CONV_WIDTH == 1:
@@ -106,5 +116,11 @@ class BaseClassifierModel(IFreqaiModel):
         pred_df_prob = DataFrame(predictions_prob, columns=self.model.classes_)
 
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
+
+        if dk.feature_pipeline["di"]:
+            dk.DI_values = dk.feature_pipeline["di"].di_values
+        else:
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
 
         return (pred_df, dk.do_predict)

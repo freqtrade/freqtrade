@@ -5,13 +5,13 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.util.datetime_helpers import dt_utc
 from tests.conftest import EXMS, patch_exchange
 
 
@@ -52,11 +52,11 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'stake_amount': [500.0, 100.0],
          'max_stake_amount': [500.0, 100],
          'amount': [4806.87657523, 970.63960782],
-         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
-                                      Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
+         'open_date': pd.to_datetime([dt_utc(2018, 1, 29, 18, 40, 0),
+                                      dt_utc(2018, 1, 30, 3, 30, 0)], utc=True
                                      ),
-         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 00, 0).datetime,
-                                       Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'close_date': pd.to_datetime([dt_utc(2018, 1, 29, 22, 00, 0),
+                                       dt_utc(2018, 1, 30, 4, 10, 0)], utc=True),
          'open_rate': [0.10401764894444211, 0.10302485],
          'close_rate': [0.10453904066847439, 0.103541],
          'fee_open': [0.0025, 0.0025],

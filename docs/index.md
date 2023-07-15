@@ -63,6 +63,10 @@ Exchanges confirmed working by the community:
 - [X] [Bitvavo](https://bitvavo.com/)
 - [X] [Kucoin](https://www.kucoin.com/)
 
+## Community showcase
+
+--8<-- "includes/showcase.md"
+
 ## Requirements
 
 ### Hardware requirements

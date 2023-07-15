@@ -10,6 +10,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
                         UniqueConstraint, desc, func, select)
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
+from typing_extensions import Self
 
 from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
                                  NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
@@ -19,7 +20,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precisi
                                 price_to_precision)
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.util import FtPrecise
+from freqtrade.util import FtPrecise, dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class Order(ModelBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     ft_trade_id: Mapped[int] = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
-    trade: Mapped[List["Trade"]] = relationship("Trade", back_populates="orders")
+    trade: Mapped["Trade"] = relationship("Trade", back_populates="orders")
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
     ft_order_side: Mapped[str] = mapped_column(String(25), nullable=False)
@@ -68,7 +69,7 @@ class Order(ModelBase):
     remaining: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     stop_price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
-    order_date: Mapped[datetime] = mapped_column(nullable=True, default=datetime.utcnow)
+    order_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
     order_filled_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     order_update_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     funding_fee: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
@@ -97,7 +98,7 @@ class Order(ModelBase):
 
     @property
     def safe_filled(self) -> float:
-        return self.filled if self.filled is not None else self.amount or 0.0
+        return self.filled if self.filled is not None else 0.0
 
     @property
     def safe_cost(self) -> float:
@@ -120,9 +121,9 @@ class Order(ModelBase):
 
     def __repr__(self):
 
-        return (f"Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, "
+        return (f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "
                 f"side={self.side}, filled={self.safe_filled}, price={self.safe_price}, "
-                f"order_type={self.order_type}, status={self.status})")
+                f"status={self.status}, date={self.order_date:{DATETIME_PRINT_FORMAT}})")
 
     def update_from_ccxt_object(self, order):
         """
@@ -158,7 +159,7 @@ class Order(ModelBase):
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
-    def to_ccxt_object(self) -> Dict[str, Any]:
+    def to_ccxt_object(self, stopPriceName: str = 'stopPrice') -> Dict[str, Any]:
         order: Dict[str, Any] = {
             'id': self.order_id,
             'symbol': self.ft_pair,
@@ -170,7 +171,6 @@ class Order(ModelBase):
             'side': self.ft_order_side,
             'filled': self.filled,
             'remaining': self.remaining,
-            'stopPrice': self.stop_price,
             'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f'),
             'timestamp': int(self.order_date_utc.timestamp() * 1000),
             'status': self.status,
@@ -178,7 +178,11 @@ class Order(ModelBase):
             'info': {},
         }
         if self.ft_order_side == 'stoploss':
-            order['ft_order_type'] = 'stoploss'
+            order.update({
+                stopPriceName: self.stop_price,
+                'ft_order_type': 'stoploss',
+            })
+
         return order
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
@@ -208,6 +212,7 @@ class Order(ModelBase):
                 'order_type': self.order_type,
                 'price': self.price,
                 'remaining': self.remaining,
+                'ft_fee_base': self.ft_fee_base,
             })
         return resp
 
@@ -243,15 +248,15 @@ class Order(ModelBase):
         else:
             logger.warning(f"Did not find order for {order}.")
 
-    @staticmethod
+    @classmethod
     def parse_from_ccxt_object(
-            order: Dict[str, Any], pair: str, side: str,
-            amount: Optional[float] = None, price: Optional[float] = None) -> 'Order':
+            cls, order: Dict[str, Any], pair: str, side: str,
+            amount: Optional[float] = None, price: Optional[float] = None) -> Self:
         """
         Parse an order from a ccxt object and return a new order Object.
         Optional support for overriding amount and price is only used for test simplification.
         """
-        o = Order(
+        o = cls(
             order_id=str(order['id']),
             ft_order_side=side,
             ft_pair=pair,
@@ -279,7 +284,7 @@ class Order(ModelBase):
         return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
 
 
-class LocalTrade():
+class LocalTrade:
     """
     Trade database model.
     Used in backtesting - must be aligned to Trade model!
@@ -422,7 +427,7 @@ class LocalTrade():
 
     @property
     def close_date_utc(self):
-        return self.close_date.replace(tzinfo=timezone.utc)
+        return self.close_date.replace(tzinfo=timezone.utc) if self.close_date else None
 
     @property
     def entry_side(self) -> str:
@@ -700,7 +705,7 @@ class LocalTrade():
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-            if self.is_open:
+            if self.is_open and order.safe_filled > 0:
                 logger.info(f'{order.order_type.upper()} is hit for {self}.')
         else:
             raise ValueError(f'Unknown order type: {order.order_type}')
@@ -708,7 +713,10 @@ class LocalTrade():
         if order.ft_order_side != self.entry_side:
             amount_tr = amount_to_contract_precision(self.amount, self.amount_precision,
                                                      self.precision_mode, self.contract_size)
-            if isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC):
+            if (
+                isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
+                or order.safe_amount_after_fee > amount_tr
+            ):
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
@@ -1291,9 +1299,12 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True, default=None)  # type: ignore
 
     def __init__(self, **kwargs):
+        from_json = kwargs.pop('__FROM_JSON', None)
         super().__init__(**kwargs)
-        self.realized_profit = 0
-        self.recalc_open_trade_value()
+        if not from_json:
+            # Skip recalculation when loading from json
+            self.realized_profit = 0
+            self.recalc_open_trade_value()
 
     @validates('enter_tag', 'exit_reason')
     def validate_string_len(self, key, value):
@@ -1385,7 +1396,10 @@ class Trade(ModelBase, LocalTrade):
                              e.g. `(trade_filter=Trade.id == trade_id)`
         :return: unsorted query object
         """
-        return Trade.session.scalars(Trade.get_trades_query(trade_filter, include_orders))
+        query = Trade.get_trades_query(trade_filter, include_orders)
+        # this sholud remain split. if use_db is False, session is not available and the above will
+        # raise an exception.
+        return Trade.session.scalars(query)
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:
@@ -1632,8 +1646,8 @@ class Trade(ModelBase, LocalTrade):
             )).scalar_one()
         return trading_volume
 
-    @staticmethod
-    def from_json(json_str: str) -> 'Trade':
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
         """
         Create a Trade instance from a json string.
 
@@ -1643,7 +1657,8 @@ class Trade(ModelBase, LocalTrade):
         """
         import rapidjson
         data = rapidjson.loads(json_str)
-        trade = Trade(
+        trade = cls(
+            __FROM_JSON=True,
             id=data["trade_id"],
             pair=data["pair"],
             base_currency=data["base_currency"],
@@ -1698,6 +1713,7 @@ class Trade(ModelBase, LocalTrade):
 
             order_obj = Order(
                 amount=order["amount"],
+                ft_amount=order["amount"],
                 ft_order_side=order["ft_order_side"],
                 ft_pair=order["pair"],
                 ft_is_open=order["is_open"],
@@ -1712,6 +1728,7 @@ class Trade(ModelBase, LocalTrade):
                     if order["order_filled_timestamp"] else None),
                 order_type=order["order_type"],
                 price=order["price"],
+                ft_price=order["price"],
                 remaining=order["remaining"],
             )
             trade.orders.append(order_obj)

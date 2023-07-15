@@ -633,7 +633,7 @@ def load_and_plot_trades(config: Config):
     """
     strategy = StrategyResolver.load_strategy(config)
 
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    exchange = ExchangeResolver.load_exchange(config)
     IStrategy.dp = DataProvider(config, exchange)
     strategy.ft_bot_start()
     strategy.bot_loop_start(datetime.now(timezone.utc))
@@ -678,7 +678,7 @@ def plot_profit(config: Config) -> None:
     if 'timeframe' not in config:
         raise OperationalException('Timeframe must be set in either config or via --timeframe.')
 
-    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    exchange = ExchangeResolver.load_exchange(config)
     plot_elements = init_plotscript(config, list(exchange.markets))
     trades = plot_elements['trades']
     # Filter trades to relevant pairs

@@ -14,7 +14,7 @@ on:
     - cron:  '0 5 * * 4'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
 permissions:
   repository-projects: read
@@ -57,7 +57,7 @@ jobs:
     - name: Installation - *nix
       if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip==23.0.1 wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -76,6 +76,17 @@ jobs:
       run: |
         # Allow failure for coveralls
         coveralls || true
+
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
 
     - name: Backtesting (multi)
       run: |
@@ -125,6 +136,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        check-latest: true
 
     - name: Cache_dependencies
       uses: actions/cache@v3
@@ -148,7 +160,8 @@ jobs:
     - name: Installation - macOS
       if: runner.os == 'macOS'
       run: |
-        brew update
+        # brew update
+        # TODO: Should be the brew upgrade
         # homebrew fails to update python due to unlinking failures
         # https://github.com/actions/runner-images/issues/6817
         rm /usr/local/bin/2to3 || true
@@ -163,7 +176,7 @@ jobs:
         rm /usr/local/bin/python3.11-config || true
 
         brew install hdf5 c-blosc
-        python -m pip install --upgrade pip==23.0.1 wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -173,6 +186,17 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order
+
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
 
     - name: Backtesting
       run: |
@@ -236,6 +260,18 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order
+
+    - name: Check for repository changes
+      run: |
+        if (git status --porcelain) {
+          Write-Host "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        }
+        else {
+          Write-Host "Repository is clean, no changes detected."
+        }
 
     - name: Backtesting
       run: |
@@ -302,7 +338,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: "3.11"
 
     - name: Documentation build
       run: |
@@ -352,7 +388,7 @@ jobs:
     - name: Installation - *nix
       if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip==23.0.1 wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -425,7 +461,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.5
+      uses: pypa/gh-action-pypi-publish@v1.8.7
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -433,7 +469,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.5
+      uses: pypa/gh-action-pypi-publish@v1.8.7
       if: (github.event_name == 'release')
       with:
         user: __token__

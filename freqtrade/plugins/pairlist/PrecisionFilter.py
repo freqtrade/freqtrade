@@ -46,6 +46,10 @@ class PrecisionFilter(IPairList):
         """
         return f"{self.name} - Filtering untradable pairs."
 
+    @staticmethod
+    def description() -> str:
+        return "Filters low-value coins which would not allow setting stoplosses."
+
     def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """
         Check if pair has enough room to add a stoploss to avoid "unsellable" buys of very

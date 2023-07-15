@@ -125,6 +125,20 @@ class Okx(Exchange):
             params['posSide'] = self._get_posSide(side, reduceOnly)
         return params
 
+    def __fetch_leverage_already_set(self, pair: str, leverage: float, side: BuySell) -> bool:
+        try:
+            res_lev = self._api.fetch_leverage(symbol=pair, params={
+                    "mgnMode": self.margin_mode.value,
+                    "posSide": self._get_posSide(side, False),
+                })
+            self._log_exchange_response('get_leverage', res_lev)
+            already_set = all(float(x['lever']) == leverage for x in res_lev['data'])
+            return already_set
+
+        except ccxt.BaseError:
+            # Assume all errors as "not set yet"
+            return False
+
     @retrier
     def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
@@ -141,8 +155,11 @@ class Okx(Exchange):
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+                already_set = self.__fetch_leverage_already_set(pair, leverage, side)
+                if not already_set:
+                    raise TemporaryError(
+                        f'Could not set leverage due to {e.__class__.__name__}. Message: {e}'
+                        ) from e
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
@@ -169,6 +186,23 @@ class Okx(Exchange):
             params['posSide'] = self._get_posSide(side, True)
         return params
 
+    def _convert_stop_order(self, pair: str, order_id: str, order: Dict) -> Dict:
+        if (
+            order['status'] == 'closed'
+            and (real_order_id := order.get('info', {}).get('ordId')) is not None
+        ):
+            # Once a order triggered, we fetch the regular followup order.
+            order_reg = self.fetch_order(real_order_id, pair)
+            self._log_exchange_response('fetch_stoploss_order1', order_reg)
+            order_reg['id_stop'] = order_reg['id']
+            order_reg['id'] = order_id
+            order_reg['type'] = 'stoploss'
+            order_reg['status_stop'] = 'triggered'
+            return order_reg
+        order = self._order_contracts_to_amount(order)
+        order['type'] = 'stoploss'
+        return order
+
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
@@ -177,7 +211,7 @@ class Okx(Exchange):
             params1 = {'stop': True}
             order_reg = self._api.fetch_order(order_id, pair, params=params1)
             self._log_exchange_response('fetch_stoploss_order', order_reg)
-            return order_reg
+            return self._convert_stop_order(pair, order_id, order_reg)
         except ccxt.OrderNotFound:
             pass
         params2 = {'stop': True, 'ordType': 'conditional'}
@@ -188,18 +222,7 @@ class Okx(Exchange):
                 orders_f = [order for order in orders if order['id'] == order_id]
                 if orders_f:
                     order = orders_f[0]
-                    if (order['status'] == 'closed'
-                            and (real_order_id := order.get('info', {}).get('ordId')) is not None):
-                        # Once a order triggered, we fetch the regular followup order.
-                        order_reg = self.fetch_order(real_order_id, pair)
-                        self._log_exchange_response('fetch_stoploss_order1', order_reg)
-                        order_reg['id_stop'] = order_reg['id']
-                        order_reg['id'] = order_id
-                        order_reg['type'] = 'stoploss'
-                        order_reg['status_stop'] = 'triggered'
-                        return order_reg
-                    order['type'] = 'stoploss'
-                    return order
+                    return self._convert_stop_order(pair, order_id, order)
             except ccxt.BaseError:
                 pass
         raise RetryableOrderError(

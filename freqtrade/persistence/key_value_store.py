@@ -36,13 +36,13 @@ class _KeyValueStoreModel(ModelBase):
 
     value_type: Mapped[ValueTypesEnum] = mapped_column(String(20), nullable=False)
 
-    string_value: Mapped[Optional[str]]
+    string_value: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     datetime_value: Mapped[Optional[datetime]]
     float_value: Mapped[Optional[float]]
     int_value: Mapped[Optional[int]]
 
 
-class KeyValueStore():
+class KeyValueStore:
     """
     Generic bot-wide, persistent key-value store
     Can be used to store generic values, e.g. very first bot startup time.

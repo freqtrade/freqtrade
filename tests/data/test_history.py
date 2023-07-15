@@ -1,12 +1,12 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import json
+import logging
 import uuid
 from pathlib import Path
 from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
 
-import arrow
 import pytest
 from pandas import DataFrame
 from pandas.testing import assert_frame_equal
@@ -26,6 +26,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.util import dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
 
@@ -198,7 +199,6 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
                                       fill_missing=False, drop_incomplete=False)
     # now = last cached item + 1 hour
     now_ts = test_data[-1][0] / 1000 + 60 * 60
-    mocker.patch('arrow.utcnow', return_value=arrow.get(now_ts))
 
     # timeframe starts earlier than the cached data
     # should fully update data
@@ -353,10 +353,10 @@ def test_download_backtesting_data_exception(mocker, caplog, default_conf, tmpdi
 
 def test_load_partial_missing(testdatadir, caplog) -> None:
     # Make sure we start fresh - test missing data at start
-    start = arrow.get('2018-01-01T00:00:00')
-    end = arrow.get('2018-01-11T00:00:00')
+    start = dt_utc(2018, 1, 1)
+    end = dt_utc(2018, 1, 11)
     data = load_data(testdatadir, '5m', ['UNITTEST/BTC'], startup_candles=20,
-                     timerange=TimeRange('date', 'date', start.int_timestamp, end.int_timestamp))
+                     timerange=TimeRange('date', 'date', start.timestamp(), end.timestamp()))
     assert log_has(
         'Using indicator startup period: 20 ...', caplog
     )
@@ -369,16 +369,16 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
                    caplog)
     # Make sure we start fresh - test missing data at end
     caplog.clear()
-    start = arrow.get('2018-01-10T00:00:00')
-    end = arrow.get('2018-02-20T00:00:00')
+    start = dt_utc(2018, 1, 10)
+    end = dt_utc(2018, 2, 20)
     data = load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
-                     timerange=TimeRange('date', 'date', start.int_timestamp, end.int_timestamp))
+                     timerange=TimeRange('date', 'date', start.timestamp(), end.timestamp()))
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(data['UNITTEST/BTC'])
 
     # Shift endtime with +5
-    end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0])
+    end_real = data['UNITTEST/BTC'].iloc[-1, 0].to_pydatetime()
     assert log_has(f'UNITTEST/BTC, spot, 5m, '
                    f'data ends at {end_real.strftime(DATETIME_PRINT_FORMAT)}',
                    caplog)
@@ -504,9 +504,10 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 ])
 def test_refresh_backtest_ohlcv_data(
         mocker, default_conf, markets, caplog, testdatadir, trademode, callcount):
-    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history',
-                           MagicMock())
+    caplog.set_level(logging.DEBUG)
+    dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history')
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value=markets))
+
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "unlink", MagicMock())
 
@@ -521,7 +522,7 @@ def test_refresh_backtest_ohlcv_data(
     assert dl_mock.call_count == callcount
     assert dl_mock.call_args[1]['timerange'].starttype == 'date'
 
-    assert log_has("Downloading pair ETH/BTC, interval 1m.", caplog)
+    assert log_has_re(r"Downloading pair ETH/BTC, .* interval 1m\.", caplog)
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):

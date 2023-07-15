@@ -15,13 +15,16 @@ from freqtrade import __version__
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 logger = logging.getLogger(__name__)
 
 
 class RemotePairList(IPairList):
+
+    is_pairlist_generator = True
 
     def __init__(self, exchange, pairlistmanager,
                  config: Config, pairlistconfig: Dict[str, Any],
@@ -38,6 +41,8 @@ class RemotePairList(IPairList):
                 '`pairlist_url` not specified. Please check your configuration '
                 'for "pairlist.config.pairlist_url"')
 
+        self._mode = self._pairlistconfig.get('mode', 'whitelist')
+        self._processing_mode = self._pairlistconfig.get('processing_mode', 'filter')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._refresh_period: int = self._pairlistconfig.get('refresh_period', 1800)
         self._keep_pairlist_on_failure = self._pairlistconfig.get('keep_pairlist_on_failure', True)
@@ -47,6 +52,21 @@ class RemotePairList(IPairList):
         self._bearer_token = self._pairlistconfig.get('bearer_token', '')
         self._init_done = False
         self._last_pairlist: List[Any] = list()
+
+        if self._mode not in ['whitelist', 'blacklist']:
+            raise OperationalException(
+                '`mode` not configured correctly. Supported Modes '
+                'are "whitelist","blacklist"')
+
+        if self._processing_mode not in ['filter', 'append']:
+            raise OperationalException(
+                '`processing_mode` not configured correctly. Supported Modes '
+                'are "filter","append"')
+
+        if self._pairlist_pos == 0 and self._mode == 'blacklist':
+            raise OperationalException(
+                'A `blacklist` mode RemotePairList can not be on the first '
+                'position of your pairlist.')
 
     @property
     def needstickers(self) -> bool:
@@ -62,6 +82,60 @@ class RemotePairList(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
+
+    @staticmethod
+    def description() -> str:
+        return "Retrieve pairs from a remote API or local file."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "pairlist_url": {
+                "type": "string",
+                "default": "",
+                "description": "URL to fetch pairlist from",
+                "help": "URL to fetch pairlist from",
+            },
+            "number_assets": {
+                "type": "number",
+                "default": 30,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist.",
+            },
+            "mode": {
+                "type": "option",
+                "default": "whitelist",
+                "options": ["whitelist", "blacklist"],
+                "description": "Pairlist mode",
+                "help": "Should this pairlist operate as a whitelist or blacklist?",
+            },
+            "processing_mode": {
+                "type": "option",
+                "default": "filter",
+                "options": ["filter", "append"],
+                "description": "Processing mode",
+                "help": "Append pairs to incomming pairlist or filter them?",
+            },
+            **IPairList.refresh_period_parameter(),
+            "keep_pairlist_on_failure": {
+                "type": "boolean",
+                "default": True,
+                "description": "Keep last pairlist on failure",
+                "help": "Keep last pairlist on failure",
+            },
+            "read_timeout": {
+                "type": "number",
+                "default": 60,
+                "description": "Read timeout",
+                "help": "Request timeout for remote pairlist",
+            },
+            "bearer_token": {
+                "type": "string",
+                "default": "",
+                "description": "Bearer token",
+                "help": "Bearer token - used for auth against the upstream service.",
+            },
+        }
 
     def process_json(self, jsonparse) -> List[str]:
 
@@ -181,6 +255,7 @@ class RemotePairList(IPairList):
 
         self.log_once(f"Fetched pairs: {pairlist}", logger.debug)
 
+        pairlist = expand_pairlist(pairlist, list(self._exchange.get_markets().keys()))
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
@@ -208,6 +283,23 @@ class RemotePairList(IPairList):
         :return: new whitelist
         """
         rpl_pairlist = self.gen_pairlist(tickers)
-        merged_list = pairlist + rpl_pairlist
-        merged_list = sorted(set(merged_list), key=merged_list.index)
+        merged_list = []
+        filtered = []
+
+        if self._mode == "whitelist":
+            if self._processing_mode == "filter":
+                merged_list = [pair for pair in pairlist if pair in rpl_pairlist]
+            elif self._processing_mode == "append":
+                merged_list = pairlist + rpl_pairlist
+            merged_list = sorted(set(merged_list), key=merged_list.index)
+        else:
+            for pair in pairlist:
+                if pair not in rpl_pairlist:
+                    merged_list.append(pair)
+                else:
+                    filtered.append(pair)
+            if filtered:
+                self.log_once(f"Blacklist - Filtered out pairs: {filtered}", logger.info)
+
+        merged_list = merged_list[:self._number_pairs]
         return merged_list

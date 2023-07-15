@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 46.4.0", "wheel"]
+requires = ["setuptools >= 64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
@@ -68,6 +68,9 @@ target-version = "py38"
 extend-select = [
   "C90",    # mccabe
   # "N",    # pep8-naming
+  "F",      # pyflakes
+  "E",      # pycodestyle
+  "W",      # pycodestyle
   "UP",     # pyupgrade
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
