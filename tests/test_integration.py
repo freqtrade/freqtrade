@@ -477,9 +477,12 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 @pytest.mark.parametrize('leverage', [1, 2])
 def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, leverage) -> None:
     default_conf_usdt['position_adjustment_enable'] = True
-
+    spot = leverage == 1
+    if not spot:
+        default_conf_usdt['trading_mode'] = 'futures'
+        default_conf_usdt['margin_mode'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    freqtrade.trading_mode = TradingMode.FUTURES
+    assert freqtrade.trading_mode == TradingMode.FUTURES if not spot else TradingMode.SPOT
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
@@ -487,6 +490,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
         get_min_pair_stake_amount=MagicMock(return_value=10),
+        get_funding_fees=MagicMock(return_value=0),
     )
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
 
@@ -498,6 +502,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
     assert pytest.approx(trade.stake_amount) == 60
+    assert trade.leverage == leverage
     assert pytest.approx(trade.amount) == 30.0 * leverage
     assert trade.open_rate == 2.0
 
@@ -521,6 +526,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert pytest.approx(trade.amount) == 20.099 * leverage
     assert trade.open_rate == 2.0
     assert trade.is_open
+    assert trade.realized_profit > 0.098 * leverage
     caplog.clear()
 
     # Sell more than what we got (we got ~20 coins left)
