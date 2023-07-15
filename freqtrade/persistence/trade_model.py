@@ -38,6 +38,7 @@ class Order(ModelBase):
     Mirrors CCXT Order structure
     """
     __tablename__ = 'orders'
+    __allow_unmapped__ = True
     session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
@@ -47,7 +48,8 @@ class Order(ModelBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     ft_trade_id: Mapped[int] = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
-    trade: Mapped["Trade"] = relationship("Trade", back_populates="orders")
+    _trade_live: Mapped["Trade"] = relationship("Trade", back_populates="orders")
+    _trade_bt: "LocalTrade" = None  # type: ignore
 
     # order_side can only be 'buy', 'sell' or 'stoploss'
     ft_order_side: Mapped[str] = mapped_column(String(25), nullable=False)
@@ -118,6 +120,10 @@ class Order(ModelBase):
     @property
     def safe_amount_after_fee(self) -> float:
         return self.safe_filled - self.safe_fee_base
+
+    @property
+    def trade(self) -> "LocalTrade":
+        return self._trade_bt or self._trade_live
 
     @property
     def stake_amount(self) -> float:
