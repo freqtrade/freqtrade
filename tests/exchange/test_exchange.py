@@ -4343,11 +4343,11 @@ def test__fetch_and_calculate_funding_fees(
     ex = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     mocker.patch(f'{EXMS}.timeframes', PropertyMock(return_value=['1h', '4h', '8h']))
     funding_fees = ex._fetch_and_calculate_funding_fees(
-        pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
+        pair='ADA/USDT:USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
     # Fees for Longs are inverted
     funding_fees = ex._fetch_and_calculate_funding_fees(
-        pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
+        pair='ADA/USDT:USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == -expected_fees
 
     # Return empty "refresh_latest"
@@ -4355,7 +4355,7 @@ def test__fetch_and_calculate_funding_fees(
     ex = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     with pytest.raises(ExchangeError, match="Could not find funding rates."):
         ex._fetch_and_calculate_funding_fees(
-            pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
+            pair='ADA/USDT:USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
 
 
 @pytest.mark.parametrize('exchange,expected_fees', [
