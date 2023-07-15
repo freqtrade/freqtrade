@@ -529,17 +529,10 @@ class RPC:
         winrate = (winning_trades / closed_trade_count) * 100 if closed_trade_count > 0 else 0
         loserate = (100 - winrate)
 
-        expectancy = 1.0
-        if mean_winning_profit > 0 and abs(mean_losing_profit) > 0:
-            expectancy = (1 + (mean_winning_profit / abs(mean_losing_profit))) * (winrate / 100) - 1
-        else:
-            if mean_winning_profit == 0:
-                expectancy = 0.0
-
-        expectancy_rate = (
-            ((winrate / 100) * mean_winning_profit) -
-            ((loserate / 100) * mean_losing_profit)
-        )
+        expectancy, expectancy_rate = self.__calc_expectancy(mean_winning_profit,
+                                                             mean_losing_profit,
+                                                             winrate,
+                                                             loserate)
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
@@ -631,6 +624,24 @@ class RPC:
                 raise ValueError()
 
         return est_stake, est_bot_stake
+
+    def __calc_expectancy(
+            self, mean_winning_profit: float, mean_losing_profit: float,
+            winrate: float, loserate: float) -> Tuple[float, float]:
+        expectancy = 1.0
+        if mean_winning_profit > 0 and abs(mean_losing_profit) > 0:
+            expectancy = (
+                (1 + (mean_winning_profit / abs(mean_losing_profit))) * (winrate / 100) - 1
+            )
+        elif mean_winning_profit == 0:
+            expectancy = 0.0
+
+        expectancy_rate = (
+            ((winrate / 100) * mean_winning_profit) -
+            ((loserate / 100) * mean_losing_profit)
+        )
+
+        return expectancy, expectancy_rate
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
