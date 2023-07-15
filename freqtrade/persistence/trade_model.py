@@ -119,6 +119,11 @@ class Order(ModelBase):
     def safe_amount_after_fee(self) -> float:
         return self.safe_filled - self.safe_fee_base
 
+    @property
+    def stake_amount(self) -> float:
+        """ Amount in stake currency used for this order"""
+        return self.safe_amount * self.safe_price / self.trade.leverage
+
     def __repr__(self):
 
         return (f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "

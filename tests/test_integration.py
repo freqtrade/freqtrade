@@ -429,6 +429,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert pytest.approx(trade.stop_loss) == 1.99 * (1 - 0.1 / leverage)
     assert pytest.approx(trade.initial_stop_loss) == 1.96 * (1 - 0.1 / leverage)
     assert trade.initial_stop_loss_pct == -0.1
+    assert pytest.approx(trade.orders[-1].stake_amount) == trade.stake_amount
 
     # 2nd order - not filling
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=120)
