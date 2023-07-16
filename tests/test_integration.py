@@ -534,14 +534,14 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert trade.open_rate == 2.0
     assert trade.is_open
     assert trade.realized_profit > 0.098 * leverage
-    expected_profit = starting_amount - 40.1980
+    expected_profit = starting_amount - 40.1980 + trade.realized_profit
     assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
 
     if spot:
         assert pytest.approx(freqtrade.wallets.get_total('USDT')) == expected_profit
     else:
         # total won't change in futures mode, only free / used will.
-        assert freqtrade.wallets.get_total('USDT') == starting_amount
+        assert freqtrade.wallets.get_total('USDT') == starting_amount + trade.realized_profit
     caplog.clear()
 
     # Sell more than what we got (we got ~20 coins left)
@@ -566,10 +566,10 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert pytest.approx(trade.stake_amount) == 40.198
     assert trade.is_open
     assert log_has_re('Amount to exit is 0.0 due to exchange limits - not exiting.', caplog)
-    expected_profit = starting_amount - 40.1980
+    expected_profit = starting_amount - 40.1980 + trade.realized_profit
     assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
     if spot:
         assert pytest.approx(freqtrade.wallets.get_total('USDT')) == expected_profit
     else:
         # total won't change in futures mode, only free / used will.
-        assert freqtrade.wallets.get_total('USDT') == starting_amount
+        assert freqtrade.wallets.get_total('USDT') == starting_amount + trade.realized_profit
