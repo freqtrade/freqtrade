@@ -628,6 +628,7 @@ class RPC:
     def __calc_expectancy(
             self, mean_winning_profit: float, mean_losing_profit: float,
             winrate: float, loserate: float) -> Tuple[float, float]:
+
         expectancy = 1.0
         if mean_winning_profit > 0 and abs(mean_losing_profit) > 0:
             expectancy = (
