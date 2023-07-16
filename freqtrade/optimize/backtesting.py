@@ -679,6 +679,7 @@ class Backtesting:
             remaining=amount,
             cost=amount * close_rate,
         )
+        order._trade_bt = trade
         trade.orders.append(order)
         return trade
 
@@ -901,8 +902,9 @@ class Backtesting:
                 amount=amount,
                 filled=0,
                 remaining=amount,
-                cost=stake_amount + trade.fee_open,
+                cost=amount * propose_rate + trade.fee_open,
             )
+            order._trade_bt = trade
             trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
