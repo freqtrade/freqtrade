@@ -494,6 +494,8 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
         get_funding_fees=MagicMock(return_value=0),
     )
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
+    starting_amount = freqtrade.wallets.get_total('USDT')
+    assert starting_amount == 1000
 
     patch_get_signal(freqtrade)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
@@ -506,6 +508,11 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert trade.leverage == leverage
     assert pytest.approx(trade.amount) == 30.0 * leverage
     assert trade.open_rate == 2.0
+    assert pytest.approx(freqtrade.wallets.get_free('USDT')) == starting_amount - 60
+    if spot:
+        assert pytest.approx(freqtrade.wallets.get_total('USDT')) == starting_amount - 60
+    else:
+        assert freqtrade.wallets.get_total('USDT') == starting_amount
 
     # Too small size
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-59)
@@ -528,6 +535,14 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert trade.open_rate == 2.0
     assert trade.is_open
     assert trade.realized_profit > 0.098 * leverage
+    expected_profit = starting_amount - 40.1980 + trade.realized_profit
+    assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
+
+    if spot:
+        assert pytest.approx(freqtrade.wallets.get_total('USDT')) == expected_profit
+    else:
+        # total won't change in futures mode, only free / used will.
+        assert freqtrade.wallets.get_total('USDT') == starting_amount + trade.realized_profit
     caplog.clear()
 
     # Sell more than what we got (we got ~20 coins left)
@@ -552,3 +567,10 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert pytest.approx(trade.stake_amount) == 40.198
     assert trade.is_open
     assert log_has_re('Amount to exit is 0.0 due to exchange limits - not exiting.', caplog)
+    expected_profit = starting_amount - 40.1980 + trade.realized_profit
+    assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
+    if spot:
+        assert pytest.approx(freqtrade.wallets.get_total('USDT')) == expected_profit
+    else:
+        # total won't change in futures mode, only free / used will.
+        assert freqtrade.wallets.get_total('USDT') == starting_amount + trade.realized_profit
