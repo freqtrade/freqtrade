@@ -526,8 +526,8 @@ class RPC:
         mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
         mean_losing_profit = (abs(losing_profit) / losing_trades) if losing_trades > 0 else 0
 
-        winrate = (winning_trades / closed_trade_count) * 100 if closed_trade_count > 0 else 0
-        loserate = (100 - winrate)
+        winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
+        loserate = (1 - winrate)
 
         expectancy, expectancy_ratio = self.__calc_expectancy(mean_winning_profit,
                                                               mean_losing_profit,
@@ -630,14 +630,14 @@ class RPC:
             winrate: float, loserate: float) -> Tuple[float, float]:
 
         expectancy = (
-            ((winrate / 100) * mean_winning_profit) -
-            ((loserate / 100) * mean_losing_profit)
+            (winrate * mean_winning_profit) -
+            (loserate * mean_losing_profit)
         )
 
         expectancy_ratio = float('inf')
         if mean_losing_profit > 0:
             expectancy_ratio = (
-                ((1 + (mean_winning_profit / mean_losing_profit)) * (winrate / 100)) - 1
+                ((1 + (mean_winning_profit / mean_losing_profit)) * winrate) - 1
             )
 
         return expectancy, expectancy_ratio
