@@ -5,17 +5,8 @@ python -m pip install --upgrade pip wheel
 
 $pyv = python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
 
-if ($pyv -eq '3.8') {
-    pip install build_helpers\TA_Lib-0.4.27-cp38-cp38-win_amd64.whl
-}
-if ($pyv -eq '3.9') {
-    pip install build_helpers\TA_Lib-0.4.27-cp39-cp39-win_amd64.whl
-}
-if ($pyv -eq '3.10') {
-    pip install build_helpers\TA_Lib-0.4.27-cp310-cp310-win_amd64.whl
-}
-if ($pyv -eq '3.11') {
-    pip install build_helpers\TA_Lib-0.4.27-cp311-cp311-win_amd64.whl
-}
+
+pip install --user build_helpers\TA_Lib-*.whl
+
 pip install -r requirements-dev.txt
 pip install -e .
