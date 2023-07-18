@@ -339,8 +339,7 @@ class TradeResponse(BaseModel):
     total_trades: int
 
 
-class ForceEnterResponse(BaseModel):
-    __root__: Union[TradeSchema, StatusMsg]
+ForceEnterResponse = RootModel[Union[TradeSchema, StatusMsg]]
 
 
 class LockModel(BaseModel):
@@ -420,8 +419,7 @@ class PlotConfig_(BaseModel):
     subplots: Dict[str, Any]
 
 
-class PlotConfig(BaseModel):
-    __root__: Union[PlotConfig_, Dict]
+PlotConfig = RootModel[Union[PlotConfig_, Dict]]
 
 
 class StrategyListResponse(BaseModel):
