@@ -97,7 +97,7 @@ setup(
         'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
-        'pydantic>=1.8.0,<2.0',
+        'pydantic>=2.0.0',
         'uvicorn',
         'psutil',
         'pyjwt',
