@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import ConfigDict, BaseModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
@@ -336,8 +336,7 @@ class TradeResponse(BaseModel):
     total_trades: int
 
 
-class ForceEnterResponse(BaseModel):
-    __root__: Union[TradeSchema, StatusMsg]
+ForceEnterResponse = RootModel[Union[TradeSchema, StatusMsg]]
 
 
 class LockModel(BaseModel):
@@ -417,8 +416,7 @@ class PlotConfig_(BaseModel):
     subplots: Dict[str, Any]
 
 
-class PlotConfig(BaseModel):
-    __root__: Union[PlotConfig_, Dict]
+PlotConfig = RootModel[Union[PlotConfig_, Dict]]
 
 
 class StrategyListResponse(BaseModel):
