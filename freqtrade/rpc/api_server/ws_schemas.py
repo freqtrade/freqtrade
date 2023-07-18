@@ -2,15 +2,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 from pandas import DataFrame
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType
 
 
 class BaseArbitraryModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class WSRequestSchema(BaseArbitraryModel):
@@ -27,9 +26,7 @@ class WSMessageSchemaType(TypedDict):
 class WSMessageSchema(BaseArbitraryModel):
     type: RPCMessageType
     data: Optional[Any] = None
-
-    class Config:
-        extra = 'allow'
+    model_config = ConfigDict(extra='allow')
 
 
 # ------------------------------ REQUEST SCHEMAS ----------------------------
