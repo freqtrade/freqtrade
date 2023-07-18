@@ -1,5 +1,4 @@
-# Downloads don't work automatically, since the URL is regenerated via javascript.
-# Downloaded from https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib
+# vendored Wheels compiled via https://github.com/xmatthias/ta-lib-python/tree/ta_bundled_040
 
 python -m pip install --upgrade pip wheel
 
