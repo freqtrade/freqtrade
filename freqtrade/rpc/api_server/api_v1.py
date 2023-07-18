@@ -174,9 +174,9 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
                                  leverage=payload.leverage)
 
     if trade:
-        return ForceEnterResponse.parse_obj(trade.to_json())
+        return ForceEnterResponse.model_validate(trade.to_json())
     else:
-        return ForceEnterResponse.parse_obj(
+        return ForceEnterResponse.model_validate(
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
@@ -281,7 +281,7 @@ def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
     if not strategy:
         if not rpc:
             raise RPCException("Strategy is mandatory in webserver mode.")
-        return PlotConfig.parse_obj(rpc._rpc_plot_config())
+        return PlotConfig.model_validate(rpc._rpc_plot_config())
     else:
         config1 = deepcopy(config)
         config1.update({
