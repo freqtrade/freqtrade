@@ -482,11 +482,11 @@ class PairHistory(BaseModel):
     data_start: str
     data_stop: str
     data_stop_ts: int
-
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
-        }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={
+        datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
+    })
 
 
 class BacktestFreqAIInputs(BaseModel):
@@ -515,7 +515,7 @@ class BacktestResponse(BaseModel):
     progress: float
     trade_count: Optional[float] = None
     # TODO: Properly type backtestresult...
-    backtest_result: SerializeAsAny[Optional[Dict[str, Any]]] = None
+    backtest_result: SerializeAsAny[Optional[Dict[str, Any]]]
 
 
 # TODO: This is a copy of BacktestHistoryEntryType
