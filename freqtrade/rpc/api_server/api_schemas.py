@@ -499,7 +499,7 @@ class BacktestRequest(BaseModel):
     timeframe_detail: Optional[str] = None
     timerange: Optional[str] = None
     max_open_trades: Optional[IntOrInf] = None
-    stake_amount: Optional[str] = None
+    stake_amount: Optional[Union[str, float]] = None
     enable_protections: bool
     dry_run_wallet: Optional[float] = None
     backtest_cache: Optional[str] = None
