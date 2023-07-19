@@ -136,6 +136,9 @@ class Profit(BaseModel):
     winning_trades: int
     losing_trades: int
     profit_factor: float
+    winrate: float
+    expectancy: float
+    expectancy_ratio: float
     max_drawdown: float
     max_drawdown_abs: float
     trading_volume: Optional[float]

@@ -494,6 +494,8 @@ class RPC:
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
 
+        closed_trade_count = len([t for t in trades if not t.is_open])
+
         best_pair = Trade.get_best_pair(start_date)
         trading_volume = Trade.get_trading_volume(start_date)
 
@@ -520,6 +522,17 @@ class RPC:
             profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
 
         profit_factor = winning_profit / abs(losing_profit) if losing_profit else float('inf')
+
+        mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
+        mean_losing_profit = (abs(losing_profit) / losing_trades) if losing_trades > 0 else 0
+
+        winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
+        loserate = (1 - winrate)
+
+        expectancy, expectancy_ratio = self.__calc_expectancy(mean_winning_profit,
+                                                              mean_losing_profit,
+                                                              winrate,
+                                                              loserate)
 
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
@@ -562,7 +575,7 @@ class RPC:
             'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
-            'closed_trade_count': len([t for t in trades if not t.is_open]),
+            'closed_trade_count': closed_trade_count,
             'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
             'first_trade_humanized': dt_humanize(first_date) if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
@@ -576,6 +589,9 @@ class RPC:
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
             'profit_factor': profit_factor,
+            'winrate': winrate,
+            'expectancy': expectancy,
+            'expectancy_ratio': expectancy_ratio,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
@@ -608,6 +624,23 @@ class RPC:
                 raise ValueError()
 
         return est_stake, est_bot_stake
+
+    def __calc_expectancy(
+            self, mean_winning_profit: float, mean_losing_profit: float,
+            winrate: float, loserate: float) -> Tuple[float, float]:
+
+        expectancy = (
+            (winrate * mean_winning_profit) -
+            (loserate * mean_losing_profit)
+        )
+
+        expectancy_ratio = float('inf')
+        if mean_losing_profit > 0:
+            expectancy_ratio = (
+                ((1 + (mean_winning_profit / mean_losing_profit)) * winrate) - 1
+            )
+
+        return expectancy, expectancy_ratio
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """

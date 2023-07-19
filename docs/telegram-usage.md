@@ -287,12 +287,17 @@ Return a summary of your profit/loss and performance.
 > **Best Performing:** `PAY/BTC: 50.23%`
 > **Trading volume:** `0.5 BTC`
 > **Profit factor:** `1.04`
+> **Win / Loss:** `102 / 36`
+> **Winrate:** `73.91%`
+> **Expectancy (Ratio):** `4.87 (1.66)`
 > **Max Drawdown:** `9.23% (0.01255 BTC)`
 
 The relative profit of `1.2%` is the average profit per trade.
 The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.
 Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
 Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.
+Expectancy corresponds to the average return per currency unit at risk, i.e. the winrate and the risk-reward ratio (the average gain of winning trades compared to the average loss of losing trades).
+Expectancy Ratio is expected profit or loss of a subsequent trade based on the performance of all past trades.
 Max drawdown corresponds to the backtesting metric `Absolute Drawdown (Account)` - calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 Bot started date will refer to the date the bot was first started. For older bots, this will default to the first trade's open date.
 
