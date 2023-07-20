@@ -97,6 +97,7 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         'wins': len(result[result['profit_abs'] > 0]),
         'draws': len(result[result['profit_abs'] == 0]),
         'losses': len(result[result['profit_abs'] < 0]),
+        'winrate': len(result[result['profit_abs'] > 0]) / len(result) if len(result) else 0.0,
     }
 
 
@@ -184,6 +185,7 @@ def generate_exit_reason_stats(max_open_trades: IntOrInf, results: DataFrame) ->
                 'wins': len(result[result['profit_abs'] > 0]),
                 'draws': len(result[result['profit_abs'] == 0]),
                 'losses': len(result[result['profit_abs'] < 0]),
+                'winrate': len(result[result['profit_abs'] > 0]) / count if count else 0.0,
                 'profit_mean': profit_mean,
                 'profit_mean_pct': round(profit_mean * 100, 2),
                 'profit_sum': profit_sum,
@@ -238,6 +240,7 @@ def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dic
         wins = sum(day['profit_abs'] > 0)
         draws = sum(day['profit_abs'] == 0)
         loses = sum(day['profit_abs'] < 0)
+        trades = (wins + draws + loses)
         stats.append(
             {
                 'date': name.strftime('%d/%m/%Y'),
@@ -245,7 +248,8 @@ def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dic
                 'profit_abs': profit_abs,
                 'wins': wins,
                 'draws': draws,
-                'loses': loses
+                'loses': loses,
+                'winrate': wins / trades if trades else 0.0,
             }
         )
     return stats
@@ -265,6 +269,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
             'wins': 0,
             'losses': 0,
             'draws': 0,
+            'winrate': 0,
             'holding_avg': timedelta(),
             'winner_holding_avg': timedelta(),
             'loser_holding_avg': timedelta(),
@@ -285,6 +290,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
         'wins': len(winning_trades),
         'losses': len(losing_trades),
         'draws': len(draw_trades),
+        'winrate': len(winning_trades) / len(results) if len(results) else 0.0,
         'holding_avg': holding_avg,
         'holding_avg_s': holding_avg.total_seconds(),
         'winner_holding_avg': winner_holding_avg,
