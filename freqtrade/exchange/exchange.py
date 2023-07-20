@@ -82,7 +82,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
         "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
-        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
+        "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
         "marketOrderRequiresPrice": False,
     }
