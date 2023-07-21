@@ -1273,24 +1273,31 @@ class RPC:
                                    exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
+        from freqtrade.data.converter import trim_dataframe
+        from freqtrade.data.dataprovider import DataProvider
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+
+        strategy = StrategyResolver.load_strategy(config)
+        startup_candles = strategy.startup_candle_count
+
         _data = load_data(
             datadir=config["datadir"],
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
-            candle_type=config.get('candle_type_def', CandleType.SPOT)
+            candle_type=config.get('candle_type_def', CandleType.SPOT),
+            startup_candles=startup_candles,
         )
         if pair not in _data:
             raise RPCException(
                 f"No data for {pair}, {timeframe} in {config.get('timerange')} found.")
-        from freqtrade.data.dataprovider import DataProvider
-        from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        strategy = StrategyResolver.load_strategy(config)
+
         strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
         strategy.ft_bot_start()
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
+        df_analyzed = trim_dataframe(df_analyzed, timerange_parsed, startup_candles=startup_candles)
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
                                               df_analyzed, dt_now())
