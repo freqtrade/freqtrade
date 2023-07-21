@@ -122,7 +122,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     return df
 
 
-def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
+def trim_dataframe(df: DataFrame, timerange, *, df_date_col: str = 'date',
                    startup_candles: int = 0) -> DataFrame:
     """
     Trim dataframe based on given timerange
