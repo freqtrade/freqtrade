@@ -1481,17 +1481,29 @@ def test_api_pair_history(botclient, mocker):
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 200)
-    assert rc.json()['length'] == 289
-    assert len(rc.json()['data']) == rc.json()['length']
-    assert 'columns' in rc.json()
-    assert 'data' in rc.json()
+    result = rc.json()
+    assert result['length'] == 289
+    assert len(result['data']) == result['length']
+    assert 'columns' in result
+    assert 'data' in result
+    data = result['data']
+    assert len(data) == 289
+    # analyed DF has 28 columns
+    assert len(result['columns']) == 28
+    assert len(data[0]) == 28
+    date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
+    rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
+
+    assert data[0][date_col_idx] == '2018-01-11 00:00:00'
+    assert data[0][rsi_col_idx] is not None
+    assert data[0][rsi_col_idx] > 0
     assert lfm.call_count == 1
-    assert rc.json()['pair'] == 'UNITTEST/BTC'
-    assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
-    assert rc.json()['data_start'] == '2018-01-11 00:00:00+00:00'
-    assert rc.json()['data_start_ts'] == 1515628800000
-    assert rc.json()['data_stop'] == '2018-01-12 00:00:00+00:00'
-    assert rc.json()['data_stop_ts'] == 1515715200000
+    assert result['pair'] == 'UNITTEST/BTC'
+    assert result['strategy'] == CURRENT_TEST_STRATEGY
+    assert result['data_start'] == '2018-01-11 00:00:00+00:00'
+    assert result['data_start_ts'] == 1515628800000
+    assert result['data_stop'] == '2018-01-12 00:00:00+00:00'
+    assert result['data_stop_ts'] == 1515715200000
 
     # No data found
     rc = client_get(client,
