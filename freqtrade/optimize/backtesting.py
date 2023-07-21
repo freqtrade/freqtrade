@@ -1277,6 +1277,7 @@ class Backtesting:
         preprocessed = self.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe
+        # This only used to determine if trimming would result in an empty dataframe
         preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
 
         if not preprocessed_tmp:
