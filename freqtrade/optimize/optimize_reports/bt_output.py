@@ -233,7 +233,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Calmar', f"{strat_results['calmar']:.2f}" if 'calmar' in strat_results else 'N/A'),
             ('Profit factor', f'{strat_results["profit_factor"]:.2f}' if 'profit_factor'
                               in strat_results else 'N/A'),
-            ('Expectancy', f"{strat_results['expectancy']:.2f}" if 'expectancy'
+            ('Expectancy Ratio', f"{strat_results['expectancy_ratio']:.2f}" if 'expectancy_ratio'
                            in strat_results else 'N/A'),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',

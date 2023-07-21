@@ -13,10 +13,10 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelis
                                        load_backtest_metadata, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
-                                    calculate_expectancy, calculate_market_change,
-                                    calculate_max_drawdown, calculate_sharpe, calculate_sortino,
-                                    calculate_underwater, combine_dataframes_with_mean,
-                                    create_cum_profit)
+                                    calculate_expectancy, calculate_expectancy_ratio,
+                                    calculate_market_change, calculate_max_drawdown,
+                                    calculate_sharpe, calculate_sortino, calculate_underwater,
+                                    combine_dataframes_with_mean, create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
@@ -339,16 +339,16 @@ def test_calculate_csum(testdatadir):
         csum_min, csum_max = calculate_csum(DataFrame())
 
 
-def test_calculate_expectancy(testdatadir):
+def test_calculate_expectancy_ratio(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
 
-    expectancy = calculate_expectancy(DataFrame())
-    assert expectancy == 0.0
+    expectancy_ratio = calculate_expectancy_ratio(DataFrame())
+    assert expectancy_ratio == 0.0
 
-    expectancy = calculate_expectancy(bt_data)
-    assert isinstance(expectancy, float)
-    assert pytest.approx(expectancy) == 0.07151374226574791
+    expectancy_ratio = calculate_expectancy_ratio(bt_data)
+    assert isinstance(expectancy_ratio, float)
+    assert pytest.approx(expectancy_ratio) == 0.07151374226574791
 
 
 def test_calculate_sortino(testdatadir):
