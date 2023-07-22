@@ -535,12 +535,13 @@ class RPC:
         #                                                       winrate,
         #                                                       loserate)
 
-        expectancy = calculate_expectancy(trades)
-        expectancy_ratio = calculate_expectancy_ratio(trades)
-
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
+
+        expectancy = calculate_expectancy(trades_df)
+        expectancy_ratio = calculate_expectancy_ratio(trades_df)
+        
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:

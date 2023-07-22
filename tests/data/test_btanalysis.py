@@ -13,10 +13,10 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelis
                                        load_backtest_metadata, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
-                                    calculate_expectancy, calculate_expectancy_ratio,
-                                    calculate_market_change, calculate_max_drawdown,
-                                    calculate_sharpe, calculate_sortino, calculate_underwater,
-                                    combine_dataframes_with_mean, create_cum_profit)
+                                    calculate_expectancy_ratio, calculate_market_change,
+                                    calculate_max_drawdown, calculate_sharpe, calculate_sortino,
+                                    calculate_underwater, combine_dataframes_with_mean,
+                                    create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
