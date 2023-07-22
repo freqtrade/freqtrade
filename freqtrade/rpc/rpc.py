@@ -524,11 +524,7 @@ class RPC:
 
         profit_factor = winning_profit / abs(losing_profit) if losing_profit else float('inf')
 
-        mean_winning_profit = (winning_profit / winning_trades) if winning_trades > 0 else 0
-        mean_losing_profit = (abs(losing_profit) / losing_trades) if losing_trades > 0 else 0
-
         winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
-        loserate = (1 - winrate)
 
         # expectancy, expectancy_ratio = self.__calc_expectancy(mean_winning_profit,
         #                                                       mean_losing_profit,
@@ -541,7 +537,7 @@ class RPC:
 
         expectancy = calculate_expectancy(trades_df)
         expectancy_ratio = calculate_expectancy_ratio(trades_df)
-        
+
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:
