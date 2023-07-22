@@ -198,7 +198,7 @@ def calculate_expectancy(trades: pd.DataFrame) -> Tuple[float, float]:
     """
     Calculate expectancy
     :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
-    :return: expectancy
+    :return: expectancy, expectancy_ratio
     """
 
     expectancy = 0
