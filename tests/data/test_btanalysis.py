@@ -338,6 +338,16 @@ def test_calculate_csum(testdatadir):
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
 
+def test_calculate_expectancy(testdatadir):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    expectancy = calculate_expectancy(DataFrame())
+    assert expectancy == 0.0
+
+    expectancy = calculate_expectancy(bt_data)
+    assert isinstance(expectancy, float)
+    assert pytest.approx(expectancy) == 0.07151374226574791
 
 def test_calculate_expectancy_ratio(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
