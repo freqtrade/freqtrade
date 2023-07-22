@@ -244,9 +244,9 @@ def calculate_expectancy_ratio(trades: pd.DataFrame) -> float:
         if (average_loss > 0):
             risk_reward_ratio = average_win / average_loss
             winrate = nb_win_trades / len(trades)
-            expectancy = ((1 + risk_reward_ratio) * winrate) - 1
+            expectancy_ratio = ((1 + risk_reward_ratio) * winrate) - 1
 
-    return expectancy
+    return expectancy_ratio
 
 
 def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: datetime,

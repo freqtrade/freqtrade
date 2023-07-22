@@ -7,9 +7,8 @@ from pandas import DataFrame, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
-                                    calculate_expectancy, calculate_expectancy_ratio,
-                                    calculate_market_change, calculate_max_drawdown,
-                                    calculate_sharpe, calculate_sortino)
+                                    calculate_expectancy_ratio, calculate_market_change,
+                                    calculate_max_drawdown, calculate_sharpe, calculate_sortino)
 from freqtrade.misc import decimals_per_coin, round_coin_value
 
 
