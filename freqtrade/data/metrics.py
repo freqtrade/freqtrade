@@ -200,11 +200,6 @@ def calculate_expectancy(trades: pd.DataFrame) -> float:
     :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :return: expectancy
     """
-    if len(trades) == 0:
-        return 0
-
-    expectancy = 0
-
     winning_trades = trades.loc[trades['profit_abs'] > 0]
     losing_trades = trades.loc[trades['profit_abs'] < 0]
     profit_sum = winning_trades['profit_abs'].sum()
@@ -212,8 +207,8 @@ def calculate_expectancy(trades: pd.DataFrame) -> float:
     nb_win_trades = len(winning_trades)
     nb_loss_trades = len(losing_trades)
 
-    average_win = profit_sum / nb_win_trades
-    average_loss = loss_sum / nb_loss_trades
+    average_win = (profit_sum / nb_win_trades) if nb_win_trades > 0 else 0
+    average_loss = (loss_sum / nb_loss_trades) if nb_loss_trades > 0 else 0
     winrate = nb_win_trades / len(trades)
     loserate = nb_loss_trades / len(trades)
     expectancy = (winrate * average_win) - (loserate * average_loss)
