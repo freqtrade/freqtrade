@@ -7,7 +7,7 @@ from pandas import DataFrame, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
-                                    calculate_expectancy_ratio, calculate_market_change,
+                                    calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
 from freqtrade.misc import decimals_per_coin, round_coin_value
 
@@ -389,6 +389,7 @@ def generate_strategy_stats(pairlist: List[str],
     losing_profit = results.loc[results['profit_abs'] < 0, 'profit_abs'].sum()
     profit_factor = winning_profit / abs(losing_profit) if losing_profit else 0.0
 
+    expectancy, expectancy_ratio = calculate_expectancy(results)
     backtest_days = (max_date - min_date).days or 1
     strat_stats = {
         'trades': results.to_dict(orient='records'),
@@ -414,7 +415,8 @@ def generate_strategy_stats(pairlist: List[str],
         'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
         'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
-        'expectancy_ratio': calculate_expectancy_ratio(results),
+        'expectancy': expectancy,
+        'expectancy_ratio': expectancy_ratio,
         'sortino': calculate_sortino(results, min_date, max_date, start_balance),
         'sharpe': calculate_sharpe(results, min_date, max_date, start_balance),
         'calmar': calculate_calmar(results, min_date, max_date, start_balance),

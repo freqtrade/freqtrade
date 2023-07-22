@@ -18,8 +18,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
-from freqtrade.data.metrics import (calculate_expectancy, calculate_expectancy_ratio,
-                                    calculate_max_drawdown)
+from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
                              State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
@@ -526,17 +525,11 @@ class RPC:
 
         winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
 
-        # expectancy, expectancy_ratio = self.__calc_expectancy(mean_winning_profit,
-        #                                                       mean_losing_profit,
-        #                                                       winrate,
-        #                                                       loserate)
-
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
 
-        expectancy = calculate_expectancy(trades_df)
-        expectancy_ratio = calculate_expectancy_ratio(trades_df)
+        expectancy, expectancy_ratio = calculate_expectancy(trades_df)
 
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
@@ -626,22 +619,6 @@ class RPC:
 
         return est_stake, est_bot_stake
 
-    def __calc_expectancy(
-            self, mean_winning_profit: float, mean_losing_profit: float,
-            winrate: float, loserate: float) -> Tuple[float, float]:
-
-        expectancy = (
-            (winrate * mean_winning_profit) -
-            (loserate * mean_losing_profit)
-        )
-
-        expectancy_ratio = float('inf')
-        if mean_losing_profit > 0:
-            expectancy_ratio = (
-                ((1 + (mean_winning_profit / mean_losing_profit)) * winrate) - 1
-            )
-
-        return expectancy, expectancy_ratio
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
