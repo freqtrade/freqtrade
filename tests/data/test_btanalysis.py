@@ -356,7 +356,7 @@ def test_calculate_expectancy_ratio(testdatadir):
     bt_data = load_backtest_data(filename)
 
     expectancy_ratio = calculate_expectancy_ratio(DataFrame())
-    assert expectancy_ratio == 0.0
+    assert expectancy_ratio == float('inf')
 
     expectancy_ratio = calculate_expectancy_ratio(bt_data)
     assert isinstance(expectancy_ratio, float)
