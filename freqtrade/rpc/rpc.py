@@ -619,7 +619,6 @@ class RPC:
 
         return est_stake, est_bot_stake
 
-
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         currencies: List[Dict] = []
