@@ -389,6 +389,7 @@ def generate_strategy_stats(pairlist: List[str],
     losing_profit = results.loc[results['profit_abs'] < 0, 'profit_abs'].sum()
     profit_factor = winning_profit / abs(losing_profit) if losing_profit else 0.0
 
+    expectancy, expectancy_ratio = calculate_expectancy(results)
     backtest_days = (max_date - min_date).days or 1
     strat_stats = {
         'trades': results.to_dict(orient='records'),
@@ -414,7 +415,8 @@ def generate_strategy_stats(pairlist: List[str],
         'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
         'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
-        'expectancy': calculate_expectancy(results),
+        'expectancy': expectancy,
+        'expectancy_ratio': expectancy_ratio,
         'sortino': calculate_sortino(results, min_date, max_date, start_balance),
         'sharpe': calculate_sharpe(results, min_date, max_date, start_balance),
         'calmar': calculate_calmar(results, min_date, max_date, start_balance),

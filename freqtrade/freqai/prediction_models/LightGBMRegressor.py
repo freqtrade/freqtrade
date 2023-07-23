@@ -32,7 +32,7 @@ class LightGBMRegressor(BaseRegressionModel):
             eval_set = None
             eval_weights = None
         else:
-            eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])
+            eval_set = [(data_dictionary["test_features"], data_dictionary["test_labels"])]
             eval_weights = data_dictionary["test_weights"]
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
