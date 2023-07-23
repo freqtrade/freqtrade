@@ -846,7 +846,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0,
          'profit_factor': None, 'winrate': 1.0, 'expectancy': 0.0003695635,
-         'expectancy_ratio': None, 'trading_volume': 91.074,
+         'expectancy_ratio': 100, 'trading_volume': 91.074,
          }
     ),
     (

@@ -305,7 +305,7 @@ A backtesting result will look like that:
 | Sharpe                      | 2.97                |
 | Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
-| Expectancy                  | -0.15               |
+| Expectancy (Ratio)          | -0.15 (-0.05)       |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -409,7 +409,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Sharpe                      | 2.97                |
 | Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
-| Expectancy                  | -0.15               |
+| Expectancy (Ratio)          | -0.15 (-0.05)       |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
