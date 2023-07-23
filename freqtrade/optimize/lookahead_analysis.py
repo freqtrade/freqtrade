@@ -214,6 +214,7 @@ class LookaheadAnalysis:
                 self.entry_varHolders[idx].result,
                 "open_date",
                 self.entry_varHolders[idx].compared_dt):
+            # logger.info(f"found lookahead-bias in trade  {self.entry_varHolders[idx][]} {idx}")
             self.current_analysis.false_entry_signals += 1
 
         # register if buy or sell signal is broken
@@ -261,6 +262,11 @@ class LookaheadAnalysis:
                 return None
             if "force_exit" in result_row['exit_reason']:
                 logger.info("found force-exit, skipping this one to avoid a false-positive.")
+
+                # just to keep the IDs of both full, entry and exit varholders the same
+                # to achieve a better debugging experience
+                self.entry_varHolders.append(VarHolder())
+                self.exit_varHolders.append(VarHolder())
                 continue
 
             self.analyze_row(idx, result_row)
