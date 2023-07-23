@@ -403,7 +403,7 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert res['latest_trade_date'] == ''
     assert res['latest_trade_timestamp'] == 0
     assert res['expectancy'] == 0
-    assert res['expectancy_ratio'] == float('inf')
+    assert res['expectancy_ratio'] == 100
 
     # Create some test data
     create_mock_trades_usdt(fee)
