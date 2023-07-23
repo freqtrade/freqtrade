@@ -381,7 +381,7 @@ def test__send_msg(default_conf, mocker, caplog):
     webhook._send_msg(msg)
 
     assert post.call_count == 1
-    assert post.call_args[1] == {'data': msg}
+    assert post.call_args[1] == {'data': msg, 'timeout': 10}
     assert post.call_args[0] == (default_conf['webhook']['url'], )
 
     post = MagicMock(side_effect=RequestException)
@@ -399,7 +399,7 @@ def test__send_msg_with_json_format(default_conf, mocker, caplog):
     mocker.patch("freqtrade.rpc.webhook.post", post)
     webhook._send_msg(msg)
 
-    assert post.call_args[1] == {'json': msg}
+    assert post.call_args[1] == {'json': msg, 'timeout': 10}
 
 
 def test__send_msg_with_raw_format(default_conf, mocker, caplog):
@@ -411,7 +411,11 @@ def test__send_msg_with_raw_format(default_conf, mocker, caplog):
     mocker.patch("freqtrade.rpc.webhook.post", post)
     webhook._send_msg(msg)
 
-    assert post.call_args[1] == {'data': msg['data'], 'headers': {'Content-Type': 'text/plain'}}
+    assert post.call_args[1] == {
+        'data': msg['data'],
+        'headers': {'Content-Type': 'text/plain'},
+        'timeout': 10
+    }
 
 
 def test_send_msg_discord(default_conf, mocker):
