@@ -141,7 +141,7 @@ class LookaheadAnalysis:
                 shutil.rmtree(path_to_current_identifier)
 
         prepare_data_config = deepcopy(self.local_config)
-        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + " - " +
+        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
@@ -231,7 +231,7 @@ class LookaheadAnalysis:
         if buy_or_sell_biased:
             logger.info(f"found lookahead-bias in trade "
                         f"pair: {result_row['pair']}, "
-                        f"timerange:{result_row['open_date']}-{result_row['close_date']}, "
+                        f"timerange:{result_row['open_date']} - {result_row['close_date']}, "
                         f"idx: {idx}")
 
         # check if the indicators themselves contain biased data
