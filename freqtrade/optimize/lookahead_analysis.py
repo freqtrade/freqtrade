@@ -251,8 +251,25 @@ class LookaheadAnalysis:
         # starting from the same datetime to avoid miss-reports of bias
         for idx, result_row in self.full_varHolder.result['results'].iterrows():
             if self.current_analysis.total_signals == self.targeted_trade_amount:
+                logger.info(f"Found targeted trade amount = {self.targeted_trade_amount} signals.")
                 break
+            if found_signals < self.minimum_trade_amount:
+                logger.info(f"only found {found_signals} "
+                            f"which is smaller than "
+                            f"minimum trade amount = {self.minimum_trade_amount}. "
+                            f"Exiting this lookahead-analysis")
+                return None
+            if "force_exit" in result_row['exit_reason']:
+                logger.info("found force-exit, skipping this one to avoid a false-positive.")
+                continue
+
             self.analyze_row(idx, result_row)
+
+        if len(self.entry_varHolders) < self.minimum_trade_amount:
+            logger.info(f"only found {found_signals} after skipping forced exits "
+                        f"which is smaller than "
+                        f"minimum trade amount = {self.minimum_trade_amount}. "
+                        f"Exiting this lookahead-analysis")
 
         # Restore verbosity, so it's not too quiet for the next strategy
         restore_verbosity_for_bias_tester()
