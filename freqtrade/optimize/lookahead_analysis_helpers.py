@@ -136,6 +136,12 @@ class LookaheadAnalysisSubFunctions:
             logger.info('Dry run wallet was not set to 1 billion, pushing it up there '
                         'just to avoid false positives')
             config['dry_run_wallet'] = min_dry_run_wallet
+        # fix stake_amount to 10k.
+        # in a combination with a wallet size of 1 billion it should always be able to trade
+        # no matter if they use custom_stake_amount as a small percentage of wallet size
+        # or fixate custom_stake_amount to a certain value.
+        logger.info('fixing stake_amount to 10.000')
+        config['stake_amount'] = 10000
 
         # enforce cache to be 'none', shift it to 'none' if not already
         # (since the default value is 'day')
