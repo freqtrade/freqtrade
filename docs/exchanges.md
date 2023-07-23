@@ -268,6 +268,8 @@ API Keys for live futures trading (Subaccount on non-unified) must have the foll
 * Contract - Orders
 * Contract - Positions
 
+We do strongly recommend to limit all API keys to the IP you're going to use it from.
+
 !!! Tip "Stoploss on Exchange"
     Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
     On futures, Bybit supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
