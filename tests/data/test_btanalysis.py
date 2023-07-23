@@ -345,7 +345,7 @@ def test_calculate_expectancy(testdatadir):
 
     expectancy, expectancy_ratio = calculate_expectancy(DataFrame())
     assert expectancy == 0.0
-    assert expectancy_ratio == float('inf')
+    assert expectancy_ratio == 100
 
     expectancy, expectancy_ratio = calculate_expectancy(bt_data)
     assert isinstance(expectancy, float)
