@@ -324,6 +324,7 @@ A backtesting result will look like that:
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -428,6 +429,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -467,6 +469,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Max Consecutive Wins / Loss`: Maximum consecutive wins/losses in a row.
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Canceled Trade Entries`: Number of trades that have been canceled by user request via `adjust_entry_price`.
