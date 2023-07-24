@@ -14,7 +14,7 @@ httpx>=0.24.1
 arrow==1.2.3
 cachetools==5.3.1
 requests==2.31.0
-urllib3==2.0.3
+urllib3==2.0.4
 jsonschema==4.18.4
 TA-Lib==0.4.27
 technical==1.4.0
