@@ -253,7 +253,7 @@ def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
     return result
 
 
-def calc_consecutive(dataframe: DataFrame) -> Tuple[int, int]:
+def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
     """
     Calculate consecutive wins and losses
     :param dataframe: Dataframe containing the trades dataframe, with profit_ratio column
@@ -265,8 +265,8 @@ def calc_consecutive(dataframe: DataFrame) -> Tuple[int, int]:
     df['counter'] = df['streaks'].groupby(df['streaks']).cumcount() + 1
     res = df.groupby(df['result']).max()
     #
-    cons_wins = res.loc['win', 'counter'] if 'win' in res.index else 0
-    cons_losses = res.loc['loss', 'counter'] if 'loss' in res.index else 0
+    cons_wins = int(res.loc['win', 'counter']) if 'win' in res.index else 0
+    cons_losses = int(res.loc['loss', 'counter']) if 'loss' in res.index else 0
     return cons_wins, cons_losses
 
 
@@ -295,7 +295,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
                           if not winning_trades.empty else timedelta())
     loser_holding_avg = (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
                          if not losing_trades.empty else timedelta())
-    winstreak, loss_streak = calc_consecutive(results)
+    winstreak, loss_streak = calc_streak(results)
 
     return {
         'wins': len(winning_trades),
