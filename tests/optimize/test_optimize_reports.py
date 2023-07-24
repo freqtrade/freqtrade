@@ -23,7 +23,8 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
-from freqtrade.optimize.optimize_reports.optimize_reports import _get_resample_from_period
+from freqtrade.optimize.optimize_reports.optimize_reports import (_get_resample_from_period,
+                                                                  calc_consecutive)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
@@ -346,6 +347,29 @@ def test_generate_trading_stats(testdatadir):
     res = generate_trading_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
     assert res['wins'] == 0
     assert res['losses'] == 0
+
+
+def test_calculate_consecutive(testdatadir):
+    df = pd.DataFrame({
+            'profit_ratio': [0.05, -0.02, -0.03, -0.05, 0.01, 0.02, 0.03, 0.04, -0.02, -0.03],
+        })
+    # 4 consecutive wins, 3 consecutive losses
+    assert calc_consecutive(df) == (4, 3)
+
+    # invert situation
+    df1 = df.copy()
+    df1['profit_ratio'] = df1['profit_ratio'] * -1
+    assert calc_consecutive(df1) == (3, 4)
+
+    df_empty = pd.DataFrame({
+            'profit_ratio': [],
+    })
+    assert df_empty.empty
+    assert calc_consecutive(df_empty) == (0, 0)
+
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+    assert calc_consecutive(bt_data) == (7, 18)
 
 
 def test_text_table_exit_reason():
