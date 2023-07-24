@@ -1,9 +1,10 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
-from pandas import DataFrame, concat, to_datetime
+import numpy as np
+from pandas import DataFrame, Series, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
@@ -252,6 +253,23 @@ def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
     return result
 
 
+def calc_consecutive(dataframe: DataFrame) -> Tuple[int, int]:
+    """
+    Calculate consecutive wins and losses
+    :param dataframe: Dataframe containing the trades dataframe, with profit_ratio column
+    :return: Tuple containing consecutive wins and losses
+    """
+
+    df = Series(np.where(dataframe['profit_ratio'] > 0, 'win', 'loss')).to_frame('result')
+    df['streaks'] = df['result'].ne(df['result'].shift()).cumsum().rename('streaks')
+    df['counter'] = df['streaks'].groupby(df['streaks']).cumcount() + 1
+    res = df.groupby(df['result']).max()
+    #
+    cons_wins = res.loc['win', 'counter'] if 'win' in res.index else 0
+    cons_losses = res.loc['loss', 'counter'] if 'loss' in res.index else 0
+    return cons_wins, cons_losses
+
+
 def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     """ Generate overall trade statistics """
     if len(results) == 0:
@@ -263,6 +281,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
             'holding_avg': timedelta(),
             'winner_holding_avg': timedelta(),
             'loser_holding_avg': timedelta(),
+            'max_consecutive_wins': 0,
+            'max_consecutive_losses': 0,
         }
 
     winning_trades = results.loc[results['profit_ratio'] > 0]
@@ -275,6 +295,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
                           if not winning_trades.empty else timedelta())
     loser_holding_avg = (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
                          if not losing_trades.empty else timedelta())
+    winstreak, loss_streak = calc_consecutive(results)
 
     return {
         'wins': len(winning_trades),
@@ -287,6 +308,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
         'winner_holding_avg_s': winner_holding_avg.total_seconds(),
         'loser_holding_avg': loser_holding_avg,
         'loser_holding_avg_s': loser_holding_avg.total_seconds(),
+        'max_consecutive_wins': winstreak,
+        'max_consecutive_losses': loss_streak,
     }
 
 
