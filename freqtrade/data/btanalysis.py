@@ -184,7 +184,7 @@ def get_backtest_resultlist(dirname: Path):
             continue
         for s, v in metadata.items():
             results.append({
-                'filename': filename.name,
+                'filename': filename.stem,
                 'strategy': s,
                 'run_id': v['run_id'],
                 'backtest_start_time': v['backtest_start_time'],

@@ -2000,7 +2000,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     result = rc.json()
     assert len(result) == 3
     fn = result[0]['filename']
-    assert fn == "backtest-result_multistrat.json"
+    assert fn == "backtest-result_multistrat"
     strategy = result[0]['strategy']
     rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}&strategy={strategy}")
     assert_response(rc)

@@ -247,7 +247,8 @@ def api_backtest_history(config=Depends(get_config)):
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
-    fn = bt_results_base / filename
+    fn = (bt_results_base / filename).with_suffix('.json')
+
     results: Dict[str, Any] = {
         'metadata': {},
         'strategy': {},
@@ -271,7 +272,7 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
 def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
-    file_abs = bt_results_base / file
+    file_abs = (bt_results_base / file).with_suffix('.json')
     # Ensure file is in backtest_results directory
     if not is_file_in_dir(file_abs, bt_results_base):
         raise HTTPException(status_code=404, detail="File not found.")
