@@ -49,7 +49,8 @@ logger = logging.getLogger(__name__)
 # 2.28: Switch reload endpoint to Post
 # 2.29: Add /exchanges endpoint
 # 2.30: new /pairlists endpoint
-API_VERSION = 2.30
+# 2.31: new /backtest/history/ delete endpoint
+API_VERSION = 2.31
 
 # Public API, requires no auth.
 router_public = APIRouter()
