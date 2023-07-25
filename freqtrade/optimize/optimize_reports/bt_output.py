@@ -270,6 +270,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
+            ('Max Consecutive Wins / Loss',
+             f"{strat_results['max_consecutive_wins']} / {strat_results['max_consecutive_losses']}"
+             if 'max_consecutive_losses' in strat_results else 'N/A'),
             ('Rejected Entry signals', strat_results.get('rejected_signals', 'N/A')),
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
