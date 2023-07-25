@@ -13,7 +13,7 @@ from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_ba
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, is_file_in_dir
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
                                                   BacktestResponse)
 from freqtrade.rpc.api_server.deps import get_config
@@ -245,13 +245,15 @@ def api_backtest_history(config=Depends(get_config)):
             tags=['webserver', 'backtest'])
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
-    fn = config['user_data_dir'] / 'backtest_results' / filename
+    bt_results_base = config['user_data_dir'] / 'backtest_results'
+    fn = bt_results_base / filename
     results: Dict[str, Any] = {
         'metadata': {},
         'strategy': {},
         'strategy_comparison': [],
     }
-
+    if not is_file_in_dir(fn, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
     load_and_merge_backtest_result(strategy, fn, results)
     return {
         "status": "ended",
