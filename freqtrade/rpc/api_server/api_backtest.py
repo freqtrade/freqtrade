@@ -2,6 +2,7 @@ import asyncio
 import logging
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
@@ -245,7 +246,7 @@ def api_backtest_history(config=Depends(get_config)):
             tags=['webserver', 'backtest'])
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
-    bt_results_base = config['user_data_dir'] / 'backtest_results'
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
     fn = bt_results_base / filename
     results: Dict[str, Any] = {
         'metadata': {},
@@ -263,3 +264,23 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
         "status_msg": "Historic result",
         "backtest_result": results,
     }
+
+
+@router.delete('/backtest/history/{file}', response_model=List[BacktestHistoryEntry],
+               tags=['webserver', 'backtest'])
+def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
+    # Get backtest result history, read from metadata files
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
+    file_abs = bt_results_base / file
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    # *.meta.json
+    file_abs_meta = file_abs.with_suffix('.meta.json')
+    logger.info(f"Deleting backtest result file: {file}")
+    # logger.info(f"Deleting backtest result file: {file_abs_meta}")
+
+    file_abs.unlink()
+    file_abs_meta.unlink()
+    return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
