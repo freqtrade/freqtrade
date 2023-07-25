@@ -193,6 +193,17 @@ def get_backtest_resultlist(dirname: Path):
     return results
 
 
+def delete_backtest_result(file_abs: Path):
+    """
+    Delete backtest result file and corresponding metadata file.
+    """
+    # *.meta.json
+    logger.info(f"Deleting backtest result file: {file_abs.name}")
+    file_abs_meta = file_abs.with_suffix('.meta.json')
+    file_abs.unlink()
+    file_abs_meta.unlink()
+
+
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
                                  min_backtest_date: Optional[datetime] = None) -> Dict[str, Any]:
     """

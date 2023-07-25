@@ -10,7 +10,8 @@ from fastapi.exceptions import HTTPException
 
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.constants import Config
-from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
+from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_resultlist,
+                                       load_and_merge_backtest_result)
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
@@ -277,11 +278,5 @@ def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
     if not is_file_in_dir(file_abs, bt_results_base):
         raise HTTPException(status_code=404, detail="File not found.")
 
-    # *.meta.json
-    file_abs_meta = file_abs.with_suffix('.meta.json')
-    logger.info(f"Deleting backtest result file: {file}")
-    # logger.info(f"Deleting backtest result file: {file_abs_meta}")
-
-    file_abs.unlink()
-    file_abs_meta.unlink()
+    delete_backtest_result(file_abs)
     return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
