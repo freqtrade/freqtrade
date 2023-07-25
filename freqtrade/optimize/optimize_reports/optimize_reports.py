@@ -255,7 +255,7 @@ def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
 
 def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
     """
-    Calculate consecutive wins and losses
+    Calculate consecutive win and loss streaks
     :param dataframe: Dataframe containing the trades dataframe, with profit_ratio column
     :return: Tuple containing consecutive wins and losses
     """
