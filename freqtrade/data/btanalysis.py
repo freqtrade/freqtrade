@@ -170,6 +170,7 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
 
 
 def _get_backtest_files(dirname: Path) -> List[Path]:
+    # Weird glob expression here avoids including .meta.json files.
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
@@ -222,7 +223,6 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
         'strategy_comparison': [],
     }
 
-    # Weird glob expression here avoids including .meta.json files.
     for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:
