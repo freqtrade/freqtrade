@@ -1476,6 +1476,12 @@ def test_api_pair_history(botclient, mocker):
                     "&timerange=20180111-20180112")
     assert_response(rc, 422)
 
+    # Invalid strategy
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}11")
+    assert_response(rc, 502)
+
     # Working
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
@@ -1510,8 +1516,7 @@ def test_api_pair_history(botclient, mocker):
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     f"&timerange=20200111-20200112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 502)
-    assert rc.json()['error'] == ("Error querying /api/v1/pair_history: "
-                                  "No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
+    assert rc.json()['detail'] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
 
 def test_api_plot_config(botclient, mocker):
@@ -1547,6 +1552,10 @@ def test_api_plot_config(botclient, mocker):
     rc = client_get(client, f"{BASE_URI}/plot_config?strategy=HyperoptableStrategy")
     assert_response(rc)
     assert rc.json()['subplots'] == {}
+
+    rc = client_get(client, f"{BASE_URI}/plot_config?strategy=NotAStrategy")
+    assert_response(rc, 502)
+    assert rc.json()['detail'] is not None
 
     mocker.patch('freqtrade.rpc.api_server.api_v1.get_rpc_optional', return_value=None)
 

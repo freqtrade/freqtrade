@@ -269,7 +269,10 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
         'timerange': timerange,
         'freqaimodel': freqaimodel if freqaimodel else config.get('freqaimodel'),
     })
-    return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange)
+    try:
+        return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
@@ -284,7 +287,10 @@ def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
         config1.update({
             'strategy': strategy
         })
+    try:
         return PlotConfig.parse_obj(RPC._rpc_plot_config_with_strategy(config1))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
