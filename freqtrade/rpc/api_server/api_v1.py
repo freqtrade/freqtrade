@@ -315,7 +315,8 @@ def get_strategy(strategy: str, config=Depends(get_config)):
                                                        extra_dir=config_.get('strategy_path'))
     except OperationalException:
         raise HTTPException(status_code=404, detail='Strategy not found')
-
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
     return {
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
