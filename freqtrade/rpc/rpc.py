@@ -1179,8 +1179,8 @@ class RPC:
         """ Analyzed dataframe in Dict form """
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                               pair, timeframe, _data, last_analyzed)
+        return RPC._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                              pair, timeframe, _data, last_analyzed)
 
     def __rpc_analysed_dataframe_raw(
         self,
