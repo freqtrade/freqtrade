@@ -3,15 +3,16 @@ Remote PairList provider
 
 Provides pair list fetched from a remote source
 """
-import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import rapidjson
 import requests
 from cachetools import TTLCache
 
 from freqtrade import __version__
+from freqtrade.configuration.load_config import CONFIG_PARSE_MODE
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
@@ -236,7 +237,7 @@ class RemotePairList(IPairList):
                 if file_path.exists():
                     with file_path.open() as json_file:
                         # Load the JSON data into a dictionary
-                        jsonparse = json.load(json_file)
+                        jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
 
                         try:
                             pairlist = self.process_json(jsonparse)
