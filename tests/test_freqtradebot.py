@@ -2793,7 +2793,7 @@ def test_manage_open_orders_entry(
 
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
-    # check it does cancel buy orders over the time limit
+    # check it does cancel entry orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
@@ -2801,7 +2801,7 @@ def test_manage_open_orders_entry(
         select(Trade).filter(Trade.open_order_id.is_(open_trade.open_order_id))).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    # Custom user buy-timeout is never called
+    # Custom user entry-timeout is never called
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
     # Entry adjustment is never called
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
