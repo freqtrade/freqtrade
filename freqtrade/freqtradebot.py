@@ -1383,7 +1383,10 @@ class FreqtradeBot(LoggingMixin):
         latest_candle_close_date = timeframe_to_next_date(self.strategy.timeframe,
                                                           latest_candle_open_date)
         # Check if new candle
-        if order_obj and latest_candle_close_date > order_obj.order_date_utc:
+        if (
+            order_obj and order_obj.side == trade.entry_side
+            and latest_candle_close_date > order_obj.order_date_utc
+        ):
             # New candle
             proposed_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=True)
