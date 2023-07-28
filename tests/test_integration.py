@@ -474,6 +474,28 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert pytest.approx(trade.orders[1].amount) == 30.150753768 * leverage
     assert pytest.approx(trade.orders[-1].amount) == 61.538461232 * leverage
 
+    # Full exit
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
+    freqtrade.strategy.custom_exit = MagicMock(return_value='Exit now')
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=2.02)
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 5
+    assert trade.orders[-1].side == trade.exit_side
+    assert trade.orders[-1].status == 'open'
+    assert trade.orders[-1].price == 2.02
+    assert pytest.approx(trade.amount) == 91.689215 * leverage
+    assert pytest.approx(trade.orders[-1].amount) == 91.689215 * leverage
+    assert freqtrade.strategy.adjust_entry_price.call_count == 0
+    # Process again, should not adjust entry price
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 5
+    assert trade.orders[-1].status == 'open'
+    assert trade.orders[-1].price == 2.02
+    # Adjust entry price cannot be called - this is an exit order
+    assert freqtrade.strategy.adjust_entry_price.call_count == 0
+
 
 @pytest.mark.parametrize('leverage', [1, 2])
 def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, leverage) -> None:
