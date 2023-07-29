@@ -96,8 +96,14 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         'volume': 'sum'
     }
     timeframe_minutes = timeframe_to_minutes(timeframe)
+    resample_interval = f'{timeframe_minutes}min'
+    if timeframe_minutes >= 43200 and timeframe_minutes < 525600:
+        # Monthly candles need special treatment to stick to the 1st of the month
+        resample_interval = f'{timeframe}S'
+    elif timeframe_minutes > 43200:
+        resample_interval = timeframe
     # Resample to create "NAN" values
-    df = dataframe.resample(f'{timeframe_minutes}min', on='date').agg(ohlcv_dict)
+    df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 
     # Forwardfill close for missing columns
     df['close'] = df['close'].fillna(method='ffill')
@@ -122,7 +128,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     return df
 
 
-def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
+def trim_dataframe(df: DataFrame, timerange, *, df_date_col: str = 'date',
                    startup_candles: int = 0) -> DataFrame:
     """
     Trim dataframe based on given timerange

@@ -367,11 +367,7 @@ class Backtesting:
             if not pair_data.empty:
                 # Cleanup from prior runs
                 pair_data.drop(HEADERS[5:] + ['buy', 'sell'], axis=1, errors='ignore')
-
-            df_analyzed = self.strategy.advise_exit(
-                self.strategy.advise_entry(pair_data, {'pair': pair}),
-                {'pair': pair}
-            ).copy()
+            df_analyzed = self.strategy.ft_advise_signals(pair_data, {'pair': pair})
             # Trim startup period from analyzed dataframe
             df_analyzed = processed[pair] = pair_data = trim_dataframe(
                 df_analyzed, self.timerange, startup_candles=self.required_startup)
@@ -679,6 +675,7 @@ class Backtesting:
             remaining=amount,
             cost=amount * close_rate,
         )
+        order._trade_bt = trade
         trade.orders.append(order)
         return trade
 
@@ -901,8 +898,9 @@ class Backtesting:
                 amount=amount,
                 filled=0,
                 remaining=amount,
-                cost=stake_amount + trade.fee_open,
+                cost=amount * propose_rate + trade.fee_open,
             )
+            order._trade_bt = trade
             trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
@@ -1275,6 +1273,7 @@ class Backtesting:
         preprocessed = self.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe
+        # This only used to determine if trimming would result in an empty dataframe
         preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
 
         if not preprocessed_tmp:

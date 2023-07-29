@@ -259,9 +259,16 @@ The configuration parameter `exchange.unknown_fee_rate` can be used to specify t
 
 Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.
 Users with unified accounts (there's no way back) can create a Sub-account which will start as "non-unified", and can therefore use isolated futures.
-On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors.
+On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors
 
 As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.
+
+API Keys for live futures trading (Subaccount on non-unified) must have the following permissions:
+* Read-write
+* Contract - Orders
+* Contract - Positions
+
+We do strongly recommend to limit all API keys to the IP you're going to use it from.
 
 !!! Tip "Stoploss on Exchange"
     Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.

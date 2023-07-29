@@ -849,6 +849,10 @@ class Telegram(RPCHandler):
         avg_duration = stats['avg_duration']
         best_pair = stats['best_pair']
         best_pair_profit_ratio = stats['best_pair_profit_ratio']
+        winrate = stats['winrate']
+        expectancy = stats['expectancy']
+        expectancy_ratio = stats['expectancy_ratio']
+
         if stats['trade_count'] == 0:
             markdown_msg = f"No trades yet.\n*Bot started:* `{stats['bot_start_date']}`"
         else:
@@ -873,7 +877,9 @@ class Telegram(RPCHandler):
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
                 f"*Latest Trade opened:* `{latest_trade_date}`\n"
-                f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
+                f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`\n"
+                f"*Winrate:* `{winrate:.2%}`\n"
+                f"*Expectancy (Ratio):* `{expectancy:.2f} ({expectancy_ratio:.2f})`"
             )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (

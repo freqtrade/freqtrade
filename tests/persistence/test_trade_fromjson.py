@@ -179,6 +179,7 @@ def test_trade_fromjson():
     assert trade.open_date_utc == datetime(2022, 10, 18, 9, 12, 42, tzinfo=timezone.utc)
     assert isinstance(trade.open_date, datetime)
     assert trade.exit_reason == 'no longer good'
+    assert trade.realized_profit == 2.76315361
 
     assert len(trade.orders) == 5
     last_o = trade.orders[-1]
