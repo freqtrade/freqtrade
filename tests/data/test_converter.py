@@ -371,8 +371,8 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
     files_temp = []
     files_new = []
     for file in file_base:
-        file_orig = testdatadir / f"{prependix}{file}.json"
-        file_temp = tmpdir1 / f"{prependix}{file}.json"
+        file_orig = testdatadir / f"{prependix}{file}.feather"
+        file_temp = tmpdir1 / f"{prependix}{file}.feather"
         file_new = tmpdir1 / f"{prependix}{file}.json.gz"
         IDataHandler.create_dir_if_needed(file_temp)
         copyfile(file_orig, file_temp)
@@ -394,7 +394,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
 
     convert_ohlcv_format(
         default_conf,
-        convert_from='json',
+        convert_from='feather',
         convert_to='jsongz',
         erase=False,
     )
@@ -408,7 +408,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
     convert_ohlcv_format(
         default_conf,
         convert_from='jsongz',
-        convert_to='json',
+        convert_to='feather',
         erase=True,
     )
     for file in (files_temp):

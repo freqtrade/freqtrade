@@ -69,7 +69,7 @@ def load_data(datadir: Path,
               fill_up_missing: bool = True,
               startup_candles: int = 0,
               fail_without_data: bool = False,
-              data_format: str = 'json',
+              data_format: str = 'feather',
               candle_type: CandleType = CandleType.SPOT,
               user_futures_funding_rate: Optional[int] = None,
               ) -> Dict[str, DataFrame]:
@@ -394,7 +394,7 @@ def _download_trades_history(exchange: Exchange,
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
                                  timerange: TimeRange, new_pairs_days: int = 30,
-                                 erase: bool = False, data_format: str = 'jsongz') -> List[str]:
+                                 erase: bool = False, data_format: str = 'feather') -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -427,8 +427,8 @@ def convert_trades_to_ohlcv(
     datadir: Path,
     timerange: TimeRange,
     erase: bool = False,
-    data_format_ohlcv: str = 'json',
-    data_format_trades: str = 'jsongz',
+    data_format_ohlcv: str = 'feather',
+    data_format_trades: str = 'feather',
     candle_type: CandleType = CandleType.SPOT
 ) -> None:
     """

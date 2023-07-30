@@ -446,12 +446,12 @@ CONF_SCHEMA = {
         'dataformat_ohlcv': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
-            'default': 'json'
+            'default': 'feather'
         },
         'dataformat_trades': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS_TRADES,
-            'default': 'jsongz'
+            'default': 'feather'
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
