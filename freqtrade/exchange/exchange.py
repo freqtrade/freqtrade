@@ -80,9 +80,8 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
-        "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
-        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
+        "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
         "marketOrderRequiresPrice": False,
     }
@@ -1859,9 +1858,6 @@ class Exchange:
         if fee_curr is None:
             return None
         fee_cost = float(fee['cost'])
-        if self._ft_has['fee_cost_in_contracts']:
-            # Convert cost via "contracts" conversion
-            fee_cost = self._contracts_to_amount(symbol, fee['cost'])
 
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):

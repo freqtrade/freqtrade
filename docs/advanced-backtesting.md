@@ -103,6 +103,22 @@ The indicators have to be present in your strategy's main DataFrame (either for 
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.
 
+There are a range of candle and trade-related fields that are included in the analysis so are 
+automatically accessible by including them on the indicator-list, and these include:
+
+- **open_date     :** trade open datetime
+- **close_date    :** trade close datetime
+- **min_rate      :** minimum price seen throughout the position
+- **max_rate      :** maxiumum price seen throughout the position
+- **open          :** signal candle open price
+- **close         :** signal candle close price
+- **high          :** signal candle high price
+- **low           :** signal candle low price
+- **volume        :** signal candle volumne
+- **profit_ratio  :** trade profit ratio
+- **profit_abs    :** absolute profit return of the trade 
+
+
 ### Filtering the trade output by date
 
 To show only trades between dates within your backtested timerange, supply the usual `timerange` option in `YYYYMMDD-[YYYYMMDD]` format:

@@ -750,7 +750,7 @@ class DigDeeperStrategy(IStrategy):
         # Hope you have a deep wallet!
         try:
             # This returns first order stake size
-            stake_amount = filled_entries[0].cost
+            stake_amount = filled_entries[0].stake_amount
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
             return stake_amount

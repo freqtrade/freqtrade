@@ -18,7 +18,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
-from freqtrade.data.metrics import calculate_max_drawdown
+from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
                              State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
@@ -494,6 +494,8 @@ class RPC:
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
 
+        closed_trade_count = len([t for t in trades if not t.is_open])
+
         best_pair = Trade.get_best_pair(start_date)
         trading_volume = Trade.get_trading_volume(start_date)
 
@@ -521,9 +523,14 @@ class RPC:
 
         profit_factor = winning_profit / abs(losing_profit) if losing_profit else float('inf')
 
+        winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
+
         trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
+
+        expectancy, expectancy_ratio = calculate_expectancy(trades_df)
+
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
         if len(trades_df) > 0:
@@ -562,7 +569,7 @@ class RPC:
             'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
-            'closed_trade_count': len([t for t in trades if not t.is_open]),
+            'closed_trade_count': closed_trade_count,
             'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
             'first_trade_humanized': dt_humanize(first_date) if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
@@ -576,6 +583,9 @@ class RPC:
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
             'profit_factor': profit_factor,
+            'winrate': winrate,
+            'expectancy': expectancy,
+            'expectancy_ratio': expectancy_ratio,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
@@ -1169,8 +1179,8 @@ class RPC:
         """ Analyzed dataframe in Dict form """
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                               pair, timeframe, _data, last_analyzed)
+        return RPC._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                              pair, timeframe, _data, last_analyzed)
 
     def __rpc_analysed_dataframe_raw(
         self,
@@ -1240,27 +1250,34 @@ class RPC:
                                    exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
+        from freqtrade.data.converter import trim_dataframe
+        from freqtrade.data.dataprovider import DataProvider
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+
+        strategy = StrategyResolver.load_strategy(config)
+        startup_candles = strategy.startup_candle_count
+
         _data = load_data(
             datadir=config["datadir"],
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
-            candle_type=config.get('candle_type_def', CandleType.SPOT)
+            candle_type=config.get('candle_type_def', CandleType.SPOT),
+            startup_candles=startup_candles,
         )
         if pair not in _data:
             raise RPCException(
                 f"No data for {pair}, {timeframe} in {config.get('timerange')} found.")
-        from freqtrade.data.dataprovider import DataProvider
-        from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        strategy = StrategyResolver.load_strategy(config)
+
         strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
         strategy.ft_bot_start()
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
+        df_analyzed = trim_dataframe(df_analyzed, timerange_parsed, startup_candles=startup_candles)
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed, dt_now())
+                                              df_analyzed.copy(), dt_now())
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and

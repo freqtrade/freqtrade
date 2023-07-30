@@ -84,7 +84,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
     except ValueError as e:
         raise OperationalException(e) from e
     if not trades.empty:
-        trades = trim_dataframe(trades, timerange, 'open_date')
+        trades = trim_dataframe(trades, timerange, df_date_col='open_date')
 
     return {"ohlcv": data,
             "trades": trades,

@@ -4,10 +4,10 @@ from collections import defaultdict
 from typing import Any, Dict
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
-from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
+from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Config
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import convert_trades_to_ohlcv, download_data_main
-from freqtrade.enums import CandleType, RunMode, TradingMode
+from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -57,6 +57,8 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
         raise OperationalException(
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
+    if 'timeframes' not in config:
+        config['timeframes'] = DL_DATA_TIMEFRAMES
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config, validate=False)
@@ -86,11 +88,10 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     if ohlcv:
         migrate_binance_futures_data(config)
-        candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', ['spot'])]
-        for candle_type in candle_types:
-            convert_ohlcv_format(config,
-                                 convert_from=args['format_from'], convert_to=args['format_to'],
-                                 erase=args['erase'], candle_type=candle_type)
+        convert_ohlcv_format(config,
+                             convert_from=args['format_from'],
+                             convert_to=args['format_to'],
+                             erase=args['erase'])
     else:
         convert_trades_format(config,
                               convert_from=args['format_from'], convert_to=args['format_to'],

@@ -30,7 +30,7 @@ async def ui_version():
     }
 
 
-def is_relative_to(path, base) -> bool:
+def is_relative_to(path: Path, base: Path) -> bool:
     # Helper function simulating behaviour of is_relative_to, which was only added in python 3.9
     try:
         path.relative_to(base)

@@ -194,32 +194,35 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 
-def calculate_expectancy(trades: pd.DataFrame) -> float:
+def calculate_expectancy(trades: pd.DataFrame) -> Tuple[float, float]:
     """
     Calculate expectancy
     :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
-    :return: expectancy
+    :return: expectancy, expectancy_ratio
     """
-    if len(trades) == 0:
-        return 0
 
-    expectancy = 1
+    expectancy = 0
+    expectancy_ratio = 100
 
-    profit_sum = trades.loc[trades['profit_abs'] > 0, 'profit_abs'].sum()
-    loss_sum = abs(trades.loc[trades['profit_abs'] < 0, 'profit_abs'].sum())
-    nb_win_trades = len(trades.loc[trades['profit_abs'] > 0])
-    nb_loss_trades = len(trades.loc[trades['profit_abs'] < 0])
+    if len(trades) > 0:
+        winning_trades = trades.loc[trades['profit_abs'] > 0]
+        losing_trades = trades.loc[trades['profit_abs'] < 0]
+        profit_sum = winning_trades['profit_abs'].sum()
+        loss_sum = abs(losing_trades['profit_abs'].sum())
+        nb_win_trades = len(winning_trades)
+        nb_loss_trades = len(losing_trades)
 
-    if (nb_win_trades > 0) and (nb_loss_trades > 0):
-        average_win = profit_sum / nb_win_trades
-        average_loss = loss_sum / nb_loss_trades
-        risk_reward_ratio = average_win / average_loss
-        winrate = nb_win_trades / len(trades)
-        expectancy = ((1 + risk_reward_ratio) * winrate) - 1
-    elif nb_win_trades == 0:
-        expectancy = 0
+        average_win = (profit_sum / nb_win_trades) if nb_win_trades > 0 else 0
+        average_loss = (loss_sum / nb_loss_trades) if nb_loss_trades > 0 else 0
+        winrate = (nb_win_trades / len(trades))
+        loserate = (nb_loss_trades / len(trades))
 
-    return expectancy
+        expectancy = (winrate * average_win) - (loserate * average_loss)
+        if (average_loss > 0):
+            risk_reward_ratio = average_win / average_loss
+            expectancy_ratio = ((1 + risk_reward_ratio) * winrate) - 1
+
+    return expectancy, expectancy_ratio
 
 
 def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: datetime,

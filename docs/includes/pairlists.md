@@ -184,6 +184,8 @@ The RemotePairList is defined in the pairlists section of the configuration sett
 "pairlists": [
     {
         "method": "RemotePairList",
+        "mode": "whitelist",
+        "processing_mode": "filter",
         "pairlist_url": "https://example.com/pairlist",
         "number_assets": 10,
         "refresh_period": 1800,
@@ -194,6 +196,14 @@ The RemotePairList is defined in the pairlists section of the configuration sett
 ]
 ```
 
+The optional `mode` option specifies if the pairlist should be used as a `blacklist` or as a `whitelist`. The default value is "whitelist".
+
+The optional `processing_mode` option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append".
+
+In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.
+
+In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.
+
 The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
 
 The user is responsible for providing a server or local file that returns a JSON object with the following structure:
@@ -201,7 +211,7 @@ The user is responsible for providing a server or local file that returns a JSON
 ```json
 {
     "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
-    "refresh_period": 1800,
+    "refresh_period": 1800
 }
 ```
 

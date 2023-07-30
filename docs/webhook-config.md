@@ -80,12 +80,18 @@ When using the Form-Encoded or JSON-Encoded configuration you can configure any 
 
 The result would be a POST request with e.g. `Status: running` body and `Content-Type: text/plain` header.
 
-Optional parameters are available to enable automatic retries for webhook messages. The `webhook.retries` parameter can be set for the maximum number of retries the webhook request should attempt if it is unsuccessful (i.e. HTTP response status is not 200). By default this is set to `0` which is disabled. An additional `webhook.retry_delay` parameter can be set to specify the time in seconds between retry attempts. By default this is set to `0.1` (i.e. 100ms). Note that increasing the number of retries or retry delay may slow down the trader if there are connectivity issues with the webhook. Example configuration for retries:
+## Additional configurations
+
+The `webhook.retries` parameter can be set for the maximum number of retries the webhook request should attempt if it is unsuccessful (i.e. HTTP response status is not 200). By default this is set to `0` which is disabled. An additional `webhook.retry_delay` parameter can be set to specify the time in seconds between retry attempts. By default this is set to `0.1` (i.e. 100ms). Note that increasing the number of retries or retry delay may slow down the trader if there are connectivity issues with the webhook.
+You can also specify `webhook.timeout` - which defines how long the bot will wait until it assumes the other host as unresponsive (defaults to 10s).
+
+Example configuration for retries:
 
 ```json
   "webhook": {
         "enabled": true,
         "url": "https://<YOURHOOKURL>",
+        "timeout": 10,
         "retries": 3,
         "retry_delay": 0.2,
         "status": {
@@ -108,6 +114,8 @@ Custom messages can be sent to Webhook endpoints via the `self.dp.send_msg()` fu
 ```
 
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
+
+## Webhook Message types
 
 ### Entry
 

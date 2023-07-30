@@ -1,30 +1,31 @@
-numpy==1.24.3
-pandas==2.0.2
+numpy==1.25.1; python_version > '3.8'
+numpy==1.24.3; python_version <= '3.8'
+pandas==2.0.3
 pandas-ta==0.3.14b
 
-ccxt==3.1.44
-cryptography==41.0.1; platform_machine != 'armv7l'
+ccxt==4.0.36
+cryptography==41.0.2; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
-aiohttp==3.8.4
-SQLAlchemy==2.0.17
-python-telegram-bot==20.3
+aiohttp==3.8.5
+SQLAlchemy==2.0.19
+python-telegram-bot==20.4
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 arrow==1.2.3
 cachetools==5.3.1
 requests==2.31.0
-urllib3==2.0.3
-jsonschema==4.17.3
-TA-Lib==0.4.26
+urllib3==2.0.4
+jsonschema==4.18.4
+TA-Lib==0.4.27
 technical==1.4.0
 tabulate==0.9.0
 pycoingecko==3.1.0
 jinja2==3.1.2
 tables==3.8.0
 blosc==1.11.1
-joblib==1.2.0
+joblib==1.3.1
 rich==13.4.2
-pyarrow==12.0.0; platform_machine != 'armv7l'
+pyarrow==12.0.1; platform_machine != 'armv7l'
 
 # find first, C search in arrays
 py_find_1st==1.1.5
@@ -32,16 +33,16 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.10
 # Properly format api responses
-orjson==3.9.1
+orjson==3.9.2
 
 # Notify systemd
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.99.1
-pydantic==1.10.9
-uvicorn==0.22.0
-pyjwt==2.7.0
+fastapi==0.100.0
+pydantic==1.10.11
+uvicorn==0.23.1
+pyjwt==2.8.0
 aiofiles==23.1.0
 psutil==5.9.5
 
@@ -49,7 +50,7 @@ psutil==5.9.5
 colorama==0.4.6
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.38
+prompt-toolkit==3.0.39
 # Extensions to datetime library
 python-dateutil==2.8.2
 

@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from freqtrade.persistence.trade_model import Trade
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_trade_fromjson():
     """Test the Trade.from_json() method."""
     trade_string = """{
@@ -168,14 +171,17 @@ def test_trade_fromjson():
         ]
     }"""
     trade = Trade.from_json(trade_string)
+    Trade.session.add(trade)
+    Trade.commit()
 
     assert trade.id == 25
     assert trade.pair == 'ETH/USDT'
-    assert trade.open_date == datetime(2022, 10, 18, 9, 12, 42, tzinfo=timezone.utc)
+    assert trade.open_date_utc == datetime(2022, 10, 18, 9, 12, 42, tzinfo=timezone.utc)
     assert isinstance(trade.open_date, datetime)
     assert trade.exit_reason == 'no longer good'
+    assert trade.realized_profit == 2.76315361
 
     assert len(trade.orders) == 5
     last_o = trade.orders[-1]
-    assert last_o.order_filled_date == datetime(2022, 10, 18, 9, 45, 22, tzinfo=timezone.utc)
+    assert last_o.order_filled_utc == datetime(2022, 10, 18, 9, 45, 22, tzinfo=timezone.utc)
     assert isinstance(last_o.order_date, datetime)
