@@ -5,7 +5,7 @@ import logging
 from copy import copy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
+from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ def load_backtest_metadata(filename: Union[Path, str]) -> Dict[str, Any]:
         raise OperationalException('Unexpected error while loading backtest metadata.') from e
 
 
-def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
+def load_backtest_stats(filename: Union[Path, str]) -> BacktestResultType:
     """
     Load backtest statistics file.
     :param filename: pathlib.Path object, or string pointing to the file.
@@ -153,14 +154,14 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
 
 def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
     """
-    Load one strategy from multi-strategy result
-    and merge it with results
+    Load one strategy from multi-strategy result and merge it with results
     :param strategy_name: Name of the strategy contained in the result
     :param filename: Backtest-result-filename to load
     :param results: dict to merge the result to.
     """
     bt_data = load_backtest_stats(filename)
-    for k in ('metadata', 'strategy'):
+    k: Literal['metadata', 'strategy']
+    for k in ('metadata', 'strategy'):  # type: ignore
         results[k][strategy_name] = bt_data[k][strategy_name]
     comparison = bt_data['strategy_comparison']
     for i in range(len(comparison)):

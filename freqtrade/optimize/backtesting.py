@@ -39,6 +39,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.wallets import Wallets
 
@@ -77,7 +78,7 @@ class Backtesting:
 
         LoggingMixin.show_output = False
         self.config = config
-        self.results: Dict[str, Any] = {}
+        self.results: BacktestResultType = get_BacktestResultType_default()
         self.trade_id_counter: int = 0
         self.order_id_counter: int = 0
 

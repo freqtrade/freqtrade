@@ -21,6 +21,7 @@ from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, Backtest
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
+from freqtrade.types import get_BacktestResultType_default
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ def __run_backtest_bg(btconfig: Config):
 
         ApiBG.bt['bt'].enable_protections = btconfig.get('enable_protections', False)
         ApiBG.bt['bt'].strategylist = [strat]
-        ApiBG.bt['bt'].results = {}
+        ApiBG.bt['bt'].results = get_BacktestResultType_default()
         ApiBG.bt['bt'].load_prior_backtest()
 
         ApiBG.bt['bt'].abort = False

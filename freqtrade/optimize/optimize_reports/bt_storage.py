@@ -1,20 +1,18 @@
 import logging
-from copy import deepcopy
 from pathlib import Path
 from typing import Dict
-
-from pandas import DataFrame
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import file_dump_joblib, file_dump_json
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
+from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
 
 
 def store_backtest_stats(
-        recordfilename: Path, stats: Dict[str, DataFrame], dtappendix: str) -> None:
+        recordfilename: Path, stats: BacktestResultType, dtappendix: str) -> None:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -33,8 +31,10 @@ def store_backtest_stats(
     # Store metadata separately.
     file_dump_json(get_backtest_metadata_filename(filename), stats['metadata'])
     # Don't mutate the original stats dict.
-    stats_copy = deepcopy(stats)
-    del stats_copy['metadata']
+    stats_copy = {
+        'strategy': stats['strategy'],
+        'strategy_comparison': stats['strategy_comparison'],
+    }
 
     file_dump_json(filename, stats_copy)
 

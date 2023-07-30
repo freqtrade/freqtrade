@@ -11,6 +11,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
 from freqtrade.misc import decimals_per_coin, round_coin_value
+from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -535,7 +536,7 @@ def generate_strategy_stats(pairlist: List[str],
 def generate_backtest_stats(btdata: Dict[str, DataFrame],
                             all_results: Dict[str, Dict[str, Union[DataFrame, Dict]]],
                             min_date: datetime, max_date: datetime
-                            ) -> Dict[str, Any]:
+                            ) -> BacktestResultType:
     """
     :param btdata: Backtest data
     :param all_results: backtest result - dictionary in the form:
@@ -544,7 +545,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
     :param max_date: Backtest end date
     :return: Dictionary containing results per strategy and a strategy summary.
     """
-    result: Dict[str, Any] = {
+    result: BacktestResultType = {
         'metadata': {},
         'strategy': {},
         'strategy_comparison': [],
