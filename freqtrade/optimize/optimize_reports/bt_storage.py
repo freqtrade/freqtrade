@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict
 
@@ -31,9 +32,11 @@ def store_backtest_stats(
 
     # Store metadata separately.
     file_dump_json(get_backtest_metadata_filename(filename), stats['metadata'])
-    del stats['metadata']
+    # Don't mutate the original stats dict.
+    stats_copy = deepcopy(stats)
+    del stats_copy['metadata']
 
-    file_dump_json(filename, stats)
+    file_dump_json(filename, stats_copy)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
