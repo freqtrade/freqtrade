@@ -179,20 +179,17 @@ def get_backtest_resultlist(dirname: Path):
     """
     Get list of backtest results read from metadata files
     """
-    results = []
-    for filename in _get_backtest_files(dirname):
-        metadata = load_backtest_metadata(filename)
-        if not metadata:
-            continue
-        for s, v in metadata.items():
-            results.append({
-                'filename': filename.stem,
-                'strategy': s,
-                'run_id': v['run_id'],
-                'backtest_start_time': v['backtest_start_time'],
-
-            })
-    return results
+    return [
+        {
+            'filename': filename.stem,
+            'strategy': s,
+            'run_id': v['run_id'],
+            'backtest_start_time': v['backtest_start_time'],
+        }
+        for filename in _get_backtest_files(dirname)
+        for s, v in load_backtest_metadata(filename).items()
+        if v
+    ]
 
 
 def delete_backtest_result(file_abs: Path):
