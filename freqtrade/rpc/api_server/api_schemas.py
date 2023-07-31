@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializeAsAny
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
@@ -470,7 +470,7 @@ class PairHistory(BaseModel):
     timeframe: str
     timeframe_ms: int
     columns: List[str]
-    data: List[Any]
+    data: SerializeAsAny[List[Any]]
     length: int
     buy_signals: int
     sell_signals: int
@@ -517,7 +517,7 @@ class BacktestResponse(BaseModel):
     progress: float
     trade_count: Optional[float]
     # TODO: Properly type backtestresult...
-    backtest_result: Optional[Dict[str, Any]]
+    backtest_result: SerializeAsAny[Optional[Dict[str, Any]]] = None
 
 
 # TODO: This is a copy of BacktestHistoryEntryType
