@@ -5424,7 +5424,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
 
     assert api_mock.create_order.call_args_list[0][1]['amount'] == order_amount
     assert order['amount'] == 100
-    assert order['cost'] == 100
+    assert order['cost'] == order_amount
     assert order['filled'] == 100
     assert order['remaining'] == 100
 

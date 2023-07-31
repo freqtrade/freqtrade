@@ -402,6 +402,8 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert res['first_trade_timestamp'] == 0
     assert res['latest_trade_date'] == ''
     assert res['latest_trade_timestamp'] == 0
+    assert res['expectancy'] == 0
+    assert res['expectancy_ratio'] == 100
 
     # Create some test data
     create_mock_trades_usdt(fee)
@@ -413,6 +415,9 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_all_coin']) == -77.45964918
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
+    assert pytest.approx(stats['winrate']) == 0.666666667
+    assert pytest.approx(stats['expectancy']) == 0.913333333
+    assert pytest.approx(stats['expectancy_ratio']) == 0.223308883
     assert stats['trade_count'] == 7
     assert stats['first_trade_humanized'] == '2 days ago'
     assert stats['latest_trade_humanized'] == '17 minutes ago'

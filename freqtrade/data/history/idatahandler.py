@@ -427,6 +427,6 @@ def get_datahandler(datadir: Path, data_format: Optional[str] = None,
     """
 
     if not data_handler:
-        HandlerClass = get_datahandlerclass(data_format or 'json')
+        HandlerClass = get_datahandlerclass(data_format or 'feather')
         data_handler = HandlerClass(datadir)
     return data_handler

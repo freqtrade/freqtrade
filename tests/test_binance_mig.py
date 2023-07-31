@@ -21,10 +21,10 @@ def test_binance_mig_data_conversion(default_conf_usdt, tmpdir, testdatadir):
     futures_dst = tmpdir / 'futures'
     futures_dst.mkdir()
     files = [
-        '-1h-mark.json',
-        '-1h-futures.json',
-        '-8h-funding_rate.json',
-        '-8h-mark.json',
+        '-1h-mark.feather',
+        '-1h-futures.feather',
+        '-8h-funding_rate.feather',
+        '-8h-mark.feather',
     ]
 
     # Copy files to tmpdir and rename to old naming

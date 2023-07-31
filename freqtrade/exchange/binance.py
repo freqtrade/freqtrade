@@ -34,6 +34,7 @@ class Binance(Exchange):
         "tickers_have_price": False,
         "floor_leverage": True,
         "stop_price_type_field": "workingType",
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
         "stop_price_type_value_mapping": {
             PriceType.LAST: "CONTRACT_PRICE",
             PriceType.MARK: "MARK_PRICE",

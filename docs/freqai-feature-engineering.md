@@ -261,7 +261,7 @@ class MyFreqaiModel(BaseRegressionModel):
         """
         feature_pipeline = Pipeline([
             ('qt', SKLearnWrapper(QuantileTransformer(output_distribution='normal'))),
-            ('di', ds.DissimilarityIndex(di_threshold=1)
+            ('di', ds.DissimilarityIndex(di_threshold=1))
         ])
 
         return feature_pipeline

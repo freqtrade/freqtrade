@@ -33,8 +33,6 @@ class Gate(Exchange):
     _ft_has_futures: Dict = {
         "needs_trading_fees": True,
         "marketOrderRequiresPrice": False,
-        "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
-        "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         "stop_price_type_field": "price_type",
         "stop_price_type_value_mapping": {
             PriceType.LAST: 0,

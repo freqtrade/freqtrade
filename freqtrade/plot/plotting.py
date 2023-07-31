@@ -55,7 +55,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         timeframe=config['timeframe'],
         timerange=timerange,
         startup_candles=startup_candles,
-        data_format=config.get('dataformat_ohlcv', 'json'),
+        data_format=config['dataformat_ohlcv'],
         candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
@@ -84,7 +84,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
     except ValueError as e:
         raise OperationalException(e) from e
     if not trades.empty:
-        trades = trim_dataframe(trades, timerange, 'open_date')
+        trades = trim_dataframe(trades, timerange, df_date_col='open_date')
 
     return {"ohlcv": data,
             "trades": trades,

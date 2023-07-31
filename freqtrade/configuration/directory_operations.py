@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
+from freqtrade.configuration.detect_environment import running_in_docker
 from freqtrade.constants import (USER_DATA_FILES, USERPATH_FREQAIMODELS, USERPATH_HYPEROPTS,
                                  USERPATH_NOTEBOOKS, USERPATH_STRATEGIES, Config)
 from freqtrade.exceptions import OperationalException
@@ -30,8 +31,7 @@ def chown_user_directory(directory: Path) -> None:
     Use Sudo to change permissions of the home-directory if necessary
     Only applies when running in docker!
     """
-    import os
-    if os.environ.get('FT_APP_ENV') == 'docker':
+    if running_in_docker():
         try:
             import subprocess
             subprocess.check_output(

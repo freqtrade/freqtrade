@@ -526,6 +526,7 @@ def get_default_conf(testdatadir):
         "disableparamexport": True,
         "internals": {},
         "export": "none",
+        "dataformat_ohlcv": "feather",
         "candle_type_def": CandleType.SPOT,
     }
     return configuration
