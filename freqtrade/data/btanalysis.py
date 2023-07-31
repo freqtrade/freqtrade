@@ -148,7 +148,6 @@ def load_backtest_stats(filename: Union[Path, str]) -> BacktestResultType:
     # Legacy list format does not contain metadata.
     if isinstance(data, dict):
         data['metadata'] = load_backtest_metadata(filename)
-
     return data
 
 
@@ -163,6 +162,7 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
     k: Literal['metadata', 'strategy']
     for k in ('metadata', 'strategy'):  # type: ignore
         results[k][strategy_name] = bt_data[k][strategy_name]
+    results['metadata'][strategy_name]['filename'] = filename.stem
     comparison = bt_data['strategy_comparison']
     for i in range(len(comparison)):
         if comparison[i]['key'] == strategy_name:
