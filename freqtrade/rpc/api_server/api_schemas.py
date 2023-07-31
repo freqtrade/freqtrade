@@ -529,6 +529,11 @@ class BacktestHistoryEntry(BaseModel):
     notes: Optional[str] = ''
 
 
+class BacktestMetadataUpdate(BaseModel):
+    strategy: str
+    notes: Optional[str]
+
+
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float
