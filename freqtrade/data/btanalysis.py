@@ -15,7 +15,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
-from freqtrade.types import BacktestResultType
+from freqtrade.types import BacktestHistoryEntryType, BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def _get_backtest_files(dirname: Path) -> List[Path]:
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
-def get_backtest_resultlist(dirname: Path):
+def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     """
     Get list of backtest results read from metadata files
     """

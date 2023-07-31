@@ -20,3 +20,8 @@ def get_BacktestResultType_default() -> BacktestResultType:
         'strategy': {},
         'strategy_comparison': [],
     }
+
+
+class BacktestHistoryEntryType(BacktestMetadataType):
+    filename: str
+    strategy: str
