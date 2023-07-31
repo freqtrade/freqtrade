@@ -526,6 +526,7 @@ class BacktestHistoryEntry(BaseModel):
     strategy: str
     run_id: str
     backtest_start_time: int
+    notes: Optional[str] = ''
 
 
 class SysInfo(BaseModel):

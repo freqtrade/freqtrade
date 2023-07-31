@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from typing_extensions import TypedDict
 
@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 class BacktestMetadataType(TypedDict):
     run_id: str
     backtest_start_time: int
+    notes: Optional[str]
 
 
 class BacktestResultType(TypedDict):
