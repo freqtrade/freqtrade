@@ -21,7 +21,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.optimize.backtest_caching import get_strategy_run_id
+from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
@@ -1998,3 +1998,41 @@ def test_get_strategy_run_id(default_conf_usdt):
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
     x = get_strategy_run_id(strategy)
     assert isinstance(x, str)
+
+
+def test_get_backtest_metadata_filename():
+    # Test with a file path
+    filename = Path('backtest_results.json')
+    expected = Path('backtest_results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a file path with multiple dots in the name
+    filename = Path('/path/to/backtest.results.json')
+    expected = Path('/path/to/backtest.results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a file path with no parent directory
+    filename = Path('backtest_results.json')
+    expected = Path('backtest_results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a string file path
+    filename = '/path/to/backtest_results.json'
+    expected = Path('/path/to/backtest_results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a string file path with no extension
+    filename = '/path/to/backtest_results'
+    expected = Path('/path/to/backtest_results.meta')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a string file path with multiple dots in the name
+    filename = '/path/to/backtest.results.json'
+    expected = Path('/path/to/backtest.results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
+    # Test with a string file path with no parent directory
+    filename = 'backtest_results.json'
+    expected = Path('backtest_results.meta.json')
+    assert get_backtest_metadata_filename(filename) == expected
+
