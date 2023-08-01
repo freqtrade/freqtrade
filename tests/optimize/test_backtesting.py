@@ -2035,4 +2035,3 @@ def test_get_backtest_metadata_filename():
     filename = 'backtest_results.json'
     expected = Path('backtest_results.meta.json')
     assert get_backtest_metadata_filename(filename) == expected
-
