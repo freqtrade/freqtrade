@@ -330,13 +330,13 @@
       "tier": 1.0,
       "currency": "USDT",
       "minNotional": 0.0,
-      "maxNotional": 5000.0,
+      "maxNotional": 10000.0,
       "maintenanceMarginRate": 0.02,
       "maxLeverage": 25.0,
       "info": {
         "bracket": "1",
         "initialLeverage": "25",
-        "notionalCap": "5000",
+        "notionalCap": "10000",
         "notionalFloor": "0",
         "maintMarginRatio": "0.02",
         "cum": "0.0"
@@ -345,7 +345,7 @@
     {
       "tier": 2.0,
       "currency": "USDT",
-      "minNotional": 5000.0,
+      "minNotional": 10000.0,
       "maxNotional": 50000.0,
       "maintenanceMarginRate": 0.025,
       "maxLeverage": 20.0,
@@ -353,63 +353,63 @@
         "bracket": "2",
         "initialLeverage": "20",
         "notionalCap": "50000",
-        "notionalFloor": "5000",
+        "notionalFloor": "10000",
         "maintMarginRatio": "0.025",
-        "cum": "25.0"
+        "cum": "50.0"
       }
     },
     {
       "tier": 3.0,
       "currency": "USDT",
       "minNotional": 50000.0,
-      "maxNotional": 900000.0,
+      "maxNotional": 1200000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 10.0,
       "info": {
         "bracket": "3",
         "initialLeverage": "10",
-        "notionalCap": "900000",
+        "notionalCap": "1200000",
         "notionalFloor": "50000",
         "maintMarginRatio": "0.05",
-        "cum": "1275.0"
+        "cum": "1300.0"
       }
     },
     {
       "tier": 4.0,
       "currency": "USDT",
-      "minNotional": 900000.0,
-      "maxNotional": 2400000.0,
+      "minNotional": 1200000.0,
+      "maxNotional": 3000000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
         "bracket": "4",
         "initialLeverage": "5",
-        "notionalCap": "2400000",
-        "notionalFloor": "900000",
+        "notionalCap": "3000000",
+        "notionalFloor": "1200000",
         "maintMarginRatio": "0.1",
-        "cum": "46275.0"
+        "cum": "61300.0"
       }
     },
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 2400000.0,
-      "maxNotional": 3000000.0,
+      "minNotional": 3000000.0,
+      "maxNotional": 3600000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
         "bracket": "5",
         "initialLeverage": "4",
-        "notionalCap": "3000000",
-        "notionalFloor": "2400000",
+        "notionalCap": "3600000",
+        "notionalFloor": "3000000",
         "maintMarginRatio": "0.125",
-        "cum": "106275.0"
+        "cum": "136300.0"
       }
     },
     {
       "tier": 6.0,
       "currency": "USDT",
-      "minNotional": 3000000.0,
+      "minNotional": 3600000.0,
       "maxNotional": 9000000.0,
       "maintenanceMarginRate": 0.25,
       "maxLeverage": 2.0,
@@ -417,9 +417,9 @@
         "bracket": "6",
         "initialLeverage": "2",
         "notionalCap": "9000000",
-        "notionalFloor": "3000000",
+        "notionalFloor": "3600000",
         "maintMarginRatio": "0.25",
-        "cum": "481275.0"
+        "cum": "586300.0"
       }
     },
     {
@@ -435,7 +435,7 @@
         "notionalCap": "15000000",
         "notionalFloor": "9000000",
         "maintMarginRatio": "0.5",
-        "cum": "2731275.0"
+        "cum": "2836300.0"
       }
     }
   ],
@@ -1576,6 +1576,120 @@
         "notionalFloor": "6000000",
         "maintMarginRatio": "0.5",
         "cum": "1820650.0"
+      }
+    }
+  ],
+  "AGLD/USDT:USDT": [
+    {
+      "tier": 1.0,
+      "currency": "USDT",
+      "minNotional": 0.0,
+      "maxNotional": 5000.0,
+      "maintenanceMarginRate": 0.02,
+      "maxLeverage": 20.0,
+      "info": {
+        "bracket": "1",
+        "initialLeverage": "20",
+        "notionalCap": "5000",
+        "notionalFloor": "0",
+        "maintMarginRatio": "0.02",
+        "cum": "0.0"
+      }
+    },
+    {
+      "tier": 2.0,
+      "currency": "USDT",
+      "minNotional": 5000.0,
+      "maxNotional": 25000.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 15.0,
+      "info": {
+        "bracket": "2",
+        "initialLeverage": "15",
+        "notionalCap": "25000",
+        "notionalFloor": "5000",
+        "maintMarginRatio": "0.025",
+        "cum": "25.0"
+      }
+    },
+    {
+      "tier": 3.0,
+      "currency": "USDT",
+      "minNotional": 25000.0,
+      "maxNotional": 200000.0,
+      "maintenanceMarginRate": 0.05,
+      "maxLeverage": 10.0,
+      "info": {
+        "bracket": "3",
+        "initialLeverage": "10",
+        "notionalCap": "200000",
+        "notionalFloor": "25000",
+        "maintMarginRatio": "0.05",
+        "cum": "650.0"
+      }
+    },
+    {
+      "tier": 4.0,
+      "currency": "USDT",
+      "minNotional": 200000.0,
+      "maxNotional": 500000.0,
+      "maintenanceMarginRate": 0.1,
+      "maxLeverage": 5.0,
+      "info": {
+        "bracket": "4",
+        "initialLeverage": "5",
+        "notionalCap": "500000",
+        "notionalFloor": "200000",
+        "maintMarginRatio": "0.1",
+        "cum": "10650.0"
+      }
+    },
+    {
+      "tier": 5.0,
+      "currency": "USDT",
+      "minNotional": 500000.0,
+      "maxNotional": 1000000.0,
+      "maintenanceMarginRate": 0.125,
+      "maxLeverage": 4.0,
+      "info": {
+        "bracket": "5",
+        "initialLeverage": "4",
+        "notionalCap": "1000000",
+        "notionalFloor": "500000",
+        "maintMarginRatio": "0.125",
+        "cum": "23150.0"
+      }
+    },
+    {
+      "tier": 6.0,
+      "currency": "USDT",
+      "minNotional": 1000000.0,
+      "maxNotional": 3000000.0,
+      "maintenanceMarginRate": 0.25,
+      "maxLeverage": 2.0,
+      "info": {
+        "bracket": "6",
+        "initialLeverage": "2",
+        "notionalCap": "3000000",
+        "notionalFloor": "1000000",
+        "maintMarginRatio": "0.25",
+        "cum": "148150.0"
+      }
+    },
+    {
+      "tier": 7.0,
+      "currency": "USDT",
+      "minNotional": 3000000.0,
+      "maxNotional": 5000000.0,
+      "maintenanceMarginRate": 0.5,
+      "maxLeverage": 1.0,
+      "info": {
+        "bracket": "7",
+        "initialLeverage": "1",
+        "notionalCap": "5000000",
+        "notionalFloor": "3000000",
+        "maintMarginRatio": "0.5",
+        "cum": "898150.0"
       }
     }
   ],
@@ -2760,10 +2874,10 @@
       "minNotional": 0.0,
       "maxNotional": 5000.0,
       "maintenanceMarginRate": 0.02,
-      "maxLeverage": 25.0,
+      "maxLeverage": 10.0,
       "info": {
         "bracket": "1",
-        "initialLeverage": "25",
+        "initialLeverage": "10",
         "notionalCap": "5000",
         "notionalFloor": "0",
         "maintMarginRatio": "0.02",
@@ -2776,10 +2890,10 @@
       "minNotional": 5000.0,
       "maxNotional": 25000.0,
       "maintenanceMarginRate": 0.025,
-      "maxLeverage": 15.0,
+      "maxLeverage": 8.0,
       "info": {
         "bracket": "2",
-        "initialLeverage": "15",
+        "initialLeverage": "8",
         "notionalCap": "25000",
         "notionalFloor": "5000",
         "maintMarginRatio": "0.025",
@@ -2792,10 +2906,10 @@
       "minNotional": 25000.0,
       "maxNotional": 100000.0,
       "maintenanceMarginRate": 0.05,
-      "maxLeverage": 10.0,
+      "maxLeverage": 6.0,
       "info": {
         "bracket": "3",
-        "initialLeverage": "10",
+        "initialLeverage": "6",
         "notionalCap": "100000",
         "notionalFloor": "25000",
         "maintMarginRatio": "0.05",
@@ -2854,13 +2968,13 @@
       "tier": 7.0,
       "currency": "BUSD",
       "minNotional": 3000000.0,
-      "maxNotional": 8000000.0,
+      "maxNotional": 4000000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "1",
-        "notionalCap": "8000000",
+        "notionalCap": "4000000",
         "notionalFloor": "3000000",
         "maintMarginRatio": "0.5",
         "cum": "949400.0"
@@ -3222,6 +3336,120 @@
         "notionalFloor": "12000000",
         "maintMarginRatio": "0.5",
         "cum": "3775770.0"
+      }
+    }
+  ],
+  "ARKM/USDT:USDT": [
+    {
+      "tier": 1.0,
+      "currency": "USDT",
+      "minNotional": 0.0,
+      "maxNotional": 5000.0,
+      "maintenanceMarginRate": 0.02,
+      "maxLeverage": 20.0,
+      "info": {
+        "bracket": "1",
+        "initialLeverage": "20",
+        "notionalCap": "5000",
+        "notionalFloor": "0",
+        "maintMarginRatio": "0.02",
+        "cum": "0.0"
+      }
+    },
+    {
+      "tier": 2.0,
+      "currency": "USDT",
+      "minNotional": 5000.0,
+      "maxNotional": 25000.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 15.0,
+      "info": {
+        "bracket": "2",
+        "initialLeverage": "15",
+        "notionalCap": "25000",
+        "notionalFloor": "5000",
+        "maintMarginRatio": "0.025",
+        "cum": "25.0"
+      }
+    },
+    {
+      "tier": 3.0,
+      "currency": "USDT",
+      "minNotional": 25000.0,
+      "maxNotional": 200000.0,
+      "maintenanceMarginRate": 0.05,
+      "maxLeverage": 10.0,
+      "info": {
+        "bracket": "3",
+        "initialLeverage": "10",
+        "notionalCap": "200000",
+        "notionalFloor": "25000",
+        "maintMarginRatio": "0.05",
+        "cum": "650.0"
+      }
+    },
+    {
+      "tier": 4.0,
+      "currency": "USDT",
+      "minNotional": 200000.0,
+      "maxNotional": 500000.0,
+      "maintenanceMarginRate": 0.1,
+      "maxLeverage": 5.0,
+      "info": {
+        "bracket": "4",
+        "initialLeverage": "5",
+        "notionalCap": "500000",
+        "notionalFloor": "200000",
+        "maintMarginRatio": "0.1",
+        "cum": "10650.0"
+      }
+    },
+    {
+      "tier": 5.0,
+      "currency": "USDT",
+      "minNotional": 500000.0,
+      "maxNotional": 1000000.0,
+      "maintenanceMarginRate": 0.125,
+      "maxLeverage": 4.0,
+      "info": {
+        "bracket": "5",
+        "initialLeverage": "4",
+        "notionalCap": "1000000",
+        "notionalFloor": "500000",
+        "maintMarginRatio": "0.125",
+        "cum": "23150.0"
+      }
+    },
+    {
+      "tier": 6.0,
+      "currency": "USDT",
+      "minNotional": 1000000.0,
+      "maxNotional": 3000000.0,
+      "maintenanceMarginRate": 0.25,
+      "maxLeverage": 2.0,
+      "info": {
+        "bracket": "6",
+        "initialLeverage": "2",
+        "notionalCap": "3000000",
+        "notionalFloor": "1000000",
+        "maintMarginRatio": "0.25",
+        "cum": "148150.0"
+      }
+    },
+    {
+      "tier": 7.0,
+      "currency": "USDT",
+      "minNotional": 3000000.0,
+      "maxNotional": 5000000.0,
+      "maintenanceMarginRate": 0.5,
+      "maxLeverage": 1.0,
+      "info": {
+        "bracket": "7",
+        "initialLeverage": "1",
+        "notionalCap": "5000000",
+        "notionalFloor": "3000000",
+        "maintMarginRatio": "0.5",
+        "cum": "898150.0"
       }
     }
   ],
@@ -5850,13 +6078,13 @@
       "tier": 4.0,
       "currency": "USDT",
       "minNotional": 3000000.0,
-      "maxNotional": 15000000.0,
+      "maxNotional": 20000000.0,
       "maintenanceMarginRate": 0.025,
       "maxLeverage": 20.0,
       "info": {
         "bracket": "4",
         "initialLeverage": "20",
-        "notionalCap": "15000000",
+        "notionalCap": "20000000",
         "notionalFloor": "3000000",
         "maintMarginRatio": "0.025",
         "cum": "46300.0"
@@ -5865,55 +6093,55 @@
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 15000000.0,
-      "maxNotional": 30000000.0,
+      "minNotional": 20000000.0,
+      "maxNotional": 40000000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 10.0,
       "info": {
         "bracket": "5",
         "initialLeverage": "10",
-        "notionalCap": "30000000",
-        "notionalFloor": "15000000",
+        "notionalCap": "40000000",
+        "notionalFloor": "20000000",
         "maintMarginRatio": "0.05",
-        "cum": "421300.0"
+        "cum": "546300.0"
       }
     },
     {
       "tier": 6.0,
       "currency": "USDT",
-      "minNotional": 30000000.0,
-      "maxNotional": 80000000.0,
+      "minNotional": 40000000.0,
+      "maxNotional": 100000000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "5",
-        "notionalCap": "80000000",
-        "notionalFloor": "30000000",
+        "notionalCap": "100000000",
+        "notionalFloor": "40000000",
         "maintMarginRatio": "0.1",
-        "cum": "1921300.0"
+        "cum": "2546300.0"
       }
     },
     {
       "tier": 7.0,
       "currency": "USDT",
-      "minNotional": 80000000.0,
-      "maxNotional": 100000000.0,
+      "minNotional": 100000000.0,
+      "maxNotional": 120000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "4",
-        "notionalCap": "100000000",
-        "notionalFloor": "80000000",
+        "notionalCap": "120000000",
+        "notionalFloor": "100000000",
         "maintMarginRatio": "0.125",
-        "cum": "3921300.0"
+        "cum": "5046300.0"
       }
     },
     {
       "tier": 8.0,
       "currency": "USDT",
-      "minNotional": 100000000.0,
+      "minNotional": 120000000.0,
       "maxNotional": 200000000.0,
       "maintenanceMarginRate": 0.15,
       "maxLeverage": 3.0,
@@ -5921,9 +6149,9 @@
         "bracket": "8",
         "initialLeverage": "3",
         "notionalCap": "200000000",
-        "notionalFloor": "100000000",
+        "notionalFloor": "120000000",
         "maintMarginRatio": "0.15",
-        "cum": "6421300.0"
+        "cum": "8046300.0"
       }
     },
     {
@@ -5939,7 +6167,7 @@
         "notionalCap": "300000000",
         "notionalFloor": "200000000",
         "maintMarginRatio": "0.25",
-        "cum": "2.64213E7"
+        "cum": "2.80463E7"
       }
     },
     {
@@ -5955,7 +6183,7 @@
         "notionalCap": "500000000",
         "notionalFloor": "300000000",
         "maintMarginRatio": "0.5",
-        "cum": "1.014213E8"
+        "cum": "1.030463E8"
       }
     }
   ],
@@ -10784,13 +11012,13 @@
       "tier": 4.0,
       "currency": "USDT",
       "minNotional": 2000000.0,
-      "maxNotional": 10000000.0,
+      "maxNotional": 15000000.0,
       "maintenanceMarginRate": 0.02,
       "maxLeverage": 20.0,
       "info": {
         "bracket": "4",
         "initialLeverage": "20",
-        "notionalCap": "10000000",
+        "notionalCap": "15000000",
         "notionalFloor": "2000000",
         "maintMarginRatio": "0.02",
         "cum": "21025.0"
@@ -10799,71 +11027,71 @@
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 10000000.0,
-      "maxNotional": 25000000.0,
+      "minNotional": 15000000.0,
+      "maxNotional": 30000000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 10.0,
       "info": {
         "bracket": "5",
         "initialLeverage": "10",
-        "notionalCap": "25000000",
-        "notionalFloor": "10000000",
+        "notionalCap": "30000000",
+        "notionalFloor": "15000000",
         "maintMarginRatio": "0.05",
-        "cum": "321025.0"
+        "cum": "471025.0"
       }
     },
     {
       "tier": 6.0,
       "currency": "USDT",
-      "minNotional": 25000000.0,
-      "maxNotional": 50000000.0,
+      "minNotional": 30000000.0,
+      "maxNotional": 60000000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "5",
-        "notionalCap": "50000000",
-        "notionalFloor": "25000000",
+        "notionalCap": "60000000",
+        "notionalFloor": "30000000",
         "maintMarginRatio": "0.1",
-        "cum": "1571025.0"
+        "cum": "1971025.0"
       }
     },
     {
       "tier": 7.0,
       "currency": "USDT",
-      "minNotional": 50000000.0,
-      "maxNotional": 60000000.0,
+      "minNotional": 60000000.0,
+      "maxNotional": 80000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "4",
-        "notionalCap": "60000000",
-        "notionalFloor": "50000000",
+        "notionalCap": "80000000",
+        "notionalFloor": "60000000",
         "maintMarginRatio": "0.125",
-        "cum": "2821025.0"
+        "cum": "3471025.0"
       }
     },
     {
       "tier": 8.0,
       "currency": "USDT",
-      "minNotional": 60000000.0,
-      "maxNotional": 80000000.0,
+      "minNotional": 80000000.0,
+      "maxNotional": 100000000.0,
       "maintenanceMarginRate": 0.15,
       "maxLeverage": 3.0,
       "info": {
         "bracket": "8",
         "initialLeverage": "3",
-        "notionalCap": "80000000",
-        "notionalFloor": "60000000",
+        "notionalCap": "100000000",
+        "notionalFloor": "80000000",
         "maintMarginRatio": "0.15",
-        "cum": "4321025.0"
+        "cum": "5471025.0"
       }
     },
     {
       "tier": 9.0,
       "currency": "USDT",
-      "minNotional": 80000000.0,
+      "minNotional": 100000000.0,
       "maxNotional": 150000000.0,
       "maintenanceMarginRate": 0.25,
       "maxLeverage": 2.0,
@@ -10871,9 +11099,9 @@
         "bracket": "9",
         "initialLeverage": "2",
         "notionalCap": "150000000",
-        "notionalFloor": "80000000",
+        "notionalFloor": "100000000",
         "maintMarginRatio": "0.25",
-        "cum": "1.2321025E7"
+        "cum": "1.5471025E7"
       }
     },
     {
@@ -10889,7 +11117,7 @@
         "notionalCap": "300000000",
         "notionalFloor": "150000000",
         "maintMarginRatio": "0.5",
-        "cum": "4.9821025E7"
+        "cum": "5.2971025E7"
       }
     }
   ],
@@ -11666,10 +11894,10 @@
       "minNotional": 0.0,
       "maxNotional": 5000.0,
       "maintenanceMarginRate": 0.02,
-      "maxLeverage": 25.0,
+      "maxLeverage": 10.0,
       "info": {
         "bracket": "1",
-        "initialLeverage": "25",
+        "initialLeverage": "10",
         "notionalCap": "5000",
         "notionalFloor": "0",
         "maintMarginRatio": "0.02",
@@ -11682,10 +11910,10 @@
       "minNotional": 5000.0,
       "maxNotional": 25000.0,
       "maintenanceMarginRate": 0.025,
-      "maxLeverage": 15.0,
+      "maxLeverage": 8.0,
       "info": {
         "bracket": "2",
-        "initialLeverage": "15",
+        "initialLeverage": "8",
         "notionalCap": "25000",
         "notionalFloor": "5000",
         "maintMarginRatio": "0.025",
@@ -11698,10 +11926,10 @@
       "minNotional": 25000.0,
       "maxNotional": 100000.0,
       "maintenanceMarginRate": 0.05,
-      "maxLeverage": 10.0,
+      "maxLeverage": 6.0,
       "info": {
         "bracket": "3",
-        "initialLeverage": "10",
+        "initialLeverage": "6",
         "notionalCap": "100000",
         "notionalFloor": "25000",
         "maintMarginRatio": "0.05",
@@ -11760,13 +11988,13 @@
       "tier": 7.0,
       "currency": "BUSD",
       "minNotional": 3000000.0,
-      "maxNotional": 8000000.0,
+      "maxNotional": 4000000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "1",
-        "notionalCap": "8000000",
+        "notionalCap": "4000000",
         "notionalFloor": "3000000",
         "maintMarginRatio": "0.5",
         "cum": "949400.0"
@@ -12384,10 +12612,10 @@
       "minNotional": 0.0,
       "maxNotional": 5000.0,
       "maintenanceMarginRate": 0.02,
-      "maxLeverage": 20.0,
+      "maxLeverage": 10.0,
       "info": {
         "bracket": "1",
-        "initialLeverage": "20",
+        "initialLeverage": "10",
         "notionalCap": "5000",
         "notionalFloor": "0",
         "maintMarginRatio": "0.02",
@@ -12400,10 +12628,10 @@
       "minNotional": 5000.0,
       "maxNotional": 25000.0,
       "maintenanceMarginRate": 0.025,
-      "maxLeverage": 10.0,
+      "maxLeverage": 8.0,
       "info": {
         "bracket": "2",
-        "initialLeverage": "10",
+        "initialLeverage": "8",
         "notionalCap": "25000",
         "notionalFloor": "5000",
         "maintMarginRatio": "0.025",
@@ -12416,10 +12644,10 @@
       "minNotional": 25000.0,
       "maxNotional": 100000.0,
       "maintenanceMarginRate": 0.05,
-      "maxLeverage": 8.0,
+      "maxLeverage": 6.0,
       "info": {
         "bracket": "3",
-        "initialLeverage": "8",
+        "initialLeverage": "6",
         "notionalCap": "100000",
         "notionalFloor": "25000",
         "maintMarginRatio": "0.05",
@@ -12462,13 +12690,13 @@
       "tier": 6.0,
       "currency": "BUSD",
       "minNotional": 1000000.0,
-      "maxNotional": 5000000.0,
+      "maxNotional": 2000000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "1",
-        "notionalCap": "5000000",
+        "notionalCap": "2000000",
         "notionalFloor": "1000000",
         "maintMarginRatio": "0.5",
         "cum": "386900.0"
@@ -15514,10 +15742,10 @@
       "minNotional": 0.0,
       "maxNotional": 5000.0,
       "maintenanceMarginRate": 0.02,
-      "maxLeverage": 20.0,
+      "maxLeverage": 10.0,
       "info": {
         "bracket": "1",
-        "initialLeverage": "20",
+        "initialLeverage": "10",
         "notionalCap": "5000",
         "notionalFloor": "0",
         "maintMarginRatio": "0.02",
@@ -15530,10 +15758,10 @@
       "minNotional": 5000.0,
       "maxNotional": 25000.0,
       "maintenanceMarginRate": 0.025,
-      "maxLeverage": 10.0,
+      "maxLeverage": 8.0,
       "info": {
         "bracket": "2",
-        "initialLeverage": "10",
+        "initialLeverage": "8",
         "notionalCap": "25000",
         "notionalFloor": "5000",
         "maintMarginRatio": "0.025",
@@ -15546,10 +15774,10 @@
       "minNotional": 25000.0,
       "maxNotional": 100000.0,
       "maintenanceMarginRate": 0.05,
-      "maxLeverage": 8.0,
+      "maxLeverage": 6.0,
       "info": {
         "bracket": "3",
-        "initialLeverage": "8",
+        "initialLeverage": "6",
         "notionalCap": "100000",
         "notionalFloor": "25000",
         "maintMarginRatio": "0.05",
@@ -15592,13 +15820,13 @@
       "tier": 6.0,
       "currency": "BUSD",
       "minNotional": 1000000.0,
-      "maxNotional": 5000000.0,
+      "maxNotional": 2000000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "1",
-        "notionalCap": "5000000",
+        "notionalCap": "2000000",
         "notionalFloor": "1000000",
         "maintMarginRatio": "0.5",
         "cum": "386900.0"
@@ -16896,13 +17124,13 @@
       "tier": 4.0,
       "currency": "USDT",
       "minNotional": 50000.0,
-      "maxNotional": 500000.0,
+      "maxNotional": 750000.0,
       "maintenanceMarginRate": 0.02,
       "maxLeverage": 25.0,
       "info": {
         "bracket": "4",
         "initialLeverage": "25",
-        "notionalCap": "500000",
+        "notionalCap": "750000",
         "notionalFloor": "50000",
         "maintMarginRatio": "0.02",
         "cum": "545.0"
@@ -16911,55 +17139,55 @@
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 500000.0,
-      "maxNotional": 2000000.0,
+      "minNotional": 750000.0,
+      "maxNotional": 3000000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 10.0,
       "info": {
         "bracket": "5",
         "initialLeverage": "10",
-        "notionalCap": "2000000",
-        "notionalFloor": "500000",
+        "notionalCap": "3000000",
+        "notionalFloor": "750000",
         "maintMarginRatio": "0.05",
-        "cum": "15545.0"
+        "cum": "23045.0"
       }
     },
     {
       "tier": 6.0,
       "currency": "USDT",
-      "minNotional": 2000000.0,
-      "maxNotional": 8000000.0,
+      "minNotional": 3000000.0,
+      "maxNotional": 10000000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "5",
-        "notionalCap": "8000000",
-        "notionalFloor": "2000000",
+        "notionalCap": "10000000",
+        "notionalFloor": "3000000",
         "maintMarginRatio": "0.1",
-        "cum": "115545.0"
+        "cum": "173045.0"
       }
     },
     {
       "tier": 7.0,
       "currency": "USDT",
-      "minNotional": 8000000.0,
-      "maxNotional": 10000000.0,
+      "minNotional": 10000000.0,
+      "maxNotional": 12000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "4",
-        "notionalCap": "10000000",
-        "notionalFloor": "8000000",
+        "notionalCap": "12000000",
+        "notionalFloor": "10000000",
         "maintMarginRatio": "0.125",
-        "cum": "315545.0"
+        "cum": "423045.0"
       }
     },
     {
       "tier": 8.0,
       "currency": "USDT",
-      "minNotional": 10000000.0,
+      "minNotional": 12000000.0,
       "maxNotional": 20000000.0,
       "maintenanceMarginRate": 0.15,
       "maxLeverage": 3.0,
@@ -16967,9 +17195,9 @@
         "bracket": "8",
         "initialLeverage": "3",
         "notionalCap": "20000000",
-        "notionalFloor": "10000000",
+        "notionalFloor": "12000000",
         "maintMarginRatio": "0.15",
-        "cum": "565545.0"
+        "cum": "723045.0"
       }
     },
     {
@@ -16985,7 +17213,7 @@
         "notionalCap": "30000000",
         "notionalFloor": "20000000",
         "maintMarginRatio": "0.25",
-        "cum": "2565545.0"
+        "cum": "2723045.0"
       }
     },
     {
@@ -17001,7 +17229,7 @@
         "notionalCap": "50000000",
         "notionalFloor": "30000000",
         "maintMarginRatio": "0.5",
-        "cum": "1.0065545E7"
+        "cum": "1.0223045E7"
       }
     }
   ],
@@ -19526,6 +19754,120 @@
         "notionalFloor": "12000000",
         "maintMarginRatio": "0.5",
         "cum": "3775770.0"
+      }
+    }
+  ],
+  "PENDLE/USDT:USDT": [
+    {
+      "tier": 1.0,
+      "currency": "USDT",
+      "minNotional": 0.0,
+      "maxNotional": 5000.0,
+      "maintenanceMarginRate": 0.02,
+      "maxLeverage": 20.0,
+      "info": {
+        "bracket": "1",
+        "initialLeverage": "20",
+        "notionalCap": "5000",
+        "notionalFloor": "0",
+        "maintMarginRatio": "0.02",
+        "cum": "0.0"
+      }
+    },
+    {
+      "tier": 2.0,
+      "currency": "USDT",
+      "minNotional": 5000.0,
+      "maxNotional": 25000.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 15.0,
+      "info": {
+        "bracket": "2",
+        "initialLeverage": "15",
+        "notionalCap": "25000",
+        "notionalFloor": "5000",
+        "maintMarginRatio": "0.025",
+        "cum": "25.0"
+      }
+    },
+    {
+      "tier": 3.0,
+      "currency": "USDT",
+      "minNotional": 25000.0,
+      "maxNotional": 200000.0,
+      "maintenanceMarginRate": 0.05,
+      "maxLeverage": 10.0,
+      "info": {
+        "bracket": "3",
+        "initialLeverage": "10",
+        "notionalCap": "200000",
+        "notionalFloor": "25000",
+        "maintMarginRatio": "0.05",
+        "cum": "650.0"
+      }
+    },
+    {
+      "tier": 4.0,
+      "currency": "USDT",
+      "minNotional": 200000.0,
+      "maxNotional": 500000.0,
+      "maintenanceMarginRate": 0.1,
+      "maxLeverage": 5.0,
+      "info": {
+        "bracket": "4",
+        "initialLeverage": "5",
+        "notionalCap": "500000",
+        "notionalFloor": "200000",
+        "maintMarginRatio": "0.1",
+        "cum": "10650.0"
+      }
+    },
+    {
+      "tier": 5.0,
+      "currency": "USDT",
+      "minNotional": 500000.0,
+      "maxNotional": 1000000.0,
+      "maintenanceMarginRate": 0.125,
+      "maxLeverage": 4.0,
+      "info": {
+        "bracket": "5",
+        "initialLeverage": "4",
+        "notionalCap": "1000000",
+        "notionalFloor": "500000",
+        "maintMarginRatio": "0.125",
+        "cum": "23150.0"
+      }
+    },
+    {
+      "tier": 6.0,
+      "currency": "USDT",
+      "minNotional": 1000000.0,
+      "maxNotional": 3000000.0,
+      "maintenanceMarginRate": 0.25,
+      "maxLeverage": 2.0,
+      "info": {
+        "bracket": "6",
+        "initialLeverage": "2",
+        "notionalCap": "3000000",
+        "notionalFloor": "1000000",
+        "maintMarginRatio": "0.25",
+        "cum": "148150.0"
+      }
+    },
+    {
+      "tier": 7.0,
+      "currency": "USDT",
+      "minNotional": 3000000.0,
+      "maxNotional": 5000000.0,
+      "maintenanceMarginRate": 0.5,
+      "maxLeverage": 1.0,
+      "info": {
+        "bracket": "7",
+        "initialLeverage": "1",
+        "notionalCap": "5000000",
+        "notionalFloor": "3000000",
+        "maintMarginRatio": "0.5",
+        "cum": "898150.0"
       }
     }
   ],
@@ -22126,112 +22468,128 @@
       "tier": 2.0,
       "currency": "USDT",
       "minNotional": 50000.0,
-      "maxNotional": 150000.0,
-      "maintenanceMarginRate": 0.02,
-      "maxLeverage": 25.0,
+      "maxNotional": 100000.0,
+      "maintenanceMarginRate": 0.012,
+      "maxLeverage": 40.0,
       "info": {
         "bracket": "2",
-        "initialLeverage": "25",
-        "notionalCap": "150000",
+        "initialLeverage": "40",
+        "notionalCap": "100000",
         "notionalFloor": "50000",
-        "maintMarginRatio": "0.02",
-        "cum": "500.0"
+        "maintMarginRatio": "0.012",
+        "cum": "100.0"
       }
     },
     {
       "tier": 3.0,
       "currency": "USDT",
-      "minNotional": 150000.0,
-      "maxNotional": 900000.0,
-      "maintenanceMarginRate": 0.025,
-      "maxLeverage": 20.0,
+      "minNotional": 100000.0,
+      "maxNotional": 200000.0,
+      "maintenanceMarginRate": 0.02,
+      "maxLeverage": 25.0,
       "info": {
         "bracket": "3",
-        "initialLeverage": "20",
-        "notionalCap": "900000",
-        "notionalFloor": "150000",
-        "maintMarginRatio": "0.025",
-        "cum": "1250.0"
+        "initialLeverage": "25",
+        "notionalCap": "200000",
+        "notionalFloor": "100000",
+        "maintMarginRatio": "0.02",
+        "cum": "900.0"
       }
     },
     {
       "tier": 4.0,
       "currency": "USDT",
-      "minNotional": 900000.0,
-      "maxNotional": 1800000.0,
-      "maintenanceMarginRate": 0.05,
-      "maxLeverage": 10.0,
+      "minNotional": 200000.0,
+      "maxNotional": 1000000.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 20.0,
       "info": {
         "bracket": "4",
-        "initialLeverage": "10",
-        "notionalCap": "1800000",
-        "notionalFloor": "900000",
-        "maintMarginRatio": "0.05",
-        "cum": "23750.0"
+        "initialLeverage": "20",
+        "notionalCap": "1000000",
+        "notionalFloor": "200000",
+        "maintMarginRatio": "0.025",
+        "cum": "1900.0"
       }
     },
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 1800000.0,
-      "maxNotional": 4800000.0,
-      "maintenanceMarginRate": 0.1,
-      "maxLeverage": 5.0,
+      "minNotional": 1000000.0,
+      "maxNotional": 2000000.0,
+      "maintenanceMarginRate": 0.05,
+      "maxLeverage": 10.0,
       "info": {
         "bracket": "5",
-        "initialLeverage": "5",
-        "notionalCap": "4800000",
-        "notionalFloor": "1800000",
-        "maintMarginRatio": "0.1",
-        "cum": "113750.0"
+        "initialLeverage": "10",
+        "notionalCap": "2000000",
+        "notionalFloor": "1000000",
+        "maintMarginRatio": "0.05",
+        "cum": "26900.0"
       }
     },
     {
       "tier": 6.0,
+      "currency": "USDT",
+      "minNotional": 2000000.0,
+      "maxNotional": 4800000.0,
+      "maintenanceMarginRate": 0.1,
+      "maxLeverage": 5.0,
+      "info": {
+        "bracket": "6",
+        "initialLeverage": "5",
+        "notionalCap": "4800000",
+        "notionalFloor": "2000000",
+        "maintMarginRatio": "0.1",
+        "cum": "126900.0"
+      }
+    },
+    {
+      "tier": 7.0,
       "currency": "USDT",
       "minNotional": 4800000.0,
       "maxNotional": 6000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
-        "bracket": "6",
+        "bracket": "7",
         "initialLeverage": "4",
         "notionalCap": "6000000",
         "notionalFloor": "4800000",
         "maintMarginRatio": "0.125",
-        "cum": "233750.0"
+        "cum": "246900.0"
       }
     },
     {
-      "tier": 7.0,
+      "tier": 8.0,
       "currency": "USDT",
       "minNotional": 6000000.0,
       "maxNotional": 18000000.0,
       "maintenanceMarginRate": 0.25,
       "maxLeverage": 2.0,
       "info": {
-        "bracket": "7",
+        "bracket": "8",
         "initialLeverage": "2",
         "notionalCap": "18000000",
         "notionalFloor": "6000000",
         "maintMarginRatio": "0.25",
-        "cum": "983750.0"
+        "cum": "996900.0"
       }
     },
     {
-      "tier": 8.0,
+      "tier": 9.0,
       "currency": "USDT",
       "minNotional": 18000000.0,
       "maxNotional": 30000000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
-        "bracket": "8",
+        "bracket": "9",
         "initialLeverage": "1",
         "notionalCap": "30000000",
         "notionalFloor": "18000000",
         "maintMarginRatio": "0.5",
-        "cum": "5483750.0"
+        "cum": "5496900.0"
       }
     }
   ],
@@ -22649,14 +23007,14 @@
       "currency": "USDT",
       "minNotional": 0.0,
       "maxNotional": 5000.0,
-      "maintenanceMarginRate": 0.02,
-      "maxLeverage": 10.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 8.0,
       "info": {
         "bracket": "1",
-        "initialLeverage": "10",
+        "initialLeverage": "8",
         "notionalCap": "5000",
         "notionalFloor": "0",
-        "maintMarginRatio": "0.02",
+        "maintMarginRatio": "0.025",
         "cum": "0.0"
       }
     },
@@ -22664,80 +23022,64 @@
       "tier": 2.0,
       "currency": "USDT",
       "minNotional": 5000.0,
-      "maxNotional": 25000.0,
-      "maintenanceMarginRate": 0.025,
-      "maxLeverage": 8.0,
-      "info": {
-        "bracket": "2",
-        "initialLeverage": "8",
-        "notionalCap": "25000",
-        "notionalFloor": "5000",
-        "maintMarginRatio": "0.025",
-        "cum": "25.0"
-      }
-    },
-    {
-      "tier": 3.0,
-      "currency": "USDT",
-      "minNotional": 25000.0,
       "maxNotional": 100000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 6.0,
       "info": {
-        "bracket": "3",
+        "bracket": "2",
         "initialLeverage": "6",
         "notionalCap": "100000",
-        "notionalFloor": "25000",
+        "notionalFloor": "5000",
         "maintMarginRatio": "0.05",
-        "cum": "650.0"
+        "cum": "125.0"
       }
     },
     {
-      "tier": 4.0,
+      "tier": 3.0,
       "currency": "USDT",
       "minNotional": 100000.0,
       "maxNotional": 250000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
-        "bracket": "4",
+        "bracket": "3",
         "initialLeverage": "5",
         "notionalCap": "250000",
         "notionalFloor": "100000",
         "maintMarginRatio": "0.1",
-        "cum": "5650.0"
+        "cum": "5125.0"
       }
     },
     {
-      "tier": 5.0,
+      "tier": 4.0,
       "currency": "USDT",
       "minNotional": 250000.0,
       "maxNotional": 1000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 2.0,
       "info": {
-        "bracket": "5",
+        "bracket": "4",
         "initialLeverage": "2",
         "notionalCap": "1000000",
         "notionalFloor": "250000",
         "maintMarginRatio": "0.125",
-        "cum": "11900.0"
+        "cum": "11375.0"
       }
     },
     {
-      "tier": 6.0,
+      "tier": 5.0,
       "currency": "USDT",
       "minNotional": 1000000.0,
       "maxNotional": 1500000.0,
       "maintenanceMarginRate": 0.5,
       "maxLeverage": 1.0,
       "info": {
-        "bracket": "6",
+        "bracket": "5",
         "initialLeverage": "1",
         "notionalCap": "1500000",
         "notionalFloor": "1000000",
         "maintMarginRatio": "0.5",
-        "cum": "386900.0"
+        "cum": "386375.0"
       }
     }
   ],
@@ -25265,6 +25607,120 @@
       }
     }
   ],
+  "WLD/USDT:USDT": [
+    {
+      "tier": 1.0,
+      "currency": "USDT",
+      "minNotional": 0.0,
+      "maxNotional": 5000.0,
+      "maintenanceMarginRate": 0.02,
+      "maxLeverage": 20.0,
+      "info": {
+        "bracket": "1",
+        "initialLeverage": "20",
+        "notionalCap": "5000",
+        "notionalFloor": "0",
+        "maintMarginRatio": "0.02",
+        "cum": "0.0"
+      }
+    },
+    {
+      "tier": 2.0,
+      "currency": "USDT",
+      "minNotional": 5000.0,
+      "maxNotional": 25000.0,
+      "maintenanceMarginRate": 0.025,
+      "maxLeverage": 15.0,
+      "info": {
+        "bracket": "2",
+        "initialLeverage": "15",
+        "notionalCap": "25000",
+        "notionalFloor": "5000",
+        "maintMarginRatio": "0.025",
+        "cum": "25.0"
+      }
+    },
+    {
+      "tier": 3.0,
+      "currency": "USDT",
+      "minNotional": 25000.0,
+      "maxNotional": 200000.0,
+      "maintenanceMarginRate": 0.05,
+      "maxLeverage": 10.0,
+      "info": {
+        "bracket": "3",
+        "initialLeverage": "10",
+        "notionalCap": "200000",
+        "notionalFloor": "25000",
+        "maintMarginRatio": "0.05",
+        "cum": "650.0"
+      }
+    },
+    {
+      "tier": 4.0,
+      "currency": "USDT",
+      "minNotional": 200000.0,
+      "maxNotional": 500000.0,
+      "maintenanceMarginRate": 0.1,
+      "maxLeverage": 5.0,
+      "info": {
+        "bracket": "4",
+        "initialLeverage": "5",
+        "notionalCap": "500000",
+        "notionalFloor": "200000",
+        "maintMarginRatio": "0.1",
+        "cum": "10650.0"
+      }
+    },
+    {
+      "tier": 5.0,
+      "currency": "USDT",
+      "minNotional": 500000.0,
+      "maxNotional": 1000000.0,
+      "maintenanceMarginRate": 0.125,
+      "maxLeverage": 4.0,
+      "info": {
+        "bracket": "5",
+        "initialLeverage": "4",
+        "notionalCap": "1000000",
+        "notionalFloor": "500000",
+        "maintMarginRatio": "0.125",
+        "cum": "23150.0"
+      }
+    },
+    {
+      "tier": 6.0,
+      "currency": "USDT",
+      "minNotional": 1000000.0,
+      "maxNotional": 3000000.0,
+      "maintenanceMarginRate": 0.25,
+      "maxLeverage": 2.0,
+      "info": {
+        "bracket": "6",
+        "initialLeverage": "2",
+        "notionalCap": "3000000",
+        "notionalFloor": "1000000",
+        "maintMarginRatio": "0.25",
+        "cum": "148150.0"
+      }
+    },
+    {
+      "tier": 7.0,
+      "currency": "USDT",
+      "minNotional": 3000000.0,
+      "maxNotional": 5000000.0,
+      "maintenanceMarginRate": 0.5,
+      "maxLeverage": 1.0,
+      "info": {
+        "bracket": "7",
+        "initialLeverage": "1",
+        "notionalCap": "5000000",
+        "notionalFloor": "3000000",
+        "maintMarginRatio": "0.5",
+        "cum": "898150.0"
+      }
+    }
+  ],
   "WOO/USDT:USDT": [
     {
       "tier": 1.0,
@@ -25856,13 +26312,13 @@
       "tier": 4.0,
       "currency": "USDT",
       "minNotional": 50000.0,
-      "maxNotional": 500000.0,
+      "maxNotional": 750000.0,
       "maintenanceMarginRate": 0.02,
       "maxLeverage": 25.0,
       "info": {
         "bracket": "4",
         "initialLeverage": "25",
-        "notionalCap": "500000",
+        "notionalCap": "750000",
         "notionalFloor": "50000",
         "maintMarginRatio": "0.02",
         "cum": "545.0"
@@ -25871,55 +26327,55 @@
     {
       "tier": 5.0,
       "currency": "USDT",
-      "minNotional": 500000.0,
-      "maxNotional": 2000000.0,
+      "minNotional": 750000.0,
+      "maxNotional": 3000000.0,
       "maintenanceMarginRate": 0.05,
       "maxLeverage": 10.0,
       "info": {
         "bracket": "5",
         "initialLeverage": "10",
-        "notionalCap": "2000000",
-        "notionalFloor": "500000",
+        "notionalCap": "3000000",
+        "notionalFloor": "750000",
         "maintMarginRatio": "0.05",
-        "cum": "15545.0"
+        "cum": "23045.0"
       }
     },
     {
       "tier": 6.0,
       "currency": "USDT",
-      "minNotional": 2000000.0,
-      "maxNotional": 8000000.0,
+      "minNotional": 3000000.0,
+      "maxNotional": 10000000.0,
       "maintenanceMarginRate": 0.1,
       "maxLeverage": 5.0,
       "info": {
         "bracket": "6",
         "initialLeverage": "5",
-        "notionalCap": "8000000",
-        "notionalFloor": "2000000",
+        "notionalCap": "10000000",
+        "notionalFloor": "3000000",
         "maintMarginRatio": "0.1",
-        "cum": "115545.0"
+        "cum": "173045.0"
       }
     },
     {
       "tier": 7.0,
       "currency": "USDT",
-      "minNotional": 8000000.0,
-      "maxNotional": 10000000.0,
+      "minNotional": 10000000.0,
+      "maxNotional": 12000000.0,
       "maintenanceMarginRate": 0.125,
       "maxLeverage": 4.0,
       "info": {
         "bracket": "7",
         "initialLeverage": "4",
-        "notionalCap": "10000000",
-        "notionalFloor": "8000000",
+        "notionalCap": "12000000",
+        "notionalFloor": "10000000",
         "maintMarginRatio": "0.125",
-        "cum": "315545.0"
+        "cum": "423045.0"
       }
     },
     {
       "tier": 8.0,
       "currency": "USDT",
-      "minNotional": 10000000.0,
+      "minNotional": 12000000.0,
       "maxNotional": 20000000.0,
       "maintenanceMarginRate": 0.15,
       "maxLeverage": 3.0,
@@ -25927,9 +26383,9 @@
         "bracket": "8",
         "initialLeverage": "3",
         "notionalCap": "20000000",
-        "notionalFloor": "10000000",
+        "notionalFloor": "12000000",
         "maintMarginRatio": "0.15",
-        "cum": "565545.0"
+        "cum": "723045.0"
       }
     },
     {
@@ -25945,7 +26401,7 @@
         "notionalCap": "30000000",
         "notionalFloor": "20000000",
         "maintMarginRatio": "0.25",
-        "cum": "2565545.0"
+        "cum": "2723045.0"
       }
     },
     {
@@ -25961,7 +26417,7 @@
         "notionalCap": "50000000",
         "notionalFloor": "30000000",
         "maintMarginRatio": "0.5",
-        "cum": "1.0065545E7"
+        "cum": "1.0223045E7"
       }
     }
   ],
