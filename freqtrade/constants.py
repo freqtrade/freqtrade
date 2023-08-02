@@ -153,7 +153,7 @@ CONF_SCHEMA = {
             },
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
-        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True, 'minimum': -1},
+        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
@@ -446,12 +446,12 @@ CONF_SCHEMA = {
         'dataformat_ohlcv': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
-            'default': 'json'
+            'default': 'feather'
         },
         'dataformat_trades': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS_TRADES,
-            'default': 'jsongz'
+            'default': 'feather'
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},

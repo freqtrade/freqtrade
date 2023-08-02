@@ -324,6 +324,7 @@ A backtesting result will look like that:
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -428,6 +429,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -467,6 +469,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Max Consecutive Wins / Loss`: Maximum consecutive wins/losses in a row.
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Canceled Trade Entries`: Number of trades that have been canceled by user request via `adjust_entry_price`.
@@ -534,6 +537,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 - ROI
   - exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
   - exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit
+  - ROI entries which came into effect on the triggering candle (e.g. `120: 0.02` for 1h candles, from `60: 0.05`) will use the candle's open as exit rate
   - Force-exits caused by `<N>=-1` ROI entries use low as exit value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss exits happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
 - Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` exit reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes

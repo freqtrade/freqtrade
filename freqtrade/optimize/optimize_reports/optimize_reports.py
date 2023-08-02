@@ -1,15 +1,17 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
-from pandas import DataFrame, concat, to_datetime
+import numpy as np
+from pandas import DataFrame, Series, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
 from freqtrade.misc import decimals_per_coin, round_coin_value
+from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -55,16 +57,6 @@ def generate_rejected_signals(preprocessed_df: Dict[str, DataFrame],
 
         rejected_candles_only[pair] = rejected_signals_only_df
     return rejected_candles_only
-
-
-def generate_wins_draws_losses(wins, draws, losses):
-    if wins > 0 and losses == 0:
-        wl_ratio = '100'
-    elif wins == 0:
-        wl_ratio = '0'
-    else:
-        wl_ratio = f'{100.0 / (wins + draws + losses) * wins:.1f}' if losses > 0 else '100'
-    return f'{wins:>4}  {draws:>4}  {losses:>4}  {wl_ratio:>4}'
 
 
 def _generate_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
@@ -262,6 +254,23 @@ def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
     return result
 
 
+def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
+    """
+    Calculate consecutive win and loss streaks
+    :param dataframe: Dataframe containing the trades dataframe, with profit_ratio column
+    :return: Tuple containing consecutive wins and losses
+    """
+
+    df = Series(np.where(dataframe['profit_ratio'] > 0, 'win', 'loss')).to_frame('result')
+    df['streaks'] = df['result'].ne(df['result'].shift()).cumsum().rename('streaks')
+    df['counter'] = df['streaks'].groupby(df['streaks']).cumcount() + 1
+    res = df.groupby(df['result']).max()
+    #
+    cons_wins = int(res.loc['win', 'counter']) if 'win' in res.index else 0
+    cons_losses = int(res.loc['loss', 'counter']) if 'loss' in res.index else 0
+    return cons_wins, cons_losses
+
+
 def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     """ Generate overall trade statistics """
     if len(results) == 0:
@@ -273,6 +282,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
             'holding_avg': timedelta(),
             'winner_holding_avg': timedelta(),
             'loser_holding_avg': timedelta(),
+            'max_consecutive_wins': 0,
+            'max_consecutive_losses': 0,
         }
 
     winning_trades = results.loc[results['profit_ratio'] > 0]
@@ -285,6 +296,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
                           if not winning_trades.empty else timedelta())
     loser_holding_avg = (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
                          if not losing_trades.empty else timedelta())
+    winstreak, loss_streak = calc_streak(results)
 
     return {
         'wins': len(winning_trades),
@@ -297,6 +309,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
         'winner_holding_avg_s': winner_holding_avg.total_seconds(),
         'loser_holding_avg': loser_holding_avg,
         'loser_holding_avg_s': loser_holding_avg.total_seconds(),
+        'max_consecutive_wins': winstreak,
+        'max_consecutive_losses': loss_streak,
     }
 
 
@@ -522,7 +536,7 @@ def generate_strategy_stats(pairlist: List[str],
 def generate_backtest_stats(btdata: Dict[str, DataFrame],
                             all_results: Dict[str, Dict[str, Union[DataFrame, Dict]]],
                             min_date: datetime, max_date: datetime
-                            ) -> Dict[str, Any]:
+                            ) -> BacktestResultType:
     """
     :param btdata: Backtest data
     :param all_results: backtest result - dictionary in the form:
@@ -531,7 +545,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
     :param max_date: Backtest end date
     :return: Dictionary containing results per strategy and a strategy summary.
     """
-    result: Dict[str, Any] = {
+    result: BacktestResultType = {
         'metadata': {},
         'strategy': {},
         'strategy_comparison': [],

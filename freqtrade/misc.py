@@ -116,6 +116,13 @@ def file_load_json(file: Path):
     return pairdata
 
 
+def is_file_in_dir(file: Path, directory: Path) -> bool:
+    """
+    Helper function to check if file is in directory.
+    """
+    return file.is_file() and file.parent.samefile(directory)
+
+
 def pair_to_filename(pair: str) -> str:
     for ch in ['/', ' ', '.', '@', '$', '+', ':']:
         pair = pair.replace(ch, '_')

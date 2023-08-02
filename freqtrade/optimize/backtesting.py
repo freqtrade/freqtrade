@@ -39,6 +39,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.wallets import Wallets
 
@@ -77,7 +78,7 @@ class Backtesting:
 
         LoggingMixin.show_output = False
         self.config = config
-        self.results: Dict[str, Any] = {}
+        self.results: BacktestResultType = get_BacktestResultType_default()
         self.trade_id_counter: int = 0
         self.order_id_counter: int = 0
 
@@ -239,7 +240,7 @@ class Backtesting:
             timerange=self.timerange,
             startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
-            data_format=self.config.get('dataformat_ohlcv', 'json'),
+            data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
         )
 
@@ -268,7 +269,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=self.config.get('candle_type_def', CandleType.SPOT)
             )
         else:
@@ -282,7 +283,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.FUNDING_RATE
             )
 
@@ -294,7 +295,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.from_string(self.exchange.get_option("mark_ohlcv_price"))
             )
             # Combine data to avoid combining the data per trade.

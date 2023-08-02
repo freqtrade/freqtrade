@@ -1476,6 +1476,12 @@ def test_api_pair_history(botclient, mocker):
                     "&timerange=20180111-20180112")
     assert_response(rc, 422)
 
+    # Invalid strategy
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}11")
+    assert_response(rc, 502)
+
     # Working
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
@@ -1510,8 +1516,7 @@ def test_api_pair_history(botclient, mocker):
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     f"&timerange=20200111-20200112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 502)
-    assert rc.json()['error'] == ("Error querying /api/v1/pair_history: "
-                                  "No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
+    assert rc.json()['detail'] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
 
 def test_api_plot_config(botclient, mocker):
@@ -1547,6 +1552,10 @@ def test_api_plot_config(botclient, mocker):
     rc = client_get(client, f"{BASE_URI}/plot_config?strategy=HyperoptableStrategy")
     assert_response(rc)
     assert rc.json()['subplots'] == {}
+
+    rc = client_get(client, f"{BASE_URI}/plot_config?strategy=NotAStrategy")
+    assert_response(rc, 502)
+    assert rc.json()['detail'] is not None
 
     mocker.patch('freqtrade.rpc.api_server.api_v1.get_rpc_optional', return_value=None)
 
@@ -1798,7 +1807,7 @@ def test_list_available_pairs(botclient):
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 
     assert_response(rc)
-    assert rc.json()['length'] == 13
+    assert rc.json()['length'] == 12
     assert isinstance(rc.json()['pairs'], list)
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")
@@ -2000,7 +2009,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     result = rc.json()
     assert len(result) == 3
     fn = result[0]['filename']
-    assert fn == "backtest-result_multistrat.json"
+    assert fn == "backtest-result_multistrat"
     strategy = result[0]['strategy']
     rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}&strategy={strategy}")
     assert_response(rc)
@@ -2012,6 +2021,34 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     # Only one strategy loaded - even though we use multiresult
     assert len(result2['backtest_result']['strategy']) == 1
     assert result2['backtest_result']['strategy'][strategy]
+
+
+def test_api_delete_backtest_history_entry(botclient, mocker, tmp_path: Path):
+    ftbot, client = botclient
+
+    # Create a temporary directory and file
+    bt_results_base = tmp_path / "backtest_results"
+    bt_results_base.mkdir()
+    file_path = bt_results_base / "test.json"
+    file_path.touch()
+    meta_path = file_path.with_suffix('.meta.json')
+    meta_path.touch()
+
+    rc = client_delete(client, f"{BASE_URI}/backtest/history/randomFile.json")
+    assert_response(rc, 503)
+    assert rc.json()['detail'] == 'Bot is not in the correct state.'
+
+    ftbot.config['user_data_dir'] = tmp_path
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+    rc = client_delete(client, f"{BASE_URI}/backtest/history/randomFile.json")
+    assert rc.status_code == 404
+    assert rc.json()['detail'] == 'File not found.'
+
+    rc = client_delete(client, f"{BASE_URI}/backtest/history/{file_path.name}")
+    assert rc.status_code == 200
+
+    assert not file_path.exists()
+    assert not meta_path.exists()
 
 
 def test_health(botclient):

@@ -1179,8 +1179,8 @@ class RPC:
         """ Analyzed dataframe in Dict form """
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                               pair, timeframe, _data, last_analyzed)
+        return RPC._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                              pair, timeframe, _data, last_analyzed)
 
     def __rpc_analysed_dataframe_raw(
         self,
@@ -1262,7 +1262,7 @@ class RPC:
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
-            data_format=config.get('dataformat_ohlcv', 'json'),
+            data_format=config['dataformat_ohlcv'],
             candle_type=config.get('candle_type_def', CandleType.SPOT),
             startup_candles=startup_candles,
         )
@@ -1277,7 +1277,7 @@ class RPC:
         df_analyzed = trim_dataframe(df_analyzed, timerange_parsed, startup_candles=startup_candles)
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed, dt_now())
+                                              df_analyzed.copy(), dt_now())
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and
