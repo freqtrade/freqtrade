@@ -101,18 +101,24 @@ class ExchangeWS():
             self,
             pair: str,
             timeframe: str,
-            candle_type: CandleType
+            candle_type: CandleType,
+            candle_date: int,
     ) -> OHLCVResponse:
         """
         Returns cached klines from ccxt's "watch" cache.
+        :param candle_date: timestamp of the end-time of the candle.
         """
         candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
-        refresh_time = int(self.klines_last_refresh[(pair, timeframe, candle_type)] * 1000)
+        refresh_date = self.klines_last_refresh[(pair, timeframe, candle_type)]
+        drop_hint = False
+        if refresh_date > candle_date:
+            # Refreshed after candle was complete.
+            logger.info(f"{candles[-1][0] // 1000} >= {candle_date}")
+            drop_hint = (candles[-1][0] // 1000) >= candle_date
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
             f"{datetime.fromtimestamp(candles[-1][0] // 1000)}, "
-            f"lref={datetime.fromtimestamp(self.klines_last_refresh[(pair, timeframe, candle_type)])}")
-        # Fake 1 candle - which is then removed again
-        # TODO: is this really a good idea??
-        # candles.append([refresh_time, 0, 0, 1, 2, 0])
-        return pair, timeframe, candle_type, candles
+            f"lref={datetime.fromtimestamp(self.klines_last_refresh[(pair, timeframe, candle_type)])}"
+            f"candle_date={datetime.fromtimestamp(candle_date)}, {drop_hint=}"
+            )
+        return pair, timeframe, candle_type, candles, drop_hint

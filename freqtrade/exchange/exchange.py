@@ -7,7 +7,6 @@ import asyncio
 import inspect
 import logging
 import signal
-import time
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor, isnan
@@ -2258,7 +2257,7 @@ class Exchange:
                     # Usable result ...
                     logger.info(f"reuse watch result for {pair}, {timeframe}, {x}")
 
-                    return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type)
+                    return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
 
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < last_refresh:
