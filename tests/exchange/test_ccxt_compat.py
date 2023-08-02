@@ -544,8 +544,6 @@ class TestCCXTExchange:
         if exchangename in ('bittrex'):
             # For some weired reason, this test returns random lengths for bittrex.
             pytest.skip("Exchange doesn't provide stable ohlcv history")
-        if exchangename in ('bitvavo'):
-            pytest.skip("Exchange Downtime ")
 
         if not exc._ft_has['ohlcv_has_history']:
             pytest.skip("Exchange does not support candle history")
