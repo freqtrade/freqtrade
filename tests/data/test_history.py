@@ -386,7 +386,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 def test_init(default_conf) -> None:
     assert {} == load_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe']
     )
@@ -395,14 +395,14 @@ def test_init(default_conf) -> None:
 def test_init_with_refresh(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     refresh_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe'],
         exchange=exchange,
         candle_type=CandleType.SPOT
     )
     assert {} == load_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe']
     )
