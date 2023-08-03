@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring,C0103
 
-import datetime
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -9,7 +8,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
-                            file_load_json, format_ms_time, json_to_dataframe, pair_to_filename,
+                            file_load_json, is_file_in_dir, json_to_dataframe, pair_to_filename,
                             parse_db_uri_for_logging, plural, render_template,
                             render_template_with_fallback, round_coin_value, safe_value_fallback,
                             safe_value_fallback2)
@@ -65,6 +64,24 @@ def test_file_load_json(mocker, testdatadir) -> None:
     assert ret
 
 
+def test_is_file_in_dir(tmp_path):
+
+    # Create a temporary directory and file
+    dir_path = tmp_path / "subdir"
+    dir_path.mkdir()
+    file_path = dir_path / "test.txt"
+    file_path.touch()
+
+    # Test that the function returns True when the file is in the directory
+    assert is_file_in_dir(file_path, dir_path) is True
+
+    # Test that the function returns False when the file is not in the directory
+    assert is_file_in_dir(file_path, tmp_path) is False
+
+    file_path2 = tmp_path / "../../test2.txt"
+    assert is_file_in_dir(file_path2, tmp_path) is False
+
+
 @pytest.mark.parametrize("pair,expected_result", [
     ("ETH/BTC", 'ETH_BTC'),
     ("ETH/USDT", 'ETH_USDT'),
@@ -89,19 +106,6 @@ def test_file_load_json(mocker, testdatadir) -> None:
 def test_pair_to_filename(pair, expected_result):
     pair_s = pair_to_filename(pair)
     assert pair_s == expected_result
-
-
-def test_format_ms_time() -> None:
-    # Date 2018-04-10 18:02:01
-    date_in_epoch_ms = 1523383321000
-    date = format_ms_time(date_in_epoch_ms)
-    assert type(date) is str
-    res = datetime.datetime(2018, 4, 10, 18, 2, 1, tzinfo=datetime.timezone.utc)
-    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
-    res = datetime.datetime(2017, 12, 13, 8, 2, 1, tzinfo=datetime.timezone.utc)
-    # Date 2017-12-13 08:02:01
-    date_in_epoch_ms = 1513152121000
-    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def test_safe_value_fallback():

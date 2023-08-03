@@ -10,7 +10,6 @@ from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
 DOCS_LINK = "https://www.freqtrade.io/en/stable"
 DEFAULT_CONFIG = 'config.json'
-DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
@@ -66,6 +65,7 @@ TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 FULL_DATAFRAME_THRESHOLD = 100
 CUSTOM_TAG_MAX_LENGTH = 255
+DL_DATA_TIMEFRAMES = ['1m', '5m']
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
@@ -112,6 +112,8 @@ MINIMAL_CONFIG = {
     }
 }
 
+__MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {'type': 'object'} for x in RPCMessageType}
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
@@ -151,7 +153,7 @@ CONF_SCHEMA = {
             },
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
-        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True, 'minimum': -1},
+        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
@@ -354,7 +356,8 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
-                **dict([(x, {'type': 'object'}) for x in RPCMessageType]),
+                **__MESSAGE_TYPE_DICT,
+                # **{x: {'type': 'object'} for x in RPCMessageType},
                 # Below -> Deprecated
                 'webhookentry': {'type': 'object'},
                 'webhookentrycancel': {'type': 'object'},
@@ -443,12 +446,12 @@ CONF_SCHEMA = {
         'dataformat_ohlcv': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
-            'default': 'json'
+            'default': 'feather'
         },
         'dataformat_trades': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS_TRADES,
-            'default': 'jsongz'
+            'default': 'feather'
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},

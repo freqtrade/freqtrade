@@ -14,15 +14,17 @@ from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backte
                                        load_backtest_stats)
 from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
-from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
-                                                 generate_daily_stats, generate_edge_table,
-                                                 generate_exit_reason_stats, generate_pair_metrics,
+from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
+                                                 generate_edge_table, generate_exit_reason_stats,
+                                                 generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
+from freqtrade.optimize.optimize_reports.optimize_reports import (_get_resample_from_period,
+                                                                  calc_streak)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
@@ -209,9 +211,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
 
 def test_store_backtest_stats(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.bt_storage.file_dump_json')
 
-    store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
+    data = {'metadata': {}, 'strategy': {}, 'strategy_comparison': []}
+    store_backtest_stats(testdatadir, data, '2022_01_01_15_05_13')
 
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
@@ -219,7 +222,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'
-    store_backtest_stats(filename, {'metadata': {}}, '2022_01_01_15_05_13')
+    store_backtest_stats(filename, data, '2022_01_01_15_05_13')
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
@@ -228,7 +231,8 @@ def test_store_backtest_stats(testdatadir, mocker):
 
 def test_store_backtest_candles(testdatadir, mocker):
 
-    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_joblib')
+    dump_mock = mocker.patch(
+        'freqtrade.optimize.optimize_reports.bt_storage.file_dump_joblib')
 
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
@@ -344,6 +348,32 @@ def test_generate_trading_stats(testdatadir):
     res = generate_trading_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
     assert res['wins'] == 0
     assert res['losses'] == 0
+
+
+def test_calc_streak(testdatadir):
+    df = pd.DataFrame({
+            'profit_ratio': [0.05, -0.02, -0.03, -0.05, 0.01, 0.02, 0.03, 0.04, -0.02, -0.03],
+        })
+    # 4 consecutive wins, 3 consecutive losses
+    res = calc_streak(df)
+    assert res == (4, 3)
+    assert isinstance(res[0], int)
+    assert isinstance(res[1], int)
+
+    # invert situation
+    df1 = df.copy()
+    df1['profit_ratio'] = df1['profit_ratio'] * -1
+    assert calc_streak(df1) == (3, 4)
+
+    df_empty = pd.DataFrame({
+            'profit_ratio': [],
+    })
+    assert df_empty.empty
+    assert calc_streak(df_empty) == (0, 0)
+
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+    assert calc_streak(bt_data) == (7, 18)
 
 
 def test_text_table_exit_reason():

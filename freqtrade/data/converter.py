@@ -11,7 +11,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, Config, TradeList
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 
 
 logger = logging.getLogger(__name__)
@@ -96,8 +96,14 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         'volume': 'sum'
     }
     timeframe_minutes = timeframe_to_minutes(timeframe)
+    resample_interval = f'{timeframe_minutes}min'
+    if timeframe_minutes >= 43200 and timeframe_minutes < 525600:
+        # Monthly candles need special treatment to stick to the 1st of the month
+        resample_interval = f'{timeframe}S'
+    elif timeframe_minutes > 43200:
+        resample_interval = timeframe
     # Resample to create "NAN" values
-    df = dataframe.resample(f'{timeframe_minutes}min', on='date').agg(ohlcv_dict)
+    df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 
     # Forwardfill close for missing columns
     df['close'] = df['close'].fillna(method='ffill')
@@ -122,7 +128,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     return df
 
 
-def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
+def trim_dataframe(df: DataFrame, timerange, *, df_date_col: str = 'date',
                    startup_candles: int = 0) -> DataFrame:
     """
     Trim dataframe based on given timerange
@@ -264,7 +270,6 @@ def convert_ohlcv_format(
     convert_from: str,
     convert_to: str,
     erase: bool,
-    candle_type: CandleType
 ):
     """
     Convert OHLCV from one format to another
@@ -272,7 +277,6 @@ def convert_ohlcv_format(
     :param convert_from: Source format
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
     """
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
@@ -280,37 +284,45 @@ def convert_ohlcv_format(
     timeframes = config.get('timeframes', [config.get('timeframe')])
     logger.info(f"Converting candle (OHLCV) for timeframe {timeframes}")
 
-    if 'pairs' not in config:
-        config['pairs'] = []
-        # Check timeframes or fall back to timeframe.
-        for timeframe in timeframes:
-            config['pairs'].extend(src.ohlcv_get_pairs(
-                config['datadir'],
-                timeframe,
-                candle_type=candle_type
-            ))
-        config['pairs'] = sorted(set(config['pairs']))
-    logger.info(f"Converting candle (OHLCV) data for {config['pairs']}")
+    candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', [
+        c.value for c in CandleType])]
+    logger.info(candle_types)
+    paircombs = src.ohlcv_get_available_data(config['datadir'], TradingMode.SPOT)
+    paircombs.extend(src.ohlcv_get_available_data(config['datadir'], TradingMode.FUTURES))
 
-    for timeframe in timeframes:
-        for pair in config['pairs']:
-            data = src.ohlcv_load(pair=pair, timeframe=timeframe,
-                                  timerange=None,
-                                  fill_missing=False,
-                                  drop_incomplete=False,
-                                  startup_candles=0,
-                                  candle_type=candle_type)
-            logger.info(f"Converting {len(data)} {timeframe} {candle_type} candles for {pair}")
-            if len(data) > 0:
-                trg.ohlcv_store(
-                    pair=pair,
-                    timeframe=timeframe,
-                    data=data,
-                    candle_type=candle_type
-                )
-                if erase and convert_from != convert_to:
-                    logger.info(f"Deleting source data for {pair} / {timeframe}")
-                    src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
+    if 'pairs' in config:
+        # Filter pairs
+        paircombs = [comb for comb in paircombs if comb[0] in config['pairs']]
+
+    if 'timeframes' in config:
+        paircombs = [comb for comb in paircombs if comb[1] in config['timeframes']]
+    paircombs = [comb for comb in paircombs if comb[2] in candle_types]
+
+    paircombs = sorted(paircombs, key=lambda x: (x[0], x[1], x[2].value))
+
+    formatted_paircombs = '\n'.join([f"{pair}, {timeframe}, {candle_type}"
+                                    for pair, timeframe, candle_type in paircombs])
+
+    logger.info(f"Converting candle (OHLCV) data for the following pair combinations:\n"
+                f"{formatted_paircombs}")
+    for pair, timeframe, candle_type in paircombs:
+        data = src.ohlcv_load(pair=pair, timeframe=timeframe,
+                              timerange=None,
+                              fill_missing=False,
+                              drop_incomplete=False,
+                              startup_candles=0,
+                              candle_type=candle_type)
+        logger.info(f"Converting {len(data)} {timeframe} {candle_type} candles for {pair}")
+        if len(data) > 0:
+            trg.ohlcv_store(
+                pair=pair,
+                timeframe=timeframe,
+                data=data,
+                candle_type=candle_type
+            )
+            if erase and convert_from != convert_to:
+                logger.info(f"Deleting source data for {pair} / {timeframe}")
+                src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
 
 
 def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:

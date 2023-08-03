@@ -2788,7 +2788,7 @@ def test_manage_open_orders_entry(
 
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
-    # check it does cancel buy orders over the time limit
+    # check it does cancel entry orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
@@ -2800,7 +2800,7 @@ def test_manage_open_orders_entry(
         ).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    # Custom user buy-timeout is never called
+    # Custom user entry-timeout is never called
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
     # Entry adjustment is never called
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
@@ -5048,7 +5048,7 @@ def test_get_real_amount_in_point(default_conf_usdt, buy_order_fee, fee, mocker,
     (8.0, 0.1, 8.0, None),
     (8.0, 0.1, 7.9, 0.1),
 ])
-def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
+def test_apply_fee_conditional(default_conf_usdt, fee, mocker, caplog,
                                amount, fee_abs, wallet, amount_exp):
     walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
@@ -5073,6 +5073,60 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
     # Amount is kept as is
     assert freqtrade.apply_fee_conditional(trade, 'LTC', amount, fee_abs, order) == amount_exp
     assert walletmock.call_count == 1
+    if fee_abs != 0 and amount_exp is None:
+        assert log_has_re(r"Fee amount.*Eating.*dust\.", caplog)
+
+
+@pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
+    (8.0, 0.0, 16, None),
+    (8.0, 0.0, 0, None),
+    (8.0, 0.1, 8, 0.1),
+    (8.0, 0.1, 20, None),
+    (8.0, 0.1, 16.0, None),
+    (8.0, 0.1, 7.9, 0.1),
+    (8.0, 0.1, 12, 0.1),
+    (8.0, 0.1, 15.9, 0.1),
+])
+def test_apply_fee_conditional_multibuy(default_conf_usdt, fee, mocker, caplog,
+                                        amount, fee_abs, wallet, amount_exp):
+    walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
+    mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_order_id="123456"
+    )
+    # One closed order
+    order = Order(
+        ft_order_side='buy',
+        order_id='10',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        filled=amount,
+        status="closed"
+    )
+    trade.orders.append(order)
+    # Add additional order - this should NOT eat into dust unless the wallet was bigger already.
+    order1 = Order(
+        ft_order_side='buy',
+        order_id='100',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+    )
+    trade.orders.append(order1)
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    walletmock.reset_mock()
+    # The new trade amount will be 2x amount - fee / wallet will have to be adapted to this.
+    assert freqtrade.apply_fee_conditional(trade, 'LTC', amount, fee_abs, order1) == amount_exp
+    assert walletmock.call_count == 1
+    if fee_abs != 0 and amount_exp is None:
+        assert log_has_re(r"Fee amount.*Eating.*dust\.", caplog)
 
 
 @pytest.mark.parametrize("delta, is_high_delta", [

@@ -3,19 +3,21 @@ Remote PairList provider
 
 Provides pair list fetched from a remote source
 """
-import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import rapidjson
 import requests
 from cachetools import TTLCache
 
 from freqtrade import __version__
+from freqtrade.configuration.load_config import CONFIG_PARSE_MODE
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,8 @@ class RemotePairList(IPairList):
                 '`pairlist_url` not specified. Please check your configuration '
                 'for "pairlist.config.pairlist_url"')
 
+        self._mode = self._pairlistconfig.get('mode', 'whitelist')
+        self._processing_mode = self._pairlistconfig.get('processing_mode', 'filter')
         self._number_pairs = self._pairlistconfig['number_assets']
         self._refresh_period: int = self._pairlistconfig.get('refresh_period', 1800)
         self._keep_pairlist_on_failure = self._pairlistconfig.get('keep_pairlist_on_failure', True)
@@ -49,6 +53,21 @@ class RemotePairList(IPairList):
         self._bearer_token = self._pairlistconfig.get('bearer_token', '')
         self._init_done = False
         self._last_pairlist: List[Any] = list()
+
+        if self._mode not in ['whitelist', 'blacklist']:
+            raise OperationalException(
+                '`mode` not configured correctly. Supported Modes '
+                'are "whitelist","blacklist"')
+
+        if self._processing_mode not in ['filter', 'append']:
+            raise OperationalException(
+                '`processing_mode` not configured correctly. Supported Modes '
+                'are "filter","append"')
+
+        if self._pairlist_pos == 0 and self._mode == 'blacklist':
+            raise OperationalException(
+                'A `blacklist` mode RemotePairList can not be on the first '
+                'position of your pairlist.')
 
     @property
     def needstickers(self) -> bool:
@@ -67,22 +86,36 @@ class RemotePairList(IPairList):
 
     @staticmethod
     def description() -> str:
-        return "Retrieve pairs from a remote API."
+        return "Retrieve pairs from a remote API or local file."
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
-            "number_assets": {
-                "type": "number",
-                "default": 0,
-                "description": "Number of assets",
-                "help": "Number of assets to use from the pairlist.",
-            },
             "pairlist_url": {
                 "type": "string",
                 "default": "",
                 "description": "URL to fetch pairlist from",
                 "help": "URL to fetch pairlist from",
+            },
+            "number_assets": {
+                "type": "number",
+                "default": 30,
+                "description": "Number of assets",
+                "help": "Number of assets to use from the pairlist.",
+            },
+            "mode": {
+                "type": "option",
+                "default": "whitelist",
+                "options": ["whitelist", "blacklist"],
+                "description": "Pairlist mode",
+                "help": "Should this pairlist operate as a whitelist or blacklist?",
+            },
+            "processing_mode": {
+                "type": "option",
+                "default": "filter",
+                "options": ["filter", "append"],
+                "description": "Processing mode",
+                "help": "Append pairs to incomming pairlist or filter them?",
             },
             **IPairList.refresh_period_parameter(),
             "keep_pairlist_on_failure": {
@@ -204,7 +237,7 @@ class RemotePairList(IPairList):
                 if file_path.exists():
                     with file_path.open() as json_file:
                         # Load the JSON data into a dictionary
-                        jsonparse = json.load(json_file)
+                        jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
 
                         try:
                             pairlist = self.process_json(jsonparse)
@@ -223,6 +256,7 @@ class RemotePairList(IPairList):
 
         self.log_once(f"Fetched pairs: {pairlist}", logger.debug)
 
+        pairlist = expand_pairlist(pairlist, list(self._exchange.get_markets().keys()))
         pairlist = self._whitelist_for_active_markets(pairlist)
         pairlist = pairlist[:self._number_pairs]
 
@@ -250,6 +284,23 @@ class RemotePairList(IPairList):
         :return: new whitelist
         """
         rpl_pairlist = self.gen_pairlist(tickers)
-        merged_list = pairlist + rpl_pairlist
-        merged_list = sorted(set(merged_list), key=merged_list.index)
+        merged_list = []
+        filtered = []
+
+        if self._mode == "whitelist":
+            if self._processing_mode == "filter":
+                merged_list = [pair for pair in pairlist if pair in rpl_pairlist]
+            elif self._processing_mode == "append":
+                merged_list = pairlist + rpl_pairlist
+            merged_list = sorted(set(merged_list), key=merged_list.index)
+        else:
+            for pair in pairlist:
+                if pair not in rpl_pairlist:
+                    merged_list.append(pair)
+                else:
+                    filtered.append(pair)
+            if filtered:
+                self.log_once(f"Blacklist - Filtered out pairs: {filtered}", logger.info)
+
+        merged_list = merged_list[:self._number_pairs]
         return merged_list

@@ -3,7 +3,6 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
@@ -117,18 +116,17 @@ def file_load_json(file: Path):
     return pairdata
 
 
+def is_file_in_dir(file: Path, directory: Path) -> bool:
+    """
+    Helper function to check if file is in directory.
+    """
+    return file.is_file() and file.parent.samefile(directory)
+
+
 def pair_to_filename(pair: str) -> str:
     for ch in ['/', ' ', '.', '@', '$', '+', ':']:
         pair = pair.replace(ch, '_')
     return pair
-
-
-def format_ms_time(date: int) -> str:
-    """
-    convert MS date to readable format.
-    : epoch-string in ms
-    """
-    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):

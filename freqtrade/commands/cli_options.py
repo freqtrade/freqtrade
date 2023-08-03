@@ -381,7 +381,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "candle_types": Arg(
         '--candle-types',
-        help='Select candle type to use',
+        help='Select candle type to convert. Defaults to all available types.',
         choices=[c.value for c in CandleType],
         nargs='+',
     ),
@@ -435,12 +435,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded candle (OHLCV) data. (default: `json`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `feather`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
-        help='Storage format for downloaded trades data. (default: `jsongz`).',
+        help='Storage format for downloaded trades data. (default: `feather`).',
         choices=constants.AVAILABLE_DATAHANDLERS_TRADES,
     ),
     "show_timerange": Arg(
@@ -450,14 +450,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exchange": Arg(
         '--exchange',
-        help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
-        f'Only valid if no config is provided.',
+        help='Exchange name. Only valid if no config is provided.',
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
         help='Specify which tickers to download. Space-separated list. '
         'Default: `1m 5m`.',
-        default=['1m', '5m'],
         nargs='+',
     ),
     "prepend_data": Arg(

@@ -453,7 +453,13 @@ Once the PR against stable is merged (best right after merging):
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "stable" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock)
+* Use the above changelog as release comment (as codeblock).
+* Use the below snippet for the new release
+
+??? Tip "Release template"
+    ````
+    --8<-- "includes/release_template.md"
+    ````
 
 ## Releases
 

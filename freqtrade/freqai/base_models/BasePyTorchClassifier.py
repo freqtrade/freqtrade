@@ -94,8 +94,8 @@ class BasePyTorchClassifier(BasePyTorchModel):
         if dk.feature_pipeline["di"]:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
-            dk.DI_values = np.zeros(len(outliers.index))
-        dk.do_predict = outliers.to_numpy()
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
 
         return (pred_df, dk.do_predict)
 

@@ -7,15 +7,16 @@ from typing import Dict, List, Optional, Tuple
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS, Config
+from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
+                                 DL_DATA_TIMEFRAMES, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
-from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
+from freqtrade.util import format_ms_time
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 
 
@@ -68,7 +69,7 @@ def load_data(datadir: Path,
               fill_up_missing: bool = True,
               startup_candles: int = 0,
               fail_without_data: bool = False,
-              data_format: str = 'json',
+              data_format: str = 'feather',
               candle_type: CandleType = CandleType.SPOT,
               user_futures_funding_rate: Optional[int] = None,
               ) -> Dict[str, DataFrame]:
@@ -354,7 +355,7 @@ def _download_trades_history(exchange: Exchange,
             trades = []
 
         if not since:
-            since = int((datetime.now() - timedelta(days=-new_pairs_days)).timestamp()) * 1000
+            since = int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:
@@ -393,7 +394,7 @@ def _download_trades_history(exchange: Exchange,
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
                                  timerange: TimeRange, new_pairs_days: int = 30,
-                                 erase: bool = False, data_format: str = 'jsongz') -> List[str]:
+                                 erase: bool = False, data_format: str = 'feather') -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -426,8 +427,8 @@ def convert_trades_to_ohlcv(
     datadir: Path,
     timerange: TimeRange,
     erase: bool = False,
-    data_format_ohlcv: str = 'json',
-    data_format_trades: str = 'jsongz',
+    data_format_ohlcv: str = 'feather',
+    data_format_trades: str = 'feather',
     candle_type: CandleType = CandleType.SPOT
 ) -> None:
     """
@@ -512,6 +513,8 @@ def download_data_main(config: Config) -> None:
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
+    if 'timeframes' not in config:
+        config['timeframes'] = DL_DATA_TIMEFRAMES
 
     # Manual validations of relevant settings
     if not config['exchange'].get('skip_pair_validation', False):

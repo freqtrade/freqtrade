@@ -35,7 +35,7 @@ def hyperopt_serializer(x):
     return str(x)
 
 
-class HyperoptStateContainer():
+class HyperoptStateContainer:
     """ Singleton class to track state of hyperopt"""
     state: HyperoptState = HyperoptState.OPTIMIZE
 
@@ -44,7 +44,7 @@ class HyperoptStateContainer():
         cls.state = value
 
 
-class HyperoptTools():
+class HyperoptTools:
 
     @staticmethod
     def get_strategy_filename(config: Config, strategy_name: str) -> Optional[Path]:
@@ -432,12 +432,10 @@ class HyperoptTools():
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
                     for j in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
-                                                           str(trials.loc[i][j]), Fore.RESET)
+                        trials.iat[i, j] = f"{Fore.GREEN}{str(trials.loc[i][j])}{Fore.RESET}"
                 if trials.loc[i]['is_best'] and highlight_best:
                     for j in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
-                                                           str(trials.loc[i][j]), Style.RESET_ALL)
+                        trials.iat[i, j] = f"{Style.BRIGHT}{str(trials.loc[i][j])}{Style.RESET_ALL}"
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit', 'is_random'])
         if remove_header > 0:

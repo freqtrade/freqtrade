@@ -168,7 +168,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 download_all_data_for_training(self.dp, self.config)
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
-            class DummyClass():
+            class DummyClass:
                 def start(self, *args, **kwargs):
                     raise OperationalException(
                         'freqAI is not enabled. '
@@ -825,6 +825,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and entry order signal to it
+        Should only be used in live.
         :param dataframe: Dataframe containing data from exchange
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
@@ -1320,6 +1321,20 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair}).copy()
                 for pair, pair_data in data.items()}
+
+    def ft_advise_signals(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Call advise_entry and advise_exit and return the resulting dataframe.
+        :param dataframe: Dataframe containing data from exchange, as well as pre-calculated
+                          indicators
+        :param metadata: Metadata dictionary with additional data (e.g. 'pair')
+        :return: DataFrame of candle (OHLCV) data with indicator data and signals added
+
+        """
+
+        dataframe = self.advise_entry(dataframe, metadata)
+        dataframe = self.advise_exit(dataframe, metadata)
+        return dataframe
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """

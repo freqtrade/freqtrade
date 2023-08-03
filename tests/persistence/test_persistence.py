@@ -559,14 +559,14 @@ def test_calc_open_close_trade_price(
     exit_order = limit_order[trade.exit_side]
 
     oobj = Order.parse_from_ccxt_object(entry_order, 'ADA/USDT', trade.entry_side)
-    oobj.trade = trade
+    oobj._trade_live = trade
     oobj.update_from_ccxt_object(entry_order)
     trade.update_trade(oobj)
 
     trade.funding_fees = funding_fees
 
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', trade.exit_side)
-    oobj.trade = trade
+    oobj._trade_live = trade
     oobj.update_from_ccxt_object(exit_order)
     trade.update_trade(oobj)
 

@@ -89,10 +89,10 @@ class PerformanceFilter(IPairList):
         # Sort the list using:
         #  - primarily performance (high to low)
         #  - then count (low to high, so as to favor same performance with fewer trades)
-        #  - then pair name alphametically
+        #  - then by prior index, keeping original sorting order
         sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['count', 'prior_idx'], ascending=True)\
-            .sort_values(by=['profit_ratio'], ascending=False)
+            .fillna(0).sort_values(by=['profit_ratio', 'count', 'prior_idx'],
+                                   ascending=[False, True, True])
         if self._min_profit is not None:
             removed = sorted_df[sorted_df['profit_ratio'] < self._min_profit]
             for _, row in removed.iterrows():

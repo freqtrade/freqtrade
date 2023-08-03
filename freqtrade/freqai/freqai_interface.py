@@ -86,8 +86,6 @@ class IFreqaiModel(ABC):
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
 
         self.CONV_WIDTH = self.freqai_info.get('conv_width', 1)
-        if self.ft_params.get("inlier_metric_window", 0):
-            self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
         self.class_names: List[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
@@ -515,7 +513,7 @@ class IFreqaiModel(ABC):
             ]
 
         if ft_params.get("principal_component_analysis", False):
-            pipe_steps.append(('pca', ds.PCA()))
+            pipe_steps.append(('pca', ds.PCA(n_components=0.999)))
             pipe_steps.append(('post-pca-scaler',
                                SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1)))))
 
@@ -675,15 +673,6 @@ class IFreqaiModel(ABC):
 
         hist_preds_df['close_price'] = strat_df['close']
         hist_preds_df['date_pred'] = strat_df['date']
-
-        # # for keras type models, the conv_window needs to be prepended so
-        # # viewing is correct in frequi
-        if self.ft_params.get('inlier_metric_window', 0):
-            n_lost_points = self.freqai_info.get('conv_width', 2)
-            zeros_df = DataFrame(np.zeros((n_lost_points, len(hist_preds_df.columns))),
-                                 columns=hist_preds_df.columns)
-            self.dd.historic_predictions[pair] = pd.concat(
-                [zeros_df, hist_preds_df], axis=0, ignore_index=True)
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """
@@ -1012,6 +1001,6 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("DI_threshold", 0) > 0:
             dk.DI_values = dk.feature_pipeline["di"].di_values
         else:
-            dk.DI_values = np.zeros(len(outliers.index))
-        dk.do_predict = outliers.to_numpy()
+            dk.DI_values = np.zeros(outliers.shape[0])
+        dk.do_predict = outliers
         return

@@ -526,6 +526,7 @@ def get_default_conf(testdatadir):
         "disableparamexport": True,
         "internals": {},
         "export": "none",
+        "dataformat_ohlcv": "feather",
         "candle_type_def": CandleType.SPOT,
     }
     return configuration
@@ -2999,85 +3000,85 @@ def mark_ohlcv():
 def funding_rate_history_hourly():
     return [
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000008,
             "timestamp": 1630454400000,
             "datetime": "2021-09-01T00:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000004,
             "timestamp": 1630458000000,
             "datetime": "2021-09-01T01:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000012,
             "timestamp": 1630461600000,
             "datetime": "2021-09-01T02:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000003,
             "timestamp": 1630465200000,
             "datetime": "2021-09-01T03:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000007,
             "timestamp": 1630468800000,
             "datetime": "2021-09-01T04:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000003,
             "timestamp": 1630472400000,
             "datetime": "2021-09-01T05:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000019,
             "timestamp": 1630476000000,
             "datetime": "2021-09-01T06:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000003,
             "timestamp": 1630479600000,
             "datetime": "2021-09-01T07:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000003,
             "timestamp": 1630483200000,
             "datetime": "2021-09-01T08:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0,
             "timestamp": 1630486800000,
             "datetime": "2021-09-01T09:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000013,
             "timestamp": 1630490400000,
             "datetime": "2021-09-01T10:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000077,
             "timestamp": 1630494000000,
             "datetime": "2021-09-01T11:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000072,
             "timestamp": 1630497600000,
             "datetime": "2021-09-01T12:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": 0.000097,
             "timestamp": 1630501200000,
             "datetime": "2021-09-01T13:00:00.000Z"
@@ -3089,13 +3090,13 @@ def funding_rate_history_hourly():
 def funding_rate_history_octohourly():
     return [
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000008,
             "timestamp": 1630454400000,
             "datetime": "2021-09-01T00:00:00.000Z"
         },
         {
-            "symbol": "ADA/USDT",
+            "symbol": "ADA/USDT:USDT",
             "fundingRate": -0.000003,
             "timestamp": 1630483200000,
             "datetime": "2021-09-01T08:00:00.000Z"

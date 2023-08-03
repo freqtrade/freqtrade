@@ -70,7 +70,7 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=3.0.0',
+        'ccxt>=4.0.0',
         'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=20.1',
         'arrow>=1.0.0',
@@ -97,7 +97,7 @@ setup(
         'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
-        'pydantic>=1.8.0',
+        'pydantic>=1.8.0,<2.0',
         'uvicorn',
         'psutil',
         'pyjwt',

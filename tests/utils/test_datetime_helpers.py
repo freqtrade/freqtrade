@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_utc, shorten_date
-from freqtrade.util.datetime_helpers import dt_humanize
+from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_utc,
+                            format_ms_time, shorten_date)
 
 
 def test_dt_now():
@@ -57,3 +57,16 @@ def test_dt_humanize() -> None:
     assert dt_humanize(dt_now()) == 'just now'
     assert dt_humanize(dt_now(), only_distance=True) == 'instantly'
     assert dt_humanize(dt_now() - timedelta(hours=16), only_distance=True) == '16 hours'
+
+
+def test_format_ms_time() -> None:
+    # Date 2018-04-10 18:02:01
+    date_in_epoch_ms = 1523383321000
+    date = format_ms_time(date_in_epoch_ms)
+    assert type(date) is str
+    res = datetime(2018, 4, 10, 18, 2, 1, tzinfo=timezone.utc)
+    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    res = datetime(2017, 12, 13, 8, 2, 1, tzinfo=timezone.utc)
+    # Date 2017-12-13 08:02:01
+    date_in_epoch_ms = 1513152121000
+    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')

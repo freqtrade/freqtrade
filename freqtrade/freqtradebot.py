@@ -231,7 +231,7 @@ class FreqtradeBot(LoggingMixin):
             self.manage_open_orders()
 
         # Protect from collisions with force_exit.
-        # Without this, freqtrade my try to recreate stoploss_on_exchange orders
+        # Without this, freqtrade may try to recreate stoploss_on_exchange orders
         # while exiting is in process, since telegram messages arrive in an different thread.
         with self._exit_lock:
             trades = Trade.get_open_trades()
@@ -1383,7 +1383,10 @@ class FreqtradeBot(LoggingMixin):
         latest_candle_close_date = timeframe_to_next_date(self.strategy.timeframe,
                                                           latest_candle_open_date)
         # Check if new candle
-        if order_obj and latest_candle_close_date > order_obj.order_date_utc:
+        if (
+            order_obj and order_obj.side == trade.entry_side
+            and latest_candle_close_date > order_obj.order_date_utc
+        ):
             # New candle
             proposed_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=True)
@@ -1941,6 +1944,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Applies the fee to amount (either from Order or from Trades).
         Can eat into dust if more than the required asset is available.
+        In case of trade adjustment orders, trade.amount will not have been adjusted yet.
         Can't happen in Futures mode - where Fees are always in settlement currency,
         never in base currency.
         """
@@ -1949,6 +1953,10 @@ class FreqtradeBot(LoggingMixin):
         if order_obj.ft_order_side == trade.exit_side or order_obj.ft_order_side == 'stoploss':
             # check against remaining amount!
             amount_ = trade.amount - amount
+
+        if trade.nr_of_successful_entries >= 1 and order_obj.ft_order_side == trade.entry_side:
+            # In case of rebuy's, trade.amount doesn't contain the amount of the last entry.
+            amount_ = trade.amount + amount
 
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
             # Eat into dust if we own more than base currency
@@ -1979,7 +1987,11 @@ class FreqtradeBot(LoggingMixin):
         # Init variables
         order_amount = safe_value_fallback(order, 'filled', 'amount')
         # Only run for closed orders
-        if trade.fee_updated(order.get('side', '')) or order['status'] == 'open':
+        if (
+            trade.fee_updated(order.get('side', ''))
+            or order['status'] == 'open'
+            or order_obj.ft_fee_base
+        ):
             return None
 
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
