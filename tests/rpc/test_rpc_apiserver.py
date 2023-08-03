@@ -80,6 +80,7 @@ def client_post(client: TestClient, url, data={}):
                                 'content-type': 'application/json'
                                 })
 
+
 def client_patch(client: TestClient, url, data={}):
 
     return client.patch(url,
@@ -88,6 +89,7 @@ def client_patch(client: TestClient, url, data={}):
                                  'Origin': 'http://example.com',
                                  'content-type': 'application/json'
                                  })
+
 
 def client_get(client: TestClient, url):
     # Add fake Origin to ensure CORS kicks in
@@ -2019,6 +2021,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     assert len(result) == 3
     fn = result[0]['filename']
     assert fn == "backtest-result_multistrat"
+    assert result[0]['notes'] == ''
     strategy = result[0]['strategy']
     rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}&strategy={strategy}")
     assert_response(rc)
