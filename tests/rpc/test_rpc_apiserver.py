@@ -10,6 +10,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
+import rapidjson
 import uvicorn
 from fastapi import FastAPI, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
@@ -79,6 +80,14 @@ def client_post(client: TestClient, url, data={}):
                                 'content-type': 'application/json'
                                 })
 
+def client_patch(client: TestClient, url, data={}):
+
+    return client.patch(url,
+                        json=data,
+                        headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
+                                 'Origin': 'http://example.com',
+                                 'content-type': 'application/json'
+                                 })
 
 def client_get(client: TestClient, url):
     # Add fake Origin to ensure CORS kicks in
@@ -1763,7 +1772,7 @@ def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
     assert_response(rc)
     response = rc.json()
-    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC',]
+    assert response['result']['whitelist'] == ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
     assert response['result']['length'] == 4
 
     # Restart with additional filter, reducing the list to 2
@@ -2023,7 +2032,7 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     assert result2['backtest_result']['strategy'][strategy]
 
 
-def test_api_delete_backtest_history_entry(botclient, mocker, tmp_path: Path):
+def test_api_delete_backtest_history_entry(botclient, tmp_path: Path):
     ftbot, client = botclient
 
     # Create a temporary directory and file
@@ -2049,6 +2058,75 @@ def test_api_delete_backtest_history_entry(botclient, mocker, tmp_path: Path):
 
     assert not file_path.exists()
     assert not meta_path.exists()
+
+
+def test_api_patch_backtest_history_entry(botclient, tmp_path: Path):
+    ftbot, client = botclient
+
+    # Create a temporary directory and file
+    bt_results_base = tmp_path / "backtest_results"
+    bt_results_base.mkdir()
+    file_path = bt_results_base / "test.json"
+    file_path.touch()
+    meta_path = file_path.with_suffix('.meta.json')
+    with meta_path.open('w') as metafile:
+        rapidjson.dump({
+            CURRENT_TEST_STRATEGY: {
+                "run_id": "6e542efc8d5e62cef6e5be0ffbc29be81a6e751d",
+                "backtest_start_time": 1690176003}
+            }, metafile)
+
+    def read_metadata():
+        with meta_path.open('r') as metafile:
+            return rapidjson.load(metafile)
+
+    rc = client_patch(client, f"{BASE_URI}/backtest/history/randomFile.json")
+    assert_response(rc, 503)
+
+    ftbot.config['user_data_dir'] = tmp_path
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_patch(client, f"{BASE_URI}/backtest/history/randomFile.json", {
+        "strategy": CURRENT_TEST_STRATEGY,
+    })
+    assert rc.status_code == 404
+
+    # Nonexisting strategy
+    rc = client_patch(client, f"{BASE_URI}/backtest/history/{file_path.name}", {
+        "strategy": f"{CURRENT_TEST_STRATEGY}xxx",
+    })
+    assert rc.status_code == 400
+    assert rc.json()['detail'] == 'Strategy not in metadata.'
+
+    # no Notes
+    rc = client_patch(client, f"{BASE_URI}/backtest/history/{file_path.name}", {
+        "strategy": CURRENT_TEST_STRATEGY,
+    })
+    assert rc.status_code == 200
+    res = rc.json()
+    assert isinstance(res, list)
+    assert len(res) == 1
+    assert res[0]['strategy'] == CURRENT_TEST_STRATEGY
+    assert res[0]['notes'] == ''
+
+    fileres = read_metadata()
+    assert fileres[CURRENT_TEST_STRATEGY]['run_id'] == res[0]['run_id']
+    assert fileres[CURRENT_TEST_STRATEGY]['notes'] == ''
+
+    rc = client_patch(client, f"{BASE_URI}/backtest/history/{file_path.name}", {
+        "strategy": CURRENT_TEST_STRATEGY,
+        "notes": "FooBar",
+    })
+    assert rc.status_code == 200
+    res = rc.json()
+    assert isinstance(res, list)
+    assert len(res) == 1
+    assert res[0]['strategy'] == CURRENT_TEST_STRATEGY
+    assert res[0]['notes'] == 'FooBar'
+
+    fileres = read_metadata()
+    assert fileres[CURRENT_TEST_STRATEGY]['run_id'] == res[0]['run_id']
+    assert fileres[CURRENT_TEST_STRATEGY]['notes'] == 'FooBar'
 
 
 def test_health(botclient):
