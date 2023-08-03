@@ -75,10 +75,11 @@ def __run_backtest_bg(btconfig: Config):
         ApiBG.bt['bt'].load_prior_backtest()
 
         ApiBG.bt['bt'].abort = False
+        strategy_name = strat.get_strategy_name()
         if (ApiBG.bt['bt'].results and
-                strat.get_strategy_name() in ApiBG.bt['bt'].results['strategy']):
+                strategy_name in ApiBG.bt['bt'].results['strategy']):
             # When previous result hash matches - reuse that result and skip backtesting.
-            logger.info(f'Reusing result of previous backtest for {strat.get_strategy_name()}')
+            logger.info(f'Reusing result of previous backtest for {strategy_name}')
         else:
             min_date, max_date = ApiBG.bt['bt'].backtest_one_strategy(
                 strat, ApiBG.bt['data'], ApiBG.bt['timerange'])
@@ -88,10 +89,12 @@ def __run_backtest_bg(btconfig: Config):
                 min_date=min_date, max_date=max_date)
 
         if btconfig.get('export', 'none') == 'trades':
-            store_backtest_stats(
+            fn = store_backtest_stats(
                 btconfig['exportfilename'], ApiBG.bt['bt'].results,
                 datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 )
+            ApiBG.bt['bt'].results['metadata'][strategy_name]['filename'] = str(fn.name)
+            ApiBG.bt['bt'].results['metadata'][strategy_name]['strategy'] = strategy_name
 
         logger.info("Backtest finished.")
 
