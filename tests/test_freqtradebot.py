@@ -5097,8 +5097,7 @@ def test_apply_fee_conditional_multibuy(default_conf_usdt, fee, mocker, caplog,
         exchange='binance',
         open_rate=0.245441,
         fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_order_id="123456"
+        fee_close=fee.return_value
     )
     # One closed order
     order = Order(
