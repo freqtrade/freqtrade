@@ -50,7 +50,8 @@ logger = logging.getLogger(__name__)
 # 2.29: Add /exchanges endpoint
 # 2.30: new /pairlists endpoint
 # 2.31: new /backtest/history/ delete endpoint
-API_VERSION = 2.31
+# 2.32: new /backtest/history/ patch endpoint
+API_VERSION = 2.32
 
 # Public API, requires no auth.
 router_public = APIRouter()
