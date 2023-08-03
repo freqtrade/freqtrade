@@ -531,7 +531,7 @@ class BacktestHistoryEntry(BaseModel):
 
 class BacktestMetadataUpdate(BaseModel):
     strategy: str
-    notes: Optional[str]
+    notes: str = ''
 
 
 class SysInfo(BaseModel):
