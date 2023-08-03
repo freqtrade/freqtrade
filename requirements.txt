@@ -3,7 +3,7 @@ numpy==1.24.3; python_version <= '3.8'
 pandas==2.0.3
 pandas-ta==0.3.14b
 
-ccxt==4.0.47
+ccxt==4.0.48
 cryptography==41.0.3; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.5
@@ -15,7 +15,7 @@ arrow==1.2.3
 cachetools==5.3.1
 requests==2.31.0
 urllib3==2.0.4
-jsonschema==4.18.4
+jsonschema==4.18.5
 TA-Lib==0.4.27
 technical==1.4.0
 tabulate==0.9.0
