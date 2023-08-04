@@ -100,12 +100,12 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 
 #### trainer_kwargs
 
-|  Parameter | Description |
-|------------|-------------|
-|  |  **Model training parameters within the `freqai.model_training_parameters.model_kwargs` sub dictionary**
-| `max_iters` | The number of training iterations to run. iteration here refers to the number of times we call self.optimizer.step(). used to calculate n_epochs. <br> **Datatype:** int. <br> Default: `100`.
-| `batch_size` | The size of the batches to use during training.. <br> **Datatype:** int. <br> Default: `64`.
-| `max_n_eval_batches` | The maximum number batches to use for evaluation.. <br> **Datatype:** int, optional. <br> Default: `None`.
+| Parameter            | Description |
+|----------------------|-------------|
+|                      |  **Model training parameters within the `freqai.model_training_parameters.model_kwargs` sub dictionary**
+| `n_epochs`           | The `n_epochs` parameter is a crucial setting in the PyTorch training loop that determines the number of times the entire training dataset will be used to update the model's parameters. An epoch represents one full pass through the entire training dataset. <br> **Datatype:** int. <br> Default: `10`.
+| `n_steps`          | An alternative way of setting `n_epochs` -  the number of training iterations to run. Iteration here refer to the number of times we call `optimizer.step()`. a simplified version of the function: <br><br> n_epochs = n_steps / (n_obs / batch_size) <br><br> The motivation here is that `n_steps` is easier to optimize and keep stable across different n_obs - the number of data points.  <br> <br> **Datatype:** int. optional. <br> Default: `None`.
+| `batch_size`         | The size of the batches to use during training.. <br> **Datatype:** int. <br> Default: `64`.
 
 
 ### Additional parameters
