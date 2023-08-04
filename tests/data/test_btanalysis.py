@@ -343,12 +343,24 @@ def test_calculate_expectancy(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
 
-    expectancy = calculate_expectancy(DataFrame())
+    expectancy, expectancy_ratio = calculate_expectancy(DataFrame())
     assert expectancy == 0.0
+    assert expectancy_ratio == 100
 
-    expectancy = calculate_expectancy(bt_data)
+    expectancy, expectancy_ratio = calculate_expectancy(bt_data)
     assert isinstance(expectancy, float)
-    assert pytest.approx(expectancy) == 0.07151374226574791
+    assert isinstance(expectancy_ratio, float)
+    assert pytest.approx(expectancy) == 5.820687070932315e-06
+    assert pytest.approx(expectancy_ratio) == 0.07151374226574791
+
+    data = {
+        'profit_abs': [100, 200, 50, -150, 300, -100, 80, -30]
+    }
+    df = DataFrame(data)
+    expectancy, expectancy_ratio = calculate_expectancy(df)
+
+    assert pytest.approx(expectancy) == 56.25
+    assert pytest.approx(expectancy_ratio) == 0.60267857
 
 
 def test_calculate_sortino(testdatadir):

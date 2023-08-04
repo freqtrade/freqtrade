@@ -136,6 +136,9 @@ class Profit(BaseModel):
     winning_trades: int
     losing_trades: int
     profit_factor: float
+    winrate: float
+    expectancy: float
+    expectancy_ratio: float
     max_drawdown: float
     max_drawdown_abs: float
     trading_volume: Optional[float]
@@ -517,11 +520,18 @@ class BacktestResponse(BaseModel):
     backtest_result: Optional[Dict[str, Any]]
 
 
+# TODO: This is a copy of BacktestHistoryEntryType
 class BacktestHistoryEntry(BaseModel):
     filename: str
     strategy: str
     run_id: str
     backtest_start_time: int
+    notes: Optional[str] = ''
+
+
+class BacktestMetadataUpdate(BaseModel):
+    strategy: str
+    notes: str = ''
 
 
 class SysInfo(BaseModel):

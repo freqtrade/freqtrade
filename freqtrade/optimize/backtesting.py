@@ -39,6 +39,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.wallets import Wallets
 
@@ -77,7 +78,7 @@ class Backtesting:
 
         LoggingMixin.show_output = False
         self.config = config
-        self.results: Dict[str, Any] = {}
+        self.results: BacktestResultType = get_BacktestResultType_default()
         self.trade_id_counter: int = 0
         self.order_id_counter: int = 0
 
@@ -239,7 +240,7 @@ class Backtesting:
             timerange=self.timerange,
             startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
-            data_format=self.config.get('dataformat_ohlcv', 'json'),
+            data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
         )
 
@@ -268,7 +269,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=self.config.get('candle_type_def', CandleType.SPOT)
             )
         else:
@@ -282,7 +283,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.FUNDING_RATE
             )
 
@@ -294,7 +295,7 @@ class Backtesting:
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=CandleType.from_string(self.exchange.get_option("mark_ohlcv_price"))
             )
             # Combine data to avoid combining the data per trade.
@@ -367,11 +368,7 @@ class Backtesting:
             if not pair_data.empty:
                 # Cleanup from prior runs
                 pair_data.drop(HEADERS[5:] + ['buy', 'sell'], axis=1, errors='ignore')
-
-            df_analyzed = self.strategy.advise_exit(
-                self.strategy.advise_entry(pair_data, {'pair': pair}),
-                {'pair': pair}
-            ).copy()
+            df_analyzed = self.strategy.ft_advise_signals(pair_data, {'pair': pair})
             # Trim startup period from analyzed dataframe
             df_analyzed = processed[pair] = pair_data = trim_dataframe(
                 df_analyzed, self.timerange, startup_candles=self.required_startup)
@@ -679,6 +676,7 @@ class Backtesting:
             remaining=amount,
             cost=amount * close_rate,
         )
+        order._trade_bt = trade
         trade.orders.append(order)
         return trade
 
@@ -901,8 +899,9 @@ class Backtesting:
                 amount=amount,
                 filled=0,
                 remaining=amount,
-                cost=stake_amount + trade.fee_open,
+                cost=amount * propose_rate + trade.fee_open,
             )
+            order._trade_bt = trade
             trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
@@ -1275,6 +1274,7 @@ class Backtesting:
         preprocessed = self.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe
+        # This only used to determine if trimming would result in an empty dataframe
         preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
 
         if not preprocessed_tmp:

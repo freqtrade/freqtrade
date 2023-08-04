@@ -5,16 +5,17 @@ import logging
 from copy import copy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import json_load
+from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
+from freqtrade.types import BacktestHistoryEntryType, BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ def load_backtest_metadata(filename: Union[Path, str]) -> Dict[str, Any]:
         raise OperationalException('Unexpected error while loading backtest metadata.') from e
 
 
-def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
+def load_backtest_stats(filename: Union[Path, str]) -> BacktestResultType:
     """
     Load backtest statistics file.
     :param filename: pathlib.Path object, or string pointing to the file.
@@ -147,21 +148,21 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     # Legacy list format does not contain metadata.
     if isinstance(data, dict):
         data['metadata'] = load_backtest_metadata(filename)
-
     return data
 
 
 def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
     """
-    Load one strategy from multi-strategy result
-    and merge it with results
+    Load one strategy from multi-strategy result and merge it with results
     :param strategy_name: Name of the strategy contained in the result
     :param filename: Backtest-result-filename to load
     :param results: dict to merge the result to.
     """
     bt_data = load_backtest_stats(filename)
-    for k in ('metadata', 'strategy'):
+    k: Literal['metadata', 'strategy']
+    for k in ('metadata', 'strategy'):  # type: ignore
         results[k][strategy_name] = bt_data[k][strategy_name]
+    results['metadata'][strategy_name]['filename'] = filename.stem
     comparison = bt_data['strategy_comparison']
     for i in range(len(comparison)):
         if comparison[i]['key'] == strategy_name:
@@ -170,27 +171,67 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
 
 
 def _get_backtest_files(dirname: Path) -> List[Path]:
+    # Weird glob expression here avoids including .meta.json files.
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
-def get_backtest_resultlist(dirname: Path):
+def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    """
+    Get backtest result read from metadata file
+    """
+    return [
+        {
+            'filename': filename.stem,
+            'strategy': s,
+            'notes': v.get('notes', ''),
+            'run_id': v['run_id'],
+            'backtest_start_time': v['backtest_start_time'],
+        } for s, v in load_backtest_metadata(filename).items()
+    ]
+
+
+def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     """
     Get list of backtest results read from metadata files
     """
-    results = []
-    for filename in _get_backtest_files(dirname):
-        metadata = load_backtest_metadata(filename)
-        if not metadata:
-            continue
-        for s, v in metadata.items():
-            results.append({
-                'filename': filename.name,
-                'strategy': s,
-                'run_id': v['run_id'],
-                'backtest_start_time': v['backtest_start_time'],
+    return [
+        {
+            'filename': filename.stem,
+            'strategy': s,
+            'run_id': v['run_id'],
+            'notes': v.get('notes', ''),
+            'backtest_start_time': v['backtest_start_time'],
+        }
+        for filename in _get_backtest_files(dirname)
+        for s, v in load_backtest_metadata(filename).items()
+        if v
+    ]
 
-            })
-    return results
+
+def delete_backtest_result(file_abs: Path):
+    """
+    Delete backtest result file and corresponding metadata file.
+    """
+    # *.meta.json
+    logger.info(f"Deleting backtest result file: {file_abs.name}")
+    file_abs_meta = file_abs.with_suffix('.meta.json')
+    file_abs.unlink()
+    file_abs_meta.unlink()
+
+
+def update_backtest_metadata(filename: Path, strategy: str, content: Dict[str, Any]):
+    """
+    Updates backtest metadata file with new content.
+    :raises: ValueError if metadata file does not exist, or strategy is not in this file.
+    """
+    metadata = load_backtest_metadata(filename)
+    if not metadata:
+        raise ValueError("File does not exist.")
+    if strategy not in metadata:
+        raise ValueError("Strategy not in metadata.")
+    metadata[strategy].update(content)
+    # Write data again.
+    file_dump_json(get_backtest_metadata_filename(filename), metadata)
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
@@ -211,7 +252,6 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
         'strategy_comparison': [],
     }
 
-    # Weird glob expression here avoids including .meta.json files.
     for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:

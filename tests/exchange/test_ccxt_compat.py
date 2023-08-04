@@ -391,7 +391,7 @@ class TestCCXTExchange:
                 assert po['id'] is not None
                 if len(order.keys()) < 5:
                     # Kucoin case
-                    assert po['status'] == 'closed'
+                    assert po['status'] is None
                     continue
                 assert po['timestamp'] == 1674493798550
                 assert isinstance(po['datetime'], str)

@@ -310,7 +310,7 @@ class DataProvider:
                 timeframe=timeframe or self._config['timeframe'],
                 datadir=self._config['datadir'],
                 timerange=timerange,
-                data_format=self._config.get('dataformat_ohlcv', 'json'),
+                data_format=self._config['dataformat_ohlcv'],
                 candle_type=_candle_type,
 
             )

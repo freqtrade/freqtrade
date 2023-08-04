@@ -84,6 +84,7 @@ class Wallets:
             tot_profit = Trade.get_total_closed_profit()
         else:
             tot_profit = LocalTrade.total_profit
+        tot_profit += sum(trade.realized_profit for trade in open_trades)
         tot_in_trades = sum(trade.stake_amount for trade in open_trades)
         used_stake = 0.0
 

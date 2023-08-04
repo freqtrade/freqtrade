@@ -2,6 +2,7 @@ import asyncio
 import logging
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
@@ -9,16 +10,19 @@ from fastapi.exceptions import HTTPException
 
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.constants import Config
-from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
+from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_result,
+                                       get_backtest_resultlist, load_and_merge_backtest_result,
+                                       update_backtest_metadata)
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
-from freqtrade.misc import deep_merge_dicts
-from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
-                                                  BacktestResponse)
+from freqtrade.misc import deep_merge_dicts, is_file_in_dir
+from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestMetadataUpdate,
+                                                  BacktestRequest, BacktestResponse)
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
+from freqtrade.types import get_BacktestResultType_default
 
 
 logger = logging.getLogger(__name__)
@@ -67,14 +71,15 @@ def __run_backtest_bg(btconfig: Config):
 
         ApiBG.bt['bt'].enable_protections = btconfig.get('enable_protections', False)
         ApiBG.bt['bt'].strategylist = [strat]
-        ApiBG.bt['bt'].results = {}
+        ApiBG.bt['bt'].results = get_BacktestResultType_default()
         ApiBG.bt['bt'].load_prior_backtest()
 
         ApiBG.bt['bt'].abort = False
+        strategy_name = strat.get_strategy_name()
         if (ApiBG.bt['bt'].results and
-                strat.get_strategy_name() in ApiBG.bt['bt'].results['strategy']):
+                strategy_name in ApiBG.bt['bt'].results['strategy']):
             # When previous result hash matches - reuse that result and skip backtesting.
-            logger.info(f'Reusing result of previous backtest for {strat.get_strategy_name()}')
+            logger.info(f'Reusing result of previous backtest for {strategy_name}')
         else:
             min_date, max_date = ApiBG.bt['bt'].backtest_one_strategy(
                 strat, ApiBG.bt['data'], ApiBG.bt['timerange'])
@@ -84,10 +89,12 @@ def __run_backtest_bg(btconfig: Config):
                 min_date=min_date, max_date=max_date)
 
         if btconfig.get('export', 'none') == 'trades':
-            store_backtest_stats(
+            fn = store_backtest_stats(
                 btconfig['exportfilename'], ApiBG.bt['bt'].results,
                 datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 )
+            ApiBG.bt['bt'].results['metadata'][strategy_name]['filename'] = str(fn.name)
+            ApiBG.bt['bt'].results['metadata'][strategy_name]['strategy'] = strategy_name
 
         logger.info("Backtest finished.")
 
@@ -245,13 +252,16 @@ def api_backtest_history(config=Depends(get_config)):
             tags=['webserver', 'backtest'])
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
-    fn = config['user_data_dir'] / 'backtest_results' / filename
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
+    fn = (bt_results_base / filename).with_suffix('.json')
+
     results: Dict[str, Any] = {
         'metadata': {},
         'strategy': {},
         'strategy_comparison': [],
     }
-
+    if not is_file_in_dir(fn, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
     load_and_merge_backtest_result(strategy, fn, results)
     return {
         "status": "ended",
@@ -261,3 +271,38 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
         "status_msg": "Historic result",
         "backtest_result": results,
     }
+
+
+@router.delete('/backtest/history/{file}', response_model=List[BacktestHistoryEntry],
+               tags=['webserver', 'backtest'])
+def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
+    # Get backtest result history, read from metadata files
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
+    file_abs = (bt_results_base / file).with_suffix('.json')
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    delete_backtest_result(file_abs)
+    return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
+
+
+@router.patch('/backtest/history/{file}', response_model=List[BacktestHistoryEntry],
+              tags=['webserver', 'backtest'])
+def api_update_backtest_history_entry(file: str, body: BacktestMetadataUpdate,
+                                      config=Depends(get_config)):
+    # Get backtest result history, read from metadata files
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
+    file_abs = (bt_results_base / file).with_suffix('.json')
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
+    content = {
+        'notes': body.notes
+    }
+    try:
+        update_backtest_metadata(file_abs, body.strategy, content)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return get_backtest_result(file_abs)

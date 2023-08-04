@@ -211,7 +211,7 @@ The user is responsible for providing a server or local file that returns a JSON
 ```json
 {
     "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
-    "refresh_period": 1800,
+    "refresh_period": 1800
 }
 ```
 

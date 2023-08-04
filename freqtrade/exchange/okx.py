@@ -32,7 +32,6 @@ class Okx(Exchange):
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
-        "fee_cost_in_contracts": True,
         "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "last",
