@@ -27,7 +27,7 @@ class PyTorchMLPRegressor(BasePyTorchRegressor):
             "model_training_parameters" : {
                 "learning_rate": 3e-4,
                 "trainer_kwargs": {
-                    "max_iters": 5000,
+                    "n_steps": 5000,
                     "batch_size": 64,
                     "n_epochs": null,
                 },
