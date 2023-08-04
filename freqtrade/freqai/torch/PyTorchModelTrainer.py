@@ -181,8 +181,8 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             "pytrainer": self
         }, path)
 
-    def load(self, path: Path, device: Optional[str] = None):
-        checkpoint = torch.load(path, map_location=device)
+    def load(self, path: Path):
+        checkpoint = torch.load(path)
         return self.load_from_checkpoint(checkpoint)
 
     def load_from_checkpoint(self, checkpoint: Dict):
