@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def store_backtest_stats(
-        recordfilename: Path, stats: BacktestResultType, dtappendix: str) -> None:
+        recordfilename: Path, stats: BacktestResultType, dtappendix: str) -> Path:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -40,6 +40,8 @@ def store_backtest_stats(
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
+
+    return filename
 
 
 def _store_backtest_analysis_data(
