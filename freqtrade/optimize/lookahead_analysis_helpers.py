@@ -137,6 +137,16 @@ class LookaheadAnalysisSubFunctions:
                         'just to avoid false positives')
             config['dry_run_wallet'] = min_dry_run_wallet
 
+        if 'fee' not in config or config['fee'] != 0.02:
+            logger.info('fee was not set to a fixed value of 0.02. ')
+            config['fee'] = 0.02
+
+        if 'timerange' not in config:
+            # setting a timerange is enforced here
+            raise OperationalException(
+                "Please set a timerange. "
+                "Usually a few months are enough depending on your needs and strategy."
+            )
         # fix stake_amount to 10k.
         # in a combination with a wallet size of 1 billion it should always be able to trade
         # no matter if they use custom_stake_amount as a small percentage of wallet size
