@@ -967,7 +967,7 @@ Print trades with id 2 and 3 as json
 freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --trade-ids 2 3 --print-json
 ```
 
-### Strategy-Updater
+## Strategy-Updater
 
 Updates listed strategies or all strategies within the strategies folder to be v3 compliant.
 If the command runs without --strategy-list then all strategies inside the strategies folder will be converted.
