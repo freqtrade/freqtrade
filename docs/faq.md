@@ -78,6 +78,14 @@ Where possible (e.g. on binance), the use of the exchange's dedicated fee curren
 On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
 Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
 
+### I deposited more funds to the exchange, but my bot doesn't recognize this
+
+Freqtrade will update the exchange balance when necessary (Before placing an order).
+RPC calls (Telegram's `/balance`, API calls to `/balance`) can trigger an update at max. once per hour.
+
+If `adjust_trade_position` is enabled (and the bot has open trades eligible for position adjustments) - then the wallets will be refreshed once per hour.
+To force an immediate update, you can use `/reload_config` - which will restart the bot.
+
 ### I want to use incomplete candles
 
 Freqtrade will not provide incomplete candles to strategies. Using incomplete candles will lead to repainting and consequently to strategies with "ghost" buys, which are impossible to both backtest, and verify after they happened.
