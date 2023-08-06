@@ -20,7 +20,7 @@ Futures trading is supported for selected exchanges. Please refer to the [docume
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
 
-## Freqtrade common issues
+## Freqtrade common questions
 
 ### Can freqtrade open multiple positions on the same pair in parallel?
 
