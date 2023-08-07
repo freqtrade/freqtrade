@@ -515,7 +515,7 @@ class BacktestResponse(BaseModel):
     progress: float
     trade_count: Optional[float] = None
     # TODO: Properly type backtestresult...
-    backtest_result: SerializeAsAny[Optional[Dict[str, Any]]]
+    backtest_result: Optional[Dict[str, Any]] = None
 
 
 # TODO: This is a copy of BacktestHistoryEntryType
