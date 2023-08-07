@@ -197,7 +197,7 @@ class StrategyTestV3(IStrategy):
 
         if current_profit < -0.0075:
             orders = trade.select_filled_orders(trade.entry_side)
-            return round(orders[0].safe_cost, 0)
+            return round(orders[0].stake_amount, 0)
 
         return None
 
