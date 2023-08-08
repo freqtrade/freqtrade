@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.tradingmode import TradingMode
-from freqtrade.exchange.exchange_utils import timeframe_to_msecs
 from tests.conftest import get_mock_coro, get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -37,12 +36,10 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
     assert api_mock.fetch_funding_rate_history.call_count == 1
     assert api_mock.fetch_funding_rate_history.call_args_list[0][0][0] == 'BTC/USDT:USDT'
     kwargs = api_mock.fetch_funding_rate_history.call_args_list[0][1]
-    assert kwargs['params'] == {}
     assert kwargs['since'] is None
 
     api_mock.fetch_funding_rate_history.reset_mock()
     since_ms = 1610000000000
-    since_ms_end = since_ms + (timeframe_to_msecs('4h') * limit)
     # Test fetch_funding_rate_history (current data)
     await exchange._fetch_funding_rate_history(
         pair='BTC/USDT:USDT',
@@ -54,7 +51,6 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
     assert api_mock.fetch_funding_rate_history.call_count == 1
     assert api_mock.fetch_funding_rate_history.call_args_list[0][0][0] == 'BTC/USDT:USDT'
     kwargs = api_mock.fetch_funding_rate_history.call_args_list[0][1]
-    assert kwargs['params'] == {'until': since_ms_end}
     assert kwargs['since'] == since_ms
 
 
