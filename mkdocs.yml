@@ -47,7 +47,6 @@ nav:
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md
         - Edge Positioning: edge.md
-        - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md
     - Strategy migration: strategy_migration.md
