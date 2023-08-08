@@ -26,7 +26,7 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.fetch_funding_rate_history = get_mock_coro(return_value=[])
     exchange = get_patched_exchange(mocker, default_conf, id='bybit', api_mock=api_mock)
-    limit = 1000
+    limit = 200
     # Test fetch_funding_rate_history (current data)
     await exchange._fetch_funding_rate_history(
         pair='BTC/USDT:USDT',

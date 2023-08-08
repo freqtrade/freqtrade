@@ -7,6 +7,7 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, PriceType, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
@@ -91,6 +92,14 @@ class Bybit(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+
+        if candle_type in (CandleType.FUNDING_RATE):
+            return 200
+
+        return super().ohlcv_candle_limit(timeframe, candle_type, since_ms)
+
     async def _fetch_funding_rate_history(
         self,
         pair: str,
@@ -104,7 +113,8 @@ class Bybit(Exchange):
         """
         params = {}
         if since_ms:
-            until = since_ms + (timeframe_to_msecs(timeframe) * self._ft_has['ohlcv_candle_limit'])
+            limit = self.ohlcv_candle_limit(timeframe, CandleType.FUNDING_RATE, since_ms)
+            until = since_ms + (timeframe_to_msecs(timeframe) * limit)
             params.update({'until': until})
         # Funding rate
         data = await self._api_async.fetch_funding_rate_history(
