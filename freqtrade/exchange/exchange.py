@@ -263,8 +263,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
 
-        self.set_sandbox(api, exchange_config, name)
-
         return api
 
     @property
@@ -464,16 +462,6 @@ class Exchange:
 
         return amount_to_contract_precision(amount, self.get_precision_amount(pair),
                                             self.precisionMode, contract_size)
-
-    def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
-        if exchange_config.get('sandbox'):
-            if api.urls.get('test'):
-                api.urls['api'] = api.urls['test']
-                logger.info("Enabled Sandbox API on %s", name)
-            else:
-                logger.warning(
-                    f"No Sandbox URL in CCXT for {name}, exiting. Please check your config.json")
-                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def _load_async_markets(self, reload: bool = False) -> None:
         try:

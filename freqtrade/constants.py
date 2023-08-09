@@ -461,7 +461,6 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
-                'sandbox': {'type': 'boolean', 'default': False},
                 'key': {'type': 'string', 'default': ''},
                 'secret': {'type': 'string', 'default': ''},
                 'password': {'type': 'string', 'default': ''},
