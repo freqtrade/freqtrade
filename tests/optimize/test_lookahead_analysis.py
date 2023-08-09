@@ -17,6 +17,8 @@ from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 def lookahead_conf(default_conf_usdt):
     default_conf_usdt['minimum_trade_amount'] = 10
     default_conf_usdt['targeted_trade_amount'] = 20
+    default_conf_usdt['timerange'] = '20220101-20220501'
+
     default_conf_usdt['strategy_path'] = str(
         Path(__file__).parent.parent / "strategy/strats/lookahead_bias")
     default_conf_usdt['strategy'] = 'strategy_test_v3_with_lookahead_bias'
@@ -43,7 +45,9 @@ def test_start_lookahead_analysis(mocker):
         "--pairs",
         "UNITTEST/BTC",
         "--max-open-trades",
-        "1"
+        "1",
+        "--timerange",
+        "20220101-20220201"
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -70,6 +74,24 @@ def test_start_lookahead_analysis(mocker):
     pargs['config'] = None
     with pytest.raises(OperationalException,
                        match=r"Targeted trade amount can't be smaller than minimum trade amount.*"):
+        start_lookahead_analysis(pargs)
+
+    # Missing timerange
+    args = [
+        "lookahead-analysis",
+        "--strategy",
+        "strategy_test_v3_with_lookahead_bias",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy/strats/lookahead_bias"),
+        "--pairs",
+        "UNITTEST/BTC",
+        "--max-open-trades",
+        "1",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match=r"Please set a timerange\..*"):
         start_lookahead_analysis(pargs)
 
 
