@@ -48,6 +48,7 @@ class LookaheadAnalysis:
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
         self.exchange: Optional[Any] = None
+        self._fee = None
 
         # pull variables the scope of the lookahead_analysis-instance
         self.local_config = deepcopy(config)
@@ -145,8 +146,13 @@ class LookaheadAnalysis:
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
+        if self._fee:
+            # Don't re-calculate fee per pair, as fee might differ per pair.
+            prepare_data_config['fee'] = self._fee
+
         backtesting = Backtesting(prepare_data_config, self.exchange)
         self.exchange = backtesting.exchange
+        self._fee = backtesting.fee
         backtesting._set_strategy(backtesting.strategylist[0])
 
         varholder.data, varholder.timerange = backtesting.load_bt_data()
@@ -198,7 +204,7 @@ class LookaheadAnalysis:
         self.prepare_data(exit_varHolder, [result_row['pair']])
 
     # now we analyze a full trade of full_varholder and look for analyze its bias
-    def analyze_row(self, idx, result_row):
+    def analyze_row(self, idx: int, result_row):
         # if force-sold, ignore this signal since here it will unconditionally exit.
         if result_row.close_date == self.dt_to_timestamp(self.full_varHolder.to_dt):
             return

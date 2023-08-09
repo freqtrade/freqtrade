@@ -137,10 +137,6 @@ class LookaheadAnalysisSubFunctions:
                         'just to avoid false positives')
             config['dry_run_wallet'] = min_dry_run_wallet
 
-        if 'fee' not in config or config['fee'] != 0.02:
-            logger.info('fee was not set to a fixed value of 0.02. ')
-            config['fee'] = 0.02
-
         if 'timerange' not in config:
             # setting a timerange is enforced here
             raise OperationalException(
