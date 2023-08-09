@@ -146,7 +146,7 @@ class LookaheadAnalysis:
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
-        if self._fee:
+        if self._fee is not None:
             # Don't re-calculate fee per pair, as fee might differ per pair.
             prepare_data_config['fee'] = self._fee
 
