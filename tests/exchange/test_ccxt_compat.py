@@ -391,7 +391,7 @@ class TestCCXTExchange:
                 assert po['id'] is not None
                 if len(order.keys()) < 5:
                     # Kucoin case
-                    assert po['status'] == 'closed'
+                    assert po['status'] is None
                     continue
                 assert po['timestamp'] == 1674493798550
                 assert isinstance(po['datetime'], str)
@@ -511,7 +511,8 @@ class TestCCXTExchange:
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exch.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
-    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe, candle_type):
+    def ccxt__async_get_candle_history(
+            self, exchange, exchangename, pair, timeframe, candle_type, factor=0.9):
 
         timeframe_ms = timeframe_to_msecs(timeframe)
         now = timeframe_to_prev_date(
@@ -532,11 +533,11 @@ class TestCCXTExchange:
             assert res[1] == timeframe
             assert res[2] == candle_type
             candles = res[3]
-            factor = 0.9
             candle_count = exchange.ohlcv_candle_limit(timeframe, candle_type, since_ms) * factor
             candle_count1 = (now.timestamp() * 1000 - since_ms) // timeframe_ms * factor
             assert len(candles) >= min(candle_count, candle_count1), \
                 f"{len(candles)} < {candle_count} in {timeframe}, Offset: {offset} {factor}"
+            # Check if first-timeframe is either the start, or start + 1
             assert candles[0][0] == since_ms or (since_ms + timeframe_ms)
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
@@ -544,8 +545,6 @@ class TestCCXTExchange:
         if exchangename in ('bittrex'):
             # For some weired reason, this test returns random lengths for bittrex.
             pytest.skip("Exchange doesn't provide stable ohlcv history")
-        if exchangename in ('bitvavo'):
-            pytest.skip("Exchange Downtime ")
 
         if not exc._ft_has['ohlcv_has_history']:
             pytest.skip("Exchange does not support candle history")
@@ -554,15 +553,29 @@ class TestCCXTExchange:
         self.ccxt__async_get_candle_history(
             exc, exchangename, pair, timeframe, CandleType.SPOT)
 
-    def test_ccxt__async_get_candle_history_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+    @pytest.mark.parametrize('candle_type', [
+        CandleType.FUTURES,
+        CandleType.FUNDING_RATE,
+        CandleType.MARK,
+        ])
+    def test_ccxt__async_get_candle_history_futures(
+            self, exchange_futures: EXCHANGE_FIXTURE_TYPE, candle_type):
         exchange, exchangename = exchange_futures
         if not exchange:
             # exchange_futures only returns values for supported exchanges
             return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         timeframe = EXCHANGES[exchangename]['timeframe']
+        if candle_type == CandleType.FUNDING_RATE:
+            timeframe = exchange._ft_has.get('funding_fee_timeframe',
+                                             exchange._ft_has['mark_ohlcv_timeframe'])
         self.ccxt__async_get_candle_history(
-            exchange, exchangename, pair, timeframe, CandleType.FUTURES)
+            exchange,
+            exchangename,
+            pair=pair,
+            timeframe=timeframe,
+            candle_type=candle_type,
+        )
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, exchangename = exchange_futures

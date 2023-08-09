@@ -25,3 +25,4 @@ def get_BacktestResultType_default() -> BacktestResultType:
 class BacktestHistoryEntryType(BacktestMetadataType):
     filename: str
     strategy: str
+    notes: str

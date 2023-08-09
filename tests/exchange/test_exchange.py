@@ -2100,7 +2100,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', candle_type) * 1.8
     ret = exchange.get_historic_ohlcv(
         pair,
         "5m",

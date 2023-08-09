@@ -48,7 +48,7 @@ class Order(ModelBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     ft_trade_id: Mapped[int] = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
-    _trade_live: Mapped["Trade"] = relationship("Trade", back_populates="orders")
+    _trade_live: Mapped["Trade"] = relationship("Trade", back_populates="orders", lazy="immediate")
     _trade_bt: "LocalTrade" = None  # type: ignore
 
     # order_side can only be 'buy', 'sell' or 'stoploss'

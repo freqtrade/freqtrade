@@ -12,7 +12,7 @@ import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import json_load
+from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.types import BacktestHistoryEntryType, BacktestResultType
@@ -175,6 +175,21 @@ def _get_backtest_files(dirname: Path) -> List[Path]:
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
+def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    """
+    Get backtest result read from metadata file
+    """
+    return [
+        {
+            'filename': filename.stem,
+            'strategy': s,
+            'notes': v.get('notes', ''),
+            'run_id': v['run_id'],
+            'backtest_start_time': v['backtest_start_time'],
+        } for s, v in load_backtest_metadata(filename).items()
+    ]
+
+
 def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     """
     Get list of backtest results read from metadata files
@@ -184,6 +199,7 @@ def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
             'filename': filename.stem,
             'strategy': s,
             'run_id': v['run_id'],
+            'notes': v.get('notes', ''),
             'backtest_start_time': v['backtest_start_time'],
         }
         for filename in _get_backtest_files(dirname)
@@ -201,6 +217,21 @@ def delete_backtest_result(file_abs: Path):
     file_abs_meta = file_abs.with_suffix('.meta.json')
     file_abs.unlink()
     file_abs_meta.unlink()
+
+
+def update_backtest_metadata(filename: Path, strategy: str, content: Dict[str, Any]):
+    """
+    Updates backtest metadata file with new content.
+    :raises: ValueError if metadata file does not exist, or strategy is not in this file.
+    """
+    metadata = load_backtest_metadata(filename)
+    if not metadata:
+        raise ValueError("File does not exist.")
+    if strategy not in metadata:
+        raise ValueError("Strategy not in metadata.")
+    metadata[strategy].update(content)
+    # Write data again.
+    file_dump_json(get_backtest_metadata_filename(filename), metadata)
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],

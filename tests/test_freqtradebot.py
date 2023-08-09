@@ -1501,9 +1501,9 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_create_stoploss_order_invalid_order(
-    mocker, default_conf_usdt, caplog, fee, is_short, limit_order, limit_order_open
+    mocker, default_conf_usdt, caplog, fee, is_short, limit_order
 ):
-    open_order = limit_order_open[entry_side(is_short)]
+    open_order = limit_order[entry_side(is_short)]
     order = limit_order[exit_side(is_short)]
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -1534,6 +1534,7 @@ def test_create_stoploss_order_invalid_order(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     caplog.clear()
+    rpc_mock.reset_mock()
     freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
     assert trade.exit_reason == ExitType.EMERGENCY_EXIT.value
@@ -1547,9 +1548,11 @@ def test_create_stoploss_order_invalid_order(
     assert create_order_mock.call_args[1]['amount'] == trade.amount
 
     # Rpc is sending first buy, then sell
-    assert rpc_mock.call_count == 3
-    assert rpc_mock.call_args_list[2][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
-    assert rpc_mock.call_args_list[2][0][0]['order_type'] == 'market'
+    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_args_list[0][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
+    assert rpc_mock.call_args_list[0][0][0]['order_type'] == 'market'
+    assert rpc_mock.call_args_list[0][0][0]['type'] == 'exit'
+    assert rpc_mock.call_args_list[1][0][0]['type'] == 'exit_fill'
 
 
 @pytest.mark.parametrize("is_short", [False, True])

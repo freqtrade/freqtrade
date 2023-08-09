@@ -14,6 +14,9 @@ Start by downloading and installing Docker / Docker Desktop for your platform:
     Freqtrade documentation assumes the use of Docker desktop (or the docker compose plugin).  
     While the docker-compose standalone installation still works, it will require changing all `docker compose` commands from `docker compose` to `docker-compose` to work (e.g. `docker compose up -d` will become `docker-compose up -d`).
 
+??? Warning "Docker on windows"
+    If you just installed docker on a windows system, make sure to reboot your system, otherwise you might encounter unexplainable Problems related to network connectivity to docker containers.
+
 ## Freqtrade with docker
 
 Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/), as well as a [docker compose file](https://github.com/freqtrade/freqtrade/blob/stable/docker-compose.yml) ready for usage.
@@ -78,7 +81,7 @@ If you've selected to enable FreqUI in the `new-config` step, you will have freq
 
 You can now access the UI by typing localhost:8080 in your browser.
 
-??? Note "UI Access on a remote servers"
+??? Note "UI Access on a remote server"
     If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
     This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
     Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
@@ -128,7 +131,7 @@ All freqtrade arguments will be available by running `docker compose run --rm fr
 !!! Note "`docker compose run --rm`"
     Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
 
-??? Note "Using docker without docker"
+??? Note "Using docker without docker compose"
     "`docker compose run --rm`" will require a compose file to be provided.
     Some freqtrade commands that don't require authentication such as `list-pairs` can be run with "`docker run --rm`" instead.  
     For example `docker run --rm freqtradeorg/freqtrade:stable list-pairs --exchange binance --quote BTC --print-json`.  
@@ -172,7 +175,7 @@ You can then run `docker compose build --pull` to build the docker image, and ru
 
 ### Plotting with docker
 
-Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
+Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your `docker-compose.yml` file.
 You can then use these commands as follows:
 
 ``` bash
@@ -203,16 +206,20 @@ docker compose -f docker/docker-compose-jupyter.yml build --no-cache
 
 ### Docker on Windows
 
-* Error: `"Timestamp for this request is outside of the recvWindow."`
-  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
-    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
-    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
+* Error: `"Timestamp for this request is outside of the recvWindow."`  
+  The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+  To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
+  A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
 
-    ``` bash
-    taskkill /IM "Docker Desktop.exe" /F
-    wsl --shutdown
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-    ```
+  ``` bash
+  taskkill /IM "Docker Desktop.exe" /F
+  wsl --shutdown
+  start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+  ```
+
+* Cannot connect to the API (Windows)  
+  If you're on windows and just installed Docker (desktop), make sure to reboot your System. Docker can have problems with network connectivity without a restart.
+  You should obviously also make sure to have your [settings](#accessing-the-ui) accordingly.
 
 !!! Warning
     Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.

@@ -610,6 +610,8 @@ class FreqtradeBot(LoggingMixin):
             # If there is any open orders, wait for them to finish.
             # TODO Remove to allow mul open orders
             if trade.open_entry_or_exit_orders_count == 0:
+                # Do a wallets update (will be ratelimited to once per hour)
+                self.wallets.update(False)
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
