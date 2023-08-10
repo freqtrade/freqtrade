@@ -271,6 +271,11 @@ class Exchange:
         ):
             logger.debug("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
+        if (self._ws_async and inspect.iscoroutinefunction(self._ws_async.close)
+                and self._ws_async.session):
+            logger.debug("Closing ws ccxt session.")
+            self.loop.run_until_complete(self._ws_async.close())
+
         if self.loop and not self.loop.is_closed():
             self.loop.close()
 
