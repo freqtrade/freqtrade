@@ -295,7 +295,8 @@ def get_exchange(exchange_name, exchange_conf):
         exchange_conf, EXCHANGES[exchange_name].get('use_ci_proxy', False))
     exchange_conf['exchange']['name'] = exchange_name
     exchange_conf['stake_currency'] = EXCHANGES[exchange_name]['stake_currency']
-    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True, load_leverage_tiers=True)
+    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True,
+                                              load_leverage_tiers=True)
 
     yield exchange, exchange_name
 
@@ -304,6 +305,7 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
     if EXCHANGES[exchange_name].get('futures') is not True:
         pytest.skip(f"Exchange {exchange_name} does not support futures.")
     else:
+        exchange_conf = deepcopy(exchange_conf)
         exchange_conf = set_test_proxy(
             exchange_conf, EXCHANGES[exchange_name].get('use_ci_proxy', False))
         exchange_conf['trading_mode'] = 'futures'
