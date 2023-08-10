@@ -21,7 +21,10 @@ It also supports the lookahead-analysis of freqai strategies.
 
 - `--cache` is forced to "none".
 - `--max-open-trades` is forced to be at least equal to the number of pairs.
-- `--dry-run-wallet` is forced to be basically infinite.
+- `--dry-run-wallet` is forced to be basically infinite (1 billion).
+- `--stake-amount` is forced to be a static 10000 (10k).
+
+Those are set to avoid users accidentally generating false positives.
 
 ## Lookahead-analysis command reference
 
