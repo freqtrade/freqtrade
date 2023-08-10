@@ -24,9 +24,6 @@ def test_exchangews_init(mocker):
     assert exchange_ws._klines_scheduled == set()
     assert exchange_ws.klines_last_refresh == {}
     assert exchange_ws.klines_last_request == {}
-    assert exchange_ws._ob_watching == set()
-    assert exchange_ws._ob_scheduled == set()
-    assert exchange_ws.ob_last_request == {}
     # Cleanup
     exchange_ws.cleanup()
 
