@@ -14,7 +14,6 @@ from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
-import ccxt.async_support as ccxt_async
 import ccxt.pro as ccxt_pro
 from cachetools import TTLCache
 from ccxt import TICK_SIZE
@@ -152,7 +151,7 @@ class Exchange:
         :return: None
         """
         self._api: ccxt.Exchange
-        self._api_async: ccxt_async.Exchange = None
+        self._api_async: ccxt_pro.Exchange = None
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
@@ -232,7 +231,7 @@ class Exchange:
         self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         self._has_watch_ohlcv = self.exchange_has("watchOHLCV")
         self._exchange_ws: Optional[ExchangeWS] = None
-        if exchange_config.get("enable_ws", True) and self._has_watch_ohlcv:
+        if exchange_conf.get("enable_ws", True) and self._has_watch_ohlcv:
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
 
         logger.info(f'Using Exchange "{self.name}"')
