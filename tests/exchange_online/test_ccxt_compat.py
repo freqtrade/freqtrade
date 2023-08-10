@@ -314,7 +314,7 @@ def exchange(request, exchange_conf):
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange_futures(request, exchange_conf, class_mocker):
     if EXCHANGES[request.param].get('futures') is not True:
-        yield None, request.param
+        pytest.skip(f"Exchange {request.param} does not support futures.")
     else:
         exchange_conf = set_test_proxy(
             exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
@@ -371,9 +371,6 @@ class TestCCXTExchange:
 
     def test_load_markets_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, exchangename = exchange_futures
-        if not exchange:
-            # exchange_futures only returns values for supported exchanges
-            return
         pair = EXCHANGES[exchangename]['pair']
         pair = EXCHANGES[exchangename].get('futures_pair', pair)
         markets = exchange.markets
@@ -561,9 +558,6 @@ class TestCCXTExchange:
     def test_ccxt__async_get_candle_history_futures(
             self, exchange_futures: EXCHANGE_FIXTURE_TYPE, candle_type):
         exchange, exchangename = exchange_futures
-        if not exchange:
-            # exchange_futures only returns values for supported exchanges
-            return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         timeframe = EXCHANGES[exchangename]['timeframe']
         if candle_type == CandleType.FUNDING_RATE:
@@ -579,9 +573,6 @@ class TestCCXTExchange:
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, exchangename = exchange_futures
-        if not exchange:
-            # exchange_futures only returns values for supported exchanges
-            return
 
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
@@ -617,9 +608,6 @@ class TestCCXTExchange:
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, exchangename = exchange_futures
-        if not exchange:
-            # exchange_futures only returns values for supported exchanges
-            return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
         pair_tf = (pair, '1h', CandleType.MARK)
@@ -641,9 +629,6 @@ class TestCCXTExchange:
 
     def test_ccxt__calculate_funding_fees(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, exchangename = exchange_futures
-        if not exchange:
-            # exchange_futures only returns values for supported exchanges
-            return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = datetime.now(timezone.utc) - timedelta(days=5)
 
@@ -690,31 +675,29 @@ class TestCCXTExchange:
 
     def test_ccxt_get_max_leverage_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, futures_name = exchange_futures
-        if futures:
-            leverage_tiers_public = EXCHANGES[futures_name].get('leverage_tiers_public')
-            if leverage_tiers_public:
-                futures_pair = EXCHANGES[futures_name].get(
-                    'futures_pair',
-                    EXCHANGES[futures_name]['pair']
-                )
-                futures_leverage = futures.get_max_leverage(futures_pair, 20)
-                assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
-                assert futures_leverage >= 1.0
-
-    def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        if futures:
+        leverage_tiers_public = EXCHANGES[futures_name].get('leverage_tiers_public')
+        if leverage_tiers_public:
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
                 EXCHANGES[futures_name]['pair']
             )
-            contract_size = futures.get_contract_size(futures_pair)
-            assert (isinstance(contract_size, float) or isinstance(contract_size, int))
-            assert contract_size >= 0.0
+            futures_leverage = futures.get_max_leverage(futures_pair, 20)
+            assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
+            assert futures_leverage >= 1.0
+
+    def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+        futures, futures_name = exchange_futures
+        futures_pair = EXCHANGES[futures_name].get(
+            'futures_pair',
+            EXCHANGES[futures_name]['pair']
+        )
+        contract_size = futures.get_contract_size(futures_pair)
+        assert (isinstance(contract_size, float) or isinstance(contract_size, int))
+        assert contract_size >= 0.0
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, futures_name = exchange_futures
-        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
+        if EXCHANGES[futures_name].get('leverage_tiers_public'):
             leverage_tiers = futures.load_leverage_tiers()
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
@@ -747,7 +730,7 @@ class TestCCXTExchange:
 
     def test_ccxt_dry_run_liquidation_price(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, futures_name = exchange_futures
-        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
+        if EXCHANGES[futures_name].get('leverage_tiers_public'):
 
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
@@ -780,14 +763,13 @@ class TestCCXTExchange:
 
     def test_ccxt_get_max_pair_stake_amount(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, futures_name = exchange_futures
-        if futures:
-            futures_pair = EXCHANGES[futures_name].get(
-                'futures_pair',
-                EXCHANGES[futures_name]['pair']
-            )
-            max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
-            assert (isinstance(max_stake_amount, float))
-            assert max_stake_amount >= 0.0
+        futures_pair = EXCHANGES[futures_name].get(
+            'futures_pair',
+            EXCHANGES[futures_name]['pair']
+        )
+        max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
+        assert (isinstance(max_stake_amount, float))
+        assert max_stake_amount >= 0.0
 
     def test_private_method_presence(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
