@@ -307,6 +307,7 @@ class Exchange:
             ccxt_module = ccxt_pro
             if not is_exchange_known_ccxt(name, ccxt_module):
                 # Fall back to async if pro doesn't support this exchange
+                import ccxt.async_support as ccxt_async
                 ccxt_module = ccxt_async
 
         if not is_exchange_known_ccxt(name, ccxt_module):
