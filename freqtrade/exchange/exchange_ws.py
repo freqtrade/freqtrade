@@ -32,13 +32,18 @@ class ExchangeWS():
 
     def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
-        self._loop.run_forever()
+        try:
+            self._loop.run_forever()
+        finally:
+            if self._loop.is_running():
+                self._loop.stop()
 
     def cleanup(self) -> None:
         logger.debug("Cleanup called - stopping")
         self._klines_watching.clear()
         if hasattr(self, '_loop'):
-            self._loop.stop()
+            self._loop.call_soon_threadsafe(self._loop.stop)
+
         self._thread.join()
         logger.debug("Stopped")
 
