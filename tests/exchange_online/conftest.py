@@ -290,29 +290,24 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
     return config
 
 
-@pytest.fixture(params=EXCHANGES, scope="class")
-def exchange(request, exchange_conf):
+def get_exchange(exchange_name, exchange_conf):
     exchange_conf = set_test_proxy(
-        exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
-    exchange_conf['exchange']['name'] = request.param
-    exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
-    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True)
+        exchange_conf, EXCHANGES[exchange_name].get('use_ci_proxy', False))
+    exchange_conf['exchange']['name'] = exchange_name
+    exchange_conf['stake_currency'] = EXCHANGES[exchange_name]['stake_currency']
+    exchange = ExchangeResolver.load_exchange(exchange_conf, validate=True, load_leverage_tiers=True)
 
-    yield exchange, request.param
+    yield exchange, exchange_name
 
 
-@pytest.fixture(params=EXCHANGES, scope="class")
-def exchange_futures(request, exchange_conf, class_mocker):
-    if EXCHANGES[request.param].get('futures') is not True:
-        pytest.skip(f"Exchange {request.param} does not support futures.")
+def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
+    if EXCHANGES[exchange_name].get('futures') is not True:
+        pytest.skip(f"Exchange {exchange_name} does not support futures.")
     else:
         exchange_conf = set_test_proxy(
-            exchange_conf, EXCHANGES[request.param].get('use_ci_proxy', False))
-        exchange_conf = deepcopy(exchange_conf)
-        exchange_conf['exchange']['name'] = request.param
+            exchange_conf, EXCHANGES[exchange_name].get('use_ci_proxy', False))
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['margin_mode'] = 'isolated'
-        exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
 
         class_mocker.patch(
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
@@ -323,7 +318,15 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(f'{EXMS}.load_cached_leverage_tiers', return_value=None)
         class_mocker.patch(f'{EXMS}.cache_leverage_tiers')
 
-        exchange = ExchangeResolver.load_exchange(
-            exchange_conf, validate=True, load_leverage_tiers=True)
+        yield from get_exchange(exchange_name, exchange_conf)
 
-        yield exchange, request.param
+
+@pytest.fixture(params=EXCHANGES, scope="class")
+def exchange(request, exchange_conf):
+    yield from get_exchange(request.param, exchange_conf)
+
+
+@pytest.fixture(params=EXCHANGES, scope="class")
+def exchange_futures(request, exchange_conf, class_mocker):
+
+    yield from get_futures_exchange(request.param, exchange_conf, class_mocker)
