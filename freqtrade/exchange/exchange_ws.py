@@ -17,7 +17,7 @@ from freqtrade.exchange.types import OHLCVResponse
 logger = logging.getLogger(__name__)
 
 
-class ExchangeWS():
+class ExchangeWS:
     def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
         self.config = config
         self.ccxt_object = ccxt_object

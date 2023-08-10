@@ -376,7 +376,7 @@ def get_exchange(exchange_name, exchange_conf):
         exchange_conf, validate=True, load_leverage_tiers=True
     )
 
-    yield exchange, exchange_name
+    return exchange, exchange_name
 
 
 def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
@@ -398,15 +398,25 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
         class_mocker.patch(f"{EXMS}.load_cached_leverage_tiers", return_value=None)
         class_mocker.patch(f"{EXMS}.cache_leverage_tiers")
 
-        yield from get_exchange(exchange_name, exchange_conf)
+        return get_exchange(exchange_name, exchange_conf)
 
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf, class_mocker):
     class_mocker.patch("freqtrade.exchange.bybit.Bybit.additional_exchange_init")
-    yield from get_exchange(request.param, exchange_conf)
+    return get_exchange(request.param, exchange_conf)
 
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange_futures(request, exchange_conf, class_mocker):
-    yield from get_futures_exchange(request.param, exchange_conf, class_mocker)
+    return get_futures_exchange(request.param, exchange_conf, class_mocker)
+
+
+@pytest.fixture(params=EXCHANGES, scope="class")
+def exchange_ws(request, exchange_conf):
+    exchange_conf["exchange"]["enable_ws"] = True
+    exchange, name = get_exchange(request.param, exchange_conf)
+    if not exchange._has_watch_ohlcv:
+        pytest.skip("Exchange does not support watch_ohlcv.")
+    yield exchange, name
+    exchange.close()
