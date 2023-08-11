@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import time
-from datetime import datetime
 from threading import Thread
 from typing import Dict, Set
 
@@ -12,6 +11,7 @@ from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import OHLCVResponse
+from freqtrade.util.datetime_helpers import dt_from_ts
 
 
 logger = logging.getLogger(__name__)
@@ -84,9 +84,9 @@ class ExchangeWS:
                 start = time.time()
                 data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
                 self.klines_last_refresh[(pair, timeframe, candle_type)] = time.time()
-                # logger.info(
-                #     f"watch done {pair}, {timeframe}, data {len(data)} "
-                #     f"in {time.time() - start:.2f}s")
+                logger.debug(
+                    f"watch done {pair}, {timeframe}, data {len(data)} "
+                    f"in {time.time() - start:.2f}s")
         except ccxt.BaseError:
             logger.exception("Exception in continuously_async_watch_ohlcv")
         finally:
@@ -122,8 +122,8 @@ class ExchangeWS:
             drop_hint = (candles[-1][0] // 1000) >= candle_date
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
-            f"{datetime.fromtimestamp(candles[-1][0] // 1000)}, "
-            f"lref={datetime.fromtimestamp(self.klines_last_refresh[(pair, timeframe, candle_type)])}"
-            f"candle_date={datetime.fromtimestamp(candle_date)}, {drop_hint=}"
+            f"{dt_from_ts(candles[-1][0] // 1000)}, "
+            f"lref={dt_from_ts(self.klines_last_refresh[(pair, timeframe, candle_type)])}"
+            f"candle_date={dt_from_ts(candle_date)}, {drop_hint=}"
             )
         return pair, timeframe, candle_type, candles, drop_hint
