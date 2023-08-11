@@ -53,4 +53,3 @@ class TestCCXTExchangeWs:
 
         assert log_has_re(r"watch result.*", caplog)
 
-

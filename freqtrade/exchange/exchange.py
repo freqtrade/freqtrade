@@ -271,8 +271,11 @@ class Exchange:
         ):
             logger.debug("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
-        if (self._ws_async and inspect.iscoroutinefunction(self._ws_async.close)
-                and self._ws_async.session):
+        if (
+            self._ws_async
+            and inspect.iscoroutinefunction(self._ws_async.close)
+            and self._ws_async.session
+        ):
             logger.debug("Closing ws ccxt session.")
             self.loop.run_until_complete(self._ws_async.close())
 
@@ -313,6 +316,7 @@ class Exchange:
             if not is_exchange_known_ccxt(name, ccxt_module):
                 # Fall back to async if pro doesn't support this exchange
                 import ccxt.async_support as ccxt_async
+
                 ccxt_module = ccxt_async
 
         if not is_exchange_known_ccxt(name, ccxt_module):
@@ -2248,6 +2252,7 @@ class Exchange:
             if self._has_watch_ohlcv and self._exchange_ws:
                 # Subscribe to websocket
                 self._exchange_ws.schedule_ohlcv(pair, timeframe, candle_type)
+
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
             min_date = int(date_minus_candles(timeframe, candle_limit - 5).timestamp())
@@ -2259,7 +2264,7 @@ class Exchange:
                 x = self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
                 logger.info(f"{pair}, {candle_date < x}, {candle_date}, {x}")
                 if candles and candles[-1][0] > min_date and candle_date < x:
-                    # Usable result ...
+                    # Usable result, update happened after prior candle end date
                     logger.info(f"reuse watch result for {pair}, {timeframe}, {x}")
 
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
