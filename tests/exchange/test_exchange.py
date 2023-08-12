@@ -3522,7 +3522,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
 
     assert ex.get_valid_pair_combination("ETH", "BTC") == "ETH/BTC"
     assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
-    with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
+    with pytest.raises(ValueError, match=r"Could not combine.* to get a valid pair."):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
 
 
