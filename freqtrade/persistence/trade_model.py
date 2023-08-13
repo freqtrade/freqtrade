@@ -240,8 +240,9 @@ class Order(ModelBase):
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
-            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct,
-                                   allow_refresh=trade.nr_of_successful_entries == 1)
+            if trade.nr_of_successful_entries == 1:
+                trade.initial_stop_loss_pct = None
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -646,7 +647,7 @@ class LocalTrade:
         stop_loss_norm = price_to_precision(new_loss, self.price_precision, self.precision_mode,
                                             rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None or allow_refresh:
+        if self.initial_stop_loss_pct is None:
             self.__set_stop_loss(stop_loss_norm, stoploss)
             self.initial_stop_loss = price_to_precision(
                 stop_loss_norm, self.price_precision, self.precision_mode,
