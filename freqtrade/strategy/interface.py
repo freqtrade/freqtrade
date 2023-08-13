@@ -381,7 +381,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
-        When not implemented by a strategy, returns the initial stoploss value
+        When not implemented by a strategy, returns the initial stoploss value.
         Only called when use_custom_stoploss is set to True.
 
         :param pair: Pair that's currently analyzed
