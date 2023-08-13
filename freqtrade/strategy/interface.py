@@ -373,7 +373,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, **kwargs) -> float:
+                        current_profit: float, after_fill: bool, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -389,6 +389,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param after_fill: True if the stoploss is called after the order was filled.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New stoploss value, relative to the current_rate
         """
@@ -1160,7 +1161,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def ft_stoploss_adjust(self, current_rate: float, trade: Trade,
                            current_time: datetime, current_profit: float,
                            force_stoploss: float, low: Optional[float] = None,
-                           high: Optional[float] = None) -> None:
+                           high: Optional[float] = None, after_fill: bool = False) -> None:
         """
         Adjust stop-loss dynamically if configured to do so.
         :param current_profit: current profit as ratio
@@ -1186,11 +1187,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=(bound or current_rate),
-                                                      current_profit=bound_profit)
+                                                      current_profit=bound_profit,
+                                                      after_fill=after_fill)
             # Sanity check - error cases will return None
             if stop_loss_value:
-                # logger.info(f"{trade.pair} {stop_loss_value=} {bound_profit=}")
-                trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
+                trade.adjust_stop_loss(bound or current_rate, stop_loss_value,
+                                       allow_refresh=after_fill)
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
