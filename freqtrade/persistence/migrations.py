@@ -88,8 +88,9 @@ def migrate_trades_and_orders_table(
     stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
     initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
     initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
-    is_stop_loss_trailing = get_column_def(cols, 'is_stop_loss_trailing',
-                                        'stop_loss_pct <> initial_stop_loss_pct')
+    is_stop_loss_trailing = get_column_def(
+        cols, 'is_stop_loss_trailing',
+        f'coalesce({stop_loss_pct}, 0.0) <> coalesce({initial_stop_loss_pct}, 0.0)')
     stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
     stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
