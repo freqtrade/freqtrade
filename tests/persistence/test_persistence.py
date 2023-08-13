@@ -87,6 +87,13 @@ def test_set_stop_loss_liquidation(fee):
     assert trade.stop_loss_pct == -0.2
     assert trade.initial_stop_loss == 1.8
 
+    # Lower stop with "allow_refresh" does move stoploss
+    trade.adjust_stop_loss(1.8, 0.22, allow_refresh=True)
+    assert trade.liquidation_price == 0.11
+    assert trade.stop_loss == 1.602
+    assert trade.stop_loss_pct == -0.22
+    assert trade.initial_stop_loss == 1.8
+
     # higher stop does move stoploss
     trade.adjust_stop_loss(2.1, 0.1)
     assert trade.liquidation_price == 0.11
@@ -141,6 +148,13 @@ def test_set_stop_loss_liquidation(fee):
     assert trade.liquidation_price == 3.8
     assert trade.stop_loss == 2.2
     assert trade.stop_loss_pct == -0.2
+    assert trade.initial_stop_loss == 2.2
+
+    # Stop does move stop higher with "allow_refresh"
+    trade.adjust_stop_loss(2.0, 0.3, allow_refresh=True)
+    assert trade.liquidation_price == 3.8
+    assert trade.stop_loss == 2.3
+    assert trade.stop_loss_pct == -0.3
     assert trade.initial_stop_loss == 2.2
 
     # Stoploss does move lower
