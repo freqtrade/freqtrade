@@ -241,7 +241,7 @@ class Order(ModelBase):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
             trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct,
-                                   refresh=trade.nr_of_successful_entries == 1)
+                                   allow_refresh=trade.nr_of_successful_entries == 1)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -622,7 +622,7 @@ class LocalTrade:
         self.stop_loss_pct = -1 * abs(percent)
 
     def adjust_stop_loss(self, current_price: float, stoploss: Optional[float],
-                         initial: bool = False, refresh: bool = False) -> None:
+                         initial: bool = False, allow_refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
@@ -634,7 +634,7 @@ class LocalTrade:
         if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
-        refresh = True if refresh else False
+        allow_refresh = True if allow_refresh else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
@@ -645,7 +645,7 @@ class LocalTrade:
         stop_loss_norm = price_to_precision(new_loss, self.price_precision, self.precision_mode,
                                             rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None or refresh:
+        if self.initial_stop_loss_pct is None or allow_refresh:
             self.__set_stop_loss(stop_loss_norm, stoploss)
             self.initial_stop_loss = price_to_precision(
                 stop_loss_norm, self.price_precision, self.precision_mode,
