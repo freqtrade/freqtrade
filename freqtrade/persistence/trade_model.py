@@ -746,10 +746,8 @@ class LocalTrade:
         self.open_order_id = None
         self.recalc_trade_from_orders(is_closing=True)
         if show_msg:
-            logger.info(
-                'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-                self
-            )
+            logger.info(f"Marking {self} as closed as the trade is fulfilled "
+                        "and found no open orders for it.")
 
     def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
                    side: str) -> None:
@@ -1192,7 +1190,7 @@ class LocalTrade:
         Adjust initial Stoploss to desired stoploss for all open trades.
         """
         for trade in Trade.get_open_trades():
-            logger.info("Found open trade: %s", trade)
+            logger.info(f"Found open trade: {trade}")
 
             # skip case if trailing-stop changed the stoploss already.
             if (trade.stop_loss == trade.initial_stop_loss
