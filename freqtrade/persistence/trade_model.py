@@ -636,7 +636,6 @@ class LocalTrade:
         if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
-        allow_refresh = True if allow_refresh else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
@@ -662,7 +661,11 @@ class LocalTrade:
             # stop losses only walk up, never down!,
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
-            if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
+            if (
+                allow_refresh
+                or (higher_stop and not self.is_short)
+                or (lower_stop and self.is_short)
+            ):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self.is_stop_loss_trailing = True
                 self.__set_stop_loss(stop_loss_norm, stoploss)
