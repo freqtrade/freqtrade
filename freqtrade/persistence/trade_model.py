@@ -240,7 +240,8 @@ class Order(ModelBase):
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
-            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct,
+                                   refresh=trade.nr_of_successful_entries == 1)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -628,11 +629,12 @@ class LocalTrade:
         :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
         :param initial: Called to initiate stop_loss.
             Skips everything if self.stop_loss is already set.
+        :param refresh: Called to refresh stop_loss, allows adjustment in both directions
         """
         if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
-        refresh = True if refresh and self.nr_of_successful_entries == 1 else False
+        refresh = True if refresh else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
