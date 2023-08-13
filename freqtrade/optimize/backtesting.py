@@ -1126,11 +1126,11 @@ class Backtesting:
                 trade.open_order_id = None
                 self.wallets.update()
 
-                # 4. Create exit orders (if any)
+            # 4. Create exit orders (if any)
             if not trade.open_order_id:
                 self._check_trade_exit(trade, row)  # Place exit order if necessary
 
-                # 5. Process exit orders.
+            # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
             if order and self._get_order_filled(order.ft_price, row):
                 order.close_bt_order(current_time, trade)
