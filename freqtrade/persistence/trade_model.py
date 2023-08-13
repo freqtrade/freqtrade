@@ -1185,10 +1185,11 @@ class LocalTrade:
             return LocalTrade.bt_open_open_trade_count
 
     @staticmethod
-    def stoploss_reinitialization(desired_stoploss):
+    def stoploss_reinitialization(desired_stoploss: float):
         """
         Adjust initial Stoploss to desired stoploss for all open trades.
         """
+        trade: Trade
         for trade in Trade.get_open_trades():
             logger.info(f"Found open trade: {trade}")
 
@@ -1199,7 +1200,7 @@ class LocalTrade:
 
                 logger.info(f"Stoploss for {trade} needs adjustment...")
                 # Force reset of stoploss
-                trade.stop_loss = None
+                trade.stop_loss = 0.0
                 trade.initial_stop_loss_pct = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
