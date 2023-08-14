@@ -1337,7 +1337,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
+    order_id = f'test_prod_{side}_{randint(0, 10 ** 6)}'
     api_mock.options = {} if not marketprice else {"createMarketBuyOrderRequiresPrice": True}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -1417,7 +1417,7 @@ def test_buy_dry_run(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_buy_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     order_type = 'market'
     time_in_force = 'gtc'
     api_mock.options = {}
@@ -1506,7 +1506,7 @@ def test_buy_prod(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -1573,7 +1573,7 @@ def test_sell_dry_run(default_conf, mocker):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_sell_{randint(0, 10 ** 6)}'
     order_type = 'market'
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
@@ -1651,7 +1651,7 @@ def test_sell_prod(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_sell_{randint(0, 10 ** 6)}'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'symbol': 'ETH/BTC',
@@ -5357,7 +5357,7 @@ def test_get_liquidation_price(
 ])
 def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amount):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
 
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
