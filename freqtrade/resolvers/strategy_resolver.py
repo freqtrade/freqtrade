@@ -219,8 +219,9 @@ class StrategyResolver(IResolver):
                     "`populate_indicators`, `populate_entry_trend` and `populate_exit_trend` "
                     "with the metadata argument. ")
 
-        after_fill = 'after_fill' in getfullargspec(strategy.custom_stoploss).args
-        if after_fill:
+        has_after_fill = ('after_fill' in getfullargspec(strategy.custom_stoploss).args
+                          and check_override(strategy, IStrategy, 'custom_stoploss'))
+        if has_after_fill:
             strategy._ft_stop_uses_after_fill = True
 
         return strategy
