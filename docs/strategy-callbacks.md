@@ -164,6 +164,7 @@ E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoplo
 During backtesting, `current_rate` (and `current_profit`) are provided against the candle's high (or low for short trades) - while the resulting stoploss is evaluated against the candle's low (or high for short trades).
 
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
+Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
 
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
@@ -180,7 +181,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool, 
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -232,14 +233,14 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool, 
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
         if current_time - timedelta(minutes=120) > trade.open_date_utc:
             return -0.05
         elif current_time - timedelta(minutes=60) > trade.open_date_utc:
             return -0.10
-        return 1
+        return None
 ```
 
 #### Different stoploss per pair
@@ -259,7 +260,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
             return -0.10
@@ -286,7 +287,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
 
         if current_profit < 0.04:
             return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
@@ -320,7 +321,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
@@ -331,7 +332,7 @@ class AwesomeStrategy(IStrategy):
             return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
 
         # return maximum stoploss value, keeping current stoploss price unchanged
-        return 1
+        return None
 ```
 
 #### Custom stoploss using an indicator from dataframe example
@@ -349,7 +350,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
-                        **kwargs) -> float:
+                        **kwargs) -> Optional[float]:
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -362,7 +363,7 @@ class AwesomeStrategy(IStrategy):
             return stoploss_from_absolute(stoploss_price, current_rate, is_short=trade.is_short)
 
         # return maximum stoploss value, keeping current stoploss price unchanged
-        return 1
+        return None
 ```
 
 See [Dataframe access](strategy-advanced.md#dataframe-access) for more information about dataframe use in strategy callbacks.

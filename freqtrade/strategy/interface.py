@@ -373,7 +373,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, after_fill: bool, **kwargs) -> float:
+                        current_profit: float, after_fill: bool, **kwargs) -> Optional[float]:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -1200,7 +1200,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 trade.adjust_stop_loss(bound or current_rate, stop_loss_value,
                                        allow_refresh=after_fill)
             else:
-                logger.warning("CustomStoploss function did not return valid stoploss")
+                logger.debug("CustomStoploss function did not return valid stoploss")
 
         if self.trailing_stop and dir_correct:
             # trailing stoploss handling
