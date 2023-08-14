@@ -8,4 +8,4 @@ gymnasium==0.28.1
 stable_baselines3==2.0.0
 sb3_contrib>=2.0.0a9
 # Progress bar for stable-baselines3 and sb3-contrib
-tqdm==4.65.0
+tqdm==4.66.1
