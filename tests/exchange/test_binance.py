@@ -35,7 +35,7 @@ def test__get_params_binance(default_conf, mocker, side, type, time_in_force, ex
 ])
 def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     order_type = 'stop_loss_limit' if trademode == TradingMode.SPOT else 'stop'
 
     api_mock.create_order = MagicMock(return_value={

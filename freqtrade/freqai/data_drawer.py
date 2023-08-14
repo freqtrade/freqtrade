@@ -375,7 +375,7 @@ class FreqaiDataDrawer:
         num_keep = self.freqai_info["purge_old_models"]
         if not num_keep:
             return
-        elif type(num_keep) == bool:
+        elif isinstance(num_keep, bool):
             num_keep = 2
 
         model_folders = [x for x in self.full_path.iterdir() if x.is_dir()]
