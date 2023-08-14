@@ -1140,7 +1140,7 @@ class Backtesting:
 
             # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
-            if self._try_close_open_order(order, trade, current_time, row):
+            if order and self._try_close_open_order(order, trade, current_time, row):
                 sub_trade = order.safe_amount_after_fee != trade.amount
                 if sub_trade:
                     trade.recalc_trade_from_orders()
