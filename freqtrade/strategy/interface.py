@@ -1247,7 +1247,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             exit_type = ExitType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
-            if trade.initial_stop_loss != trade.stop_loss:
+            if trade.is_stop_loss_trailing:
                 exit_type = ExitType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at "
