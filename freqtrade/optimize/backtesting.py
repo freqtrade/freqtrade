@@ -578,10 +578,10 @@ class Backtesting:
         """ Rate is within candle, therefore filled"""
         return row[LOW_IDX] <= rate <= row[HIGH_IDX]
 
-    def _call_adjust_stop(self, current_date: datetime, trade: Trade, current_rate: float):
+    def _call_adjust_stop(self, current_date: datetime, trade: LocalTrade, current_rate: float):
         profit = trade.calc_profit_ratio(current_rate)
-        self.strategy.ft_stoploss_adjust(current_rate, trade, current_date, profit, 0,
-                                         after_fill=True)
+        self.strategy.ft_stoploss_adjust(current_rate, trade,  # type: ignore
+                                         current_date, profit, 0, after_fill=True)
 
     def _try_close_open_order(
             self, order: Optional[Order], trade: LocalTrade, current_date: datetime,
