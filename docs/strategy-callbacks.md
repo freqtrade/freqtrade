@@ -166,6 +166,30 @@ During backtesting, `current_rate` (and `current_profit`) are provided against t
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
 
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+
+!!! Note "Use of dates"
+    All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
+
+!!! Tip "Trailing stoploss"
+    It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
+
+### Adjust stoploss after position adjustments
+
+Depending on your strategy, you may encounter the need to adjust the stoploss in both directions after a [position adjustment](#adjust-trade-position).
+For this, freqtrade will make an additional call with `after_fill=True` after an order fills, which will allow the strategy to move the stoploss in any direction (also widening the gap between stoploss and current price, which is otherwise forbidden).
+
+!!! Note "backwards compatibility"
+    This call will only be made if the `after_fill` parameter is part of the function definition of your `custom_stoploss` function.
+    As such, this will not impact (and with that, surprise) existing, running strategies.
+
+### Custom stoploss examples
+
+The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.
+
+#### Trailing stop via custom stoploss
+
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
 ``` python
@@ -203,19 +227,6 @@ class AwesomeStrategy(IStrategy):
         """
         return -0.04
 ```
-
-Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
-
-!!! Note "Use of dates"
-    All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
-
-!!! Tip "Trailing stoploss"
-    It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
-
-### Custom stoploss examples
-
-The next section will show some examples on what's possible with the custom stoploss function.
-Of course, many more things are possible, and all examples can be combined at will.
 
 #### Time based trailing stop
 
