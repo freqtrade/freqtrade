@@ -43,7 +43,7 @@ fastapi==0.101.0
 pydantic==1.10.11
 uvicorn==0.23.2
 pyjwt==2.8.0
-aiofiles==23.1.0
+aiofiles==23.2.1
 psutil==5.9.5
 
 # Support for colorized terminal output
