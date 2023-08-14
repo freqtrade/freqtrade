@@ -614,11 +614,9 @@ class LocalTrade:
         """
         Method used internally to set self.stop_loss.
         """
-        stop_loss_norm = price_to_precision(stop_loss, self.price_precision, self.precision_mode,
-                                            rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         if not self.stop_loss:
-            self.initial_stop_loss = stop_loss_norm
-        self.stop_loss = stop_loss_norm
+            self.initial_stop_loss = stop_loss
+        self.stop_loss = stop_loss
 
         self.stop_loss_pct = -1 * abs(percent)
 
@@ -642,26 +640,27 @@ class LocalTrade:
         else:
             new_loss = float(current_price * (1 - abs(stoploss / leverage)))
 
+        stop_loss_norm = price_to_precision(new_loss, self.price_precision, self.precision_mode,
+                                            rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None or refresh:
-            self.__set_stop_loss(new_loss, stoploss)
+            self.__set_stop_loss(stop_loss_norm, stoploss)
             self.initial_stop_loss = price_to_precision(
-                new_loss, self.price_precision, self.precision_mode,
+                stop_loss_norm, self.price_precision, self.precision_mode,
                 rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
             self.initial_stop_loss_pct = -1 * abs(stoploss)
 
         # evaluate if the stop loss needs to be updated
         else:
-
-            higher_stop = new_loss > self.stop_loss
-            lower_stop = new_loss < self.stop_loss
+            higher_stop = stop_loss_norm > self.stop_loss
+            lower_stop = stop_loss_norm < self.stop_loss
 
             # stop losses only walk up, never down!,
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self.__set_stop_loss(new_loss, stoploss)
+                self.__set_stop_loss(stop_loss_norm, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 
