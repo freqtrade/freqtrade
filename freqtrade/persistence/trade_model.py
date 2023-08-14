@@ -242,6 +242,7 @@ class Order(ModelBase):
             trade.recalc_trade_from_orders()
             if trade.nr_of_successful_entries == 1:
                 trade.initial_stop_loss_pct = None
+                trade.is_stop_loss_trailing = False
             trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct)
 
     @staticmethod
@@ -667,7 +668,8 @@ class LocalTrade:
                 or (lower_stop and self.is_short)
             ):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self.is_stop_loss_trailing = True
+                if not allow_refresh:
+                    self.is_stop_loss_trailing = True
                 self.__set_stop_loss(stop_loss_norm, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
