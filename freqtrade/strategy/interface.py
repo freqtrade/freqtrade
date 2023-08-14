@@ -1181,7 +1181,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         bound = (low if trade.is_short else high)
         bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
         if self.use_custom_stoploss and dir_correct:
-            stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
+            stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None,
+                                                    supress_error=True
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=(bound or current_rate),
