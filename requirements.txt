@@ -49,8 +49,8 @@ psutil==5.9.5
 # Support for colorized terminal output
 colorama==0.4.6
 # Building config files interactively
-questionary==1.10.0
-prompt-toolkit==3.0.39
+questionary==2.0.0
+prompt-toolkit==3.0.36
 # Extensions to datetime library
 python-dateutil==2.8.2
 
