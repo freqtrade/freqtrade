@@ -720,6 +720,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 # END - Intended to be overridden by strategy
 ###
 
+    _ft_stop_uses_after_fill = False
+
     def __informative_pairs_freqai(self) -> ListPairsWithTimeframes:
         """
         Create informative-pairs needed for FreqAI
@@ -1168,6 +1170,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param low: Low value of this candle, only set in backtesting
         :param high: High value of this candle, only set in backtesting
         """
+        if after_fill and not self._ft_stop_uses_after_fill:
+            # Skip if the strategy doesn't support after fill.
+            return
+
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
