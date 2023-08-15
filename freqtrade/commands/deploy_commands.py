@@ -35,6 +35,10 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     Deploy new strategy from template to strategy_path
     """
     fallback = 'full'
+    attributes = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/strategy_attributes_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/strategy_attributes_{fallback}.j2",
+    )
     indicators = render_template_with_fallback(
         templatefile=f"strategy_subtemplates/indicators_{subtemplate}.j2",
         templatefallbackfile=f"strategy_subtemplates/indicators_{fallback}.j2",
@@ -58,6 +62,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
 
     strategy_text = render_template(templatefile='base_strategy.py.j2',
                                     arguments={"strategy": strategy_name,
+                                               "attributes": attributes,
                                                "indicators": indicators,
                                                "buy_trend": buy_trend,
                                                "sell_trend": sell_trend,
