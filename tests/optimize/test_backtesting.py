@@ -1359,11 +1359,11 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # Cached data correctly removed amounts
     offset = 1 if tres == 0 else 0
-    removed_candles = len(data[pair]) - offset - backtesting.strategy.startup_candle_count
+    removed_candles = len(data[pair]) - offset
     assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
     assert len(
         backtesting.dataprovider.get_analyzed_dataframe('NXT/BTC', '5m')[0]
-    ) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
+    ) == len(data['NXT/BTC']) - 1
 
     backtesting.strategy.max_open_trades = 1
     backtesting.config.update({'max_open_trades': 1})
