@@ -1229,12 +1229,14 @@ class Backtesting:
                     is_first = True
                     current_time_det = current_time
                     for det_row in detail_data[HEADERS].values.tolist():
+                        self.dataprovider._set_dataframe_max_date(current_time_det)
                         open_trade_count_start = self.backtest_loop(
                             det_row, pair, current_time_det, end_date,
                             open_trade_count_start, trade_dir, is_first)
                         current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         is_first = False
                 else:
+                    self.dataprovider._set_dataframe_max_date(current_time)
                     open_trade_count_start = self.backtest_loop(
                         row, pair, current_time, end_date,
                         open_trade_count_start, trade_dir)
