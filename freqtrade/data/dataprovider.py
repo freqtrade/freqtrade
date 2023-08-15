@@ -284,7 +284,7 @@ class DataProvider:
     def historic_ohlcv(
         self,
         pair: str,
-        timeframe: Optional[str] = None,
+        timeframe: str,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -307,7 +307,7 @@ class DataProvider:
             timerange.subtract_start(tf_seconds * startup_candles)
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
-                timeframe=timeframe or self._config['timeframe'],
+                timeframe=timeframe,
                 datadir=self._config['datadir'],
                 timerange=timerange,
                 data_format=self._config['dataformat_ohlcv'],
@@ -354,6 +354,7 @@ class DataProvider:
             data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
         else:
             # Get historical OHLCV data (cached on disk).
+            timeframe = timeframe or self._config['timeframe']
             data = self.historic_ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
         if len(data) == 0:
             logger.warning(f"No data found for ({pair}, {timeframe}, {candle_type}).")
