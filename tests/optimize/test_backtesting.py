@@ -1122,10 +1122,10 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
 
-    global count
     count = 0
 
     def tmp_confirm_entry(pair, current_time, **kwargs):
+        nonlocal count
         dp = backtesting.strategy.dp
         df, _ = dp.get_analyzed_dataframe(pair, backtesting.strategy.timeframe)
         current_candle = df.iloc[-1].squeeze()
@@ -1135,8 +1135,7 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
         assert candle_date == current_time
         # These asserts don't properly raise as they are nested,
         # therefore we increment count and assert for that.
-        global count
-        count = count + 1
+        count += 1
 
     backtesting.strategy.confirm_trade_entry = tmp_confirm_entry
     backtesting.backtest(
