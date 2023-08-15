@@ -1,6 +1,8 @@
 """
 Jinja2 rendering utils, used to generate new strategy and configurations.
 """
+
+
 def render_template(templatefile: str, arguments: dict = {}) -> str:
 
     from jinja2 import Environment, PackageLoader, select_autoescape
