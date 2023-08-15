@@ -1,5 +1,4 @@
 import logging
-import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -40,23 +39,27 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             state_dict and model_meta_data saved by self.save() method.
         :param model_meta_data: Additional metadata about the model (optional).
         :param data_convertor: convertor from pd.DataFrame to torch.tensor.
-        :param max_iters: The number of training iterations to run.
-            iteration here refers to the number of times we call
-            self.optimizer.step(). used to calculate n_epochs.
+        :param n_steps: used to calculate n_epochs. The number of training iterations to run.
+            iteration here refers to the number of times optimizer.step() is called.
+            ignored if n_epochs is set.
+        :param n_epochs: The maximum number batches to use for evaluation.
         :param batch_size: The size of the batches to use during training.
-        :param max_n_eval_batches: The maximum number batches to use for evaluation.
         """
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
         self.model_meta_data = model_meta_data
         self.device = device
-        self.max_iters: int = kwargs.get("max_iters", 100)
+        self.n_epochs: Optional[int] = kwargs.get("n_epochs", 10)
+        self.n_steps: Optional[int] = kwargs.get("n_steps", None)
+        if self.n_steps is None and not self.n_epochs:
+            raise Exception("Either `n_steps` or `n_epochs` should be set.")
+
         self.batch_size: int = kwargs.get("batch_size", 64)
-        self.max_n_eval_batches: Optional[int] = kwargs.get("max_n_eval_batches", None)
         self.data_convertor = data_convertor
         self.window_size: int = window_size
         self.tb_logger = tb_logger
+        self.test_batch_counter = 0
 
     def fit(self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]):
         """
@@ -72,55 +75,46 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
            backpropagation.
          - Updates the model's parameters using an optimizer.
         """
-        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary, splits)
-        epochs = self.calc_n_epochs(
-            n_obs=len(data_dictionary["train_features"]),
-            batch_size=self.batch_size,
-            n_iters=self.max_iters
-        )
         self.model.train()
-        for epoch in range(1, epochs + 1):
-            for i, batch_data in enumerate(data_loaders_dictionary["train"]):
 
+        data_loaders_dictionary = self.create_data_loaders_dictionary(data_dictionary, splits)
+        n_obs = len(data_dictionary["train_features"])
+        n_epochs = self.n_epochs or self.calc_n_epochs(n_obs=n_obs)
+        batch_counter = 0
+        for _ in range(n_epochs):
+            for _, batch_data in enumerate(data_loaders_dictionary["train"]):
                 xb, yb = batch_data
-                xb.to(self.device)
-                yb.to(self.device)
+                xb = xb.to(self.device)
+                yb = yb.to(self.device)
                 yb_pred = self.model(xb)
                 loss = self.criterion(yb_pred, yb)
 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 self.optimizer.step()
-                self.tb_logger.log_scalar("train_loss", loss.item(), i)
+                self.tb_logger.log_scalar("train_loss", loss.item(), batch_counter)
+                batch_counter += 1
 
             # evaluation
             if "test" in splits:
-                self.estimate_loss(
-                    data_loaders_dictionary,
-                    self.max_n_eval_batches,
-                    "test"
-                )
+                self.estimate_loss(data_loaders_dictionary, "test")
 
     @torch.no_grad()
     def estimate_loss(
             self,
             data_loader_dictionary: Dict[str, DataLoader],
-            max_n_eval_batches: Optional[int],
             split: str,
     ) -> None:
         self.model.eval()
-        n_batches = 0
-        for i, batch_data in enumerate(data_loader_dictionary[split]):
-            if max_n_eval_batches and i > max_n_eval_batches:
-                n_batches += 1
-                break
+        for _, batch_data in enumerate(data_loader_dictionary[split]):
             xb, yb = batch_data
-            xb.to(self.device)
-            yb.to(self.device)
+            xb = xb.to(self.device)
+            yb = yb.to(self.device)
 
             yb_pred = self.model(xb)
             loss = self.criterion(yb_pred, yb)
-            self.tb_logger.log_scalar(f"{split}_loss", loss.item(), i)
+            self.tb_logger.log_scalar(f"{split}_loss", loss.item(), self.test_batch_counter)
+            self.test_batch_counter += 1
 
         self.model.train()
 
@@ -148,31 +142,30 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
 
         return data_loader_dictionary
 
-    @staticmethod
-    def calc_n_epochs(n_obs: int, batch_size: int, n_iters: int) -> int:
+    def calc_n_epochs(self, n_obs: int) -> int:
         """
         Calculates the number of epochs required to reach the maximum number
         of iterations specified in the model training parameters.
 
-        the motivation here is that `max_iters` is easier to optimize and keep stable,
+        the motivation here is that `n_steps` is easier to optimize and keep stable,
         across different n_obs - the number of data points.
         """
+        assert isinstance(self.n_steps, int), "Either `n_steps` or `n_epochs` should be set."
+        n_batches = n_obs // self.batch_size
+        n_epochs = min(self.n_steps // n_batches, 1)
+        if n_epochs <= 10:
+            logger.warning(
+                f"Setting low n_epochs: {n_epochs}. "
+                f"Please consider increasing `n_steps` hyper-parameter."
+            )
 
-        n_batches = math.ceil(n_obs // batch_size)
-        epochs = math.ceil(n_iters // n_batches)
-        if epochs <= 10:
-            logger.warning("User set `max_iters` in such a way that the trainer will only perform "
-                           f" {epochs} epochs. Please consider increasing this value accordingly")
-            if epochs <= 1:
-                logger.warning("Epochs set to 1. Please review your `max_iters` value")
-                epochs = 1
-        return epochs
+        return n_epochs
 
     def save(self, path: Path):
         """
         - Saving any nn.Module state_dict
         - Saving model_meta_data, this dict should contain any additional data that the
-          user needs to store. e.g class_names for classification models.
+          user needs to store. e.g. class_names for classification models.
         """
 
         torch.save({
