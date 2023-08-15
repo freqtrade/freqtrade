@@ -10,7 +10,7 @@ from freqtrade.configuration.directory_operations import copy_sample_files, crea
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import render_template, render_template_with_fallback
+from freqtrade.util import render_template, render_template_with_fallback
 
 
 logger = logging.getLogger(__name__)
