@@ -11,7 +11,7 @@ function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
         echo_block "Installing Pip for ${PYTHON}"
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        curl https://bootstrap.pypa.io/get-pip.py -s -o get-pip.py
         ${PYTHON} get-pip.py
         rm get-pip.py
    fi
