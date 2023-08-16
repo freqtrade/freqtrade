@@ -111,10 +111,9 @@ A similar setup can also be taken for Pycharm - using `freqtrade` as module name
     If your environment has not been detected, you can also pick a path manually.
 
     #### Pycharm
-    
+
     In pycharm, you can select the appropriate Environment in the "Run/Debug Configurations" window.
     ![Pycharm debug configuration](assets/pycharm_debug.png)
-    ![Alt text](image.png)
 
 !!! Note "Startup directory"
     This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).
