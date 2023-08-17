@@ -651,10 +651,10 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
 
     assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
     assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
-
-    assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    msg = 'Could not convert NoDatapair to OHLCV.'
+    assert not log_has(msg, caplog)
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
-    assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    assert log_has(msg, caplog)

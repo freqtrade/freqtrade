@@ -213,7 +213,7 @@ def trades_df_remove_duplicates(trades: pd.DataFrame) -> pd.DataFrame:
     :param trades: DataFrame with the columns constants.DEFAULT_TRADES_COLUMNS
     :return: DataFrame with duplicates removed based on the 'timestamp' column
     """
-    return trades.drop_duplicates(subset=['timestamp'])
+    return trades.drop_duplicates(subset=['timestamp', 'id'])
 
 
 def trades_dict_to_list(trades: List[Dict]) -> TradeList:
