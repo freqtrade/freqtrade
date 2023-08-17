@@ -221,7 +221,7 @@ class IDataHandler(ABC):
         return trades
 
     def trades_load_aslist(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
-        trades = self.trades_load(pair, timerange)
+        trades = trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
         return trades.values.tolist()
 
     @classmethod
