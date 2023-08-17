@@ -264,7 +264,7 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
     logger.info(f"Converting trades for {config['pairs']}")
 
     for pair in config['pairs']:
-        data = src.trades_load_aslist(pair=pair)
+        data = src.trades_load(pair=pair)
         logger.info(f"Converting {len(data)} trades for {pair}")
         trg.trades_store(pair, data)
         if erase and convert_from != convert_to:

@@ -81,11 +81,11 @@ class ParquetDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         # filename = self._pair_trades_filename(self._datadir, pair)

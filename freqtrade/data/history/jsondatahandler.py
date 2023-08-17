@@ -6,7 +6,7 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
 from freqtrade.data.converter import trades_dict_to_list
 from freqtrade.enums import CandleType
 
@@ -94,15 +94,17 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
-        misc.file_dump_json(filename, data, is_zip=self._use_zip)
+        data.loc[:, 'timestamp'] = data.loc[:, 'timestamp'].view(np.int64) // 1000 // 1000
+        trades = data[DEFAULT_TRADES_COLUMNS].values.tolist()
+        misc.file_dump_json(filename, trades, is_zip=self._use_zip)
 
     def trades_append(self, pair: str, data: DataFrame):
         """

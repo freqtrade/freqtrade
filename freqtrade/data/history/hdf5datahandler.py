@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
 from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
@@ -100,16 +100,16 @@ class HDF5DataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def trades_store(self, pair: str, data: pd.DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         key = self._pair_trades_key(pair)
 
-        pd.DataFrame(data, columns=DEFAULT_TRADES_COLUMNS).to_hdf(
+        data.to_hdf(
             self._pair_trades_filename(self._datadir, pair), key,
             mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['timestamp']

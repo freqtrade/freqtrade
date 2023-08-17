@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from pandas import DataFrame, Timestamp
+from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
@@ -331,30 +332,18 @@ def test_hdf5datahandler_trades_load(testdatadir):
 def test_hdf5datahandler_trades_store(testdatadir, tmpdir):
     tmpdir1 = Path(tmpdir)
     dh = get_datahandler(testdatadir, 'hdf5')
-    trades = dh.trades_load_aslist('XRP/ETH')
+    trades = dh.trades_load('XRP/ETH')
 
     dh1 = get_datahandler(tmpdir1, 'hdf5')
     dh1.trades_store('XRP/NEW', trades)
     file = tmpdir1 / 'XRP_NEW-trades.h5'
     assert file.is_file()
     # Load trades back
-    trades_new = dh1.trades_load_aslist('XRP/NEW')
+    trades_new = dh1.trades_load('XRP/NEW')
 
     assert len(trades_new) == len(trades)
-    assert trades[0][0] == trades_new[0][0]
-    assert trades[0][1] == trades_new[0][1]
-    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
-    assert trades[0][3] == trades_new[0][3]
-    assert trades[0][4] == trades_new[0][4]
-    assert trades[0][5] == trades_new[0][5]
-    assert trades[0][6] == trades_new[0][6]
-    assert trades[-1][0] == trades_new[-1][0]
-    assert trades[-1][1] == trades_new[-1][1]
-    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
-    assert trades[-1][3] == trades_new[-1][3]
-    assert trades[-1][4] == trades_new[-1][4]
-    assert trades[-1][5] == trades_new[-1][5]
-    assert trades[-1][6] == trades_new[-1][6]
+    assert_frame_equal(trades, trades_new, check_exact=True)
+    assert len(trades_new) == len(trades)
 
 
 def test_hdf5datahandler_trades_purge(mocker, testdatadir):
@@ -508,30 +497,16 @@ def test_featherdatahandler_trades_load(testdatadir):
 def test_featherdatahandler_trades_store(testdatadir, tmpdir):
     tmpdir1 = Path(tmpdir)
     dh = get_datahandler(testdatadir, 'feather')
-    trades = dh.trades_load_aslist('XRP/ETH')
+    trades = dh.trades_load('XRP/ETH')
 
     dh1 = get_datahandler(tmpdir1, 'feather')
     dh1.trades_store('XRP/NEW', trades)
     file = tmpdir1 / 'XRP_NEW-trades.feather'
     assert file.is_file()
     # Load trades back
-    trades_new = dh1.trades_load_aslist('XRP/NEW')
-
+    trades_new = dh1.trades_load('XRP/NEW')
+    assert_frame_equal(trades, trades_new, check_exact=True)
     assert len(trades_new) == len(trades)
-    assert trades[0][0] == trades_new[0][0]
-    assert trades[0][1] == trades_new[0][1]
-    # assert trades[0][2] == trades_new[0][2]  # This is nan - so comparison does not make sense
-    assert trades[0][3] == trades_new[0][3]
-    assert trades[0][4] == trades_new[0][4]
-    assert trades[0][5] == trades_new[0][5]
-    assert trades[0][6] == trades_new[0][6]
-    assert trades[-1][0] == trades_new[-1][0]
-    assert trades[-1][1] == trades_new[-1][1]
-    # assert trades[-1][2] == trades_new[-1][2]  # This is nan - so comparison does not make sense
-    assert trades[-1][3] == trades_new[-1][3]
-    assert trades[-1][4] == trades_new[-1][4]
-    assert trades[-1][5] == trades_new[-1][5]
-    assert trades[-1][6] == trades_new[-1][6]
 
 
 def test_featherdatahandler_trades_purge(mocker, testdatadir):
