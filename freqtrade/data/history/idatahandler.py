@@ -16,7 +16,8 @@ from pandas import DataFrame, to_datetime
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, TradeList
-from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
+from freqtrade.data.converter import (clean_ohlcv_dataframe, trades_df_remove_duplicates,
+                                      trim_dataframe)
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_seconds
 
@@ -216,12 +217,12 @@ class IDataHandler(ABC):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        trades = trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+        trades = trades_df_remove_duplicates(self._trades_load(pair, timerange=timerange))
         trades['timestamp'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
         return trades
 
     def trades_load_aslist(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
-        trades = trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+        trades = trades_df_remove_duplicates(self._trades_load(pair, timerange=timerange))
         return trades.values.tolist()
 
     @classmethod

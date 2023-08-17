@@ -10,8 +10,9 @@ import pytest
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
                                       ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
-                                      reduce_dataframe_footprint, trades_dict_to_list,
-                                      trades_remove_duplicates, trades_to_ohlcv, trim_dataframe)
+                                      reduce_dataframe_footprint, trades_df_remove_duplicates,
+                                      trades_dict_to_list, trades_remove_duplicates,
+                                      trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler
@@ -298,11 +299,20 @@ def test_trim_dataframe(testdatadir) -> None:
     assert all(data_modify.iloc[0] == data.iloc[25])
 
 
-def test_trades_remove_duplicates(trades_history_df):
+def test_trades_remove_duplicates(trades_history):
+    trades_history1 = trades_history * 3
+    assert len(trades_history1) == len(trades_history) * 3
+    res = trades_remove_duplicates(trades_history1)
+    assert len(res) == len(trades_history)
+    for i, t in enumerate(res):
+        assert t == trades_history[i]
+
+
+def test_trades_df_remove_duplicates(trades_history_df):
     trades_history1 = pd.concat([trades_history_df, trades_history_df, trades_history_df]
                                 ).reset_index(drop=True)
     assert len(trades_history1) == len(trades_history_df) * 3
-    res = trades_remove_duplicates(trades_history1)
+    res = trades_df_remove_duplicates(trades_history1)
     assert len(res) == len(trades_history_df)
     assert res.equals(trades_history_df)
 
