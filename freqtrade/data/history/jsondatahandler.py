@@ -6,7 +6,7 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
 from freqtrade.data.converter import trades_dict_to_list
 from freqtrade.enums import CandleType
 
@@ -113,13 +113,13 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         tradesdata = misc.file_load_json(filename)
@@ -132,7 +132,8 @@ class JsonDataHandler(IDataHandler):
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
             pass
-        return tradesdata
+        trades = DataFrame(tradesdata, columns=DEFAULT_TRADES_COLUMNS)
+        return trades
 
     @classmethod
     def _get_file_extension(cls):

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple, Type
 
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
@@ -188,12 +188,12 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
 
     def trades_purge(self, pair: str) -> bool:
@@ -208,7 +208,7 @@ class IDataHandler(ABC):
             return True
         return False
 
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         Removes duplicates in the process.
@@ -216,7 +216,13 @@ class IDataHandler(ABC):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+        trades = trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+        trades['timestamp'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
+        return trades
+
+    def trades_load_aslist(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+        trades = self.trades_load(pair, timerange)
+        return trades.values.tolist()
 
     @classmethod
     def create_dir_if_needed(cls, datadir: Path):

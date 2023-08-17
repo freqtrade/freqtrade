@@ -104,13 +104,13 @@ class FeatherDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         if not filename.exists():
@@ -118,7 +118,7 @@ class FeatherDataHandler(IDataHandler):
 
         tradesdata = read_feather(filename)
 
-        return tradesdata.values.tolist()
+        return tradesdata
 
     @classmethod
     def _get_file_extension(cls):

@@ -343,7 +343,7 @@ def _download_trades_history(exchange: Exchange,
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
 
-        trades = data_handler.trades_load(pair)
+        trades = data_handler.trades_load_aslist(pair)
 
         # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
