@@ -195,15 +195,14 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     return frame
 
 
-def trades_remove_duplicates(trades: List[List]) -> List[List]:
+def trades_remove_duplicates(trades: pd.DataFrame) -> pd.DataFrame:
     """
-    Removes duplicates from the trades list.
-    Uses itertools.groupby to avoid converting to pandas.
-    Tests show it as being pretty efficient on lists of 4M Lists.
-    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
-    :return: same format as above, but with duplicates removed
+    Removes duplicates from the trades DataFrame.
+    Uses pandas.DataFrame.drop_duplicates to remove duplicates based on the 'timestamp' column.
+    :param trades: DataFrame with the columns constants.DEFAULT_TRADES_COLUMNS
+    :return: DataFrame with duplicates removed based on the 'timestamp' column
     """
-    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
+    return trades.drop_duplicates(subset=['timestamp'])
 
 
 def trades_dict_to_list(trades: List[Dict]) -> TradeList:
@@ -215,7 +214,7 @@ def trades_dict_to_list(trades: List[Dict]) -> TradeList:
     return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
 
 
-def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
+def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     """
     Converts trades list to OHLCV list
     :param trades: List of trades, as returned by ccxt.fetch_trades.
@@ -225,12 +224,9 @@ def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
-    if not trades:
+    if trades.empty:
         raise ValueError('Trade-list empty.')
-    df = pd.DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',
-                                     utc=True,)
-    df = df.set_index('timestamp')
+    df = trades.set_index('timestamp')
 
     df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
     df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()
