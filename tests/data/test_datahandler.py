@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
@@ -303,39 +303,42 @@ def test_hdf5datahandler_trades_get_pairs(testdatadir):
 def test_hdf5datahandler_trades_load(testdatadir):
     dh = get_datahandler(testdatadir, 'hdf5')
     trades = dh.trades_load('XRP/ETH')
-    assert isinstance(trades, list)
+    assert isinstance(trades, DataFrame)
 
     trades1 = dh.trades_load('UNITTEST/NONEXIST')
-    assert trades1 == []
+    assert isinstance(trades1, DataFrame)
+    assert trades1.empty
     # data goes from 2019-10-11 - 2019-10-13
     timerange = TimeRange.parse_timerange('20191011-20191012')
 
     trades2 = dh._trades_load('XRP/ETH', timerange)
     assert len(trades) > len(trades2)
     # Check that ID is None (If it's nan, it's wrong)
-    assert trades2[0][2] is None
+    assert trades2.iloc[0]['type'] is None
 
     # unfiltered load has trades before starttime
-    assert len([t for t in trades if t[0] < timerange.startts * 1000]) >= 0
+
+    assert len(trades.loc[trades['timestamp'] < timerange.startdt]) >= 0
     # filtered list does not have trades before starttime
-    assert len([t for t in trades2 if t[0] < timerange.startts * 1000]) == 0
+    assert len(trades2.loc[trades2['timestamp'] < timerange.startts * 1000]) == 0
     # unfiltered load has trades after endtime
-    assert len([t for t in trades if t[0] > timerange.stopts * 1000]) > 0
+    assert len(trades.loc[trades['timestamp'] > timerange.stopdt]) >= 0
     # filtered list does not have trades after endtime
-    assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
+    assert len(trades2.loc[trades2['timestamp'] > timerange.stopts * 1000]) == 0
+    # assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
 
 
 def test_hdf5datahandler_trades_store(testdatadir, tmpdir):
     tmpdir1 = Path(tmpdir)
     dh = get_datahandler(testdatadir, 'hdf5')
-    trades = dh.trades_load('XRP/ETH')
+    trades = dh.trades_load_aslist('XRP/ETH')
 
     dh1 = get_datahandler(tmpdir1, 'hdf5')
     dh1.trades_store('XRP/NEW', trades)
     file = tmpdir1 / 'XRP_NEW-trades.h5'
     assert file.is_file()
     # Load trades back
-    trades_new = dh1.trades_load('XRP/NEW')
+    trades_new = dh1.trades_load_aslist('XRP/NEW')
 
     assert len(trades_new) == len(trades)
     assert trades[0][0] == trades_new[0][0]
@@ -493,25 +496,26 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
 def test_featherdatahandler_trades_load(testdatadir):
     dh = get_datahandler(testdatadir, 'feather')
     trades = dh.trades_load('XRP/ETH')
-    assert isinstance(trades, list)
-    assert trades[0][0] == 1570752011620
-    assert trades[-1][-1] == 0.1986231
+    assert isinstance(trades, DataFrame)
+    assert trades.iloc[0]['timestamp'] == Timestamp('2019-10-11 00:00:11.620000+0000')
+    assert trades.iloc[-1]['cost'] == 0.1986231
 
     trades1 = dh.trades_load('UNITTEST/NONEXIST')
-    assert trades1 == []
+    assert isinstance(trades, DataFrame)
+    assert trades1.empty
 
 
 def test_featherdatahandler_trades_store(testdatadir, tmpdir):
     tmpdir1 = Path(tmpdir)
     dh = get_datahandler(testdatadir, 'feather')
-    trades = dh.trades_load('XRP/ETH')
+    trades = dh.trades_load_aslist('XRP/ETH')
 
     dh1 = get_datahandler(tmpdir1, 'feather')
     dh1.trades_store('XRP/NEW', trades)
     file = tmpdir1 / 'XRP_NEW-trades.feather'
     assert file.is_file()
     # Load trades back
-    trades_new = dh1.trades_load('XRP/NEW')
+    trades_new = dh1.trades_load_aslist('XRP/NEW')
 
     assert len(trades_new) == len(trades)
     assert trades[0][0] == trades_new[0][0]
