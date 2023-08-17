@@ -20,7 +20,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange.exchange import timeframe_to_next_date
+from freqtrade.exchange import timeframe_to_next_date, timeframe_to_prev_date
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade, Trade
@@ -1135,6 +1135,12 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
         assert candle_date == current_time
         # These asserts don't properly raise as they are nested,
         # therefore we increment count and assert for that.
+        df = dp.get_pair_dataframe(pair, backtesting.strategy.timeframe)
+        prior_time = timeframe_to_prev_date(backtesting.strategy.timeframe,
+                                            candle_date - timedelta(seconds=1))
+        assert prior_time == df.iloc[-1].squeeze()['date']
+        assert df.iloc[-1].squeeze()['date'] < current_time
+
         count += 1
 
     backtesting.strategy.confirm_trade_entry = tmp_confirm_entry
@@ -1353,11 +1359,11 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # Cached data correctly removed amounts
     offset = 1 if tres == 0 else 0
-    removed_candles = len(data[pair]) - offset - backtesting.strategy.startup_candle_count
+    removed_candles = len(data[pair]) - offset
     assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
     assert len(
         backtesting.dataprovider.get_analyzed_dataframe('NXT/BTC', '5m')[0]
-    ) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
+    ) == len(data['NXT/BTC']) - 1
 
     backtesting.strategy.max_open_trades = 1
     backtesting.config.update({'max_open_trades': 1})

@@ -369,12 +369,13 @@ class Backtesting:
                 # Cleanup from prior runs
                 pair_data.drop(HEADERS[5:] + ['buy', 'sell'], axis=1, errors='ignore')
             df_analyzed = self.strategy.ft_advise_signals(pair_data, {'pair': pair})
-            # Trim startup period from analyzed dataframe
-            df_analyzed = processed[pair] = pair_data = trim_dataframe(
-                df_analyzed, self.timerange, startup_candles=self.required_startup)
             # Update dataprovider cache
             self.dataprovider._set_cached_df(
                 pair, self.timeframe, df_analyzed, self.config['candle_type_def'])
+
+            # Trim startup period from analyzed dataframe
+            df_analyzed = processed[pair] = pair_data = trim_dataframe(
+                df_analyzed, self.timerange, startup_candles=self.required_startup)
 
             # Create a copy of the dataframe before shifting, that way the entry signal/tag
             # remains on the correct candle for callbacks.
@@ -1196,7 +1197,8 @@ class Backtesting:
 
                 row_index += 1
                 indexes[pair] = row_index
-                self.dataprovider._set_dataframe_max_index(row_index)
+                self.dataprovider._set_dataframe_max_index(self.required_startup + row_index)
+                self.dataprovider._set_dataframe_max_date(current_time)
                 current_detail_time: datetime = row[DATE_IDX].to_pydatetime()
                 trade_dir: Optional[LongShort] = self.check_for_trade_entry(row)
 
@@ -1229,12 +1231,14 @@ class Backtesting:
                     is_first = True
                     current_time_det = current_time
                     for det_row in detail_data[HEADERS].values.tolist():
+                        self.dataprovider._set_dataframe_max_date(current_time_det)
                         open_trade_count_start = self.backtest_loop(
                             det_row, pair, current_time_det, end_date,
                             open_trade_count_start, trade_dir, is_first)
                         current_time_det += timedelta(minutes=self.timeframe_detail_min)
                         is_first = False
                 else:
+                    self.dataprovider._set_dataframe_max_date(current_time)
                     open_trade_count_start = self.backtest_loop(
                         row, pair, current_time, end_date,
                         open_trade_count_start, trade_dir)
