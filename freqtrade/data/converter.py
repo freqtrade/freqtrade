@@ -203,7 +203,7 @@ def trades_remove_duplicates(trades: List[List]) -> List[List]:
     :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
     :return: same format as above, but with duplicates removed
     """
-    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
+    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0, 1)))]
 
 
 def trades_df_remove_duplicates(trades: pd.DataFrame) -> pd.DataFrame:

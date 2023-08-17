@@ -581,7 +581,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC')
-    assert log_has("New Amount of trades: 5", caplog)
+    assert log_has("New Amount of trades: 6", caplog)
     assert file1.is_file()
 
     ght_mock.reset_mock()
