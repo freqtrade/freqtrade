@@ -114,7 +114,7 @@ class FeatherDataHandler(IDataHandler):
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         if not filename.exists():
-            return []
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
         tradesdata = read_feather(filename)
 

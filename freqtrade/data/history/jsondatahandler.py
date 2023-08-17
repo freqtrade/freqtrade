@@ -125,7 +125,7 @@ class JsonDataHandler(IDataHandler):
         tradesdata = misc.file_load_json(filename)
 
         if not tradesdata:
-            return []
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
         if isinstance(tradesdata[0], dict):
             # Convert trades dict to list
