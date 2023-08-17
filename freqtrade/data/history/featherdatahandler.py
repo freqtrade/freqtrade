@@ -95,11 +95,11 @@ class FeatherDataHandler(IDataHandler):
         tradesdata = DataFrame(data, columns=DEFAULT_TRADES_COLUMNS)
         tradesdata.to_feather(filename, compression_level=9, compression='lz4')
 
-    def trades_append(self, pair: str, data: TradeList):
+    def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()

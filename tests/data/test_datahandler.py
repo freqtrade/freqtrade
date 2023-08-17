@@ -291,7 +291,7 @@ def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
 def test_datahandler_trades_append(datahandler, testdatadir):
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
-        dh.trades_append('UNITTEST/ETH', [])
+        dh.trades_append('UNITTEST/ETH', DataFrame())
 
 
 def test_hdf5datahandler_trades_get_pairs(testdatadir):

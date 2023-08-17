@@ -104,11 +104,11 @@ class JsonDataHandler(IDataHandler):
         filename = self._pair_trades_filename(self._datadir, pair)
         misc.file_dump_json(filename, data, is_zip=self._use_zip)
 
-    def trades_append(self, pair: str, data: TradeList):
+    def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()
