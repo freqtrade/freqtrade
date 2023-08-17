@@ -2350,6 +2350,13 @@ def trades_history():
 
 
 @pytest.fixture(scope="function")
+def trades_history_df(trades_history):
+    trades = pd.DataFrame(trades_history, columns=constants.DEFAULT_TRADES_COLUMNS)
+    trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='ms', utc=True)
+    return trades
+
+
+@pytest.fixture(scope="function")
 def fetch_trades_result():
     return [{'info': {'a': 126181329,
                       'p': '0.01962700',
