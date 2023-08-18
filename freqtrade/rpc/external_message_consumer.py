@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def schema_to_dict(schema: Union[WSMessageSchema, WSRequestSchema]):
-    return schema.dict(exclude_none=True)
+    return schema.model_dump(exclude_none=True)
 
 
 class ExternalMessageConsumer:
@@ -322,7 +322,7 @@ class ExternalMessageConsumer:
         producer_name = producer.get('name', 'default')
 
         try:
-            producer_message = WSMessageSchema.parse_obj(message)
+            producer_message = WSMessageSchema.model_validate(message)
         except ValidationError as e:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
@@ -344,7 +344,7 @@ class ExternalMessageConsumer:
     def _consume_whitelist_message(self, producer_name: str, message: WSMessageSchema):
         try:
             # Validate the message
-            whitelist_message = WSWhitelistMessage.parse_obj(message)
+            whitelist_message = WSWhitelistMessage.model_validate(message.model_dump())
         except ValidationError as e:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
@@ -356,7 +356,7 @@ class ExternalMessageConsumer:
 
     def _consume_analyzed_df_message(self, producer_name: str, message: WSMessageSchema):
         try:
-            df_message = WSAnalyzedDFMessage.parse_obj(message)
+            df_message = WSAnalyzedDFMessage.model_validate(message.model_dump())
         except ValidationError as e:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return

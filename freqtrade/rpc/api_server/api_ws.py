@@ -65,7 +65,7 @@ async def _process_consumer_request(
     """
     # Validate the request, makes sure it matches the schema
     try:
-        websocket_request = WSRequestSchema.parse_obj(request)
+        websocket_request = WSRequestSchema.model_validate(request)
     except ValidationError as e:
         logger.error(f"Invalid request from {channel}: {e}")
         return
@@ -94,7 +94,7 @@ async def _process_consumer_request(
 
         # Format response
         response = WSWhitelistMessage(data=whitelist)
-        await channel.send(response.dict(exclude_none=True))
+        await channel.send(response.model_dump(exclude_none=True))
 
     elif type_ == RPCRequestType.ANALYZED_DF:
         # Limit the amount of candles per dataframe to 'limit' or 1500
@@ -105,7 +105,7 @@ async def _process_consumer_request(
         for message in rpc._ws_request_analyzed_df(limit, pair):
             # Format response
             response = WSAnalyzedDFMessage(data=message)
-            await channel.send(response.dict(exclude_none=True))
+            await channel.send(response.model_dump(exclude_none=True))
 
 
 @router.websocket("/message/ws")
