@@ -319,11 +319,11 @@ def test_hdf5datahandler_trades_load(testdatadir):
 
     # unfiltered load has trades before starttime
 
-    assert len(trades.loc[trades['timestamp'] < timerange.startdt]) >= 0
+    assert len(trades.loc[trades['timestamp'] < timerange.startts * 1000]) >= 0
     # filtered list does not have trades before starttime
     assert len(trades2.loc[trades2['timestamp'] < timerange.startts * 1000]) == 0
     # unfiltered load has trades after endtime
-    assert len(trades.loc[trades['timestamp'] > timerange.stopdt]) >= 0
+    assert len(trades.loc[trades['timestamp'] > timerange.stopts * 1000]) >= 0
     # filtered list does not have trades after endtime
     assert len(trades2.loc[trades2['timestamp'] > timerange.stopts * 1000]) == 0
     # assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
@@ -486,7 +486,8 @@ def test_featherdatahandler_trades_load(testdatadir):
     dh = get_datahandler(testdatadir, 'feather')
     trades = dh.trades_load('XRP/ETH')
     assert isinstance(trades, DataFrame)
-    assert trades.iloc[0]['timestamp'] == Timestamp('2019-10-11 00:00:11.620000+0000')
+    assert trades.iloc[0]['timestamp'] == 1570752011620
+    assert trades.iloc[0]['date'] == Timestamp('2019-10-11 00:00:11.620000+0000')
     assert trades.iloc[-1]['cost'] == 0.1986231
 
     trades1 = dh.trades_load('UNITTEST/NONEXIST')

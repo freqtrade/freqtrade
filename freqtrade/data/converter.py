@@ -248,7 +248,7 @@ def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     timeframe_minutes = timeframe_to_minutes(timeframe)
     if trades.empty:
         raise ValueError('Trade-list empty.')
-    df = trades.set_index('timestamp')
+    df = trades.set_index('date', drop=True)
 
     df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
     df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()

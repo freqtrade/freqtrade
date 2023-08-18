@@ -218,7 +218,7 @@ class IDataHandler(ABC):
         :return: List of trades
         """
         trades = trades_df_remove_duplicates(self._trades_load(pair, timerange=timerange))
-        trades['timestamp'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
+        trades['date'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
         return trades
 
     def trades_load_aslist(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
