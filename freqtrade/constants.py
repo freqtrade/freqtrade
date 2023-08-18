@@ -38,8 +38,7 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList', '
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod',
                          'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
-AVAILABLE_DATAHANDLERS_TRADES = ['json', 'jsongz', 'hdf5', 'feather']
-AVAILABLE_DATAHANDLERS = AVAILABLE_DATAHANDLERS_TRADES + ['parquet']
+AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5', 'feather', 'parquet']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
 BACKTEST_CACHE_AGE = ['none', 'day', 'week', 'month']
 BACKTEST_CACHE_DEFAULT = 'day'
@@ -459,7 +458,7 @@ CONF_SCHEMA = {
         },
         'dataformat_trades': {
             'type': 'string',
-            'enum': AVAILABLE_DATAHANDLERS_TRADES,
+            'enum': AVAILABLE_DATAHANDLERS,
             'default': 'feather'
         },
         'position_adjustment_enable': {'type': 'boolean'},
