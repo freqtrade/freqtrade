@@ -109,7 +109,7 @@ class HDF5DataHandler(IDataHandler):
         """
         key = self._pair_trades_key(pair)
 
-        data.to_hdf(
+        data[DEFAULT_TRADES_COLUMNS].to_hdf(
             self._pair_trades_filename(self._datadir, pair), key,
             mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['timestamp']
