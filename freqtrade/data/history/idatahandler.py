@@ -222,10 +222,6 @@ class IDataHandler(ABC):
         trades = trades_convert_types(trades)
         return trades
 
-    def trades_load_aslist(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
-        trades = trades_df_remove_duplicates(self._trades_load(pair, timerange=timerange))
-        return trades.values.tolist()
-
     @classmethod
     def create_dir_if_needed(cls, datadir: Path):
         """
