@@ -6,8 +6,8 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList
-from freqtrade.data.converter import trades_dict_to_list
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
+from freqtrade.data.converter import trades_dict_to_list, trades_list_to_df
 from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
@@ -94,45 +94,46 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
-        misc.file_dump_json(filename, data, is_zip=self._use_zip)
+        trades = data.values.tolist()
+        misc.file_dump_json(filename, trades, is_zip=self._use_zip)
 
-    def trades_append(self, pair: str, data: TradeList):
+    def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         tradesdata = misc.file_load_json(filename)
 
         if not tradesdata:
-            return []
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
         if isinstance(tradesdata[0], dict):
             # Convert trades dict to list
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
             pass
-        return tradesdata
+        return trades_list_to_df(tradesdata, convert=False)
 
     @classmethod
     def _get_file_extension(cls):

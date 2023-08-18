@@ -4,13 +4,14 @@ from pathlib import Path
 from shutil import copyfile
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
                                       ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
-                                      reduce_dataframe_footprint, trades_dict_to_list,
-                                      trades_remove_duplicates, trades_to_ohlcv, trim_dataframe)
+                                      reduce_dataframe_footprint, trades_df_remove_duplicates,
+                                      trades_dict_to_list, trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler
@@ -34,13 +35,13 @@ def test_ohlcv_to_dataframe(ohlcv_history_list, caplog):
     assert log_has('Converting candle (OHLCV) data to dataframe for pair UNITTEST/BTC.', caplog)
 
 
-def test_trades_to_ohlcv(trades_history, caplog):
+def test_trades_to_ohlcv(trades_history_df, caplog):
 
     caplog.set_level(logging.DEBUG)
     with pytest.raises(ValueError, match="Trade-list empty."):
-        trades_to_ohlcv([], '1m')
+        trades_to_ohlcv(pd.DataFrame(columns=trades_history_df.columns), '1m')
 
-    df = trades_to_ohlcv(trades_history, '1m')
+    df = trades_to_ohlcv(trades_history_df, '1m')
     assert not df.empty
     assert len(df) == 1
     assert 'open' in df.columns
@@ -297,13 +298,13 @@ def test_trim_dataframe(testdatadir) -> None:
     assert all(data_modify.iloc[0] == data.iloc[25])
 
 
-def test_trades_remove_duplicates(trades_history):
-    trades_history1 = trades_history * 3
-    assert len(trades_history1) == len(trades_history) * 3
-    res = trades_remove_duplicates(trades_history1)
-    assert len(res) == len(trades_history)
-    for i, t in enumerate(res):
-        assert t == trades_history[i]
+def test_trades_df_remove_duplicates(trades_history_df):
+    trades_history1 = pd.concat([trades_history_df, trades_history_df, trades_history_df]
+                                ).reset_index(drop=True)
+    assert len(trades_history1) == len(trades_history_df) * 3
+    res = trades_df_remove_duplicates(trades_history1)
+    assert len(res) == len(trades_history_df)
+    assert res.equals(trades_history_df)
 
 
 def test_trades_dict_to_list(fetch_trades_result):
