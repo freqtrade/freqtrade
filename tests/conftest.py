@@ -14,7 +14,7 @@ import pytest
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
-from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.converter import ohlcv_to_dataframe, trades_list_to_df
 from freqtrade.edge import PairInfo
 from freqtrade.enums import CandleType, MarginMode, RunMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange
@@ -2352,8 +2352,8 @@ def trades_history():
 
 @pytest.fixture(scope="function")
 def trades_history_df(trades_history):
-    trades = pd.DataFrame(trades_history, columns=constants.DEFAULT_TRADES_COLUMNS)
-    trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='ms', utc=True)
+    trades = trades_list_to_df(trades_history)
+    trades['date'] = pd.to_datetime(trades['timestamp'], unit='ms', utc=True)
     return trades
 
 

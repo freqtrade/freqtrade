@@ -50,6 +50,15 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
+TRADES_DTYPES = {
+    'timestamp': 'int64',
+    'id': 'str',
+    'type': 'str',
+    'side': 'str',
+    'price': 'float64',
+    'amount': 'float64',
+    'cost': 'float64',
+}
 TRADING_MODES = ['spot', 'margin', 'futures']
 MARGIN_MODES = ['cross', 'isolated', '']
 

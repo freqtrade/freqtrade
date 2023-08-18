@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, Config, TradeList
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
+                                 Config, TradeList)
 from freqtrade.enums import CandleType, TradingMode
 
 
@@ -231,9 +232,10 @@ def trades_list_to_df(trades: TradeList):
     :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
     """
     if not trades:
-        return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+        return DataFrame(columns=DEFAULT_TRADES_COLUMNS).astype(TRADES_DTYPES)
     df = DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
-    return df
+
+    return df.astype(TRADES_DTYPES)
 
 
 def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
