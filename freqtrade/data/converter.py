@@ -226,16 +226,29 @@ def trades_dict_to_list(trades: List[Dict]) -> TradeList:
     return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
 
 
-def trades_list_to_df(trades: TradeList):
+def trades_convert_types(trades: DataFrame) -> DataFrame:
+    """
+    Convert Trades dtypes and add 'date' column
+    """
+    trades = trades.astype(TRADES_DTYPES)
+    trades['date'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
+    return trades
+
+
+def trades_list_to_df(trades: TradeList, convert: bool = True):
     """
     convert trades list to dataframe
     :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
     """
     if not trades:
-        return DataFrame(columns=DEFAULT_TRADES_COLUMNS).astype(TRADES_DTYPES)
-    df = DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+        df = DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+    else:
+        df = DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
 
-    return df.astype(TRADES_DTYPES)
+    if convert:
+        df = trades_convert_types(df)
+
+    return df
 
 
 def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:

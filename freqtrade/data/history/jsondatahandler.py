@@ -134,7 +134,7 @@ class JsonDataHandler(IDataHandler):
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
             pass
-        return trades_list_to_df(tradesdata)
+        return trades_list_to_df(tradesdata, convert=False)
 
     @classmethod
     def _get_file_extension(cls):
