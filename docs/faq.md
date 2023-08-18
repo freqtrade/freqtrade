@@ -20,7 +20,7 @@ Futures trading is supported for selected exchanges. Please refer to the [docume
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
 
-## Freqtrade common issues
+## Freqtrade common questions
 
 ### Can freqtrade open multiple positions on the same pair in parallel?
 
@@ -36,7 +36,7 @@ Running the bot with `freqtrade trade --config config.json` shows the output `fr
 This could be caused by the following reasons:
 
 * The virtual environment is not active.
-  * Run `source .env/bin/activate` to activate the virtual environment.
+  * Run `source .venv/bin/activate` to activate the virtual environment.
 * The installation did not complete successfully.
   * Please check the [Installation documentation](installation.md).
 
@@ -77,6 +77,14 @@ Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next tim
 Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.
 On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
 Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
+
+### I deposited more funds to the exchange, but my bot doesn't recognize this
+
+Freqtrade will update the exchange balance when necessary (Before placing an order).
+RPC calls (Telegram's `/balance`, API calls to `/balance`) can trigger an update at max. once per hour.
+
+If `adjust_trade_position` is enabled (and the bot has open trades eligible for position adjustments) - then the wallets will be refreshed once per hour.
+To force an immediate update, you can use `/reload_config` - which will restart the bot.
 
 ### I want to use incomplete candles
 

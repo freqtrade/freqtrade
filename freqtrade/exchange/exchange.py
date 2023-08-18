@@ -263,8 +263,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
 
-        self.set_sandbox(api, exchange_config, name)
-
         return api
 
     @property
@@ -465,16 +463,6 @@ class Exchange:
         return amount_to_contract_precision(amount, self.get_precision_amount(pair),
                                             self.precisionMode, contract_size)
 
-    def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
-        if exchange_config.get('sandbox'):
-            if api.urls.get('test'):
-                api.urls['api'] = api.urls['test']
-                logger.info("Enabled Sandbox API on %s", name)
-            else:
-                logger.warning(
-                    f"No Sandbox URL in CCXT for {name}, exiting. Please check your config.json")
-                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
-
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
@@ -580,7 +568,7 @@ class Exchange:
         for pair in [f"{curr_1}/{curr_2}", f"{curr_2}/{curr_1}"]:
             if pair in self.markets and self.markets[pair].get('active'):
                 return pair
-        raise ExchangeError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
+        raise ValueError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
     def validate_timeframes(self, timeframe: Optional[str]) -> None:
         """
@@ -1876,7 +1864,7 @@ class Exchange:
                 tick = self.fetch_ticker(comb)
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-            except ExchangeError:
+            except (ValueError, ExchangeError):
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None

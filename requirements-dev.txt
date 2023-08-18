@@ -7,8 +7,8 @@
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
-ruff==0.0.282
-mypy==1.4.1
+ruff==0.0.284
+mypy==1.5.0
 pre-commit==3.3.3
 pytest==7.4.0
 pytest-asyncio==0.21.1

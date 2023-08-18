@@ -556,41 +556,6 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     assert result == 4000
 
 
-def test_set_sandbox(default_conf, mocker):
-    """
-    Test working scenario
-    """
-    api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(return_value={
-        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
-    })
-    url_mock = PropertyMock(return_value={'test': "api-public.sandbox.gdax.com",
-                                          'api': 'https://api.gdax.com'})
-    type(api_mock).urls = url_mock
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liveurl = exchange._api.urls['api']
-    default_conf['exchange']['sandbox'] = True
-    exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
-    assert exchange._api.urls['api'] != liveurl
-
-
-def test_set_sandbox_exception(default_conf, mocker):
-    """
-    Test Fail scenario
-    """
-    api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(return_value={
-        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
-    })
-    url_mock = PropertyMock(return_value={'api': 'https://api.gdax.com'})
-    type(api_mock).urls = url_mock
-
-    with pytest.raises(OperationalException, match=r'does not provide a sandbox api'):
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        default_conf['exchange']['sandbox'] = True
-        exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
-
-
 def test__load_async_markets(default_conf, mocker, caplog):
     mocker.patch(f'{EXMS}._init_ccxt')
     mocker.patch(f'{EXMS}.validate_pairs')
@@ -1372,7 +1337,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
+    order_id = f'test_prod_{side}_{randint(0, 10 ** 6)}'
     api_mock.options = {} if not marketprice else {"createMarketBuyOrderRequiresPrice": True}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -1452,7 +1417,7 @@ def test_buy_dry_run(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_buy_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     order_type = 'market'
     time_in_force = 'gtc'
     api_mock.options = {}
@@ -1541,7 +1506,7 @@ def test_buy_prod(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -1608,7 +1573,7 @@ def test_sell_dry_run(default_conf, mocker):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_sell_{randint(0, 10 ** 6)}'
     order_type = 'market'
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
@@ -1686,7 +1651,7 @@ def test_sell_prod(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_sell_{randint(0, 10 ** 6)}'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'symbol': 'ETH/BTC',
@@ -2100,7 +2065,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', candle_type) * 1.8
     ret = exchange.get_historic_ohlcv(
         pair,
         "5m",
@@ -3557,7 +3522,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
 
     assert ex.get_valid_pair_combination("ETH", "BTC") == "ETH/BTC"
     assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
-    with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
+    with pytest.raises(ValueError, match=r"Could not combine.* to get a valid pair."):
         ex.get_valid_pair_combination("NOPAIR", "ETH")
 
 
@@ -5392,7 +5357,7 @@ def test_get_liquidation_price(
 ])
 def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amount):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
 
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,

@@ -461,7 +461,6 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
-                'sandbox': {'type': 'boolean', 'default': False},
                 'key': {'type': 'string', 'default': ''},
                 'secret': {'type': 'string', 'default': ''},
                 'password': {'type': 'string', 'default': ''},
@@ -667,6 +666,9 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dry_run',
     'dataformat_ohlcv',
     'dataformat_trades',
+]
+SCHEMA_MINIMAL_WEBSERVER = SCHEMA_MINIMAL_REQUIRED + [
+    'api_server',
 ]
 
 CANCEL_REASON = {

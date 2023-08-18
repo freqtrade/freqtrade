@@ -20,6 +20,7 @@ class Discord(Webhook):
         self._format = 'json'
         self._retries = 1
         self._retry_delay = 0.1
+        self._timeout = self._config['discord'].get('timeout', 10)
 
     def cleanup(self) -> None:
         """

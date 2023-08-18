@@ -31,7 +31,7 @@ The docker-image includes hyperopt dependencies, no further action needed.
 ### Easy installation script (setup.sh) / Manual installation
 
 ```bash
-source .env/bin/activate
+source .venv/bin/activate
 pip install -r requirements-hyperopt.txt
 ```
 

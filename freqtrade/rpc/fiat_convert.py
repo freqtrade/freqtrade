@@ -26,6 +26,7 @@ coingecko_mapping = {
     'sol': 'solana',
     'usdt': 'tether',
     'busd': 'binance-usd',
+    'tusd': 'true-usd',
 }
 
 
