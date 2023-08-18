@@ -91,8 +91,7 @@ class FeatherDataHandler(IDataHandler):
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         self.create_dir_if_needed(filename)
-
-        data.to_feather(filename, compression_level=9, compression='lz4')
+        data.reset_index(drop=True).to_feather(filename, compression_level=9, compression='lz4')
 
     def trades_append(self, pair: str, data: DataFrame):
         """
