@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 from pandas import DataFrame
-from pydantic import ConfigDict, BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType
