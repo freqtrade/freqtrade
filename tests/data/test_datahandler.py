@@ -118,12 +118,6 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     assert set(paircombs) == {('UNITTEST/BTC', '5m', CandleType.SPOT)}
 
 
-def test_jsondatahandler_trades_get_pairs(testdatadir):
-    pairs = JsonGzDataHandler.trades_get_pairs(testdatadir)
-    # Convert to set to avoid failures due to sorting
-    assert set(pairs) == {'XRP/ETH', 'XRP/OLD'}
-
-
 def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
@@ -269,18 +263,6 @@ def test_jsondatahandler_trades_load(testdatadir, caplog):
     assert log_has(logmsg, caplog)
 
 
-def test_jsondatahandler_trades_purge(mocker, testdatadir):
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
-    dh = JsonGzDataHandler(testdatadir)
-    assert not dh.trades_purge('UNITTEST/NONEXIST')
-    assert unlinkmock.call_count == 0
-
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    assert dh.trades_purge('UNITTEST/NONEXIST')
-    assert unlinkmock.call_count == 1
-
-
 @pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
 def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
     dh = get_datahandler(testdatadir, datahandler)
@@ -297,10 +279,17 @@ def test_datahandler_trades_append(datahandler, testdatadir):
         dh.trades_append('UNITTEST/ETH', DataFrame())
 
 
-def test_hdf5datahandler_trades_get_pairs(testdatadir):
-    pairs = HDF5DataHandler.trades_get_pairs(testdatadir)
+@pytest.mark.parametrize('datahandler,expected', [
+    ('jsongz', {'XRP/ETH', 'XRP/OLD'}),
+    ('hdf5',  {'XRP/ETH'}),
+    ('feather', {'XRP/ETH'}),
+    ('parquet', {'XRP/ETH'}),
+])
+def test_datahandler_trades_get_pairs(testdatadir, datahandler, expected):
+
+    pairs = get_datahandlerclass(datahandler).trades_get_pairs(testdatadir)
     # Convert to set to avoid failures due to sorting
-    assert set(pairs) == {'XRP/ETH'}
+    assert set(pairs) == expected
 
 
 def test_hdf5datahandler_trades_load(testdatadir):
@@ -329,35 +318,6 @@ def test_hdf5datahandler_trades_load(testdatadir):
     # filtered list does not have trades after endtime
     assert len(trades2.loc[trades2['timestamp'] > timerange.stopts * 1000]) == 0
     # assert len([t for t in trades2 if t[0] > timerange.stopts * 1000]) == 0
-
-
-def test_hdf5datahandler_trades_store(testdatadir, tmpdir):
-    tmpdir1 = Path(tmpdir)
-    dh = get_datahandler(testdatadir, 'hdf5')
-    trades = dh.trades_load('XRP/ETH')
-
-    dh1 = get_datahandler(tmpdir1, 'hdf5')
-    dh1.trades_store('XRP/NEW', trades)
-    file = tmpdir1 / 'XRP_NEW-trades.h5'
-    assert file.is_file()
-    # Load trades back
-    trades_new = dh1.trades_load('XRP/NEW')
-
-    assert len(trades_new) == len(trades)
-    assert_frame_equal(trades, trades_new, check_exact=True)
-    assert len(trades_new) == len(trades)
-
-
-def test_hdf5datahandler_trades_purge(mocker, testdatadir):
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-    unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
-    dh = get_datahandler(testdatadir, 'hdf5')
-    assert not dh.trades_purge('UNITTEST/NONEXIST')
-    assert unlinkmock.call_count == 0
-
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    assert dh.trades_purge('UNITTEST/NONEXIST')
-    assert unlinkmock.call_count == 1
 
 
 @pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
@@ -484,8 +444,9 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     assert unlinkmock.call_count == 2
 
 
-def test_featherdatahandler_trades_load(testdatadir):
-    dh = get_datahandler(testdatadir, 'feather')
+@pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
+def test_datahandler_trades_load(testdatadir, datahandler):
+    dh = get_datahandler(testdatadir, datahandler)
     trades = dh.trades_load('XRP/ETH')
     assert isinstance(trades, DataFrame)
     assert trades.iloc[0]['timestamp'] == 1570752011620
@@ -497,14 +458,16 @@ def test_featherdatahandler_trades_load(testdatadir):
     assert trades1.empty
 
 
-def test_featherdatahandler_trades_store(testdatadir, tmpdir):
+@pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
+def test_datahandler_trades_store(testdatadir, tmpdir, datahandler):
     tmpdir1 = Path(tmpdir)
-    dh = get_datahandler(testdatadir, 'feather')
+    dh = get_datahandler(testdatadir, datahandler)
     trades = dh.trades_load('XRP/ETH')
 
-    dh1 = get_datahandler(tmpdir1, 'feather')
+    dh1 = get_datahandler(tmpdir1, datahandler)
     dh1.trades_store('XRP/NEW', trades)
-    file = tmpdir1 / 'XRP_NEW-trades.feather'
+
+    file = tmpdir1 / f'XRP_NEW-trades.{dh1._get_file_extension()}'
     assert file.is_file()
     # Load trades back
     trades_new = dh1.trades_load('XRP/NEW')
@@ -512,10 +475,11 @@ def test_featherdatahandler_trades_store(testdatadir, tmpdir):
     assert len(trades_new) == len(trades)
 
 
-def test_featherdatahandler_trades_purge(mocker, testdatadir):
+@pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
+def test_datahandler_trades_purge(mocker, testdatadir, datahandler):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
-    dh = get_datahandler(testdatadir, 'feather')
+    dh = get_datahandler(testdatadir, datahandler)
     assert not dh.trades_purge('UNITTEST/NONEXIST')
     assert unlinkmock.call_count == 0
 
