@@ -11,7 +11,7 @@ function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
         echo_block "Installing Pip for ${PYTHON}"
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        curl https://bootstrap.pypa.io/get-pip.py -s -o get-pip.py
         ${PYTHON} get-pip.py
         rm get-pip.py
    fi
@@ -41,12 +41,12 @@ function check_installed_python() {
 }
 
 function updateenv() {
-    echo_block "Updating your virtual env"
-    if [ ! -f .env/bin/activate ]; then
+    echo_block "Updating your virtual environment"
+    if [ ! -f .venv/bin/activate ]; then
         echo "Something went wrong, no virtual environment found."
         exit 1
     fi
-    source .env/bin/activate
+    source .venv/bin/activate
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip wheel setuptools
@@ -186,7 +186,14 @@ function install_redhat() {
 # Upgrade the bot
 function update() {
     git pull
+    if [ -f .env/bin/activate  ]; then
+        # Old environment found - updating to new environment.
+        recreate_environments
+    fi
     updateenv
+    echo "Update completed."
+    echo_block "Don't forget to activate your virtual enviorment with 'source .venv/bin/activate'!"
+
 }
 
 function check_git_changes() {
@@ -197,6 +204,27 @@ function check_git_changes() {
         echo "Changes in git directory"
         return 0
     fi
+}
+
+function recreate_environments() {
+    if [ -d ".env" ]; then
+        # Remove old virtual env
+        echo "- Deleting your previous virtual env"
+        echo "Warning: Your new environment will be at .venv!"
+        rm -rf .env
+    fi
+    if [ -d ".venv" ]; then
+        echo "- Deleting your previous virtual env"
+        rm -rf .venv
+    fi
+
+    echo
+    ${PYTHON} -m venv .venv
+    if [ $? -ne 0 ]; then
+        echo "Could not create virtual environment. Leaving now"
+        exit 1
+    fi
+
 }
 
 # Reset Develop or Stable branch
@@ -225,17 +253,8 @@ function reset() {
     else
         echo "Reset ignored because you are not on 'stable' or 'develop'."
     fi
+    recreate_environments
 
-    if [ -d ".env" ]; then
-        echo "- Deleting your previous virtual env"
-        rm -rf .env
-    fi
-    echo
-    ${PYTHON} -m venv .env
-    if [ $? -ne 0 ]; then
-        echo "Could not create virtual environment. Leaving now"
-        exit 1
-    fi
     updateenv
 }
 
@@ -266,9 +285,9 @@ function install() {
     reset
     config
     echo_block "Run the bot !"
-    echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <subcommand>'."
-    echo "You can see the list of available bot sub-commands by executing 'source .env/bin/activate; freqtrade --help'."
-    echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
+    echo "You can now use the bot by executing 'source .venv/bin/activate; freqtrade <subcommand>'."
+    echo "You can see the list of available bot sub-commands by executing 'source .venv/bin/activate; freqtrade --help'."
+    echo "You verify that freqtrade is installed successfully by running 'source .venv/bin/activate; freqtrade --version'."
 }
 
 function plot() {

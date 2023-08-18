@@ -8,8 +8,9 @@ if [ -n "$2" ] || [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
   tar zxvf ta-lib-0.4.0-src.tar.gz
   cd ta-lib \
   && sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h \
-  && curl 'https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess' -o config.guess \
-  && curl 'https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.sub' -o config.sub \
+  && echo "Downloading gcc config.guess and config.sub" \
+  && curl -s 'https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess' -o config.guess \
+  && curl -s 'https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.sub' -o config.sub \
   && ./configure --prefix=${INSTALL_LOC}/ \
   && make
   if [ $? -ne 0 ]; then
