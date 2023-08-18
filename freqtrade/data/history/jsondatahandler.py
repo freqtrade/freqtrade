@@ -7,7 +7,7 @@ from pandas import DataFrame, read_json, to_datetime
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
-from freqtrade.data.converter import trades_dict_to_list
+from freqtrade.data.converter import trades_dict_to_list, trades_list_to_df
 from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
@@ -134,8 +134,7 @@ class JsonDataHandler(IDataHandler):
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
             pass
-        trades = DataFrame(tradesdata, columns=DEFAULT_TRADES_COLUMNS)
-        return trades
+        return trades_list_to_df(tradesdata)
 
     @classmethod
     def _get_file_extension(cls):

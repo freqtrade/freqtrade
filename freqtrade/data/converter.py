@@ -225,6 +225,17 @@ def trades_dict_to_list(trades: List[Dict]) -> TradeList:
     return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
 
 
+def trades_list_to_df(trades: TradeList):
+    """
+    convert trades list to dataframe
+    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
+    """
+    if not trades:
+        return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+    df = DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+    return df
+
+
 def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     """
     Converts trades list to OHLCV list
