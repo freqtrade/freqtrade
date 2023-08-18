@@ -94,7 +94,7 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: DataFrame) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
@@ -102,8 +102,7 @@ class JsonDataHandler(IDataHandler):
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
-        data.loc[:, 'timestamp'] = data.loc[:, 'timestamp']
-        trades = data[DEFAULT_TRADES_COLUMNS].values.tolist()
+        trades = data.values.tolist()
         misc.file_dump_json(filename, trades, is_zip=self._use_zip)
 
     def trades_append(self, pair: str, data: DataFrame):

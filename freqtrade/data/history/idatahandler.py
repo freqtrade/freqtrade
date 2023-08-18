@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import DEFAULT_TRADES_COLUMNS, ListPairsWithTimeframes
 from freqtrade.data.converter import (clean_ohlcv_dataframe, trades_convert_types,
                                       trades_df_remove_duplicates, trim_dataframe)
 from freqtrade.enums import CandleType, TradingMode
@@ -171,7 +171,7 @@ class IDataHandler(ABC):
         return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     @abstractmethod
-    def trades_store(self, pair: str, data: DataFrame) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
@@ -196,6 +196,16 @@ class IDataHandler(ABC):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: Dataframe containing trades
         """
+
+    def trades_store(self, pair: str, data: DataFrame) -> None:
+        """
+        Store trades data (list of Dicts) to file
+        :param pair: Pair - used for filename
+        :param data: Dataframe containing trades
+                     column sequence as in DEFAULT_TRADES_COLUMNS
+        """
+        # Filter on expected columns (will remove the actual date column).
+        self._trades_store(pair, data[DEFAULT_TRADES_COLUMNS])
 
     def trades_purge(self, pair: str) -> bool:
         """

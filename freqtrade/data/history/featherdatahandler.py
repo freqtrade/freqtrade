@@ -82,7 +82,7 @@ class FeatherDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: DataFrame) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
@@ -92,7 +92,7 @@ class FeatherDataHandler(IDataHandler):
         filename = self._pair_trades_filename(self._datadir, pair)
         self.create_dir_if_needed(filename)
 
-        data[DEFAULT_TRADES_COLUMNS].to_feather(filename, compression_level=9, compression='lz4')
+        data.to_feather(filename, compression_level=9, compression='lz4')
 
     def trades_append(self, pair: str, data: DataFrame):
         """
