@@ -254,6 +254,36 @@ class AwesomeStrategy(IStrategy):
         return None
 ```
 
+#### Time based trailing stop with after-fill adjustments
+
+Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
+If an additional order fills, set stoploss to -10% below the new `open_rate` ([Averaged across all entries](#position-adjust-calculations)).
+
+``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, after_fill: bool, 
+                        **kwargs) -> Optional[float]:
+
+        if after_fill: 
+            # After an additional order, start with a stoploss of 10% below the new open rate
+            return stoploss_from_open(0.10, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+        # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+        if current_time - timedelta(minutes=120) > trade.open_date_utc:
+            return -0.05
+        elif current_time - timedelta(minutes=60) > trade.open_date_utc:
+            return -0.10
+        return None
+```
+
 #### Different stoploss per pair
 
 Use a different stoploss depending on the pair.
