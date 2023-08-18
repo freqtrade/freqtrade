@@ -11,11 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple, Type
 
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import TRADES_DTYPES, ListPairsWithTimeframes, TradeList
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.converter import (clean_ohlcv_dataframe, trades_convert_types,
                                       trades_df_remove_duplicates, trim_dataframe)
 from freqtrade.enums import CandleType, TradingMode
