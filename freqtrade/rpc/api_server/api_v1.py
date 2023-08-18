@@ -289,7 +289,7 @@ def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
             'strategy': strategy
         })
     try:
-        return PlotConfig.parse_obj(RPC._rpc_plot_config_with_strategy(config1))
+        return PlotConfig.model_validate(RPC._rpc_plot_config_with_strategy(config1))
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
