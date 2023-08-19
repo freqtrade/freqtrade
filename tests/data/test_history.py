@@ -620,7 +620,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert int(ght_mock.call_args_list[0][1]['since'] // 1000) == since_time
     assert ght_mock.call_args_list[0][1]['from_id'] is None
-    assert log_has_re(r'Start earlier than available data. Redownloading trades for.*', caplog)
+    assert log_has_re(r'Start .* earlier than available data. Redownloading trades for.*', caplog)
     _clean_test_file(file2)
 
 

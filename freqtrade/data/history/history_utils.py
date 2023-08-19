@@ -351,9 +351,10 @@ def _download_trades_history(exchange: Exchange,
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
 
-        if not trades.empty and since < trades.iloc[0]['timestamp']:
+        if not trades.empty and since > 0 and since < trades.iloc[0]['timestamp']:
             # since is before the first trade
-            logger.info(f"Start earlier than available data. Redownloading trades for {pair}...")
+            logger.info(f"Start ({trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}) earlier than "
+                        f"available data. Redownloading trades for {pair}...")
             trades = trades_list_to_df([])
 
         if not since:
