@@ -3,6 +3,7 @@
 import json
 import logging
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
@@ -26,7 +27,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.util import dt_utc
+from freqtrade.util import dt_ts, dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
 
@@ -569,7 +570,10 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
 
 
 def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog,
-                                 tmpdir) -> None:
+                                 tmpdir, time_machine) -> None:
+    start_dt = dt_utc(2023, 1, 1)
+    time_machine.move_to(start_dt, tick=False)
+
     tmpdir1 = Path(tmpdir)
     ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
     mocker.patch(f'{EXMS}.get_historic_trades', ght_mock)
@@ -581,8 +585,13 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC')
+    assert log_has("Current Amount of trades: 0", caplog)
     assert log_has("New Amount of trades: 6", caplog)
+    assert ght_mock.call_count == 1
+    # Default "since" - 30 days before current day.
+    assert ght_mock.call_args_list[0][1]['since'] == dt_ts(start_dt - timedelta(days=30))
     assert file1.is_file()
+    caplog.clear()
 
     ght_mock.reset_mock()
     since_time = int(trades_history[-3][0] // 1000)
@@ -599,6 +608,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     file1.unlink()
 
     mocker.patch(f'{EXMS}.get_historic_trades', MagicMock(side_effect=ValueError))
+    caplog.clear()
 
     assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
                                         pair='ETH/BTC')
