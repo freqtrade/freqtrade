@@ -105,7 +105,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "select",
             "name": "exchange_name",
             "message": "Select exchange",
-            "choices": lambda x: [
+            "choices": [
                 "binance",
                 "binanceus",
                 "bittrex",
