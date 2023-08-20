@@ -259,7 +259,7 @@ function reset() {
 }
 
 function config() {
-    echo_block "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
+    echo_block "Please use 'freqtrade new-config -c user_data/config.json' to generate a new configuration file."
 }
 
 function install() {
