@@ -2357,7 +2357,11 @@ class Exchange:
                 pair=pair, since=since, until=until, from_id=from_id))
 
             for sig in [signal.SIGINT, signal.SIGTERM]:
-                self.loop.add_signal_handler(sig, task.cancel)
+                try:
+                    self.loop.add_signal_handler(sig, task.cancel)
+                except NotImplementedError:
+                    # Not all platforms implement signals (e.g. windows)
+                    pass
             return self.loop.run_until_complete(task)
 
     @retrier
