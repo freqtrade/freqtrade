@@ -357,9 +357,6 @@ def _download_trades_history(exchange: Exchange,
                         f"available data. Redownloading trades for {pair}...")
             trades = trades_list_to_df([])
 
-        if not since:
-            since = dt_ts(dt_now() - timedelta(days=new_pairs_days))
-
         from_id = trades.iloc[-1]['id'] if not trades.empty else None
         if not trades.empty and since < trades.iloc[-1]['timestamp']:
             # Reset since to the last available point
@@ -367,6 +364,9 @@ def _download_trades_history(exchange: Exchange,
             since = trades.iloc[-1]['timestamp'] - (5 * 1000)
             logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
                         f"since: {format_ms_time(since)}.")
+
+        if not since:
+            since = dt_ts(dt_now() - timedelta(days=new_pairs_days))
 
         logger.debug("Current Start: %s", 'None' if trades.empty else
                      f"{trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}")
