@@ -120,7 +120,7 @@ function updateenv() {
 
 # Install tab lib
 function install_talib() {
-    if [ -f /usr/local/lib/libta_lib.a ]; then
+    if [ -f /usr/local/lib/libta_lib.a ] || [ -f /usr/local/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.so ]; then
         echo "ta-lib already installed, skipping"
         return
     fi
