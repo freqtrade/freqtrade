@@ -383,7 +383,7 @@ You've made it this far, so you have successfully installed freqtrade.
 freqtrade create-userdir --userdir user_data
 
 # Step 2 - Create a new configuration file
-freqtrade new-config --config config.json
+freqtrade new-config --config user_data/config.json
 ```
 
 You are ready to run, read [Bot Configuration](configuration.md), remember to start with `dry_run: True` and verify that everything is working.
@@ -393,7 +393,7 @@ To learn how to setup your configuration, please refer to the [Bot Configuration
 ### Start the Bot
 
 ```bash
-freqtrade trade --config config.json --strategy SampleStrategy
+freqtrade trade --config user_data/config.json --strategy SampleStrategy
 ```
 
 !!! Warning
