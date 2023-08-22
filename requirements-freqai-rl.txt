@@ -4,7 +4,7 @@
 # Required for freqai-rl
 torch==2.0.1
 #until these branches will be released we can use this
-gymnasium==0.28.1
+gymnasium==0.29.1
 stable_baselines3==2.1.0
 sb3_contrib>=2.0.0a9
 # Progress bar for stable-baselines3 and sb3-contrib
