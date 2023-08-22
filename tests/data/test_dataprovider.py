@@ -264,7 +264,7 @@ def test_orderbook(mocker, default_conf, order_book_l2):
     assert order_book_l2.call_args_list[0][0][0] == 'ETH/BTC'
     assert order_book_l2.call_args_list[0][0][1] >= 5
 
-    assert type(res) is dict
+    assert isinstance(res, dict)
     assert 'bids' in res
     assert 'asks' in res
 
@@ -277,7 +277,7 @@ def test_market(mocker, default_conf, markets):
     dp = DataProvider(default_conf, exchange)
     res = dp.market('ETH/BTC')
 
-    assert type(res) is dict
+    assert isinstance(res, dict)
     assert 'symbol' in res
     assert res['symbol'] == 'ETH/BTC'
 
@@ -291,7 +291,7 @@ def test_ticker(mocker, default_conf, tickers):
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
     res = dp.ticker('ETH/BTC')
-    assert type(res) is dict
+    assert isinstance(res, dict)
     assert 'symbol' in res
     assert res['symbol'] == 'ETH/BTC'
 
