@@ -553,7 +553,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         assert isinstance(whitelist, list)
 
         # Verify length of pairlist matches (used for ShuffleFilter without seed)
-        if type(whitelist_result) is list:
+        if isinstance(whitelist_result, list):
             assert whitelist == whitelist_result
         else:
             len(whitelist) == whitelist_result

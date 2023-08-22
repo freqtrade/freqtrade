@@ -2470,7 +2470,7 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
 
-    assert type(res) is dict
+    assert isinstance(res, dict)
     assert len(res) == 1
     # Test that each is in list at least once as order is not guaranteed
     assert log_has("Error loading ETH/BTC. Result was [[]].", caplog)
@@ -2854,7 +2854,7 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
 
     pair = 'ETH/BTC'
     res = await exchange._async_fetch_trades(pair, since=None, params=None)
-    assert type(res) is list
+    assert isinstance(res, list)
     assert isinstance(res[0], list)
     assert isinstance(res[1], list)
 
@@ -2954,9 +2954,9 @@ async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
     ret = await exchange._async_get_trade_history_id(pair,
                                                      since=fetch_trades_result[0]['timestamp'],
                                                      until=fetch_trades_result[-1]['timestamp'] - 1)
-    assert type(ret) is tuple
+    assert isinstance(ret, tuple)
     assert ret[0] == pair
-    assert type(ret[1]) is list
+    assert isinstance(ret[1], list)
     assert len(ret[1]) == len(fetch_trades_result)
     assert exchange._api_async.fetch_trades.call_count == 3
     fetch_trades_cal = exchange._api_async.fetch_trades.call_args_list
@@ -2992,9 +2992,9 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
         pair,
         since=fetch_trades_result[0]['timestamp'],
         until=fetch_trades_result[-1]['timestamp'] - 1)
-    assert type(ret) is tuple
+    assert isinstance(ret, tuple)
     assert ret[0] == pair
-    assert type(ret[1]) is list
+    assert isinstance(ret[1], list)
     assert len(ret[1]) == len(fetch_trades_result)
     assert exchange._api_async.fetch_trades.call_count == 2
     fetch_trades_cal = exchange._api_async.fetch_trades.call_args_list
@@ -3028,9 +3028,9 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     pair = 'ETH/BTC'
     ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0][0],
                                                        until=trades_history[-1][0] - 1)
-    assert type(ret) is tuple
+    assert isinstance(ret, tuple)
     assert ret[0] == pair
-    assert type(ret[1]) is list
+    assert isinstance(ret[1], list)
     assert len(ret[1]) == len(trades_history) - 1
     assert exchange._async_fetch_trades.call_count == 2
     fetch_trades_cal = exchange._async_fetch_trades.call_args_list
