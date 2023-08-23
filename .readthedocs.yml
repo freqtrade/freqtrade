@@ -8,4 +8,4 @@ build:
 
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: docs/requirements-docs.txt
