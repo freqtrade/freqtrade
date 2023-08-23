@@ -48,6 +48,7 @@ class LookaheadAnalysis:
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
         self.exchange: Optional[Any] = None
+        self._fee = None
 
         # pull variables the scope of the lookahead_analysis-instance
         self.local_config = deepcopy(config)
@@ -145,8 +146,13 @@ class LookaheadAnalysis:
                                             str(self.dt_to_timestamp(varholder.to_dt)))
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
+        if self._fee is not None:
+            # Don't re-calculate fee per pair, as fee might differ per pair.
+            prepare_data_config['fee'] = self._fee
+
         backtesting = Backtesting(prepare_data_config, self.exchange)
         self.exchange = backtesting.exchange
+        self._fee = backtesting.fee
         backtesting._set_strategy(backtesting.strategylist[0])
 
         varholder.data, varholder.timerange = backtesting.load_bt_data()
@@ -198,7 +204,7 @@ class LookaheadAnalysis:
         self.prepare_data(exit_varHolder, [result_row['pair']])
 
     # now we analyze a full trade of full_varholder and look for analyze its bias
-    def analyze_row(self, idx, result_row):
+    def analyze_row(self, idx: int, result_row):
         # if force-sold, ignore this signal since here it will unconditionally exit.
         if result_row.close_date == self.dt_to_timestamp(self.full_varHolder.to_dt):
             return
@@ -209,12 +215,16 @@ class LookaheadAnalysis:
         # fill entry_varHolder and exit_varHolder
         self.fill_entry_and_exit_varHolders(result_row)
 
+        # this will trigger a logger-message
+        buy_or_sell_biased: bool = False
+
         # register if buy signal is broken
         if not self.report_signal(
                 self.entry_varHolders[idx].result,
                 "open_date",
                 self.entry_varHolders[idx].compared_dt):
             self.current_analysis.false_entry_signals += 1
+            buy_or_sell_biased = True
 
         # register if buy or sell signal is broken
         if not self.report_signal(
@@ -222,6 +232,13 @@ class LookaheadAnalysis:
                 "close_date",
                 self.exit_varHolders[idx].compared_dt):
             self.current_analysis.false_exit_signals += 1
+            buy_or_sell_biased = True
+
+        if buy_or_sell_biased:
+            logger.info(f"found lookahead-bias in trade "
+                        f"pair: {result_row['pair']}, "
+                        f"timerange:{result_row['open_date']} - {result_row['close_date']}, "
+                        f"idx: {idx}")
 
         # check if the indicators themselves contain biased data
         self.analyze_indicators(self.full_varHolder, self.entry_varHolders[idx], result_row['pair'])
@@ -251,8 +268,32 @@ class LookaheadAnalysis:
         # starting from the same datetime to avoid miss-reports of bias
         for idx, result_row in self.full_varHolder.result['results'].iterrows():
             if self.current_analysis.total_signals == self.targeted_trade_amount:
+                logger.info(f"Found targeted trade amount = {self.targeted_trade_amount} signals.")
                 break
+            if found_signals < self.minimum_trade_amount:
+                logger.info(f"only found {found_signals} "
+                            f"which is smaller than "
+                            f"minimum trade amount = {self.minimum_trade_amount}. "
+                            f"Exiting this lookahead-analysis")
+                return None
+            if "force_exit" in result_row['exit_reason']:
+                logger.info("found force-exit in pair: {result_row['pair']}, "
+                            f"timerange:{result_row['open_date']}-{result_row['close_date']}, "
+                            f"idx: {idx}, skipping this one to avoid a false-positive.")
+
+                # just to keep the IDs of both full, entry and exit varholders the same
+                # to achieve a better debugging experience
+                self.entry_varHolders.append(VarHolder())
+                self.exit_varHolders.append(VarHolder())
+                continue
+
             self.analyze_row(idx, result_row)
+
+        if len(self.entry_varHolders) < self.minimum_trade_amount:
+            logger.info(f"only found {found_signals} after skipping forced exits "
+                        f"which is smaller than "
+                        f"minimum trade amount = {self.minimum_trade_amount}. "
+                        f"Exiting this lookahead-analysis")
 
         # Restore verbosity, so it's not too quiet for the next strategy
         restore_verbosity_for_bias_tester()

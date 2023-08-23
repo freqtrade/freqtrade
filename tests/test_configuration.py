@@ -1038,8 +1038,7 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
         validate_config_schema(all_conf)
 
 
-@pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
-                                  ("exchange", "key", ""),
+@pytest.mark.parametrize("keys", [("exchange", "key", ""),
                                   ("exchange", "secret", ""),
                                   ("exchange", "password", ""),
                                   ])

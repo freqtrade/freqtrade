@@ -1424,12 +1424,12 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert len(rc.json()['data']) == amount
 
     assert (rc.json()['data'] ==
-            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+            [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
-             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
+             ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
                  8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 0, 0, 1511686500000, 8.893e-05,
                  None, None, None],
-             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+             ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None]
 
              ])
@@ -1443,13 +1443,13 @@ def test_api_pair_candles(botclient, ohlcv_history):
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
     assert (rc.json()['data'] ==
-            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+            [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, None, 0, 0, None, 1511686200000, None, None, None, None],
-             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, 0, 0, '2017-11-26 08:55:00',
+             ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, 0, 0, '2017-11-26T08:55:00Z',
                  1511686500000, 8.893e-05, None, None, None],
-             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
-                 0.7039405, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26 09:00:00', 1511686800000,
+             ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z', 1511686800000,
                  None, None, None, None]
              ])
 
@@ -1506,7 +1506,7 @@ def test_api_pair_history(botclient, mocker):
     date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
     rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
 
-    assert data[0][date_col_idx] == '2018-01-11 00:00:00'
+    assert data[0][date_col_idx] == '2018-01-11T00:00:00Z'
     assert data[0][rsi_col_idx] is not None
     assert data[0][rsi_col_idx] > 0
     assert lfm.call_count == 1

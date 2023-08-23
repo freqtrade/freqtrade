@@ -63,7 +63,7 @@ ignore = ["freqtrade/vendor/**"]
 
 [tool.ruff]
 line-length = 100
-extend-exclude = [".env"]
+extend-exclude = [".env", ".venv"]
 target-version = "py38"
 extend-select = [
   "C90",    # mccabe

@@ -10,7 +10,7 @@ from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
-from freqtrade.misc import render_template
+from freqtrade.util import render_template
 
 
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "select",
             "name": "exchange_name",
             "message": "Select exchange",
-            "choices": lambda x: [
+            "choices": [
                 "binance",
                 "binanceus",
                 "bittrex",
