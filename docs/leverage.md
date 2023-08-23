@@ -64,7 +64,7 @@ You will also have to pick a "margin mode" (explanation below) - with freqtrade 
 
 ##### Pair namings
 
-Freqtrade follows the [ccxt naming conventions for futures](https://docs.ccxt.com/en/latest/manual.html?#perpetual-swap-perpetual-future).
+Freqtrade follows the [ccxt naming conventions for futures](https://docs.ccxt.com/#/README?id=perpetual-swap-perpetual-future).
 A futures pair will therefore have the naming of `base/quote:settle` (e.g. `ETH/USDT:USDT`).
 
 ### Margin mode
