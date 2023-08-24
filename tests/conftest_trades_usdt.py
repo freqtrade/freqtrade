@@ -36,13 +36,13 @@ def mock_order_usdt_1_exit(is_short: bool):
     return {
         'id': f'prod_exit_1_{direc(is_short)}',
         'symbol': 'LTC/USDT',
-        'status': 'closed',
+        'status': 'open',
         'side': exit_side(is_short),
         'type': 'limit',
         'price': 8.0,
         'amount': 2.0,
-        'filled': 2.0,
-        'remaining': 0.0,
+        'filled': 0.0,
+        'remaining': 2.0,
     }
 
 
@@ -96,13 +96,13 @@ def mock_order_usdt_2_exit(is_short: bool):
     return {
         'id': f'12366_{direc(is_short)}',
         'symbol': 'NEO/USDT',
-        'status': 'closed',
+        'status': 'open',
         'side': exit_side(is_short),
         'type': 'limit',
         'price': 2.05,
         'amount': 100.0,
-        'filled': 100.0,
-        'remaining': 0.0,
+        'filled': 0.0,
+        'remaining': 100.0,
     }
 
 
@@ -378,7 +378,7 @@ def mock_trade_usdt_7(fee, is_short: bool):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=17),
         open_rate=2.0,
         exchange='binance',
-        open_order_id=f'1234_{direc(is_short)}',
+        open_order_id=None,
         strategy='StrategyTestV2',
         timeframe=5,
         is_short=is_short,
