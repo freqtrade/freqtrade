@@ -412,7 +412,7 @@ def short_trade(fee):
         # close_profit_abs=-0.6925113200000013,
         exchange='binance',
         is_open=True,
-        open_order_id='dry_run_exit_short_12345',
+        open_order_id=None,
         strategy='DefaultStrategy',
         timeframe=5,
         exit_reason='sell_signal',
