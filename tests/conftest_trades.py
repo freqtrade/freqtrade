@@ -103,7 +103,6 @@ def mock_trade_2(fee, is_short: bool):
         close_profit_abs=-0.005584127 if is_short else 0.000584127,
         exchange='binance',
         is_open=False,
-        open_order_id=f'dry_run_sell_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
         enter_tag='TEST1',

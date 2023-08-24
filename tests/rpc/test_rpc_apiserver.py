@@ -706,7 +706,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert len(trades) - 1 == len(Trade.session.scalars(select(Trade)).all())
     rc = client_delete(client, f"{BASE_URI}/trades/2")
     assert_response(rc)
-    assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
+    assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 1 open orders.'
     assert len(trades) - 2 == len(Trade.session.scalars(select(Trade)).all())
     assert stoploss_mock.call_count == 1
 
