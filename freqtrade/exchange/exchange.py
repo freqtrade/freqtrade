@@ -2152,7 +2152,7 @@ class Exchange:
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
-            logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
+            logger.debug("Done fetching pair %s, %s interval %s...", pair, candle_type, timeframe )
             return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
         except ccxt.NotSupported as e:
