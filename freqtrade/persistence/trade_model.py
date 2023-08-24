@@ -1055,7 +1055,8 @@ class LocalTrade:
 
     def select_filled_orders(self, order_side: Optional[str] = None) -> List['Order']:
         """
-        Finds filled orders for this orderside.
+        Finds filled orders for this order side.
+        Will not return open orders which already partially filled.
         :param order_side: Side of the order (either 'buy', 'sell', or None)
         :return: array of Order objects
         """

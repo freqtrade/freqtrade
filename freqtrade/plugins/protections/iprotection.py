@@ -42,7 +42,7 @@ class IProtection(LoggingMixin, ABC):
             self._stop_duration = (tf_in_min * self._stop_duration_candles)
         else:
             self._stop_duration_candles = None
-            self._stop_duration = protection_config.get('stop_duration', 60)
+            self._stop_duration = int(protection_config.get('stop_duration', 60))
         if 'lookback_period_candles' in protection_config:
             self._lookback_period_candles = int(protection_config.get('lookback_period_candles', 1))
             self._lookback_period = tf_in_min * self._lookback_period_candles

@@ -28,9 +28,9 @@ from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
                             get_patched_freqtradebot, get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal, patch_wallet,
                             patch_whitelist)
-from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_1,
-                                   mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
-                                   mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
+from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_2,
+                                   mock_order_2_sell, mock_order_3, mock_order_3_sell, mock_order_4,
+                                   mock_order_5_stoploss, mock_order_6_sell)
 from tests.conftest_trades_usdt import mock_trade_usdt_4
 
 
@@ -5353,8 +5353,8 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short,buy_calls,sell_calls", [
-    (False, 1, 2),
-    (True, 1, 2),
+    (False, 1, 1),
+    (True, 1, 1),
 ])
 def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, limit_order_open,
                                 is_short, buy_calls, sell_calls):
@@ -5411,7 +5411,7 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     freqtrade.config['dry_run'] = False
     freqtrade.startup_update_open_orders()
 
-    assert len(Order.get_open_orders()) == 3
+    assert len(Order.get_open_orders()) == 4
     matching_buy_order = mock_order_4(is_short=is_short)
     matching_buy_order.update({
         'status': 'closed',
@@ -5419,7 +5419,7 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     mocker.patch(f'{EXMS}.fetch_order', return_value=matching_buy_order)
     freqtrade.startup_update_open_orders()
     # Only stoploss and sell orders are kept open
-    assert len(Order.get_open_orders()) == 2
+    assert len(Order.get_open_orders()) == 3
 
     caplog.clear()
     mocker.patch(f'{EXMS}.fetch_order', side_effect=ExchangeError)
@@ -5431,7 +5431,7 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     # Orders which are no longer found after X days should be assumed as canceled.
     freqtrade.startup_update_open_orders()
     assert log_has_re(r"Order is older than \d days.*", caplog)
-    assert hto_mock.call_count == 2
+    assert hto_mock.call_count == 3
     assert hto_mock.call_args_list[0][0][0]['status'] == 'canceled'
     assert hto_mock.call_args_list[1][0][0]['status'] == 'canceled'
 
@@ -5475,7 +5475,6 @@ def test_update_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_
                  side_effect=[
                      patch_with_fee(mock_order_2_sell(is_short=is_short)),
                      patch_with_fee(mock_order_3_sell(is_short=is_short)),
-                     patch_with_fee(mock_order_1(is_short=is_short)),
                      patch_with_fee(mock_order_2(is_short=is_short)),
                      patch_with_fee(mock_order_3(is_short=is_short)),
                      patch_with_fee(mock_order_4(is_short=is_short)),
@@ -5585,14 +5584,15 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     caplog.clear()
 
     # No open order
-    trade = trades[0]
+    trade = trades[1]
     reset_open_orders(trade)
     assert not trade.has_open_orders
     assert trade.stoploss_order_id is None
 
     freqtrade.handle_insufficient_funds(trade)
-    order = mock_order_1(is_short=is_short)
-    assert log_has_re(r"Order Order(.*order_id=" + order['id'] + ".*) is no longer open.", caplog)
+    order = trade.orders[0]
+    assert log_has_re(r"Order Order(.*order_id=" + order.order_id + ".*) is no longer open.",
+                      caplog)
     assert mock_fo.call_count == 0
     assert mock_uts.call_count == 0
     # No change to orderid - as update_trade_state is mocked

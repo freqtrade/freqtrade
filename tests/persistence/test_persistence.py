@@ -1977,9 +1977,9 @@ def test_select_order(fee, is_short):
 
     # Open buy order, no sell order
     order = trades[0].select_order(trades[0].entry_side, True)
-    assert order is None
-    order = trades[0].select_order(trades[0].entry_side, False)
     assert order is not None
+    order = trades[0].select_order(trades[0].entry_side, False)
+    assert order is None
     order = trades[0].select_order(trades[0].exit_side, None)
     assert order is None
 
@@ -2450,7 +2450,16 @@ def test_select_filled_orders(fee):
 
     # Closed buy order, no sell order
     orders = trades[0].select_filled_orders('buy')
+    assert isinstance(orders, list)
+    assert len(orders) == 0
+
+    orders = trades[0].select_filled_orders('sell')
     assert orders is not None
+    assert len(orders) == 0
+
+    # closed buy order, and closed sell order
+    orders = trades[1].select_filled_orders('buy')
+    assert isinstance(orders, list)
     assert len(orders) == 1
     order = orders[0]
     assert order.amount > 0
@@ -2458,33 +2467,25 @@ def test_select_filled_orders(fee):
     assert order.side == 'buy'
     assert order.ft_order_side == 'buy'
     assert order.status == 'closed'
-    orders = trades[0].select_filled_orders('sell')
-    assert orders is not None
-    assert len(orders) == 0
-
-    # closed buy order, and closed sell order
-    orders = trades[1].select_filled_orders('buy')
-    assert orders is not None
-    assert len(orders) == 1
 
     orders = trades[1].select_filled_orders('sell')
-    assert orders is not None
+    assert isinstance(orders, list)
     assert len(orders) == 1
 
     # Has open buy order
     orders = trades[3].select_filled_orders('buy')
-    assert orders is not None
+    assert isinstance(orders, list)
     assert len(orders) == 0
     orders = trades[3].select_filled_orders('sell')
-    assert orders is not None
+    assert isinstance(orders, list)
     assert len(orders) == 0
 
     # Open sell order
     orders = trades[4].select_filled_orders('buy')
-    assert orders is not None
+    assert isinstance(orders, list)
     assert len(orders) == 1
     orders = trades[4].select_filled_orders('sell')
-    assert orders is not None
+    assert isinstance(orders, list)
     assert len(orders) == 0
 
 
