@@ -841,7 +841,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2,
          'profit_factor': 0.0, 'winrate': 0.0, 'expectancy': -0.0033695635,
-         'expectancy_ratio': -1.0, 'trading_volume': 91.074,
+         'expectancy_ratio': -1.0, 'trading_volume': 75.945,
          }
     ),
     (
@@ -857,7 +857,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0,
          'profit_factor': None, 'winrate': 1.0, 'expectancy': 0.0003695635,
-         'expectancy_ratio': 100, 'trading_volume': 91.074,
+         'expectancy_ratio': 100, 'trading_volume': 75.945,
          }
     ),
     (
@@ -874,7 +874,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1,
          'profit_factor': 0.02775724835771106, 'winrate': 0.5,
          'expectancy': -0.0027145635000000003, 'expectancy_ratio': -0.48612137582114445,
-         'trading_volume': 91.074,
+         'trading_volume': 75.945,
          }
     )
 ])
@@ -1125,7 +1125,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
     assert_response(rc)
     resp_values = rc.json()
     assert len(resp_values) == 4
-    assert resp_values[0]['profit_abs'] is None
+    assert resp_values[0]['profit_abs'] == 0.0
 
 
 def test_api_version(botclient):

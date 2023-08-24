@@ -316,7 +316,7 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
 
     create_mock_trades(fee)
     trades = Trade.get_open_trades()
-    trade = trades[0]
+    trade = trades[3]
     # Average may be empty on some exchanges
     trade.orders[0].average = 0
     trade.orders.append(Order(
@@ -344,9 +344,9 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
 
     await telegram._status(update=update, context=MagicMock())
     assert msg_mock.call_count == 4
-    msg = msg_mock.call_args_list[0][0][0]
+    msg = msg_mock.call_args_list[3][0][0]
     assert re.search(r'Number of Entries.*2', msg)
-    assert re.search(r'Number of Exits.*0', msg)
+    assert re.search(r'Number of Exits.*1', msg)
     assert re.search(r'Average Entry Price', msg)
     assert re.search(r'Order filled', msg)
     assert re.search(r'Close Date:', msg) is None
