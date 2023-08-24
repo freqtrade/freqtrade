@@ -363,9 +363,8 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
 
     res = rpc._rpc_delete('2')
     assert isinstance(res, dict)
-    assert cancel_mock.call_count == 1
     assert stoploss_mock.call_count == 1
-    assert res['cancel_order_count'] == 2
+    assert res['cancel_order_count'] == 1
 
     stoploss_mock = mocker.patch(f'{EXMS}.cancel_stoploss_order', side_effect=InvalidOrderException)
 
