@@ -5451,7 +5451,6 @@ def test_update_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_
                  side_effect=[
                      patch_with_fee(mock_order_2_sell(is_short=is_short)),
                      patch_with_fee(mock_order_3_sell(is_short=is_short)),
-                     patch_with_fee(mock_order_1(is_short=is_short)),
                      patch_with_fee(mock_order_2(is_short=is_short)),
                      patch_with_fee(mock_order_3(is_short=is_short)),
                      patch_with_fee(mock_order_4(is_short=is_short)),
