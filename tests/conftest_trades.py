@@ -22,15 +22,15 @@ def mock_order_1(is_short: bool):
     return {
         'id': f'1234_{direc(is_short)}',
         'symbol': 'ETH/BTC',
-        'status': 'closed',
+        'status': 'open',
         'side': entry_side(is_short),
         'type': 'limit',
         'price': 0.123,
         'average': 0.123,
         'amount': 123.0,
-        'filled': 123.0,
+        'filled': 50.0,
         'cost': 15.129,
-        'remaining': 0.0,
+        'remaining': 123.0 - 50.0,
     }
 
 
