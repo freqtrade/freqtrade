@@ -28,8 +28,9 @@ from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
                             get_patched_freqtradebot, get_patched_worker, log_has, log_has_re,
                             patch_edge, patch_exchange, patch_get_signal, patch_wallet,
                             patch_whitelist)
-from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
-                                   mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
+from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_2,
+                                   mock_order_2_sell, mock_order_3, mock_order_3_sell, mock_order_4,
+                                   mock_order_5_stoploss, mock_order_6_sell)
 from tests.conftest_trades_usdt import mock_trade_usdt_4
 
 
