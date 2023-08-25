@@ -765,7 +765,6 @@ class LocalTrade:
         self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
         self.exit_order_status = 'closed'
-        self.open_order_id = None
         self.recalc_trade_from_orders(is_closing=True)
         if show_msg:
             logger.info(f"Marking {self} as closed as the trade is fulfilled "
