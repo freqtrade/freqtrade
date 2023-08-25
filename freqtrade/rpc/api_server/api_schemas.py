@@ -328,8 +328,6 @@ class OpenTradeSchema(TradeSchema):
     total_profit_fiat: Optional[float] = None
     total_profit_ratio: Optional[float] = None
 
-    open_order: Optional[str] = None
-
 
 class TradeResponse(BaseModel):
     trades: List[TradeSchema]
