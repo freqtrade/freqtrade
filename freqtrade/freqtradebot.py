@@ -1698,7 +1698,6 @@ class FreqtradeBot(LoggingMixin):
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side, amount, limit)
         trade.orders.append(order_obj)
 
-        # trade.open_order_id = order['id']
         trade.exit_order_status = ''
         trade.close_rate_requested = limit
         trade.exit_reason = exit_reason

@@ -103,7 +103,6 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
 
         trade.orders.append(oobj)
         trade.stoploss_order_id = f"stop{idx}"
-        trade.open_order_id = None
 
     n = freqtrade.exit_positions(trades)
     assert n == 2
@@ -194,8 +193,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     for trade in trades:
         assert pytest.approx(trade.stake_amount) == result1
-        # Reset trade open order id's
-        trade.open_order_id = None
+
     trades = Trade.get_open_trades()
     assert len(trades) == 5
     bals = freqtrade.wallets.get_all_balances()

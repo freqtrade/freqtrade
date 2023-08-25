@@ -1096,7 +1096,7 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
     assert trade.buy_tag == 'force_entry'
-    # assert trade.open_order_id == 'mocked_limit_buy'
+
     assert trade.open_orders_ids[-1] == 'mocked_limit_buy'
 
     freqtradebot.strategy.position_adjustment_enable = True
