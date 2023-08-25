@@ -268,6 +268,13 @@ def set_sqlite_to_wal(engine):
 
 def fix_old_dry_orders(engine):
     with engine.begin() as connection:
+
+        # Update current dry-run Orders where
+        # - current Order is open
+        # - current Trade is closed
+        # - current Order trade_id not equal to current Trade.id
+        # - current Order not stoploss
+
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
             tuple_(Order.ft_trade_id, Order.order_id).not_in(
@@ -281,36 +288,14 @@ def fix_old_dry_orders(engine):
         ).values(ft_is_open=False)
         connection.execute(stmt)
 
-        # OLD
-        stmt = update(Order).where(
-            Order.ft_is_open.is_(True),
-            tuple_(Order.ft_trade_id, Order.order_id).not_in(
-                select(
-                    Trade.id, Trade.open_order_id
-                ).where(Trade.open_order_id.is_not(None))
-                  ),
-            Order.ft_order_side != 'stoploss',
-            Order.order_id.like('dry%')
-
-        ).values(ft_is_open=False)
-        connection.execute(stmt)
-
-        # Update current Order where
-        # -current Order is open
-        # -current Order trade_id not equal to current Trade.id
-        # -current Order not stoploss
-        # -order_id not equal to current Trade.stoploss_order_id
-        # -current Order is dry
-
-        # NEW WIP
+        # Close dry-run orders for closed trades.
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
             Order.ft_trade_id.not_in(
-                select(Trade.id).where(Trade.open_orders_count.is_not(0))
-            ),
-            Order.order_id.not_in(
-                select(Trade.open_orders).filter(Order.order_id).first()
-            ),
+                select(
+                    Trade.id
+                ).where(Trade.is_open.is_(True))
+                  ),
             Order.ft_order_side != 'stoploss',
             Order.order_id.like('dry%')
 
@@ -363,7 +348,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             "start with a fresh database.")
 
     set_sqlite_to_wal(engine)
-    # fix_old_dry_orders(engine) # TODO Fix that
+    fix_old_dry_orders(engine)
 
     if migrating:
         logger.info("Database migration finished.")
