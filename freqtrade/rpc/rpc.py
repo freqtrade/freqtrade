@@ -786,7 +786,7 @@ class RPC:
                 self._freqtrade.handle_cancel_exit(
                     trade, order, oo.order_id, CANCEL_REASON['FORCE_EXIT'])
 
-        if any(not tocr['cancel_state'] for tocr in trade_entry_cancelation_registry):
+        if all(tocr['cancel_state'] for tocr in trade_entry_cancelation_registry):
             if trade.has_open_orders:
                 # Order cancellation failed, so we can't exit.
                 return False

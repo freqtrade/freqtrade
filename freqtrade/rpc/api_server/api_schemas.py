@@ -304,7 +304,6 @@ class TradeSchema(BaseModel):
 
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
-    open_order_id: Optional[str] = None
     orders: List[OrderSchema]
 
     leverage: Optional[float] = None
