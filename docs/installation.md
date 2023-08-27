@@ -286,7 +286,7 @@ cd freqtrade
 #### Freqtrade install: Conda Environment
 
 ```bash
-conda create --name freqtrade python=3.10
+conda create --name freqtrade python=3.11
 ```
 
 !!! Note "Creating Conda Environment"
