@@ -778,7 +778,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'amount': amount,
             'remaining': amount,
             'filled': 0.0,
-            'id': trade.orders[0].order_id,
+            'id': trade.orders[-1].order_id,
         }
     )
     cancel_order_3 = mocker.patch(
@@ -790,7 +790,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'amount': amount,
             'remaining': amount,
             'filled': 0.0,
-            'id': trade.orders[0].order_id,
+            'id': trade.orders[-1].order_id,
         }
     )
     msg = rpc._rpc_force_exit('3')
@@ -799,7 +799,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_3.call_count == 1
     assert cancel_order_mock.call_count == 0
 
-    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
+    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '4')).first()
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
     mocker.patch(
@@ -828,7 +828,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert msg == {'result': 'Created exit order for trade 4.'}
     assert cancel_order_4.call_count == 1
     assert cancel_order_mock.call_count == 0
-    assert trade.amount == amount
+    assert pytest.approx(trade.amount) == amount
 
 
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
