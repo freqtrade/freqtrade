@@ -5345,7 +5345,7 @@ def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, lim
     mocker.patch(
         f'{EXMS}.fetch_order',
         side_effect=[
-            # ExchangeError(), # We are mocking an error? Disabled for the moment need more info
+            ExchangeError(),
             limit_order[exit_side(is_short)],
             limit_order_open[entry_side(is_short)],
             limit_order_open[exit_side(is_short)],
