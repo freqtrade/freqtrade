@@ -6,6 +6,7 @@ from tabulate import tabulate
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.misc import decimals_per_coin, round_coin_value
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
+from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -363,7 +364,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
     print()
 
 
-def show_backtest_results(config: Config, backtest_stats: Dict):
+def show_backtest_results(config: Config, backtest_stats: BacktestResultType):
     stake_currency = config['stake_currency']
 
     for strategy, results in backtest_stats['strategy'].items():
@@ -383,7 +384,7 @@ def show_backtest_results(config: Config, backtest_stats: Dict):
         print('\nFor more details, please look at the detail tables above')
 
 
-def show_sorted_pairlist(config: Config, backtest_stats: Dict):
+def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
     if config.get('backtest_show_pair_list', False):
         for strategy, results in backtest_stats['strategy'].items():
             print(f"Pairs for Strategy {strategy}: \n[")

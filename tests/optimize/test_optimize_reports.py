@@ -213,7 +213,8 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.bt_storage.file_dump_json')
 
-    store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
+    data = {'metadata': {}, 'strategy': {}, 'strategy_comparison': []}
+    store_backtest_stats(testdatadir, data, '2022_01_01_15_05_13')
 
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
@@ -221,7 +222,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'
-    store_backtest_stats(filename, {'metadata': {}}, '2022_01_01_15_05_13')
+    store_backtest_stats(filename, data, '2022_01_01_15_05_13')
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json

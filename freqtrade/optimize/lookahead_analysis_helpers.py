@@ -137,6 +137,19 @@ class LookaheadAnalysisSubFunctions:
                         'just to avoid false positives')
             config['dry_run_wallet'] = min_dry_run_wallet
 
+        if 'timerange' not in config:
+            # setting a timerange is enforced here
+            raise OperationalException(
+                "Please set a timerange. "
+                "Usually a few months are enough depending on your needs and strategy."
+            )
+        # fix stake_amount to 10k.
+        # in a combination with a wallet size of 1 billion it should always be able to trade
+        # no matter if they use custom_stake_amount as a small percentage of wallet size
+        # or fixate custom_stake_amount to a certain value.
+        logger.info('fixing stake_amount to 10k')
+        config['stake_amount'] = 10000
+
         # enforce cache to be 'none', shift it to 'none' if not already
         # (since the default value is 'day')
         if config.get('backtest_cache') is None:

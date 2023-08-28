@@ -5,6 +5,7 @@ Cryptocurrency Exchanges support
 import asyncio
 import inspect
 import logging
+import signal
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor
@@ -263,8 +264,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}") from e
 
-        self.set_sandbox(api, exchange_config, name)
-
         return api
 
     @property
@@ -465,16 +464,6 @@ class Exchange:
         return amount_to_contract_precision(amount, self.get_precision_amount(pair),
                                             self.precisionMode, contract_size)
 
-    def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
-        if exchange_config.get('sandbox'):
-            if api.urls.get('test'):
-                api.urls['api'] = api.urls['test']
-                logger.info("Enabled Sandbox API on %s", name)
-            else:
-                logger.warning(
-                    f"No Sandbox URL in CCXT for {name}, exiting. Please check your config.json")
-                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
-
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
@@ -580,7 +569,7 @@ class Exchange:
         for pair in [f"{curr_1}/{curr_2}", f"{curr_2}/{curr_1}"]:
             if pair in self.markets and self.markets[pair].get('active'):
                 return pair
-        raise ExchangeError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
+        raise ValueError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
     def validate_timeframes(self, timeframe: Optional[str]) -> None:
         """
@@ -1876,7 +1865,7 @@ class Exchange:
                 tick = self.fetch_ticker(comb)
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-            except ExchangeError:
+            except (ValueError, ExchangeError):
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
@@ -2163,7 +2152,7 @@ class Exchange:
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
-            logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
+            logger.debug("Done fetching pair %s, %s interval %s...", pair, candle_type, timeframe)
             return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
         except ccxt.NotSupported as e:
@@ -2265,20 +2254,24 @@ class Exchange:
             from_id = t[-1][1]
             trades.extend(t[:-1])
         while True:
-            t = await self._async_fetch_trades(pair,
-                                               params={self._trades_pagination_arg: from_id})
-            if t:
-                # Skip last id since its the key for the next call
-                trades.extend(t[:-1])
-                if from_id == t[-1][1] or t[-1][0] > until:
-                    logger.debug(f"Stopping because from_id did not change. "
-                                 f"Reached {t[-1][0]} > {until}")
-                    # Reached the end of the defined-download period - add last trade as well.
-                    trades.extend(t[-1:])
-                    break
+            try:
+                t = await self._async_fetch_trades(pair,
+                                                   params={self._trades_pagination_arg: from_id})
+                if t:
+                    # Skip last id since its the key for the next call
+                    trades.extend(t[:-1])
+                    if from_id == t[-1][1] or t[-1][0] > until:
+                        logger.debug(f"Stopping because from_id did not change. "
+                                     f"Reached {t[-1][0]} > {until}")
+                        # Reached the end of the defined-download period - add last trade as well.
+                        trades.extend(t[-1:])
+                        break
 
-                from_id = t[-1][1]
-            else:
+                    from_id = t[-1][1]
+                else:
+                    break
+            except asyncio.CancelledError:
+                logger.debug("Async operation Interrupted, breaking trades DL loop.")
                 break
 
         return (pair, trades)
@@ -2298,16 +2291,20 @@ class Exchange:
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
-            t = await self._async_fetch_trades(pair, since=since)
-            if t:
-                since = t[-1][0]
-                trades.extend(t)
-                # Reached the end of the defined-download period
-                if until and t[-1][0] > until:
-                    logger.debug(
-                        f"Stopping because until was reached. {t[-1][0]} > {until}")
+            try:
+                t = await self._async_fetch_trades(pair, since=since)
+                if t:
+                    since = t[-1][0]
+                    trades.extend(t)
+                    # Reached the end of the defined-download period
+                    if until and t[-1][0] > until:
+                        logger.debug(
+                            f"Stopping because until was reached. {t[-1][0]} > {until}")
+                        break
+                else:
                     break
-            else:
+            except asyncio.CancelledError:
+                logger.debug("Async operation Interrupted, breaking trades DL loop.")
                 break
 
         return (pair, trades)
@@ -2356,9 +2353,16 @@ class Exchange:
             raise OperationalException("This exchange does not support downloading Trades.")
 
         with self._loop_lock:
-            return self.loop.run_until_complete(
-                self._async_get_trade_history(pair=pair, since=since,
-                                              until=until, from_id=from_id))
+            task = asyncio.ensure_future(self._async_get_trade_history(
+                pair=pair, since=since, until=until, from_id=from_id))
+
+            for sig in [signal.SIGINT, signal.SIGTERM]:
+                try:
+                    self.loop.add_signal_handler(sig, task.cancel)
+                except NotImplementedError:
+                    # Not all platforms implement signals (e.g. windows)
+                    pass
+            return self.loop.run_until_complete(task)
 
     @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:

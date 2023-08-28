@@ -605,17 +605,13 @@ class RPC:
                 est_stake = balance.free
             est_bot_stake = amount
         else:
-            try:
-                pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                rate: Optional[float] = tickers.get(pair, {}).get('last', None)
-                if rate:
-                    if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
-                        rate = 1.0 / rate
-                    est_stake = rate * balance.total
-                    est_bot_stake = rate * amount
-            except (ExchangeError):
-                logger.warning(f"Could not get rate for pair {coin}.")
-                raise ValueError()
+            pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
+            rate: Optional[float] = tickers.get(pair, {}).get('last', None)
+            if rate:
+                if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
+                    rate = 1.0 / rate
+                est_stake = rate * balance.total
+                est_bot_stake = rate * amount
 
         return est_stake, est_bot_stake
 
@@ -1262,7 +1258,7 @@ class RPC:
             pairs=[pair],
             timeframe=timeframe,
             timerange=timerange_parsed,
-            data_format=config.get('dataformat_ohlcv', 'json'),
+            data_format=config['dataformat_ohlcv'],
             candle_type=config.get('candle_type_def', CandleType.SPOT),
             startup_candles=startup_candles,
         )

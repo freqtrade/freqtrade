@@ -1,16 +1,15 @@
 """
 Functions to convert data from one format to another
 """
-import itertools
 import logging
-from operator import itemgetter
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, Config, TradeList
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
+                                 Config, TradeList)
 from freqtrade.enums import CandleType, TradingMode
 
 
@@ -195,15 +194,14 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     return frame
 
 
-def trades_remove_duplicates(trades: List[List]) -> List[List]:
+def trades_df_remove_duplicates(trades: pd.DataFrame) -> pd.DataFrame:
     """
-    Removes duplicates from the trades list.
-    Uses itertools.groupby to avoid converting to pandas.
-    Tests show it as being pretty efficient on lists of 4M Lists.
-    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
-    :return: same format as above, but with duplicates removed
+    Removes duplicates from the trades DataFrame.
+    Uses pandas.DataFrame.drop_duplicates to remove duplicates based on the 'timestamp' column.
+    :param trades: DataFrame with the columns constants.DEFAULT_TRADES_COLUMNS
+    :return: DataFrame with duplicates removed based on the 'timestamp' column
     """
-    return [i for i, _ in itertools.groupby(sorted(trades, key=itemgetter(0)))]
+    return trades.drop_duplicates(subset=['timestamp', 'id'])
 
 
 def trades_dict_to_list(trades: List[Dict]) -> TradeList:
@@ -215,7 +213,32 @@ def trades_dict_to_list(trades: List[Dict]) -> TradeList:
     return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
 
 
-def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
+def trades_convert_types(trades: DataFrame) -> DataFrame:
+    """
+    Convert Trades dtypes and add 'date' column
+    """
+    trades = trades.astype(TRADES_DTYPES)
+    trades['date'] = to_datetime(trades['timestamp'], unit='ms', utc=True)
+    return trades
+
+
+def trades_list_to_df(trades: TradeList, convert: bool = True):
+    """
+    convert trades list to dataframe
+    :param trades: List of Lists with constants.DEFAULT_TRADES_COLUMNS as columns
+    """
+    if not trades:
+        df = DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+    else:
+        df = DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
+
+    if convert:
+        df = trades_convert_types(df)
+
+    return df
+
+
+def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     """
     Converts trades list to OHLCV list
     :param trades: List of trades, as returned by ccxt.fetch_trades.
@@ -225,12 +248,9 @@ def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_minutes = timeframe_to_minutes(timeframe)
-    if not trades:
+    if trades.empty:
         raise ValueError('Trade-list empty.')
-    df = pd.DataFrame(trades, columns=DEFAULT_TRADES_COLUMNS)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',
-                                     utc=True,)
-    df = df.set_index('timestamp')
+    df = trades.set_index('date', drop=True)
 
     df_new = df['price'].resample(f'{timeframe_minutes}min').ohlc()
     df_new['volume'] = df['amount'].resample(f'{timeframe_minutes}min').sum()

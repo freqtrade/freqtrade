@@ -27,7 +27,7 @@ For this to work, first activate your virtual environment and run the following 
 
 ``` bash
 # Activate virtual environment
-source .env/bin/activate
+source .venv/bin/activate
 
 pip install ipykernel
 ipython kernel install --user --name=freqtrade

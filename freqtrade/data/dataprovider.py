@@ -17,7 +17,7 @@ from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWith
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
-from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.exchange.types import OrderBook
 from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
@@ -46,6 +46,8 @@ class DataProvider:
         self.__rpc = rpc
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
+        self.__slice_date: Optional[datetime] = None
+
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
         self.__producer_pairs_df: Dict[str,
                                        Dict[PairWithTimeframe, Tuple[DataFrame, datetime]]] = {}
@@ -64,9 +66,18 @@ class DataProvider:
     def _set_dataframe_max_index(self, limit_index: int):
         """
         Limit analyzed dataframe to max specified index.
+        Only relevant in backtesting.
         :param limit_index: dataframe index.
         """
         self.__slice_index = limit_index
+
+    def _set_dataframe_max_date(self, limit_date: datetime):
+        """
+        Limit infomrative dataframe to max specified index.
+        Only relevant in backtesting.
+        :param limit_date: "current date"
+        """
+        self.__slice_date = limit_date
 
     def _set_cached_df(
         self,
@@ -284,7 +295,7 @@ class DataProvider:
     def historic_ohlcv(
         self,
         pair: str,
-        timeframe: Optional[str] = None,
+        timeframe: str,
         candle_type: str = ''
     ) -> DataFrame:
         """
@@ -307,10 +318,10 @@ class DataProvider:
             timerange.subtract_start(tf_seconds * startup_candles)
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
-                timeframe=timeframe or self._config['timeframe'],
+                timeframe=timeframe,
                 datadir=self._config['datadir'],
                 timerange=timerange,
-                data_format=self._config.get('dataformat_ohlcv', 'json'),
+                data_format=self._config['dataformat_ohlcv'],
                 candle_type=_candle_type,
 
             )
@@ -354,7 +365,13 @@ class DataProvider:
             data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
         else:
             # Get historical OHLCV data (cached on disk).
+            timeframe = timeframe or self._config['timeframe']
             data = self.historic_ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
+            # Cut date to timeframe-specific date.
+            # This is necessary to prevent lookahead bias in callbacks through informative pairs.
+            if self.__slice_date:
+                cutoff_date = timeframe_to_prev_date(timeframe, self.__slice_date)
+                data = data.loc[data['date'] < cutoff_date]
         if len(data) == 0:
             logger.warning(f"No data found for ({pair}, {timeframe}, {candle_type}).")
         return data

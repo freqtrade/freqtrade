@@ -3,6 +3,7 @@
 import json
 import logging
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
@@ -26,7 +27,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.util import dt_utc
+from freqtrade.util import dt_ts, dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
 
@@ -68,7 +69,7 @@ def test_load_data_7min_timeframe(caplog, testdatadir) -> None:
 
 def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) -> None:
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history)
-    file = testdatadir / 'UNITTEST_BTC-1m.json'
+    file = testdatadir / 'UNITTEST_BTC-1m.feather'
     load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'])
     assert file.is_file()
     assert not log_has(
@@ -79,7 +80,7 @@ def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) ->
 
 def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history)
-    file = testdatadir / 'futures/UNITTEST_USDT_USDT-1h-mark.json'
+    file = testdatadir / 'futures/UNITTEST_USDT_USDT-1h-mark.feather'
     load_data(datadir=testdatadir, timeframe='1h', pairs=['UNITTEST/BTC'], candle_type='mark')
     assert file.is_file()
     assert not log_has(
@@ -90,7 +91,7 @@ def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
 
 def test_load_data_startup_candles(mocker, testdatadir) -> None:
     ltfmock = mocker.patch(
-        'freqtrade.data.history.jsondatahandler.JsonDataHandler._ohlcv_load',
+        'freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load',
         MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
@@ -112,7 +113,7 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     tmpdir1 = Path(tmpdir)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file = tmpdir1 / 'MEME_BTC-1m.json'
+    file = tmpdir1 / 'MEME_BTC-1m.feather'
 
     # do not download a new pair if refresh_pairs isn't set
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
@@ -280,10 +281,10 @@ def test_download_pair_history(
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     tmpdir1 = Path(tmpdir)
-    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.json'
-    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.json'
-    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.json'
-    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.json'
+    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.feather'
+    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.feather'
+    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.feather'
+    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.feather'
 
     assert not file1_1.is_file()
     assert not file2_1.is_file()
@@ -326,7 +327,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch(
-        'freqtrade.data.history.jsondatahandler.JsonDataHandler.ohlcv_store',
+        'freqtrade.data.history.featherdatahandler.FeatherDataHandler.ohlcv_store',
         return_value=None)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -386,7 +387,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
 def test_init(default_conf) -> None:
     assert {} == load_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe']
     )
@@ -395,14 +396,14 @@ def test_init(default_conf) -> None:
 def test_init_with_refresh(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     refresh_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe'],
         exchange=exchange,
         candle_type=CandleType.SPOT
     )
     assert {} == load_data(
-        datadir=Path(''),
+        datadir=Path(),
         pairs=[],
         timeframe=default_conf['timeframe']
     )
@@ -569,7 +570,10 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
 
 
 def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog,
-                                 tmpdir) -> None:
+                                 tmpdir, time_machine) -> None:
+    start_dt = dt_utc(2023, 1, 1)
+    time_machine.move_to(start_dt, tick=False)
+
     tmpdir1 = Path(tmpdir)
     ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
     mocker.patch(f'{EXMS}.get_historic_trades', ght_mock)
@@ -581,8 +585,13 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC')
-    assert log_has("New Amount of trades: 5", caplog)
+    assert log_has("Current Amount of trades: 0", caplog)
+    assert log_has("New Amount of trades: 6", caplog)
+    assert ght_mock.call_count == 1
+    # Default "since" - 30 days before current day.
+    assert ght_mock.call_args_list[0][1]['since'] == dt_ts(start_dt - timedelta(days=30))
     assert file1.is_file()
+    caplog.clear()
 
     ght_mock.reset_mock()
     since_time = int(trades_history[-3][0] // 1000)
@@ -599,6 +608,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     file1.unlink()
 
     mocker.patch(f'{EXMS}.get_historic_trades', MagicMock(side_effect=ValueError))
+    caplog.clear()
 
     assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
                                         pair='ETH/BTC')
@@ -620,15 +630,15 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert int(ght_mock.call_args_list[0][1]['since'] // 1000) == since_time
     assert ght_mock.call_args_list[0][1]['from_id'] is None
-    assert log_has_re(r'Start earlier than available data. Redownloading trades for.*', caplog)
+    assert log_has_re(r'Start .* earlier than available data. Redownloading trades for.*', caplog)
     _clean_test_file(file2)
 
 
 def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     tmpdir1 = Path(tmpdir)
     pair = 'XRP/ETH'
-    file1 = tmpdir1 / 'XRP_ETH-1m.json'
-    file5 = tmpdir1 / 'XRP_ETH-5m.json'
+    file1 = tmpdir1 / 'XRP_ETH-1m.feather'
+    file5 = tmpdir1 / 'XRP_ETH-5m.feather'
     filetrades = tmpdir1 / 'XRP_ETH-trades.json.gz'
     copyfile(testdatadir / file1.name, file1)
     copyfile(testdatadir / file5.name, file5)
@@ -641,6 +651,7 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     tr = TimeRange.parse_timerange('20191011-20191012')
 
     convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
 
     assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
@@ -648,11 +659,12 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
     df_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
     df_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
 
-    assert df_1m.equals(dfbak_1m)
-    assert df_5m.equals(dfbak_5m)
-
-    assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
+    assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
+    msg = 'Could not convert NoDatapair to OHLCV.'
+    assert not log_has(msg, caplog)
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
-    assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    assert log_has(msg, caplog)

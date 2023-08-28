@@ -613,6 +613,8 @@ class FreqtradeBot(LoggingMixin):
         for trade in Trade.get_open_trades():
             # If there is any open orders, wait for them to finish.
             if trade.open_order_id is None:
+                # Do a wallets update (will be ratelimited to once per hour)
+                self.wallets.update(False)
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:

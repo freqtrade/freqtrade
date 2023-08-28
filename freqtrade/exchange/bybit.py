@@ -7,10 +7,10 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, PriceType, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange_utils import timeframe_to_msecs
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class Bybit(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 200,
+        "ohlcv_candle_limit": 1000,
         "ohlcv_has_history": True,
     }
     _ft_has_futures: Dict = {
@@ -91,28 +91,13 @@ class Bybit(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    async def _fetch_funding_rate_history(
-        self,
-        pair: str,
-        timeframe: str,
-        limit: int,
-        since_ms: Optional[int] = None,
-    ) -> List[List]:
-        """
-        Fetch funding rate history
-        Necessary workaround until https://github.com/ccxt/ccxt/issues/15990 is fixed.
-        """
-        params = {}
-        if since_ms:
-            until = since_ms + (timeframe_to_msecs(timeframe) * self._ft_has['ohlcv_candle_limit'])
-            params.update({'until': until})
-        # Funding rate
-        data = await self._api_async.fetch_funding_rate_history(
-            pair, since=since_ms,
-            params=params)
-        # Convert funding rate to candle pattern
-        data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
-        return data
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+
+        if candle_type in (CandleType.FUNDING_RATE):
+            return 200
+
+        return super().ohlcv_candle_limit(timeframe, candle_type, since_ms)
 
     def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT:

@@ -50,7 +50,8 @@ logger = logging.getLogger(__name__)
 # 2.29: Add /exchanges endpoint
 # 2.30: new /pairlists endpoint
 # 2.31: new /backtest/history/ delete endpoint
-API_VERSION = 2.31
+# 2.32: new /backtest/history/ patch endpoint
+API_VERSION = 2.32
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -174,9 +175,9 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
                                  leverage=payload.leverage)
 
     if trade:
-        return ForceEnterResponse.parse_obj(trade.to_json())
+        return ForceEnterResponse.model_validate(trade.to_json())
     else:
-        return ForceEnterResponse.parse_obj(
+        return ForceEnterResponse.model_validate(
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
@@ -281,14 +282,14 @@ def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
     if not strategy:
         if not rpc:
             raise RPCException("Strategy is mandatory in webserver mode.")
-        return PlotConfig.parse_obj(rpc._rpc_plot_config())
+        return PlotConfig.model_validate(rpc._rpc_plot_config())
     else:
         config1 = deepcopy(config)
         config1.update({
             'strategy': strategy
         })
     try:
-        return PlotConfig.parse_obj(RPC._rpc_plot_config_with_strategy(config1))
+        return PlotConfig.model_validate(RPC._rpc_plot_config_with_strategy(config1))
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 

@@ -4,7 +4,7 @@ from typing import Optional
 from pandas import DataFrame, read_feather, to_datetime
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
 from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
@@ -82,43 +82,41 @@ class FeatherDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         self.create_dir_if_needed(filename)
+        data.reset_index(drop=True).to_feather(filename, compression_level=9, compression='lz4')
 
-        tradesdata = DataFrame(data, columns=DEFAULT_TRADES_COLUMNS)
-        tradesdata.to_feather(filename, compression_level=9, compression='lz4')
-
-    def trades_append(self, pair: str, data: TradeList):
+    def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         if not filename.exists():
-            return []
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
         tradesdata = read_feather(filename)
 
-        return tradesdata.values.tolist()
+        return tradesdata
 
     @classmethod
     def _get_file_extension(cls):

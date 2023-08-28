@@ -22,15 +22,15 @@ def mock_order_1(is_short: bool):
     return {
         'id': f'1234_{direc(is_short)}',
         'symbol': 'ETH/BTC',
-        'status': 'closed',
+        'status': 'open',
         'side': entry_side(is_short),
         'type': 'limit',
         'price': 0.123,
         'average': 0.123,
         'amount': 123.0,
-        'filled': 123.0,
+        'filled': 50.0,
         'cost': 15.129,
-        'remaining': 0.0,
+        'remaining': 123.0 - 50.0,
     }
 
 
@@ -103,7 +103,6 @@ def mock_trade_2(fee, is_short: bool):
         close_profit_abs=-0.005584127 if is_short else 0.000584127,
         exchange='binance',
         is_open=False,
-        open_order_id=f'dry_run_sell_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
         enter_tag='TEST1',
@@ -412,7 +411,7 @@ def short_trade(fee):
         # close_profit_abs=-0.6925113200000013,
         exchange='binance',
         is_open=True,
-        open_order_id='dry_run_exit_short_12345',
+        open_order_id=None,
         strategy='DefaultStrategy',
         timeframe=5,
         exit_reason='sell_signal',
