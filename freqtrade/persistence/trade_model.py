@@ -999,7 +999,6 @@ class LocalTrade:
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
-        profit = None
         # Reset funding fees
         self.funding_fees = 0.0
         funding_fees = 0.0
@@ -1029,11 +1028,9 @@ class LocalTrade:
 
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
-                                          open_rate=float(avg_price))
-                close_profit_abs += profit
-                close_profit = self.calc_profit_ratio(
-                    exit_rate, amount=exit_amount, open_rate=avg_price)
+                prof = self.calc_profit_combined(exit_rate, exit_amount, float(avg_price))
+                close_profit_abs += prof.profit_abs
+                close_profit = prof.profit_ratio
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += (tmp_amount * price)
@@ -1043,7 +1040,7 @@ class LocalTrade:
         if close_profit:
             self.close_profit = close_profit
             self.realized_profit = close_profit_abs
-            self.close_profit_abs = profit
+            self.close_profit_abs = prof.profit_abs
 
         current_amount_tr = amount_to_contract_precision(
             float(current_amount), self.amount_precision, self.precision_mode, self.contract_size)
