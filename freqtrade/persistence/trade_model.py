@@ -3,6 +3,7 @@ This module contains the class to persist trades into SQLite
 """
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
@@ -24,6 +25,14 @@ from freqtrade.util import FtPrecise, dt_now
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProfitStruct:
+    profit_abs: float
+    profit_ratio: float
+    total_profit: float
+    total_profit_ratio: float
 
 
 class Order(ModelBase):
@@ -906,14 +915,14 @@ class LocalTrade:
         return float(f"{profit:.8f}")
 
     def calc_profit_combined(self, rate: float, amount: Optional[float] = None,
-                             open_rate: Optional[float] = None):
+                             open_rate: Optional[float] = None) -> ProfitStruct:
         """
         Calculate profit metrics (absolute, ratio, total, total ratio).
         All calculations include fees.
         :param rate: close rate to compare with.
         :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
-        :return: TODO: fill me out
+        :return: Profit structure, containing absolute and relative profits.
         """
 
         close_trade_value = self.calc_close_trade_value(rate, amount)
@@ -943,13 +952,13 @@ class LocalTrade:
         )
         total_profit_ratio = float(f"{total_profit_ratio:.8f}")
         profit_abs = float(f"{profit_abs:.8f}")
-        res = {
-            'profit_abs': profit_abs,
-            'profit_ratio': profit_ratio,
-            'total_profit': profit_abs + self.realized_profit,
-            'total_profit_ratio': total_profit_ratio,
-        }
-        return res
+
+        return ProfitStruct(
+            profit_abs=profit_abs,
+            profit_ratio=profit_ratio,
+            total_profit=profit_abs + self.realized_profit,
+            total_profit_ratio=total_profit_ratio,
+        )
 
     def calc_profit_ratio(
             self, rate: float, amount: Optional[float] = None,

@@ -1159,21 +1159,21 @@ def test_calc_profit(
     trade.open_order_id = 'something'
 
     profit_res = trade.calc_profit_combined(close_rate)
-    assert pytest.approx(profit_res['profit_abs']) == round(profit, 8)
-    assert pytest.approx(profit_res['profit_ratio']) == round(profit_ratio, 8)
+    assert pytest.approx(profit_res.profit_abs) == round(profit, 8)
+    assert pytest.approx(profit_res.profit_ratio) == round(profit_ratio, 8)
 
-    assert pytest.approx(profit_res['total_profit']) == round(profit, 8)
-    # assert pytest.approx(profit_res['total_profit_ratio']) == round(profit_ratio, 8)
+    assert pytest.approx(profit_res.total_profit) == round(profit, 8)
+    # assert pytest.approx(profit_res.total_profit_ratio) == round(profit_ratio, 8)
 
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
 
     profit_res2 = trade.calc_profit_combined(close_rate, trade.amount, trade.open_rate)
-    assert pytest.approx(profit_res2['profit_abs']) == round(profit, 8)
-    assert pytest.approx(profit_res2['profit_ratio']) == round(profit_ratio, 8)
+    assert pytest.approx(profit_res2.profit_abs) == round(profit, 8)
+    assert pytest.approx(profit_res2.profit_ratio) == round(profit_ratio, 8)
 
-    assert pytest.approx(profit_res2['total_profit']) == round(profit, 8)
-    # assert pytest.approx(profit_res2['total_profit_ratio']) == round(profit_ratio, 8)
+    assert pytest.approx(profit_res2.total_profit) == round(profit, 8)
+    # assert pytest.approx(profit_res2.total_profit_ratio) == round(profit_ratio, 8)
 
     assert pytest.approx(trade.calc_profit(close_rate, trade.amount,
                          trade.open_rate)) == round(profit, 8)
