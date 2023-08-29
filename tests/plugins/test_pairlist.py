@@ -1370,7 +1370,9 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
     (['BTC/USD'],
      ['BTC/USD', 'BTC/USDT'],
      ['BTC/USD']),
-
+    (['BTC/USDT:USDT'],
+     ['BTC/USDT:USDT', 'BTC/USDT'],
+     ['BTC/USDT:USDT']),
 ])
 def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
     if expected is None:
