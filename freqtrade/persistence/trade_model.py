@@ -897,22 +897,14 @@ class LocalTrade:
                     open_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Deprecated - only available for backwards compatibility
         :param rate: close rate to compare with.
         :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
-        close_trade_value = self.calc_close_trade_value(rate, amount)
-        if amount is None or open_rate is None:
-            open_trade_value = self.open_trade_value
-        else:
-            open_trade_value = self._calc_open_trade_value(amount, open_rate)
-
-        if self.is_short:
-            profit = open_trade_value - close_trade_value
-        else:
-            profit = close_trade_value - open_trade_value
-        return float(f"{profit:.8f}")
+        prof = self.calc_profit_combined(rate, amount, open_rate)
+        return prof.profit_abs
 
     def calc_profit_combined(self, rate: float, amount: Optional[float] = None,
                              open_rate: Optional[float] = None) -> ProfitStruct:
