@@ -905,6 +905,52 @@ class LocalTrade:
             profit = close_trade_value - open_trade_value
         return float(f"{profit:.8f}")
 
+    def calc_profit_combined(self, rate: float, amount: Optional[float] = None,
+                             open_rate: Optional[float] = None):
+        """
+        Calculate profit metrics (absolute, ratio, total, total ratio).
+        All calculations include fees.
+        :param rate: close rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
+        :return: TODO: fill me out
+        """
+
+        close_trade_value = self.calc_close_trade_value(rate, amount)
+        if amount is None or open_rate is None:
+            open_trade_value = self.open_trade_value
+        else:
+            open_trade_value = self._calc_open_trade_value(amount, open_rate)
+
+        if self.is_short:
+            profit_abs = open_trade_value - close_trade_value
+        else:
+            profit_abs = close_trade_value - open_trade_value
+
+        try:
+            if self.is_short:
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
+            else:
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
+            profit_ratio = float(f"{profit_ratio:.8f}")
+        except ZeroDivisionError:
+            profit_ratio = 0.0
+
+        total_profit_abs = profit_abs + self.realized_profit
+        total_profit_ratio = (
+            (total_profit_abs / self.max_stake_amount) * self.leverage
+            if self.max_stake_amount else 0.0
+        )
+        total_profit_ratio = float(f"{total_profit_ratio:.8f}")
+        profit_abs = float(f"{profit_abs:.8f}")
+        res = {
+            'profit_abs': profit_abs,
+            'profit_ratio': profit_ratio,
+            'total_profit': profit_abs + self.realized_profit,
+            'total_profit_ratio': total_profit_ratio,
+        }
+        return res
+
     def calc_profit_ratio(
             self, rate: float, amount: Optional[float] = None,
             open_rate: Optional[float] = None) -> float:
