@@ -3458,6 +3458,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         close_date=dt_now(),
         exit_reason="sell_reason_whatever",
         stake_amount=0.245441 * 2,
+        leverage=1,
     )
     trade.orders = [
         Order(

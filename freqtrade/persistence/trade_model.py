@@ -924,15 +924,14 @@ class LocalTrade:
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and open_trade_value == 0.0)
-        leverage = self.leverage or 1.0
 
         if (short_close_zero or long_close_zero):
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = (1 - (close_trade_value / open_trade_value)) * leverage
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
             else:
-                profit_ratio = ((close_trade_value / open_trade_value) - 1) * leverage
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
 
         return float(f"{profit_ratio:.8f}")
 

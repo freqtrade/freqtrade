@@ -986,7 +986,7 @@ def test_api_performance(botclient, fee):
         fee_close=fee.return_value,
         fee_open=fee.return_value,
         close_rate=0.265441,
-
+        leverage=1.0,
     )
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)
@@ -1002,7 +1002,8 @@ def test_api_performance(botclient, fee):
         is_open=False,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
-        close_rate=0.391
+        close_rate=0.391,
+        leverage=1.0,
     )
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)
