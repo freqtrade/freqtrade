@@ -1161,6 +1161,8 @@ def test_calc_profit(
     profit_res = trade.calc_profit_combined(close_rate)
     assert pytest.approx(profit_res.profit_abs) == round(profit, 8)
     assert pytest.approx(profit_res.profit_ratio) == round(profit_ratio, 8)
+    val = trade.open_trade_value * (profit_res.profit_ratio) / lev
+    assert pytest.approx(val) == profit_res.profit_abs
 
     assert pytest.approx(profit_res.total_profit) == round(profit, 8)
     # assert pytest.approx(profit_res.total_profit_ratio) == round(profit_ratio, 8)
