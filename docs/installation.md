@@ -143,11 +143,11 @@ If you are on Debian, Ubuntu or MacOS, freqtrade provides the script to install 
 
 ### Activate your virtual environment
 
-Each time you open a new terminal, you must run `source .env/bin/activate` to activate your virtual environment.
+Each time you open a new terminal, you must run `source .venv/bin/activate` to activate your virtual environment.
 
 ```bash
-# then activate your .env
-source ./.env/bin/activate
+# activate virtual environment
+source ./.venv/bin/activate
 ```
 
 ### Congratulations
@@ -172,7 +172,7 @@ With this option, the script will install the bot and most dependencies:
 You will need to have git and python3.8+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv under `.env/`
+* Setup your virtualenv under `.venv/`
 
 This option is a combination of installation tasks and `--reset`
 
@@ -225,11 +225,11 @@ rm -rf ./ta-lib*
 You will run freqtrade in separated `virtual environment`
 
 ```bash
-# create virtualenv in directory /freqtrade/.env
-python3 -m venv .env
+# create virtualenv in directory /freqtrade/.venv
+python3 -m venv .venv
 
 # run virtualenv
-source .env/bin/activate
+source .venv/bin/activate
 ```
 
 #### Install python dependencies
@@ -286,7 +286,7 @@ cd freqtrade
 #### Freqtrade install: Conda Environment
 
 ```bash
-conda create --name freqtrade python=3.10
+conda create --name freqtrade python=3.11
 ```
 
 !!! Note "Creating Conda Environment"
@@ -383,7 +383,7 @@ You've made it this far, so you have successfully installed freqtrade.
 freqtrade create-userdir --userdir user_data
 
 # Step 2 - Create a new configuration file
-freqtrade new-config --config config.json
+freqtrade new-config --config user_data/config.json
 ```
 
 You are ready to run, read [Bot Configuration](configuration.md), remember to start with `dry_run: True` and verify that everything is working.
@@ -393,7 +393,7 @@ To learn how to setup your configuration, please refer to the [Bot Configuration
 ### Start the Bot
 
 ```bash
-freqtrade trade --config config.json --strategy SampleStrategy
+freqtrade trade --config user_data/config.json --strategy SampleStrategy
 ```
 
 !!! Warning
@@ -411,8 +411,8 @@ If you used (1)`Script` or (2)`Manual` installation, you need to run the bot in 
 # if:
 bash: freqtrade: command not found
 
-# then activate your .env
-source ./.env/bin/activate
+# then activate your virtual environment
+source ./.venv/bin/activate
 ```
 
 ### MacOS installation error

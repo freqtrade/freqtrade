@@ -706,7 +706,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert len(trades) - 1 == len(Trade.session.scalars(select(Trade)).all())
     rc = client_delete(client, f"{BASE_URI}/trades/2")
     assert_response(rc)
-    assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
+    assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 1 open orders.'
     assert len(trades) - 2 == len(Trade.session.scalars(select(Trade)).all())
     assert stoploss_mock.call_count == 1
 
@@ -841,7 +841,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2,
          'profit_factor': 0.0, 'winrate': 0.0, 'expectancy': -0.0033695635,
-         'expectancy_ratio': -1.0, 'trading_volume': 91.074,
+         'expectancy_ratio': -1.0, 'trading_volume': 75.945,
          }
     ),
     (
@@ -857,7 +857,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0,
          'profit_factor': None, 'winrate': 1.0, 'expectancy': 0.0003695635,
-         'expectancy_ratio': 100, 'trading_volume': 91.074,
+         'expectancy_ratio': 100, 'trading_volume': 75.945,
          }
     ),
     (
@@ -874,7 +874,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1,
          'profit_factor': 0.02775724835771106, 'winrate': 0.5,
          'expectancy': -0.0027145635000000003, 'expectancy_ratio': -0.48612137582114445,
-         'trading_volume': 91.074,
+         'trading_volume': 75.945,
          }
     )
 ])
@@ -1125,7 +1125,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
     assert_response(rc)
     resp_values = rc.json()
     assert len(resp_values) == 4
-    assert resp_values[0]['profit_abs'] is None
+    assert resp_values[0]['profit_abs'] == 0.0
 
 
 def test_api_version(botclient):
@@ -1429,12 +1429,12 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert len(rc.json()['data']) == amount
 
     assert (rc.json()['data'] ==
-            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+            [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
-             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
+             ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
                  8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 0, 0, 1511686500000, 8.893e-05,
                  None, None, None],
-             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+             ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None]
 
              ])
@@ -1448,13 +1448,13 @@ def test_api_pair_candles(botclient, ohlcv_history):
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
     assert (rc.json()['data'] ==
-            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+            [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, None, 0, 0, None, 1511686200000, None, None, None, None],
-             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, 0, 0, '2017-11-26 08:55:00',
+             ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, 0, 0, '2017-11-26T08:55:00Z',
                  1511686500000, 8.893e-05, None, None, None],
-             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
-                 0.7039405, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26 09:00:00', 1511686800000,
+             ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z', 1511686800000,
                  None, None, None, None]
              ])
 
@@ -1511,7 +1511,7 @@ def test_api_pair_history(botclient, mocker):
     date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
     rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
 
-    assert data[0][date_col_idx] == '2018-01-11 00:00:00'
+    assert data[0][date_col_idx] == '2018-01-11T00:00:00Z'
     assert data[0][rsi_col_idx] is not None
     assert data[0][rsi_col_idx] > 0
     assert lfm.call_count == 1

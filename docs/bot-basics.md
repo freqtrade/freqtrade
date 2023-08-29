@@ -7,7 +7,7 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 * **Strategy**: Your trading strategy, telling the bot what to do.
 * **Trade**: Open position.
 * **Open Order**: Order which is currently placed on the exchange, and is not yet complete.
-* **Pair**: Tradable pair, usually in the format of Base/Quote (e.g. XRP/USDT).
+* **Pair**: Tradable pair, usually in the format of Base/Quote (e.g. `XRP/USDT` for spot, `XRP/USDT:USDT` for futures).
 * **Timeframe**: Candle length to use (e.g. `"5m"`, `"1h"`, ...).
 * **Indicators**: Technical indicators (SMA, EMA, RSI, ...).
 * **Limit order**: Limit orders which execute at the defined limit price or better.
@@ -19,6 +19,20 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 ## Fee handling
 
 All profit calculations of Freqtrade include fees. For Backtesting / Hyperopt / Dry-run modes, the exchange default fee is used (lowest tier on the exchange). For live operations, fees are used as applied by the exchange (this includes BNB rebates etc.).
+
+## Pair naming
+
+Freqtrade follows the [ccxt naming convention](https://docs.ccxt.com/#/README?id=consistency-of-base-and-quote-currencies) for currencies.
+Using the wrong naming convention in the wrong market will usually result in the bot not recognizing the pair, usually resulting in errors like "this pair is not available".
+
+### Spot pair naming
+
+For spot pairs, naming will be `base/quote` (e.g. `ETH/USDT`).
+
+### Futures pair naming
+
+For futures pairs, naming will be `base/quote:settle` (e.g. `ETH/USDT:USDT`).
+
 
 ## Bot execution logic
 

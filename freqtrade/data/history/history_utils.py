@@ -10,14 +10,16 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
                                  DL_DATA_TIMEFRAMES, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
-                                      trades_remove_duplicates, trades_to_ohlcv)
+                                      trades_df_remove_duplicates, trades_list_to_df,
+                                      trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
-from freqtrade.util import format_ms_time
+from freqtrade.util import dt_ts, format_ms_time
 from freqtrade.util.binance_mig import migrate_binance_futures_data
+from freqtrade.util.datetime_helpers import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -349,24 +351,27 @@ def _download_trades_history(exchange: Exchange,
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
 
-        if trades and since < trades[0][0]:
+        if not trades.empty and since > 0 and since < trades.iloc[0]['timestamp']:
             # since is before the first trade
-            logger.info(f"Start earlier than available data. Redownloading trades for {pair}...")
-            trades = []
+            logger.info(f"Start ({trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}) earlier than "
+                        f"available data. Redownloading trades for {pair}...")
+            trades = trades_list_to_df([])
 
-        if not since:
-            since = int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
-
-        from_id = trades[-1][1] if trades else None
-        if trades and since < trades[-1][0]:
+        from_id = trades.iloc[-1]['id'] if not trades.empty else None
+        if not trades.empty and since < trades.iloc[-1]['timestamp']:
             # Reset since to the last available point
             # - 5 seconds (to ensure we're getting all trades)
-            since = trades[-1][0] - (5 * 1000)
+            since = trades.iloc[-1]['timestamp'] - (5 * 1000)
             logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
                         f"since: {format_ms_time(since)}.")
 
-        logger.debug(f"Current Start: {format_ms_time(trades[0][0]) if trades else 'None'}")
-        logger.debug(f"Current End: {format_ms_time(trades[-1][0]) if trades else 'None'}")
+        if not since:
+            since = dt_ts(dt_now() - timedelta(days=new_pairs_days))
+
+        logger.debug("Current Start: %s", 'None' if trades.empty else
+                     f"{trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}")
+        logger.debug("Current End: %s", 'None' if trades.empty else
+                     f"{trades.iloc[-1]['date']:{DATETIME_PRINT_FORMAT}}")
         logger.info(f"Current Amount of trades: {len(trades)}")
 
         # Default since_ms to 30 days if nothing is given
@@ -375,13 +380,16 @@ def _download_trades_history(exchange: Exchange,
                                                   until=until,
                                                   from_id=from_id,
                                                   )
-        trades.extend(new_trades[1])
+        new_trades_df = trades_list_to_df(new_trades[1])
+        trades = concat([trades, new_trades_df], axis=0)
         # Remove duplicates to make sure we're not storing data we don't need
-        trades = trades_remove_duplicates(trades)
+        trades = trades_df_remove_duplicates(trades)
         data_handler.trades_store(pair, data=trades)
 
-        logger.debug(f"New Start: {format_ms_time(trades[0][0])}")
-        logger.debug(f"New End: {format_ms_time(trades[-1][0])}")
+        logger.debug("New Start: %s", 'None' if trades.empty else
+                     f"{trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}")
+        logger.debug("New End: %s", 'None' if trades.empty else
+                     f"{trades.iloc[-1]['date']:{DATETIME_PRINT_FORMAT}}")
         logger.info(f"New Amount of trades: {len(trades)}")
         return True
 

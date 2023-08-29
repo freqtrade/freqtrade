@@ -3,6 +3,7 @@
 import json
 import logging
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from shutil import copyfile
 from unittest.mock import MagicMock, PropertyMock
@@ -26,7 +27,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.util import dt_utc
+from freqtrade.util import dt_ts, dt_utc
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_patched_exchange, log_has, log_has_re,
                             patch_exchange)
 
@@ -569,7 +570,10 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
 
 
 def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog,
-                                 tmpdir) -> None:
+                                 tmpdir, time_machine) -> None:
+    start_dt = dt_utc(2023, 1, 1)
+    time_machine.move_to(start_dt, tick=False)
+
     tmpdir1 = Path(tmpdir)
     ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
     mocker.patch(f'{EXMS}.get_historic_trades', ght_mock)
@@ -581,8 +585,13 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
                                     pair='ETH/BTC')
-    assert log_has("New Amount of trades: 5", caplog)
+    assert log_has("Current Amount of trades: 0", caplog)
+    assert log_has("New Amount of trades: 6", caplog)
+    assert ght_mock.call_count == 1
+    # Default "since" - 30 days before current day.
+    assert ght_mock.call_args_list[0][1]['since'] == dt_ts(start_dt - timedelta(days=30))
     assert file1.is_file()
+    caplog.clear()
 
     ght_mock.reset_mock()
     since_time = int(trades_history[-3][0] // 1000)
@@ -599,6 +608,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     file1.unlink()
 
     mocker.patch(f'{EXMS}.get_historic_trades', MagicMock(side_effect=ValueError))
+    caplog.clear()
 
     assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
                                         pair='ETH/BTC')
@@ -620,7 +630,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
 
     assert int(ght_mock.call_args_list[0][1]['since'] // 1000) == since_time
     assert ght_mock.call_args_list[0][1]['from_id'] is None
-    assert log_has_re(r'Start earlier than available data. Redownloading trades for.*', caplog)
+    assert log_has_re(r'Start .* earlier than available data. Redownloading trades for.*', caplog)
     _clean_test_file(file2)
 
 
@@ -651,10 +661,10 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
 
     assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
     assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
-
-    assert not log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    msg = 'Could not convert NoDatapair to OHLCV.'
+    assert not log_has(msg, caplog)
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
                             datadir=tmpdir1, timerange=tr, erase=True)
-    assert log_has('Could not convert NoDatapair to OHLCV.', caplog)
+    assert log_has(msg, caplog)

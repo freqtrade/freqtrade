@@ -38,8 +38,7 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList', '
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod',
                          'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
-AVAILABLE_DATAHANDLERS_TRADES = ['json', 'jsongz', 'hdf5', 'feather']
-AVAILABLE_DATAHANDLERS = AVAILABLE_DATAHANDLERS_TRADES + ['parquet']
+AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5', 'feather', 'parquet']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
 BACKTEST_CACHE_AGE = ['none', 'day', 'week', 'month']
 BACKTEST_CACHE_DEFAULT = 'day'
@@ -50,6 +49,15 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
+TRADES_DTYPES = {
+    'timestamp': 'int64',
+    'id': 'str',
+    'type': 'str',
+    'side': 'str',
+    'price': 'float64',
+    'amount': 'float64',
+    'cost': 'float64',
+}
 TRADING_MODES = ['spot', 'margin', 'futures']
 MARGIN_MODES = ['cross', 'isolated', '']
 
@@ -450,7 +458,7 @@ CONF_SCHEMA = {
         },
         'dataformat_trades': {
             'type': 'string',
-            'enum': AVAILABLE_DATAHANDLERS_TRADES,
+            'enum': AVAILABLE_DATAHANDLERS,
             'default': 'feather'
         },
         'position_adjustment_enable': {'type': 'boolean'},
@@ -666,6 +674,9 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dry_run',
     'dataformat_ohlcv',
     'dataformat_trades',
+]
+SCHEMA_MINIMAL_WEBSERVER = SCHEMA_MINIMAL_REQUIRED + [
+    'api_server',
 ]
 
 CANCEL_REASON = {

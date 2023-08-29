@@ -31,8 +31,8 @@ Other versions must be downloaded from the above link.
 
 ``` powershell
 cd \path\freqtrade
-python -m venv .env
-.env\Scripts\activate.ps1
+python -m venv .venv
+.venv\Scripts\activate.ps1
 # optionally install ta-lib from wheel
 # Eventually adjust the below filename to match the downloaded wheel
 pip install --find-links build_helpers\ TA-Lib -U

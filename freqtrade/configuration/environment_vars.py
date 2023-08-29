@@ -41,7 +41,7 @@ def flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str,
             key = env_var.replace(prefix, '')
             for k in reversed(key.split('__')):
                 val = {k.lower(): get_var_typed(val)
-                       if type(val) != dict and k not in no_convert else val}
+                       if not isinstance(val, dict) and k not in no_convert else val}
             relevant_vars = deep_merge_dicts(val, relevant_vars)
     return relevant_vars
 

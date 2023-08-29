@@ -78,19 +78,7 @@ class {{ strategy }}(IStrategy):
     buy_rsi = IntParameter(10, 40, default=30, space="buy")
     sell_rsi = IntParameter(60, 90, default=70, space="sell")
 
-    # Optional order type mapping.
-    order_types = {
-        'entry': 'limit',
-        'exit': 'limit',
-        'stoploss': 'market',
-        'stoploss_on_exchange': False
-    }
-
-    # Optional order time in force.
-    order_time_in_force = {
-        'entry': 'GTC',
-        'exit': 'GTC'
-    }
+    {{ attributes | indent(4) }}
     {{ plot_config | indent(4) }}
 
     def informative_pairs(self):

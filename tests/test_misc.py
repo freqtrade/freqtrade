@@ -9,8 +9,7 @@ import pytest
 
 from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
                             file_load_json, is_file_in_dir, json_to_dataframe, pair_to_filename,
-                            parse_db_uri_for_logging, plural, render_template,
-                            render_template_with_fallback, round_coin_value, safe_value_fallback,
+                            parse_db_uri_for_logging, plural, round_coin_value, safe_value_fallback,
                             safe_value_fallback2)
 
 
@@ -175,20 +174,6 @@ def test_plural() -> None:
     assert plural(1.5, "ox", "oxen") == "oxen"
     assert plural(-0.5, "ox", "oxen") == "oxen"
     assert plural(-1.5, "ox", "oxen") == "oxen"
-
-
-def test_render_template_fallback(mocker):
-    from jinja2.exceptions import TemplateNotFound
-    with pytest.raises(TemplateNotFound):
-        val = render_template(
-            templatefile='subtemplates/indicators_does-not-exist.j2',)
-
-    val = render_template_with_fallback(
-        templatefile='strategy_subtemplates/indicators_does-not-exist.j2',
-        templatefallbackfile='strategy_subtemplates/indicators_minimal.j2',
-    )
-    assert isinstance(val, str)
-    assert 'if self.dp' in val
 
 
 @pytest.mark.parametrize('conn_url,expected', [
