@@ -271,8 +271,9 @@ class RPC:
                     profit_str = f'{NAN:.2%}'
                 else:
                     if trade.nr_of_successful_entries > 0:
-                        trade_profit = trade.calc_profit(current_rate)
-                        profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                        profit = trade.calc_profit_combined(current_rate)
+                        trade_profit = profit.profit_abs
+                        profit_str = f'{profit.profit_ratio:.2%}'
                     else:
                         trade_profit = 0.0
                         profit_str = f'{0.0:.2f}'
@@ -491,9 +492,10 @@ class RPC:
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit_ratio = trade.calc_profit_ratio(rate=current_rate)
-                    profit_abs = trade.calc_profit(
-                        rate=trade.close_rate or current_rate) + trade.realized_profit
+                    profit = trade.calc_profit_combined(trade.close_rate or current_rate)
+
+                    profit_ratio = profit.profit_ratio
+                    profit_abs = profit.total_profit
 
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
