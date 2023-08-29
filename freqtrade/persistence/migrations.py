@@ -88,6 +88,9 @@ def migrate_trades_and_orders_table(
     stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
     initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
     initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
+    is_stop_loss_trailing = get_column_def(
+        cols, 'is_stop_loss_trailing',
+        f'coalesce({stop_loss_pct}, 0.0) <> coalesce({initial_stop_loss_pct}, 0.0)')
     stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
     stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
@@ -156,7 +159,7 @@ def migrate_trades_and_orders_table(
             open_rate_requested, close_rate, close_rate_requested, close_profit,
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
-            stoploss_order_id, stoploss_last_update,
+            is_stop_loss_trailing, stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
@@ -175,6 +178,7 @@ def migrate_trades_and_orders_table(
             {stop_loss} stop_loss, {stop_loss_pct} stop_loss_pct,
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
+            {is_stop_loss_trailing} is_stop_loss_trailing,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate,
             case when {exit_reason} = 'sell_signal' then 'exit_signal'
@@ -316,8 +320,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    # if not has_column(cols_trades, 'max_stake_amount'):
-    if not has_column(cols_orders, 'ft_price'):
+    # if not has_column(cols_orders, 'ft_price'):
+    if not has_column(cols_trades, 'is_stop_loss_trailing'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")

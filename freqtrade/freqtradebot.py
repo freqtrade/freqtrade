@@ -1870,15 +1870,23 @@ class FreqtradeBot(LoggingMixin):
 
         trade.update_trade(order_obj)
 
-        if order.get('status') in constants.NON_OPEN_EXCHANGE_STATES:
+        trade = self._update_trade_after_fill(trade, order_obj)
+        Trade.commit()
+
+        self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
+
+        return False
+
+    def _update_trade_after_fill(self, trade: Trade, order: Order) -> Trade:
+        if order.status in constants.NON_OPEN_EXCHANGE_STATES:
             # If a entry order was closed, force update on stoploss on exchange
-            if order.get('side') == trade.entry_side:
+            if order.ft_order_side == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
                 if not self.edge:
                     # TODO: should shorting/leverage be supported by Edge,
                     # then this will need to be fixed.
                     trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            if order.get('side') == trade.entry_side or (trade.amount > 0 and trade.is_open):
+            if order.ft_order_side == trade.entry_side or (trade.amount > 0 and trade.is_open):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
@@ -1894,13 +1902,16 @@ class FreqtradeBot(LoggingMixin):
                     ))
                 except DependencyException:
                     logger.warning('Unable to calculate liquidation price')
+                if self.strategy.use_custom_stoploss:
+                    current_rate = self.exchange.get_rate(
+                        trade.pair, side='exit', is_short=trade.is_short, refresh=True)
+                    profit = trade.calc_profit_ratio(current_rate)
+                    self.strategy.ft_stoploss_adjust(current_rate, trade,
+                                                     datetime.now(timezone.utc), profit, 0,
+                                                     after_fill=True)
             # Updating wallets when order is closed
             self.wallets.update()
-        Trade.commit()
-
-        self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
-
-        return False
+        return trade
 
     def order_close_notify(
             self, trade: Trade, order: Order, stoploss_order: bool, send_msg: bool):
