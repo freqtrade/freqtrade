@@ -289,10 +289,11 @@ def price_to_precision(
             ticks = price * (10**ndigits)
             if rounding_mode == ROUND_UP:
                 return ceil(ticks) / (10**ndigits)
-            if rounding_mode == TRUNCATE:
-                return int(ticks) / (10**ndigits)
             if rounding_mode == ROUND_DOWN:
                 return floor(ticks) / (10**ndigits)
+            if rounding_mode == TRUNCATE:
+                return int(ticks) / (10**ndigits)
+
             raise ValueError(f"Unknown rounding_mode {rounding_mode}")
         raise ValueError(f"Unknown precisionMode {precisionMode}")
     return price
