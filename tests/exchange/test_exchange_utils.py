@@ -182,23 +182,23 @@ def test_timeframe_to_next_date():
 
 
 @pytest.mark.parametrize("amount,precision_mode,precision,expected", [
-    (2.34559, 2, 4, 2.3455),
-    (2.34559, 2, 5, 2.34559),
-    (2.34559, 2, 3, 2.345),
-    (2.9999, 2, 3, 2.999),
-    (2.9909, 2, 3, 2.990),
-    (2.9909, 2, 0, 2),
-    (29991.5555, 2, 0, 29991),
-    (29991.5555, 2, -1, 29990),
-    (29991.5555, 2, -2, 29900),
+    (2.34559, DECIMAL_PLACES, 4, 2.3455),
+    (2.34559, DECIMAL_PLACES, 5, 2.34559),
+    (2.34559, DECIMAL_PLACES, 3, 2.345),
+    (2.9999, DECIMAL_PLACES, 3, 2.999),
+    (2.9909, DECIMAL_PLACES, 3, 2.990),
+    (2.9909, DECIMAL_PLACES, 0, 2),
+    (29991.5555, DECIMAL_PLACES, 0, 29991),
+    (29991.5555, DECIMAL_PLACES, -1, 29990),
+    (29991.5555, DECIMAL_PLACES, -2, 29900),
     # Tests for Tick-size
-    (2.34559, 4, 0.0001, 2.3455),
-    (2.34559, 4, 0.00001, 2.34559),
-    (2.34559, 4, 0.001, 2.345),
-    (2.9999, 4, 0.001, 2.999),
-    (2.9909, 4, 0.001, 2.990),
-    (2.9909, 4, 0.005, 2.99),
-    (2.9999, 4, 0.005, 2.995),
+    (2.34559, TICK_SIZE, 0.0001, 2.3455),
+    (2.34559, TICK_SIZE, 0.00001, 2.34559),
+    (2.34559, TICK_SIZE, 0.001, 2.345),
+    (2.9999, TICK_SIZE, 0.001, 2.999),
+    (2.9909, TICK_SIZE, 0.001, 2.990),
+    (2.9909, TICK_SIZE, 0.005, 2.99),
+    (2.9999, TICK_SIZE, 0.005, 2.995),
 ])
 def test_amount_to_precision(amount, precision_mode, precision, expected,):
     """
@@ -214,11 +214,11 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected,rounding_mode", [
     # Tests for DECIMAL_PLACES, ROUND_UP
-    (2.34559, 2, 4, 2.3456, ROUND_UP),
-    (2.34559, 2, 5, 2.34559, ROUND_UP),
-    (2.34559, 2, 3, 2.346, ROUND_UP),
-    (2.9999, 2, 3, 3.000, ROUND_UP),
-    (2.9909, 2, 3, 2.991, ROUND_UP),
+    (2.34559, DECIMAL_PLACES, 4, 2.3456, ROUND_UP),
+    (2.34559, DECIMAL_PLACES, 5, 2.34559, ROUND_UP),
+    (2.34559, DECIMAL_PLACES, 3, 2.346, ROUND_UP),
+    (2.9999, DECIMAL_PLACES, 3, 3.000, ROUND_UP),
+    (2.9909, DECIMAL_PLACES, 3, 2.991, ROUND_UP),
     # Tests for DECIMAL_PLACES, ROUND
     (2.345600000000001, DECIMAL_PLACES, 4, 2.3456, ROUND),
     (2.345551, DECIMAL_PLACES, 4, 2.3456, ROUND),
@@ -251,11 +251,11 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (234.24, TICK_SIZE, 0.5, 234., ROUND),
     (234.26, TICK_SIZE, 0.5, 234.5, ROUND),
     # Tests for TRUNCATTE
-    (2.34559, 2, 4, 2.3455, TRUNCATE),
-    (2.34559, 2, 5, 2.34559, TRUNCATE),
-    (2.34559, 2, 3, 2.345, TRUNCATE),
-    (2.9999, 2, 3, 2.999, TRUNCATE),
-    (2.9909, 2, 3, 2.990, TRUNCATE),
+    (2.34559, DECIMAL_PLACES, 4, 2.3455, TRUNCATE),
+    (2.34559, DECIMAL_PLACES, 5, 2.34559, TRUNCATE),
+    (2.34559, DECIMAL_PLACES, 3, 2.345, TRUNCATE),
+    (2.9999, DECIMAL_PLACES, 3, 2.999, TRUNCATE),
+    (2.9909, DECIMAL_PLACES, 3, 2.990, TRUNCATE),
 ])
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
     assert price_to_precision(
