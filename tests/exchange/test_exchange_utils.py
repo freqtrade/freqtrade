@@ -2,7 +2,8 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE, TRUNCATE
+from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
+                  TRUNCATE)
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -228,6 +229,11 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (2.34559, DECIMAL_PLACES, 3, 2.346, ROUND_UP),
     (2.9999, DECIMAL_PLACES, 3, 3.000, ROUND_UP),
     (2.9909, DECIMAL_PLACES, 3, 2.991, ROUND_UP),
+    (2.9901, DECIMAL_PLACES, 3, 2.991, ROUND_UP),
+    (2.34559, DECIMAL_PLACES, 5, 2.34559, ROUND_DOWN),
+    (2.34559, DECIMAL_PLACES, 4, 2.3455, ROUND_DOWN),
+    (2.9901, DECIMAL_PLACES, 3, 2.990, ROUND_DOWN),
+    (0.00299, DECIMAL_PLACES, 3, 0.002, ROUND_DOWN),
     # Tests for DECIMAL_PLACES, ROUND
     (2.345600000000001, DECIMAL_PLACES, 4, 2.3456, ROUND),
     (2.345551, DECIMAL_PLACES, 4, 2.3456, ROUND),
@@ -265,6 +271,9 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (2.34559, DECIMAL_PLACES, 3, 2.345, TRUNCATE),
     (2.9999, DECIMAL_PLACES, 3, 2.999, TRUNCATE),
     (2.9909, DECIMAL_PLACES, 3, 2.990, TRUNCATE),
+    (2.9909, TICK_SIZE, 0.001, 2.990, TRUNCATE),
+    (2.9909, TICK_SIZE, 0.01, 2.99, TRUNCATE),
+    (2.9909, TICK_SIZE, 0.1, 2.9, TRUNCATE),
 ])
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
     assert price_to_precision(
