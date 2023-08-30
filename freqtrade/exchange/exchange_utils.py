@@ -271,6 +271,13 @@ def price_to_precision(
     :return: price rounded up to the precision the Exchange accepts
     """
     if price_precision is not None and precisionMode is not None:
+        if rounding_mode not in (ROUND_UP, ROUND_DOWN):
+            # Use CCXT code where possible.
+            return float(decimal_to_precision(price, rounding_mode=rounding_mode,
+                                              precision=price_precision,
+                                              counting_mode=precisionMode
+                                              ))
+
         if precisionMode == TICK_SIZE:
             if rounding_mode == ROUND:
                 ticks = price / price_precision
@@ -283,16 +290,13 @@ def price_to_precision(
                 return round(float(str(price_str - missing + precision)), 14)
             return price
         elif precisionMode in (SIGNIFICANT_DIGITS, DECIMAL_PLACES):
+
             ndigits = round(price_precision)
-            if rounding_mode == ROUND:
-                return round(price, ndigits)
             ticks = price * (10**ndigits)
             if rounding_mode == ROUND_UP:
                 return ceil(ticks) / (10**ndigits)
             if rounding_mode == ROUND_DOWN:
                 return floor(ticks) / (10**ndigits)
-            if rounding_mode == TRUNCATE:
-                return int(ticks) / (10**ndigits)
 
             raise ValueError(f"Unknown rounding_mode {rounding_mode}")
         raise ValueError(f"Unknown precisionMode {precisionMode}")
