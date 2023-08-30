@@ -17,7 +17,6 @@ from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, market_is_ac
                                 timeframe_to_prev_date)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_exchange_credentials)
-from freqtrade.exchange.exchange import amount_to_contract_precision
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.util import dt_now, dt_ts
 from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_patched_exchange,
@@ -4447,20 +4446,6 @@ def test_amount_to_contract_precision(
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     result_size = exchange.amount_to_contract_precision(pair, amount)
     assert result_size == expected_fut
-
-
-@pytest.mark.parametrize('amount,precision,precision_mode,contract_size,expected', [
-    (1.17, 1.0, 4, 0.01, 1.17),  # Tick size
-    (1.17, 1.0, 2, 0.01, 1.17),  #
-    (1.16, 1.0, 4, 0.01, 1.16),  #
-    (1.16, 1.0, 2, 0.01, 1.16),  #
-    (1.13, 1.0, 2, 0.01, 1.13),  #
-    (10.988, 1.0, 2, 10, 10),
-    (10.988, 1.0, 4, 10, 10),
-])
-def test_amount_to_contract_precision2(amount, precision, precision_mode, contract_size, expected):
-    res = amount_to_contract_precision(amount, precision, precision_mode, contract_size)
-    assert pytest.approx(res) == expected
 
 
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,margin_mode', [

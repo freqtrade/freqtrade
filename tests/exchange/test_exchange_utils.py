@@ -6,9 +6,10 @@ from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, TICK_SIZE, TRUNCATE
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (amount_to_precision, date_minus_candles, price_to_precision,
-                                timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
-                                timeframe_to_prev_date, timeframe_to_seconds)
+from freqtrade.exchange import (amount_to_contract_precision, amount_to_precision,
+                                date_minus_candles, price_to_precision, timeframe_to_minutes,
+                                timeframe_to_msecs, timeframe_to_next_date, timeframe_to_prev_date,
+                                timeframe_to_seconds)
 from freqtrade.exchange.check_exchange import check_exchange
 from tests.conftest import log_has_re
 
@@ -259,3 +260,18 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
     assert price_to_precision(
         price, precision, precision_mode, rounding_mode=rounding_mode) == expected
+
+
+@pytest.mark.parametrize('amount,precision,precision_mode,contract_size,expected', [
+    (1.17, 1.0, 4, 0.01, 1.17),  # Tick size
+    (1.17, 1.0, 2, 0.01, 1.17),  #
+    (1.16, 1.0, 4, 0.01, 1.16),  #
+    (1.16, 1.0, 2, 0.01, 1.16),  #
+    (1.13, 1.0, 2, 0.01, 1.13),  #
+    (10.988, 1.0, 2, 10, 10),
+    (10.988, 1.0, 4, 10, 10),
+])
+def test_amount_to_contract_precision_standalone(amount, precision, precision_mode, contract_size,
+                                                 expected):
+    res = amount_to_contract_precision(amount, precision, precision_mode, contract_size)
+    assert pytest.approx(res) == expected
