@@ -1,9 +1,11 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import date_minus_candles, timeframe_to_prev_date
 from freqtrade.exchange.check_exchange import check_exchange
 from tests.conftest import log_has_re
 
@@ -83,3 +85,14 @@ def test_check_exchange(default_conf, caplog) -> None:
     with pytest.raises(OperationalException,
                        match=r'This command requires a configured exchange.*'):
         check_exchange(default_conf)
+
+
+def test_date_minus_candles():
+
+    date = datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)
+
+    assert date_minus_candles("5m", 3, date) == date - timedelta(minutes=15)
+    assert date_minus_candles("5m", 5, date) == date - timedelta(minutes=25)
+    assert date_minus_candles("1m", 6, date) == date - timedelta(minutes=6)
+    assert date_minus_candles("1h", 3, date) == date - timedelta(hours=3, minutes=25)
+    assert date_minus_candles("1h", 3) == timeframe_to_prev_date('1h') - timedelta(hours=3)
