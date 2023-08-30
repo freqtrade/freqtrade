@@ -248,6 +248,39 @@ def amount_to_contract_precision(
     return amount
 
 
+def __price_to_precision_significant_digits(
+    price: float,
+    price_precision: float,
+    *,
+    rounding_mode: int = ROUND,
+) -> float:
+    """
+    Implementation of ROUND_UP/Round_down for significant digits mode.
+    """
+    from decimal import ROUND_DOWN as dec_ROUND_DOWN
+    from decimal import ROUND_UP as dec_ROUND_UP
+    from decimal import Decimal
+    dec = Decimal(str(price))
+    string = f'{dec:f}'
+    precision = round(price_precision)
+
+    q = precision - dec.adjusted() - 1
+    sigfig = Decimal('10') ** -q
+    if q < 0:
+        string_to_precision = string[:precision]
+        # string_to_precision is '' when we have zero precision
+        below = sigfig * Decimal(string_to_precision if string_to_precision else '0')
+        above = below + sigfig
+        res = above if rounding_mode == ROUND_UP else below
+        precise = f'{res:f}'
+    else:
+        precise = '{:f}'.format(dec.quantize(
+            sigfig,
+            rounding=dec_ROUND_DOWN if rounding_mode == ROUND_DOWN else dec_ROUND_UP)
+        )
+    return float(precise)
+
+
 def price_to_precision(
     price: float,
     price_precision: Optional[float],
@@ -289,7 +322,7 @@ def price_to_precision(
                     res = price_str - missing
                 return round(float(str(res)), 14)
             return price
-        elif precisionMode in (SIGNIFICANT_DIGITS, DECIMAL_PLACES):
+        elif precisionMode == DECIMAL_PLACES:
 
             ndigits = round(price_precision)
             ticks = price * (10**ndigits)
@@ -299,5 +332,11 @@ def price_to_precision(
                 return floor(ticks) / (10**ndigits)
 
             raise ValueError(f"Unknown rounding_mode {rounding_mode}")
+        elif precisionMode == SIGNIFICANT_DIGITS:
+            if rounding_mode in (ROUND_UP, ROUND_DOWN):
+                return __price_to_precision_significant_digits(
+                    price, price_precision, rounding_mode=rounding_mode
+                )
+
         raise ValueError(f"Unknown precisionMode {precisionMode}")
     return price
