@@ -14,8 +14,7 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeE
                                   InsufficientFundsError, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, market_is_active,
-                                timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
-                                timeframe_to_prev_date, timeframe_to_seconds)
+                                timeframe_to_prev_date)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_exchange_credentials)
 from freqtrade.exchange.exchange import amount_to_contract_precision
@@ -283,8 +282,6 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     # Patch to see if this will pass if the values are in the ft dict
     ex._ft_has.update({"order_time_in_force": ["GTC", "FOK", "IOC"]})
     ex.validate_order_time_in_force(tif2)
-
-
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -3557,86 +3554,6 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
             # This should only run for bittrex
             assert exchange_name == 'bittrex'
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == expected
-
-
-def test_timeframe_to_minutes():
-    assert timeframe_to_minutes("5m") == 5
-    assert timeframe_to_minutes("10m") == 10
-    assert timeframe_to_minutes("1h") == 60
-    assert timeframe_to_minutes("1d") == 1440
-
-
-def test_timeframe_to_seconds():
-    assert timeframe_to_seconds("5m") == 300
-    assert timeframe_to_seconds("10m") == 600
-    assert timeframe_to_seconds("1h") == 3600
-    assert timeframe_to_seconds("1d") == 86400
-
-
-def test_timeframe_to_msecs():
-    assert timeframe_to_msecs("5m") == 300000
-    assert timeframe_to_msecs("10m") == 600000
-    assert timeframe_to_msecs("1h") == 3600000
-    assert timeframe_to_msecs("1d") == 86400000
-
-
-def test_timeframe_to_prev_date():
-    # 2019-08-12 13:22:08
-    date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
-
-    tf_list = [
-        # 5m -> 2019-08-12 13:20:00
-        ("5m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
-        # 10m -> 2019-08-12 13:20:00
-        ("10m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)),
-        # 1h -> 2019-08-12 13:00:00
-        ("1h", datetime(2019, 8, 12, 13, 00, 0, tzinfo=timezone.utc)),
-        # 2h -> 2019-08-12 12:00:00
-        ("2h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
-        # 4h -> 2019-08-12 12:00:00
-        ("4h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=timezone.utc)),
-        # 1d -> 2019-08-12 00:00:00
-        ("1d", datetime(2019, 8, 12, 00, 00, 0, tzinfo=timezone.utc)),
-    ]
-    for interval, result in tf_list:
-        assert timeframe_to_prev_date(interval, date) == result
-
-    date = datetime.now(tz=timezone.utc)
-    assert timeframe_to_prev_date("5m") < date
-    # Does not round
-    time = datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
-    assert timeframe_to_prev_date('5m', time) == time
-    time = datetime(2019, 8, 12, 13, 0, 0, tzinfo=timezone.utc)
-    assert timeframe_to_prev_date('1h', time) == time
-
-
-def test_timeframe_to_next_date():
-    # 2019-08-12 13:22:08
-    date = datetime.fromtimestamp(1565616128, tz=timezone.utc)
-    tf_list = [
-        # 5m -> 2019-08-12 13:25:00
-        ("5m", datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)),
-        # 10m -> 2019-08-12 13:30:00
-        ("10m", datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)),
-        # 1h -> 2019-08-12 14:00:00
-        ("1h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
-        # 2h -> 2019-08-12 14:00:00
-        ("2h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=timezone.utc)),
-        # 4h -> 2019-08-12 14:00:00
-        ("4h", datetime(2019, 8, 12, 16, 00, 0, tzinfo=timezone.utc)),
-        # 1d -> 2019-08-13 00:00:00
-        ("1d", datetime(2019, 8, 13, 0, 0, 0, tzinfo=timezone.utc)),
-    ]
-
-    for interval, result in tf_list:
-        assert timeframe_to_next_date(interval, date) == result
-
-    date = datetime.now(tz=timezone.utc)
-    assert timeframe_to_next_date("5m") > date
-
-    date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
-    assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
-
 
 
 @pytest.mark.parametrize(
