@@ -279,15 +279,15 @@ def price_to_precision(
                                               ))
 
         if precisionMode == TICK_SIZE:
-            if rounding_mode == ROUND:
-                ticks = price / price_precision
-                rounded_ticks = round(ticks)
-                return rounded_ticks * price_precision
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
             if not missing == FtPrecise("0"):
-                return round(float(str(price_str - missing + precision)), 14)
+                if rounding_mode == ROUND_UP:
+                    res = price_str - missing + precision
+                elif rounding_mode == ROUND_DOWN:
+                    res = price_str - missing
+                return round(float(str(res)), 14)
             return price
         elif precisionMode in (SIGNIFICANT_DIGITS, DECIMAL_PLACES):
 
