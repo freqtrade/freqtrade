@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, TICK_SIZE, TRUNCATE
+from ccxt import DECIMAL_PLACES, ROUND, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE, TRUNCATE
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -191,6 +191,15 @@ def test_timeframe_to_next_date():
     (29991.5555, DECIMAL_PLACES, 0, 29991),
     (29991.5555, DECIMAL_PLACES, -1, 29990),
     (29991.5555, DECIMAL_PLACES, -2, 29900),
+    # Tests for
+    (2.34559, SIGNIFICANT_DIGITS, 4, 2.345),
+    (2.34559, SIGNIFICANT_DIGITS, 5, 2.3455),
+    (2.34559, SIGNIFICANT_DIGITS, 3, 2.34),
+    (2.9999, SIGNIFICANT_DIGITS, 3, 2.99),
+    (2.9909, SIGNIFICANT_DIGITS, 3, 2.99),
+    (0.0000077723, SIGNIFICANT_DIGITS, 5, 0.0000077723),
+    (0.0000077723, SIGNIFICANT_DIGITS, 3, 0.00000777),
+    (0.0000077723, SIGNIFICANT_DIGITS, 1, 0.000007),
     # Tests for Tick-size
     (2.34559, TICK_SIZE, 0.0001, 2.3455),
     (2.34559, TICK_SIZE, 0.00001, 2.34559),
