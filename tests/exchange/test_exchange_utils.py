@@ -241,6 +241,9 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (2.51, DECIMAL_PLACES, 0, 3., ROUND),
     (5.1, DECIMAL_PLACES, -1, 10., ROUND),
     (4.9, DECIMAL_PLACES, -1, 0., ROUND),
+    (0.000007222, SIGNIFICANT_DIGITS, 1, 0.000007, ROUND),
+    (0.000007222, SIGNIFICANT_DIGITS, 2, 0.0000072, ROUND),
+    (0.000007777, SIGNIFICANT_DIGITS, 2, 0.0000078, ROUND),
     # Tests for TICK_SIZE, ROUND_UP
     (2.34559, TICK_SIZE, 0.0001, 2.3456, ROUND_UP),
     (2.34559, TICK_SIZE, 0.00001, 2.34559, ROUND_UP),
@@ -277,6 +280,14 @@ def test_amount_to_precision(amount, precision_mode, precision, expected,):
     (2.9909, TICK_SIZE, 0.001, 2.990, TRUNCATE),
     (2.9909, TICK_SIZE, 0.01, 2.99, TRUNCATE),
     (2.9909, TICK_SIZE, 0.1, 2.9, TRUNCATE),
+    # Tests for Significant
+    (2.34559, SIGNIFICANT_DIGITS, 4, 2.345, TRUNCATE),
+    (2.34559, SIGNIFICANT_DIGITS, 5, 2.3455, TRUNCATE),
+    (2.34559, SIGNIFICANT_DIGITS, 3, 2.34, TRUNCATE),
+    (2.9999, SIGNIFICANT_DIGITS, 3, 2.99, TRUNCATE),
+    (2.9909, SIGNIFICANT_DIGITS, 2, 2.9, TRUNCATE),
+    (0.00000777, SIGNIFICANT_DIGITS, 2, 0.0000077, TRUNCATE),
+    (0.00000729, SIGNIFICANT_DIGITS, 2, 0.0000072, TRUNCATE),
 ])
 def test_price_to_precision(price, precision_mode, precision, expected, rounding_mode):
     assert price_to_precision(
