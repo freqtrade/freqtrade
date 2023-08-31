@@ -192,7 +192,7 @@ function update() {
     fi
     updateenv
     echo "Update completed."
-    echo_block "Don't forget to activate your virtual enviorment with 'source .venv/bin/activate'!"
+    echo_block "Don't forget to activate your virtual environment with 'source .venv/bin/activate'!"
 
 }
 
