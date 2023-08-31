@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.tradingmode import TradingMode
-from tests.conftest import get_mock_coro, get_patched_exchange
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -68,3 +68,31 @@ def test_bybit_get_funding_fees(default_conf, mocker):
     exchange.get_funding_fees('BTC/USDT:USDT', 1, False, now)
 
     assert exchange._fetch_and_calculate_funding_fees.call_count == 1
+
+
+def test_bybit_fetch_orders(default_conf, mocker, limit_order):
+
+    api_mock = MagicMock()
+    api_mock.fetch_orders = MagicMock(return_value=[
+        limit_order['buy'],
+        limit_order['sell'],
+    ])
+    api_mock.fetch_open_orders = MagicMock(return_value=[limit_order['buy']])
+    api_mock.fetch_closed_orders = MagicMock(return_value=[limit_order['buy']])
+
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
+    start_time = datetime.now(timezone.utc) - timedelta(days=20)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id='bybit')
+    # Not available in dry-run
+    assert exchange.fetch_orders('mocked', start_time) == []
+    assert api_mock.fetch_orders.call_count == 0
+    default_conf['dry_run'] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id='bybit')
+    res = exchange.fetch_orders('mocked', start_time)
+    # Bybit will call the endpoint 3 times, as it has a limit of 7 days per call
+    assert api_mock.fetch_orders.call_count == 3
+    assert api_mock.fetch_open_orders.call_count == 0
+    assert api_mock.fetch_closed_orders.call_count == 0
+    assert len(res) == 2 * 3
