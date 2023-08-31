@@ -1421,8 +1421,17 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def __fetch_orders_emulate(self, pair: str, since_ms: int) -> List[Dict]:
+        orders = []
+        if self.exchange_has('fetchClosedOrders'):
+            orders = self._api.fetch_closed_orders(pair, since=since_ms)
+            if self.exchange_has('fetchOpenOrders'):
+                orders_open = self._api.fetch_open_orders(pair, since=since_ms)
+                orders.extend(orders_open)
+        return orders
+
     @retrier(retries=0)
-    def fetch_orders(self, pair: str, since: datetime) -> List[Dict]:
+    def fetch_orders(self, pair: str, since: datetime, params: Optional[Dict] = None) -> List[Dict]:
         """
         Fetch all orders for a pair "since"
         :param pair: Pair for the query
@@ -1431,26 +1440,20 @@ class Exchange:
         if self._config['dry_run']:
             return []
 
-        def fetch_orders_emulate() -> List[Dict]:
-            orders = []
-            if self.exchange_has('fetchClosedOrders'):
-                orders = self._api.fetch_closed_orders(pair, since=since_ms)
-                if self.exchange_has('fetchOpenOrders'):
-                    orders_open = self._api.fetch_open_orders(pair, since=since_ms)
-                    orders.extend(orders_open)
-            return orders
-
         try:
             since_ms = int((since.timestamp() - 10) * 1000)
+
             if self.exchange_has('fetchOrders'):
+                if not params:
+                    params = {}
                 try:
-                    orders: List[Dict] = self._api.fetch_orders(pair, since=since_ms)
+                    orders: List[Dict] = self._api.fetch_orders(pair, since=since_ms, params=params)
                 except ccxt.NotSupported:
                     # Some exchanges don't support fetchOrders
                     # attempt to fetch open and closed orders separately
-                    orders = fetch_orders_emulate()
+                    orders = self.__fetch_orders_emulate(pair, since_ms)
             else:
-                orders = fetch_orders_emulate()
+                orders = self.__fetch_orders_emulate(pair, since_ms)
             self._log_exchange_response('fetch_orders', orders)
             orders = [self._order_contracts_to_amount(o) for o in orders]
             return orders
