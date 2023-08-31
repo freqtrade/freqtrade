@@ -1,6 +1,6 @@
 """ Bybit exchange subclass """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
@@ -11,6 +11,7 @@ from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.util.datetime_helpers import dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -203,3 +204,20 @@ class Bybit(Exchange):
             return self._fetch_and_calculate_funding_fees(
                     pair, amount, is_short, open_date)
         return 0.0
+
+    def fetch_orders(self, pair: str, since: datetime, params: Optional[Dict] = None) -> List[Dict]:
+        """
+        Fetch all orders for a pair "since"
+        :param pair: Pair for the query
+        :param since: Starting time for the query
+        """
+        # On bybit, the distance between since and "until" can't exceed 7 days.
+        # we therefore need to split the query into multiple queries.
+        orders = []
+
+        while since < dt_now():
+            until = since + timedelta(days=7, minutes=-1)
+            orders += super().fetch_orders(pair, since, params={'until': dt_ts(until)})
+            since = until
+
+        return orders
