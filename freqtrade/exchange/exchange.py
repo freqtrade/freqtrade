@@ -920,7 +920,7 @@ class Exchange:
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
-            filled_amount = 0.0
+            filled_value = 0.0
             book_entry_price = 0.0
             for book_entry in orderbook[ob_type]:
                 book_entry_price = book_entry[0]
@@ -928,17 +928,17 @@ class Exchange:
                 if remaining_amount > 0:
                     if remaining_amount < book_entry_coin_volume:
                         # Orderbook at this slot bigger than remaining amount
-                        filled_amount += remaining_amount * book_entry_price
+                        filled_value += remaining_amount * book_entry_price
                         break
                     else:
-                        filled_amount += book_entry_coin_volume * book_entry_price
+                        filled_value += book_entry_coin_volume * book_entry_price
                     remaining_amount -= book_entry_coin_volume
                 else:
                     break
             else:
                 # If remaining_amount wasn't consumed completely (break was not called)
-                filled_amount += remaining_amount * book_entry_price
-            forecast_avg_filled_price = max(filled_amount, 0) / amount
+                filled_value += remaining_amount * book_entry_price
+            forecast_avg_filled_price = max(filled_value, 0) / amount
             # Limit max. slippage to specified value
             if side == 'buy':
                 forecast_avg_filled_price = min(forecast_avg_filled_price, max_slippage_val)
