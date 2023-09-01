@@ -498,6 +498,76 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
 
 @pytest.mark.parametrize('leverage', [1, 2])
+@pytest.mark.parametrize("is_short", [False, True])
+def test_dca_order_adjust_entry_replace_fails(
+    default_conf_usdt, ticker_usdt, fee, mocker, caplog, is_short, leverage
+) -> None:
+    spot = leverage == 1
+    if not spot:
+        default_conf_usdt['trading_mode'] = 'futures'
+        default_conf_usdt['margin_mode'] = 'isolated'
+    default_conf_usdt['position_adjustment_enable'] = True
+    default_conf_usdt['max_open_trades'] = 2
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker_usdt,
+        get_fee=fee,
+        get_funding_fees=MagicMock(return_value=0),
+    )
+
+    # no order fills.
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', side_effect=[False, True])
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+    freqtrade.enter_positions()
+
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+    assert len(trades) == 1
+
+    mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
+
+    # Timeout to not interfere
+    freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
+
+    # Create DCA order for 2nd trade (so we have 2 open orders on 2 trades)
+    # this 2nd order won't fill.
+
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=20)
+
+    freqtrade.process()
+
+    assert freqtrade.strategy.adjust_trade_position.call_count == 1
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+    assert len(trades) == 2
+
+    # We now have 2 orders open
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=2.05)
+    freqtrade.manage_open_orders()
+    trades = Trade.session.scalars(
+        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+    assert len(trades) == 2
+    assert len(Order.get_open_orders()) == 2
+    # Entry adjustment is called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 2
+
+    # Attempt order replacement - fails.
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
+
+    entry_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_entry',
+                              return_value=False)
+    msg = r"Could not replace order for.*"
+    assert not log_has_re(msg, caplog)
+    freqtrade.manage_open_orders()
+
+    assert log_has_re(msg, caplog)
+    assert entry_mock.call_count == 2
+    assert len(Trade.get_trades().all()) == 2
+    assert len(Order.get_open_orders()) == 0
+
+
+@pytest.mark.parametrize('leverage', [1, 2])
 def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, leverage) -> None:
     default_conf_usdt['position_adjustment_enable'] = True
     spot = leverage == 1

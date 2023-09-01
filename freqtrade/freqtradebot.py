@@ -1410,7 +1410,7 @@ class FreqtradeBot(LoggingMixin):
                                          replacing=replacing)
                 if adjusted_entry_price:
                     # place new order only if new price is supplied
-                    self.execute_entry(
+                    if not self.execute_entry(
                         pair=trade.pair,
                         stake_amount=(
                             order_obj.safe_remaining * order_obj.safe_price / trade.leverage),
@@ -1418,7 +1418,8 @@ class FreqtradeBot(LoggingMixin):
                         trade=trade,
                         is_short=trade.is_short,
                         order_adjust=True,
-                    )
+                    ):
+                        logger.warning(f"Could not replace order for {trade}.")
 
     def cancel_all_open_orders(self) -> None:
         """
