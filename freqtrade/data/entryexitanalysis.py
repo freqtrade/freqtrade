@@ -121,7 +121,7 @@ def _do_group_table_output(bigdf, glist, csv_path: Path, to_csv=False, ):
 
             new['exp_ratio'] = (
                 (
-                    (1 + (new['avg_win'] / abs(new['avg_loss']))) * (new['wl_ratio_pct']/100)
+                    (1 + (new['avg_win'] / abs(new['avg_loss']))) * (new['wl_ratio_pct'] / 100)
                 ) - 1).fillna(0)
 
             new.columns = ['total_num_buys', 'wins', 'losses',
