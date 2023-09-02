@@ -784,7 +784,7 @@ class FreqtradeBot(LoggingMixin):
         order_obj = Order.parse_from_ccxt_object(order, pair, side, amount, enter_limit_requested)
         order_id = order['id']
         order_status = order.get('status')
-        logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
+        logger.info(f"Order {order_id} was created for {pair} and status is {order_status}.")
 
         # we assume the order is executed at the price requested
         enter_limit_filled_price = enter_limit_requested
