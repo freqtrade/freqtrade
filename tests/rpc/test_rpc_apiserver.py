@@ -617,7 +617,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
 
 
-def test_api_weekly(botclient, mocker, ticker, fee, markets):
+def test_api_weekly(botclient, mocker, ticker, fee, markets, time_machine):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -627,15 +627,18 @@ def test_api_weekly(botclient, mocker, ticker, fee, markets):
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    time_machine.move_to("2023-03-31 21:45:05 +00:00")
     rc = client_get(client, f"{BASE_URI}/weekly")
     assert_response(rc)
     assert len(rc.json()['data']) == 4
     assert rc.json()['stake_currency'] == 'BTC'
     assert rc.json()['fiat_display_currency'] == 'USD'
-    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
+    # Moved to monday
+    assert rc.json()['data'][0]['date'] == '2023-03-27'
+    assert rc.json()['data'][1]['date'] == '2023-03-20'
 
 
-def test_api_monthly(botclient, mocker, ticker, fee, markets):
+def test_api_monthly(botclient, mocker, ticker, fee, markets, time_machine):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -645,12 +648,14 @@ def test_api_monthly(botclient, mocker, ticker, fee, markets):
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
+    time_machine.move_to("2023-03-31 21:45:05 +00:00")
     rc = client_get(client, f"{BASE_URI}/monthly")
     assert_response(rc)
     assert len(rc.json()['data']) == 3
     assert rc.json()['stake_currency'] == 'BTC'
     assert rc.json()['fiat_display_currency'] == 'USD'
-    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
+    assert rc.json()['data'][0]['date'] == '2023-03-01'
+    assert rc.json()['data'][1]['date'] == '2023-02-01'
 
 
 @pytest.mark.parametrize('is_short', [True, False])
