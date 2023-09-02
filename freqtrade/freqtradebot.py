@@ -1420,6 +1420,13 @@ class FreqtradeBot(LoggingMixin):
                         order_adjust=True,
                     ):
                         logger.warning(f"Could not replace order for {trade}.")
+                        if trade.nr_of_successful_entries == 0:
+                            # this is the first entry and we didn't get filled yet, delete trade
+                            logger.warning(f"Removing {trade} from database.")
+                            self._notify_enter_cancel(
+                                trade, order_type=self.strategy.order_types['entry'],
+                                reason=constants.CANCEL_REASON['REPLACE_FAILED'])
+                            trade.delete()
 
     def cancel_all_open_orders(self) -> None:
         """

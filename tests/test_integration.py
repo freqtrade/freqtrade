@@ -563,7 +563,7 @@ def test_dca_order_adjust_entry_replace_fails(
 
     assert log_has_re(msg, caplog)
     assert entry_mock.call_count == 2
-    assert len(Trade.get_trades().all()) == 2
+    assert len(Trade.get_trades().all()) == 1
     assert len(Order.get_open_orders()) == 0
 
 
