@@ -927,13 +927,14 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
+    For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the [`custom_stoploss`](strategy-callbacks.md#custom-stoploss) callback  returns the ["risk for this trade"](stoploss.md#stoploss-and-leverage) - not the relative price movement.
 
     ``` python
 
     from datetime import datetime
     from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_absolute
+    from freqtrade.strategy import IStrategy, stoploss_from_absolute, timeframe_to_prev_date
 
     class AwesomeStrategy(IStrategy):
 
@@ -947,8 +948,12 @@ In some situations it may be confusing to deal with stops relative to current ra
                             current_rate: float, current_profit: float, after_fill: bool,
                             **kwargs) -> Optional[float]:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+            trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
             candle = dataframe.iloc[-1].squeeze()
-            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
+            sign = 1 if trade.is_short else -1
+            return stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), 
+                                          current_rate, is_short=trade.is_short,
+                                          leverage=trade.leverage)
 
     ```
 

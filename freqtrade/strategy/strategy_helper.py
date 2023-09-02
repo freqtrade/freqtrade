@@ -123,7 +123,8 @@ def stoploss_from_open(
     return max(stoploss * leverage, 0.0)
 
 
-def stoploss_from_absolute(stop_rate: float, current_rate: float, is_short: bool = False) -> float:
+def stoploss_from_absolute(stop_rate: float, current_rate: float, is_short: bool = False,
+                           leverage: float = 1.0) -> float:
     """
     Given current price and desired stop price, return a stop loss value that is relative to current
     price.
@@ -136,6 +137,7 @@ def stoploss_from_absolute(stop_rate: float, current_rate: float, is_short: bool
     :param stop_rate: Stop loss price.
     :param current_rate: Current asset price.
     :param is_short: When true, perform the calculation for short instead of long
+    :param leverage: Leverage to use for the calculation
     :return: Positive stop loss value relative to current price
     """
 
@@ -150,4 +152,4 @@ def stoploss_from_absolute(stop_rate: float, current_rate: float, is_short: bool
     # negative stoploss values indicate the requested stop price is higher/lower
     # (long/short) than the current price
     # shorts can yield stoploss values higher than 1, so limit that as well
-    return max(min(stoploss, 1.0), 0.0)
+    return max(min(stoploss, 1.0), 0.0) * leverage

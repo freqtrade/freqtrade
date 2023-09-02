@@ -317,7 +317,7 @@ After:
         if current_profit > 0.10:
             return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
 
-        return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
+        return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short, leverage=trade.leverage)
 
 
 ```
