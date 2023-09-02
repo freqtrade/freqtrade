@@ -151,6 +151,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `weekly <n>` | Shows profit or loss per week, over the last n days (n defaults to 4).
+| `monthly <n>` | Shows profit or loss per month, over the last n days (n defaults to 3).
 | `stats` | Display a summary of profit / loss reasons as well as average holding times.
 | `whitelist` | Show the current whitelist.
 | `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.

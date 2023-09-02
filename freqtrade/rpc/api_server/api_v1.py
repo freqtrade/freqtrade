@@ -11,7 +11,7 @@ from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily,
+                                                  BlacklistResponse, Count, DailyWeeklyMonthly,
                                                   DeleteLockRequest, DeleteTrade,
                                                   ExchangeListResponse, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
@@ -51,7 +51,8 @@ logger = logging.getLogger(__name__)
 # 2.30: new /pairlists endpoint
 # 2.31: new /backtest/history/ delete endpoint
 # 2.32: new /backtest/history/ patch endpoint
-API_VERSION = 2.32
+# 2.33: Additional weekly/monthly metrics
+API_VERSION = 2.33
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -99,10 +100,22 @@ def stats(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stats()
 
 
-@router.get('/daily', response_model=Daily, tags=['info'])
+@router.get('/daily', response_model=DailyWeeklyMonthly, tags=['info'])
 def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
                                     config.get('fiat_display_currency', ''))
+
+
+@router.get('/weekly', response_model=DailyWeeklyMonthly, tags=['info'])
+def weekly(timescale: int = 4, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', 'weeks'))
+
+
+@router.get('/monthly', response_model=DailyWeeklyMonthly, tags=['info'])
+def monthly(timescale: int = 3, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', 'months'))
 
 
 @router.get('/status', response_model=List[OpenTradeSchema], tags=['info'])

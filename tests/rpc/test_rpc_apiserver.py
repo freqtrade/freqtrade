@@ -617,6 +617,42 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
 
 
+def test_api_weekly(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client_get(client, f"{BASE_URI}/weekly")
+    assert_response(rc)
+    assert len(rc.json()['data']) == 4
+    assert rc.json()['stake_currency'] == 'BTC'
+    assert rc.json()['fiat_display_currency'] == 'USD'
+    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
+
+
+def test_api_monthly(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client_get(client, f"{BASE_URI}/monthly")
+    assert_response(rc)
+    assert len(rc.json()['data']) == 3
+    assert rc.json()['stake_currency'] == 'BTC'
+    assert rc.json()['fiat_display_currency'] == 'USD'
+    assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
+
+
 @pytest.mark.parametrize('is_short', [True, False])
 def test_api_trades(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
