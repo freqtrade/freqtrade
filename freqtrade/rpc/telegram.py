@@ -51,6 +51,7 @@ class TimeunitMappings:
     message2: str
     callback: str
     default: int
+    dateformat: str
 
 
 def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
@@ -736,10 +737,10 @@ class Telegram(RPCHandler):
         """
 
         vals = {
-            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7),
+            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7, '%Y-%m-%d'),
             'weeks': TimeunitMappings('Monday', 'Weekly', 'weeks (starting from Monday)',
-                                      'update_weekly', 8),
-            'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6),
+                                      'update_weekly', 8, '%Y-%m-%d'),
+            'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6, '%Y-%m'),
         }
         val = vals[unit]
 
@@ -756,7 +757,7 @@ class Telegram(RPCHandler):
             unit
         )
         stats_tab = tabulate(
-            [[f"{period['date']} ({period['trade_count']})",
+            [[f"{period['date']:{val.dateformat}} ({period['trade_count']})",
               f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
               f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
               f"{period['rel_profit']:.2%}",

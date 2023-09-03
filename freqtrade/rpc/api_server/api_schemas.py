@@ -157,7 +157,7 @@ class Stats(BaseModel):
     durations: Dict[str, Optional[float]]
 
 
-class DailyRecord(BaseModel):
+class DailyWeeklyMonthlyRecord(BaseModel):
     date: date
     abs_profit: float
     rel_profit: float
@@ -166,8 +166,8 @@ class DailyRecord(BaseModel):
     trade_count: int
 
 
-class Daily(BaseModel):
-    data: List[DailyRecord]
+class DailyWeeklyMonthly(BaseModel):
+    data: List[DailyWeeklyMonthlyRecord]
     fiat_display_currency: str
     stake_currency: str
 
