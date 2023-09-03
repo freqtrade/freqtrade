@@ -221,3 +221,14 @@ class Bybit(Exchange):
             since = until
 
         return orders
+
+    def fetch_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        order = super().fetch_order(order_id, pair, params)
+        if (
+            order.get('status') == 'canceled'
+            and order.get('filled') == 0.0
+            and order.get('remaining') == 0.0
+        ):
+            # Canceled orders will have "remaining=0" on bybit.
+            order['remaining'] = None
+        return order

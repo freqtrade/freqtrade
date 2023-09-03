@@ -96,3 +96,55 @@ def test_bybit_fetch_orders(default_conf, mocker, limit_order):
     assert api_mock.fetch_open_orders.call_count == 0
     assert api_mock.fetch_closed_orders.call_count == 0
     assert len(res) == 2 * 3
+
+
+def test_bybit_fetch_order_canceled_empty(default_conf_usdt, mocker):
+    default_conf_usdt['dry_run'] = False
+
+    api_mock = MagicMock()
+    api_mock.fetch_order = MagicMock(return_value={
+        'id': '123',
+        'symbol': 'BTC/USDT',
+        'status': 'canceled',
+        'filled': 0.0,
+        'remaining': 0.0,
+        'amount': 20.0,
+    })
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, id='bybit')
+
+    res = exchange.fetch_order('123', 'BTC/USDT')
+    assert res['remaining'] is None
+    assert res['filled'] == 0.0
+    assert res['amount'] == 20.0
+    assert res['status'] == 'canceled'
+
+    api_mock.fetch_order = MagicMock(return_value={
+        'id': '123',
+        'symbol': 'BTC/USDT',
+        'status': 'canceled',
+        'filled': 0.0,
+        'remaining': 20.0,
+        'amount': 20.0,
+    })
+    # Don't touch orders which return correctly.
+    res1 = exchange.fetch_order('123', 'BTC/USDT')
+    assert res1['remaining'] == 20.0
+    assert res1['filled'] == 0.0
+    assert res1['amount'] == 20.0
+    assert res1['status'] == 'canceled'
+
+    # Reverse test - remaining is not touched
+    api_mock.fetch_order = MagicMock(return_value={
+        'id': '124',
+        'symbol': 'BTC/USDT',
+        'status': 'open',
+        'filled': 0.0,
+        'remaining': 20.0,
+        'amount': 20.0,
+    })
+    res2 = exchange.fetch_order('123', 'BTC/USDT')
+    assert res2['remaining'] == 20.0
+    assert res2['filled'] == 0.0
+    assert res2['amount'] == 20.0
+    assert res2['status'] == 'open'
