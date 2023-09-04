@@ -26,13 +26,14 @@ class VarHolder:
     timeframe: str
     startup_candle: int
 
+
 class RecursiveAnalysis:
 
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
         self.failed_bias_check = True
         self.full_varHolder = VarHolder()
-        self.partial_varHolder_array = []
-        self.partial_varHolder_lookahead_array = []
+        self.partial_varHolder_array: List[VarHolder] = []
+        self.partial_varHolder_lookahead_array: List[VarHolder] = []
 
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
@@ -43,7 +44,7 @@ class RecursiveAnalysis:
         self.local_config['strategy'] = strategy_obj['name']
         self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
         self.strategy_obj = strategy_obj
-        self.dict_recursive = dict()
+        self.dict_recursive: Dict[Any] = dict()
 
     @staticmethod
     def dt_to_timestamp(dt: datetime):
@@ -73,7 +74,7 @@ class RecursiveAnalysis:
                     indicators = values.index
 
                     for indicator in indicators:
-                        if(indicator not in self.dict_recursive):
+                        if (indicator not in self.dict_recursive):
                             self.dict_recursive[indicator] = {}
 
                         values_diff = compare_df.loc[indicator]
