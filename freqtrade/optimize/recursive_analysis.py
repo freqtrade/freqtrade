@@ -44,7 +44,7 @@ class RecursiveAnalysis:
         self.local_config['strategy'] = strategy_obj['name']
         self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
         self.strategy_obj = strategy_obj
-        self.dict_recursive: Dict[Any] = dict()
+        self.dict_recursive: Dict[str, Any] = dict()
 
     @staticmethod
     def dt_to_timestamp(dt: datetime):

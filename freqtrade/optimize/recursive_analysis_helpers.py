@@ -40,85 +40,7 @@ class RecursiveAnalysisSubFunctions:
         return table, headers, data
 
     @staticmethod
-    def export_to_csv(config: Dict[str, Any], lookahead_analysis: List[RecursiveAnalysis]):
-        def add_or_update_row(df, row_data):
-            if (
-                    (df['filename'] == row_data['filename']) &
-                    (df['strategy'] == row_data['strategy'])
-            ).any():
-                # Update existing row
-                pd_series = pd.DataFrame([row_data])
-                df.loc[
-                    (df['filename'] == row_data['filename']) &
-                    (df['strategy'] == row_data['strategy'])
-                    ] = pd_series
-            else:
-                # Add new row
-                df = pd.concat([df, pd.DataFrame([row_data], columns=df.columns)])
-
-            return df
-
-        if Path(config['lookahead_analysis_exportfilename']).exists():
-            # Read CSV file into a pandas dataframe
-            csv_df = pd.read_csv(config['lookahead_analysis_exportfilename'])
-        else:
-            # Create a new empty DataFrame with the desired column names and set the index
-            csv_df = pd.DataFrame(columns=[
-                'filename', 'strategy', 'has_bias', 'total_signals',
-                'biased_entry_signals', 'biased_exit_signals', 'biased_indicators'
-            ],
-                index=None)
-
-        for inst in lookahead_analysis:
-            # only update if
-            if (inst.current_analysis.total_signals > config['minimum_trade_amount']
-                    and inst.failed_bias_check is not True):
-                new_row_data = {'filename': inst.strategy_obj['location'].parts[-1],
-                                'strategy': inst.strategy_obj['name'],
-                                'has_bias': inst.current_analysis.has_bias,
-                                'total_signals':
-                                    int(inst.current_analysis.total_signals),
-                                'biased_entry_signals':
-                                    int(inst.current_analysis.false_entry_signals),
-                                'biased_exit_signals':
-                                    int(inst.current_analysis.false_exit_signals),
-                                'biased_indicators':
-                                    ",".join(inst.current_analysis.false_indicators)}
-                csv_df = add_or_update_row(csv_df, new_row_data)
-
-        # Fill NaN values with a default value (e.g., 0)
-        csv_df['total_signals'] = csv_df['total_signals'].fillna(0)
-        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].fillna(0)
-        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].fillna(0)
-
-        # Convert columns to integers
-        csv_df['total_signals'] = csv_df['total_signals'].astype(int)
-        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].astype(int)
-        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].astype(int)
-
-        logger.info(f"saving {config['lookahead_analysis_exportfilename']}")
-        csv_df.to_csv(config['lookahead_analysis_exportfilename'], index=False)
-
-    @staticmethod
     def calculate_config_overrides(config: Config):
-        if config['targeted_trade_amount'] < config['minimum_trade_amount']:
-            # this combo doesn't make any sense.
-            raise OperationalException(
-                "Targeted trade amount can't be smaller than minimum trade amount."
-            )
-        if len(config['pairs']) > config['max_open_trades']:
-            logger.info('Max_open_trades were less than amount of pairs. '
-                        'Set max_open_trades to amount of pairs just to avoid false positives.')
-            config['max_open_trades'] = len(config['pairs'])
-
-        min_dry_run_wallet = 1000000000
-        if config['dry_run_wallet'] < min_dry_run_wallet:
-            logger.info('Dry run wallet was not set to 1 billion, pushing it up there '
-                        'just to avoid false positives')
-            config['dry_run_wallet'] = min_dry_run_wallet
-
-        # enforce cache to be 'none', shift it to 'none' if not already
-        # (since the default value is 'day')
         if config.get('backtest_cache') is None:
             config['backtest_cache'] = 'none'
         elif config['backtest_cache'] != 'none':
@@ -173,8 +95,6 @@ class RecursiveAnalysisSubFunctions:
         if RecursiveAnalysis_instances:
             RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances(
                 config, RecursiveAnalysis_instances)
-            if config.get('lookahead_analysis_exportfilename') is not None:
-                RecursiveAnalysisSubFunctions.export_to_csv(config, RecursiveAnalysis_instances)
         else:
             logger.error("There were no strategies specified neither through "
                          "--strategy nor through "
