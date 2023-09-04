@@ -209,8 +209,8 @@ class Arguments:
                                         start_lookahead_analysis, start_new_config,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
                                         start_recursive_analysis, start_show_trades,
-                                        start_strategy_update, start_test_pairlist,
-                                        start_trading, start_webserver)
+                                        start_strategy_update, start_test_pairlist, start_trading,
+                                        start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added

@@ -59,7 +59,7 @@ class RecursiveAnalysis:
 
         # check and report signals
         base_last_row = self.full_varHolder.indicators[pair_to_check].iloc[-1]
-        
+
         for part in self.partial_varHolder_array:
             part_last_row = part.indicators[pair_to_check].iloc[-1]
 
