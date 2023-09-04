@@ -4,7 +4,7 @@ import pytest
 import time_machine
 
 from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_utc,
-                            format_ms_time, shorten_date)
+                            format_date, format_ms_time, shorten_date)
 
 
 def test_dt_now():
@@ -70,3 +70,14 @@ def test_format_ms_time() -> None:
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
     assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def test_format_date() -> None:
+
+    date = datetime(2023, 9, 1, 5, 2, 3, 455555, tzinfo=timezone.utc)
+    assert format_date(date) == '2023-09-01 05:02:03'
+    assert format_date(None) == ''
+
+    date = datetime(2021, 9, 30, 22, 59, 3, 455555, tzinfo=timezone.utc)
+    assert format_date(date) == '2021-09-30 22:59:03'
+    assert format_date('') == ''
