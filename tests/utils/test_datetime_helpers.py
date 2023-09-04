@@ -87,4 +87,4 @@ def test_format_date() -> None:
 
     date = datetime(2021, 9, 30, 22, 59, 3, 455555, tzinfo=timezone.utc)
     assert format_date(date) == '2021-09-30 22:59:03'
-    assert format_date('') == ''
+    assert format_date(None) == ''

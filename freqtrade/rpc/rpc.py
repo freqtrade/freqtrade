@@ -31,7 +31,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize, dt_now, format_date, shorten_date
+from freqtrade.util import dt_humanize, dt_now, dt_ts_def, format_date, shorten_date
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -572,10 +572,10 @@ class RPC:
             'closed_trade_count': closed_trade_count,
             'first_trade_date': format_date(first_date),
             'first_trade_humanized': dt_humanize(first_date) if first_date else '',
-            'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
+            'first_trade_timestamp': dt_ts_def(first_date, 0),
             'latest_trade_date': format_date(last_date),
             'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
-            'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
+            'latest_trade_timestamp': dt_ts_def(last_date, 0),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
             'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,  # Deprecated
@@ -589,7 +589,7 @@ class RPC:
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
-            'bot_start_timestamp': int(bot_start.timestamp() * 1000) if bot_start else 0,
+            'bot_start_timestamp': dt_ts_def(bot_start, 0),
             'bot_start_date': format_date(bot_start),
         }
 
