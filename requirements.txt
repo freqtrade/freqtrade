@@ -8,7 +8,7 @@ cryptography==41.0.3; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.5
 SQLAlchemy==2.0.20
-python-telegram-bot==20.4
+python-telegram-bot==20.5
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 arrow==1.2.3
