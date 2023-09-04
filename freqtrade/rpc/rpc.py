@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
+from freqtrade.constants import CANCEL_REASON, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
@@ -31,7 +31,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize, dt_now, shorten_date
+from freqtrade.util import dt_humanize, dt_now, format_date, shorten_date
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -525,7 +525,7 @@ class RPC:
 
         winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
 
-        trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
+        trades_df = DataFrame([{'close_date': format_date(trade.close_date),
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
 
@@ -570,10 +570,10 @@ class RPC:
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': closed_trade_count,
-            'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
+            'first_trade_date': format_date(first_date),
             'first_trade_humanized': dt_humanize(first_date) if first_date else '',
             'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
-            'latest_trade_date': last_date.strftime(DATETIME_PRINT_FORMAT) if last_date else '',
+            'latest_trade_date': format_date(last_date),
             'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
             'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
@@ -590,7 +590,7 @@ class RPC:
             'max_drawdown_abs': max_drawdown_abs,
             'trading_volume': trading_volume,
             'bot_start_timestamp': int(bot_start.timestamp() * 1000) if bot_start else 0,
-            'bot_start_date': bot_start.strftime(DATETIME_PRINT_FORMAT) if bot_start else '',
+            'bot_start_date': format_date(bot_start),
         }
 
     def __balance_get_est_stake(
@@ -1092,7 +1092,7 @@ class RPC:
             buffer = bufferHandler.buffer[-limit:]
         else:
             buffer = bufferHandler.buffer
-        records = [[datetime.fromtimestamp(r.created).strftime(DATETIME_PRINT_FORMAT),
+        records = [[format_date(datetime.fromtimestamp(r.created)),
                    r.created * 1000, r.name, r.levelname,
                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
@@ -1309,7 +1309,7 @@ class RPC:
 
         return {
             "last_process": str(last_p),
-            "last_process_loc": last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            "last_process_loc": format_date(last_p.astimezone(tzlocal())),
             "last_process_ts": int(last_p.timestamp()),
         }
 
