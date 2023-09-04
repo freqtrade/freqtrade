@@ -28,6 +28,16 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
     return int(dt_now().timestamp() * 1000)
 
 
+def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
+    """
+    Return dt in ms as a timestamp in UTC.
+    If dt is None, return the current datetime in UTC.
+    """
+    if dt:
+        return int(dt.timestamp() * 1000)
+    return default
+
+
 def dt_floor_day(dt: datetime) -> datetime:
     """Return the floor of the day for the given datetime."""
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
