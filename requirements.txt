@@ -1,6 +1,7 @@
 numpy==1.25.2; python_version > '3.8'
 numpy==1.24.3; python_version <= '3.8'
-pandas==2.1.0
+pandas==2.1.0; python_version > '3.8'
+pandas==2.0.3; python_version <= '3.8'
 pandas-ta==0.3.14b
 
 ccxt==4.0.81
