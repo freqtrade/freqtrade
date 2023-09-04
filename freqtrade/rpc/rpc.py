@@ -189,7 +189,7 @@ class RPC:
 
                         current_profit = current_profit_abs = current_profit_fiat = NAN
                         if not isnan(current_rate):
-                            prof = trade.calc_profit_combined(current_rate)
+                            prof = trade.calculate_profit(current_rate)
                             current_profit = prof.profit_ratio
                             current_profit_abs = prof.profit_abs
                             total_profit_abs = prof.total_profit
@@ -217,7 +217,7 @@ class RPC:
                     )
 
                 # Calculate guaranteed profit (in case of trailing stop)
-                stop_entry = trade.calc_profit_combined(trade.stop_loss)
+                stop_entry = trade.calculate_profit(trade.stop_loss)
 
                 stoploss_entry_dist = stop_entry.profit_abs
                 stoploss_entry_dist_ratio = stop_entry.profit_ratio
@@ -271,7 +271,7 @@ class RPC:
                     profit_str = f'{NAN:.2%}'
                 else:
                     if trade.nr_of_successful_entries > 0:
-                        profit = trade.calc_profit_combined(current_rate)
+                        profit = trade.calculate_profit(current_rate)
                         trade_profit = profit.profit_abs
                         profit_str = f'{profit.profit_ratio:.2%}'
                     else:
@@ -492,7 +492,7 @@ class RPC:
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit = trade.calc_profit_combined(trade.close_rate or current_rate)
+                    profit = trade.calculate_profit(trade.close_rate or current_rate)
 
                     profit_ratio = profit.profit_ratio
                     profit_abs = profit.total_profit

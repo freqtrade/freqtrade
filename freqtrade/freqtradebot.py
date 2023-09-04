@@ -1731,10 +1731,10 @@ class FreqtradeBot(LoggingMixin):
             amount = order.safe_filled if fill else order.safe_amount
             order_rate: float = order.safe_price
 
-            profit = trade.calc_profit_combined(order_rate, amount, trade.open_rate)
+            profit = trade.calculate_profit(order_rate, amount, trade.open_rate)
         else:
             order_rate = trade.safe_close_rate
-            profit = trade.calc_profit_combined(rate=order_rate)
+            profit = trade.calculate_profit(rate=order_rate)
             amount = trade.amount
         gain = "profit" if profit.profit_ratio > 0 else "loss"
 
@@ -1787,7 +1787,7 @@ class FreqtradeBot(LoggingMixin):
         order = self.order_obj_or_raise(order_id, order_or_none)
 
         profit_rate: float = trade.safe_close_rate
-        profit = trade.calc_profit_combined(rate=profit_rate)
+        profit = trade.calculate_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
         gain = "profit" if profit.profit_ratio > 0 else "loss"

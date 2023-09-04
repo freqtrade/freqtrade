@@ -903,11 +903,11 @@ class LocalTrade:
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
-        prof = self.calc_profit_combined(rate, amount, open_rate)
+        prof = self.calculate_profit(rate, amount, open_rate)
         return prof.profit_abs
 
-    def calc_profit_combined(self, rate: float, amount: Optional[float] = None,
-                             open_rate: Optional[float] = None) -> ProfitStruct:
+    def calculate_profit(self, rate: float, amount: Optional[float] = None,
+                         open_rate: Optional[float] = None) -> ProfitStruct:
         """
         Calculate profit metrics (absolute, ratio, total, total ratio).
         All calculations include fees.
@@ -1020,7 +1020,7 @@ class LocalTrade:
 
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                prof = self.calc_profit_combined(exit_rate, exit_amount, float(avg_price))
+                prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
                 close_profit_abs += prof.profit_abs
                 close_profit = prof.profit_ratio
             else:
