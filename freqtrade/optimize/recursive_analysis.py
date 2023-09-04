@@ -81,7 +81,7 @@ class RecursiveAnalysis:
                         values_diff_other = values_diff.loc['other']
                         diff = (values_diff_other - values_diff_self) / values_diff_self * 100
 
-                        self.dict_recursive[indicator][part.startup_candle] = "{:.3f}%".format(diff)
+                        self.dict_recursive[indicator][part.startup_candle] = f"{diff:.3f}%"
 
             else:
                 logger.info("No difference found. Stop the process.")
