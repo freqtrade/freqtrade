@@ -3,8 +3,6 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-import pandas as pd
-
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.recursive_analysis import RecursiveAnalysis
