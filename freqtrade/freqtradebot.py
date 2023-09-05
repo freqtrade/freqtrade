@@ -1731,14 +1731,12 @@ class FreqtradeBot(LoggingMixin):
             amount = order.safe_filled if fill else order.safe_amount
             order_rate: float = order.safe_price
 
-            profit = trade.calc_profit(rate=order_rate, amount=amount, open_rate=trade.open_rate)
-            profit_ratio = trade.calc_profit_ratio(order_rate, amount, trade.open_rate)
+            profit = trade.calculate_profit(order_rate, amount, trade.open_rate)
         else:
             order_rate = trade.safe_close_rate
-            profit = trade.calc_profit(rate=order_rate) + (0.0 if fill else trade.realized_profit)
-            profit_ratio = trade.calc_profit_ratio(order_rate)
+            profit = trade.calculate_profit(rate=order_rate)
             amount = trade.amount
-        gain = "profit" if profit_ratio > 0 else "loss"
+        gain = "profit" if profit.profit_ratio > 0 else "loss"
 
         msg: RPCSellMsg = {
             'type': (RPCMessageType.EXIT_FILL if fill
@@ -1756,8 +1754,8 @@ class FreqtradeBot(LoggingMixin):
             'open_rate': trade.open_rate,
             'close_rate': order_rate,
             'current_rate': current_rate,
-            'profit_amount': profit,
-            'profit_ratio': profit_ratio,
+            'profit_amount': profit.profit_abs if fill else profit.total_profit,
+            'profit_ratio': profit.profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'sell_reason': trade.exit_reason,  # Deprecated
@@ -1789,11 +1787,10 @@ class FreqtradeBot(LoggingMixin):
         order = self.order_obj_or_raise(order_id, order_or_none)
 
         profit_rate: float = trade.safe_close_rate
-        profit_trade = trade.calc_profit(rate=profit_rate)
+        profit = trade.calculate_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
-        profit_ratio = trade.calc_profit_ratio(profit_rate)
-        gain = "profit" if profit_ratio > 0 else "loss"
+        gain = "profit" if profit.profit_ratio > 0 else "loss"
 
         msg: RPCSellCancelMsg = {
             'type': RPCMessageType.EXIT_CANCEL,
@@ -1808,8 +1805,8 @@ class FreqtradeBot(LoggingMixin):
             'amount': order.safe_amount_after_fee,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
-            'profit_amount': profit_trade,
-            'profit_ratio': profit_ratio,
+            'profit_amount': profit.profit_abs,
+            'profit_ratio': profit.profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'sell_reason': trade.exit_reason,  # Deprecated

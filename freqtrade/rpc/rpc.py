@@ -174,6 +174,8 @@ class RPC:
                 order: Optional[Order] = None
                 current_profit_fiat: Optional[float] = None
                 total_profit_fiat: Optional[float] = None
+                total_profit_abs = 0.0
+                total_profit_ratio: Optional[float] = None
                 if trade.open_order_id:
                     order = trade.select_order_by_order_id(trade.open_order_id)
                 # calculate profit and send message to user
@@ -184,23 +186,22 @@ class RPC:
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                     if len(trade.select_filled_orders(trade.entry_side)) > 0:
-                        current_profit = trade.calc_profit_ratio(
-                            current_rate) if not isnan(current_rate) else NAN
-                        current_profit_abs = trade.calc_profit(
-                            current_rate) if not isnan(current_rate) else NAN
+
+                        current_profit = current_profit_abs = current_profit_fiat = NAN
+                        if not isnan(current_rate):
+                            prof = trade.calculate_profit(current_rate)
+                            current_profit = prof.profit_ratio
+                            current_profit_abs = prof.profit_abs
+                            total_profit_abs = prof.total_profit
+                            total_profit_ratio = prof.total_profit_ratio
                     else:
                         current_profit = current_profit_abs = current_profit_fiat = 0.0
+
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
                     current_profit = trade.close_profit or 0.0
                     current_profit_abs = trade.close_profit_abs or 0.0
-                total_profit_abs = trade.realized_profit + current_profit_abs
-                total_profit_ratio: Optional[float] = None
-                if trade.max_stake_amount:
-                    total_profit_ratio = (
-                        (total_profit_abs / trade.max_stake_amount) * trade.leverage
-                    )
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
@@ -216,8 +217,11 @@ class RPC:
                     )
 
                 # Calculate guaranteed profit (in case of trailing stop)
-                stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
-                stoploss_entry_dist_ratio = trade.calc_profit_ratio(trade.stop_loss)
+                stop_entry = trade.calculate_profit(trade.stop_loss)
+
+                stoploss_entry_dist = stop_entry.profit_abs
+                stoploss_entry_dist_ratio = stop_entry.profit_ratio
+
                 # calculate distance to stoploss
                 stoploss_current_dist = trade.stop_loss - current_rate
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
@@ -267,8 +271,9 @@ class RPC:
                     profit_str = f'{NAN:.2%}'
                 else:
                     if trade.nr_of_successful_entries > 0:
-                        trade_profit = trade.calc_profit(current_rate)
-                        profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                        profit = trade.calculate_profit(current_rate)
+                        trade_profit = profit.profit_abs
+                        profit_str = f'{profit.profit_ratio:.2%}'
                     else:
                         trade_profit = 0.0
                         profit_str = f'{0.0:.2f}'
@@ -487,9 +492,10 @@ class RPC:
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit_ratio = trade.calc_profit_ratio(rate=current_rate)
-                    profit_abs = trade.calc_profit(
-                        rate=trade.close_rate or current_rate) + trade.realized_profit
+                    profit = trade.calculate_profit(trade.close_rate or current_rate)
+
+                    profit_ratio = profit.profit_ratio
+                    profit_abs = profit.total_profit
 
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)

@@ -164,7 +164,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     response = deepcopy(gen_response)
     response.update({
         'max_stake_amount': 0.001,
-        'total_profit_ratio': pytest.approx(-0.00409),
+        'total_profit_ratio': pytest.approx(-0.00409153),
     })
     assert results[0] == response
 

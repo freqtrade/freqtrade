@@ -3,6 +3,7 @@ This module contains the class to persist trades into SQLite
 """
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
@@ -24,6 +25,14 @@ from freqtrade.util import FtPrecise, dt_now
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProfitStruct:
+    profit_abs: float
+    profit_ratio: float
+    total_profit: float
+    total_profit_ratio: float
 
 
 class Order(ModelBase):
@@ -888,11 +897,26 @@ class LocalTrade:
                     open_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Deprecated - only available for backwards compatibility
         :param rate: close rate to compare with.
         :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
+        prof = self.calculate_profit(rate, amount, open_rate)
+        return prof.profit_abs
+
+    def calculate_profit(self, rate: float, amount: Optional[float] = None,
+                         open_rate: Optional[float] = None) -> ProfitStruct:
+        """
+        Calculate profit metrics (absolute, ratio, total, total ratio).
+        All calculations include fees.
+        :param rate: close rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
+        :return: Profit structure, containing absolute and relative profits.
+        """
+
         close_trade_value = self.calc_close_trade_value(rate, amount)
         if amount is None or open_rate is None:
             open_trade_value = self.open_trade_value
@@ -900,10 +924,33 @@ class LocalTrade:
             open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
         if self.is_short:
-            profit = open_trade_value - close_trade_value
+            profit_abs = open_trade_value - close_trade_value
         else:
-            profit = close_trade_value - open_trade_value
-        return float(f"{profit:.8f}")
+            profit_abs = close_trade_value - open_trade_value
+
+        try:
+            if self.is_short:
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
+            else:
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
+            profit_ratio = float(f"{profit_ratio:.8f}")
+        except ZeroDivisionError:
+            profit_ratio = 0.0
+
+        total_profit_abs = profit_abs + self.realized_profit
+        total_profit_ratio = (
+            (total_profit_abs / self.max_stake_amount) * self.leverage
+            if self.max_stake_amount else 0.0
+        )
+        total_profit_ratio = float(f"{total_profit_ratio:.8f}")
+        profit_abs = float(f"{profit_abs:.8f}")
+
+        return ProfitStruct(
+            profit_abs=profit_abs,
+            profit_ratio=profit_ratio,
+            total_profit=profit_abs + self.realized_profit,
+            total_profit_ratio=total_profit_ratio,
+        )
 
     def calc_profit_ratio(
             self, rate: float, amount: Optional[float] = None,
@@ -944,7 +991,6 @@ class LocalTrade:
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
-        profit = None
         # Reset funding fees
         self.funding_fees = 0.0
         funding_fees = 0.0
@@ -974,11 +1020,9 @@ class LocalTrade:
 
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
-                                          open_rate=float(avg_price))
-                close_profit_abs += profit
-                close_profit = self.calc_profit_ratio(
-                    exit_rate, amount=exit_amount, open_rate=avg_price)
+                prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
+                close_profit_abs += prof.profit_abs
+                close_profit = prof.profit_ratio
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += (tmp_amount * price)
@@ -988,7 +1032,7 @@ class LocalTrade:
         if close_profit:
             self.close_profit = close_profit
             self.realized_profit = close_profit_abs
-            self.close_profit_abs = profit
+            self.close_profit_abs = prof.profit_abs
 
         current_amount_tr = amount_to_contract_precision(
             float(current_amount), self.amount_precision, self.precision_mode, self.contract_size)
