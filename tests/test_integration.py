@@ -520,7 +520,11 @@ def test_dca_order_adjust_entry_replace_fails(
     freqtrade.enter_positions()
 
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
 
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
@@ -537,14 +541,22 @@ def test_dca_order_adjust_entry_replace_fails(
 
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 2
 
     # We now have 2 orders open
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=2.05)
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 2
     assert len(Order.get_open_orders()) == 2
     # Entry adjustment is called
