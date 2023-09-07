@@ -178,20 +178,8 @@ import pandas as pd
 stats = load_backtest_stats(backtest_dir)
 strategy_stats = stats['strategy'][strategy]
 
-dates = []
-profits = []
-for date_profit in strategy_stats['daily_profit']:
-    dates.append(date_profit[0])
-    profits.append(date_profit[1])
-
-equity = 0
-equity_daily = []
-for daily_profit in profits:
-    equity_daily.append(equity)
-    equity += float(daily_profit)
-
-
-df = pd.DataFrame({'dates': dates,'equity_daily': equity_daily})
+df = pd.DataFrame(columns=['dates','equity'], data=strategy_stats['daily_profit'])
+df['equity_daily'] = df['equity'].cumsum()
 
 fig = px.line(df, x="dates", y="equity_daily")
 fig.show()
