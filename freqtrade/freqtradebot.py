@@ -1315,7 +1315,7 @@ class FreqtradeBot(LoggingMixin):
         Timeout setting takes priority over limit order adjustment request.
         :return: None
         """
-        for trade in Trade.get_open_order_trades():
+        for trade in Trade.get_open_trades():
             for open_order in trade.open_orders:
                 try:
                     order = self.exchange.fetch_order(open_order.order_id, trade.pair)
@@ -1426,7 +1426,7 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
 
-        for trade in Trade.get_open_order_trades():
+        for trade in Trade.get_open_trades():
             for open_order in trade.open_orders:
                 try:
                     order = self.exchange.fetch_order(open_order.order_id, trade.pair)

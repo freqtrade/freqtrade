@@ -2037,7 +2037,6 @@ def test_Trade_object_idem():
         'total_open_trades_stakes',
         'get_closed_trades_without_assigned_fees',
         'get_open_trades_without_assigned_fees',
-        'get_open_order_trades',
         'get_trades',
         'get_trades_query',
         'get_exit_reason_performance',

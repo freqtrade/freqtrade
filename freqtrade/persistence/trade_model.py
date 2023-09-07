@@ -1443,14 +1443,6 @@ class Trade(ModelBase, LocalTrade):
         return Trade.session.scalars(query)
 
     @staticmethod
-    def get_open_order_trades() -> List['Trade']:
-        """
-        Returns all open trades
-        NOTE: Not supported in Backtesting.
-        """
-        return cast(List[Trade], Trade.get_trades([Trade.open_orders_count != 0]).all())
-
-    @staticmethod
     def get_open_trades_without_assigned_fees():
         """
         Returns all open trades which don't have open fees set correctly
