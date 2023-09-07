@@ -3430,8 +3430,11 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     assert cancel_order_mock.call_count == 1
 
 
+@pytest.mark.parametrize('is_short', [True, False])
 @pytest.mark.parametrize('leverage', [1, 5])
-def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> None:
+@pytest.mark.parametrize('amount', [2, 50])
+def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, is_short,
+                                  leverage, amount) -> None:
     send_msg_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
@@ -3440,6 +3443,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> N
         cancel_order=cancel_order_mock,
     )
     entry_price = 0.245441
+
     mocker.patch(f'{EXMS}.get_rate', return_value=entry_price)
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.2)
 
@@ -3448,8 +3452,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> N
     freqtrade = FreqtradeBot(default_conf_usdt)
 
     trade = Trade(
-        pair='LTC/ETH',
-        amount=2 * leverage,
+        pair='LTC/USDT',
+        amount=amount * leverage,
         exchange='binance',
         open_rate=entry_price,
         open_order_id="sell_123456",
@@ -3459,19 +3463,20 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> N
         close_rate=0.555,
         close_date=dt_now(),
         exit_reason="sell_reason_whatever",
-        stake_amount=entry_price * 2,
+        stake_amount=entry_price * amount,
         leverage=leverage,
+        is_short=is_short,
     )
     trade.orders = [
         Order(
-            ft_order_side='buy',
+            ft_order_side=entry_side(is_short),
             ft_pair=trade.pair,
             ft_is_open=False,
             order_id='buy_123456',
             status="closed",
             symbol=trade.pair,
             order_type="market",
-            side="buy",
+            side=entry_side(is_short),
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,
@@ -3481,14 +3486,14 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> N
             order_filled_date=trade.open_date,
              ),
         Order(
-            ft_order_side='sell',
+            ft_order_side=exit_side(is_short),
             ft_pair=trade.pair,
             ft_is_open=True,
             order_id='sell_123456',
             status="open",
             symbol=trade.pair,
             order_type="limit",
-            side="sell",
+            side=exit_side(is_short),
             price=trade.open_rate,
             average=trade.open_rate,
             filled=0.0,
@@ -3514,8 +3519,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> N
     send_msg_mock.reset_mock()
 
     # Partial exit - below exit threshold
-    order['amount'] = 2 * leverage
-    order['filled'] = 1.9 * leverage
+    order['amount'] = amount * leverage
+    order['filled'] = amount * 0.99 * leverage
     assert not freqtrade.handle_cancel_exit(trade, order, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
