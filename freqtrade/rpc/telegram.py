@@ -889,7 +889,11 @@ class Telegram(RPCHandler):
                     f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
                     f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
                     f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
-                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
+                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`\n"
+                    f"    from `{stats['max_drawdown_start']} "
+                    f"({round_coin_value(stats['drawdown_high'], stake_cur)})`\n"
+                    f"    to `{stats['max_drawdown_end']} "
+                    f"({round_coin_value(stats['drawdown_low'], stake_cur)})`\n"
                 )
         await self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                              query=update.callback_query)

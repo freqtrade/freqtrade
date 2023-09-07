@@ -532,6 +532,7 @@ class RPC:
         winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
 
         trades_df = DataFrame([{'close_date': format_date(trade.close_date),
+                                'close_date_dt': trade.close_date,
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
 
@@ -539,10 +540,15 @@ class RPC:
 
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
+        drawdown_start: Optional[datetime] = None
+        drawdown_end: Optional[datetime] = None
+        dd_high_val = dd_low_val = 0.0
         if len(trades_df) > 0:
             try:
-                (max_drawdown_abs, _, _, _, _, max_drawdown) = calculate_max_drawdown(
-                    trades_df, value_col='profit_abs', starting_balance=starting_balance)
+                (max_drawdown_abs, drawdown_start, drawdown_end, dd_high_val, dd_low_val,
+                 max_drawdown) = calculate_max_drawdown(
+                    trades_df, value_col='profit_abs', date_col='close_date_dt',
+                    starting_balance=starting_balance)
             except ValueError:
                 # ValueError if no losing trade.
                 pass
@@ -594,6 +600,12 @@ class RPC:
             'expectancy_ratio': expectancy_ratio,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
+            'max_drawdown_start': format_date(drawdown_start),
+            'max_drawdown_start_timestamp': dt_ts_def(drawdown_start),
+            'max_drawdown_end': format_date(drawdown_end),
+            'max_drawdown_end_timestamp': dt_ts_def(drawdown_end),
+            'drawdown_high': dd_high_val,
+            'drawdown_low': dd_low_val,
             'trading_volume': trading_volume,
             'bot_start_timestamp': dt_ts_def(bot_start, 0),
             'bot_start_date': format_date(bot_start),
