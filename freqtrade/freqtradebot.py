@@ -1529,7 +1529,8 @@ class FreqtradeBot(LoggingMixin):
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
             filled_amt: float = order.get('filled', 0.0) or 0.0
-            filled_rem_stake = trade.stake_amount - filled_amt * trade.open_rate
+            # Filled val is in quote currency (after leverage)
+            filled_rem_stake = trade.stake_amount - (filled_amt * trade.open_rate / trade.leverage)
             minstake = self.exchange.get_min_pair_stake_amount(
                 trade.pair, trade.open_rate, self.strategy.stoploss)
             # Double-check remaining amount
