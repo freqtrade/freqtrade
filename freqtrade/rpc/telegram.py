@@ -532,40 +532,24 @@ class Telegram(RPCHandler):
             cur_entry_amount = order["filled"] or order["amount"]
             cur_entry_average = order["safe_price"]
             lines.append("  ")
+            lines.append(f"*{wording} #{order_nr}:*")
             if order_nr == 1:
-                lines.append(f"*{wording} #{order_nr}:*")
                 lines.append(
                     f"*Amount:* {cur_entry_amount:.8g} "
                     f"({round_coin_value(order['cost'], quote_currency)})"
                 )
                 lines.append(f"*Average Price:* {cur_entry_average:.8g}")
             else:
-                sum_stake = 0
-                sum_amount = 0
-                for y in range(order_nr):
-                    loc_order = filled_orders[y]
-                    if loc_order['is_open'] is True:
-                        # Skip open orders (e.g. stop orders)
-                        continue
-                    amount = loc_order["filled"] or loc_order["amount"]
-                    sum_stake += amount * loc_order["safe_price"]
-                    sum_amount += amount
-                prev_avg_price = sum_stake / sum_amount
                 # TODO: This calculation ignores fees.
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
-                minus_on_entry = 0
-                if prev_avg_price:
-                    minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
-
-                lines.append(f"*{wording} #{order_nr}:* at {minus_on_entry:.2%} avg Profit")
                 if is_open:
                     lines.append("({})".format(dt_humanize(order["order_filled_date"],
                                                            granularity=["day", "hour", "minute"])))
                 lines.append(f"*Amount:* {cur_entry_amount:.8g} "
                              f"({round_coin_value(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average:.8g} "
-                             f"({price_to_1st_entry:.2%} from 1st entry Rate)")
-                lines.append(f"*Order filled:* {order['order_filled_date']}")
+                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                lines.append(f"*Order Filled:* {order['order_filled_date']}")
 
             lines_detail.append("\n".join(lines))
 
