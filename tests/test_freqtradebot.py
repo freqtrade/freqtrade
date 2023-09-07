@@ -3539,7 +3539,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, is_short,
 
     send_msg_mock.reset_mock()
 
-    order['filled'] = 1
+    order['filled'] = amount * 0.5 * leverage
     assert freqtrade.handle_cancel_exit(trade, order, reason)
     assert send_msg_mock.call_count == 1
     assert (send_msg_mock.call_args_list[0][0][0]['reason']
