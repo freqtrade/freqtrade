@@ -3430,7 +3430,8 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     assert cancel_order_mock.call_count == 1
 
 
-def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
+@pytest.mark.parametrize('leverage', [1, 5])
+def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee, leverage) -> None:
     send_msg_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
@@ -3438,7 +3439,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         EXMS,
         cancel_order=cancel_order_mock,
     )
-    mocker.patch(f'{EXMS}.get_rate', return_value=0.245441)
+    entry_price = 0.245441
+    mocker.patch(f'{EXMS}.get_rate', return_value=entry_price)
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.2)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_order_fee')
@@ -3447,9 +3449,9 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
 
     trade = Trade(
         pair='LTC/ETH',
-        amount=2,
+        amount=2 * leverage,
         exchange='binance',
-        open_rate=0.245441,
+        open_rate=entry_price,
         open_order_id="sell_123456",
         open_date=dt_now() - timedelta(days=2),
         fee_open=fee.return_value,
@@ -3457,8 +3459,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         close_rate=0.555,
         close_date=dt_now(),
         exit_reason="sell_reason_whatever",
-        stake_amount=0.245441 * 2,
-        leverage=1,
+        stake_amount=entry_price * 2,
+        leverage=leverage,
     )
     trade.orders = [
         Order(
@@ -3512,8 +3514,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     send_msg_mock.reset_mock()
 
     # Partial exit - below exit threshold
-    order['amount'] = 2
-    order['filled'] = 1.9
+    order['amount'] = 2 * leverage
+    order['filled'] = 1.9 * leverage
     assert not freqtrade.handle_cancel_exit(trade, order, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
