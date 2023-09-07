@@ -3,6 +3,7 @@ This module contains the class to persist trades into SQLite
 """
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
@@ -24,6 +25,14 @@ from freqtrade.util import FtPrecise, dt_now
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProfitStruct:
+    profit_abs: float
+    profit_ratio: float
+    total_profit: float
+    total_profit_ratio: float
 
 
 class Order(ModelBase):
@@ -240,7 +249,10 @@ class Order(ModelBase):
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
-            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
+            if trade.nr_of_successful_entries == 1:
+                trade.initial_stop_loss_pct = None
+                trade.is_stop_loss_trailing = False
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -348,6 +360,7 @@ class LocalTrade:
     initial_stop_loss: Optional[float] = 0.0
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Optional[float] = None
+    is_stop_loss_trailing: bool = False
     # stoploss order id which is on exchange
     stoploss_order_id: Optional[str] = None
     # last update time of the stoploss order on exchange
@@ -655,18 +668,18 @@ class LocalTrade:
         self.stop_loss_pct = -1 * abs(percent)
 
     def adjust_stop_loss(self, current_price: float, stoploss: Optional[float],
-                         initial: bool = False, refresh: bool = False) -> None:
+                         initial: bool = False, allow_refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
         :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
         :param initial: Called to initiate stop_loss.
             Skips everything if self.stop_loss is already set.
+        :param refresh: Called to refresh stop_loss, allows adjustment in both directions
         """
         if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
-        refresh = True if refresh and self.nr_of_successful_entries == 1 else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
@@ -677,7 +690,7 @@ class LocalTrade:
         stop_loss_norm = price_to_precision(new_loss, self.price_precision, self.precision_mode,
                                             rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None or refresh:
+        if self.initial_stop_loss_pct is None:
             self.__set_stop_loss(stop_loss_norm, stoploss)
             self.initial_stop_loss = price_to_precision(
                 stop_loss_norm, self.price_precision, self.precision_mode,
@@ -692,8 +705,14 @@ class LocalTrade:
             # stop losses only walk up, never down!,
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
-            if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
+            if (
+                allow_refresh
+                or (higher_stop and not self.is_short)
+                or (lower_stop and self.is_short)
+            ):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
+                if not allow_refresh:
+                    self.is_stop_loss_trailing = True
                 self.__set_stop_loss(stop_loss_norm, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
@@ -900,11 +919,26 @@ class LocalTrade:
                     open_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Deprecated - only available for backwards compatibility
         :param rate: close rate to compare with.
         :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
+        prof = self.calculate_profit(rate, amount, open_rate)
+        return prof.profit_abs
+
+    def calculate_profit(self, rate: float, amount: Optional[float] = None,
+                         open_rate: Optional[float] = None) -> ProfitStruct:
+        """
+        Calculate profit metrics (absolute, ratio, total, total ratio).
+        All calculations include fees.
+        :param rate: close rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
+        :return: Profit structure, containing absolute and relative profits.
+        """
+
         close_trade_value = self.calc_close_trade_value(rate, amount)
         if amount is None or open_rate is None:
             open_trade_value = self.open_trade_value
@@ -912,10 +946,33 @@ class LocalTrade:
             open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
         if self.is_short:
-            profit = open_trade_value - close_trade_value
+            profit_abs = open_trade_value - close_trade_value
         else:
-            profit = close_trade_value - open_trade_value
-        return float(f"{profit:.8f}")
+            profit_abs = close_trade_value - open_trade_value
+
+        try:
+            if self.is_short:
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
+            else:
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
+            profit_ratio = float(f"{profit_ratio:.8f}")
+        except ZeroDivisionError:
+            profit_ratio = 0.0
+
+        total_profit_abs = profit_abs + self.realized_profit
+        total_profit_ratio = (
+            (total_profit_abs / self.max_stake_amount) * self.leverage
+            if self.max_stake_amount else 0.0
+        )
+        total_profit_ratio = float(f"{total_profit_ratio:.8f}")
+        profit_abs = float(f"{profit_abs:.8f}")
+
+        return ProfitStruct(
+            profit_abs=profit_abs,
+            profit_ratio=profit_ratio,
+            total_profit=profit_abs + self.realized_profit,
+            total_profit_ratio=total_profit_ratio,
+        )
 
     def calc_profit_ratio(
             self, rate: float, amount: Optional[float] = None,
@@ -936,15 +993,14 @@ class LocalTrade:
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and open_trade_value == 0.0)
-        leverage = self.leverage or 1.0
 
         if (short_close_zero or long_close_zero):
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = (1 - (close_trade_value / open_trade_value)) * leverage
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
             else:
-                profit_ratio = ((close_trade_value / open_trade_value) - 1) * leverage
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
 
         return float(f"{profit_ratio:.8f}")
 
@@ -957,7 +1013,6 @@ class LocalTrade:
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
-        profit = None
         # Reset funding fees
         self.funding_fees = 0.0
         funding_fees = 0.0
@@ -987,11 +1042,9 @@ class LocalTrade:
 
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
-                                          open_rate=float(avg_price))
-                close_profit_abs += profit
-                close_profit = self.calc_profit_ratio(
-                    exit_rate, amount=exit_amount, open_rate=avg_price)
+                prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
+                close_profit_abs += prof.profit_abs
+                close_profit = prof.profit_ratio
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += (tmp_amount * price)
@@ -1001,7 +1054,7 @@ class LocalTrade:
         if close_profit:
             self.close_profit = close_profit
             self.realized_profit = close_profit_abs
-            self.close_profit_abs = profit
+            self.close_profit_abs = prof.profit_abs
 
         current_amount_tr = amount_to_contract_precision(
             float(current_amount), self.amount_precision, self.precision_mode, self.contract_size)
@@ -1226,7 +1279,7 @@ class LocalTrade:
             logger.info(f"Found open trade: {trade}")
 
             # skip case if trailing-stop changed the stoploss already.
-            if (trade.stop_loss == trade.initial_stop_loss
+            if (not trade.is_stop_loss_trailing
                     and trade.initial_stop_loss_pct != desired_stoploss):
                 # Stoploss value got changed
 
@@ -1298,6 +1351,8 @@ class Trade(ModelBase, LocalTrade):
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True)  # type: ignore
+    is_stop_loss_trailing: Mapped[bool] = mapped_column(
+        nullable=False, default=False)  # type: ignore
     # stoploss order id which is on exchange
     stoploss_order_id: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True, index=True)  # type: ignore

@@ -503,6 +503,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        leverage=1.0,
     )
 
     now = dt_now()
@@ -552,6 +553,7 @@ def test_should_sell(default_conf, fee) -> None:
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        leverage=1.0,
     )
     now = dt_now()
     res = strategy.should_exit(trade, 1, now,

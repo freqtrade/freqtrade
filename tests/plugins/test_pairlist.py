@@ -616,6 +616,10 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
      "BTC", "binance", ['ETH/BTC', 'LTC/BTC', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+    # TKN/BTC is removed because it doesn't have enough candles
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 6, "refresh_period": 86400}],
+     "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'HOT/BTC', 'NEO/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
     #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
@@ -626,23 +630,25 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
     whitelist_conf['exchange']['name'] = exchange
+    # Ensure we have 6 candles
+    ohlcv_history_long = pd.concat([ohlcv_history, ohlcv_history])
 
-    ohlcv_history_high_vola = ohlcv_history.copy()
+    ohlcv_history_high_vola = ohlcv_history_long.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
 
     # create candles for medium overall volume with last candle high volume
-    ohlcv_history_medium_volume = ohlcv_history.copy()
+    ohlcv_history_medium_volume = ohlcv_history_long.copy()
     ohlcv_history_medium_volume.loc[ohlcv_history_medium_volume.index == 2, 'volume'] = 5
 
     # create candles for high volume with all candles high volume, but very low price.
-    ohlcv_history_high_volume = ohlcv_history.copy()
+    ohlcv_history_high_volume = ohlcv_history_long.copy()
     ohlcv_history_high_volume['volume'] = 10
     ohlcv_history_high_volume['low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
     ohlcv_history_high_volume['high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
     ohlcv_history_high_volume['close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
 
     ohlcv_data = {
-        ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history,
+        ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history_long,
         ('TKN/BTC', '1d', CandleType.SPOT): ohlcv_history,
         ('LTC/BTC', '1d', CandleType.SPOT): ohlcv_history_medium_volume,
         ('XRP/BTC', '1d', CandleType.SPOT): ohlcv_history_high_vola,
@@ -1370,7 +1376,12 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
     (['BTC/USD'],
      ['BTC/USD', 'BTC/USDT'],
      ['BTC/USD']),
-
+    (['BTC/USDT:USDT'],
+     ['BTC/USDT:USDT', 'BTC/USDT'],
+     ['BTC/USDT:USDT']),
+    (['BB_BTC/USDT', 'CC_BTC/USDT', 'AA_ETH/USDT', 'XRP/USDT', 'ETH/USDT', 'XX_BTC/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['XRP/USDT', 'ETH/USDT']),
 ])
 def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
     if expected is None:

@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
+from freqtrade.constants import CANCEL_REASON, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
@@ -31,7 +31,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize, dt_now, shorten_date
+from freqtrade.util import dt_humanize, dt_now, dt_ts_def, format_date, shorten_date
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -183,6 +183,8 @@ class RPC:
                 ]
                 oo_details = ''.join(map(str, oo_details_lst))
 
+                total_profit_abs = 0.0
+                total_profit_ratio: Optional[float] = None
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
@@ -191,23 +193,22 @@ class RPC:
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                     if len(trade.select_filled_orders(trade.entry_side)) > 0:
-                        current_profit = trade.calc_profit_ratio(
-                            current_rate) if not isnan(current_rate) else NAN
-                        current_profit_abs = trade.calc_profit(
-                            current_rate) if not isnan(current_rate) else NAN
+
+                        current_profit = current_profit_abs = current_profit_fiat = NAN
+                        if not isnan(current_rate):
+                            prof = trade.calculate_profit(current_rate)
+                            current_profit = prof.profit_ratio
+                            current_profit_abs = prof.profit_abs
+                            total_profit_abs = prof.total_profit
+                            total_profit_ratio = prof.total_profit_ratio
                     else:
                         current_profit = current_profit_abs = current_profit_fiat = 0.0
+
                 else:
                     # Closed trade ...
                     current_rate = trade.close_rate
                     current_profit = trade.close_profit or 0.0
                     current_profit_abs = trade.close_profit_abs or 0.0
-                total_profit_abs = trade.realized_profit + current_profit_abs
-                total_profit_ratio: Optional[float] = None
-                if trade.max_stake_amount:
-                    total_profit_ratio = (
-                        (total_profit_abs / trade.max_stake_amount) * trade.leverage
-                    )
 
                 # Calculate fiat profit
                 if not isnan(current_profit_abs) and self._fiat_converter:
@@ -223,8 +224,11 @@ class RPC:
                     )
 
                 # Calculate guaranteed profit (in case of trailing stop)
-                stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
-                stoploss_entry_dist_ratio = trade.calc_profit_ratio(trade.stop_loss)
+                stop_entry = trade.calculate_profit(trade.stop_loss)
+
+                stoploss_entry_dist = stop_entry.profit_abs
+                stoploss_entry_dist_ratio = stop_entry.profit_ratio
+
                 # calculate distance to stoploss
                 stoploss_current_dist = trade.stop_loss - current_rate
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
@@ -270,8 +274,9 @@ class RPC:
                     profit_str = f'{NAN:.2%}'
                 else:
                     if trade.nr_of_successful_entries > 0:
-                        trade_profit = trade.calc_profit(current_rate)
-                        profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                        profit = trade.calculate_profit(current_rate)
+                        trade_profit = profit.profit_abs
+                        profit_str = f'{profit.profit_ratio:.2%}'
                     else:
                         trade_profit = 0.0
                         profit_str = f'{0.0:.2f}'
@@ -371,7 +376,7 @@ class RPC:
 
         data = [
             {
-                'date': f"{key.year}-{key.month:02d}" if timeunit == 'months' else key,
+                'date': key,
                 'abs_profit': value["amount"],
                 'starting_balance': value["daily_stake"],
                 'rel_profit': value["rel_profit"],
@@ -494,9 +499,10 @@ class RPC:
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit_ratio = trade.calc_profit_ratio(rate=current_rate)
-                    profit_abs = trade.calc_profit(
-                        rate=trade.close_rate or current_rate) + trade.realized_profit
+                    profit = trade.calculate_profit(trade.close_rate or current_rate)
+
+                    profit_ratio = profit.profit_ratio
+                    profit_abs = profit.total_profit
 
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
@@ -532,7 +538,8 @@ class RPC:
 
         winrate = (winning_trades / closed_trade_count) if closed_trade_count > 0 else 0
 
-        trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
+        trades_df = DataFrame([{'close_date': format_date(trade.close_date),
+                                'close_date_dt': trade.close_date,
                                 'profit_abs': trade.close_profit_abs}
                                for trade in trades if not trade.is_open and trade.close_date])
 
@@ -540,10 +547,15 @@ class RPC:
 
         max_drawdown_abs = 0.0
         max_drawdown = 0.0
+        drawdown_start: Optional[datetime] = None
+        drawdown_end: Optional[datetime] = None
+        dd_high_val = dd_low_val = 0.0
         if len(trades_df) > 0:
             try:
-                (max_drawdown_abs, _, _, _, _, max_drawdown) = calculate_max_drawdown(
-                    trades_df, value_col='profit_abs', starting_balance=starting_balance)
+                (max_drawdown_abs, drawdown_start, drawdown_end, dd_high_val, dd_low_val,
+                 max_drawdown) = calculate_max_drawdown(
+                    trades_df, value_col='profit_abs', date_col='close_date_dt',
+                    starting_balance=starting_balance)
             except ValueError:
                 # ValueError if no losing trade.
                 pass
@@ -577,12 +589,12 @@ class RPC:
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': closed_trade_count,
-            'first_trade_date': first_date.strftime(DATETIME_PRINT_FORMAT) if first_date else '',
+            'first_trade_date': format_date(first_date),
             'first_trade_humanized': dt_humanize(first_date) if first_date else '',
-            'first_trade_timestamp': int(first_date.timestamp() * 1000) if first_date else 0,
-            'latest_trade_date': last_date.strftime(DATETIME_PRINT_FORMAT) if last_date else '',
+            'first_trade_timestamp': dt_ts_def(first_date, 0),
+            'latest_trade_date': format_date(last_date),
             'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
-            'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
+            'latest_trade_timestamp': dt_ts_def(last_date, 0),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
             'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,  # Deprecated
@@ -595,9 +607,15 @@ class RPC:
             'expectancy_ratio': expectancy_ratio,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
+            'max_drawdown_start': format_date(drawdown_start),
+            'max_drawdown_start_timestamp': dt_ts_def(drawdown_start),
+            'max_drawdown_end': format_date(drawdown_end),
+            'max_drawdown_end_timestamp': dt_ts_def(drawdown_end),
+            'drawdown_high': dd_high_val,
+            'drawdown_low': dd_low_val,
             'trading_volume': trading_volume,
-            'bot_start_timestamp': int(bot_start.timestamp() * 1000) if bot_start else 0,
-            'bot_start_date': bot_start.strftime(DATETIME_PRINT_FORMAT) if bot_start else '',
+            'bot_start_timestamp': dt_ts_def(bot_start, 0),
+            'bot_start_date': format_date(bot_start),
         }
 
     def __balance_get_est_stake(
@@ -1106,7 +1124,7 @@ class RPC:
             buffer = bufferHandler.buffer[-limit:]
         else:
             buffer = bufferHandler.buffer
-        records = [[datetime.fromtimestamp(r.created).strftime(DATETIME_PRINT_FORMAT),
+        records = [[format_date(datetime.fromtimestamp(r.created)),
                    r.created * 1000, r.name, r.levelname,
                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
@@ -1323,7 +1341,7 @@ class RPC:
 
         return {
             "last_process": str(last_p),
-            "last_process_loc": last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            "last_process_loc": format_date(last_p.astimezone(tzlocal())),
             "last_process_ts": int(last_p.timestamp()),
         }
 

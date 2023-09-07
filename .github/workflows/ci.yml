@@ -25,7 +25,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-20.04, ubuntu-22.04 ]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -127,7 +127,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -237,7 +237,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -448,7 +448,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version: "3.11"
 
     - name: Extract branch name
       shell: bash

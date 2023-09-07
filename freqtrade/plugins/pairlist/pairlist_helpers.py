@@ -29,9 +29,8 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
 
-        for element in result:
-            if not re.fullmatch(r'^[A-Za-z0-9/-]+$', element):
-                result.remove(element)
+        result = [element for element in result if re.fullmatch(r'^[A-Za-z0-9:/-]+$', element)]
+
     else:
         for pair_wc in wildcardpl:
             try:

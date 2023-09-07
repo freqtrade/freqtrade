@@ -617,6 +617,47 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json()['data'][0]['date'] == str(datetime.now(timezone.utc).date())
 
 
+def test_api_weekly(botclient, mocker, ticker, fee, markets, time_machine):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    time_machine.move_to("2023-03-31 21:45:05 +00:00")
+    rc = client_get(client, f"{BASE_URI}/weekly")
+    assert_response(rc)
+    assert len(rc.json()['data']) == 4
+    assert rc.json()['stake_currency'] == 'BTC'
+    assert rc.json()['fiat_display_currency'] == 'USD'
+    # Moved to monday
+    assert rc.json()['data'][0]['date'] == '2023-03-27'
+    assert rc.json()['data'][1]['date'] == '2023-03-20'
+
+
+def test_api_monthly(botclient, mocker, ticker, fee, markets, time_machine):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    time_machine.move_to("2023-03-31 21:45:05 +00:00")
+    rc = client_get(client, f"{BASE_URI}/monthly")
+    assert_response(rc)
+    assert len(rc.json()['data']) == 3
+    assert rc.json()['stake_currency'] == 'BTC'
+    assert rc.json()['fiat_display_currency'] == 'USD'
+    assert rc.json()['data'][0]['date'] == '2023-03-01'
+    assert rc.json()['data'][1]['date'] == '2023-02-01'
+
+
 @pytest.mark.parametrize('is_short', [True, False])
 def test_api_trades(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
@@ -936,6 +977,10 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'expectancy_ratio': expected['expectancy_ratio'],
         'max_drawdown': ANY,
         'max_drawdown_abs': ANY,
+        'max_drawdown_start': ANY,
+        'max_drawdown_start_timestamp': ANY,
+        'max_drawdown_end': ANY,
+        'max_drawdown_end_timestamp': ANY,
         'trading_volume': expected['trading_volume'],
         'bot_start_timestamp': 0,
         'bot_start_date': '',
@@ -985,7 +1030,7 @@ def test_api_performance(botclient, fee):
         fee_close=fee.return_value,
         fee_open=fee.return_value,
         close_rate=0.265441,
-
+        leverage=1.0,
     )
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)
@@ -1000,7 +1045,8 @@ def test_api_performance(botclient, fee):
         is_open=False,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
-        close_rate=0.391
+        close_rate=0.391,
+        leverage=1.0,
     )
     trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
     trade.close_profit_abs = trade.calc_profit(trade.close_rate)

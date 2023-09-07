@@ -78,18 +78,28 @@ def test_set_stop_loss_liquidation(fee):
     assert trade.liquidation_price == 0.11
     # Stoploss does not change from liquidation price
     assert trade.stop_loss == 1.8
+    assert trade.stop_loss_pct == -0.2
     assert trade.initial_stop_loss == 1.8
 
     # lower stop doesn't move stoploss
     trade.adjust_stop_loss(1.8, 0.2)
     assert trade.liquidation_price == 0.11
     assert trade.stop_loss == 1.8
+    assert trade.stop_loss_pct == -0.2
+    assert trade.initial_stop_loss == 1.8
+
+    # Lower stop with "allow_refresh" does move stoploss
+    trade.adjust_stop_loss(1.8, 0.22, allow_refresh=True)
+    assert trade.liquidation_price == 0.11
+    assert trade.stop_loss == 1.602
+    assert trade.stop_loss_pct == -0.22
     assert trade.initial_stop_loss == 1.8
 
     # higher stop does move stoploss
     trade.adjust_stop_loss(2.1, 0.1)
     assert trade.liquidation_price == 0.11
     assert pytest.approx(trade.stop_loss) == 1.994999
+    assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.8
     assert trade.stoploss_or_liquidation == trade.stop_loss
 
@@ -131,12 +141,21 @@ def test_set_stop_loss_liquidation(fee):
     assert trade.liquidation_price == 3.8
     # Stoploss does not change from liquidation price
     assert trade.stop_loss == 2.2
+    assert trade.stop_loss_pct == -0.2
     assert trade.initial_stop_loss == 2.2
 
     # Stop doesn't move stop higher
     trade.adjust_stop_loss(2.0, 0.3)
     assert trade.liquidation_price == 3.8
     assert trade.stop_loss == 2.2
+    assert trade.stop_loss_pct == -0.2
+    assert trade.initial_stop_loss == 2.2
+
+    # Stop does move stop higher with "allow_refresh"
+    trade.adjust_stop_loss(2.0, 0.3, allow_refresh=True)
+    assert trade.liquidation_price == 3.8
+    assert trade.stop_loss == 2.3
+    assert trade.stop_loss_pct == -0.3
     assert trade.initial_stop_loss == 2.2
 
     # Stoploss does move lower
@@ -144,6 +163,7 @@ def test_set_stop_loss_liquidation(fee):
     trade.adjust_stop_loss(1.8, 0.1)
     assert trade.liquidation_price == 1.5
     assert pytest.approx(trade.stop_loss) == 1.89
+    assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 2.2
     assert trade.stoploss_or_liquidation == 1.5
 
@@ -1125,12 +1145,29 @@ def test_calc_profit(
         leverage=lev,
         fee_open=0.0025,
         fee_close=fee_close,
+        max_stake_amount=60.0,
         trading_mode=trading_mode,
         funding_fees=funding_fees
     )
 
+    profit_res = trade.calculate_profit(close_rate)
+    assert pytest.approx(profit_res.profit_abs) == round(profit, 8)
+    assert pytest.approx(profit_res.profit_ratio) == round(profit_ratio, 8)
+    val = trade.open_trade_value * (profit_res.profit_ratio) / lev
+    assert pytest.approx(val) == profit_res.profit_abs
+
+    assert pytest.approx(profit_res.total_profit) == round(profit, 8)
+    # assert pytest.approx(profit_res.total_profit_ratio) == round(profit_ratio, 8)
+
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
+
+    profit_res2 = trade.calculate_profit(close_rate, trade.amount, trade.open_rate)
+    assert pytest.approx(profit_res2.profit_abs) == round(profit, 8)
+    assert pytest.approx(profit_res2.profit_ratio) == round(profit_ratio, 8)
+
+    assert pytest.approx(profit_res2.total_profit) == round(profit, 8)
+    # assert pytest.approx(profit_res2.total_profit_ratio) == round(profit_ratio, 8)
 
     assert pytest.approx(trade.calc_profit(close_rate, trade.amount,
                          trade.open_rate)) == round(profit, 8)

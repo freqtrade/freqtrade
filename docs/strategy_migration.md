@@ -311,12 +311,13 @@ After:
 
 ``` python hl_lines="5 7"
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, after_fill: bool, 
+                        **kwargs) -> Optional[float]:
         # once the profit has risen above 10%, keep the stoploss at 7% above the open price
         if current_profit > 0.10:
             return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
 
-        return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
+        return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short, leverage=trade.leverage)
 
 
 ```

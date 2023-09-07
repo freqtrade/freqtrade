@@ -51,6 +51,7 @@ class TimeunitMappings:
     message2: str
     callback: str
     default: int
+    dateformat: str
 
 
 def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
@@ -736,10 +737,10 @@ class Telegram(RPCHandler):
         """
 
         vals = {
-            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7),
+            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7, '%Y-%m-%d'),
             'weeks': TimeunitMappings('Monday', 'Weekly', 'weeks (starting from Monday)',
-                                      'update_weekly', 8),
-            'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6),
+                                      'update_weekly', 8, '%Y-%m-%d'),
+            'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6, '%Y-%m'),
         }
         val = vals[unit]
 
@@ -756,7 +757,7 @@ class Telegram(RPCHandler):
             unit
         )
         stats_tab = tabulate(
-            [[f"{period['date']} ({period['trade_count']})",
+            [[f"{period['date']:{val.dateformat}} ({period['trade_count']})",
               f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
               f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
               f"{period['rel_profit']:.2%}",
@@ -888,7 +889,11 @@ class Telegram(RPCHandler):
                     f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
                     f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
                     f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
-                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
+                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`\n"
+                    f"    from `{stats['max_drawdown_start']} "
+                    f"({round_coin_value(stats['drawdown_high'], stake_cur)})`\n"
+                    f"    to `{stats['max_drawdown_end']} "
+                    f"({round_coin_value(stats['drawdown_low'], stake_cur)})`\n"
                 )
         await self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                              query=update.callback_query)

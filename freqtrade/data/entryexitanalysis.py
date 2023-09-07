@@ -119,8 +119,15 @@ def _do_group_table_output(bigdf, glist, csv_path: Path, to_csv=False, ):
             new['avg_win'] = (new['profit_abs_wins'] / new.iloc[:, 1]).fillna(0)
             new['avg_loss'] = (new['profit_abs_loss'] / new.iloc[:, 2]).fillna(0)
 
-            new.columns = ['total_num_buys', 'wins', 'losses', 'profit_abs_wins', 'profit_abs_loss',
-                           'profit_tot', 'wl_ratio_pct', 'avg_win', 'avg_loss']
+            new['exp_ratio'] = (
+                (
+                    (1 + (new['avg_win'] / abs(new['avg_loss']))) * (new['wl_ratio_pct'] / 100)
+                ) - 1).fillna(0)
+
+            new.columns = ['total_num_buys', 'wins', 'losses',
+                           'profit_abs_wins', 'profit_abs_loss',
+                           'profit_tot', 'wl_ratio_pct',
+                           'avg_win', 'avg_loss', 'exp_ratio']
 
             sortcols = ['total_num_buys']
 
@@ -204,6 +211,7 @@ def prepare_results(analysed_trades, stratname,
                     timerange=None):
     res_df = pd.DataFrame()
     for pair, trades in analysed_trades[stratname].items():
+        trades.dropna(subset=['close_date'], inplace=True)
         res_df = pd.concat([res_df, trades], ignore_index=True)
 
     res_df = _select_rows_within_dates(res_df, timerange)

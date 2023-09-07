@@ -134,6 +134,20 @@ class FtRestClient:
         """
         return self._get("daily", params={"timescale": days} if days else None)
 
+    def weekly(self, weeks=None):
+        """Return the profits for each week, and amount of trades.
+
+        :return: json object
+        """
+        return self._get("weekly", params={"timescale": weeks} if weeks else None)
+
+    def monthly(self, months=None):
+        """Return the profits for each month, and amount of trades.
+
+        :return: json object
+        """
+        return self._get("monthly", params={"timescale": months} if months else None)
+
     def edge(self):
         """Return information about edge.
 

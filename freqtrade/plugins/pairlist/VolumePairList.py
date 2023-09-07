@@ -260,6 +260,7 @@ class VolumePairList(IPairList):
                     quoteVolume = (pair_candles['quoteVolume']
                                    .rolling(self._lookback_period)
                                    .sum()
+                                   .fillna(0)
                                    .iloc[-1])
 
                     # replace quoteVolume with range quoteVolume sum calculated above

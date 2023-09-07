@@ -141,6 +141,10 @@ class Profit(BaseModel):
     expectancy_ratio: float
     max_drawdown: float
     max_drawdown_abs: float
+    max_drawdown_start: str
+    max_drawdown_start_timestamp: int
+    max_drawdown_end: str
+    max_drawdown_end_timestamp: int
     trading_volume: Optional[float] = None
     bot_start_timestamp: int
     bot_start_date: str
@@ -157,7 +161,7 @@ class Stats(BaseModel):
     durations: Dict[str, Optional[float]]
 
 
-class DailyRecord(BaseModel):
+class DailyWeeklyMonthlyRecord(BaseModel):
     date: date
     abs_profit: float
     rel_profit: float
@@ -166,8 +170,8 @@ class DailyRecord(BaseModel):
     trade_count: int
 
 
-class Daily(BaseModel):
-    data: List[DailyRecord]
+class DailyWeeklyMonthly(BaseModel):
+    data: List[DailyWeeklyMonthlyRecord]
     fiat_display_currency: str
     stake_currency: str
 

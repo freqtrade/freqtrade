@@ -832,7 +832,7 @@ class Exchange:
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
         now = dt_now()
-        order_id = f'dry_run_{side}_{now.timestamp()}'
+        order_id = f'dry_run_{side}_{pair}_{now.timestamp()}'
         # Rounding here must respect to contract sizes
         _amount = self._contracts_to_amount(
             pair, self.amount_to_precision(pair, self._amount_to_contracts(pair, amount)))
@@ -863,8 +863,8 @@ class Exchange:
         if self.exchange_has('fetchL2OrderBook'):
             orderbook = self.fetch_l2_order_book(pair, 20)
         if ordertype == "limit" and orderbook:
-            # Allow a 3% price difference
-            allowed_diff = 0.03
+            # Allow a 1% price difference
+            allowed_diff = 0.01
             if self._dry_is_price_crossed(pair, side, rate, orderbook, allowed_diff):
                 logger.info(
                     f"Converted order {pair} to market order due to price {rate} crossing spread "
@@ -920,7 +920,7 @@ class Exchange:
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
-            filled_amount = 0.0
+            filled_value = 0.0
             book_entry_price = 0.0
             for book_entry in orderbook[ob_type]:
                 book_entry_price = book_entry[0]
@@ -928,17 +928,17 @@ class Exchange:
                 if remaining_amount > 0:
                     if remaining_amount < book_entry_coin_volume:
                         # Orderbook at this slot bigger than remaining amount
-                        filled_amount += remaining_amount * book_entry_price
+                        filled_value += remaining_amount * book_entry_price
                         break
                     else:
-                        filled_amount += book_entry_coin_volume * book_entry_price
+                        filled_value += book_entry_coin_volume * book_entry_price
                     remaining_amount -= book_entry_coin_volume
                 else:
                     break
             else:
                 # If remaining_amount wasn't consumed completely (break was not called)
-                filled_amount += remaining_amount * book_entry_price
-            forecast_avg_filled_price = max(filled_amount, 0) / amount
+                filled_value += remaining_amount * book_entry_price
+            forecast_avg_filled_price = max(filled_value, 0) / amount
             # Limit max. slippage to specified value
             if side == 'buy':
                 forecast_avg_filled_price = min(forecast_avg_filled_price, max_slippage_val)
@@ -1421,8 +1421,17 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def __fetch_orders_emulate(self, pair: str, since_ms: int) -> List[Dict]:
+        orders = []
+        if self.exchange_has('fetchClosedOrders'):
+            orders = self._api.fetch_closed_orders(pair, since=since_ms)
+            if self.exchange_has('fetchOpenOrders'):
+                orders_open = self._api.fetch_open_orders(pair, since=since_ms)
+                orders.extend(orders_open)
+        return orders
+
     @retrier(retries=0)
-    def fetch_orders(self, pair: str, since: datetime) -> List[Dict]:
+    def fetch_orders(self, pair: str, since: datetime, params: Optional[Dict] = None) -> List[Dict]:
         """
         Fetch all orders for a pair "since"
         :param pair: Pair for the query
@@ -1431,26 +1440,20 @@ class Exchange:
         if self._config['dry_run']:
             return []
 
-        def fetch_orders_emulate() -> List[Dict]:
-            orders = []
-            if self.exchange_has('fetchClosedOrders'):
-                orders = self._api.fetch_closed_orders(pair, since=since_ms)
-                if self.exchange_has('fetchOpenOrders'):
-                    orders_open = self._api.fetch_open_orders(pair, since=since_ms)
-                    orders.extend(orders_open)
-            return orders
-
         try:
             since_ms = int((since.timestamp() - 10) * 1000)
+
             if self.exchange_has('fetchOrders'):
+                if not params:
+                    params = {}
                 try:
-                    orders: List[Dict] = self._api.fetch_orders(pair, since=since_ms)
+                    orders: List[Dict] = self._api.fetch_orders(pair, since=since_ms, params=params)
                 except ccxt.NotSupported:
                     # Some exchanges don't support fetchOrders
                     # attempt to fetch open and closed orders separately
-                    orders = fetch_orders_emulate()
+                    orders = self.__fetch_orders_emulate(pair, since_ms)
             else:
-                orders = fetch_orders_emulate()
+                orders = self.__fetch_orders_emulate(pair, since_ms)
             self._log_exchange_response('fetch_orders', orders)
             orders = [self._order_contracts_to_amount(o) for o in orders]
             return orders
