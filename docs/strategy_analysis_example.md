@@ -167,7 +167,7 @@ trades.groupby("pair")["exit_reason"].value_counts()
 # Plotting equity line (starting with 0 on day 1 and adding daily profit for each backtested day)
 
 from freqtrade.configuration import Configuration
-from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
+from freqtrade.data.btanalysis import load_backtest_stats
 import plotly.express as px
 import pandas as pd
 
