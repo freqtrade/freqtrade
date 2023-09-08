@@ -513,7 +513,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.orders.append(oobj)
     trade.update_trade(oobj)
-    assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 2.0
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -527,7 +527,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
     trade.orders.append(oobj)
     trade.update_trade(oobj)
-    assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
     assert trade.close_rate == 2.2
     assert pytest.approx(trade.close_profit) == 0.094513715710723
     assert trade.close_date is not None
@@ -692,7 +692,7 @@ def test_update_open_order(limit_buy_order_usdt):
         trading_mode=margin
     )
 
-    assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
     assert trade.close_profit is None
     assert trade.close_date is None
 
@@ -700,7 +700,7 @@ def test_update_open_order(limit_buy_order_usdt):
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
 
-    assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
     assert trade.close_profit is None
     assert trade.close_date is None
 
@@ -1357,6 +1357,7 @@ def test_get_open_orders(fee, is_short, use_db):
     # assert trade.id == 3
     assert len(trade.orders) == 2
     assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
 
     Trade.use_db = True
 
@@ -2683,7 +2684,7 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         assert len(trade.orders) == idx + 1
         if idx < len(data) - 1:
             assert trade.is_open is True
-        assert len(trade.open_orders) == 0
+        assert not trade.has_open_orders
         assert trade.amount == result[0]
         assert trade.open_rate == result[1]
         assert trade.stake_amount == result[2]
@@ -2697,4 +2698,4 @@ def test_recalc_trade_from_orders_dca(data) -> None:
     assert not trade.is_open
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
-    assert len(trade.open_orders) == 0
+    assert not trade.has_open_orders
