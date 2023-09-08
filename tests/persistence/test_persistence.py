@@ -458,14 +458,14 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
         leverage=lev,
         trading_mode=trading_mode
     )
-    assert trade.open_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.close_profit is None
     assert trade.close_date is None
 
     oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', entry_side)
     trade.orders.append(oobj)
     trade.update_trade(oobj)
-    assert trade.open_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == open_rate
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -481,7 +481,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     trade.orders.append(oobj)
     trade.update_trade(oobj)
 
-    assert trade.open_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.close_rate == close_rate
     assert pytest.approx(trade.close_profit) == profit
     assert trade.close_date is not None

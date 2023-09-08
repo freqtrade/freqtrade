@@ -872,7 +872,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert trade
     assert trade.is_open is True
-    assert trade.open_orders_count > 0
+    assert trade.has_open_orders
     assert '22' in trade.open_orders_ids
 
     # Test calling with price
@@ -899,7 +899,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.session.scalars(select(Trade)).all()[2]
     trade.is_short = is_short
     assert trade
-    assert trade.open_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['average'] * order['filled'] / leverage, 8)
     assert pytest.approx(trade.liquidation_price) == liq_price
@@ -917,7 +917,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.session.scalars(select(Trade)).all()[3]
     trade.is_short = is_short
     assert trade
-    assert trade.open_orders_count == 0
+    assert not trade.has_open_orders
     assert trade.open_rate == 0.5
     assert trade.stake_amount == round(order['average'] * order['filled'] / leverage, 8)
 
@@ -3184,12 +3184,13 @@ def test_manage_open_orders_partial(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_orders_count != 0)
+        select(Trade)
     ).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount / leverage
     assert trades[0].stake_amount != prior_stake
+    assert not trades[0].has_open_orders
 
 
 @pytest.mark.parametrize("is_short", [False, True])

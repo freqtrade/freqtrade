@@ -506,10 +506,6 @@ class LocalTrade:
         return len(open_orders_wo_sl) > 0
 
     @property
-    def open_orders_count(self) -> int:
-        return len(self.open_orders)
-
-    @property
     def open_entry_or_exit_orders_count(self) -> int:
 
         open_buy_or_sell_orders = [
@@ -519,7 +515,7 @@ class LocalTrade:
         return len(open_buy_or_sell_orders)
 
     @property
-    def open_orders_ids(self) -> list:
+    def open_orders_ids(self) -> List[str]:
         open_orders_ids_wo_sl = [
             oo.order_id for oo in self.open_orders
             if oo.ft_order_side not in ['stoploss']
