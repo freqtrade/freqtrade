@@ -1451,7 +1451,7 @@ class FreqtradeBot(LoggingMixin):
                     self.handle_cancel_exit(
                         trade, order, open_order.order_id, constants.CANCEL_REASON['ALL_CANCELLED']
                     )
-            Trade.commit()
+        Trade.commit()
 
     def handle_cancel_enter(
             self, trade: Trade, order: Dict, order_id: str,
