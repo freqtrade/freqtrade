@@ -298,7 +298,7 @@ class RPC:
                 ]
 
                 # exemple: '*.**.**' trying to enter, exit and exit with 3 different orders
-                active_attempt_side_symbols_str = '.'.join(map(str, active_attempt_side_symbols))
+                active_attempt_side_symbols_str = '.'.join(active_attempt_side_symbols)
 
                 detail_trade = [
                     f'{trade.id} {direction_str}',
@@ -787,7 +787,7 @@ class RPC:
 
     def __exec_force_exit(self, trade: Trade, ordertype: Optional[str],
                           amount: Optional[float] = None) -> bool:
-        # Check if there is there is open orders
+        # Check if there is there are open orders
         trade_entry_cancelation_registry = []
         for oo in trade.open_orders:
             trade_entry_cancelation_res = {'order_id': oo.order_id, 'cancel_state': False}
@@ -904,10 +904,10 @@ class RPC:
         if trade:
             is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
-                raise RPCException(f'position for {pair} already open - id: {trade.id}')
+                raise RPCException(f"position for {pair} already open - id: {trade.id}")
             if trade.has_open_orders:
-                raise RPCException(f'position for {pair} already open - id: {trade.id} '
-                                   f'and has open order {trade.open_orders_ids}')
+                raise RPCException(f"position for {pair} already open - id: {trade.id} "
+                                   f"and has open order {','.join(trade.open_orders_ids)}")
         else:
             if Trade.get_open_trade_count() >= self._config['max_open_trades']:
                 raise RPCException("Maximum number of trades is reached.")
@@ -956,7 +956,7 @@ class RPC:
                     raise RPCException("Order not found.")
                 self._freqtrade.handle_cancel_order(
                     order, open_order.order_id, trade, CANCEL_REASON['USER_CANCEL'])
-                Trade.commit()
+            Trade.commit()
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """
@@ -971,13 +971,12 @@ class RPC:
                 raise RPCException('invalid argument')
 
             # Try cancelling regular order if that exists
-            if trade.has_open_orders:
-                for open_order in trade.open_orders:
-                    try:
-                        self._freqtrade.exchange.cancel_order(open_order.order_id, trade.pair)
-                        c_count += 1
-                    except (ExchangeError):
-                        pass
+            for open_order in trade.open_orders:
+                try:
+                    self._freqtrade.exchange.cancel_order(open_order.order_id, trade.pair)
+                    c_count += 1
+                except (ExchangeError):
+                    pass
 
             # cancel stoploss on exchange ...
             if (self._freqtrade.strategy.order_types.get('stoploss_on_exchange')

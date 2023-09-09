@@ -495,10 +495,16 @@ class LocalTrade:
 
     @property
     def open_orders(self) -> List[Order]:
+        """
+        All open orders for this trade excluding stoploss orders
+        """
         return [o for o in self.orders if o.ft_is_open and o.ft_order_side != 'stoploss']
 
     @property
     def has_open_orders(self) -> int:
+        """
+        True if there are open orders for this trade excluding stoploss orders
+        """
         open_orders_wo_sl = [
             o for o in self.orders
             if o.ft_order_side not in ['stoploss'] and o.ft_is_open
