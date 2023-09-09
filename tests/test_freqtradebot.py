@@ -2984,7 +2984,7 @@ def test_manage_open_orders_buy_exception(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert open_trade.open_entry_or_exit_orders_count == 1
+    assert len(open_trade.open_orders) == 1
 
 
 @pytest.mark.parametrize("is_short", [False, True])
