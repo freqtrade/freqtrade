@@ -1446,7 +1446,7 @@ def test_to_json(fee):
         'price_precision': 7.0,
         'precision_mode': 1,
         'orders': [],
-        'open_orders': [],
+        'has_open_orders': False,
     }
 
     # Simulate dry_run entries
@@ -1532,7 +1532,7 @@ def test_to_json(fee):
         'price_precision': 8.0,
         'precision_mode': 2,
         'orders': [],
-        'open_orders': [],
+        'has_open_orders': False,
     }
 
 

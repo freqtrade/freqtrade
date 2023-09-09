@@ -1158,6 +1158,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'price_precision': None,
         'precision_mode': None,
         'orders': [ANY],
+        'has_open_orders': True,
     }
 
     mocker.patch(f'{EXMS}.get_rate',

@@ -90,6 +90,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount_precision': 8.0,
         'price_precision': 8.0,
         'precision_mode': 2,
+        'has_open_orders': False,
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
@@ -128,6 +129,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_abs': 0.0,
         'total_profit_abs': 0.0,
         'open_orders': '(limit buy rem=91.07468123)',
+        'has_open_orders': True,
     })
     response_unfilled['orders'][0].update({
         'is_open': True,
@@ -145,7 +147,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     results = rpc._rpc_trade_status()
     # Reuse above object, only remaining changed.
     response_unfilled['orders'][0].update({
-        'remaining': None
+        'remaining': None,
     })
     assert results[0] == response_unfilled
 
@@ -164,6 +166,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     response.update({
         'max_stake_amount': 0.001,
         'total_profit_ratio': pytest.approx(-0.00409153),
+        'has_open_orders': False,
     })
     assert results[0] == response
 

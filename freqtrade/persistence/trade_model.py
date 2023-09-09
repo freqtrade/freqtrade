@@ -542,8 +542,6 @@ class LocalTrade:
     def to_json(self, minified: bool = False) -> Dict[str, Any]:
         filled_or_open_orders = self.select_filled_or_open_orders()
         orders_json = [order.to_json(self.entry_side, minified) for order in filled_or_open_orders]
-        open_orders = self.select_open_orders()
-        open_orders_json = [order.to_json(self.entry_side, minified) for order in open_orders]
 
         return {
             'trade_id': self.id,
@@ -623,7 +621,7 @@ class LocalTrade:
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
             'orders': orders_json,
-            'open_orders': open_orders_json
+            'has_open_orders': self.has_open_orders,
         }
 
     @staticmethod
@@ -1126,16 +1124,6 @@ class LocalTrade:
                     and o.status in NON_OPEN_EXCHANGE_STATES
                     )
                 or (o.ft_is_open is True and o.status is not None)
-                ]
-
-    def select_open_orders(self) -> List['Order']:
-        """
-        Finds open orders
-        :param order_side: Side of the order (either 'buy', 'sell', or None)
-        :return: array of Order objects
-        """
-        return [o for o in self.orders if
-                (o.ft_is_open is True and o.status is not None)
                 ]
 
     @property
