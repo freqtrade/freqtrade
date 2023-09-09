@@ -1364,6 +1364,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'amount_precision': None,
         'price_precision': None,
         'precision_mode': None,
+        'has_open_orders': False,
         'orders': [],
     }
 
