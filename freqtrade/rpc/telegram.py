@@ -663,10 +663,10 @@ class Telegram(RPCHandler):
                              ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
                 lines.append("*Stoploss distance:* `{stoploss_current_dist:.8g}` "
                              "`({stoploss_current_dist_ratio:.2%})`")
-                for order in r.get('open_orders', []):
+                if r.get('open_orders'):
                     lines.append(
-                        f"*Open Order:* `{order}`"
-                        + "- `{exit_order_status}`" if r['exit_order_status'] else "")
+                        "*Open Order:* `{open_orders}`"
+                        + ("- `{exit_order_status}`" if r['exit_order_status'] else ""))
 
             lines_detail = self._prepare_order_details(
                 r['orders'], r['quote_currency'], r['is_open'])

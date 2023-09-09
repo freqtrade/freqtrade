@@ -181,7 +181,7 @@ class RPC:
                     for oo in trade.open_orders
                     if oo.ft_order_side not in ['stoploss']
                 ]
-                oo_details = ''.join(map(str, oo_details_lst))
+                oo_details = ', '.join(oo_details_lst)
 
                 total_profit_abs = 0.0
                 total_profit_ratio: Optional[float] = None
