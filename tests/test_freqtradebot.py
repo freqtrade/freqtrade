@@ -2939,7 +2939,6 @@ def test_check_handle_cancelled_buy(
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    # open_trade.orders = []
     open_trade.is_short = is_short
     Trade.session.add(open_trade)
     Trade.commit()
@@ -2955,8 +2954,7 @@ def test_check_handle_cancelled_buy(
         ).all()
     assert len(trades) == 0
     exit_name = 'Buy' if is_short else 'Sell'
-    assert log_has_re(
-        f"{exit_name} order cancelled on exchange for Trade.*", caplog)
+    assert log_has_re(f"{exit_name} order cancelled on exchange for Trade.*", caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -3287,7 +3285,7 @@ def test_manage_open_orders_partial_except(
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 3
     trades = Trade.session.scalars(
-        select(Trade).where(Order.ft_trade_id == Trade.id)
+        select(Trade)
         ).all()
     assert len(trades) == 1
     # Verify that trade has been updated
@@ -4032,7 +4030,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     freqtrade.exit_positions(trades)
     assert trade
     assert trade.stoploss_order_id == '123'
-    # assert not trade.has_open_orders
+    assert not trade.has_open_orders
 
     # Assuming stoploss on exchange is hit
     # stoploss_order_id should become None
