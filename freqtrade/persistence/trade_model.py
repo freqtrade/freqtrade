@@ -352,7 +352,6 @@ class LocalTrade:
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
-    open_order_id: Optional[str] = None
     # absolute value of the stop loss
     stop_loss: float = 0.0
     # percentage value of the stop loss
@@ -494,6 +493,32 @@ class LocalTrade:
         except IndexError:
             return ''
 
+    @property
+    def open_orders(self) -> List[Order]:
+        """
+        All open orders for this trade excluding stoploss orders
+        """
+        return [o for o in self.orders if o.ft_is_open and o.ft_order_side != 'stoploss']
+
+    @property
+    def has_open_orders(self) -> int:
+        """
+        True if there are open orders for this trade excluding stoploss orders
+        """
+        open_orders_wo_sl = [
+            o for o in self.orders
+            if o.ft_order_side not in ['stoploss'] and o.ft_is_open
+        ]
+        return len(open_orders_wo_sl) > 0
+
+    @property
+    def open_orders_ids(self) -> List[str]:
+        open_orders_ids_wo_sl = [
+            oo.order_id for oo in self.open_orders
+            if oo.ft_order_side not in ['stoploss']
+        ]
+        return open_orders_ids_wo_sl
+
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
@@ -512,8 +537,8 @@ class LocalTrade:
         )
 
     def to_json(self, minified: bool = False) -> Dict[str, Any]:
-        filled_orders = self.select_filled_or_open_orders()
-        orders = [order.to_json(self.entry_side, minified) for order in filled_orders]
+        filled_or_open_orders = self.select_filled_or_open_orders()
+        orders_json = [order.to_json(self.entry_side, minified) for order in filled_or_open_orders]
 
         return {
             'trade_id': self.id,
@@ -589,11 +614,11 @@ class LocalTrade:
             'is_short': self.is_short,
             'trading_mode': self.trading_mode,
             'funding_fees': self.funding_fees,
-            'open_order_id': self.open_order_id,
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
-            'orders': orders,
+            'orders': orders_json,
+            'has_open_orders': self.has_open_orders,
         }
 
     @staticmethod
@@ -711,24 +736,13 @@ class LocalTrade:
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
             self.stoploss_order_id = None
@@ -761,7 +775,6 @@ class LocalTrade:
         self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
         self.exit_order_status = 'closed'
-        self.open_order_id = None
         self.recalc_trade_from_orders(is_closing=True)
         if show_msg:
             logger.info(f"Marking {self} as closed as the trade is fulfilled "
@@ -1309,7 +1322,6 @@ class Trade(ModelBase, LocalTrade):
     open_date: Mapped[datetime] = mapped_column(
         nullable=False, default=datetime.utcnow)  # type: ignore
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
-    open_order_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
     # percentage value of the stop loss
@@ -1465,14 +1477,6 @@ class Trade(ModelBase, LocalTrade):
         # this sholud remain split. if use_db is False, session is not available and the above will
         # raise an exception.
         return Trade.session.scalars(query)
-
-    @staticmethod
-    def get_open_order_trades() -> List['Trade']:
-        """
-        Returns all open trades
-        NOTE: Not supported in Backtesting.
-        """
-        return cast(List[Trade], Trade.get_trades(Trade.open_order_id.isnot(None)).all())
 
     @staticmethod
     def get_open_trades_without_assigned_fees():
@@ -1772,7 +1776,6 @@ class Trade(ModelBase, LocalTrade):
             is_short=data["is_short"],
             trading_mode=data["trading_mode"],
             funding_fees=data["funding_fees"],
-            open_order_id=data["open_order_id"],
         )
         for order in data["orders"]:
 

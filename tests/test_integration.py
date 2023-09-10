@@ -103,7 +103,6 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
 
         trade.orders.append(oobj)
         trade.stoploss_order_id = f"stop{idx}"
-        trade.open_order_id = None
 
     n = freqtrade.exit_positions(trades)
     assert n == 2
@@ -194,8 +193,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     for trade in trades:
         assert pytest.approx(trade.stake_amount) == result1
-        # Reset trade open order id's
-        trade.open_order_id = None
+
     trades = Trade.get_open_trades()
     assert len(trades) == 5
     bals = freqtrade.wallets.get_all_balances()
@@ -386,7 +384,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert len(Trade.get_trades().all()) == 1
     trade: Trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct == -0.1
@@ -399,7 +397,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     assert pytest.approx(trade.stake_amount) == 60
 
     # Cancel order and place new one
@@ -407,7 +405,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct == -0.1
@@ -421,7 +419,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
-    assert trade.open_order_id is None
+    assert not trade.has_open_orders
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.99
     assert pytest.approx(trade.stake_amount) == 60
@@ -438,7 +436,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 3
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     assert trade.open_rate == 1.99
     assert trade.orders[-1].price == 1.96
     assert trade.orders[-1].cost == 120 * leverage
@@ -449,7 +447,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 4
-    assert trade.open_order_id is not None
+    assert trade.has_open_orders
     assert trade.open_rate == 1.99
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.orders[-1].price == 1.95
@@ -463,7 +461,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 4
-    assert trade.open_order_id is None
+    assert not trade.has_open_orders
     assert pytest.approx(trade.open_rate) == 1.963153456
     assert trade.orders[-1].price == 1.95
     assert pytest.approx(trade.orders[-1].cost) == 120 * leverage
@@ -522,7 +520,11 @@ def test_dca_order_adjust_entry_replace_fails(
     freqtrade.enter_positions()
 
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 1
 
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=False)
@@ -539,14 +541,22 @@ def test_dca_order_adjust_entry_replace_fails(
 
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 2
 
     # We now have 2 orders open
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=2.05)
     freqtrade.manage_open_orders()
     trades = Trade.session.scalars(
-        select(Trade).filter(Trade.open_order_id.is_not(None))).all()
+        select(Trade)
+        .where(Order.ft_is_open.is_(True))
+        .where(Order.ft_order_side != "stoploss")
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
     assert len(trades) == 2
     assert len(Order.get_open_orders()) == 2
     # Entry adjustment is called

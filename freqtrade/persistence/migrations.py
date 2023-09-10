@@ -157,7 +157,7 @@ def migrate_trades_and_orders_table(
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_close_currency, open_rate,
             open_rate_requested, close_rate, close_rate_requested, close_profit,
-            stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
+            stake_amount, amount, amount_requested, open_date, close_date,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             is_stop_loss_trailing, stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
@@ -174,7 +174,7 @@ def migrate_trades_and_orders_table(
             {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
             open_rate, {open_rate_requested} open_rate_requested, close_rate,
             {close_rate_requested} close_rate_requested, close_profit,
-            stake_amount, amount, {amount_requested}, open_date, close_date, open_order_id,
+            stake_amount, amount, {amount_requested}, open_date, close_date,
             {stop_loss} stop_loss, {stop_loss_pct} stop_loss_pct,
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
@@ -272,6 +272,13 @@ def set_sqlite_to_wal(engine):
 
 def fix_old_dry_orders(engine):
     with engine.begin() as connection:
+
+        # Update current dry-run Orders where
+        # - current Order is open
+        # - current Trade is closed
+        # - current Order trade_id not equal to current Trade.id
+        # - current Order not stoploss
+
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
             tuple_(Order.ft_trade_id, Order.order_id).not_in(
@@ -285,12 +292,13 @@ def fix_old_dry_orders(engine):
         ).values(ft_is_open=False)
         connection.execute(stmt)
 
+        # Close dry-run orders for closed trades.
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
-            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+            Order.ft_trade_id.not_in(
                 select(
-                    Trade.id, Trade.open_order_id
-                ).where(Trade.open_order_id.is_not(None))
+                    Trade.id
+                ).where(Trade.is_open.is_(True))
                   ),
             Order.ft_order_side != 'stoploss',
             Order.order_id.like('dry%')

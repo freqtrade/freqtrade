@@ -308,7 +308,7 @@ class TradeSchema(BaseModel):
 
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
-    open_order_id: Optional[str] = None
+    has_open_orders: bool
     orders: List[OrderSchema]
 
     leverage: Optional[float] = None
@@ -332,8 +332,6 @@ class OpenTradeSchema(TradeSchema):
     total_profit_abs: float
     total_profit_fiat: Optional[float] = None
     total_profit_ratio: Optional[float] = None
-
-    open_order: Optional[str] = None
 
 
 class TradeResponse(BaseModel):
