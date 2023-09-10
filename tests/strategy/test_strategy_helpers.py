@@ -117,7 +117,9 @@ def test_merge_informative_pair_empty():
         'close_2h',
         'volume_2h'
     ]
-    assert result['volume_2h'].isnull().all()
+    # We merge an empty dataframe, so all values should be NaN
+    for col in ['date_2h', 'open_2h', 'high_2h', 'low_2h', 'close_2h', 'volume_2h']:
+        assert result[col].isnull().all()
 
 
 def test_merge_informative_pair_suffix():
