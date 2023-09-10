@@ -96,6 +96,30 @@ def test_merge_informative_pair_lower():
         merge_informative_pair(data, informative, '1h', '15m', ffill=True)
 
 
+def test_merge_informative_pair_empty():
+    data = generate_test_data('1h', 40)
+    informative = pd.DataFrame(columns=data.columns)
+
+    result = merge_informative_pair(data, informative, '1h', '2h', ffill=True)
+    assert result['date'].equals(data['date'])
+
+    assert list(result.columns) == [
+        'date',
+        'open',
+        'high',
+        'low',
+        'close',
+        'volume',
+        'date_2h',
+        'open_2h',
+        'high_2h',
+        'low_2h',
+        'close_2h',
+        'volume_2h'
+    ]
+    assert result['volume_2h'].isnull().all()
+
+
 def test_merge_informative_pair_suffix():
     data = generate_test_data('15m', 20)
     informative = generate_test_data('1h', 20)
