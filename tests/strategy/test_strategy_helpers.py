@@ -134,6 +134,21 @@ def test_merge_informative_pair_suffix():
     assert 'open_suf' in result.columns
     assert 'open_1h' not in result.columns
 
+    assert list(result.columns) == [
+        'date',
+        'open',
+        'high',
+        'low',
+        'close',
+        'volume',
+        'date_suf',
+        'open_suf',
+        'high_suf',
+        'low_suf',
+        'close_suf',
+        'volume_suf'
+    ]
+
 
 def test_merge_informative_pair_suffix_append_timeframe():
     data = generate_test_data('15m', 20)
