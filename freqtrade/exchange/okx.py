@@ -4,8 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import ccxt
 
 from freqtrade.constants import BuySell
-from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.enums.pricetype import PriceType
+from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import (DDosProtection, OperationalException, RetryableOrderError,
                                   TemporaryError)
 from freqtrade.exchange import Exchange, date_minus_candles
