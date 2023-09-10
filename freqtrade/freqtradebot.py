@@ -468,8 +468,6 @@ class FreqtradeBot(LoggingMixin):
                     safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
                     tz=timezone.utc)
                 trade.orders.append(order_obj)
-                # TODO: how do we handle open_order_id ...
-                Trade.commit()
                 prev_exit_reason = trade.exit_reason
                 trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
                 self.update_trade_state(trade, order['id'], order)
@@ -485,7 +483,10 @@ class FreqtradeBot(LoggingMixin):
                     Trade.commit()
 
         except ExchangeError:
-            logger.warning("Error finding onexchange order")
+            logger.warning("Error finding onexchange order.")
+        except Exception:
+            # catching https://github.com/freqtrade/freqtrade/issues/9025
+            logger.warning("Error finding onexchange order", exc_info=True)
 #
 # BUY / enter positions / open trades logic and methods
 #
