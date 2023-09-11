@@ -20,8 +20,9 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
                                 price_to_precision)
 from freqtrade.leverage import interest
+from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.util import FtPrecise, dt_now
+from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -176,7 +177,9 @@ class Order(ModelBase):
                 # (represents the funding fee since the last order)
                 self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0 and not self.order_filled_date:
-                self.order_filled_date = datetime.now(timezone.utc)
+                self.order_filled_date = dt_from_ts(
+                    safe_value_fallback(order, 'lastTradeTimestamp', default_value=dt_ts())
+                )
         self.order_update_date = datetime.now(timezone.utc)
 
     def to_ccxt_object(self, stopPriceName: str = 'stopPrice') -> Dict[str, Any]:
