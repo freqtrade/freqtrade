@@ -5687,7 +5687,8 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
     Trade.session.add(trade)
     freqtrade.handle_onexchange_order(trade)
     assert log_has_re(r"Found previously unknown order .*", caplog)
-    assert mock_uts.call_count == 1
+    # Update trade state is called twice, once for the known and once for the unknown order.
+    assert mock_uts.call_count == 2
     assert mock_fo.call_count == 1
 
     trade = Trade.session.scalars(select(Trade)).first()

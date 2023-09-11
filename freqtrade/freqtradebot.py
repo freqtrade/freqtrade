@@ -457,30 +457,41 @@ class FreqtradeBot(LoggingMixin):
         """
         try:
             orders = self.exchange.fetch_orders(trade.pair, trade.open_date_utc)
+            prev_exit_reason = trade.exit_reason
+            prev_trade_state = trade.is_open
             for order in orders:
                 trade_order = [o for o in trade.orders if o.order_id == order['id']]
-                if trade_order:
-                    continue
-                logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
 
-                order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
-                order_obj.order_filled_date = datetime.fromtimestamp(
-                    safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
-                    tz=timezone.utc)
-                trade.orders.append(order_obj)
-                prev_exit_reason = trade.exit_reason
-                trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
-                self.update_trade_state(trade, order['id'], order)
+                if trade_order:
+                    # We knew this order, but didn't have it updated properly
+                    order_obj = trade_order[0]
+                else:
+                    logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
+
+                    order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
+                    order_obj.order_filled_date = datetime.fromtimestamp(
+                        safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
+                        tz=timezone.utc)
+                    trade.orders.append(order_obj)
+                    Trade.commit()
+                    trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
+
+                self.update_trade_state(trade, order['id'], order, send_msg=False)
 
                 logger.info(f"handled order {order['id']}")
-                if not trade.is_open:
-                    # Trade was just closed
-                    trade.close_date = order_obj.order_filled_date
-                    Trade.commit()
-                    break
-                else:
-                    trade.exit_reason = prev_exit_reason
-                    Trade.commit()
+
+            # Refresh trade from database
+            Trade.session.refresh(trade)
+            if not trade.is_open:
+                # Trade was just closed
+                trade.close_date = max([o.order_filled_date for o in trade.orders
+                                        if o.order_filled_date])
+                self.order_close_notify(trade, order_obj,
+                                        order_obj.ft_order_side == 'stoploss',
+                                        send_msg=prev_trade_state != trade.is_open)
+            else:
+                trade.exit_reason = prev_exit_reason
+            Trade.commit()
 
         except ExchangeError:
             logger.warning("Error finding onexchange order.")
