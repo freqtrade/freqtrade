@@ -121,6 +121,8 @@ def test_safe_value_fallback():
 
     assert safe_value_fallback(dict1, 'keyNo', 'keyNo') is None
     assert safe_value_fallback(dict1, 'keyNo', 'keyNo', 55) == 55
+    assert safe_value_fallback(dict1, 'keyNo', default_value=55) == 55
+    assert safe_value_fallback(dict1, 'keyNo', None, default_value=55) == 55
 
 
 def test_safe_value_fallback2():
