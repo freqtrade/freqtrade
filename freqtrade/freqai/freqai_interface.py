@@ -453,7 +453,7 @@ class IFreqaiModel(ABC):
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
                 self.set_initial_historic_predictions(pred_df, dk, pair, dataframe)
-            self.dd.set_initial_return_values(pair, pred_df)
+            self.dd.set_initial_return_values(pair, pred_df, dataframe)
 
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
             return

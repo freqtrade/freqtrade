@@ -31,7 +31,7 @@ class FreqaiExampleStrategy(IStrategy):
     plot_config = {
         "main_plot": {},
         "subplots": {
-            "&-s_close": {"prediction": {"color": "blue"}},
+            "&-s_close": {"&-s_close": {"color": "blue"}},
             "do_predict": {
                 "do_predict": {"color": "brown"},
             },
