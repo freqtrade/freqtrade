@@ -28,7 +28,6 @@ class RecursiveAnalysis(BaseAnalysis):
         self.partial_varHolder_array: List[VarHolder] = []
         self.partial_varHolder_lookahead_array: List[VarHolder] = []
 
-
         self.dict_recursive: Dict[str, Any] = dict()
 
     # For recursive bias check
