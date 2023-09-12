@@ -484,8 +484,7 @@ class FreqtradeBot(LoggingMixin):
             Trade.session.refresh(trade)
             if not trade.is_open:
                 # Trade was just closed
-                trade.close_date = max([o.order_filled_date for o in trade.orders
-                                        if o.order_filled_date])
+                trade.close_date = trade.date_last_filled_utc
                 self.order_close_notify(trade, order_obj,
                                         order_obj.ft_order_side == 'stoploss',
                                         send_msg=prev_trade_state != trade.is_open)
