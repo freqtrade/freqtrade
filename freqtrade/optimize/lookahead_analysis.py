@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange
 from freqtrade.data.history import get_timerange
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
