@@ -36,6 +36,7 @@ class BaseAnalysis:
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
         self.failed_bias_check = True
         self.full_varHolder = VarHolder()
+        self.exchange: Optional[Any] = None
         self._fee = None
 
         # pull variables the scope of the lookahead_analysis-instance
