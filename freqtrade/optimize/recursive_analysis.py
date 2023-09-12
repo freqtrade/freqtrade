@@ -25,11 +25,11 @@ class RecursiveAnalysis(BaseAnalysis):
         self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
 
         super().__init__(config, strategy_obj)
-        
+
         self.partial_varHolder_array: List[VarHolder] = []
         self.partial_varHolder_lookahead_array: List[VarHolder] = []
 
-        
+
         self.dict_recursive: Dict[str, Any] = dict()
 
     # For recursive bias check
