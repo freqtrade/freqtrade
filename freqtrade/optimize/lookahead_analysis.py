@@ -119,41 +119,37 @@ class LookaheadAnalysis(BaseAnalysis):
                                         f"{col_name[0]}. "
                                         f"{str(self_value)} != {str(other_value)}")
 
-    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame], backtesting=None):
+    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
 
-        if backtesting is None:
-            backtesting = Backtesting(deepcopy(self.local_config))
-        super().prepare_data(varholder, pairs_to_load, backtesting)
+        if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
+            # purge previous data if the freqai model is defined
+            # (to be sure nothing is carried over from older backtests)
+            path_to_current_identifier = (
+                Path(f"{self.local_config['user_data_dir']}/models/"
+                     f"{self.local_config['freqai']['identifier']}").resolve())
+            # remove folder and its contents
+            if Path.exists(path_to_current_identifier):
+                shutil.rmtree(path_to_current_identifier)
 
-        # if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
-        #     # purge previous data if the freqai model is defined
-        #     # (to be sure nothing is carried over from older backtests)
-        #     path_to_current_identifier = (
-        #         Path(f"{self.local_config['user_data_dir']}/models/"
-        #              f"{self.local_config['freqai']['identifier']}").resolve())
-        #     # remove folder and its contents
-        #     if Path.exists(path_to_current_identifier):
-        #         shutil.rmtree(path_to_current_identifier)
+        prepare_data_config = deepcopy(self.local_config)
+        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
+                                            str(self.dt_to_timestamp(varholder.to_dt)))
+        prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
-        # prepare_data_config = deepcopy(self.local_config)
-        # prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
-        #                                     str(self.dt_to_timestamp(varholder.to_dt)))
-        # prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
+        if self._fee is not None:
+            # Don't re-calculate fee per pair, as fee might differ per pair.
+            prepare_data_config['fee'] = self._fee
 
-        # if self._fee is not None:
-        #     # Don't re-calculate fee per pair, as fee might differ per pair.
-        #     prepare_data_config['fee'] = self._fee
-
-        # backtesting = Backtesting(prepare_data_config, self.exchange)
+        backtesting = Backtesting(prepare_data_config, self.exchange)
         self.exchange = backtesting.exchange
         self._fee = backtesting.fee
-        # backtesting._set_strategy(backtesting.strategylist[0])
+        backtesting._set_strategy(backtesting.strategylist[0])
 
-        # varholder.data, varholder.timerange = backtesting.load_bt_data()
-        # backtesting.load_bt_data_detail()
-        # varholder.timeframe = backtesting.timeframe
+        varholder.data, varholder.timerange = backtesting.load_bt_data()
+        backtesting.load_bt_data_detail()
+        varholder.timeframe = backtesting.timeframe
 
-        # varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
+        varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
         varholder.result = self.get_result(backtesting, varholder.indicators)
 
     def fill_entry_and_exit_varHolders(self, result_row):
