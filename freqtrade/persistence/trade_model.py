@@ -433,13 +433,20 @@ class LocalTrade:
             return self.amount
 
     @property
-    def date_last_filled_utc(self) -> datetime:
+    def _date_last_filled_utc(self) -> Optional[datetime]:
         """ Date of the last filled order"""
         orders = self.select_filled_orders()
-        if not orders:
+        if orders:
+            return max(o.order_filled_utc for o in orders if o.order_filled_utc)
+        return None
+
+    @property
+    def date_last_filled_utc(self) -> datetime:
+        """ Date of the last filled order - or open_date if no orders are filled"""
+        dt_last_filled = self._date_last_filled_utc
+        if not dt_last_filled:
             return self.open_date_utc
-        return max([self.open_date_utc,
-                    max(o.order_filled_utc for o in orders if o.order_filled_utc)])
+        return max([self.open_date_utc, dt_last_filled])
 
     @property
     def open_date_utc(self):
@@ -775,7 +782,7 @@ class LocalTrade:
         and marks trade as closed
         """
         self.close_rate = rate
-        self.close_date = self.close_date or datetime.utcnow()
+        self.close_date = self.close_date or self._date_last_filled_utc or dt_now()
         self.is_open = False
         self.exit_order_status = 'closed'
         self.recalc_trade_from_orders(is_closing=True)
