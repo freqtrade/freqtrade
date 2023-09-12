@@ -96,6 +96,32 @@ def test_merge_informative_pair_lower():
         merge_informative_pair(data, informative, '1h', '15m', ffill=True)
 
 
+def test_merge_informative_pair_empty():
+    data = generate_test_data('1h', 40)
+    informative = pd.DataFrame(columns=data.columns)
+
+    result = merge_informative_pair(data, informative, '1h', '2h', ffill=True)
+    assert result['date'].equals(data['date'])
+
+    assert list(result.columns) == [
+        'date',
+        'open',
+        'high',
+        'low',
+        'close',
+        'volume',
+        'date_2h',
+        'open_2h',
+        'high_2h',
+        'low_2h',
+        'close_2h',
+        'volume_2h'
+    ]
+    # We merge an empty dataframe, so all values should be NaN
+    for col in ['date_2h', 'open_2h', 'high_2h', 'low_2h', 'close_2h', 'volume_2h']:
+        assert result[col].isnull().all()
+
+
 def test_merge_informative_pair_suffix():
     data = generate_test_data('15m', 20)
     informative = generate_test_data('1h', 20)
@@ -109,6 +135,21 @@ def test_merge_informative_pair_suffix():
 
     assert 'open_suf' in result.columns
     assert 'open_1h' not in result.columns
+
+    assert list(result.columns) == [
+        'date',
+        'open',
+        'high',
+        'low',
+        'close',
+        'volume',
+        'date_suf',
+        'open_suf',
+        'high_suf',
+        'low_suf',
+        'close_suf',
+        'volume_suf'
+    ]
 
 
 def test_merge_informative_pair_suffix_append_timeframe():

@@ -1,9 +1,8 @@
-numpy==1.25.2; python_version > '3.8'
-numpy==1.24.3; python_version <= '3.8'
+numpy==1.25.2
 pandas==2.0.3
 pandas-ta==0.3.14b
 
-ccxt==4.0.81
+ccxt==4.0.88
 cryptography==41.0.3; platform_machine != 'armv7l'
 cryptography==40.0.1; platform_machine == 'armv7l'
 aiohttp==3.8.5
@@ -33,7 +32,7 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.10
 # Properly format api responses
-orjson==3.9.5
+orjson==3.9.7
 
 # Notify systemd
 sdnotify==0.3.2
@@ -49,7 +48,7 @@ psutil==5.9.5
 # Support for colorized terminal output
 colorama==0.4.6
 # Building config files interactively
-questionary==2.0.0
+questionary==2.0.1
 prompt-toolkit==3.0.36
 # Extensions to datetime library
 python-dateutil==2.8.2

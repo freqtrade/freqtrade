@@ -977,6 +977,10 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'expectancy_ratio': expected['expectancy_ratio'],
         'max_drawdown': ANY,
         'max_drawdown_abs': ANY,
+        'max_drawdown_start': ANY,
+        'max_drawdown_start_timestamp': ANY,
+        'max_drawdown_end': ANY,
+        'max_drawdown_end_timestamp': ANY,
         'trading_volume': expected['trading_volume'],
         'bot_start_timestamp': 0,
         'bot_start_date': '',
@@ -1022,7 +1026,6 @@ def test_api_performance(botclient, fee):
         exchange='binance',
         stake_amount=1,
         open_rate=0.245441,
-        open_order_id="123456",
         is_open=False,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
@@ -1039,7 +1042,6 @@ def test_api_performance(botclient, fee):
         stake_amount=1,
         exchange='binance',
         open_rate=0.412,
-        open_order_id="123456",
         is_open=False,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
@@ -1062,11 +1064,11 @@ def test_api_performance(botclient, fee):
 
 
 @pytest.mark.parametrize(
-    'is_short,current_rate,open_order_id,open_trade_value',
-    [(True, 1.098e-05, 'dry_run_buy_short_12345', 15.0911775),
-     (False, 1.099e-05, 'dry_run_buy_long_12345', 15.1668225)])
+    'is_short,current_rate,open_trade_value',
+    [(True, 1.098e-05, 15.0911775),
+     (False, 1.099e-05, 15.1668225)])
 def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
-                    current_rate, open_order_id, open_trade_value):
+                    current_rate, open_trade_value):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -1107,7 +1109,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'current_rate': current_rate,
         'open_date': ANY,
         'open_timestamp': ANY,
-        'open_order': None,
         'open_rate': 0.123,
         'pair': 'ETH/BTC',
         'base_currency': 'ETH',
@@ -1140,7 +1141,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         "is_short": is_short,
         'max_rate': ANY,
         'min_rate': ANY,
-        'open_order_id': open_order_id,
         'open_rate_requested': ANY,
         'open_trade_value': open_trade_value,
         'exit_reason': None,
@@ -1158,6 +1158,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'price_precision': None,
         'precision_mode': None,
         'orders': [ANY],
+        'has_open_orders': True,
     }
 
     mocker.patch(f'{EXMS}.get_rate',
@@ -1287,7 +1288,6 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         exchange='binance',
         stake_amount=1,
         open_rate=0.245441,
-        open_order_id="123456",
         open_date=datetime.now(timezone.utc),
         is_open=False,
         is_short=False,
@@ -1348,7 +1348,6 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'is_short': False,
         'max_rate': None,
         'min_rate': None,
-        'open_order_id': '123456',
         'open_rate_requested': None,
         'open_trade_value': 0.24605460,
         'exit_reason': None,
@@ -1365,6 +1364,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'amount_precision': None,
         'price_precision': None,
         'precision_mode': None,
+        'has_open_orders': False,
         'orders': [],
     }
 

@@ -347,8 +347,8 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
     msg = msg_mock.call_args_list[3][0][0]
     assert re.search(r'Number of Entries.*2', msg)
     assert re.search(r'Number of Exits.*1', msg)
-    assert re.search(r'Average Entry Price', msg)
-    assert re.search(r'Order filled', msg)
+    assert re.search(r'from 1st entry rate', msg)
+    assert re.search(r'Order Filled', msg)
     assert re.search(r'Close Date:', msg) is None
     assert re.search(r'Close Profit:', msg) is None
 

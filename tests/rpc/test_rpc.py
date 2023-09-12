@@ -42,7 +42,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'strategy': ANY,
         'enter_tag': ANY,
         'timeframe': 5,
-        'open_order_id': ANY,
         'close_date': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
@@ -75,7 +74,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_current_dist_pct': -10.01,
         'stoploss_entry_dist': -0.00010402,
         'stoploss_entry_dist_ratio': -0.10376381,
-        'open_order': None,
+        'open_orders': '',
         'realized_profit': 0.0,
         'realized_profit_ratio': None,
         'total_profit_abs': -4.09e-06,
@@ -91,6 +90,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount_precision': 8.0,
         'price_precision': 8.0,
         'precision_mode': 2,
+        'has_open_orders': False,
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
@@ -128,7 +128,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_pct': 0.0,
         'profit_abs': 0.0,
         'total_profit_abs': 0.0,
-        'open_order': '(limit buy rem=91.07468123)',
+        'open_orders': '(limit buy rem=91.07468123)',
+        'has_open_orders': True,
     })
     response_unfilled['orders'][0].update({
         'is_open': True,
@@ -146,7 +147,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     results = rpc._rpc_trade_status()
     # Reuse above object, only remaining changed.
     response_unfilled['orders'][0].update({
-        'remaining': None
+        'remaining': None,
     })
     assert results[0] == response_unfilled
 
@@ -164,7 +165,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     response = deepcopy(gen_response)
     response.update({
         'max_stake_amount': 0.001,
-        'total_profit_ratio': pytest.approx(-0.00409),
+        'total_profit_ratio': pytest.approx(-0.00409153),
+        'has_open_orders': False,
     })
     assert results[0] == response
 
@@ -779,7 +781,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'amount': amount,
             'remaining': amount,
             'filled': 0.0,
-            'id': trade.orders[0].order_id,
+            'id': trade.orders[-1].order_id,
         }
     )
     cancel_order_3 = mocker.patch(
@@ -791,7 +793,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'amount': amount,
             'remaining': amount,
             'filled': 0.0,
-            'id': trade.orders[0].order_id,
+            'id': trade.orders[-1].order_id,
         }
     )
     msg = rpc._rpc_force_exit('3')
@@ -800,7 +802,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_3.call_count == 1
     assert cancel_order_mock.call_count == 0
 
-    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '2')).first()
+    trade = Trade.session.scalars(select(Trade).filter(Trade.id == '4')).first()
     amount = trade.amount
     # make an limit-buy open trade, if there is no 'filled', don't sell it
     mocker.patch(
@@ -829,7 +831,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert msg == {'result': 'Created exit order for trade 4.'}
     assert cancel_order_4.call_count == 1
     assert cancel_order_mock.call_count == 0
-    assert trade.amount == amount
+    assert pytest.approx(trade.amount) == amount
 
 
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
@@ -1097,7 +1099,8 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
     assert trade.buy_tag == 'force_entry'
-    assert trade.open_order_id == 'mocked_limit_buy'
+
+    assert trade.open_orders_ids[-1] == 'mocked_limit_buy'
 
     freqtradebot.strategy.position_adjustment_enable = True
     with pytest.raises(RPCException, match=r'position for LTC/BTC already open.*open order.*'):

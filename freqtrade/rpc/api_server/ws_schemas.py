@@ -5,7 +5,7 @@ from pandas import DataFrame
 from pydantic import BaseModel, ConfigDict
 
 from freqtrade.constants import PairWithTimeframe
-from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType
+from freqtrade.enums import RPCMessageType, RPCRequestType
 
 
 class BaseArbitraryModel(BaseModel):

@@ -105,7 +105,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 
     # Forwardfill close for missing columns
-    df['close'] = df['close'].fillna(method='ffill')
+    df['close'] = df['close'].ffill()
     # Use close for "open, high, low"
     df.loc[:, ['open', 'high', 'low']] = df[['open', 'high', 'low']].fillna(
         value={'open': df['close'],

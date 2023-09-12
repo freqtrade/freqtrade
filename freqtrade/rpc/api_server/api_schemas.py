@@ -141,6 +141,10 @@ class Profit(BaseModel):
     expectancy_ratio: float
     max_drawdown: float
     max_drawdown_abs: float
+    max_drawdown_start: str
+    max_drawdown_start_timestamp: int
+    max_drawdown_end: str
+    max_drawdown_end_timestamp: int
     trading_volume: Optional[float] = None
     bot_start_timestamp: int
     bot_start_date: str
@@ -304,7 +308,7 @@ class TradeSchema(BaseModel):
 
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
-    open_order_id: Optional[str] = None
+    has_open_orders: bool
     orders: List[OrderSchema]
 
     leverage: Optional[float] = None
@@ -328,8 +332,6 @@ class OpenTradeSchema(TradeSchema):
     total_profit_abs: float
     total_profit_fiat: Optional[float] = None
     total_profit_ratio: Optional[float] = None
-
-    open_order: Optional[str] = None
 
 
 class TradeResponse(BaseModel):

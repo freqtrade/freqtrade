@@ -6,8 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import ccxt
 
 from freqtrade.constants import BuySell
-from freqtrade.enums import MarginMode, PriceType, TradingMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
