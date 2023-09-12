@@ -49,7 +49,7 @@ class BaseAnalysis:
         timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
         return timestamp
 
-    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame], backtesting=None):
+    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame], backtesting: Backtesting):
 
         if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
             # purge previous data if the freqai model is defined
@@ -70,8 +70,7 @@ class BaseAnalysis:
             # Don't re-calculate fee per pair, as fee might differ per pair.
             prepare_data_config['fee'] = self._fee
 
-        if backtesting is None:
-            backtesting = Backtesting(prepare_data_config, self.exchange)
+        backtesting = Backtesting(prepare_data_config, self.exchange)
         backtesting._set_strategy(backtesting.strategylist[0])
 
         varholder.data, varholder.timerange = backtesting.load_bt_data()

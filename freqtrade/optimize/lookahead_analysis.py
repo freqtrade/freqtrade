@@ -121,6 +121,8 @@ class LookaheadAnalysis(BaseAnalysis):
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame], backtesting=None):
 
+        if backtesting is None:
+            backtesting = Backtesting(deepcopy(self.local_config))
         super().prepare_data(varholder, pairs_to_load, backtesting)
 
         # if 'freqai' in self.local_config and 'identifier' in self.local_config['freqai']:
