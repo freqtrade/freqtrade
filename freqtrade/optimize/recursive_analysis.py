@@ -1,13 +1,12 @@
 import logging
 import shutil
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
                                               restore_verbosity_for_bias_tester)
