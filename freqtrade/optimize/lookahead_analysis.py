@@ -1,33 +1,21 @@
 import logging
 import shutil
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange
 from freqtrade.data.history import get_timerange
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
                                               restore_verbosity_for_bias_tester)
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.optimize.base_analysis import BaseAnalysis, VarHolder
 
 
 logger = logging.getLogger(__name__)
-
-
-class VarHolder:
-    timerange: TimeRange
-    data: DataFrame
-    indicators: Dict[str, DataFrame]
-    result: DataFrame
-    compared: DataFrame
-    from_dt: datetime
-    to_dt: datetime
-    compared_dt: datetime
-    timeframe: str
 
 
 class Analysis:
@@ -39,29 +27,18 @@ class Analysis:
         self.has_bias = False
 
 
-class LookaheadAnalysis:
+class LookaheadAnalysis(BaseAnalysis):
 
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
-        self.failed_bias_check = True
-        self.full_varHolder = VarHolder()
+
+        super().__init__(config, strategy_obj)
 
         self.entry_varHolders: List[VarHolder] = []
         self.exit_varHolders: List[VarHolder] = []
-        self.exchange: Optional[Any] = None
-        self._fee = None
 
-        # pull variables the scope of the lookahead_analysis-instance
-        self.local_config = deepcopy(config)
-        self.local_config['strategy'] = strategy_obj['name']
         self.current_analysis = Analysis()
         self.minimum_trade_amount = config['minimum_trade_amount']
         self.targeted_trade_amount = config['targeted_trade_amount']
-        self.strategy_obj = strategy_obj
-
-    @staticmethod
-    def dt_to_timestamp(dt: datetime):
-        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
-        return timestamp
 
     @staticmethod
     def get_result(backtesting: Backtesting, processed: DataFrame):
@@ -162,24 +139,6 @@ class LookaheadAnalysis:
         varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
         varholder.result = self.get_result(backtesting, varholder.indicators)
 
-    def fill_full_varholder(self):
-        self.full_varHolder = VarHolder()
-
-        # define datetime in human-readable format
-        parsed_timerange = TimeRange.parse_timerange(self.local_config['timerange'])
-
-        if parsed_timerange.startdt is None:
-            self.full_varHolder.from_dt = datetime.fromtimestamp(0, tz=timezone.utc)
-        else:
-            self.full_varHolder.from_dt = parsed_timerange.startdt
-
-        if parsed_timerange.stopdt is None:
-            self.full_varHolder.to_dt = datetime.utcnow()
-        else:
-            self.full_varHolder.to_dt = parsed_timerange.stopdt
-
-        self.prepare_data(self.full_varHolder, self.local_config['pairs'])
-
     def fill_entry_and_exit_varHolders(self, result_row):
         # entry_varHolder
         entry_varHolder = VarHolder()
@@ -246,8 +205,7 @@ class LookaheadAnalysis:
 
     def start(self) -> None:
 
-        # first make a single backtest
-        self.fill_full_varholder()
+        super().start()
 
         reduce_verbosity_for_bias_tester()
 

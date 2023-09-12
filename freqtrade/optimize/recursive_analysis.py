@@ -1,55 +1,34 @@
 import logging
 import shutil
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
                                               restore_verbosity_for_bias_tester)
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.optimize.base_analysis import BaseAnalysis, VarHolder
 
 
 logger = logging.getLogger(__name__)
 
 
-class VarHolder:
-    timerange: TimeRange
-    data: DataFrame
-    indicators: Dict[str, DataFrame]
-    from_dt: datetime
-    to_dt: datetime
-    timeframe: str
-    startup_candle: int
-
-
-class RecursiveAnalysis:
+class RecursiveAnalysis(BaseAnalysis):
 
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
-        self.failed_bias_check = True
-        self.full_varHolder = VarHolder()
+
+        self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
+
+        super().__init__(config, strategy_obj)
+
         self.partial_varHolder_array: List[VarHolder] = []
         self.partial_varHolder_lookahead_array: List[VarHolder] = []
 
-        self.entry_varHolders: List[VarHolder] = []
-        self.exit_varHolders: List[VarHolder] = []
-        self.exchange: Optional[Any] = None
-
-        # pull variables the scope of the recursive_analysis-instance
-        self.local_config = deepcopy(config)
-        self.local_config['strategy'] = strategy_obj['name']
-        self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
-        self.strategy_obj = strategy_obj
         self.dict_recursive: Dict[str, Any] = dict()
-
-    @staticmethod
-    def dt_to_timestamp(dt: datetime):
-        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
-        return timestamp
 
     # For recursive bias check
     # analyzes two data frames with processed indicators and shows differences between them.
@@ -141,7 +120,6 @@ class RecursiveAnalysis:
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
         backtesting = Backtesting(prepare_data_config, self.exchange)
-        self.exchange = backtesting.exchange
         backtesting._set_strategy(backtesting.strategylist[0])
 
         varholder.data, varholder.timerange = backtesting.load_bt_data()
@@ -149,24 +127,6 @@ class RecursiveAnalysis:
         varholder.timeframe = backtesting.timeframe
 
         varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
-
-    def fill_full_varholder(self):
-        self.full_varHolder = VarHolder()
-
-        # define datetime in human-readable format
-        parsed_timerange = TimeRange.parse_timerange(self.local_config['timerange'])
-
-        if parsed_timerange.startdt is None:
-            self.full_varHolder.from_dt = datetime.fromtimestamp(0, tz=timezone.utc)
-        else:
-            self.full_varHolder.from_dt = parsed_timerange.startdt
-
-        if parsed_timerange.stopdt is None:
-            self.full_varHolder.to_dt = datetime.utcnow()
-        else:
-            self.full_varHolder.to_dt = parsed_timerange.stopdt
-
-        self.prepare_data(self.full_varHolder, self.local_config['pairs'])
 
     def fill_partial_varholder(self, start_date, startup_candle):
         partial_varHolder = VarHolder()
@@ -186,9 +146,6 @@ class RecursiveAnalysis:
 
         partial_varHolder.from_dt = self.full_varHolder.from_dt
         partial_varHolder.to_dt = end_date
-        # partial_varHolder.startup_candle = startup_candle
-
-        # self.local_config['startup_candle_count'] = startup_candle
 
         self.prepare_data(partial_varHolder, self.local_config['pairs'])
 
@@ -196,11 +153,9 @@ class RecursiveAnalysis:
 
     def start(self) -> None:
 
-        # first make a single backtest
-        self.fill_full_varholder()
+        super().start()
 
         reduce_verbosity_for_bias_tester()
-
         start_date_full = self.full_varHolder.from_dt
         end_date_full = self.full_varHolder.to_dt
 

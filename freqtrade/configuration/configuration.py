@@ -490,6 +490,9 @@ class Configuration:
         self._args_to_config(config, argname='lookahead_analysis_exportfilename',
                              logstring='Path to store lookahead-analysis-results: {}')
 
+        self._args_to_config(config, argname='startup_candle',
+                             logstring='Startup candle to be used on recursive analysis: {}')
+
     def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',
