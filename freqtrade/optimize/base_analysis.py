@@ -101,5 +101,3 @@ class BaseAnalysis:
 
         # first make a single backtest
         self.fill_full_varholder()
-
-        reduce_verbosity_for_bias_tester()

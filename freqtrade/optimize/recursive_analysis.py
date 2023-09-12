@@ -21,11 +21,15 @@ logger = logging.getLogger(__name__)
 class RecursiveAnalysis(BaseAnalysis):
 
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
+
+        self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
+
         super().__init__(config, strategy_obj)
+        
         self.partial_varHolder_array: List[VarHolder] = []
         self.partial_varHolder_lookahead_array: List[VarHolder] = []
 
-        self._startup_candle = config.get('startup_candle', [199, 399, 499, 999, 1999])
+        
         self.dict_recursive: Dict[str, Any] = dict()
 
     # For recursive bias check
@@ -126,7 +130,8 @@ class RecursiveAnalysis(BaseAnalysis):
     def start(self) -> None:
 
         super().start()
-        
+
+        reduce_verbosity_for_bias_tester()
         start_date_full = self.full_varHolder.from_dt
         end_date_full = self.full_varHolder.to_dt
 
