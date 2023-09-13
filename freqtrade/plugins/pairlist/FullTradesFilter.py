@@ -63,7 +63,7 @@ class FullTradesFilter(IPairList):
             trades = Trade.get_trades(Trade.is_open.is_(True)).all()
         except AttributeError:
             # Performancefilter does not work in backtesting.
-            self.log_once("PerformanceFilter is not available in this mode.", logger.warning)
+            self.log_once("FullTradesFilter is not available in this mode.", logger.warning)
             return pairlist
 
         # Skip performance-based sorting if no performance data is available
@@ -73,10 +73,10 @@ class FullTradesFilter(IPairList):
 
         max_trades = self._config['max_open_trades']
 
-        self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
+        # self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
 
         if (num_open >= max_trades):
-            logger.info('Slots full. Emptying pairlist!!')
+            # logger.info('Slots full. Emptying pairlist!!')
             return [];
 
         return pairlist
