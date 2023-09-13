@@ -645,11 +645,11 @@ class IFreqaiModel(ABC):
         If the user reuses an identifier on a subsequent instance,
         this function will not be called. In that case, "real" predictions
         will be appended to the loaded set of historic predictions.
-        :param df: DataFrame = the dataframe containing the training feature data
-        :param model: Any = A model which was `fit` using a common library such as
-                      catboost or lightgbm
+        :param pred_df: DataFrame = the dataframe containing the predictions coming
+            out of a model
         :param dk: FreqaiDataKitchen = object containing methods for data analysis
         :param pair: str = current pair
+        :param strat_df: DataFrame = dataframe coming from strategy
         """
 
         self.dd.historic_predictions[pair] = pred_df

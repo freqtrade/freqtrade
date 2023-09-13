@@ -294,9 +294,9 @@ class FreqaiDataDrawer:
         if len(common_dates.index) > 0:
             new_pred = new_pred.iloc[len(common_dates):]
         else:
-            logger.error("No common dates found between new predictions and historic predictions. "
-                         "You likely left your FreqAI instance offline for more than "
-                         f"{len(dataframe.index)} candles.")
+            logger.warning("No common dates found between new predictions and historic "
+                           "predictions. You likely left your FreqAI instance offline "
+                           f"for more than {len(dataframe.index)} candles.")
 
         df_concat = pd.concat([hist_preds, new_pred], ignore_index=True, keys=hist_preds.keys())
 
