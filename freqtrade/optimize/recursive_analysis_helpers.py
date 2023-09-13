@@ -39,12 +39,19 @@ class RecursiveAnalysisSubFunctions:
 
     @staticmethod
     def calculate_config_overrides(config: Config):
+        if 'timerange' not in config:
+            # setting a timerange is enforced here
+            raise OperationalException(
+                "Please set a timerange. "
+                "A timerange of 20 candles are enough for recursive analysis."
+            )
+
         if config.get('backtest_cache') is None:
             config['backtest_cache'] = 'none'
         elif config['backtest_cache'] != 'none':
             logger.info(f"backtest_cache = "
                         f"{config['backtest_cache']} detected. "
-                        f"Inside lookahead-analysis it is enforced to be 'none'. "
+                        f"Inside recursive-analysis it is enforced to be 'none'. "
                         f"Changed it to 'none'")
             config['backtest_cache'] = 'none'
         return config
@@ -57,7 +64,7 @@ class RecursiveAnalysisSubFunctions:
         current_instance = RecursiveAnalysis(config, strategy_obj)
         current_instance.start()
         elapsed = time.perf_counter() - start
-        logger.info(f"Checking recursive and lookahead bias of indicators "
+        logger.info(f"Checking recursive and indicator-only lookahead bias of indicators "
                     f"of {Path(strategy_obj['location']).name} "
                     f"took {elapsed:.0f} seconds.")
         return current_instance
