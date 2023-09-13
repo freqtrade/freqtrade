@@ -59,14 +59,7 @@ class FullTradesFilter(IPairList):
         :return: new allowlist
         """
         # Get the trading performance for pairs from database
-        try:
-            trades = Trade.get_trades(Trade.is_open.is_(True)).all()
-        except AttributeError:
-            # Performancefilter does not work in backtesting.
-            self.log_once("FullTradesFilter is not available in this mode.", logger.warning)
-            return pairlist
-
-        num_open = len(trades)
+        num_open = Trade.get_open_trade_count()
         max_trades = self._config['max_open_trades']
 
         # self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
