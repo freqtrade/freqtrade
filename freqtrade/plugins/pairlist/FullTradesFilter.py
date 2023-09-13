@@ -22,8 +22,8 @@ class FullTradesFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._minutes = pairlistconfig.get('minutes', 0)
-        self._min_profit = pairlistconfig.get('min_profit')
+        # self._minutes = pairlistconfig.get('minutes', 0)
+        # self._min_profit = pairlistconfig.get('min_profit')
 
     @property
     def needstickers(self) -> bool:
@@ -38,11 +38,11 @@ class FullTradesFilter(IPairList):
         """
         Short allowlist method description - used for startup-messages
         """
-        return f"{self.name} - Emptying whitelist when trade slots are full."
+        return f"{self.name} - Shrink whitelist when trade slots are full."
 
     @staticmethod
     def description() -> str:
-        return "Emptying whitelist when trade slots are full."
+        return "Shrink whitelist when trade slots are full."
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
