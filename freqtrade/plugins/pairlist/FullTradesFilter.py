@@ -75,4 +75,8 @@ class FullTradesFilter(IPairList):
 
         self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
 
+        if (num_open >= max_trades):
+            logger.info('Slots full. Emptying pairlist!!')
+            return [];
+
         return pairlist
