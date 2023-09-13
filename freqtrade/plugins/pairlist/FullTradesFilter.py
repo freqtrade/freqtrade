@@ -66,11 +66,7 @@ class FullTradesFilter(IPairList):
             self.log_once("FullTradesFilter is not available in this mode.", logger.warning)
             return pairlist
 
-        # Skip performance-based sorting if no performance data is available
         num_open = len(trades)
-        if num_open == 0:
-            return pairlist
-
         max_trades = self._config['max_open_trades']
 
         # self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
