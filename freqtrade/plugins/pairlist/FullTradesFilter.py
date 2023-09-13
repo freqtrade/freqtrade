@@ -73,6 +73,6 @@ class FullTradesFilter(IPairList):
 
         max_trades = self._config['max_open_trades']
 
-        self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}")
+        self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
 
         return pairlist
