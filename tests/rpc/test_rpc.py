@@ -263,7 +263,11 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee, markets, mocker) -> None:
+def test__rpc_timeunit_profit(
+        default_conf_usdt, ticker, fee, markets, mocker, time_machine) -> None:
+
+    time_machine.move_to("2023-09-05 10:00:00 +00:00", tick=False)
+
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,
