@@ -513,7 +513,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
-        This means extra buy or sell orders with additional fees.
+        This means extra entry or exit orders with additional fees.
         Only called when `position_adjustment_enable` is set to True.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
@@ -522,8 +522,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Current buy rate.
-        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param current_rate: Current entry rate (same as current_entry_profit)
+        :param current_profit: Current profit (as ratio), calculated based on current_rate
+                               (same as current_entry_profit).
         :param min_stake: Minimal stake size allowed by exchange (for both entries and exits)
         :param max_stake: Maximum stake allowed (either through balance, or by exchange limits).
         :param current_entry_rate: Current rate using entry pricing.
