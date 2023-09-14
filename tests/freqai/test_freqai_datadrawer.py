@@ -139,14 +139,6 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
         freqai.dd.get_timerange_from_live_historic_predictions()
 
 
-class MockClass:  # This represents your class that has the set_initial_return_values method.
-    def __init__(self):
-        self.historic_predictions = {}
-        self.model_return_values = {}
-
-    # ... set_initial_return_values function here ...
-
-
 def test_set_initial_return_values(mocker, freqai_conf):
     """
     Simple test of the set initial return values that ensures
