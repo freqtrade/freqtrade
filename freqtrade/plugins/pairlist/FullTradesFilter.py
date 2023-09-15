@@ -4,8 +4,6 @@ Performance pair list filter
 import logging
 from typing import Any, Dict, List
 
-import pandas as pd
-
 from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.persistence import Trade
@@ -47,7 +45,7 @@ class FullTradesFilter(IPairList):
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
-            
+
         }
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
@@ -62,10 +60,7 @@ class FullTradesFilter(IPairList):
         num_open = Trade.get_open_trade_count()
         max_trades = self._config['max_open_trades']
 
-        # self.log_once(f"Max open trades: {max_trades}, current open trades: {num_open}", logger.info)
-
         if (num_open >= max_trades):
-            # logger.info('Slots full. Emptying pairlist!!')
-            return [];
+            return []
 
         return pairlist
