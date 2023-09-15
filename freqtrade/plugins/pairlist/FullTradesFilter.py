@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.persistence import Trade
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)
