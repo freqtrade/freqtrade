@@ -1,5 +1,5 @@
 """
-Performance pair list filter
+Full trade slots pair list filter
 """
 import logging
 from typing import Any, Dict, List
@@ -20,9 +20,6 @@ class FullTradesFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        # self._minutes = pairlistconfig.get('minutes', 0)
-        # self._min_profit = pairlistconfig.get('min_profit')
-
     @property
     def needstickers(self) -> bool:
         """
@@ -42,12 +39,6 @@ class FullTradesFilter(IPairList):
     def description() -> str:
         return "Shrink whitelist when trade slots are full."
 
-    @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
-        return {
-
-        }
-
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Filters and sorts pairlist and returns the allowlist again.
@@ -56,7 +47,7 @@ class FullTradesFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
-        # Get the trading performance for pairs from database
+        # Get the number of open trades and max open trades config
         num_open = Trade.get_open_trade_count()
         max_trades = self._config['max_open_trades']
 
