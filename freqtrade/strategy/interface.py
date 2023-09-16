@@ -406,6 +406,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         When not implemented by a strategy, returns None, orderbook is used to set entry price
 
         :param pair: Pair that's currently analyzed
+        :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
