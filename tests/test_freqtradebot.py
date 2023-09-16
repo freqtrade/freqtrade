@@ -5700,6 +5700,77 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
     assert trade.exit_reason == ExitType.SOLD_ON_EXCHANGE.value
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_onexchange_order_exit(mocker, default_conf_usdt, limit_order, is_short, caplog):
+    default_conf_usdt['dry_run'] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_uts = mocker.spy(freqtrade, 'update_trade_state')
+
+    entry_order = limit_order[entry_side(is_short)]
+    add_entry_order = deepcopy(entry_order)
+    add_entry_order.update({
+        'id': '_partial_entry_id',
+        'amount': add_entry_order['amount'] / 1.5,
+        'cost': add_entry_order['cost'] / 1.5,
+        'filled': add_entry_order['filled'] / 1.5,
+    })
+
+    exit_order_part = deepcopy(limit_order[exit_side(is_short)])
+    exit_order_part.update({
+        'id': 'some_random_partial_id',
+        'amount': exit_order_part['amount'] / 2,
+        'cost': exit_order_part['cost'] / 2,
+        'filled': exit_order_part['filled'] / 2,
+    })
+    exit_order = limit_order[exit_side(is_short)]
+
+    # Orders intentionally in the wrong sequence
+    mock_fo = mocker.patch(f'{EXMS}.fetch_orders', return_value=[
+        entry_order,
+        exit_order_part,
+        exit_order,
+        add_entry_order,
+    ])
+
+    trade = Trade(
+        pair='ETH/USDT',
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=entry_order['price'],
+        open_date=dt_now(),
+        stake_amount=entry_order['cost'],
+        amount=entry_order['amount'],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+        is_open=True,
+    )
+
+    trade.orders = [
+        Order.parse_from_ccxt_object(entry_order, trade.pair, entry_side(is_short)),
+        Order.parse_from_ccxt_object(exit_order_part, trade.pair, exit_side(is_short)),
+        Order.parse_from_ccxt_object(add_entry_order, trade.pair, entry_side(is_short)),
+        Order.parse_from_ccxt_object(exit_order, trade.pair, exit_side(is_short)),
+    ]
+    trade.recalc_trade_from_orders()
+    Trade.session.add(trade)
+    Trade.commit()
+
+    freqtrade.handle_onexchange_order(trade)
+    # assert log_has_re(r"Found previously unknown order .*", caplog)
+    # Update trade state is called three times, once for every order
+    assert mock_uts.call_count == 4
+    assert mock_fo.call_count == 1
+
+    trade = Trade.session.scalars(select(Trade)).first()
+
+    assert len(trade.orders) == 4
+    assert trade.is_open is True
+    assert trade.exit_reason is None
+    assert trade.amount == 5.0
+
+
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
