@@ -1680,7 +1680,10 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
     api_mock.fetch_closed_orders = MagicMock(return_value=[limit_order['buy']])
 
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
-    start_time = datetime.now(timezone.utc) - timedelta(days=5)
+    start_time = datetime.now(timezone.utc) - timedelta(days=20)
+    expected = 1
+    if exchange_name == 'bybit':
+        expected = 3
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # Not available in dry-run
@@ -1690,10 +1693,10 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     res = exchange.fetch_orders('mocked', start_time)
-    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_orders.call_count == expected
     assert api_mock.fetch_open_orders.call_count == 0
     assert api_mock.fetch_closed_orders.call_count == 0
-    assert len(res) == 2
+    assert len(res) == 2 * expected
 
     res = exchange.fetch_orders('mocked', start_time)
 
@@ -1707,13 +1710,17 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
         if endpoint == 'fetchOpenOrders':
             return True
 
+    if exchange_name == 'okx':
+        # Special OKX case is tested separately
+        return
+
     mocker.patch(f'{EXMS}.exchange_has', has_resp)
 
     # happy path without fetchOrders
-    res = exchange.fetch_orders('mocked', start_time)
+    exchange.fetch_orders('mocked', start_time)
     assert api_mock.fetch_orders.call_count == 0
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == expected
+    assert api_mock.fetch_closed_orders.call_count == expected
 
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
 
@@ -1726,11 +1733,11 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
     api_mock.fetch_open_orders.reset_mock()
     api_mock.fetch_closed_orders.reset_mock()
 
-    res = exchange.fetch_orders('mocked', start_time)
+    exchange.fetch_orders('mocked', start_time)
 
-    assert api_mock.fetch_orders.call_count == 1
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_orders.call_count == expected
+    assert api_mock.fetch_open_orders.call_count == expected
+    assert api_mock.fetch_closed_orders.call_count == expected
 
 
 def test_fetch_trading_fees(default_conf, mocker):
