@@ -186,7 +186,7 @@ class Okx(Exchange):
 
     def _convert_stop_order(self, pair: str, order_id: str, order: Dict) -> Dict:
         if (
-            order['status'] == 'closed'
+            order.get('status', 'open') == 'closed'
             and (real_order_id := order.get('info', {}).get('ordId')) is not None
         ):
             # Once a order triggered, we fetch the regular followup order.

@@ -24,7 +24,7 @@ from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_pat
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -1312,8 +1312,11 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         leverage=3.0
     )
 
-    assert exchange._set_leverage.call_count == 1
-    assert exchange.set_margin_mode.call_count == 1
+    if exchange_name != 'okx':
+        assert exchange._set_leverage.call_count == 1
+        assert exchange.set_margin_mode.call_count == 1
+    else:
+        assert api_mock.set_leverage.call_count == 1
     assert order['amount'] == 0.01
 
 
@@ -2044,7 +2047,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
         )
     # Required candles
     candles = (end_ts - start_ts) / 300_000
-    exp = candles // exchange.ohlcv_candle_limit('5m', CandleType.SPOT) + 1
+    exp = candles // exchange.ohlcv_candle_limit('5m', candle_type, start_ts) + 1
 
     # Depending on the exchange, this should be called between 1 and 6 times.
     assert exchange._api_async.fetch_ohlcv.call_count == exp
@@ -3226,8 +3229,14 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value={'id': '123', 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == {'id': '123', 'symbol': 'TKN/BTC'}
+    res = {'id': '123', 'symbol': 'TKN/BTC'}
+    if exchange_name == 'okx':
+        res = {'id': '123', 'symbol': 'TKN/BTC', 'type': 'stoploss'}
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == res
 
+    if exchange_name == 'okx':
+        # Tested separately.
+        return
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -3547,6 +3556,8 @@ def test_get_markets_error(default_conf, mocker):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
+    if exchange_name == 'okx':
+        pytest.skip("Tested separately for okx")
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     timeframes = ('1m', '5m', '1h')
     expected = exchange._ft_has['ohlcv_candle_limit']
