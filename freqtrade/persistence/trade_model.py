@@ -13,8 +13,9 @@ from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, 
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 from typing_extensions import Self
 
-from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
-                                 NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
+from freqtrade.constants import (CANCELED_EXCHANGE_STATES, CUSTOM_TAG_MAX_LENGTH,
+                                 DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
+                                 BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
@@ -827,7 +828,8 @@ class LocalTrade:
         Get amount of failed exiting orders
         assumes full exits.
         """
-        return len([o for o in self.orders if o.ft_order_side == self.exit_side])
+        return len([o for o in self.orders if o.ft_order_side == self.exit_side
+                    and o.status in CANCELED_EXCHANGE_STATES])
 
     def _calc_open_trade_value(self, amount: float, open_rate: float) -> float:
         """
