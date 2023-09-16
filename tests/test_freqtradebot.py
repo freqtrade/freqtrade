@@ -5660,6 +5660,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_short, caplog):
+    default_conf_usdt['dry_run'] = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.spy(freqtrade, 'update_trade_state')
 
@@ -5671,17 +5672,17 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
     ])
 
     trade = Trade(
-            pair='ETH/USDT',
-            fee_open=0.001,
-            fee_close=0.001,
-            open_rate=entry_order['price'],
-            open_date=dt_now(),
-            stake_amount=entry_order['cost'],
-            amount=entry_order['amount'],
-            exchange="binance",
-            is_short=is_short,
-            leverage=1,
-            )
+        pair='ETH/USDT',
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=entry_order['price'],
+        open_date=dt_now(),
+        stake_amount=entry_order['cost'],
+        amount=entry_order['amount'],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
 
     trade.orders.append(Order.parse_from_ccxt_object(
         entry_order, 'ADA/USDT', entry_side(is_short))
