@@ -1364,16 +1364,19 @@ class FreqtradeBot(LoggingMixin):
             canceled = self.handle_cancel_exit(trade, order, order_id, reason)
             canceled_count = trade.get_canceled_exit_order_count()
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
-            if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                logger.warning(f'Emergency exiting trade {trade}, as the exit order '
-                               f'timed out {max_timeouts} times.')
-                self.emergency_exit(trade, order['price'])
+            if (canceled and max_timeouts > 0 and canceled_count >= max_timeouts):
+                logger.warning(f"Emergency exiting trade {trade}, as the exit order "
+                               f"timed out {max_timeouts} times. force selling {order['amount']}.")
+                self.emergency_exit(trade, order['price'], order['amount'])
 
-    def emergency_exit(self, trade: Trade, price: float) -> None:
+    def emergency_exit(
+            self, trade: Trade, price: float, sub_trade_amt: Optional[float] = None) -> None:
         try:
             self.execute_trade_exit(
                 trade, price,
-                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
+                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT),
+                sub_trade_amt=sub_trade_amt
+                )
         except DependencyException as exception:
             logger.warning(
                 f'Unable to emergency exit trade {trade.pair}: {exception}')
