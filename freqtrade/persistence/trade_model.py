@@ -628,6 +628,7 @@ class LocalTrade:
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
+            'contract_size': self.contract_size,
             'has_open_orders': self.has_open_orders,
             'orders': orders_json,
         }
@@ -1788,6 +1789,10 @@ class Trade(ModelBase, LocalTrade):
             is_short=data["is_short"],
             trading_mode=data["trading_mode"],
             funding_fees=data["funding_fees"],
+            amount_precision=data.get('amount_precision', None),
+            price_precision=data.get('price_precision', None),
+            precision_mode=data.get('precision_mode', None),
+            contract_size=data.get('contract_size', None),
         )
         for order in data["orders"]:
 

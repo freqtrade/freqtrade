@@ -1385,6 +1385,7 @@ def test_to_json(fee):
         precision_mode=1,
         amount_precision=8.0,
         price_precision=7.0,
+        contract_size=1,
     )
     result = trade.to_json()
     assert isinstance(result, dict)
@@ -1450,6 +1451,7 @@ def test_to_json(fee):
         'amount_precision': 8.0,
         'price_precision': 7.0,
         'precision_mode': 1,
+        'contract_size': 1,
         'orders': [],
         'has_open_orders': False,
     }
@@ -1471,6 +1473,7 @@ def test_to_json(fee):
         precision_mode=2,
         amount_precision=7.0,
         price_precision=8.0,
+        contract_size=1
     )
     result = trade.to_json()
     assert isinstance(result, dict)
@@ -1536,6 +1539,7 @@ def test_to_json(fee):
         'amount_precision': 7.0,
         'price_precision': 8.0,
         'precision_mode': 2,
+        'contract_size': 1,
         'orders': [],
         'has_open_orders': False,
     }
