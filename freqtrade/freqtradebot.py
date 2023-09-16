@@ -1851,7 +1851,7 @@ class FreqtradeBot(LoggingMixin):
 
     def update_trade_state(
             self, trade: Trade, order_id: Optional[str],
-            action_order: Optional[Dict[str, Any]] = None,
+            action_order: Optional[Dict[str, Any]] = None, *,
             stoploss_order: bool = False, send_msg: bool = True) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
