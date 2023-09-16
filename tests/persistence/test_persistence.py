@@ -1932,6 +1932,10 @@ def test_get_canceled_exit_order_count(fee, is_short):
 
     create_mock_trades(fee, is_short=is_short)
     trade = Trade.get_trades([Trade.pair == 'ETC/BTC']).first()
+    # No canceled order.
+    assert trade.get_canceled_exit_order_count() == 0
+
+    trade.orders[-1].status = 'canceled'
     assert trade.get_canceled_exit_order_count() == 1
 
 
