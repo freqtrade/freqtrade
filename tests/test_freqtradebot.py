@@ -2991,6 +2991,8 @@ def test_manage_open_orders_exit_usercustom(
     is_short, open_trade_usdt, caplog
 ) -> None:
     default_conf_usdt["unfilledtimeout"] = {"entry": 1440, "exit": 1440, "exit_timeout_count": 1}
+    limit_sell_order_old['amount'] = open_trade_usdt.amount
+    limit_sell_order_old['remaining'] = open_trade_usdt.amount
 
     if is_short:
         limit_sell_order_old['side'] = 'buy'
