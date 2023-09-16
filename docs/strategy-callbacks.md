@@ -510,6 +510,8 @@ Each of these methods are called right before placing an order on the exchange.
 !!! Note
     If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
 
+!!! Note
+    Within this function you will have access to the Trade object, giving you the flexibility to adjust your current entry or exit price in relation to the current trade status. This object is available as soon as the first entry order associated with the trade is created.
 ### Custom order entry and exit price example
 
 ``` python
