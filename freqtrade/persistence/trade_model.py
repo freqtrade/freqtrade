@@ -627,8 +627,8 @@ class LocalTrade:
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
-            'orders': orders_json,
             'has_open_orders': self.has_open_orders,
+            'orders': orders_json,
         }
 
     @staticmethod
