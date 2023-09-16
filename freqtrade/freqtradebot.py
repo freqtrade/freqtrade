@@ -456,7 +456,8 @@ class FreqtradeBot(LoggingMixin):
         Only used balance disappeared, which would make exiting impossible.
         """
         try:
-            orders = self.exchange.fetch_orders(trade.pair, trade.open_date_utc)
+            orders = self.exchange.fetch_orders(
+                trade.pair, trade.open_date_utc - timedelta(seconds=10))
             prev_exit_reason = trade.exit_reason
             prev_trade_state = trade.is_open
             for order in orders:
