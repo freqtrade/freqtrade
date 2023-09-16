@@ -728,7 +728,7 @@ class LocalTrade:
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss or 0.0):.8f}.")
 
-    def update_trade(self, order: Order) -> None:
+    def update_trade(self, order: Order, recalculating: bool = False) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -770,8 +770,9 @@ class LocalTrade:
                                                      self.precision_mode, self.contract_size)
             if (
                 isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
-                or order.safe_amount_after_fee > amount_tr
+                or (not recalculating and order.safe_amount_after_fee > amount_tr)
             ):
+                # When recalculating a trade, only comming out to 0 can force a close
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()

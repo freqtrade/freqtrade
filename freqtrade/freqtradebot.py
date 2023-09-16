@@ -1888,7 +1888,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.handle_order_fee(trade, order_obj, order)
 
-        trade.update_trade(order_obj)
+        trade.update_trade(order_obj, not send_msg)
 
         trade = self._update_trade_after_fill(trade, order_obj)
         Trade.commit()
