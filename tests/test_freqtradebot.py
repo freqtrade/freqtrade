@@ -3052,7 +3052,7 @@ def test_manage_open_orders_exit_usercustom(
     # 2nd canceled trade - Fail execute exit
     caplog.clear()
 
-    mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
+    mocker.patch('freqtrade.persistence.Trade.get_canceled_exit_order_count', return_value=1)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit',
                  side_effect=DependencyException)
     freqtrade.manage_open_orders()

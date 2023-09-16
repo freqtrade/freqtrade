@@ -1928,11 +1928,11 @@ def test_get_best_pair_lev(fee):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
-def test_get_exit_order_count(fee, is_short):
+def test_get_canceled_exit_order_count(fee, is_short):
 
     create_mock_trades(fee, is_short=is_short)
     trade = Trade.get_trades([Trade.pair == 'ETC/BTC']).first()
-    assert trade.get_exit_order_count() == 1
+    assert trade.get_canceled_exit_order_count() == 1
 
 
 @pytest.mark.usefixtures("init_persistence")

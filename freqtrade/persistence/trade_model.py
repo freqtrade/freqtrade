@@ -823,7 +823,7 @@ class LocalTrade:
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def get_exit_order_count(self) -> int:
+    def get_canceled_exit_order_count(self) -> int:
         """
         Get amount of failed exiting orders
         assumes full exits.
