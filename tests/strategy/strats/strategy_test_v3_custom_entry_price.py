@@ -33,7 +33,8 @@ class StrategyTestV3CustomEntryPrice(StrategyTestV3):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         return dataframe
 
-    def custom_entry_price(self, pair: str, trade: 'Trade', current_time: datetime, proposed_rate: float,
+    def custom_entry_price(self, pair: str, trade: Trade, current_time: datetime,
+                           proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         return self.new_entry_price
