@@ -16,7 +16,7 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirecti
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import remove_entry_exit_signals
-from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -395,7 +395,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
-    def custom_entry_price(self, pair: str, trade: Union[Trade, LocalTrade, None],
+    def custom_entry_price(self, pair: str, trade: Trade,
                            current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
