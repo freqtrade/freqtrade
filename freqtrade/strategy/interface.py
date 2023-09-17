@@ -395,7 +395,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+    def custom_entry_price(self, pair: str, trade: Optional[Trade],
+                           current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Custom entry price logic, returning the new entry price.
@@ -405,6 +406,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         When not implemented by a strategy, returns None, orderbook is used to set entry price
 
         :param pair: Pair that's currently analyzed
+        :param trade: trade object (None for initial entries).
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.

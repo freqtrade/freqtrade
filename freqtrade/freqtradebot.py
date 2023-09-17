@@ -938,7 +938,8 @@ class FreqtradeBot(LoggingMixin):
             # Don't call custom_entry_price in order-adjust scenario
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=enter_limit_requested)(
-                pair=pair, current_time=datetime.now(timezone.utc),
+                pair=pair, trade=trade,
+                current_time=datetime.now(timezone.utc),
                 proposed_rate=enter_limit_requested, entry_tag=entry_tag,
                 side=trade_side,
             )

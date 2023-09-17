@@ -6,6 +6,8 @@ from typing import Optional
 from pandas import DataFrame
 from strategy_test_v3 import StrategyTestV3
 
+from freqtrade.persistence import Trade
+
 
 class StrategyTestV3CustomEntryPrice(StrategyTestV3):
     """
@@ -31,7 +33,8 @@ class StrategyTestV3CustomEntryPrice(StrategyTestV3):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         return dataframe
 
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+    def custom_entry_price(self, pair: str, trade: Optional[Trade], current_time: datetime,
+                           proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         return self.new_entry_price
