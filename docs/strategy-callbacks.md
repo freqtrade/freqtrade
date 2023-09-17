@@ -512,6 +512,7 @@ Each of these methods are called right before placing an order on the exchange.
 
 !!! Note
     Using custom_entry_price, the Trade object will be available as soon as the first entry order associated with the trade is created, for the first entry, `trade` parameter value will be `None`.
+
 ### Custom order entry and exit price example
 
 ``` python
