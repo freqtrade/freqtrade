@@ -395,7 +395,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
-    def custom_entry_price(self, pair: str, trade: Trade,
+    def custom_entry_price(self, pair: str, trade: Optional[Trade],
                            current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
