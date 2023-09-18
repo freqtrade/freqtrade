@@ -11,8 +11,8 @@ from freqtrade.util.gc_setup import gc_set_threshold
 
 
 # check min. python version
-if sys.version_info < (3, 8):  # pragma: no cover
-    sys.exit("Freqtrade requires Python version >= 3.8")
+if sys.version_info < (3, 9):  # pragma: no cover
+    sys.exit("Freqtrade requires Python version >= 3.9")
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments
