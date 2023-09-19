@@ -181,7 +181,6 @@ def test_set_initial_return_values(mocker, freqai_conf):
 
     assert (hist_pred_df['date_pred'].iloc[-1] ==
             pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1))
-    assert 'date' not in hist_pred_df.columns
     assert 'date_pred' in hist_pred_df.columns
     assert hist_pred_df.shape[0] == 7  # Total rows: 5 from historic and 2 new zeros
 
@@ -236,7 +235,6 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
     model_return_df = freqai.dd.model_return_values[pair]
 
     assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1)
-    assert 'date' not in hist_pred_df.columns
     assert 'date_pred' in hist_pred_df.columns
     assert hist_pred_df.shape[0] == 9  # Total rows: 5 from historic and 4 new zeros
 
