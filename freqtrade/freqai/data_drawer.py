@@ -263,23 +263,46 @@ class FreqaiDataDrawer:
             self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
             return
 
-    def set_initial_return_values(self, pair: str, pred_df: DataFrame) -> None:
+    def set_initial_return_values(self, pair: str,
+                                  pred_df: DataFrame,
+                                  dataframe: DataFrame
+                                  ) -> None:
         """
         Set the initial return values to the historical predictions dataframe. This avoids needing
         to repredict on historical candles, and also stores historical predictions despite
         retrainings (so stored predictions are true predictions, not just inferencing on trained
-        data)
+        data).
+
+        We also aim to keep the date from historical predictions so that the FreqUI displays
+        zeros during any downtime (between FreqAI reloads).
         """
 
-        hist_df = self.historic_predictions
-        len_diff = len(hist_df[pair].index) - len(pred_df.index)
-        if len_diff < 0:
-            df_concat = pd.concat([pred_df.iloc[:abs(len_diff)], hist_df[pair]],
-                                  ignore_index=True, keys=hist_df[pair].keys())
+        new_pred = pred_df.copy()
+        # set new_pred values to nans (we want to signal to user that there was nothing
+        # historically made during downtime. The newest pred will get appeneded later in
+        # append_model_predictions)
+        new_pred.iloc[:, :] = np.nan
+        new_pred["date_pred"] = dataframe["date"]
+        hist_preds = self.historic_predictions[pair].copy()
+
+        # find the closest common date between new_pred and historic predictions
+        # and cut off the new_pred dataframe at that date
+        common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
+        if len(common_dates.index) > 0:
+            new_pred = new_pred.iloc[len(common_dates):]
         else:
-            df_concat = hist_df[pair].tail(len(pred_df.index)).reset_index(drop=True)
+            logger.warning("No common dates found between new predictions and historic "
+                           "predictions. You likely left your FreqAI instance offline "
+                           f"for more than {len(dataframe.index)} candles.")
+
+        df_concat = pd.concat([hist_preds, new_pred], ignore_index=True, keys=hist_preds.keys())
+        # remove last row because we will append that later in append_model_predictions()
+        df_concat = df_concat.iloc[:-1]
+        # any missing values will get zeroed out so users can see the exact
+        # downtime in FreqUI
         df_concat = df_concat.fillna(0)
-        self.model_return_values[pair] = df_concat
+        self.historic_predictions[pair] = df_concat
+        self.model_return_values[pair] = df_concat.tail(len(dataframe.index)).reset_index(drop=True)
 
     def append_model_predictions(self, pair: str, predictions: DataFrame,
                                  do_preds: NDArray[np.int_],

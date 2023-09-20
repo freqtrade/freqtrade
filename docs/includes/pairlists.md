@@ -376,7 +376,7 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
         "max_rate_of_change": 0.99,
-        "refresh_period": 1440
+        "refresh_period": 86400
     }
 ]
 ```
@@ -431,7 +431,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "method": "RangeStabilityFilter",
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
-        "refresh_period": 1440
+        "refresh_period": 86400
     },
     {
         "method": "VolatilityFilter",
