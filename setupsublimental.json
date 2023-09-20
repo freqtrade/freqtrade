@@ -1,0 +1,93 @@
+
+{
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "max_open_trades": 1,
+    "stake_currency": "USDT",
+    "stake_amount": "unlimited",
+    "tradable_balance_ratio": 1,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": true,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": false,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing":{
+        "price_side": "other",
+        "use_order_book": false
+    },
+    "minimal_roi": {
+      "0": 0.197,
+      "10": 0.087,
+      "58": 0.036,
+      "155": 0
+    },
+    "stoploss": -0.023,
+    "trailing_stop": true,
+      "trailing_stop_positive": 0.22,
+      "trailing_stop_positive_offset": 0.269,
+      "trailing_only_offset_is_reached": true,
+
+    "buy": {
+      "ratio_indicator": 1.4,
+      "rsi_threshold": 22,
+      "top_traders": true
+    },
+    "sell": {},
+    "protection": {},
+    "exchange": {
+        "name": "bybit",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": ["BTC/USDT:USDT","NEAR/USDT:USDT",
+        "CFX/USDT:USDT","ATOM/USDT:USDT",
+        "FIL/USDT:USDT","GALA/USDT:USDT", "ALGO/USDT:USDT", "ZEC/USDT:USDT",
+        "FTM/USDT:USDT","CRV/USDT:USDT",  "ENS/USDT:USDT",
+        "PEOPLE/USDT:USDT","GRT/USDT:USDT",
+         "ARB/USDT:USDT",
+        "ICP/USDT:USDT","LINK/USDT:USDT","MASK/USDT:USDT","LTC/USDT:USDT",
+        "OP/USDT:USDT"],
+        "pair_blacklist": [
+        ]
+    },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 4202,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "7cdad018b81b397a33d66018c760631f9bcffede6e65f6c31e932842998a7f3b",
+        "ws_token": "6v-3RTBBfNtMAt0o-nruoV0xL-55SFrhhw",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "Purp1tchee"
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "6696229815:AAHXo057w1Dy4-Nd4rwdLb7cI7yjNvwbbB4",
+        "chat_id": "5934004826"
+    },
+    "bot_name": "supremacy",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

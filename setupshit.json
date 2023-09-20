@@ -1,0 +1,65 @@
+
+{
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "max_open_trades": 1,
+    "stake_currency": "USDT",
+    "stake_amount": "unlimited",
+    "tradable_balance_ratio": 1,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": true,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing":{
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "bybit",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": ["BTC/USDT:USDT", "ADA/USDT:USDT","NEAR/USDT:USDT", "CFX/USDT:USDT", "ARB/USDT:USDT", "APT/USDT:USDT", "WAVES/USDT:USDT", "DASH/USDT:USDT", "LINK/USDT:USDT", "MASK/USDT:USDT", "LTC/USDT:USDT", "MATIC/USDT:USDT", "OP/USDT:USDT", "XRP/USDT:USDT"],
+        "pair_blacklist": [
+        ]
+    },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 2025,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "7cdad018b81b397a33d66018c760631f9bcffede6e65f6c31e932842998a7f3b",
+        "ws_token": "6v-3RTBBfNtMAt0o-nruoV0xL-55SFrhhw",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "Purp1tchee"
+    },
+    "bot_name": "obsession",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

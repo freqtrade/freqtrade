@@ -15,7 +15,7 @@
         "exit": 30
     },
     "exchange": {
-        "name": "binance",
+        "name": "bybit",
         "key": "",
         "secret": "",
         "ccxt_config": {},
@@ -46,6 +46,18 @@
             "method": "StaticPairList"
         }
     ],
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 2098,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "7cdad018b81b397a33d66018c760631f9bcffede6e65f6c31e932842998a7f3b",
+        "ws_token": "6v-3RTBBfNtMAt0o-nruoV0xL-55SFrhhw",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "Purp1tchee"
+    },
     "freqai": {
         "enabled": true,
         "purge_old_models": 2,
