@@ -1082,6 +1082,10 @@ class Exchange:
             if order.get('status') is None:
                 # Map empty status to open.
                 order['status'] = 'open'
+
+            if order.get('type') is None:
+                order['type'] = ordertype
+
             self._log_exchange_response('create_order', order)
             order = self._order_contracts_to_amount(order)
             return order
