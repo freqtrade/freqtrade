@@ -1079,6 +1079,9 @@ class Exchange:
                 rate_for_order,
                 params,
             )
+            if order.get('status') is None:
+                # Map empty status to open.
+                order['status'] = 'open'
             self._log_exchange_response('create_order', order)
             order = self._order_contracts_to_amount(order)
             return order

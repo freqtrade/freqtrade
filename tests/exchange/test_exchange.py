@@ -1447,6 +1447,7 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
 
     assert 'id' in order
     assert 'info' in order
+    assert order['status'] == 'open'
     assert order['id'] == order_id
     assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
