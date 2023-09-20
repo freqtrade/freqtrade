@@ -19,7 +19,7 @@ class RecursiveAnalysisSubFunctions:
             config: Dict[str, Any],
             recursive_instances: List[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
-        headers = ['strategy', 'indicators']
+        headers = ['indicators']
         for candle in startups:
             headers.append(candle)
 
@@ -27,7 +27,7 @@ class RecursiveAnalysisSubFunctions:
         for inst in recursive_instances:
             if len(inst.dict_recursive) > 0:
                 for indicator, values in inst.dict_recursive.items():
-                    temp_data = [inst.strategy_obj['name'], indicator]
+                    temp_data = [indicator]
                     for candle in startups:
                         temp_data.append(values.get(int(candle), '-'))
                     data.append(temp_data)

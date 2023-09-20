@@ -16,8 +16,6 @@ head over to the [Data Downloading](data-download.md) section of the documentati
 This command is built upon backtesting since it internally chains backtests to prepare different lenghts of data and calculate indicators based of each of the prepared data.
 This is done by not looking at the strategy itself - but at the value of the indicators it returned. After multiple backtests are done to calculate the indicators of different startup candles value, the values of last rows are compared to see hoe much differences are they compared to the base backtest.
 
-You can use commands of [Backtesting](backtesting.md).
-
 - `--cache` is forced to "none".
 - Since we are only looking at indicators' value, using more than one pair is redundant. It is recommended to set the pair used in the command using `-p` flag, preferably using pair with high price, such as BTC or ETH, to avoid having rounding issue that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis the first pair in the whitelist.
 - It's recommended to set a long timerange (at least consist of 5000 candles), so that the initial backtest that going to be used as benchmark have very small or no recursive issue at all. For example, for a 5m timeframe, timerange of 5000 candles would be equal to 18 days.
@@ -36,28 +34,9 @@ usage: freqtrade recursive-analysis [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                     [--timerange TIMERANGE]
                                     [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
                                     [-p PAIRS [PAIRS ...]]
-                                    [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                                    [--export {none,trades,signals}]
-                                    [--export-filename PATH]
-                                    [--breakdown {day,week,month} [{day,week,month} ...]]
-                                    [--cache {none,day,week,month}]
                                     [--freqai-backtest-live-models]
-                                    [--minimum-trade-amount INT]
-                                    [--targeted-trade-amount INT]
-                                    [--lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME]
 
-options:
-  --minimum-trade-amount INT
-                        Minimum trade amount for lookahead-analysis
-  --targeted-trade-amount INT
-                        Targeted trade amount for lookahead analysis
-  --lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME
-                        Use this csv-filename to store lookahead-analysis-
-                        results
 ```
-
-!!! Note ""
-    The above Output was reduced to options `lookahead-analysis` adds on top of regular backtesting commands.
 
 ### Summary
 
