@@ -1,7 +1,9 @@
 
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 from freqtrade.configuration import TimeRange
@@ -135,3 +137,111 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
             match=r'Historic predictions not found.*'
             ):
         freqai.dd.get_timerange_from_live_historic_predictions()
+
+
+def test_set_initial_return_values(mocker, freqai_conf):
+    """
+    Simple test of the set initial return values that ensures
+    we are concatening and ffilling values properly.
+    """
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    # Setup
+    pair = "BTC/USD"
+    end_x = "2023-08-31"
+    start_x_plus_1 = "2023-08-30"
+    end_x_plus_5 = "2023-09-03"
+
+    historic_data = {
+        'date_pred': pd.date_range(end=end_x, periods=5),
+        'value': range(1, 6)
+    }
+    new_data = {
+        'date': pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
+        'value': range(6, 11)
+    }
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(historic_data)
+
+    new_pred_df = pd.DataFrame(new_data)
+    dataframe = pd.DataFrame(new_data)
+
+    # Action
+    with patch('logging.Logger.warning') as mock_logger_warning:
+        freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
+
+    # Assertions
+    hist_pred_df = freqai.dd.historic_predictions[pair]
+    model_return_df = freqai.dd.model_return_values[pair]
+
+    assert (hist_pred_df['date_pred'].iloc[-1] ==
+            pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1))
+    assert 'date_pred' in hist_pred_df.columns
+    assert hist_pred_df.shape[0] == 7  # Total rows: 5 from historic and 2 new zeros
+
+    # compare values in model_return_df with hist_pred_df
+    assert (model_return_df["value"].values ==
+            hist_pred_df.tail(len(dataframe))["value"].values).all()
+    assert model_return_df.shape[0] == len(dataframe)
+
+    # Ensure logger error is not called
+    mock_logger_warning.assert_not_called()
+
+
+def test_set_initial_return_values_warning(mocker, freqai_conf):
+    """
+    Simple test of set_initial_return_values that hits the warning
+    associated with leaving a FreqAI bot offline so long that the
+    exchange candles have no common date with the historic predictions
+    """
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    # Setup
+    pair = "BTC/USD"
+    end_x = "2023-08-31"
+    start_x_plus_1 = "2023-09-01"
+    end_x_plus_5 = "2023-09-05"
+
+    historic_data = {
+        'date_pred': pd.date_range(end=end_x, periods=5),
+        'value': range(1, 6)
+    }
+    new_data = {
+        'date': pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
+        'value': range(6, 11)
+    }
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(historic_data)
+
+    new_pred_df = pd.DataFrame(new_data)
+    dataframe = pd.DataFrame(new_data)
+
+    # Action
+    with patch('logging.Logger.warning') as mock_logger_warning:
+        freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
+
+    # Assertions
+    hist_pred_df = freqai.dd.historic_predictions[pair]
+    model_return_df = freqai.dd.model_return_values[pair]
+
+    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1)
+    assert 'date_pred' in hist_pred_df.columns
+    assert hist_pred_df.shape[0] == 9  # Total rows: 5 from historic and 4 new zeros
+
+    # compare values in model_return_df with hist_pred_df
+    assert (model_return_df["value"].values == hist_pred_df.tail(
+        len(dataframe))["value"].values).all()
+    assert model_return_df.shape[0] == len(dataframe)
+
+    # Ensure logger error is not called
+    mock_logger_warning.assert_called()

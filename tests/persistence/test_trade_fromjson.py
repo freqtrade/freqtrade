@@ -66,6 +66,10 @@ def test_trade_fromjson():
         "is_short": false,
         "trading_mode": "spot",
         "funding_fees": 0.0,
+        "amount_precision": 1.0,
+        "price_precision": 3.0,
+        "precision_mode": 2,
+        "contract_size": 1.0,
         "open_order_id": null,
         "orders": [
             {
@@ -180,6 +184,9 @@ def test_trade_fromjson():
     assert isinstance(trade.open_date, datetime)
     assert trade.exit_reason == 'no longer good'
     assert trade.realized_profit == 2.76315361
+    assert trade.precision_mode == 2
+    assert trade.amount_precision == 1.0
+    assert trade.contract_size == 1.0
 
     assert len(trade.orders) == 5
     last_o = trade.orders[-1]

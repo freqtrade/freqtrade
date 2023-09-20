@@ -24,7 +24,7 @@ from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_pat
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -1312,8 +1312,11 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         leverage=3.0
     )
 
-    assert exchange._set_leverage.call_count == 1
-    assert exchange.set_margin_mode.call_count == 1
+    if exchange_name != 'okx':
+        assert exchange._set_leverage.call_count == 1
+        assert exchange.set_margin_mode.call_count == 1
+    else:
+        assert api_mock.set_leverage.call_count == 1
     assert order['amount'] == 0.01
 
 
@@ -1677,7 +1680,10 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
     api_mock.fetch_closed_orders = MagicMock(return_value=[limit_order['buy']])
 
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
-    start_time = datetime.now(timezone.utc) - timedelta(days=5)
+    start_time = datetime.now(timezone.utc) - timedelta(days=20)
+    expected = 1
+    if exchange_name == 'bybit':
+        expected = 3
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # Not available in dry-run
@@ -1687,10 +1693,10 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     res = exchange.fetch_orders('mocked', start_time)
-    assert api_mock.fetch_orders.call_count == 1
+    assert api_mock.fetch_orders.call_count == expected
     assert api_mock.fetch_open_orders.call_count == 0
     assert api_mock.fetch_closed_orders.call_count == 0
-    assert len(res) == 2
+    assert len(res) == 2 * expected
 
     res = exchange.fetch_orders('mocked', start_time)
 
@@ -1704,13 +1710,17 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
         if endpoint == 'fetchOpenOrders':
             return True
 
+    if exchange_name == 'okx':
+        # Special OKX case is tested separately
+        return
+
     mocker.patch(f'{EXMS}.exchange_has', has_resp)
 
     # happy path without fetchOrders
-    res = exchange.fetch_orders('mocked', start_time)
+    exchange.fetch_orders('mocked', start_time)
     assert api_mock.fetch_orders.call_count == 0
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_open_orders.call_count == expected
+    assert api_mock.fetch_closed_orders.call_count == expected
 
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
 
@@ -1723,11 +1733,11 @@ def test_fetch_orders(default_conf, mocker, exchange_name, limit_order):
     api_mock.fetch_open_orders.reset_mock()
     api_mock.fetch_closed_orders.reset_mock()
 
-    res = exchange.fetch_orders('mocked', start_time)
+    exchange.fetch_orders('mocked', start_time)
 
-    assert api_mock.fetch_orders.call_count == 1
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
+    assert api_mock.fetch_orders.call_count == expected
+    assert api_mock.fetch_open_orders.call_count == expected
+    assert api_mock.fetch_closed_orders.call_count == expected
 
 
 def test_fetch_trading_fees(default_conf, mocker):
@@ -2044,7 +2054,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
         )
     # Required candles
     candles = (end_ts - start_ts) / 300_000
-    exp = candles // exchange.ohlcv_candle_limit('5m', CandleType.SPOT) + 1
+    exp = candles // exchange.ohlcv_candle_limit('5m', candle_type, start_ts) + 1
 
     # Depending on the exchange, this should be called between 1 and 6 times.
     assert exchange._api_async.fetch_ohlcv.call_count == exp
@@ -3122,25 +3132,28 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
+    mock_prefix = 'freqtrade.exchange.gate.Gate'
+    if exchange_name == 'okx':
+        mock_prefix = 'freqtrade.exchange.okx.Okx'
     mocker.patch(f'{EXMS}.fetch_stoploss_order', return_value={'for': 123})
-    mocker.patch('freqtrade.exchange.gate.Gate.fetch_stoploss_order', return_value={'for': 123})
+    mocker.patch(f'{mock_prefix}.fetch_stoploss_order', return_value={'for': 123})
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     res = {'fee': {}, 'status': 'canceled', 'amount': 1234}
     mocker.patch(f'{EXMS}.cancel_stoploss_order', return_value=res)
-    mocker.patch('freqtrade.exchange.gate.Gate.cancel_stoploss_order', return_value=res)
+    mocker.patch(f'{mock_prefix}.cancel_stoploss_order', return_value=res)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == res
 
     mocker.patch(f'{EXMS}.cancel_stoploss_order', return_value='canceled')
-    mocker.patch('freqtrade.exchange.gate.Gate.cancel_stoploss_order', return_value='canceled')
+    mocker.patch(f'{mock_prefix}.cancel_stoploss_order', return_value='canceled')
     # Fall back to fetch_stoploss_order
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == {'for': 123}
 
     exc = InvalidOrderException("")
     mocker.patch(f'{EXMS}.fetch_stoploss_order', side_effect=exc)
-    mocker.patch('freqtrade.exchange.gate.Gate.fetch_stoploss_order', side_effect=exc)
+    mocker.patch(f'{mock_prefix}.fetch_stoploss_order', side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co['amount'] == 555
     assert co == {'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
@@ -3148,7 +3161,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     with pytest.raises(InvalidOrderException):
         exc = InvalidOrderException("Did not find order")
         mocker.patch(f'{EXMS}.cancel_stoploss_order', side_effect=exc)
-        mocker.patch('freqtrade.exchange.gate.Gate.cancel_stoploss_order', side_effect=exc)
+        mocker.patch(f'{mock_prefix}.cancel_stoploss_order', side_effect=exc)
         exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
@@ -3223,8 +3236,14 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value={'id': '123', 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == {'id': '123', 'symbol': 'TKN/BTC'}
+    res = {'id': '123', 'symbol': 'TKN/BTC'}
+    if exchange_name == 'okx':
+        res = {'id': '123', 'symbol': 'TKN/BTC', 'type': 'stoploss'}
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == res
 
+    if exchange_name == 'okx':
+        # Tested separately.
+        return
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -3544,6 +3563,8 @@ def test_get_markets_error(default_conf, mocker):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
+    if exchange_name == 'okx':
+        pytest.skip("Tested separately for okx")
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     timeframes = ('1m', '5m', '1h')
     expected = exchange._ft_has['ohlcv_candle_limit']

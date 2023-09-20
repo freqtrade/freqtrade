@@ -456,31 +456,42 @@ class FreqtradeBot(LoggingMixin):
         Only used balance disappeared, which would make exiting impossible.
         """
         try:
-            orders = self.exchange.fetch_orders(trade.pair, trade.open_date_utc)
+            orders = self.exchange.fetch_orders(
+                trade.pair, trade.open_date_utc - timedelta(seconds=10))
+            prev_exit_reason = trade.exit_reason
+            prev_trade_state = trade.is_open
             for order in orders:
                 trade_order = [o for o in trade.orders if o.order_id == order['id']]
-                if trade_order:
-                    continue
-                logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
 
-                order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
-                order_obj.order_filled_date = datetime.fromtimestamp(
-                    safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
-                    tz=timezone.utc)
-                trade.orders.append(order_obj)
-                prev_exit_reason = trade.exit_reason
-                trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
-                self.update_trade_state(trade, order['id'], order)
+                if trade_order:
+                    # We knew this order, but didn't have it updated properly
+                    order_obj = trade_order[0]
+                else:
+                    logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
+
+                    order_obj = Order.parse_from_ccxt_object(order, trade.pair, order['side'])
+                    order_obj.order_filled_date = datetime.fromtimestamp(
+                        safe_value_fallback(order, 'lastTradeTimestamp', 'timestamp') // 1000,
+                        tz=timezone.utc)
+                    trade.orders.append(order_obj)
+                    Trade.commit()
+                    trade.exit_reason = ExitType.SOLD_ON_EXCHANGE.value
+
+                self.update_trade_state(trade, order['id'], order, send_msg=False)
 
                 logger.info(f"handled order {order['id']}")
-                if not trade.is_open:
-                    # Trade was just closed
-                    trade.close_date = order_obj.order_filled_date
-                    Trade.commit()
-                    break
-                else:
-                    trade.exit_reason = prev_exit_reason
-                    Trade.commit()
+
+            # Refresh trade from database
+            Trade.session.refresh(trade)
+            if not trade.is_open:
+                # Trade was just closed
+                trade.close_date = trade.date_last_filled_utc
+                self.order_close_notify(trade, order_obj,
+                                        order_obj.ft_order_side == 'stoploss',
+                                        send_msg=prev_trade_state != trade.is_open)
+            else:
+                trade.exit_reason = prev_exit_reason
+            Trade.commit()
 
         except ExchangeError:
             logger.warning("Error finding onexchange order.")
@@ -927,7 +938,8 @@ class FreqtradeBot(LoggingMixin):
             # Don't call custom_entry_price in order-adjust scenario
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=enter_limit_requested)(
-                pair=pair, current_time=datetime.now(timezone.utc),
+                pair=pair, trade=trade,
+                current_time=datetime.now(timezone.utc),
                 proposed_rate=enter_limit_requested, entry_tag=entry_tag,
                 side=trade_side,
             )
@@ -1352,18 +1364,21 @@ class FreqtradeBot(LoggingMixin):
             self.handle_cancel_enter(trade, order, order_id, reason)
         else:
             canceled = self.handle_cancel_exit(trade, order, order_id, reason)
-            canceled_count = trade.get_exit_order_count()
+            canceled_count = trade.get_canceled_exit_order_count()
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
-            if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                logger.warning(f'Emergency exiting trade {trade}, as the exit order '
-                               f'timed out {max_timeouts} times.')
-                self.emergency_exit(trade, order['price'])
+            if (canceled and max_timeouts > 0 and canceled_count >= max_timeouts):
+                logger.warning(f"Emergency exiting trade {trade}, as the exit order "
+                               f"timed out {max_timeouts} times. force selling {order['amount']}.")
+                self.emergency_exit(trade, order['price'], order['amount'])
 
-    def emergency_exit(self, trade: Trade, price: float) -> None:
+    def emergency_exit(
+            self, trade: Trade, price: float, sub_trade_amt: Optional[float] = None) -> None:
         try:
             self.execute_trade_exit(
                 trade, price,
-                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
+                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT),
+                sub_trade_amt=sub_trade_amt
+                )
         except DependencyException as exception:
             logger.warning(
                 f'Unable to emergency exit trade {trade.pair}: {exception}')
@@ -1838,7 +1853,7 @@ class FreqtradeBot(LoggingMixin):
 
     def update_trade_state(
             self, trade: Trade, order_id: Optional[str],
-            action_order: Optional[Dict[str, Any]] = None,
+            action_order: Optional[Dict[str, Any]] = None, *,
             stoploss_order: bool = False, send_msg: bool = True) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
@@ -1875,7 +1890,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.handle_order_fee(trade, order_obj, order)
 
-        trade.update_trade(order_obj)
+        trade.update_trade(order_obj, not send_msg)
 
         trade = self._update_trade_after_fill(trade, order_obj)
         Trade.commit()

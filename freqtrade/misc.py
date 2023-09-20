@@ -156,7 +156,7 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
-def safe_value_fallback(obj: dict, key1: str, key2: str, default_value=None):
+def safe_value_fallback(obj: dict, key1: str, key2: Optional[str] = None, default_value=None):
     """
     Search a value in obj, return this if it's not None.
     Then search key2 in obj - return that if it's not none - then use default_value.
@@ -165,7 +165,7 @@ def safe_value_fallback(obj: dict, key1: str, key2: str, default_value=None):
     if key1 in obj and obj[key1] is not None:
         return obj[key1]
     else:
-        if key2 in obj and obj[key2] is not None:
+        if key2 and key2 in obj and obj[key2] is not None:
             return obj[key2]
     return default_value
 
