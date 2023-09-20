@@ -282,15 +282,12 @@ class FreqaiDataDrawer:
         # historically made during downtime. The newest pred will get appeneded later in
         # append_model_predictions)
         new_pred.iloc[:, :] = np.nan
-        new_pred["date"] = dataframe["date"]
-
+        new_pred["date_pred"] = dataframe["date"]
         hist_preds = self.historic_predictions[pair].copy()
-        # rename date_pred column to date so that we can merge on date
-        hist_preds = hist_preds.rename(columns={"date_pred": "date"})
 
         # find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
-        common_dates = pd.merge(new_pred, hist_preds, on="date", how="inner")
+        common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
         if len(common_dates.index) > 0:
             new_pred = new_pred.iloc[len(common_dates):]
         else:
@@ -299,18 +296,12 @@ class FreqaiDataDrawer:
                            f"for more than {len(dataframe.index)} candles.")
 
         df_concat = pd.concat([hist_preds, new_pred], ignore_index=True, keys=hist_preds.keys())
-
         # remove last row because we will append that later in append_model_predictions()
         df_concat = df_concat.iloc[:-1]
         # any missing values will get zeroed out so users can see the exact
         # downtime in FreqUI
         df_concat = df_concat.fillna(0)
-
-        # rename date column back to date_pred
-        df_concat = df_concat.rename(columns={"date": "date_pred"})
-
         self.historic_predictions[pair] = df_concat
-
         self.model_return_values[pair] = df_concat.tail(len(dataframe.index)).reset_index(drop=True)
 
     def append_model_predictions(self, pair: str, predictions: DataFrame,
