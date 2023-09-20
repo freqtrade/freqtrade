@@ -65,6 +65,7 @@ ignore = ["freqtrade/vendor/**"]
 line-length = 100
 extend-exclude = [".env", ".venv"]
 target-version = "py38"
+# Exclude UP036 as it's causing the "exit if < 3.9" to fail.
 extend-select = [
   "C90",    # mccabe
   # "N",    # pep8-naming

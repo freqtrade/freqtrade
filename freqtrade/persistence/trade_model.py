@@ -13,15 +13,17 @@ from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, 
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 from typing_extensions import Self
 
-from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
-                                 NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
+from freqtrade.constants import (CANCELED_EXCHANGE_STATES, CUSTOM_TAG_MAX_LENGTH,
+                                 DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
+                                 BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
                                 price_to_precision)
 from freqtrade.leverage import interest
+from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.util import FtPrecise, dt_now
+from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -176,7 +178,9 @@ class Order(ModelBase):
                 # (represents the funding fee since the last order)
                 self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0 and not self.order_filled_date:
-                self.order_filled_date = datetime.now(timezone.utc)
+                self.order_filled_date = dt_from_ts(
+                    safe_value_fallback(order, 'lastTradeTimestamp', default_value=dt_ts())
+                )
         self.order_update_date = datetime.now(timezone.utc)
 
     def to_ccxt_object(self, stopPriceName: str = 'stopPrice') -> Dict[str, Any]:
@@ -430,13 +434,20 @@ class LocalTrade:
             return self.amount
 
     @property
-    def date_last_filled_utc(self) -> datetime:
+    def _date_last_filled_utc(self) -> Optional[datetime]:
         """ Date of the last filled order"""
         orders = self.select_filled_orders()
-        if not orders:
+        if orders:
+            return max(o.order_filled_utc for o in orders if o.order_filled_utc)
+        return None
+
+    @property
+    def date_last_filled_utc(self) -> datetime:
+        """ Date of the last filled order - or open_date if no orders are filled"""
+        dt_last_filled = self._date_last_filled_utc
+        if not dt_last_filled:
             return self.open_date_utc
-        return max([self.open_date_utc,
-                    max(o.order_filled_utc for o in orders if o.order_filled_utc)])
+        return max([self.open_date_utc, dt_last_filled])
 
     @property
     def open_date_utc(self):
@@ -617,8 +628,9 @@ class LocalTrade:
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
-            'orders': orders_json,
+            'contract_size': self.contract_size,
             'has_open_orders': self.has_open_orders,
+            'orders': orders_json,
         }
 
     @staticmethod
@@ -716,7 +728,7 @@ class LocalTrade:
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss or 0.0):.8f}.")
 
-    def update_trade(self, order: Order) -> None:
+    def update_trade(self, order: Order, recalculating: bool = False) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -758,8 +770,9 @@ class LocalTrade:
                                                      self.precision_mode, self.contract_size)
             if (
                 isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
-                or order.safe_amount_after_fee > amount_tr
+                or (not recalculating and order.safe_amount_after_fee > amount_tr)
             ):
+                # When recalculating a trade, only comming out to 0 can force a close
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
@@ -772,7 +785,7 @@ class LocalTrade:
         and marks trade as closed
         """
         self.close_rate = rate
-        self.close_date = self.close_date or datetime.utcnow()
+        self.close_date = self.close_date or self._date_last_filled_utc or dt_now()
         self.is_open = False
         self.exit_order_status = 'closed'
         self.recalc_trade_from_orders(is_closing=True)
@@ -812,12 +825,13 @@ class LocalTrade:
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def get_exit_order_count(self) -> int:
+    def get_canceled_exit_order_count(self) -> int:
         """
         Get amount of failed exiting orders
         assumes full exits.
         """
-        return len([o for o in self.orders if o.ft_order_side == self.exit_side])
+        return len([o for o in self.orders if o.ft_order_side == self.exit_side
+                    and o.status in CANCELED_EXCHANGE_STATES])
 
     def _calc_open_trade_value(self, amount: float, open_rate: float) -> float:
         """
@@ -1776,6 +1790,10 @@ class Trade(ModelBase, LocalTrade):
             is_short=data["is_short"],
             trading_mode=data["trading_mode"],
             funding_fees=data["funding_fees"],
+            amount_precision=data.get('amount_precision', None),
+            price_precision=data.get('price_precision', None),
+            precision_mode=data.get('precision_mode', None),
+            contract_size=data.get('contract_size', None),
         )
         for order in data["orders"]:
 

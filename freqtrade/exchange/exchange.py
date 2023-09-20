@@ -1420,7 +1420,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def __fetch_orders_emulate(self, pair: str, since_ms: int) -> List[Dict]:
+    def _fetch_orders_emulate(self, pair: str, since_ms: int) -> List[Dict]:
         orders = []
         if self.exchange_has('fetchClosedOrders'):
             orders = self._api.fetch_closed_orders(pair, since=since_ms)
@@ -1450,9 +1450,9 @@ class Exchange:
                 except ccxt.NotSupported:
                     # Some exchanges don't support fetchOrders
                     # attempt to fetch open and closed orders separately
-                    orders = self.__fetch_orders_emulate(pair, since_ms)
+                    orders = self._fetch_orders_emulate(pair, since_ms)
             else:
-                orders = self.__fetch_orders_emulate(pair, since_ms)
+                orders = self._fetch_orders_emulate(pair, since_ms)
             self._log_exchange_response('fetch_orders', orders)
             orders = [self._order_contracts_to_amount(o) for o in orders]
             return orders

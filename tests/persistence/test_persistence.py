@@ -600,7 +600,9 @@ def test_calc_open_close_trade_price(
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_trade_close(fee):
+def test_trade_close(fee, time_machine):
+    time_machine.move_to("2022-09-01 05:00:00 +00:00", tick=False)
+
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=60.0,
@@ -609,7 +611,7 @@ def test_trade_close(fee):
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
+        open_date=dt_now() - timedelta(minutes=10),
         interest_rate=0.0005,
         exchange='binance',
         trading_mode=margin,
@@ -628,6 +630,7 @@ def test_trade_close(fee):
         status="closed",
         order_type="limit",
         side=trade.entry_side,
+        order_filled_date=trade.open_date,
     ))
     trade.orders.append(Order(
         ft_order_side=trade.exit_side,
@@ -642,6 +645,7 @@ def test_trade_close(fee):
         status="closed",
         order_type="limit",
         side=trade.exit_side,
+        order_filled_date=dt_now(),
          ))
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -650,14 +654,15 @@ def test_trade_close(fee):
     assert trade.is_open is False
     assert pytest.approx(trade.close_profit) == 0.094513715
     assert trade.close_date is not None
+    assert trade.close_date_utc == dt_now()
 
-    new_date = datetime(2020, 2, 2, 15, 6, 1),
-    assert trade.close_date != new_date
+    new_date = dt_now() + timedelta(minutes=5)
+    assert trade.close_date_utc != new_date
     # Close should NOT update close_date if the trade has been closed already
     assert trade.is_open is False
     trade.close_date = new_date
     trade.close(2.2)
-    assert trade.close_date == new_date
+    assert trade.close_date_utc == new_date
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1380,6 +1385,7 @@ def test_to_json(fee):
         precision_mode=1,
         amount_precision=8.0,
         price_precision=7.0,
+        contract_size=1,
     )
     result = trade.to_json()
     assert isinstance(result, dict)
@@ -1445,6 +1451,7 @@ def test_to_json(fee):
         'amount_precision': 8.0,
         'price_precision': 7.0,
         'precision_mode': 1,
+        'contract_size': 1,
         'orders': [],
         'has_open_orders': False,
     }
@@ -1466,6 +1473,7 @@ def test_to_json(fee):
         precision_mode=2,
         amount_precision=7.0,
         price_precision=8.0,
+        contract_size=1
     )
     result = trade.to_json()
     assert isinstance(result, dict)
@@ -1531,6 +1539,7 @@ def test_to_json(fee):
         'amount_precision': 7.0,
         'price_precision': 8.0,
         'precision_mode': 2,
+        'contract_size': 1,
         'orders': [],
         'has_open_orders': False,
     }
@@ -1923,11 +1932,15 @@ def test_get_best_pair_lev(fee):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
-def test_get_exit_order_count(fee, is_short):
+def test_get_canceled_exit_order_count(fee, is_short):
 
     create_mock_trades(fee, is_short=is_short)
     trade = Trade.get_trades([Trade.pair == 'ETC/BTC']).first()
-    assert trade.get_exit_order_count() == 1
+    # No canceled order.
+    assert trade.get_canceled_exit_order_count() == 0
+
+    trade.orders[-1].status = 'canceled'
+    assert trade.get_canceled_exit_order_count() == 1
 
 
 @pytest.mark.usefixtures("init_persistence")

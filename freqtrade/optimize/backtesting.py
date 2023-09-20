@@ -738,7 +738,9 @@ class Backtesting:
         if order_type == 'limit':
             new_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=propose_rate)(
-                pair=pair, current_time=current_time,
+                pair=pair,
+                trade=trade,  # type: ignore[arg-type]
+                current_time=current_time,
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate

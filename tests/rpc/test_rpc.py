@@ -90,6 +90,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'amount_precision': 8.0,
         'price_precision': 8.0,
         'precision_mode': 2,
+        'contract_size': 1,
         'has_open_orders': False,
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
@@ -263,7 +264,11 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee, markets, mocker) -> None:
+def test__rpc_timeunit_profit(
+        default_conf_usdt, ticker, fee, markets, mocker, time_machine) -> None:
+
+    time_machine.move_to("2023-09-05 10:00:00 +00:00", tick=False)
+
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,

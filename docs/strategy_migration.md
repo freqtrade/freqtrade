@@ -280,7 +280,7 @@ After:
 
 ``` python hl_lines="3"
 class AwesomeStrategy(IStrategy):
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+    def custom_entry_price(self, pair: str, trade: Optional[Trade], current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
       return proposed_rate
 ```
