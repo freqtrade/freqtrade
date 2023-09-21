@@ -3335,11 +3335,11 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     l_order = deepcopy(limit_order[entry_side(is_short)])
-    cancel_buy_order = deepcopy(limit_order[entry_side(is_short)])
-    cancel_buy_order['status'] = 'canceled'
-    del cancel_buy_order['filled']
+    cancel_entry_order = deepcopy(limit_order[entry_side(is_short)])
+    cancel_entry_order['status'] = 'canceled'
+    del cancel_entry_order['filled']
 
-    cancel_order_mock = MagicMock(return_value=cancel_buy_order)
+    cancel_order_mock = MagicMock(return_value=cancel_entry_order)
     mocker.patch(f'{EXMS}.cancel_order_with_result', cancel_order_mock)
 
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3369,8 +3369,8 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     assert cancel_order_mock.call_count == 1
 
     # Order remained open for some reason (cancel failed)
-    cancel_buy_order['status'] = 'open'
-    cancel_order_mock = MagicMock(return_value=cancel_buy_order)
+    cancel_entry_order['status'] = 'open'
+    cancel_order_mock = MagicMock(return_value=cancel_entry_order)
 
     mocker.patch(f'{EXMS}.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_enter(trade, l_order, trade.open_orders_ids[0], reason)
@@ -3393,8 +3393,6 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     )
     assert co_mock.call_count == 1
     assert fo_mock.call_count == 3
-
-
 
 
 @pytest.mark.parametrize("is_short", [False, True])
