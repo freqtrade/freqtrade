@@ -3334,7 +3334,7 @@ def test_manage_open_orders_exception(default_conf_usdt, ticker_usdt, open_trade
 def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_short, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    l_order = limit_order[entry_side(is_short)]
+    l_order = deepcopy(limit_order[entry_side(is_short)])
     cancel_buy_order = deepcopy(limit_order[entry_side(is_short)])
     cancel_buy_order['status'] = 'canceled'
     del cancel_buy_order['filled']
@@ -3380,6 +3380,21 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     assert not freqtrade.handle_cancel_enter(
         trade, limit_order[entry_side(is_short)], trade.open_orders_ids[0], reason
     )
+
+    # Retry ...
+    cbo = limit_order[entry_side(is_short)]
+
+    mocker.patch('freqtrade.freqtradebot.sleep')
+    cbo['status'] = 'open'
+    co_mock = mocker.patch(f'{EXMS}.cancel_order_with_result', return_value=cbo)
+    fo_mock = mocker.patch(f'{EXMS}.fetch_order', return_value=cbo)
+    assert not freqtrade.handle_cancel_enter(
+        trade, cbo, cbo['id'], reason, replacing=True
+    )
+    assert co_mock.call_count == 1
+    assert fo_mock.call_count == 3
+
+
 
 
 @pytest.mark.parametrize("is_short", [False, True])
