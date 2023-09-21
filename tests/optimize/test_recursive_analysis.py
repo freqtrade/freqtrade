@@ -10,7 +10,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.recursive_analysis import RecursiveAnalysis
 from freqtrade.optimize.recursive_analysis_helpers import RecursiveAnalysisSubFunctions
-from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
+from tests.conftest import get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture

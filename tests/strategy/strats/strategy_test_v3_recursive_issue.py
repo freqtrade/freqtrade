@@ -1,11 +1,10 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
+import talib.abstract as ta
 from pandas import DataFrame
-from technical.indicators import ichimoku
 
 from freqtrade.strategy import IStrategy
 from freqtrade.strategy.parameters import CategoricalParameter
 
-import talib.abstract as ta
 
 class strategy_test_v3_recursive_issue(IStrategy):
     INTERFACE_VERSION = 3
