@@ -16,7 +16,6 @@ class RecursiveAnalysisSubFunctions:
 
     @staticmethod
     def text_table_recursive_analysis_instances(
-            config: Dict[str, Any],
             recursive_instances: List[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
         headers = ['indicators']
@@ -99,7 +98,7 @@ class RecursiveAnalysisSubFunctions:
         # report the results
         if RecursiveAnalysis_instances:
             RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances(
-                config, RecursiveAnalysis_instances)
+                RecursiveAnalysis_instances)
         else:
             logger.error("There were no strategies specified neither through "
                          "--strategy nor through "
