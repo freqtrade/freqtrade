@@ -1385,6 +1385,22 @@ class FreqtradeBot(LoggingMixin):
             logger.warning(
                 f'Unable to emergency exit trade {trade.pair}: {exception}')
 
+    def replace_order_failed(self, trade: Trade, msg: str) -> None:
+        """
+        Order replacement fail handling.
+        Deletes the trade if necessary.
+        :param trade: Trade object.
+        :param msg: Error message.
+        """
+        logger.warning(msg)
+        if trade.nr_of_successful_entries == 0:
+            # this is the first entry and we didn't get filled yet, delete trade
+            logger.warning(f"Removing {trade} from database.")
+            self._notify_enter_cancel(
+                trade, order_type=self.strategy.order_types['entry'],
+                reason=constants.CANCEL_REASON['REPLACE_FAILED'])
+            trade.delete()
+
     def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
         """
         Check if current analyzed entry order should be replaced or simply cancelled.
@@ -1436,14 +1452,7 @@ class FreqtradeBot(LoggingMixin):
                         is_short=trade.is_short,
                         mode='replace',
                     ):
-                        logger.warning(f"Could not replace order for {trade}.")
-                        if trade.nr_of_successful_entries == 0:
-                            # this is the first entry and we didn't get filled yet, delete trade
-                            logger.warning(f"Removing {trade} from database.")
-                            self._notify_enter_cancel(
-                                trade, order_type=self.strategy.order_types['entry'],
-                                reason=constants.CANCEL_REASON['REPLACE_FAILED'])
-                            trade.delete()
+                        self.replace_order_failed(trade, f"Could not replace order for {trade}.")
 
     def cancel_all_open_orders(self) -> None:
         """
