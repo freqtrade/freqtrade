@@ -25,87 +25,58 @@ def recursive_conf(default_conf_usdt):
     return default_conf_usdt
 
 
-# def test_start_recursive_analysis(mocker):
-#     single_mock = MagicMock()
-#     text_table_mock = MagicMock()
-#     mocker.patch.multiple(
-#         'freqtrade.optimize.recursive_analysis_helpers.RecursiveAnalysisSubFunctions',
-#         initialize_single_recursive_analysis=single_mock,
-#         text_table_recursive_analysis_instances=text_table_mock,
-#     )
-#     args = [
-#         "recursive-analysis",
-#         "--strategy",
-#         "strategy_test_v3_recursive_issue",
-#         "--strategy-path",
-#         str(Path(__file__).parent.parent / "strategy/strats"),
-#         "--pairs",
-#         "UNITTEST/BTC",
-#         "--timerange",
-#         "20220101-20220201"
-#     ]
-#     pargs = get_args(args)
-#     pargs['config'] = None
+def test_start_recursive_analysis(mocker):
+    single_mock = MagicMock()
+    text_table_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.optimize.recursive_analysis_helpers.RecursiveAnalysisSubFunctions',
+        initialize_single_recursive_analysis=single_mock,
+        text_table_recursive_analysis_instances=text_table_mock,
+    )
+    args = [
+        "recursive-analysis",
+        "--strategy",
+        "strategy_test_v3_recursive_issue",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy/strats"),
+        "--pairs",
+        "UNITTEST/BTC",
+        "--timerange",
+        "20220101-20220201"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
 
-#     start_recursive_analysis(pargs)
-#     assert single_mock.call_count == 1
-#     assert text_table_mock.call_count == 1
+    start_recursive_analysis(pargs)
+    assert single_mock.call_count == 1
+    assert text_table_mock.call_count == 1
 
-#     single_mock.reset_mock()
+    single_mock.reset_mock()
 
-#     # Test invalid config
-#     args = [
-#         "recursive-analysis",
-#         "--strategy",
-#         "strategy_test_v3_with_recursive_bias",
-#         "--strategy-path",
-#         str(Path(__file__).parent.parent / "strategy/strats/recursive_bias"),
-#         "--targeted-trade-amount",
-#         "10",
-#         "--minimum-trade-amount",
-#         "20",
-#     ]
-#     pargs = get_args(args)
-#     pargs['config'] = None
-#     with pytest.raises(OperationalException,
-#                        match=r"Targeted trade amount can't be smaller than minimum trade amount.*"):
-#         start_recursive_analysis(pargs)
-
-#     # Missing timerange
-#     args = [
-#         "recursive-analysis",
-#         "--strategy",
-#         "strategy_test_v3_with_recursive_bias",
-#         "--strategy-path",
-#         str(Path(__file__).parent.parent / "strategy/strats/recursive_bias"),
-#         "--pairs",
-#         "UNITTEST/BTC",
-#         "--max-open-trades",
-#         "1",
-#     ]
-#     pargs = get_args(args)
-#     pargs['config'] = None
-#     with pytest.raises(OperationalException,
-#                        match=r"Please set a timerange\..*"):
-#         start_recursive_analysis(pargs)
+    # Missing timerange
+    args = [
+        "recursive-analysis",
+        "--strategy",
+        "strategy_test_v3_with_recursive_bias",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy/strats"),
+        "--pairs",
+        "UNITTEST/BTC"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException,
+                       match=r"Please set a timerange\..*"):
+        start_recursive_analysis(pargs)
 
 
-# def test_recursive_helper_invalid_config(recursive_conf) -> None:
-#     conf = deepcopy(recursive_conf)
-#     conf['targeted_trade_amount'] = 10
-#     conf['minimum_trade_amount'] = 40
-#     with pytest.raises(OperationalException,
-#                        match=r"Targeted trade amount can't be smaller than minimum trade amount.*"):
-#         RecursiveAnalysisSubFunctions.start(conf)
-
-
-# def test_recursive_helper_no_strategy_defined(recursive_conf):
-#     conf = deepcopy(recursive_conf)
-#     conf['pairs'] = ['UNITTEST/USDT']
-#     del conf['strategy']
-#     with pytest.raises(OperationalException,
-#                        match=r"No Strategy specified"):
-#         RecursiveAnalysisSubFunctions.start(conf)
+def test_recursive_helper_no_strategy_defined(recursive_conf):
+    conf = deepcopy(recursive_conf)
+    conf['pairs'] = ['UNITTEST/USDT']
+    del conf['strategy']
+    with pytest.raises(OperationalException,
+                       match=r"No Strategy specified"):
+        RecursiveAnalysisSubFunctions.start(conf)
 
 
 def test_recursive_helper_start(recursive_conf, mocker) -> None:
