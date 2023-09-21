@@ -1516,8 +1516,10 @@ class FreqtradeBot(LoggingMixin):
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             # if trade is not partially completed and it's the only order, just delete the trade
-            open_order_count = len([order for order in trade.orders if order.status == 'open'])
-            if open_order_count <= 1 and trade.nr_of_successful_entries == 0 and not replacing:
+            open_order_count = len([
+                order for order in trade.orders if order.ft_is_open and order.order_id != order_id
+                ])
+            if open_order_count < 1 and trade.nr_of_successful_entries == 0 and not replacing:
                 logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
                 trade.delete()
                 was_trade_fully_canceled = True
