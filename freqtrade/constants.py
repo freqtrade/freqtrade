@@ -711,3 +711,6 @@ Config = Dict[str, Any]
 # Exchange part of the configuration.
 ExchangeConfig = Dict[str, Any]
 IntOrInf = float
+
+
+EntryExecuteMode = Literal['initial', 'pos_adjust', 'replace']

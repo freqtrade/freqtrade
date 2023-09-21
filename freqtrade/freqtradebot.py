@@ -13,7 +13,7 @@ from schedule import Scheduler
 
 from freqtrade import constants
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.constants import BuySell, Config, ExchangeConfig, LongShort
+from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfig, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -670,7 +670,7 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     logger.debug("Max adjustment entries is set to unlimited.")
             self.execute_entry(trade.pair, stake_amount, price=current_entry_rate,
-                               trade=trade, is_short=trade.is_short)
+                               trade=trade, is_short=trade.is_short, mode='pos_adjust')
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -740,7 +740,7 @@ class FreqtradeBot(LoggingMixin):
         ordertype: Optional[str] = None,
         enter_tag: Optional[str] = None,
         trade: Optional[Trade] = None,
-        order_adjust: bool = False,
+        mode: EntryExecuteMode = 'initial',
         leverage_: Optional[float] = None,
     ) -> bool:
         """
@@ -757,13 +757,12 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_,
-            pos_adjust)
+            pair, price, stake_amount, trade_side, enter_tag, trade, mode, leverage_)
 
         if not stake_amount:
             return False
 
-        msg = (f"Position adjust: about to create a new order for {pair} with stake: "
+        msg = (f"Position adjust: about to create a new order for {pair} with stake_amount: "
                f"{stake_amount} for {trade}" if pos_adjust
                else
                f"{name} signal found: about create a new trade for {pair} with stake_amount: "
@@ -919,9 +918,8 @@ class FreqtradeBot(LoggingMixin):
         trade_side: LongShort,
         entry_tag: Optional[str],
         trade: Optional[Trade],
-        order_adjust: bool,
+        mode: EntryExecuteMode,
         leverage_: Optional[float],
-        pos_adjust: bool,
     ) -> Tuple[float, float, float]:
         """
         Validate and eventually adjust (within limits) limit, amount and leverage
@@ -934,7 +932,7 @@ class FreqtradeBot(LoggingMixin):
             # Calculate price
             enter_limit_requested = self.exchange.get_rate(
                 pair, side='entry', is_short=(trade_side == 'short'), refresh=True)
-        if not order_adjust:
+        if mode != 'replace':
             # Don't call custom_entry_price in order-adjust scenario
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=enter_limit_requested)(
@@ -974,7 +972,7 @@ class FreqtradeBot(LoggingMixin):
         # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair, enter_limit_requested,
-            self.strategy.stoploss if not pos_adjust else 0.0,
+            self.strategy.stoploss if not mode != 'pos_adjust' else 0.0,
             leverage)
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, enter_limit_requested, leverage)
@@ -1432,7 +1430,7 @@ class FreqtradeBot(LoggingMixin):
                         price=adjusted_entry_price,
                         trade=trade,
                         is_short=trade.is_short,
-                        order_adjust=True,
+                        mode='replace',
                     ):
                         logger.warning(f"Could not replace order for {trade}.")
                         if trade.nr_of_successful_entries == 0:
