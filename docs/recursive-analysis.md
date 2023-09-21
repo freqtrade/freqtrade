@@ -1,4 +1,4 @@
-# Lookahead analysis
+# Recursive analysis
 
 This page explains how to validate your strategy in terms of recursive formula issue.
 
