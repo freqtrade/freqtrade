@@ -8,7 +8,7 @@ import pytest
 from freqtrade.commands.optimize_commands import start_recursive_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.recursive_analysis import Analysis, RecursiveAnalysis
+from freqtrade.optimize.recursive_analysis import RecursiveAnalysis
 from freqtrade.optimize.recursive_analysis_helpers import RecursiveAnalysisSubFunctions
 from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
@@ -340,7 +340,7 @@ def test_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
-    recursive_conf['pairs'] = ['UNITTEST/USDT']
+    recursive_conf['pairs'] = ['UNITTEST/BTC']
 
     recursive_conf['timeframe'] = '5m'
     recursive_conf['timerange'] = '20180119-20180122'
@@ -362,7 +362,7 @@ def test_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
     # Assert init correct
     assert log_has_re(f"Strategy Parameter: scenario = {scenario}", caplog)
 
-    diff_pct = float(instance.dict_recursive['rsi'][100].replace("%", ""))
+    diff_pct = abs(float(instance.dict_recursive['rsi'][100].replace("%", "")))
     # check non-biased strategy
     if scenario == "no_bias":
         assert diff_pct < 0.01

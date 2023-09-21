@@ -129,6 +129,7 @@ class RecursiveAnalysis(BaseAnalysis):
         varholder.indicators = backtesting.strategy.advise_all_indicators(varholder.data)
 
     def fill_partial_varholder(self, start_date, startup_candle):
+        logger.info(f"Calculating indicators using startup candle of {startup_candle}.")
         partial_varHolder = VarHolder()
 
         partial_varHolder.from_dt = start_date
@@ -142,6 +143,8 @@ class RecursiveAnalysis(BaseAnalysis):
         self.partial_varHolder_array.append(partial_varHolder)
 
     def fill_partial_varholder_lookahead(self, end_date):
+        logger.info("Calculating indicators to test lookahead on indicators.")
+
         partial_varHolder = VarHolder()
 
         partial_varHolder.from_dt = self.full_varHolder.from_dt
