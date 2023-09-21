@@ -1636,7 +1636,8 @@ def test_api_strategies(botclient, tmpdir):
         'freqai_test_classifier',
         'freqai_test_multimodel_classifier_strat',
         'freqai_test_multimodel_strat',
-        'freqai_test_strat'
+        'freqai_test_strat',
+        'strategy_test_v3_recursive_issue'
     ]}
 
 
