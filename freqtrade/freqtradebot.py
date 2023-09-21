@@ -7,6 +7,7 @@ from copy import deepcopy
 from datetime import datetime, time, timedelta, timezone
 from math import isclose
 from threading import Lock
+from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
 
 from schedule import Scheduler
@@ -1439,8 +1440,12 @@ class FreqtradeBot(LoggingMixin):
                 cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
             if order_obj.price != adjusted_entry_price:
                 # cancel existing order if new price is supplied or None
-                self.handle_cancel_enter(trade, order, order_obj.order_id, cancel_reason,
-                                         replacing=replacing)
+                res = self.handle_cancel_enter(trade, order, order_obj.order_id, cancel_reason,
+                                               replacing=replacing)
+                if not res:
+                    self.replace_order_failed(
+                        trade, f"Could not cancel order for {trade}, therefore not replacing.")
+                    return
                 if adjusted_entry_price:
                     # place new order only if new price is supplied
                     if not self.execute_entry(
@@ -1494,7 +1499,6 @@ class FreqtradeBot(LoggingMixin):
             logger.warning(f"No open order for {trade}.")
             return False
 
-        # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
             filled_val: float = order.get('filled', 0.0) or 0.0
             filled_stake = filled_val * trade.open_rate
@@ -1508,6 +1512,17 @@ class FreqtradeBot(LoggingMixin):
                 return False
             corder = self.exchange.cancel_order_with_result(order_id, trade.pair,
                                                             trade.amount)
+            # if replacing, retry fetching the order 3 times if the status is not what we need
+            if replacing:
+                retry_count = 0
+                while (
+                    corder.get('status') not in constants.NON_OPEN_EXCHANGE_STATES
+                    and retry_count < 3
+                ):
+                    sleep(0.5)
+                    corder = self.exchange.fetch_order(order_id, trade.pair)
+                    retry_count += 1
+
             # Avoid race condition where the order could not be cancelled coz its already filled.
             # Simply bailing here is the only safe way - as this order will then be
             # handled in the next iteration.
@@ -1524,6 +1539,7 @@ class FreqtradeBot(LoggingMixin):
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
+            was_trade_fully_canceled = True
             # if trade is not partially completed and it's the only order, just delete the trade
             open_order_count = len([
                 order for order in trade.orders if order.ft_is_open and order.order_id != order_id
@@ -1531,7 +1547,6 @@ class FreqtradeBot(LoggingMixin):
             if open_order_count < 1 and trade.nr_of_successful_entries == 0 and not replacing:
                 logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
                 trade.delete()
-                was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
             else:
                 self.update_trade_state(trade, order_id, corder)
