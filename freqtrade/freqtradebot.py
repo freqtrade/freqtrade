@@ -763,15 +763,19 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         msg = (f"Position adjust: about to create a new order for {pair} with stake_amount: "
-               f"{stake_amount} for {trade}" if pos_adjust
+               f"{stake_amount} for {trade}" if mode == 'pos_adjust'
                else
-               f"{name} signal found: about create a new trade for {pair} with stake_amount: "
-               f"{stake_amount} ...")
+               (f"Replacing {side} order: about create a new order for {pair} with stake_amount: "
+                f"{stake_amount} ..."
+                if mode == 'replace' else
+                f"{name} signal found: about create a new trade for {pair} with stake_amount: "
+                f"{stake_amount} ..."
+                ))
         logger.info(msg)
         amount = (stake_amount / enter_limit_requested) * leverage
         order_type = ordertype or self.strategy.order_types['entry']
 
-        if not pos_adjust and not strategy_safe_wrapper(
+        if mode == 'initial' and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
