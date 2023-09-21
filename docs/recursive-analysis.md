@@ -33,9 +33,16 @@ usage: freqtrade recursive-analysis [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                     [--freqaimodel-path PATH] [-i TIMEFRAME]
                                     [--timerange TIMERANGE]
                                     [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
-                                    [-p PAIRS [PAIRS ...]]
+                                    [-p PAIR]
                                     [--freqai-backtest-live-models]
+                                    [--startup-candle STARTUP_CANDLES [STARTUP_CANDLES ...]]
 
+optional arguments:
+-p PAIR, --pairs PAIR
+                        Limit command to this pair.
+--startup-candle STARTUP_CANDLE [STARTUP_CANDLE ...]
+                        Provide a space-separated list of startup_candle_count to
+                        be checked. Default : `199 399 499 999 1999`.
 ```
 
 ### Summary

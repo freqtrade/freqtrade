@@ -1556,7 +1556,7 @@ def test_start_strategy_updater(mocker, tmpdir):
     pargs['config'] = None
     start_strategy_update(pargs)
     # Number of strategies in the test directory
-    assert sc_mock.call_count == 11
+    assert sc_mock.call_count == 12
 
     sc_mock.reset_mock()
     args = [
