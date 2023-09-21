@@ -16,10 +16,9 @@ class RecursiveAnalysisSubFunctions:
 
     @staticmethod
     def text_table_recursive_analysis_instances(
-            config: Dict[str, Any],
             recursive_instances: List[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
-        headers = ['strategy', 'indicators']
+        headers = ['indicators']
         for candle in startups:
             headers.append(candle)
 
@@ -27,7 +26,7 @@ class RecursiveAnalysisSubFunctions:
         for inst in recursive_instances:
             if len(inst.dict_recursive) > 0:
                 for indicator, values in inst.dict_recursive.items():
-                    temp_data = [inst.strategy_obj['name'], indicator]
+                    temp_data = [indicator]
                     for candle in startups:
                         temp_data.append(values.get(int(candle), '-'))
                     data.append(temp_data)
@@ -39,12 +38,19 @@ class RecursiveAnalysisSubFunctions:
 
     @staticmethod
     def calculate_config_overrides(config: Config):
+        if 'timerange' not in config:
+            # setting a timerange is enforced here
+            raise OperationalException(
+                "Please set a timerange. "
+                "A timerange of 20 candles are enough for recursive analysis."
+            )
+
         if config.get('backtest_cache') is None:
             config['backtest_cache'] = 'none'
         elif config['backtest_cache'] != 'none':
             logger.info(f"backtest_cache = "
                         f"{config['backtest_cache']} detected. "
-                        f"Inside lookahead-analysis it is enforced to be 'none'. "
+                        f"Inside recursive-analysis it is enforced to be 'none'. "
                         f"Changed it to 'none'")
             config['backtest_cache'] = 'none'
         return config
@@ -57,7 +63,7 @@ class RecursiveAnalysisSubFunctions:
         current_instance = RecursiveAnalysis(config, strategy_obj)
         current_instance.start()
         elapsed = time.perf_counter() - start
-        logger.info(f"Checking recursive and lookahead bias of indicators "
+        logger.info(f"Checking recursive and indicator-only lookahead bias of indicators "
                     f"of {Path(strategy_obj['location']).name} "
                     f"took {elapsed:.0f} seconds.")
         return current_instance
@@ -92,7 +98,7 @@ class RecursiveAnalysisSubFunctions:
         # report the results
         if RecursiveAnalysis_instances:
             RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances(
-                config, RecursiveAnalysis_instances)
+                RecursiveAnalysis_instances)
         else:
             logger.error("There were no strategies specified neither through "
                          "--strategy nor through "
