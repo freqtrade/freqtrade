@@ -2854,6 +2854,52 @@ def test_adjust_entry_cancel(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
+def test_adjust_entry_replace_fail(
+    default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
+    limit_sell_order_old, fee, mocker, caplog, is_short
+) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
+    old_order['id'] = open_trade.open_orders[0].order_id
+    limit_entry_cancel = deepcopy(old_order)
+    limit_entry_cancel['status'] = 'open'
+    cancel_order_mock = MagicMock(return_value=limit_entry_cancel)
+    fetch_order_mock = MagicMock(return_value=old_order)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker_usdt,
+        fetch_order=fetch_order_mock,
+        cancel_order_with_result=cancel_order_mock,
+        get_fee=fee
+    )
+    mocker.patch('freqtrade.freqtradebot.sleep')
+
+    open_trade.is_short = is_short
+    Trade.session.add(open_trade)
+    Trade.commit()
+
+    # Timeout to not interfere
+    freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
+
+    # Attempt replace order - which fails
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=12234)
+    freqtrade.manage_open_orders()
+    trades = Trade.session.scalars(
+        select(Trade)
+        .where(Order.ft_trade_id == Trade.id)
+        ).all()
+
+    assert len(trades) == 0
+    assert len(Order.session.scalars(select(Order)).all()) == 0
+    assert fetch_order_mock.call_count == 4
+    assert log_has_re(
+        r"Could not cancel order.*, therefore not replacing\.", caplog)
+
+    # Entry adjustment is called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 1
+
+
+@pytest.mark.parametrize("is_short", [False, True])
 def test_adjust_entry_maintain_replace(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short
