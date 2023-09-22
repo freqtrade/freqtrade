@@ -58,10 +58,8 @@ class TestCCXTExchange:
     def test_ccxt_order_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchange_name = exchange
         if orders := EXCHANGES[exchange_name].get('sample_order'):
-            pair = 'SOL/USDT'
             for order in orders:
-                market = exch._api.markets[pair]
-                po = exch._api.parse_order(order, market)
+                po = exch._api.parse_order(order)
                 assert isinstance(po['id'], str)
                 assert po['id'] is not None
                 if len(order.keys()) < 5:
@@ -76,7 +74,7 @@ class TestCCXTExchange:
                 if po['average'] is not None:
                     assert isinstance(po['average'], float)
                     assert po['average'] == 15.5
-                assert po['symbol'] == pair
+                assert po['symbol'] == 'SOL/USDT'
                 assert isinstance(po['amount'], float)
                 assert po['amount'] == 1.1
                 assert isinstance(po['status'], str)
