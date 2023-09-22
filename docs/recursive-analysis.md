@@ -50,6 +50,15 @@ optional arguments:
 Checks a given strategy for recursive formula issue via recursive-analysis.
 Recursive formula issue means that the indicator's calculation don't have enough data for its calculation to produce correct value.
 
+### What's with the odd-numbered default startup candles?
+If you look the arguments above, you should notice that the default value for the startup candles are odd number. Why is it? Because when the bot fetchs candle data from exchange's API, the last candle is the one being checked by the bot, and the rest of the data is what we call startup candles.
+
+For example, Binance allow 1000 candles per API call. When the bot receive 1000 candles, the last candle is being looked at as the current candle, and the 999 candles are the startup candles. If you put the startup candle as 1000 for example, the bot will try to fetch 1001 candles instead. The issue with that is that exchange API send candle data in bulk size. So in case of Binance API, it will send the data in group of 1000. Which means if the bot think the strategy need 1001 data, it will download 2000 data instead, which means you will have 1 current candle and 1999 startup candles.
+
+Another thing to keep in mind is that Freqtrade only allowed to call the API for 5 times only. So for example, you can only download 5000 data from Binance API, which means the max `startup_candle_count` you can have is 4999.
+
+Please note that the limit can changed in the future by the exchanges without any prior notice.
+
 ### How does the command work?
 
 It will start with a backtest using the supplied timerange to generate a baseline for indicators' value.
