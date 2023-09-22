@@ -2771,9 +2771,9 @@ def test_manage_open_orders_entry(
 
     order = Order.parse_from_ccxt_object(old_order, 'mocked', 'buy')
     open_trade.orders[0] = order
-    limit_buy_cancel = deepcopy(old_order)
-    limit_buy_cancel['status'] = 'canceled'
-    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
+    limit_entry_cancel = deepcopy(old_order)
+    limit_entry_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_entry_cancel)
     patch_exchange(mocker)
     mocker.patch.multiple(
         EXMS,
@@ -2816,9 +2816,9 @@ def test_adjust_entry_cancel(
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_orders[0].order_id
-    limit_buy_cancel = deepcopy(old_order)
-    limit_buy_cancel['status'] = 'canceled'
-    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
+    limit_entry_cancel = deepcopy(old_order)
+    limit_entry_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_entry_cancel)
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
@@ -2861,9 +2861,9 @@ def test_adjust_entry_maintain_replace(
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_orders_ids[0]
-    limit_buy_cancel = deepcopy(old_order)
-    limit_buy_cancel['status'] = 'canceled'
-    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
+    limit_entry_cancel = deepcopy(old_order)
+    limit_entry_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_entry_cancel)
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
