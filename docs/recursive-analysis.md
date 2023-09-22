@@ -66,9 +66,9 @@ Please note that this candle limit may be changed in the future by the exchanges
 - After setting the benchmark it will then carry out additional runs for each different startup candle count.
 - It will then compare the indicator values at the last candle rows and report the differences in a table.
 
-## Understand the recursive analysis output
+## Understanding the recursive-analysis output
 
-This is an example of how the output will look like when at least one indicator have recursive formula issue
+This is an example of an output results table where at least one indicator has a recursive formula issue:
 
 ```
 | indicators   | 20      | 40      | 80     | 100    | 150     | 300     | 999    |
@@ -77,13 +77,13 @@ This is an example of how the output will look like when at least one indicator 
 | rsi_14       | 24.141% | -0.876% | 0.070% | 0.007% | -0.000% | -0.000% | -      |
 ```
 
-The numbers at the header indicates different `startup_candle_count` used in the analysis. The numbers in the table indicates how much varied are they compared to the benchmark value.
+The column headers indicate the different `startup_candle_count` used in the analysis. The values in the table indicate the variance of the backtested indicators compared to the benchmark value.
 
-`nan%` means the value of that indicator can't be calculated due to lack of data. In this example, you can't calculate rsi with length of 30 with just 21 (1 current candle + 20 startup candles) data.
+`nan%` means the value of that indicator cannot be calculated due to lack of data. In this example, you cannot calculate RSI with length 30 with just 21 candles (1 current candle + 20 startup candles).
 
-Important thing to note, we can't tell you which `startup_candle_count` to use because it depends on each users' preference on how much variance is small enough in their opinion to not have any effect on entries and/or exits.
+Users should assess the table per indicator to decide if the specified `startup_candle_count` results in a sufficiently small variance so that the indicator does not have any effect on entries and/or exits.
 
-Aiming for zero variance (shown by `-` value) might not be the best option, because some indicators might requires you to use a very long startup to have zero variance.
+As such, aiming for absolute zero variance (shown by `-` value) might not be the best option, because some indicators might require you to use such a long `startup_candle_count` to have zero variance.
 
 ## Caveats
 
