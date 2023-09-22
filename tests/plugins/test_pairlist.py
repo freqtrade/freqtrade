@@ -14,7 +14,7 @@ from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.persistence import Trade
+from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
@@ -1463,3 +1463,53 @@ def test_ProducerPairlist(mocker, whitelist_conf, markets):
     pm.refresh_pairlist()
     assert len(pm.whitelist) == 4
     assert pm.whitelist == ['TKN/BTC'] + pairs
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['ADA/USDT', 'XRP/USDT', 'ETC/USDT'])
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "FullTradesFilter"}
+    ]
+    default_conf_usdt['max_open_trades'] = -1
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        create_mock_trades_usdt(fee)
+        pm.refresh_pairlist()
+
+        # Unlimited max open trades, so no change to whitelist
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+        # Set max_open_trades to 4, the filter should empty the whitelist
+        default_conf_usdt['max_open_trades'] = 4
+        pm.refresh_pairlist()
+        assert pm.whitelist == []
+        assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
+
+        list_trades = LocalTrade.get_open_trades()
+        assert len(list_trades) == 4
+
+        # Move to 1 hour later, close a trade, so original sorting is restored.
+        t.move_to("2021-09-01 07:00:00 +00:00")
+        list_trades[2].close(12)
+        Trade.commit()
+
+        # open trades count below max_open_trades, whitelist restored
+        list_trades = LocalTrade.get_open_trades()
+        assert len(list_trades) == 3
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+        # Set max_open_trades to 3, the filter should empty the whitelist
+        default_conf_usdt['max_open_trades'] = 3
+        pm.refresh_pairlist()
+        assert pm.whitelist == []
+        assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)

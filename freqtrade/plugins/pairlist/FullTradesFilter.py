@@ -51,7 +51,7 @@ class FullTradesFilter(IPairList):
         num_open = Trade.get_open_trade_count()
         max_trades = self._config['max_open_trades']
 
-        if (num_open >= max_trades):
+        if (num_open >= max_trades) and (max_trades > 0):
             return []
 
         return pairlist
