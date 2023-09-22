@@ -1,26 +1,27 @@
 # Recursive analysis
 
-This page explains how to validate your strategy in terms of recursive formula issue.
+This page explains how to validate your strategy for inaccuracies due to recursive issues with certain indicators.
 
-First of all, what is recursive formula? Recursive formula is a formula that defines any term of a sequence in terms of its preceding term(s). Example of a recursive formula is a<sub>n</sub> = a<sub>n-1</sub> + b.
+A recursive formula defines any term of a sequence relative to its preceding term(s). An example of a recursive formula is a<sub>n</sub> = a<sub>n-1</sub> + b.
 
-Second question is why is it matter for Freqtrade? It matters because in backtesting, the bot will get full data of the pairs according to the timerange specified. But in dry/live run, the bot will have limited amounts of data, limited by what each exchanges gives.
+Why does this matter for Freqtrade? In backtesting, the bot will get full data of the pairs according to the timerange specified. But in a dry/live run, the bot will be limited by the amount of data each exchanges gives.
 
-For example, let's say that I want to calculate a very basic indicator called `steps`. The first row's value is always 0, while the following rows' values are equal to the value of the previous row's plus 1. If I were to calculate it using latest 1000 candles, then the `steps` value of first row is 0, and the `steps` value at last closed candle is 999.
+For example, to calculate a very basic indicator called `steps`, the first row's value is always 0, while the following rows' values are equal to the value of the previous row plus 1. If I were to calculate it using the latest 1000 candles, then the `steps` value of the first row is 0, and the `steps` value at the last closed candle is 999.
 
-But what if I only calculate based of latest 500 candles? Then instead of 999, the `steps` value at last closed candle is 499. The difference of the value means your backtest result can differ from your dry/live run result.
+What happens if the calculation is using only the latest 500 candles? Then instead of 999, the `steps` value at last closed candle is 499. The difference of the value means your backtest result can differ from your dry/live run result.
 
-Recursive-analysis requires historic data to be available. To learn how to get data for the pairs and exchange you're interested in,
+The `recursive-analysis` command requires historic data to be available. To learn how to get data for the pairs and exchange you're interested in,
 head over to the [Data Downloading](data-download.md) section of the documentation.
 
-This command is built upon backtesting since it internally chains backtests to prepare different lenghts of data and calculate indicators based of each of the prepared data.
-This is done by not looking at the strategy itself - but at the value of the indicators it returned. After multiple backtests are done to calculate the indicators of different startup candles value, the values of last rows are compared to see hoe much differences are they compared to the base backtest.
+This command is built upon backtesting since it internally chains backtests to prepare different lengths of data and calculates indicators based on the downloaded data.
+This does not run the strategy itself, but rather uses the indicators it contains. After multiple backtests are done to calculate the indicators of different startup candle values (`startup_candle_count`), the values of last rows across all backtests are compared to see how much variance they show compared to the base backtest.
 
-- `--cache` is forced to "none".
-- Since we are only looking at indicators' value, using more than one pair is redundant. It is recommended to set the pair used in the command using `-p` flag, preferably using pair with high price, such as BTC or ETH, to avoid having rounding issue that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis is the first pair in the whitelist.
-- It's recommended to set a long timerange (at least consist of 5000 candles), so that the initial backtest that going to be used as benchmark have very small or no recursive issue at all. For example, for a 5m timeframe, timerange of 5000 candles would be equal to 18 days.
+Command settings:
+- Use the `-p` option to set your desired pair to analyse. Since we are only looking at indicator values, using more than one pair is redundant. Preferably use a pair with a relatively high price and at least moderate volatility, such as BTC or ETH, to avoid rounding issues that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis is the first pair in the whitelist.
+- It is recommended to set a long timerange (at least 5000 candles) so that the initial backtest that is going to be used as a benchmark has very small or no recursive issues itself. For example, for a 5m timeframe, a timerange of 5000 candles would be equal to 18 days.
+- `--cache` is forced to "none" to avoid loading previous backtest results automatically.
 
-Beside recursive formula check, this command also going to do a simple lookahead bias check on the indicators' value only. It won't replace [Lookahead-analysis](lookahead-analysis.md), since this check won't check the difference in trades' entries and exits, which is the important effect of lookahead bias. It will only check whether there is any lookahead bias in indicators if the end of the data are moved.
+In addition to the recursive formula check, this command also carries out a simple lookahead bias check on the indicator values only. For a full lookahead check, use [Lookahead-analysis](lookahead-analysis.md).
 
 ## Recursive-analysis command reference
 
@@ -47,25 +48,25 @@ optional arguments:
 
 ### Summary
 
-Checks a given strategy for recursive formula issue via recursive-analysis.
-Recursive formula issue means that the indicator's calculation don't have enough data for its calculation to produce correct value.
+Checks a given strategy for recursive formula issue via `recursive-analysis`.
 
-### What's with the odd-numbered default startup candles?
-If you look the arguments above, you should notice that the default value for the startup candles are odd number. Why is it? Because when the bot fetchs candle data from exchange's API, the last candle is the one being checked by the bot, and the rest of the data is what we call startup candles.
+### Why are odd-numbered default startup candles used?
 
-For example, Binance allow 1000 candles per API call. When the bot receive 1000 candles, the last candle is being looked at as the current candle, and the 999 candles are the startup candles. If you put the startup candle as 1000 for example, the bot will try to fetch 1001 candles instead. The issue with that is that exchange API send candle data in bulk size. So in case of Binance API, it will send the data in group of 1000. Which means if the bot think the strategy need 1001 data, it will download 2000 data instead, which means you will have 1 current candle and 1999 startup candles.
+The default value for startup candles are odd numbers. When the bot fetches candle data from the exchange's API, the last candle is the one being checked by the bot and the rest of the data are the "startup candles".
 
-Another thing to keep in mind is that Freqtrade only allowed to call the API for 5 times only. So for example, you can only download 5000 data from Binance API, which means the max `startup_candle_count` you can have is 4999.
+For example, Binance allows 1000 candles per API call. When the bot receives 1000 candles, the last candle is the "current candle", and the preceding 999 candles are the "startup candles". By setting the startup candle count as 1000 instead of 999, the bot will try to fetch 1001 candles instead. The exchange API will then send candle data in a paginated form, i.e. in case of the Binance API, this will be two groups- one of length 1000 and another of length 1. This results in the bot thinking the strategy needs 1001 candles of data, and so it will download 2000 candles worth of data instead, which means there will be 1 "current candle" and 1999 "startup candles".
 
-Please note that the limit can changed in the future by the exchanges without any prior notice.
+Furthermore, exchanges limit the number of consecutive bulk API calls, e.g. Binance allows 5 calls. In this case, only 5000 candles can be downloaded from Binance API without hitting the API rate limit, which means the max `startup_candle_count` you can have is 4999.
+
+Please note that this candle limit may be changed in the future by the exchanges without any prior notice.
 
 ### How does the command work?
 
-It will start with a backtest using the supplied timerange to generate a baseline for indicators' value.
-After setting the baseline it will then do additional runs for each different startup candles.
-When the additional runs are done, it will compare the indicators at the last rows and report the differences in a table.
+- Firstly an initial backtest is carried out using the supplied timerange to generate a benchmark for indicator values.
+- After setting the benchmark it will then carry out additional runs for each different startup candle count.
+- It will then compare the indicator values at the last candle rows and report the differences in a table.
 
 ### Caveats
 
-- `recursive-analysis` will only calculate and compare the indicators' value at the last row. If there are any differences, the table will only tell you the percentage differences. Whether it has any real impact on your entries and exits isn't checked.
-- The ideal scenario is to have your indicators have no difference at all despite the startup candle being varied. But in reality, some of publicly-available formulas are using recursive formula. So the goal isn't to have zero differences, but to have the differences low enough to make sure they won't have any real impact on trading decisions.
+- `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count backtests and the original benchmark backtest. Whether it has any actual impact on your entries and exits is not included.
+- The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and the `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
