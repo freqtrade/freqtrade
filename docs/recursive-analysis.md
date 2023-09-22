@@ -66,7 +66,26 @@ Please note that this candle limit may be changed in the future by the exchanges
 - After setting the benchmark it will then carry out additional runs for each different startup candle count.
 - It will then compare the indicator values at the last candle rows and report the differences in a table.
 
-### Caveats
+## Understand the recursive analysis output
+
+This is an example of how the output will look like when at least one indicator have recursive formula issue
+
+```
+| indicators   | 20      | 40      | 80     | 100    | 150     | 300     | 999    |
+|--------------+---------+---------+--------+--------+---------+---------+--------|
+| rsi_30       | nan%    | -6.025% | 0.612% | 0.828% | -0.140% | 0.000%  | 0.000% |
+| rsi_14       | 24.141% | -0.876% | 0.070% | 0.007% | -0.000% | -0.000% | -      |
+```
+
+The numbers at the header indicates different `startup_candle_count` used in the analysis. The numbers in the table indicates how much varied are they compared to the benchmark value.
+
+`nan%` means the value of that indicator can't be calculated due to lack of data. In this example, you can't calculate rsi with length of 30 with just 21 (1 current candle + 20 startup candles) data.
+
+Important thing to note, we can't tell you which `startup_candle_count` to use because it depends on each users' preference on how much variance is small enough in their opinion to not have any effect on entries and/or exits.
+
+Aiming for zero variance (shown by `-` value) might not be the best option, because some indicators might requires you to use a very long startup to have zero variance.
+
+## Caveats
 
 - `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count backtests and the original benchmark backtest. Whether it has any actual impact on your entries and exits is not included.
 - The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and the `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
