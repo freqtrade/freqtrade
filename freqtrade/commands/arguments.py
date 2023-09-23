@@ -474,7 +474,7 @@ class Arguments:
         # Add recursive_analysis subcommand
         recursive_analayis_cmd = subparsers.add_parser(
             'recursive-analysis',
-            help="Check for potential look ahead bias.",
+            help="Check for potential recursive formula issue.",
             parents=[_common_parser, _strategy_parser])
 
         recursive_analayis_cmd.set_defaults(func=start_recursive_analysis)
