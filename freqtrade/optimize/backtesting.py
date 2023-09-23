@@ -116,6 +116,7 @@ class Backtesting:
             raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
+        self.disable_database_use()
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
@@ -318,13 +319,16 @@ class Backtesting:
         else:
             self.futures_data = {}
 
+    def disable_database_use(self):
+        PairLocks.use_db = False
+        PairLocks.timeframe = self.timeframe
+        Trade.use_db = False
+
     def prepare_backtest(self, enable_protections):
         """
         Backtesting setup method - called once for every call to "backtest()".
         """
-        PairLocks.use_db = False
-        PairLocks.timeframe = self.config['timeframe']
-        Trade.use_db = False
+        self.disable_database_use()
         PairLocks.reset_locks()
         Trade.reset_trades()
         self.rejected_trades = 0
