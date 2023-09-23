@@ -249,7 +249,7 @@ class FreqaiDataKitchen:
                     f"{self.pair}: all training data dropped due to NaNs. "
                     "You likely did not download enough training data prior "
                     "to your backtest timerange. Hint:\n"
-                    "https://www.freqtrade.io/en/stable/freqai-running/"
+                    f"{DOCS_LINK}/freqai-running/"
                     "#downloading-data-to-cover-the-full-backtest-period"
                 )
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
