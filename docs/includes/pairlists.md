@@ -243,7 +243,7 @@ Shrink whitelist to consist only in-trade pairs when the trade slots are full (w
 
 When the trade slots are full, there is no need to calculate indicators of the rest of the pairs (except informative pairs) since no new trade can be opened. By shrinking the whitelist to just the in-trade pairs, you can improve calculation speeds and reduce CPU usage. When a trade slot is free (either a trade is closed or `max_open_trades` value in config is increased), then the whitelist will return to normal state.
 
-When multiple pairlist filters are being used, it's recommended to put this filter at second position directly below the primary pairlist, so when the trade slots are full, the bot don't have to download data for the rest of the filters.
+When multiple pairlist filters are being used, it's recommended to put this filter at second position directly below the primary pairlist, so when the trade slots are full, the bot doesn't have to download data for the rest of the filters.
 
 !!! Warning "Backtesting"
     `FullTradesFilter` does not support backtesting mode.
