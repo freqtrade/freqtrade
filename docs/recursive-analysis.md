@@ -17,7 +17,8 @@ This command is built upon backtesting since it internally chains backtests to p
 This does not run the strategy itself, but rather uses the indicators it contains. After multiple backtests are done to calculate the indicators of different startup candle values (`startup_candle_count`), the values of last rows across all backtests are compared to see how much variance they show compared to the base backtest.
 
 Command settings:
-- Use the `-p` option to set your desired pair to analyse. Since we are only looking at indicator values, using more than one pair is redundant. Preferably use a pair with a relatively high price and at least moderate volatility, such as BTC or ETH, to avoid rounding issues that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis is the first pair in the whitelist.
+
+- Use the `-p` option to set your desired pair to analyze. Since we are only looking at indicator values, using more than one pair is redundant. Preferably use a pair with a relatively high price and at least moderate volatility, such as BTC or ETH, to avoid rounding issues that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis is the first pair in the whitelist.
 - It is recommended to set a long timerange (at least 5000 candles) so that the initial backtest that is going to be used as a benchmark has very small or no recursive issues itself. For example, for a 5m timeframe, a timerange of 5000 candles would be equal to 18 days.
 - `--cache` is forced to "none" to avoid loading previous backtest results automatically.
 
