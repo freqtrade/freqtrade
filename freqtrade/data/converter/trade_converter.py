@@ -136,6 +136,7 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
             )
         from freqtrade.data.converter.trade_converter_kraken import import_kraken_trades_from_csv
         import_kraken_trades_from_csv(config, convert_to)
+        return
 
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)

@@ -30,13 +30,13 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     exchange = ExchangeResolver.load_exchange(config, validate=False)
     # iterate through directories in this directory
     data_symbols = {p.stem for p in tradesdir.rglob('*.csv')}
-    print(data_symbols)
 
     # create pair/filename mapping
     markets = {
         (m['symbol'], m['altname']) for m in exchange.markets.values()
         if m.get('altname') in data_symbols
     }
+    logger.info(f"Found csv files for {', '.join(data_symbols)}")
 
     for pair, name in markets:
         dfs = []
