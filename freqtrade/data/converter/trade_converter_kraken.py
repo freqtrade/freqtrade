@@ -46,8 +46,11 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
             df = pd.read_csv(f, names=KRAKEN_CSV_TRADE_COLUMNS)
             dfs.append(df)
 
+        # Load existing trades data
         if not dfs:
+            logger.info(f"No data found for pair {pair}")
             continue
+
         trades = pd.concat(dfs, ignore_index=True)
 
         trades.loc[:, 'timestamp'] = trades['timestamp'] * 1e3
