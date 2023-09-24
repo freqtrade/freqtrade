@@ -67,8 +67,8 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
         exchange.validate_pairs(config['pairs'])
     expanded_pairs = expand_pairlist(config['pairs'], list(exchange.markets))
 
-    logger.info(f"About to Convert pairs: {expanded_pairs}, "
-                f"intervals: {config['timeframes']} to {config['datadir']}")
+    logger.info(f"About to convert pairs: '{', '.join(expanded_pairs)}', "
+                f"intervals: '{', '.join(config['timeframes'])}' to {config['datadir']}")
 
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)
