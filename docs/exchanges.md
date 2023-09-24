@@ -136,15 +136,6 @@ Freqtrade will not attempt to change these settings.
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
-Due to the heavy rate-limiting applied by Kraken, the following configuration section should be used to download data:
-
-``` json
-    "ccxt_async_config": {
-        "enableRateLimit": true,
-        "rateLimit": 3100
-    },
-```
-
 !!! Warning "Downloading data from kraken"
     Downloading kraken data will require significantly more memory (RAM) than any other exchange, as the trades-data needs to be converted into candles on your machine.
     It will also take a long time, as freqtrade will need to download every single trade that happened on the exchange for the pair / timerange combination, therefore please be patient.
