@@ -13,14 +13,14 @@ What happens if the calculation is using only the latest 500 candles? Then inste
 The `recursive-analysis` command requires historic data to be available. To learn how to get data for the pairs and exchange you're interested in,
 head over to the [Data Downloading](data-download.md) section of the documentation.
 
-This command is built upon backtesting since it internally chains backtests to prepare different lengths of data and calculates indicators based on the downloaded data.
-This does not run the strategy itself, but rather uses the indicators it contains. After multiple backtests are done to calculate the indicators of different startup candle values (`startup_candle_count`), the values of last rows across all backtests are compared to see how much variance they show compared to the base backtest.
+This command is built upon preparing different lengths of data and calculates indicators based on them.
+This does not backtest the strategy itself, but rather only calculates the indicators. After calculating the indicators of different startup candle values (`startup_candle_count`) are done, the values of last rows across all specified `startup_candle_count` are compared to see how much variance they show compared to the base calculation.
 
 Command settings:
 
 - Use the `-p` option to set your desired pair to analyze. Since we are only looking at indicator values, using more than one pair is redundant. Preferably use a pair with a relatively high price and at least moderate volatility, such as BTC or ETH, to avoid rounding issues that can make the results inaccurate. If no pair is set on the command, the pair used for this analysis is the first pair in the whitelist.
-- It is recommended to set a long timerange (at least 5000 candles) so that the initial backtest that is going to be used as a benchmark has very small or no recursive issues itself. For example, for a 5m timeframe, a timerange of 5000 candles would be equal to 18 days.
-- `--cache` is forced to "none" to avoid loading previous backtest results automatically.
+- It is recommended to set a long timerange (at least 5000 candles) so that the initial indicators' calculation that is going to be used as a benchmark has very small or no recursive issues itself. For example, for a 5m timeframe, a timerange of 5000 candles would be equal to 18 days.
+- `--cache` is forced to "none" to avoid loading previous indicators calculation automatically.
 
 In addition to the recursive formula check, this command also carries out a simple lookahead bias check on the indicator values only. For a full lookahead check, use [Lookahead-analysis](lookahead-analysis.md).
 
@@ -63,7 +63,7 @@ Please note that this candle limit may be changed in the future by the exchanges
 
 ### How does the command work?
 
-- Firstly an initial backtest is carried out using the supplied timerange to generate a benchmark for indicator values.
+- Firstly an initial indicator calculation is carried out using the supplied timerange to generate a benchmark for indicator values.
 - After setting the benchmark it will then carry out additional runs for each different startup candle count.
 - It will then compare the indicator values at the last candle rows and report the differences in a table.
 
@@ -78,7 +78,7 @@ This is an example of an output results table where at least one indicator has a
 | rsi_14       | 24.141% | -0.876% | 0.070% | 0.007% | -0.000% | -0.000% | -      |
 ```
 
-The column headers indicate the different `startup_candle_count` used in the analysis. The values in the table indicate the variance of the backtested indicators compared to the benchmark value.
+The column headers indicate the different `startup_candle_count` used in the analysis. The values in the table indicate the variance of the calculated indicators compared to the benchmark value.
 
 `nan%` means the value of that indicator cannot be calculated due to lack of data. In this example, you cannot calculate RSI with length 30 with just 21 candles (1 current candle + 20 startup candles).
 
@@ -88,5 +88,6 @@ As such, aiming for absolute zero variance (shown by `-` value) might not be the
 
 ## Caveats
 
-- `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count backtests and the original benchmark backtest. Whether it has any actual impact on your entries and exits is not included.
+- `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count calculations and the original benchmark calculation. Whether it has any actual impact on your entries and exits is not included.
 - The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and the `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
+- `recursive-analysis` will only run calculations on `populate_indicators` and `@informative` decorator(s). If you put any indicator calculation on `populate_entry_trend` or `populate_exit_trend`, it won't be calculated
