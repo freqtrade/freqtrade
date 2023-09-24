@@ -10,7 +10,6 @@ from freqtrade.data.history import convert_trades_to_ohlcv, download_data_main
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.util.binance_mig import migrate_binance_futures_data
 
@@ -53,28 +52,19 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
     # Remove stake-currency to skip checks which are not relevant for datadownload
     config['stake_currency'] = ''
 
-    if 'pairs' not in config:
-        raise OperationalException(
-            "Downloading data requires a list of pairs. "
-            "Please check the documentation on how to configure this.")
     if 'timeframes' not in config:
         config['timeframes'] = DL_DATA_TIMEFRAMES
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config, validate=False)
     # Manual validations of relevant settings
-    if not config['exchange'].get('skip_pair_validation', False):
-        exchange.validate_pairs(config['pairs'])
-    expanded_pairs = expand_pairlist(config['pairs'], list(exchange.markets))
-
-    logger.info(f"About to convert pairs: '{', '.join(expanded_pairs)}', "
-                f"intervals: '{', '.join(config['timeframes'])}' to {config['datadir']}")
 
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)
+
     # Convert downloaded trade data to different timeframes
     convert_trades_to_ohlcv(
-        pairs=expanded_pairs, timeframes=config['timeframes'],
+        pairs=config.get('pairs', []), timeframes=config['timeframes'],
         datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
         data_format_ohlcv=config['dataformat_ohlcv'],
         data_format_trades=config['dataformat_trades'],

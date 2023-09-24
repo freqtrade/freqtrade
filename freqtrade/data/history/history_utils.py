@@ -444,6 +444,11 @@ def convert_trades_to_ohlcv(
     """
     data_handler_trades = get_datahandler(datadir, data_format=data_format_trades)
     data_handler_ohlcv = get_datahandler(datadir, data_format=data_format_ohlcv)
+    if not pairs:
+        pairs = data_handler_trades.trades_get_pairs(datadir)
+
+    logger.info(f"About to convert pairs: '{', '.join(pairs)}', "
+                f"intervals: '{', '.join(timeframes)}' to {datadir}")
 
     for pair in pairs:
         trades = data_handler_trades.trades_load(pair)
