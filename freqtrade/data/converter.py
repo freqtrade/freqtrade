@@ -2,12 +2,14 @@
 Functions to convert data from one format to another
 """
 import logging
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
+from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
                                  Config, TradeList)
 from freqtrade.enums import CandleType, TradingMode
@@ -258,6 +260,42 @@ def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     # Drop 0 volume rows
     df_new = df_new.dropna()
     return df_new.loc[:, DEFAULT_DATAFRAME_COLUMNS]
+
+
+def convert_trades_to_ohlcv(
+    pairs: List[str],
+    timeframes: List[str],
+    datadir: Path,
+    timerange: TimeRange,
+    erase: bool = False,
+    data_format_ohlcv: str = 'feather',
+    data_format_trades: str = 'feather',
+    candle_type: CandleType = CandleType.SPOT
+) -> None:
+    """
+    Convert stored trades data to ohlcv data
+    """
+    from freqtrade.data.history.idatahandler import get_datahandler
+    data_handler_trades = get_datahandler(datadir, data_format=data_format_trades)
+    data_handler_ohlcv = get_datahandler(datadir, data_format=data_format_ohlcv)
+    if not pairs:
+        pairs = data_handler_trades.trades_get_pairs(datadir)
+
+    logger.info(f"About to convert pairs: '{', '.join(pairs)}', "
+                f"intervals: '{', '.join(timeframes)}' to {datadir}")
+
+    for pair in pairs:
+        trades = data_handler_trades.trades_load(pair)
+        for timeframe in timeframes:
+            if erase:
+                if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
+            try:
+                ohlcv = trades_to_ohlcv(trades, timeframe)
+                # Store ohlcv
+                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv, candle_type=candle_type)
+            except ValueError:
+                logger.exception(f'Could not convert {pair} to OHLCV.')
 
 
 def convert_trades_format(config: Config, convert_from: str, convert_to: str, erase: bool):

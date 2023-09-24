@@ -5,8 +5,9 @@ from typing import Any, Dict
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Config
-from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
-from freqtrade.data.history import convert_trades_to_ohlcv, download_data_main
+from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
+                                      convert_trades_to_ohlcv)
+from freqtrade.data.history import download_data_main
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
