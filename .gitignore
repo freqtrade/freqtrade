@@ -83,6 +83,9 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+# memray
+memray-*
+
 # Sphinx documentation
 docs/_build/
 # Mkdocs documentation
