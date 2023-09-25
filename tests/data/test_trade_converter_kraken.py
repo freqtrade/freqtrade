@@ -3,12 +3,18 @@ from pathlib import Path
 from shutil import copytree
 from unittest.mock import PropertyMock
 
+import pytest
+
 from freqtrade.data.converter.trade_converter_kraken import import_kraken_trades_from_csv
 from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.exceptions import OperationalException
 from tests.conftest import EXMS, log_has, log_has_re, patch_exchange
 
 
 def test_import_kraken_trades_from_csv(testdatadir, tmpdir, caplog, default_conf_usdt, mocker):
+    with pytest.raises(OperationalException, match="This function is only for the kraken exchange"):
+        import_kraken_trades_from_csv(default_conf_usdt, 'feather')
+
     default_conf_usdt['exchange']['name'] = 'kraken'
 
     patch_exchange(mocker, id='kraken')

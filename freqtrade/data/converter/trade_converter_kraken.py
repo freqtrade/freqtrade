@@ -7,6 +7,7 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_TRADES_COLUMNS, C
 from freqtrade.data.converter.trade_converter import (trades_convert_types,
                                                       trades_df_remove_duplicates)
 from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 
 
@@ -20,7 +21,7 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     Import kraken trades from csv
     """
     if config['exchange']['name'] != 'kraken':
-        raise ValueError('This function is only for kraken exchange')
+        raise OperationalException('This function is only for the kraken exchange.')
 
     datadir: Path = config['datadir']
     data_handler = get_datahandler(datadir, data_format=convert_to)
