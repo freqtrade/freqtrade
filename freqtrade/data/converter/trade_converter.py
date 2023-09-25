@@ -128,7 +128,7 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
     """
-    if convert_from == 'csv':
+    if convert_from == 'kraken_csv':
         if config['exchange']['name'] != 'kraken':
             raise OperationalException(
                 'Converting from csv is only supported for kraken.'

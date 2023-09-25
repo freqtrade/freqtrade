@@ -162,7 +162,7 @@ Not having this will lead to incomplete data, and therefore invalid results whil
 You can convert these files into freqtrade files:
 
 ``` bash
-freqtrade convert-trade-data --exchange kraken --format-from csv --format-to feather
+freqtrade convert-trade-data --exchange kraken --format-from kraken_csv --format-to feather
 # Convert trade data to different ohlcv timeframes
 freqtrade trades-to-ohlcv -p BTC/EUR BCH/EUR --exchange kraken -t 1m 5m 15m 1h
 ```
