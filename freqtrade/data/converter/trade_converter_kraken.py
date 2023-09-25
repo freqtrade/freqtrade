@@ -1,12 +1,12 @@
 import logging
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_TRADES_COLUMNS, Config
 from freqtrade.data.converter.trade_converter import (trades_convert_types,
                                                       trades_df_remove_duplicates)
+from freqtrade.data.history.idatahandler import get_datahandler
 from freqtrade.resolvers import ExchangeResolver
 
 
@@ -22,7 +22,6 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     if config['exchange']['name'] != 'kraken':
         raise ValueError('This function is only for kraken exchange')
 
-    from freqtrade.data.history.idatahandler import get_datahandler
     datadir: Path = config['datadir']
     data_handler = get_datahandler(datadir, data_format=convert_to)
 
@@ -36,7 +35,7 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
         (m['symbol'], m['altname']) for m in exchange.markets.values()
         if m.get('altname') in data_symbols
     }
-    logger.info(f"Found csv files for {', '.join(data_symbols)}")
+    logger.info(f"Found csv files for {', '.join(data_symbols)}.")
 
     for pair, name in markets:
         dfs = []
@@ -57,7 +56,7 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
         trades.loc[:, 'cost'] = trades['price'] * trades['amount']
         for col in DEFAULT_TRADES_COLUMNS:
             if col not in trades.columns:
-                trades[col] = np.nan
+                trades[col] = ''
 
         trades = trades[DEFAULT_TRADES_COLUMNS]
         trades = trades_convert_types(trades)
