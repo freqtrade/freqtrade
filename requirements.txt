@@ -3,7 +3,7 @@ numpy==1.25.2; platform_machine == 'armv7l'
 pandas==2.0.3
 pandas-ta==0.3.14b
 
-ccxt==4.0.88
+ccxt==4.0.105
 cryptography==41.0.3
 aiohttp==3.8.5
 SQLAlchemy==2.0.21
