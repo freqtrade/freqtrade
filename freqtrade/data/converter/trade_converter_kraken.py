@@ -41,12 +41,12 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
         dfs = []
         # Load and combine all csv files for this pair
         for f in tradesdir.rglob(f"{name}.csv"):
-            # print(pair, f)
             df = pd.read_csv(f, names=KRAKEN_CSV_TRADE_COLUMNS)
             dfs.append(df)
 
         # Load existing trades data
         if not dfs:
+            # edgecase, can only happen if the file was deleted between the above glob and here
             logger.info(f"No data found for pair {pair}")
             continue
 
