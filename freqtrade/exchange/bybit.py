@@ -36,6 +36,9 @@ class Bybit(Exchange):
         "funding_fee_timeframe": "8h",
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "stop_price_param": "stopLossPrice",
+        # bybit response parsing fails to populate stopLossPrice
+        "stop_price_prop": "stopPrice",
         "stop_price_type_field": "triggerBy",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "LastPrice",

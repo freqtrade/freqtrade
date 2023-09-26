@@ -30,6 +30,7 @@ class Okx(Exchange):
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
         "stop_price_param": "stopLossPrice",
+        "stop_price_prop": "stopLossPrice",
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
