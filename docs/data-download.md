@@ -154,13 +154,13 @@ freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT --
 
 Freqtrade currently supports the following data-formats:
 
+* `feather` - a dataformat based on Apache Arrow
 * `json` -  plain "text" json files
 * `jsongz` - a gzip-zipped version of json files
 * `hdf5` - a high performance datastore
-* `feather` - a dataformat based on Apache Arrow
 * `parquet` - columnar datastore (OHLCV only)
 
-By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
+By default, both OHLCV data and trades data are stored in the `feather` format.
 
 This can be changed via the `--data-format-ohlcv` and `--data-format-trades` command line arguments respectively.
 To persist this change, you should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:
@@ -203,15 +203,15 @@ time freqtrade list-data --show-timerange --data-format-ohlcv <dataformat>
 
 |  Format | Size | timing |
 |------------|-------------|-------------|
+| `feather` | 72Mb | 3.5s |
 | `json` | 149Mb | 25.6s |
 | `jsongz` | 39Mb | 27s |
 | `hdf5` | 145Mb | 3.9s |
-| `feather` | 72Mb | 3.5s |
 | `parquet` | 83Mb | 3.8s |
 
 Size has been taken from the BTC/USDT 1m spot combination for the timerange specified above.
 
-To have a best performance/size mix, we recommend the use of either feather or parquet.
+To have a best performance/size mix, we recommend using the default feather format, or parquet.
 
 ### Pairs file
 
