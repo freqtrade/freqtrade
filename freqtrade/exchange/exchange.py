@@ -61,7 +61,8 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
-        "stop_price_param": "stopPrice",
+        "stop_price_param": "stopPrice",  # Used for stoploss_on_exchange request
+        "stop_price_prop": "stopPrice",  # Used for stoploss_on_exchange response parsing
         "order_time_in_force": ["GTC"],
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
@@ -855,7 +856,7 @@ class Exchange:
         }
         if stop_loss:
             dry_order["info"] = {"stopPrice": dry_order["price"]}
-            dry_order[self._ft_has['stop_price_param']] = dry_order["price"]
+            dry_order[self._ft_has['stop_price_prop']] = dry_order["price"]
             # Workaround to avoid filling stoploss orders immediately
             dry_order["ft_order_type"] = "stoploss"
         orderbook: Optional[OrderBook] = None
@@ -1007,7 +1008,7 @@ class Exchange:
             from freqtrade.persistence import Order
             order = Order.order_by_id(order_id)
             if order:
-                ccxt_order = order.to_ccxt_object(self._ft_has['stop_price_param'])
+                ccxt_order = order.to_ccxt_object(self._ft_has['stop_price_prop'])
                 self._dry_run_open_orders[order_id] = ccxt_order
                 return ccxt_order
             # Gracefully handle errors with dry-run orders.
@@ -1115,7 +1116,7 @@ class Exchange:
         """
         if not self._ft_has.get('stoploss_on_exchange'):
             raise OperationalException(f"stoploss is not implemented for {self.name}.")
-        price_param = self._ft_has['stop_price_param']
+        price_param = self._ft_has['stop_price_prop']
         return (
             order.get(price_param, None) is None
             or ((side == "sell" and stop_loss > float(order[price_param])) or
