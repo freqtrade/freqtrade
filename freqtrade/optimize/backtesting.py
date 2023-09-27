@@ -598,6 +598,16 @@ class Backtesting:
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
+                # trade is still open
+                trade.set_liquidation_price(self.exchange.get_liquidation_price(
+                    pair=trade.pair,
+                    open_rate=trade.open_rate,
+                    is_short=trade.is_short,
+                    amount=trade.amount,
+                    stake_amount=trade.stake_amount,
+                    leverage=trade.leverage,
+                    wallet_balance=trade.stake_amount,
+                ))
                 self._call_adjust_stop(current_date, trade, order.ft_price)
                 # pass
             return True
@@ -893,16 +903,6 @@ class Backtesting:
                 )
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-
-            trade.set_liquidation_price(self.exchange.get_liquidation_price(
-                pair=pair,
-                open_rate=propose_rate,
-                amount=amount,
-                stake_amount=trade.stake_amount,
-                leverage=trade.leverage,
-                wallet_balance=trade.stake_amount,
-                is_short=is_short,
-            ))
 
             order = Order(
                 id=self.order_id_counter,
