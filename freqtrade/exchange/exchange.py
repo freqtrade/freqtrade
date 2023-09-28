@@ -61,8 +61,8 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
-        "stop_price_param": "stopPrice",  # Used for stoploss_on_exchange request
-        "stop_price_prop": "stopPrice",  # Used for stoploss_on_exchange response parsing
+        "stop_price_param": "stopLossPrice",  # Used for stoploss_on_exchange request
+        "stop_price_prop": "stopLossPrice",  # Used for stoploss_on_exchange response parsing
         "order_time_in_force": ["GTC"],
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
