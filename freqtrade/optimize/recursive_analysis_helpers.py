@@ -77,12 +77,12 @@ class RecursiveAnalysisSubFunctions:
 
         RecursiveAnalysis_instances = []
 
-        # unify --strategy and --strategy_list to one list
+        # unify --strategy and --strategy-list to one list
         if not (strategy_list := config.get('strategy_list', [])):
             if config.get('strategy') is None:
                 raise OperationalException(
                     "No Strategy specified. Please specify a strategy via --strategy or "
-                    "--strategy_list"
+                    "--strategy-list"
                 )
             strategy_list = [config['strategy']]
 
@@ -102,5 +102,5 @@ class RecursiveAnalysisSubFunctions:
         else:
             logger.error("There were no strategies specified neither through "
                          "--strategy nor through "
-                         "--strategy_list "
+                         "--strategy-list "
                          "or timeframe was not specified.")
