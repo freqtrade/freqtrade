@@ -150,7 +150,7 @@ def test_initialize_single_recursive_analysis(recursive_conf, mocker, caplog):
 @pytest.mark.parametrize('scenario', [
     'no_bias', 'bias1'
 ])
-def test_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
+def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
