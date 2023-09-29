@@ -28,10 +28,12 @@ class strategy_test_v3_recursive_issue(IStrategy):
         # bias is introduced here
         if self.scenario.value == 'no_bias':
             dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-        elif self.scenario.value == 'bias1':
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=50)
         else:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=50).shift(-1)
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=50)
+
+        if self.scenario.value == 'bias2':
+            # Has both bias1 and bias2
+            dataframe['rsi_lookahead'] = ta.RSI(dataframe, timeperiod=50).shift(-1)
 
         return dataframe
 

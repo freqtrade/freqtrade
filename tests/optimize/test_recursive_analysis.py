@@ -179,11 +179,10 @@ def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> 
 
     if scenario == "bias2":
         assert log_has_re("=> found lookahead in indicator rsi", caplog)
-    else:
-        diff_pct = abs(float(instance.dict_recursive['rsi'][100].replace("%", "")))
-        # check non-biased strategy
-        if scenario == "no_bias":
-            assert diff_pct < 0.01
-        # check biased strategy
-        elif scenario == "bias1":
-            assert diff_pct >= 0.01
+    diff_pct = abs(float(instance.dict_recursive['rsi'][100].replace("%", "")))
+    # check non-biased strategy
+    if scenario == "no_bias":
+        assert diff_pct < 0.01
+    # check biased strategy
+    elif scenario in ("bias1", "bias2"):
+        assert diff_pct >= 0.01
