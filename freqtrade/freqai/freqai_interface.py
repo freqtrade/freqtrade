@@ -138,7 +138,6 @@ class IFreqaiModel(ABC):
         :param metadata: pair metadata coming from strategy.
         :param strategy: Strategy to train on
         """
-
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
         self.data_provider = strategy.dp
@@ -394,6 +393,11 @@ class IFreqaiModel(ABC):
         dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
 
+        if not strategy.process_only_new_candles:
+            raise OperationalException("You are trying to use a FreqAI strategy with "
+                                       "process_only_new_candles = False. This is not supported "
+                                       "by FreqAI, and it is therefore aborting.")
+        
         # get the model metadata associated with the current pair
         (_, trained_timestamp) = self.dd.get_pair_dict_info(metadata["pair"])
 
