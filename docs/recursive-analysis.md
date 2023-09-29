@@ -47,10 +47,6 @@ optional arguments:
                         be checked. Default : `199 399 499 999 1999`.
 ```
 
-### Summary
-
-Checks a given strategy for recursive formula issue via `recursive-analysis`.
-
 ### Why are odd-numbered default startup candles used?
 
 The default value for startup candles are odd numbers. When the bot fetches candle data from the exchange's API, the last candle is the one being checked by the bot and the rest of the data are the "startup candles".
@@ -64,8 +60,8 @@ Please note that this candle limit may be changed in the future by the exchanges
 ### How does the command work?
 
 - Firstly an initial indicator calculation is carried out using the supplied timerange to generate a benchmark for indicator values.
-- After setting the benchmark it will then carry out additional runs for each different startup candle count.
-- It will then compare the indicator values at the last candle rows and report the differences in a table.
+- After setting the benchmark it will then carry out additional runs for each of the different startup candle count values.
+- The command will then compare the indicator values at the last candle rows and report the differences in a table.
 
 ## Understanding the recursive-analysis output
 
@@ -89,5 +85,5 @@ As such, aiming for absolute zero variance (shown by `-` value) might not be the
 ## Caveats
 
 - `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count calculations and the original benchmark calculation. Whether it has any actual impact on your entries and exits is not included.
-- The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and the `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
-- `recursive-analysis` will only run calculations on `populate_indicators` and `@informative` decorator(s). If you put any indicator calculation on `populate_entry_trend` or `populate_exit_trend`, it won't be calculated
+- The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and therefore `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
+- `recursive-analysis` will only run calculations on `populate_indicators` and `@informative` decorator(s). If you put any indicator calculation on `populate_entry_trend` or `populate_exit_trend`, it won't be calculated.
