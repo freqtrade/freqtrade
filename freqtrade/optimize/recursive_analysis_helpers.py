@@ -42,7 +42,7 @@ class RecursiveAnalysisSubFunctions:
             # setting a timerange is enforced here
             raise OperationalException(
                 "Please set a timerange. "
-                "A timerange of 20 candles are enough for recursive analysis."
+                "A timerange of 5000 candles are enough for recursive analysis."
             )
 
         if config.get('backtest_cache') is None:
