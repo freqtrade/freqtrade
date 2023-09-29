@@ -22,7 +22,6 @@ nav:
         - Web Hook: webhook-config.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
-    - Lookahead analysis: lookahead-analysis.md
     - Hyperopt: hyperopt.md
     - FreqAI:
         - Introduction: freqai.md
@@ -43,6 +42,8 @@ nav:
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
         - Trade Object: trade-object.md
+        - Lookahead analysis: lookahead-analysis.md
+        - Recursive analysis: recursive-analysis.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md
