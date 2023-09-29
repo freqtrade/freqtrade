@@ -19,7 +19,7 @@ class strategy_test_v3_recursive_issue(IStrategy):
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
-    scenario = CategoricalParameter(['no_bias', 'bias1'], default='bias1', space="buy")
+    scenario = CategoricalParameter(['no_bias', 'bias1', 'bias2'], default='bias1', space="buy")
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 100
@@ -28,8 +28,10 @@ class strategy_test_v3_recursive_issue(IStrategy):
         # bias is introduced here
         if self.scenario.value == 'no_bias':
             dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-        else:
+        elif self.scenario.value == 'bias1':
             dataframe['rsi'] = ta.RSI(dataframe, timeperiod=50)
+        else:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=50).shift(-1)
 
         return dataframe
 

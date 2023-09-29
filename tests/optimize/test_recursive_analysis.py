@@ -148,7 +148,7 @@ def test_initialize_single_recursive_analysis(recursive_conf, mocker, caplog):
 
 
 @pytest.mark.parametrize('scenario', [
-    'no_bias', 'bias1'
+    'no_bias', 'bias1', 'bias2'
 ])
 def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
@@ -177,10 +177,13 @@ def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> 
     # Assert init correct
     assert log_has_re(f"Strategy Parameter: scenario = {scenario}", caplog)
 
-    diff_pct = abs(float(instance.dict_recursive['rsi'][100].replace("%", "")))
-    # check non-biased strategy
-    if scenario == "no_bias":
-        assert diff_pct < 0.01
-    # check biased strategy
-    elif scenario == "bias1":
-        assert diff_pct >= 0.01
+    if scenario == "bias2":
+        assert log_has_re("=> found lookahead in indicator rsi", caplog)
+    else:
+        diff_pct = abs(float(instance.dict_recursive['rsi'][100].replace("%", "")))
+        # check non-biased strategy
+        if scenario == "no_bias":
+            assert diff_pct < 0.01
+        # check biased strategy
+        elif scenario == "bias1":
+            assert diff_pct >= 0.01
