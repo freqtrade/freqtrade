@@ -397,7 +397,7 @@ class IFreqaiModel(ABC):
             raise OperationalException("You are trying to use a FreqAI strategy with "
                                        "process_only_new_candles = False. This is not supported "
                                        "by FreqAI, and it is therefore aborting.")
-        
+
         # get the model metadata associated with the current pair
         (_, trained_timestamp) = self.dd.get_pair_dict_info(metadata["pair"])
 
