@@ -36,8 +36,9 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 # Install dependencies
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
-RUN  pip install --user --no-cache-dir numpy \
+RUN  pip install --user --no-cache-dir numpy==1.25.2 \
   && pip install --user /tmp/pyarrow-*.whl \
+  && pip install --user --no-build-isolation TA-Lib==0.4.28 \
   && pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image

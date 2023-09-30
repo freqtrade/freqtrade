@@ -138,7 +138,6 @@ class IFreqaiModel(ABC):
         :param metadata: pair metadata coming from strategy.
         :param strategy: Strategy to train on
         """
-
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
         self.data_provider = strategy.dp
@@ -394,6 +393,11 @@ class IFreqaiModel(ABC):
         dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
 
+        if not strategy.process_only_new_candles:
+            raise OperationalException("You are trying to use a FreqAI strategy with "
+                                       "process_only_new_candles = False. This is not supported "
+                                       "by FreqAI, and it is therefore aborting.")
+
         # get the model metadata associated with the current pair
         (_, trained_timestamp) = self.dd.get_pair_dict_info(metadata["pair"])
 
@@ -453,7 +457,7 @@ class IFreqaiModel(ABC):
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
                 self.set_initial_historic_predictions(pred_df, dk, pair, dataframe)
-            self.dd.set_initial_return_values(pair, pred_df)
+            self.dd.set_initial_return_values(pair, pred_df, dataframe)
 
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
             return
@@ -645,11 +649,11 @@ class IFreqaiModel(ABC):
         If the user reuses an identifier on a subsequent instance,
         this function will not be called. In that case, "real" predictions
         will be appended to the loaded set of historic predictions.
-        :param df: DataFrame = the dataframe containing the training feature data
-        :param model: Any = A model which was `fit` using a common library such as
-                      catboost or lightgbm
+        :param pred_df: DataFrame = the dataframe containing the predictions coming
+            out of a model
         :param dk: FreqaiDataKitchen = object containing methods for data analysis
         :param pair: str = current pair
+        :param strat_df: DataFrame = dataframe coming from strategy
         """
 
         self.dd.historic_predictions[pair] = pred_df

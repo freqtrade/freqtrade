@@ -1,16 +1,17 @@
 import logging
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
 from freqtrade.constants import BuySell
-from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.enums.pricetype import PriceType
+from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import (DDosProtection, OperationalException, RetryableOrderError,
                                   TemporaryError)
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
 from freqtrade.misc import safe_value_fallback2
+from freqtrade.util import dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,6 @@ class Okx(Exchange):
         "funding_fee_timeframe": "8h",
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
-        "stop_price_param": "stopLossPrice",
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
@@ -187,7 +187,7 @@ class Okx(Exchange):
 
     def _convert_stop_order(self, pair: str, order_id: str, order: Dict) -> Dict:
         if (
-            order['status'] == 'closed'
+            order.get('status', 'open') == 'closed'
             and (real_order_id := order.get('info', {}).get('ordId')) is not None
         ):
             # Once a order triggered, we fetch the regular followup order.
@@ -241,3 +241,18 @@ class Okx(Exchange):
             pair=pair,
             params=params1,
         )
+
+    def _fetch_orders_emulate(self, pair: str, since_ms: int) -> List[Dict]:
+        orders = []
+
+        orders = self._api.fetch_closed_orders(pair, since=since_ms)
+        if (since_ms < dt_ts(dt_now() - timedelta(days=6, hours=23))):
+            # Regular fetch_closed_orders only returns 7 days of data.
+            # Force usage of "archive" endpoint, which returns 3 months of data.
+            params = {'method': 'privateGetTradeOrdersHistoryArchive'}
+            orders_hist = self._api.fetch_closed_orders(pair, since=since_ms, params=params)
+            orders.extend(orders_hist)
+
+        orders_open = self._api.fetch_open_orders(pair, since=since_ms)
+        orders.extend(orders_open)
+        return orders

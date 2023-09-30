@@ -55,7 +55,7 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 ## Binance
 
 !!! Warning "Server location and geo-ip restrictions"
-    Please be aware that binance restrict api access regarding the server country. The currents and non exhaustive countries blocked are United States, Malaysia (Singapour), Ontario (Canada). Please go to [binance terms > b. Eligibility](https://www.binance.com/en/terms) to find up to date list.
+    Please be aware that Binance restricts API access regarding the server country. The current and non-exhaustive countries blocked are Canada, Malaysia, Netherlands and United States. Please go to [binance terms > b. Eligibility](https://www.binance.com/en/terms) to find up to date list.
 
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
@@ -135,15 +135,6 @@ Freqtrade will not attempt to change these settings.
 
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
-
-Due to the heavy rate-limiting applied by Kraken, the following configuration section should be used to download data:
-
-``` json
-    "ccxt_async_config": {
-        "enableRateLimit": true,
-        "rateLimit": 3100
-    },
-```
 
 !!! Warning "Downloading data from kraken"
     Downloading kraken data will require significantly more memory (RAM) than any other exchange, as the trades-data needs to be converted into candles on your machine.

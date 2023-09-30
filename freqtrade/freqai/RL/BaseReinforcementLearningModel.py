@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 SB3_MODELS = ['PPO', 'A2C', 'DQN']
-SB3_CONTRIB_MODELS = ['TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO']
+SB3_CONTRIB_MODELS = ['TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO', 'QRDQN']
 
 
 class BaseReinforcementLearningModel(IFreqaiModel):

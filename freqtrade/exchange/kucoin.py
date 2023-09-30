@@ -21,6 +21,8 @@ class Kucoin(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "stop_price_param": "stopPrice",
+        "stop_price_prop": "stopPrice",
         "stoploss_order_types": {"limit": "limit", "market": "market"},
         "l2_limit_range": [20, 100],
         "l2_limit_range_required": False,

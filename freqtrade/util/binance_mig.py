@@ -4,7 +4,7 @@ from packaging import version
 from sqlalchemy import select
 
 from freqtrade.constants import DOCS_LINK, Config
-from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Trade

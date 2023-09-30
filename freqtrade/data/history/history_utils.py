@@ -9,9 +9,9 @@ from pandas import DataFrame, concat
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
                                  DL_DATA_TIMEFRAMES, Config)
-from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
-                                      trades_df_remove_duplicates, trades_list_to_df,
-                                      trades_to_ohlcv)
+from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
+                                      ohlcv_to_dataframe, trades_df_remove_duplicates,
+                                      trades_list_to_df)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
@@ -427,36 +427,6 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
                                  timerange=timerange,
                                  data_handler=data_handler)
     return pairs_not_available
-
-
-def convert_trades_to_ohlcv(
-    pairs: List[str],
-    timeframes: List[str],
-    datadir: Path,
-    timerange: TimeRange,
-    erase: bool = False,
-    data_format_ohlcv: str = 'feather',
-    data_format_trades: str = 'feather',
-    candle_type: CandleType = CandleType.SPOT
-) -> None:
-    """
-    Convert stored trades data to ohlcv data
-    """
-    data_handler_trades = get_datahandler(datadir, data_format=data_format_trades)
-    data_handler_ohlcv = get_datahandler(datadir, data_format=data_format_ohlcv)
-
-    for pair in pairs:
-        trades = data_handler_trades.trades_load(pair)
-        for timeframe in timeframes:
-            if erase:
-                if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
-            try:
-                ohlcv = trades_to_ohlcv(trades, timeframe)
-                # Store ohlcv
-                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv, candle_type=candle_type)
-            except ValueError:
-                logger.exception(f'Could not convert {pair} to OHLCV.')
 
 
 def get_timerange(data: Dict[str, DataFrame]) -> Tuple[datetime, datetime]:

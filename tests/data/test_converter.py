@@ -6,12 +6,14 @@ from shutil import copyfile
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
-                                      ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
-                                      reduce_dataframe_footprint, trades_df_remove_duplicates,
-                                      trades_dict_to_list, trades_to_ohlcv, trim_dataframe)
+                                      convert_trades_to_ohlcv, ohlcv_fill_up_missing_data,
+                                      ohlcv_to_dataframe, reduce_dataframe_footprint,
+                                      trades_df_remove_duplicates, trades_dict_to_list,
+                                      trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler
@@ -441,3 +443,39 @@ def test_reduce_dataframe_footprint():
     # Changes dtype of returned dataframe
     assert df2['open_copy'].dtype == np.float32
     assert df2['close_copy'].dtype == np.float32
+
+
+def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
+    tmpdir1 = Path(tmpdir)
+    pair = 'XRP/ETH'
+    file1 = tmpdir1 / 'XRP_ETH-1m.feather'
+    file5 = tmpdir1 / 'XRP_ETH-5m.feather'
+    filetrades = tmpdir1 / 'XRP_ETH-trades.json.gz'
+    copyfile(testdatadir / file1.name, file1)
+    copyfile(testdatadir / file5.name, file5)
+    copyfile(testdatadir / filetrades.name, filetrades)
+
+    # Compare downloaded dataset with converted dataset
+    dfbak_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
+    dfbak_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
+
+    tr = TimeRange.parse_timerange('20191011-20191012')
+
+    convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
+                            datadir=tmpdir1, timerange=tr, erase=True)
+
+    assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
+    # Load new data
+    df_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
+    df_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
+
+    assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
+    assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
+    msg = 'Could not convert NoDatapair to OHLCV.'
+    assert not log_has(msg, caplog)
+
+    convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
+                            data_format_trades='jsongz',
+                            datadir=tmpdir1, timerange=tr, erase=True)
+    assert log_has(msg, caplog)

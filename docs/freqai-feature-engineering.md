@@ -178,7 +178,7 @@ You can ask for each of the defined features to be included also for informative
 
 `include_shifted_candles` indicates the number of previous candles to include in the feature set. For example, `include_shifted_candles: 2` tells FreqAI to include the past 2 candles for each of the features in the feature set.
 
-In total, the number of features the user of the presented example strat has created is: length of `include_timeframes` * no. features in `feature_engineering_expand_*()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
+In total, the number of features the user of the presented example strategy has created is: length of `include_timeframes` * no. features in `feature_engineering_expand_*()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
  $= 3 * 3 * 3 * 2 * 2 = 108$.
  
  !!! note "Learn more about creative feature engineering"

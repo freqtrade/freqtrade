@@ -116,6 +116,7 @@ class Backtesting:
             raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
+        self.disable_database_use()
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
@@ -318,13 +319,16 @@ class Backtesting:
         else:
             self.futures_data = {}
 
+    def disable_database_use(self):
+        PairLocks.use_db = False
+        PairLocks.timeframe = self.timeframe
+        Trade.use_db = False
+
     def prepare_backtest(self, enable_protections):
         """
         Backtesting setup method - called once for every call to "backtest()".
         """
-        PairLocks.use_db = False
-        PairLocks.timeframe = self.config['timeframe']
-        Trade.use_db = False
+        self.disable_database_use()
         PairLocks.reset_locks()
         Trade.reset_trades()
         self.rejected_trades = 0
@@ -579,6 +583,11 @@ class Backtesting:
         """ Rate is within candle, therefore filled"""
         return row[LOW_IDX] <= rate <= row[HIGH_IDX]
 
+    def _call_adjust_stop(self, current_date: datetime, trade: LocalTrade, current_rate: float):
+        profit = trade.calc_profit_ratio(current_rate)
+        self.strategy.ft_stoploss_adjust(current_rate, trade,  # type: ignore
+                                         current_date, profit, 0, after_fill=True)
+
     def _try_close_open_order(
             self, order: Optional[Order], trade: LocalTrade, current_date: datetime,
             row: Tuple) -> bool:
@@ -588,7 +597,19 @@ class Backtesting:
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
-            trade.open_order_id = None
+            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
+                # trade is still open
+                trade.set_liquidation_price(self.exchange.get_liquidation_price(
+                    pair=trade.pair,
+                    open_rate=trade.open_rate,
+                    is_short=trade.is_short,
+                    amount=trade.amount,
+                    stake_amount=trade.stake_amount,
+                    leverage=trade.leverage,
+                    wallet_balance=trade.stake_amount,
+                ))
+                self._call_adjust_stop(current_date, trade, order.ft_price)
+                # pass
             return True
         return False
 
@@ -731,7 +752,9 @@ class Backtesting:
         if order_type == 'limit':
             new_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=propose_rate)(
-                pair=pair, current_time=current_time,
+                pair=pair,
+                trade=trade,  # type: ignore[arg-type]
+                current_time=current_time,
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate
@@ -854,7 +877,6 @@ class Backtesting:
                 self.trade_id_counter += 1
                 trade = LocalTrade(
                     id=self.trade_id_counter,
-                    open_order_id=self.order_id_counter,
                     pair=pair,
                     base_currency=base_currency,
                     stake_currency=self.config['stake_currency'],
@@ -882,16 +904,6 @@ class Backtesting:
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
-            trade.set_liquidation_price(self.exchange.get_liquidation_price(
-                pair=pair,
-                open_rate=propose_rate,
-                amount=amount,
-                stake_amount=trade.stake_amount,
-                leverage=trade.leverage,
-                wallet_balance=trade.stake_amount,
-                is_short=is_short,
-            ))
-
             order = Order(
                 id=self.order_id_counter,
                 ft_trade_id=trade.id,
@@ -916,8 +928,7 @@ class Backtesting:
             )
             order._trade_bt = trade
             trade.orders.append(order)
-            if not self._try_close_open_order(order, trade, current_time, row):
-                trade.open_order_id = str(self.order_id_counter)
+            self._try_close_open_order(order, trade, current_time, row)
             trade.recalc_trade_from_orders()
 
         return trade
@@ -929,7 +940,7 @@ class Backtesting:
         """
         for pair in open_trades.keys():
             for trade in list(open_trades[pair]):
-                if trade.open_order_id and trade.nr_of_successful_entries == 0:
+                if trade.has_open_orders and trade.nr_of_successful_entries == 0:
                     # Ignore trade if entry-order did not fill yet
                     continue
                 exit_row = data[pair][-1]
@@ -1006,13 +1017,11 @@ class Backtesting:
                 else:
                     # Close additional entry order
                     del trade.orders[trade.orders.index(order)]
-                    trade.open_order_id = None
                     return False
             if order.side == trade.exit_side:
                 self.timedout_exit_orders += 1
                 # Close exit order and retry exiting on next signal.
                 del trade.orders[trade.orders.index(order)]
-                trade.open_order_id = None
                 return False
         return None
 
@@ -1040,7 +1049,6 @@ class Backtesting:
                 return False
             else:
                 del trade.orders[trade.orders.index(order)]
-                trade.open_order_id = None
                 self.canceled_entry_orders += 1
 
             # place new order if result was not None
@@ -1051,7 +1059,7 @@ class Backtesting:
                                     order.safe_remaining * order.ft_price / trade.leverage),
                                   direction='short' if trade.is_short else 'long')
                 # Delete trade if no successful entries happened (if placing the new order failed)
-                if trade.open_order_id is None and trade.nr_of_successful_entries == 0:
+                if not trade.has_open_orders and trade.nr_of_successful_entries == 0:
                     return True
                 self.replaced_entry_orders += 1
             else:
@@ -1136,7 +1144,7 @@ class Backtesting:
                 self.wallets.update()
 
             # 4. Create exit orders (if any)
-            if not trade.open_order_id:
+            if not trade.has_open_orders:
                 self._check_trade_exit(trade, row)  # Place exit order if necessary
 
             # 5. Process exit orders.

@@ -24,7 +24,7 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
     The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
-    Python3.8 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
+    Python3.9 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
     Also, python headers (`python<yourversion>-dev` / `python<yourversion>-devel`) must be available for the installation to complete successfully.
 
 !!! Warning "Up-to-date clock"
@@ -42,7 +42,7 @@ These requirements apply to both [Script Installation](#script-installation) and
 
 ### Install guide
 
-* [Python >= 3.8.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [Python >= 3.9](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
@@ -54,7 +54,7 @@ We've included/collected install instructions for Ubuntu, MacOS, and Windows. Th
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
-    Python3.8 or higher and the corresponding pip are assumed to be available.
+    Python3.9 or higher and the corresponding pip are assumed to be available.
 
 === "Debian/Ubuntu"
     #### Install necessary dependencies
@@ -169,7 +169,7 @@ You can as well update, configure and reset the codebase of your bot with `./scr
 ** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.8+ installed beforehand for this to work.
+You will need to have git and python3.9+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv under `.venv/`

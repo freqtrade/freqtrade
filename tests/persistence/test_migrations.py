@@ -15,6 +15,7 @@ from freqtrade.persistence import Trade, init_db
 from freqtrade.persistence.base import ModelBase
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from freqtrade.persistence.models import PairLock
+from freqtrade.persistence.trade_model import Order
 from tests.conftest import log_has
 
 
@@ -217,6 +218,23 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
             {amount},
             0,
             {amount * 0.00258580}
+        ),
+        (
+            -- Order without reference trade
+            2,
+            'buy',
+            'ETC/BTC',
+            1,
+            'dry_buy_order55',
+            'canceled',
+            'ETC/BTC',
+            'limit',
+            'buy',
+            0.00258580,
+            {amount},
+            {amount},
+            0,
+            {amount * 0.00258580}
         )
     """
     engine = create_engine('sqlite://')
@@ -238,9 +256,10 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     # Run init to test migration
     init_db(default_conf['db_url'])
 
-    trades = Trade.session.scalars(select(Trade).filter(Trade.id == 1)).all()
+    trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 1
     trade = trades[0]
+    assert trade.id == 1
     assert trade.fee_open == fee.return_value
     assert trade.fee_close == fee.return_value
     assert trade.open_rate_requested is None
@@ -281,11 +300,17 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     assert orders[1].order_id == 'dry_buy_order22'
     assert orders[1].ft_order_side == 'buy'
-    assert orders[1].ft_is_open is False
+    assert orders[1].ft_is_open is True
 
     assert orders[2].order_id == 'dry_stop_order_id11X'
     assert orders[2].ft_order_side == 'stoploss'
     assert orders[2].ft_is_open is False
+
+    orders1 = Order.session.scalars(select(Order)).all()
+    assert len(orders1) == 5
+    order = orders1[4]
+    assert order.ft_trade_id == 2
+    assert order.ft_is_open is False
 
 
 def test_migrate_too_old(mocker, default_conf, fee, caplog):

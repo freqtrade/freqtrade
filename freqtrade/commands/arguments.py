@@ -122,6 +122,8 @@ ARGS_LOOKAHEAD_ANALYSIS = [
     a for a in ARGS_BACKTEST if a not in ("position_stacking", "use_max_market_positions", 'cache')
     ] + ["minimum_trade_amount", "targeted_trade_amount", "lookahead_analysis_exportfilename"]
 
+ARGS_RECURSIVE_ANALYSIS = ["timeframe", "timerange", "dataformat_ohlcv", "pairs", "startup_candle"]
+
 
 class Arguments:
     """
@@ -206,8 +208,9 @@ class Arguments:
                                         start_list_strategies, start_list_timeframes,
                                         start_lookahead_analysis, start_new_config,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
-                                        start_show_trades, start_strategy_update,
-                                        start_test_pairlist, start_trading, start_webserver)
+                                        start_recursive_analysis, start_show_trades,
+                                        start_strategy_update, start_test_pairlist, start_trading,
+                                        start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -467,3 +470,14 @@ class Arguments:
 
         self._build_args(optionlist=ARGS_LOOKAHEAD_ANALYSIS,
                          parser=lookahead_analayis_cmd)
+
+        # Add recursive_analysis subcommand
+        recursive_analayis_cmd = subparsers.add_parser(
+            'recursive-analysis',
+            help="Check for potential recursive formula issue.",
+            parents=[_common_parser, _strategy_parser])
+
+        recursive_analayis_cmd.set_defaults(func=start_recursive_analysis)
+
+        self._build_args(optionlist=ARGS_RECURSIVE_ANALYSIS,
+                         parser=recursive_analayis_cmd)

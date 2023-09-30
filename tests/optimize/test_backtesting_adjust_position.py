@@ -9,7 +9,7 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import ExitType, TradingMode
+from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.util.datetime_helpers import dt_utc
 from tests.conftest import EXMS, patch_exchange
@@ -103,18 +103,21 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=10)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
+    mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", return_value=(0.1, 0.1))
 
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,
         "dry_run_wallet": 1000.0,
         "strategy": "StrategyTestV3",
+        "trading_mode": "futures",
+        "margin_mode": "isolated",
     })
+    default_conf['pairlists'] = [{'method': 'StaticPairList', 'allow_inactive': True}]
     backtesting = Backtesting(default_conf)
-    backtesting.trading_mode = TradingMode.FUTURES
     backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
-    pair = 'XRP/USDT'
+    pair = 'XRP/USDT:USDT'
     row = [
             pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
             2.1,  # Open
@@ -130,12 +133,12 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
             ]
     backtesting.strategy.leverage = MagicMock(return_value=leverage)
     trade = backtesting._enter_trade(pair, row=row, direction='long')
-    trade.orders[0].close_bt_order(row[0], trade)
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
     assert pytest.approx(trade.amount) == 47.61904762 * leverage
     assert len(trade.orders) == 1
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=None)
+    assert pytest.approx(trade.liquidation_price) == (0.10278333 if leverage == 1 else 1.2122249)
 
     trade = backtesting._get_adjust_trade_entry_for_candle(trade, row)
     assert trade
@@ -151,6 +154,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert pytest.approx(trade.stake_amount) == 200.0
     assert pytest.approx(trade.amount) == 95.23809524 * leverage
     assert len(trade.orders) == 2
+    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
 
     # Reduce by more than amount - no change to trade.
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=-500)
@@ -162,6 +166,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert pytest.approx(trade.amount) == 95.23809524 * leverage
     assert len(trade.orders) == 2
     assert trade.nr_of_successful_entries == 2
+    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
 
     # Reduce position by 50
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=-100)
@@ -173,6 +178,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert len(trade.orders) == 3
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
+    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
 
     # Adjust below minimum
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=-99)
@@ -184,3 +190,4 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert len(trade.orders) == 3
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
+    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)

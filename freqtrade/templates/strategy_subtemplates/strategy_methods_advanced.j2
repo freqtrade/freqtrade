@@ -13,7 +13,8 @@ def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
     """
     pass
 
-def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate: float,
+def custom_entry_price(self, pair: str, trade: Optional['Trade'],
+                       current_time: 'datetime', proposed_rate: float,
                        entry_tag: 'Optional[str]', side: str, **kwargs) -> float:
     """
     Custom entry price logic, returning the new entry price.
@@ -23,6 +24,7 @@ def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate:
     When not implemented by a strategy, returns None, orderbook is used to set entry price
 
     :param pair: Pair that's currently analyzed
+    :param trade: trade object (None for initial entries).
     :param current_time: datetime object, containing the current datetime
     :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
@@ -102,8 +104,8 @@ def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: f
 
 use_custom_stoploss = True
 
-def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime',
-                    current_rate: float, current_profit: float, **kwargs) -> float:
+def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, after_fill: bool, **kwargs) -> float:
     """
     Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
     e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -111,7 +113,7 @@ def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime',
 
     For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
-    When not implemented by a strategy, returns the initial stoploss value
+    When not implemented by a strategy, returns the initial stoploss value.
     Only called when use_custom_stoploss is set to True.
 
     :param pair: Pair that's currently analyzed
@@ -119,10 +121,10 @@ def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime',
     :param current_time: datetime object, containing the current datetime
     :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param after_fill: True if the stoploss is called after the order was filled.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return float: New stoploss value, relative to the current_rate
     """
-    return self.stoploss
 
 def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                 current_profit: float, **kwargs) -> 'Optional[Union[str, bool]]':
@@ -257,7 +259,7 @@ def adjust_trade_position(self, trade: 'Trade', current_time: datetime,
     """
     Custom trade adjustment logic, returning the stake amount that a trade should be
     increased or decreased.
-    This means extra buy or sell orders with additional fees.
+    This means extra entry or exit orders with additional fees.
     Only called when `position_adjustment_enable` is set to True.
 
     For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
@@ -266,8 +268,9 @@ def adjust_trade_position(self, trade: 'Trade', current_time: datetime,
 
     :param trade: trade object.
     :param current_time: datetime object, containing the current datetime
-    :param current_rate: Current buy rate.
-    :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param current_rate: Current entry rate (same as current_entry_profit)
+    :param current_profit: Current profit (as ratio), calculated based on current_rate
+                            (same as current_entry_profit).
     :param min_stake: Minimal stake size allowed by exchange (for both entries and exits)
     :param max_stake: Maximum stake allowed (either through balance, or by exchange limits).
     :param current_entry_rate: Current rate using entry pricing.
@@ -276,8 +279,8 @@ def adjust_trade_position(self, trade: 'Trade', current_time: datetime,
     :param current_exit_profit: Current profit using exit pricing.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return float: Stake amount to adjust your trade,
-                    Positive values to increase position, Negative values to decrease position.
-                    Return None for no action.
+                   Positive values to increase position, Negative values to decrease position.
+                   Return None for no action.
     """
     return None
 

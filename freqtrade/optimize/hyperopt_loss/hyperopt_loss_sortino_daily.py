@@ -52,7 +52,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         total_profit = sum_daily["profit_ratio_after_slippage"] - minimum_acceptable_return
         expected_returns_mean = total_profit.mean()
 
-        sum_daily['downside_returns'] = 0
+        sum_daily['downside_returns'] = 0.0
         sum_daily.loc[total_profit < 0, 'downside_returns'] = total_profit
         total_downside = sum_daily['downside_returns']
         # Here total_downside contains min(0, P - MAR) values,

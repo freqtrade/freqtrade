@@ -14,7 +14,7 @@ from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.persistence import Trade
+from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
@@ -616,6 +616,10 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
      "BTC", "binance", ['ETH/BTC', 'LTC/BTC', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+    # TKN/BTC is removed because it doesn't have enough candles
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 6, "refresh_period": 86400}],
+     "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'HOT/BTC', 'NEO/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
     #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
@@ -626,23 +630,25 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
     whitelist_conf['exchange']['name'] = exchange
+    # Ensure we have 6 candles
+    ohlcv_history_long = pd.concat([ohlcv_history, ohlcv_history])
 
-    ohlcv_history_high_vola = ohlcv_history.copy()
+    ohlcv_history_high_vola = ohlcv_history_long.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
 
     # create candles for medium overall volume with last candle high volume
-    ohlcv_history_medium_volume = ohlcv_history.copy()
+    ohlcv_history_medium_volume = ohlcv_history_long.copy()
     ohlcv_history_medium_volume.loc[ohlcv_history_medium_volume.index == 2, 'volume'] = 5
 
     # create candles for high volume with all candles high volume, but very low price.
-    ohlcv_history_high_volume = ohlcv_history.copy()
+    ohlcv_history_high_volume = ohlcv_history_long.copy()
     ohlcv_history_high_volume['volume'] = 10
     ohlcv_history_high_volume['low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
     ohlcv_history_high_volume['high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
     ohlcv_history_high_volume['close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
 
     ohlcv_data = {
-        ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history,
+        ('ETH/BTC', '1d', CandleType.SPOT): ohlcv_history_long,
         ('TKN/BTC', '1d', CandleType.SPOT): ohlcv_history,
         ('LTC/BTC', '1d', CandleType.SPOT): ohlcv_history_medium_volume,
         ('XRP/BTC', '1d', CandleType.SPOT): ohlcv_history_high_vola,
@@ -1370,7 +1376,12 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
     (['BTC/USD'],
      ['BTC/USD', 'BTC/USDT'],
      ['BTC/USD']),
-
+    (['BTC/USDT:USDT'],
+     ['BTC/USDT:USDT', 'BTC/USDT'],
+     ['BTC/USDT:USDT']),
+    (['BB_BTC/USDT', 'CC_BTC/USDT', 'AA_ETH/USDT', 'XRP/USDT', 'ETH/USDT', 'XX_BTC/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['XRP/USDT', 'ETH/USDT']),
 ])
 def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
     if expected is None:
@@ -1452,3 +1463,53 @@ def test_ProducerPairlist(mocker, whitelist_conf, markets):
     pm.refresh_pairlist()
     assert len(pm.whitelist) == 4
     assert pm.whitelist == ['TKN/BTC'] + pairs
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['ADA/USDT', 'XRP/USDT', 'ETC/USDT'])
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "FullTradesFilter"}
+    ]
+    default_conf_usdt['max_open_trades'] = -1
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        create_mock_trades_usdt(fee)
+        pm.refresh_pairlist()
+
+        # Unlimited max open trades, so no change to whitelist
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+        # Set max_open_trades to 4, the filter should empty the whitelist
+        default_conf_usdt['max_open_trades'] = 4
+        pm.refresh_pairlist()
+        assert pm.whitelist == []
+        assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
+
+        list_trades = LocalTrade.get_open_trades()
+        assert len(list_trades) == 4
+
+        # Move to 1 hour later, close a trade, so original sorting is restored.
+        t.move_to("2021-09-01 07:00:00 +00:00")
+        list_trades[2].close(12)
+        Trade.commit()
+
+        # open trades count below max_open_trades, whitelist restored
+        list_trades = LocalTrade.get_open_trades()
+        assert len(list_trades) == 3
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+        # Set max_open_trades to 3, the filter should empty the whitelist
+        default_conf_usdt['max_open_trades'] = 3
+        pm.refresh_pairlist()
+        assert pm.whitelist == []
+        assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)

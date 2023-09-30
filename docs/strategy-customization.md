@@ -168,10 +168,12 @@ Most indicators have an instable startup period, in which they are either not av
 To account for this, the strategy can be assigned the `startup_candle_count` attribute.
 This should be set to the maximum number of candles that the strategy requires to calculate stable indicators. In the case where a user includes higher timeframes with informative pairs, the `startup_candle_count` does not necessarily change. The value is the maximum period (in candles) that any of the informatives timeframes need to compute stable indicators.
 
-In this example strategy, this should be set to 100 (`startup_candle_count = 100`), since the longest needed history is 100 candles.
+You can use [recursive-analysis](recursive-analysis.md) to check and find the correct `startup_candle_count` to be used.
+
+In this example strategy, this should be set to 400 (`startup_candle_count = 400`), since the minimum needed history for ema100 calculation to make sure the value is correct is 400 candles.
 
 ``` python
-    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=400)
 ```
 
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
@@ -193,11 +195,11 @@ Let's try to backtest 1 month (January 2019) of 5m candles using an example stra
 freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m
 ```
 
-Assuming `startup_candle_count` is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from `20190101 - (100 * 5m)` - which is ~2018-12-31 15:30:00.
+Assuming `startup_candle_count` is set to 400, backtesting knows it needs 400 candles to generate valid buy signals. It will load data from `20190101 - (400 * 5m)` - which is ~2018-12-30 11:40:00.
 If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.
 
 !!! Note
-    If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
+    If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-02 09:20:00.
 
 ### Entry signal rules
 
@@ -264,7 +266,7 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
 ### Exit signal rules
 
 Edit the method `populate_exit_trend()` into your strategy file to update your exit strategy.
-The exit-signal is only used for exits if `use_exit_signal` is set to true in the configuration.
+The exit-signal can be suppressed by setting `use_exit_signal` to false in the configuration or strategy.
 `use_exit_signal` will not influence [signal collision rules](#colliding-signals) - which will still apply and can prevent entries.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
@@ -586,6 +588,67 @@ for more information.
     will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
     created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
 
+### *merge_informative_pair()*
+
+This method helps you merge an informative pair to a regular dataframe without lookahead bias.
+It's there to help you merge the dataframe in a safe and consistent way.
+
+Options:
+
+- Rename the columns for you to create unique columns
+- Merge the dataframe without lookahead bias
+- Forward-fill (optional)
+
+For a full sample, please refer to the [complete data provider example](#complete-data-provider-sample) below.
+
+All columns of the informative dataframe will be available on the returning dataframe in a renamed fashion:
+
+!!! Example "Column renaming"
+    Assuming `inf_tf = '1d'` the resulting columns will be:
+
+    ``` python
+    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+    'date_1d', 'open_1d', 'high_1d', 'low_1d', 'close_1d', 'rsi_1d'   # from the informative dataframe
+    ```
+
+??? Example "Column renaming - 1h"
+    Assuming `inf_tf = '1h'` the resulting columns will be:
+
+    ``` python
+    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe
+    ```
+
+??? Example "Custom implementation"
+    A custom implementation for this is possible, and can be done as follows:
+
+    ``` python
+
+    # Shift date by 1 candle
+    # This is necessary since the data is always the "open date"
+    # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
+    minutes = timeframe_to_minutes(inf_tf)
+    # Only do this if the timeframes are different:
+    informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
+
+    # Rename columns to be unique
+    informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
+    # Assuming inf_tf = '1d' - then the columns will now be:
+    # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
+
+    # Combine the 2 dataframes
+    # all indicators on the informative sample MUST be calculated before this point
+    dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_merge_{inf_tf}', how='left')
+    # FFill to have the 1d value available in every row throughout the day.
+    # Without this, comparisons would only work once per day.
+    dataframe = dataframe.ffill()
+
+    ```
+
+!!! Warning "Informative timeframe < timeframe"
+    Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
+    To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).
+
 ## Additional data (DataProvider)
 
 The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
@@ -809,146 +872,6 @@ class SampleStrategy(IStrategy):
 ```
 
 ***
-
-## Helper functions
-
-### *merge_informative_pair()*
-
-This method helps you merge an informative pair to a regular dataframe without lookahead bias.
-It's there to help you merge the dataframe in a safe and consistent way.
-
-Options:
-
-- Rename the columns for you to create unique columns
-- Merge the dataframe without lookahead bias
-- Forward-fill (optional)
-
-For a full sample, please refer to the [complete data provider example](#complete-data-provider-sample) below.
-
-All columns of the informative dataframe will be available on the returning dataframe in a renamed fashion:
-
-!!! Example "Column renaming"
-    Assuming `inf_tf = '1d'` the resulting columns will be:
-
-    ``` python
-    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
-    'date_1d', 'open_1d', 'high_1d', 'low_1d', 'close_1d', 'rsi_1d'   # from the informative dataframe
-    ```
-
-??? Example "Column renaming - 1h"
-    Assuming `inf_tf = '1h'` the resulting columns will be:
-
-    ``` python
-    'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
-    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe
-    ```
-
-??? Example "Custom implementation"
-    A custom implementation for this is possible, and can be done as follows:
-
-    ``` python
-
-    # Shift date by 1 candle
-    # This is necessary since the data is always the "open date"
-    # and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00
-    minutes = timeframe_to_minutes(inf_tf)
-    # Only do this if the timeframes are different:
-    informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')
-
-    # Rename columns to be unique
-    informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]
-    # Assuming inf_tf = '1d' - then the columns will now be:
-    # date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
-
-    # Combine the 2 dataframes
-    # all indicators on the informative sample MUST be calculated before this point
-    dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_merge_{inf_tf}', how='left')
-    # FFill to have the 1d value available in every row throughout the day.
-    # Without this, comparisons would only work once per day.
-    dataframe = dataframe.ffill()
-
-    ```
-
-!!! Warning "Informative timeframe < timeframe"
-    Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
-    To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).
-
-***
-
-### *stoploss_from_open()*
-
-Stoploss values returned from `custom_stoploss` must specify a percentage relative to `current_rate`, but sometimes you may want to specify a stoploss relative to the entry point instead. `stoploss_from_open()` is a helper function to calculate a stoploss value that can be returned from `custom_stoploss` which will be equivalent to the desired trade profit above the entry point.
-
-??? Example "Returning a stoploss relative to the open price from the custom stoploss function"
-
-    Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).  
-
-    If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, current_profit, False)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
-
-    This function will consider leverage - so at 10x leverage, the actual stoploss would be 0.7% above $100 (0.7% * 10x = 7%).
-
-
-    ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_open
-
-    class AwesomeStrategy(IStrategy):
-
-        # ... populate_* methods
-
-        use_custom_stoploss = True
-
-        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                            current_rate: float, current_profit: float, **kwargs) -> float:
-
-            # once the profit has risen above 10%, keep the stoploss at 7% above the open price
-            if current_profit > 0.10:
-                return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
-
-            return 1
-
-    ```
-
-    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
-
-!!! Note
-    Providing invalid input to `stoploss_from_open()` may produce "CustomStoploss function did not return valid stoploss" warnings.
-    This may happen if `current_profit` parameter is below specified `open_relative_stop`. Such situations may arise when closing trade
-    is blocked by `confirm_trade_exit()` method. Warnings can be solved by never blocking stop loss sells by checking `exit_reason` in
-    `confirm_trade_exit()`, or by using `return stoploss_from_open(...) or 1` idiom, which will request to not change stop loss when
-    `current_profit < open_relative_stop`.
-
-### *stoploss_from_absolute()*
-
-In some situations it may be confusing to deal with stops relative to current rate. Instead, you may define a stoploss level using an absolute price.
-
-??? Example "Returning a stoploss using absolute price from the custom stoploss function"
-
-    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)`.
-
-    ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_absolute
-
-    class AwesomeStrategy(IStrategy):
-
-        use_custom_stoploss = True
-
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
-            return dataframe
-
-        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                            current_rate: float, current_profit: float, **kwargs) -> float:
-            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            candle = dataframe.iloc[-1].squeeze()
-            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
-
-    ```
 
 ## Additional data (Wallets)
 

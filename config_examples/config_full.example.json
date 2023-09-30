@@ -70,6 +70,7 @@
     },
     "pairlists": [
         {"method": "StaticPairList"},
+        {"method": "FullTradesFilter"},
         {
             "method": "VolumePairList",
             "number_assets": 20,

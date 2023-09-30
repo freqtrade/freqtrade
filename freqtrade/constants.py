@@ -33,7 +33,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'MaxDrawDownHyperOptLoss', 'MaxDrawDownRelativeHyperOptLoss',
                          'ProfitDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList', 'RemotePairList',
-                       'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
+                       'AgeFilter', "FullTradesFilter", 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod',
@@ -77,7 +77,8 @@ DL_DATA_TIMEFRAMES = ['1m', '5m']
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
-NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
+CANCELED_EXCHANGE_STATES = ('cancelled', 'canceled', 'expired')
+NON_OPEN_EXCHANGE_STATES = CANCELED_EXCHANGE_STATES + ('closed',)
 
 # Define decimals per coin for outputs
 # Only used for outputs.
@@ -177,6 +178,11 @@ CONF_SCHEMA = {
         'minimum_trade_amount': {'type': 'number', 'default': 10},
         'targeted_trade_amount': {'type': 'number', 'default': 20},
         'lookahead_analysis_exportfilename': {'type': 'string'},
+        'startup_candle': {
+            'type': 'array',
+            'uniqueItems': True,
+            'default': [199, 399, 499, 999, 1999],
+        },
         'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
@@ -688,6 +694,7 @@ CANCEL_REASON = {
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
     "FORCE_EXIT": "forcesold",
     "REPLACE": "cancelled to be replaced by new limit order",
+    "REPLACE_FAILED": "failed to replace order, deleting Trade",
     "USER_CANCEL": "user requested order cancel"
 }
 
@@ -709,3 +716,6 @@ Config = Dict[str, Any]
 # Exchange part of the configuration.
 ExchangeConfig = Dict[str, Any]
 IntOrInf = float
+
+
+EntryExecuteMode = Literal['initial', 'pos_adjust', 'replace']

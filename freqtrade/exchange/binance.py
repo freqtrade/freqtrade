@@ -21,6 +21,8 @@ class Binance(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "stop_price_param": "stopPrice",
+        "stop_price_prop": "stopPrice",
         "stoploss_order_types": {"limit": "stop_loss_limit"},
         "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
         "ohlcv_candle_limit": 1000,

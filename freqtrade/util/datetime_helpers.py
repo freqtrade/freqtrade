@@ -4,6 +4,8 @@ from typing import Optional
 
 import arrow
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
+
 
 def dt_now() -> datetime:
     """Return the current datetime in UTC."""
@@ -24,6 +26,16 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
     if dt:
         return int(dt.timestamp() * 1000)
     return int(dt_now().timestamp() * 1000)
+
+
+def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
+    """
+    Return dt in ms as a timestamp in UTC.
+    If dt is None, return the current datetime in UTC.
+    """
+    if dt:
+        return int(dt.timestamp() * 1000)
+    return default
 
 
 def dt_floor_day(dt: datetime) -> datetime:
@@ -61,6 +73,17 @@ def dt_humanize(dt: datetime, **kwargs) -> str:
     :param kwargs: kwargs to pass to arrow's humanize()
     """
     return arrow.get(dt).humanize(**kwargs)
+
+
+def format_date(date: Optional[datetime]) -> str:
+    """
+    Return a formatted date string.
+    Returns an empty string if date is None.
+    :param date: datetime to format
+    """
+    if date:
+        return date.strftime(DATETIME_PRINT_FORMAT)
+    return ''
 
 
 def format_ms_time(date: int) -> str:

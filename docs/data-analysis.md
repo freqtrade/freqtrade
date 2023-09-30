@@ -10,7 +10,7 @@ You can run this server using the following command: `docker compose -f docker/d
 This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
 Please use the link that's printed in the console after startup for simplified login.
 
-For more information, Please visit the [Data analysis with Docker](docker_quickstart.md#data-analayis-using-docker-compose) section.
+For more information, Please visit the [Data analysis with Docker](docker_quickstart.md#data-analysis-using-docker-compose) section.
 
 ### Pro tips
 

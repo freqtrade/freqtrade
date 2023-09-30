@@ -3,6 +3,7 @@ This module contains the class to persist trades into SQLite
 """
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
@@ -12,18 +13,28 @@ from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, 
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 from typing_extensions import Self
 
-from freqtrade.constants import (CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC,
-                                 NON_OPEN_EXCHANGE_STATES, BuySell, LongShort)
+from freqtrade.constants import (CANCELED_EXCHANGE_STATES, CUSTOM_TAG_MAX_LENGTH,
+                                 DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
+                                 BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
                                 price_to_precision)
 from freqtrade.leverage import interest
+from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.util import FtPrecise, dt_now
+from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProfitStruct:
+    profit_abs: float
+    profit_ratio: float
+    total_profit: float
+    total_profit_ratio: float
 
 
 class Order(ModelBase):
@@ -167,7 +178,9 @@ class Order(ModelBase):
                 # (represents the funding fee since the last order)
                 self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0 and not self.order_filled_date:
-                self.order_filled_date = datetime.now(timezone.utc)
+                self.order_filled_date = dt_from_ts(
+                    safe_value_fallback(order, 'lastTradeTimestamp', default_value=dt_ts())
+                )
         self.order_update_date = datetime.now(timezone.utc)
 
     def to_ccxt_object(self, stopPriceName: str = 'stopPrice') -> Dict[str, Any]:
@@ -240,7 +253,10 @@ class Order(ModelBase):
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
-            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
+            if trade.nr_of_successful_entries == 1:
+                trade.initial_stop_loss_pct = None
+                trade.is_stop_loss_trailing = False
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -340,7 +356,6 @@ class LocalTrade:
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
-    open_order_id: Optional[str] = None
     # absolute value of the stop loss
     stop_loss: float = 0.0
     # percentage value of the stop loss
@@ -349,6 +364,7 @@ class LocalTrade:
     initial_stop_loss: Optional[float] = 0.0
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Optional[float] = None
+    is_stop_loss_trailing: bool = False
     # stoploss order id which is on exchange
     stoploss_order_id: Optional[str] = None
     # last update time of the stoploss order on exchange
@@ -418,13 +434,20 @@ class LocalTrade:
             return self.amount
 
     @property
-    def date_last_filled_utc(self) -> datetime:
+    def _date_last_filled_utc(self) -> Optional[datetime]:
         """ Date of the last filled order"""
         orders = self.select_filled_orders()
-        if not orders:
+        if orders:
+            return max(o.order_filled_utc for o in orders if o.order_filled_utc)
+        return None
+
+    @property
+    def date_last_filled_utc(self) -> datetime:
+        """ Date of the last filled order - or open_date if no orders are filled"""
+        dt_last_filled = self._date_last_filled_utc
+        if not dt_last_filled:
             return self.open_date_utc
-        return max([self.open_date_utc,
-                    max(o.order_filled_utc for o in orders if o.order_filled_utc)])
+        return max([self.open_date_utc, dt_last_filled])
 
     @property
     def open_date_utc(self):
@@ -481,6 +504,32 @@ class LocalTrade:
         except IndexError:
             return ''
 
+    @property
+    def open_orders(self) -> List[Order]:
+        """
+        All open orders for this trade excluding stoploss orders
+        """
+        return [o for o in self.orders if o.ft_is_open and o.ft_order_side != 'stoploss']
+
+    @property
+    def has_open_orders(self) -> int:
+        """
+        True if there are open orders for this trade excluding stoploss orders
+        """
+        open_orders_wo_sl = [
+            o for o in self.orders
+            if o.ft_order_side not in ['stoploss'] and o.ft_is_open
+        ]
+        return len(open_orders_wo_sl) > 0
+
+    @property
+    def open_orders_ids(self) -> List[str]:
+        open_orders_ids_wo_sl = [
+            oo.order_id for oo in self.open_orders
+            if oo.ft_order_side not in ['stoploss']
+        ]
+        return open_orders_ids_wo_sl
+
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
@@ -499,8 +548,8 @@ class LocalTrade:
         )
 
     def to_json(self, minified: bool = False) -> Dict[str, Any]:
-        filled_orders = self.select_filled_or_open_orders()
-        orders = [order.to_json(self.entry_side, minified) for order in filled_orders]
+        filled_or_open_orders = self.select_filled_or_open_orders()
+        orders_json = [order.to_json(self.entry_side, minified) for order in filled_or_open_orders]
 
         return {
             'trade_id': self.id,
@@ -576,11 +625,12 @@ class LocalTrade:
             'is_short': self.is_short,
             'trading_mode': self.trading_mode,
             'funding_fees': self.funding_fees,
-            'open_order_id': self.open_order_id,
             'amount_precision': self.amount_precision,
             'price_precision': self.price_precision,
             'precision_mode': self.precision_mode,
-            'orders': orders,
+            'contract_size': self.contract_size,
+            'has_open_orders': self.has_open_orders,
+            'orders': orders_json,
         }
 
     @staticmethod
@@ -621,18 +671,18 @@ class LocalTrade:
         self.stop_loss_pct = -1 * abs(percent)
 
     def adjust_stop_loss(self, current_price: float, stoploss: Optional[float],
-                         initial: bool = False, refresh: bool = False) -> None:
+                         initial: bool = False, allow_refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
         :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
         :param initial: Called to initiate stop_loss.
             Skips everything if self.stop_loss is already set.
+        :param refresh: Called to refresh stop_loss, allows adjustment in both directions
         """
         if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
             # Don't modify if called with initial and nothing to do
             return
-        refresh = True if refresh and self.nr_of_successful_entries == 1 else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
@@ -643,7 +693,7 @@ class LocalTrade:
         stop_loss_norm = price_to_precision(new_loss, self.price_precision, self.precision_mode,
                                             rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP)
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None or refresh:
+        if self.initial_stop_loss_pct is None:
             self.__set_stop_loss(stop_loss_norm, stoploss)
             self.initial_stop_loss = price_to_precision(
                 stop_loss_norm, self.price_precision, self.precision_mode,
@@ -658,8 +708,14 @@ class LocalTrade:
             # stop losses only walk up, never down!,
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
-            if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
+            if (
+                allow_refresh
+                or (higher_stop and not self.is_short)
+                or (lower_stop and self.is_short)
+            ):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
+                if not allow_refresh:
+                    self.is_stop_loss_trailing = True
                 self.__set_stop_loss(stop_loss_norm, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
@@ -672,7 +728,7 @@ class LocalTrade:
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss or 0.0):.8f}.")
 
-    def update_trade(self, order: Order) -> None:
+    def update_trade(self, order: Order, recalculating: bool = False) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -692,24 +748,13 @@ class LocalTrade:
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
             self.stoploss_order_id = None
@@ -725,8 +770,9 @@ class LocalTrade:
                                                      self.precision_mode, self.contract_size)
             if (
                 isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
-                or order.safe_amount_after_fee > amount_tr
+                or (not recalculating and order.safe_amount_after_fee > amount_tr)
             ):
+                # When recalculating a trade, only comming out to 0 can force a close
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
@@ -739,10 +785,9 @@ class LocalTrade:
         and marks trade as closed
         """
         self.close_rate = rate
-        self.close_date = self.close_date or datetime.utcnow()
+        self.close_date = self.close_date or self._date_last_filled_utc or dt_now()
         self.is_open = False
         self.exit_order_status = 'closed'
-        self.open_order_id = None
         self.recalc_trade_from_orders(is_closing=True)
         if show_msg:
             logger.info(f"Marking {self} as closed as the trade is fulfilled "
@@ -780,12 +825,13 @@ class LocalTrade:
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def get_exit_order_count(self) -> int:
+    def get_canceled_exit_order_count(self) -> int:
         """
         Get amount of failed exiting orders
         assumes full exits.
         """
-        return len([o for o in self.orders if o.ft_order_side == self.exit_side])
+        return len([o for o in self.orders if o.ft_order_side == self.exit_side
+                    and o.status in CANCELED_EXCHANGE_STATES])
 
     def _calc_open_trade_value(self, amount: float, open_rate: float) -> float:
         """
@@ -878,11 +924,26 @@ class LocalTrade:
                     open_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
+        Deprecated - only available for backwards compatibility
         :param rate: close rate to compare with.
         :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
         :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
+        prof = self.calculate_profit(rate, amount, open_rate)
+        return prof.profit_abs
+
+    def calculate_profit(self, rate: float, amount: Optional[float] = None,
+                         open_rate: Optional[float] = None) -> ProfitStruct:
+        """
+        Calculate profit metrics (absolute, ratio, total, total ratio).
+        All calculations include fees.
+        :param rate: close rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
+        :return: Profit structure, containing absolute and relative profits.
+        """
+
         close_trade_value = self.calc_close_trade_value(rate, amount)
         if amount is None or open_rate is None:
             open_trade_value = self.open_trade_value
@@ -890,10 +951,33 @@ class LocalTrade:
             open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
         if self.is_short:
-            profit = open_trade_value - close_trade_value
+            profit_abs = open_trade_value - close_trade_value
         else:
-            profit = close_trade_value - open_trade_value
-        return float(f"{profit:.8f}")
+            profit_abs = close_trade_value - open_trade_value
+
+        try:
+            if self.is_short:
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
+            else:
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
+            profit_ratio = float(f"{profit_ratio:.8f}")
+        except ZeroDivisionError:
+            profit_ratio = 0.0
+
+        total_profit_abs = profit_abs + self.realized_profit
+        total_profit_ratio = (
+            (total_profit_abs / self.max_stake_amount) * self.leverage
+            if self.max_stake_amount else 0.0
+        )
+        total_profit_ratio = float(f"{total_profit_ratio:.8f}")
+        profit_abs = float(f"{profit_abs:.8f}")
+
+        return ProfitStruct(
+            profit_abs=profit_abs,
+            profit_ratio=profit_ratio,
+            total_profit=profit_abs + self.realized_profit,
+            total_profit_ratio=total_profit_ratio,
+        )
 
     def calc_profit_ratio(
             self, rate: float, amount: Optional[float] = None,
@@ -914,15 +998,14 @@ class LocalTrade:
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and open_trade_value == 0.0)
-        leverage = self.leverage or 1.0
 
         if (short_close_zero or long_close_zero):
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = (1 - (close_trade_value / open_trade_value)) * leverage
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
             else:
-                profit_ratio = ((close_trade_value / open_trade_value) - 1) * leverage
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
 
         return float(f"{profit_ratio:.8f}")
 
@@ -935,7 +1018,6 @@ class LocalTrade:
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
-        profit = None
         # Reset funding fees
         self.funding_fees = 0.0
         funding_fees = 0.0
@@ -965,11 +1047,9 @@ class LocalTrade:
 
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
-                                          open_rate=float(avg_price))
-                close_profit_abs += profit
-                close_profit = self.calc_profit_ratio(
-                    exit_rate, amount=exit_amount, open_rate=avg_price)
+                prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
+                close_profit_abs += prof.profit_abs
+                close_profit = prof.profit_ratio
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += (tmp_amount * price)
@@ -979,7 +1059,7 @@ class LocalTrade:
         if close_profit:
             self.close_profit = close_profit
             self.realized_profit = close_profit_abs
-            self.close_profit_abs = profit
+            self.close_profit_abs = prof.profit_abs
 
         current_amount_tr = amount_to_contract_precision(
             float(current_amount), self.amount_precision, self.precision_mode, self.contract_size)
@@ -1194,7 +1274,7 @@ class LocalTrade:
             logger.info(f"Found open trade: {trade}")
 
             # skip case if trailing-stop changed the stoploss already.
-            if (trade.stop_loss == trade.initial_stop_loss
+            if (not trade.is_stop_loss_trailing
                     and trade.initial_stop_loss_pct != desired_stoploss):
                 # Stoploss value got changed
 
@@ -1256,7 +1336,6 @@ class Trade(ModelBase, LocalTrade):
     open_date: Mapped[datetime] = mapped_column(
         nullable=False, default=datetime.utcnow)  # type: ignore
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
-    open_order_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
     # percentage value of the stop loss
@@ -1267,6 +1346,8 @@ class Trade(ModelBase, LocalTrade):
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True)  # type: ignore
+    is_stop_loss_trailing: Mapped[bool] = mapped_column(
+        nullable=False, default=False)  # type: ignore
     # stoploss order id which is on exchange
     stoploss_order_id: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True, index=True)  # type: ignore
@@ -1410,14 +1491,6 @@ class Trade(ModelBase, LocalTrade):
         # this sholud remain split. if use_db is False, session is not available and the above will
         # raise an exception.
         return Trade.session.scalars(query)
-
-    @staticmethod
-    def get_open_order_trades() -> List['Trade']:
-        """
-        Returns all open trades
-        NOTE: Not supported in Backtesting.
-        """
-        return cast(List[Trade], Trade.get_trades(Trade.open_order_id.isnot(None)).all())
 
     @staticmethod
     def get_open_trades_without_assigned_fees():
@@ -1717,7 +1790,10 @@ class Trade(ModelBase, LocalTrade):
             is_short=data["is_short"],
             trading_mode=data["trading_mode"],
             funding_fees=data["funding_fees"],
-            open_order_id=data["open_order_id"],
+            amount_precision=data.get('amount_precision', None),
+            price_precision=data.get('price_precision', None),
+            precision_mode=data.get('precision_mode', None),
+            contract_size=data.get('contract_size', None),
         )
         for order in data["orders"]:
 

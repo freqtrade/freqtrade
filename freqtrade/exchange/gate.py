@@ -25,8 +25,10 @@ class Gate(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "order_time_in_force": ['GTC', 'IOC'],
-        "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
+        "stoploss_order_types": {"limit": "limit"},
+        "stop_price_param": "stopPrice",
+        "stop_price_prop": "stopPrice",
         "marketOrderRequiresPrice": True,
     }
 
