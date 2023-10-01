@@ -65,8 +65,8 @@ ARGS_BUILD_CONFIG = ["config"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
+ARGS_CONVERT_DATA_TRADES = ["pairs", "format_from_trades", "format_to", "erase", "exchange"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase", "exchange"]
-
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "trading_mode", "candle_types"]
 
 ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]
@@ -268,7 +268,7 @@ class Arguments:
             parents=[_common_parser],
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
-        self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
+        self._build_args(optionlist=ARGS_CONVERT_DATA_TRADES, parser=convert_trade_data_cmd)
 
         # Add trades-to-ohlcv subcommand
         convert_trade_data_cmd = subparsers.add_parser(
