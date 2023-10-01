@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.recursive_analysis import RecursiveAnalysis
+from freqtrade.optimize.analysis.recursive_analysis import RecursiveAnalysis
 from freqtrade.resolvers import StrategyResolver
 
 
