@@ -60,5 +60,5 @@ schedule==1.2.1
 websockets==11.0.3
 janus==1.0.0
 
-ast-comments==1.1.1
+ast-comments==1.1.0
 packaging==23.2
