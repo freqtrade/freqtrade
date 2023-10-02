@@ -37,7 +37,7 @@ class RecursiveAnalysisSubFunctions:
             print(table)
             return table, headers, data
 
-        return None
+        return None, None, data
 
     @staticmethod
     def calculate_config_overrides(config: Config):
