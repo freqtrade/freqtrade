@@ -31,9 +31,9 @@ optional arguments:
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --data-format-ohlcv {json,jsongz,hdf5}
+  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
+                        (default: `feather`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
