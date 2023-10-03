@@ -102,6 +102,5 @@ class RecursiveAnalysisSubFunctions:
             RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances(
                 RecursiveAnalysis_instances)
         else:
-            logger.error("There were no strategies specified neither through "
-                         "--strategy "
+            logger.error("There was no strategy specified through --strategy "
                          "or timeframe was not specified.")
