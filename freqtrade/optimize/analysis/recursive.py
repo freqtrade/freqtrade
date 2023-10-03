@@ -64,7 +64,7 @@ class RecursiveAnalysis(BaseAnalysis):
                         self.dict_recursive[indicator][part.startup_candle] = f"{diff:.3f}%"
 
             else:
-                logger.info("No difference found. Stop the process.")
+                logger.info("No variance on indicator(s) found due to recursive formula.")
                 break
 
     # For lookahead bias check
@@ -100,7 +100,7 @@ class RecursiveAnalysis(BaseAnalysis):
                     # logger.info("part value {:.5f}".format(values_diff_other))
 
         else:
-            logger.info("No lookahead bias on indicators found. Stop the process.")
+            logger.info("No lookahead bias on indicators found.")
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
 

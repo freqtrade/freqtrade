@@ -31,10 +31,13 @@ class RecursiveAnalysisSubFunctions:
                         temp_data.append(values.get(int(candle), '-'))
                     data.append(temp_data)
 
-        from tabulate import tabulate
-        table = tabulate(data, headers=headers, tablefmt="orgtbl")
-        print(table)
-        return table, headers, data
+        if len(data) > 0:
+            from tabulate import tabulate
+            table = tabulate(data, headers=headers, tablefmt="orgtbl")
+            print(table)
+            return table, headers, data
+
+        return None, None, data
 
     @staticmethod
     def calculate_config_overrides(config: Config):
@@ -81,8 +84,7 @@ class RecursiveAnalysisSubFunctions:
         if not (strategy_list := config.get('strategy_list', [])):
             if config.get('strategy') is None:
                 raise OperationalException(
-                    "No Strategy specified. Please specify a strategy via --strategy or "
-                    "--strategy-list"
+                    "No Strategy specified. Please specify a strategy via --strategy"
                 )
             strategy_list = [config['strategy']]
 
@@ -100,7 +102,5 @@ class RecursiveAnalysisSubFunctions:
             RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances(
                 RecursiveAnalysis_instances)
         else:
-            logger.error("There were no strategies specified neither through "
-                         "--strategy nor through "
-                         "--strategy-list "
+            logger.error("There was no strategy specified through --strategy "
                          "or timeframe was not specified.")
