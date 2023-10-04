@@ -237,6 +237,7 @@ class Order(ModelBase):
                 'price': self.price,
                 'remaining': self.remaining,
                 'ft_fee_base': self.ft_fee_base,
+                'funding_fee': self.funding_fee,
             })
         return resp
 
