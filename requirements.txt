@@ -1,4 +1,5 @@
-numpy==1.26.0
+numpy==1.26.0; platform_machine != 'armv7l'
+numpy==1.25.2; platform_machine == 'armv7l'
 pandas==2.0.3
 pandas-ta==0.3.14b
 
