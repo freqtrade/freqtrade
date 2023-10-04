@@ -23,7 +23,7 @@ WORKDIR /freqtrade
 # Install dependencies
 FROM base as python-deps
 RUN  apt-get update \
-  && apt-get -y install build-essential libssl-dev libffi-dev libgfortran5 pkg-config cmake gcc \
+  && apt-get -y install build-essential libssl-dev libffi-dev libopenblas-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
   && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
