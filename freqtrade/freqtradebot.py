@@ -1435,7 +1435,7 @@ class FreqtradeBot(LoggingMixin):
                 trade=trade, order=order_obj, pair=trade.pair,
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
                 current_order_rate=order_obj.safe_price, entry_tag=trade.enter_tag,
-                side=trade.entry_side)
+                side=trade.trade_direction)
 
             replacing = True
             cancel_reason = constants.CANCEL_REASON['REPLACE']
