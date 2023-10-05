@@ -8,15 +8,13 @@ logger = logging.getLogger(__name__)
 def set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
     """
     Set the logging level for third party libraries
+    :param verbosity: Verbosity level. amount of `-v` passed to the command line
     :return: None
     """
-
-    logging.getLogger('requests').setLevel(
-        logging.INFO if verbosity <= 1 else logging.DEBUG
-    )
-    logging.getLogger("urllib3").setLevel(
-        logging.INFO if verbosity <= 1 else logging.DEBUG
-    )
+    for logger_name in ('requests', 'urllib3', 'httpcore'):
+        logging.getLogger(logger_name).setLevel(
+            logging.INFO if verbosity <= 1 else logging.DEBUG
+        )
     logging.getLogger('ccxt.base.exchange').setLevel(
         logging.INFO if verbosity <= 2 else logging.DEBUG
     )
