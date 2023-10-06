@@ -749,6 +749,7 @@ class FreqtradeBot(LoggingMixin):
         :param pair: pair for which we want to create a LIMIT_BUY
         :param stake_amount: amount of stake-currency for the pair
         :return: True if a buy order is created, false if it fails.
+        :raise: DependencyException or it's subclasses like ExchangeError.
         """
         time_in_force = self.strategy.order_time_in_force['entry']
 
@@ -1452,15 +1453,21 @@ class FreqtradeBot(LoggingMixin):
                     return
                 if adjusted_entry_price:
                     # place new order only if new price is supplied
-                    if not self.execute_entry(
-                        pair=trade.pair,
-                        stake_amount=(
-                            order_obj.safe_remaining * order_obj.safe_price / trade.leverage),
-                        price=adjusted_entry_price,
-                        trade=trade,
-                        is_short=trade.is_short,
-                        mode='replace',
-                    ):
+                    try:
+                        if not self.execute_entry(
+                            pair=trade.pair,
+                            stake_amount=(
+                                order_obj.safe_remaining * order_obj.safe_price / trade.leverage),
+                            price=adjusted_entry_price,
+                            trade=trade,
+                            is_short=trade.is_short,
+                            mode='replace',
+                        ):
+                            self.replace_order_failed(
+                                trade, f"Could not replace order for {trade}.")
+                    except DependencyException as exception:
+                        logger.warning(
+                            f'Unable to replace order for {trade.pair}: {exception}')
                         self.replace_order_failed(trade, f"Could not replace order for {trade}.")
 
     def cancel_all_open_orders(self) -> None:
