@@ -1189,7 +1189,6 @@ class FreqtradeBot(LoggingMixin):
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss',
                                                      trade.amount, stop_price)
             trade.orders.append(order_obj)
-            trade.stoploss_order_id = str(stoploss_order['id'])
             trade.stoploss_last_update = datetime.now(timezone.utc)
             return True
         except InsufficientFundsError as e:
@@ -1198,13 +1197,11 @@ class FreqtradeBot(LoggingMixin):
             self.handle_insufficient_funds(trade)
 
         except InvalidOrderException as e:
-            trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.emergency_exit(trade, stop_price)
 
         except ExchangeError:
-            trade.stoploss_order_id = None
             logger.exception('Unable to place a stoploss order on exchange.')
         return False
 
