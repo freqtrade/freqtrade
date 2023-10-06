@@ -1299,8 +1299,7 @@ class FreqtradeBot(LoggingMixin):
 
     def manage_trade_stoploss_orders(self, trade, stoploss_orders):
         """
-        Check to see if stoploss on exchange should be updated
-        in case of trailing stoploss on exchange
+        Perform required actions acording to existing stoploss orders of trade
         :param trade: Corresponding Trade
         :param stoploss_orders: Current on exchange stoploss orders
         :return: None
