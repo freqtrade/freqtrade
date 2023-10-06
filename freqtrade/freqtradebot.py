@@ -1330,7 +1330,6 @@ class FreqtradeBot(LoggingMixin):
                 # value immediately
                 self.handle_trailing_stoploss_on_exchange(trade, last_active_sl_order)
 
-        # TODO cancel remaining_active_sl_orders active_sl_orders[:-1]
         return
 
     def manage_open_orders(self) -> None:
