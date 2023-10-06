@@ -636,7 +636,6 @@ class LocalTrade:
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
-            'stoploss_order_id': self.stoploss_order_id,
             'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update else None),
             'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
@@ -787,7 +786,6 @@ class LocalTrade:
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
-            self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open and order.safe_filled > 0:
@@ -1378,9 +1376,6 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True)  # type: ignore
     is_stop_loss_trailing: Mapped[bool] = mapped_column(
         nullable=False, default=False)  # type: ignore
-    # stoploss order id which is on exchange
-    stoploss_order_id: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, index=True)  # type: ignore
     # last update time of the stoploss order on exchange
     stoploss_last_update: Mapped[Optional[datetime]] = mapped_column(nullable=True)  # type: ignore
     # absolute value of the highest reached price
@@ -1805,7 +1800,6 @@ class Trade(ModelBase, LocalTrade):
             exit_order_status=data["exit_order_status"],
             stop_loss=data["stop_loss_abs"],
             stop_loss_pct=data["stop_loss_ratio"],
-            stoploss_order_id=data["stoploss_order_id"],
             stoploss_last_update=(
                 datetime.fromtimestamp(data["stoploss_last_update_timestamp"] // 1000,
                                        tz=timezone.utc)
