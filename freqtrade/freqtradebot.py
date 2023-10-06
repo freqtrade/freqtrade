@@ -904,18 +904,18 @@ class FreqtradeBot(LoggingMixin):
 
     def cancel_stoploss_on_exchange(self, trade: Trade) -> Trade:
         # First cancelling stoploss on exchange ...
-        if trade.stoploss_order_id:
-            try:
-                logger.info(f"Canceling stoploss on exchange for {trade}")
-                co = self.exchange.cancel_stoploss_order_with_result(
-                    trade.stoploss_order_id, trade.pair, trade.amount)
-                self.update_trade_state(trade, trade.stoploss_order_id, co, stoploss_order=True)
-
-                # Reset stoploss order id.
-                trade.stoploss_order_id = None
-            except InvalidOrderException:
-                logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id} "
-                                 f"for pair {trade.pair}")
+        if trade.has_open_sl_orders:
+            for o in trade.orders:
+                if o.ft_order_side == 'stoploss' and o.ft_is_open:
+                    try:
+                        logger.info(f"Canceling stoploss on exchange for {trade} "
+                                    f"order: {o.order_id}")
+                        co = self.exchange.cancel_stoploss_order_with_result(
+                            o.order_id, trade.pair, trade.amount)
+                        self.update_trade_state(trade, o.order_id, co, stoploss_order=True)
+                    except InvalidOrderException:
+                        logger.exception(f"Could not cancel stoploss order {o.order_id} "
+                                         f"for pair {trade.pair}")
         return trade
 
     def get_valid_enter_price_and_stake(
