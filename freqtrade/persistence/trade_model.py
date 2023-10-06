@@ -524,6 +524,16 @@ class LocalTrade:
         return len(open_orders_wo_sl) > 0
 
     @property
+    def open_sl_orders(self) -> List[Order]:
+        """
+        All open stoploss orders for this trade
+        """
+        return [
+            o for o in self.orders
+            if o.ft_order_side in ['stoploss'] and o.ft_is_open
+        ]
+
+    @property
     def has_open_sl_orders(self) -> int:
         """
         True if there are open stoploss orders for this trade
