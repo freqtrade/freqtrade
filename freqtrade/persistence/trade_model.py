@@ -366,8 +366,6 @@ class LocalTrade:
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Optional[float] = None
     is_stop_loss_trailing: bool = False
-    # stoploss order id which is on exchange
-    stoploss_order_id: Optional[str] = None
     # last update time of the stoploss order on exchange
     stoploss_last_update: Optional[datetime] = None
     # absolute value of the highest reached price
