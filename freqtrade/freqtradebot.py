@@ -1215,27 +1215,30 @@ class FreqtradeBot(LoggingMixin):
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
-        stoploss_order = None
 
-        try:
-            # First we check if there is already a stoploss on exchange
-            stoploss_order = self.exchange.fetch_stoploss_order(
-                trade.stoploss_order_id, trade.pair) if trade.stoploss_order_id else None
-        except InvalidOrderException as exception:
-            logger.warning('Unable to fetch stoploss order: %s', exception)
+        stoploss_orders = []
+        for slo in trade.sl_orders:
+            stoploss_order = None
+            try:
+                # First we check if there is already a stoploss on exchange
+                stoploss_order = self.exchange.fetch_stoploss_order(
+                    slo.order_id, trade.pair) if slo.order_id else None
+            except InvalidOrderException as exception:
+                logger.warning('Unable to fetch stoploss order: %s', exception)
 
-        if stoploss_order:
-            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
-                                    stoploss_order=True)
+            if stoploss_order:
+                stoploss_orders.append(stoploss_order)
+                self.update_trade_state(trade, slo.order_id, stoploss_order,
+                                        stoploss_order=True)
 
-        # We check if stoploss order is fulfilled
-        if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
-            trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-            self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
-                                    stoploss_order=True)
-            self._notify_exit(trade, "stoploss", True)
-            self.handle_protections(trade.pair, trade.trade_direction)
-            return True
+            # We check if stoploss order is fulfilled
+            if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
+                trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
+                self.update_trade_state(trade, slo.order_id, stoploss_order,
+                                        stoploss_order=True)
+                self._notify_exit(trade, "stoploss", True)
+                self.handle_protections(trade.pair, trade.trade_direction)
+                return True
 
         if trade.has_open_orders or not trade.is_open:
             # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
@@ -1244,7 +1247,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if not stoploss_order:
+        if len(stoploss_orders) == 0:
             stop_price = trade.stoploss_or_liquidation
             if self.edge:
                 stoploss = self.edge.get_stoploss(pair=trade.pair)
@@ -1258,27 +1261,7 @@ class FreqtradeBot(LoggingMixin):
                 # in which case the trade will be closed - which we must check below.
                 return False
 
-        # If stoploss order is canceled for some reason we add it again
-        if (trade.is_open
-                and stoploss_order
-                and stoploss_order['status'] in ('canceled', 'cancelled')):
-            if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
-                return False
-            else:
-                logger.warning('Stoploss order was cancelled, but unable to recreate one.')
-
-        # Finally we check if stoploss on exchange should be moved up because of trailing.
-        # Triggered Orders are now real orders - so don't replace stoploss anymore
-        if (
-            trade.is_open and stoploss_order
-            and stoploss_order.get('status_stop') != 'triggered'
-            and (self.config.get('trailing_stop', False)
-                 or self.config.get('use_custom_stoploss', False))
-        ):
-            # if trailing stoploss is enabled we check if stoploss value has changed
-            # in which case we cancel stoploss order and put another one with new
-            # value immediately
-            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order)
+        self.manage_trade_stoploss_orders(trade, stoploss_orders)
 
         return False
 
@@ -1313,6 +1296,43 @@ class FreqtradeBot(LoggingMixin):
                 if not self.create_stoploss_order(trade=trade, stop_price=stoploss_norm):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
+
+    def manage_trade_stoploss_orders(self, trade, stoploss_orders):
+        """
+        Check to see if stoploss on exchange should be updated
+        in case of trailing stoploss on exchange
+        :param trade: Corresponding Trade
+        :param stoploss_orders: Current on exchange stoploss orders
+        :return: None
+        """
+        # If all stoploss orderd are canceled for some reason we add it again
+        canceled_sl_orders = [o for o in stoploss_orders if o.status in ['canceled', 'cancelled']]
+        if (
+                    trade.is_open and
+                    len(stoploss_orders) > 0 and
+                    len(stoploss_orders) == len(canceled_sl_orders)
+                ):
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
+                return False
+            else:
+                logger.warning('All Stoploss orders are cancelled, but unable to recreate one.')
+
+        active_sl_orders = [o for o in stoploss_orders if o not in canceled_sl_orders]
+        if len(active_sl_orders) > 0:
+            last_active_sl_order = active_sl_orders[-1]
+            # Finally we check if stoploss on exchange should be moved up because of trailing.
+            # Triggered Orders are now real orders - so don't replace stoploss anymore
+            if (trade.is_open and
+                    last_active_sl_order.get('status_stop') != 'triggered' and
+                    (self.config.get('trailing_stop', False) or
+                     self.config.get('use_custom_stoploss', False))):
+                # if trailing stoploss is enabled we check if stoploss value has changed
+                # in which case we cancel stoploss order and put another one with new
+                # value immediately
+                self.handle_trailing_stoploss_on_exchange(trade, last_active_sl_order)
+
+        # TODO cancel remaining_active_sl_orders active_sl_orders[:-1]
+        return
 
     def manage_open_orders(self) -> None:
         """
