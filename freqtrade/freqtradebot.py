@@ -312,9 +312,9 @@ class FreqtradeBot(LoggingMixin):
         open_trades = Trade.get_open_trade_count()
         return max(0, self.config['max_open_trades'] - open_trades)
 
-    def update_funding_fees(self):
+    def update_funding_fees(self) -> None:
         if self.trading_mode == TradingMode.FUTURES:
-            trades = Trade.get_open_trades()
+            trades: List[Trade] = Trade.get_open_trades()
             try:
                 for trade in trades:
                     funding_fees = self.exchange.get_funding_fees(
@@ -327,7 +327,7 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning("Could not update funding fees for open trades.")
 
-    def startup_backpopulate_precision(self):
+    def startup_backpopulate_precision(self) -> None:
 
         trades = Trade.get_trades([Trade.contract_size.is_(None)])
         for trade in trades:
