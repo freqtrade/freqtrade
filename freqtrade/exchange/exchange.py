@@ -2733,8 +2733,7 @@ class Exchange:
         except KeyError:
             raise ExchangeError("Could not find funding rates.") from None
 
-        funding_mark_rates = self.combine_funding_and_mark(
-            funding_rates=funding_rates, mark_rates=mark_rates)
+        funding_mark_rates = self.combine_funding_and_mark(funding_rates, mark_rates)
 
         return self.calculate_funding_fees(
             funding_mark_rates,
@@ -2781,7 +2780,7 @@ class Exchange:
         amount: float,
         is_short: bool,
         open_date: datetime,
-        close_date: Optional[datetime] = None,
+        close_date: datetime,
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
