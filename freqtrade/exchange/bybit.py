@@ -240,7 +240,7 @@ class Bybit(Exchange):
 
         # Currently bybit does not update status of the cancelled order on time.
         # Even though endpoint returns proper response and code 200, the status stays open.
-        # This re-fetches the order giving vyvit enough time to update the status.
+        # This re-fetches the order giving bybit enough time to update the status.
         if order.get("status") == "open" and order.get("filled") == 0.0:
             try:
                 order = self.fetch_order(order_id, pair)
