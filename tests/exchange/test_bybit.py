@@ -148,3 +148,86 @@ def test_bybit_fetch_order_canceled_empty(default_conf_usdt, mocker):
     assert res2['filled'] == 0.0
     assert res2['amount'] == 20.0
     assert res2['status'] == 'open'
+
+
+def test_bybit_cancel_order_with_result(default_conf_usdt, mocker):
+    default_conf_usdt['dry_run'] = False
+
+    api_mock = MagicMock()
+
+    # Test that retry gets the correct value.
+    api_mock.fetch_order = MagicMock(side_effect=[{
+        'id': '123',
+        'symbol': 'ETH/USDT',
+        'status': 'open',
+        'filled': 0.0,
+        'remaining': 20.0,
+        'amount': 20.0,
+        },
+        {
+        'id': '123',
+        'symbol': 'ETH/USDT',
+        'status': 'canceled',
+        'filled': 0.0,
+        'remaining': 20.0,
+        'amount': 20.0,
+    }])
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, id='bybit')
+
+    res = exchange.cancel_order_with_result('123', 'ETH/USDT', 20.0)
+
+    assert res['remaining'] == 20.0
+    assert res['filled'] == 0.0
+    assert res['amount'] == 20.0
+    assert res['status'] == 'canceled'
+
+    # Don't retry anything if the first call has status closed.
+    api_mock.fetch_order = MagicMock(side_effect=[{
+        'id': '987',
+        'symbol': 'ETH/USDT',
+        'status': 'canceled',
+        'filled': 0.0,
+        'remaining': 20.0,
+        'amount': 20.0,
+        },
+        {
+        'id': '987',
+        'symbol': 'ETH/USDT',
+        'status': 'canceled',
+        'filled': 0.0,
+        'remaining': 30.0,
+        'amount': 30.0,
+    }])
+
+    res = exchange.cancel_order_with_result('987', 'ETH/USDT', 20.0)
+
+    assert res['remaining'] == 20.0
+    assert res['filled'] == 0.0
+    assert res['amount'] == 20.0
+    assert res['status'] == 'canceled'
+
+    # If the order was really filled, return latest order status.
+    api_mock.fetch_order = MagicMock(side_effect=[{
+        'id': '987',
+        'symbol': 'ETH/USDT',
+        'status': 'open',
+        'filled': 20.0,
+        'remaining': 0.0,
+        'amount': 20.0,
+        },
+        {
+        'id': '987',
+        'symbol': 'ETH/USDT',
+        'status': 'open',
+        'filled': 20.0,
+        'remaining': 00.0,
+        'amount': 20.0,
+    }])
+
+    res = exchange.cancel_order_with_result('987', 'ETH/USDT', 20.0)
+
+    assert res['remaining'] == 0.0
+    assert res['filled'] == 20.0
+    assert res['amount'] == 20.0
+    assert res['status'] == 'open'

@@ -7,7 +7,8 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
-from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
+from freqtrade.exceptions import (DDosProtection, InvalidOrderException, OperationalException,
+                                  TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 from freqtrade.util.datetime_helpers import dt_now, dt_ts
@@ -232,4 +233,26 @@ class Bybit(Exchange):
         ):
             # Canceled orders will have "remaining=0" on bybit.
             order['remaining'] = None
+        return order
+
+    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        order = super().cancel_order_with_result(order_id, pair, amount)
+
+        # Currently bybit does not update status of the cancelled order on time.
+        # Even though endpoint returns proper response and code 200, the status stays open.
+        # This re-fetches the order giving vyvit enough time to update the status.
+        if order.get("status") == "open" and order.get("filled") == 0.0:
+            try:
+                order = self.fetch_order(order_id, pair)
+            except InvalidOrderException:
+                logger.warning(f"Could not fetch cancelled order {order_id}.")
+                order = {
+                    "id": order_id,
+                    "status": "canceled",
+                    "amount": amount,
+                    "filled": 0.0,
+                    "fee": {},
+                    "info": {},
+                }
+
         return order
