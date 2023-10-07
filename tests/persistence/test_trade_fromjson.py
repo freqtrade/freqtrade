@@ -170,7 +170,8 @@ def test_trade_fromjson():
                 "order_filled_date": "2022-10-18 09:45:22",
                 "order_type": "market",
                 "price": 0.2592,
-                "remaining": 0.0
+                "remaining": 0.0,
+                "funding_fee": -0.055
             }
         ]
     }"""
@@ -192,3 +193,4 @@ def test_trade_fromjson():
     last_o = trade.orders[-1]
     assert last_o.order_filled_utc == datetime(2022, 10, 18, 9, 45, 22, tzinfo=timezone.utc)
     assert isinstance(last_o.order_date, datetime)
+    assert last_o.funding_fee == -0.055

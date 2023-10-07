@@ -1817,6 +1817,7 @@ class Trade(ModelBase, LocalTrade):
                 price=order["price"],
                 ft_price=order["price"],
                 remaining=order["remaining"],
+                funding_fee=order.get("funding_fee", None),
             )
             trade.orders.append(order_obj)
 
