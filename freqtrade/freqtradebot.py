@@ -1336,6 +1336,7 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         for trade in Trade.get_open_trades():
+            open_order: Order
             for open_order in trade.open_orders:
                 try:
                     order = self.exchange.fetch_order(open_order.order_id, trade.pair)
