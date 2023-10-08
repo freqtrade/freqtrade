@@ -795,14 +795,14 @@ class RPC:
 
             if order['side'] == trade.entry_side:
                 fully_canceled = self._freqtrade.handle_cancel_enter(
-                    trade, order, oo.order_id, CANCEL_REASON['FORCE_EXIT'])
+                    trade, order, oo, CANCEL_REASON['FORCE_EXIT'])
                 trade_entry_cancelation_res['cancel_state'] = fully_canceled
                 trade_entry_cancelation_registry.append(trade_entry_cancelation_res)
 
             if order['side'] == trade.exit_side:
                 # Cancel order - so it is placed anew with a fresh price.
                 self._freqtrade.handle_cancel_exit(
-                    trade, order, oo.order_id, CANCEL_REASON['FORCE_EXIT'])
+                    trade, order, oo, CANCEL_REASON['FORCE_EXIT'])
 
         if all(tocr['cancel_state'] is False for tocr in trade_entry_cancelation_registry):
             if trade.has_open_orders:
@@ -955,7 +955,7 @@ class RPC:
                     logger.info(f"Cannot query order for {trade} due to {e}.", exc_info=True)
                     raise RPCException("Order not found.")
                 self._freqtrade.handle_cancel_order(
-                    order, open_order.order_id, trade, CANCEL_REASON['USER_CANCEL'])
+                    order, open_order, trade, CANCEL_REASON['USER_CANCEL'])
             Trade.commit()
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
