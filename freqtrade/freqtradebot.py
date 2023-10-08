@@ -1506,9 +1506,6 @@ class FreqtradeBot(LoggingMixin):
         """
         was_trade_fully_canceled = False
         side = trade.entry_side.capitalize()
-        if not trade.has_open_orders:
-            logger.warning(f"No open order for {trade}.")
-            return False
 
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
             filled_val: float = order.get('filled', 0.0) or 0.0
