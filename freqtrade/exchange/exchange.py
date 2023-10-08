@@ -2655,6 +2655,8 @@ class Exchange:
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
+        Funding fees are only charged at full hours (usually every 4-8h).
+        Therefore a trade opening at 10:00:01 will not be charged a funding fee until the next hour.
         :param open_date: The open date for a trade
         :return: The cutoff open time for when a funding fee is charged
         """
@@ -2796,8 +2798,8 @@ class Exchange:
         fees: float = 0
 
         if not df.empty:
-            df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
-            fees = sum(df['open_fund'] * df['open_mark'] * amount)
+            df1 = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
+            fees = sum(df1['open_fund'] * df1['open_mark'] * amount)
 
         # Negate fees for longs as funding_fees expects it this way based on live endpoints.
         return fees if is_short else -fees
