@@ -1921,7 +1921,7 @@ class FreqtradeBot(LoggingMixin):
 
         if self.exchange.check_order_canceled_empty(order):
             # Trade has been cancelled on exchange
-            # Handling of this will happen in check_handle_timedout.
+            # Handling of this will happen in handle_cancel_order.
             return True
 
         order_obj_or_none = trade.select_order_by_order_id(order_id)
