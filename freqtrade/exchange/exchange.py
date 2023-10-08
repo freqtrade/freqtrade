@@ -2715,8 +2715,7 @@ class Exchange:
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
-        open_timestamp = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
-        # close_timestamp = int(close_date.timestamp()) * 1000
+        since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
 
         mark_comb: PairWithTimeframe = (
             pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
@@ -2724,7 +2723,7 @@ class Exchange:
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
-            since_ms=open_timestamp,
+            since_ms=since_ms,
             cache=False,
             drop_incomplete=False,
         )
