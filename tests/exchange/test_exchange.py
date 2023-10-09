@@ -4191,7 +4191,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
     mocker.patch(f'{EXMS}.timeframes', PropertyMock(return_value=['4h', '8h']))
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
+    d1 = datetime.strptime("2021-08-31 23:00:01 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, True, d1)
