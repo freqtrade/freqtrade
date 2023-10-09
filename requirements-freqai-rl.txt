@@ -2,7 +2,7 @@
 -r requirements-freqai.txt
 
 # Required for freqai-rl
-torch==2.0.1
+torch==2.1.0
 #until these branches will be released we can use this
 gymnasium==0.29.1
 stable_baselines3==2.1.0
