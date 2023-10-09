@@ -2223,6 +2223,9 @@ class Exchange:
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
             trades = self._trades_contracts_to_amount(trades)
+
+            if len(trades) > 0:
+                logger.debug( "Fetched trades for pair %s, datetime: %s (%d).", pair, trades[0]['datetime'],  trades[0]['timestamp']  )
             return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
