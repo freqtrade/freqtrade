@@ -5978,7 +5978,7 @@ def test_update_funding_fees(
         time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
     """
     # SETUP
-    time_machine.move_to("2021-09-01 00:00:00 +00:00")
+    time_machine.move_to("2021-09-01 00:00:16 +00:00")
 
     open_order = limit_order_open[entry_side(is_short)]
     open_exit_order = limit_order_open[exit_side(is_short)]
