@@ -8,6 +8,7 @@ import logging
 import signal
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+import arrow
 from math import floor
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union, Callable
@@ -2319,7 +2320,7 @@ class Exchange:
         results_df = {}
         for pair, timeframe, candle_type in set(pair_list):
             new_ticks = []
-            all_stored_ticks = []
+            all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
             first_candle_ms = self.needed_candle_ms(timeframe, candle_type)
             # refresh, if
             # a. not in _trades
@@ -2340,19 +2341,20 @@ class Exchange:
 
                     else: 
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
-                        all_stored_ticks = data_handler.trades_load(f"{pair}-cached")
-                        if all_stored_ticks:
-                            if all_stored_ticks[0][0] <= first_candle_ms:
-                                last_cached_ms = all_stored_ticks[-1][0]
+                        all_stored_ticks_df = data_handler.trades_load(f"{pair}-cached")
+
+                        if not all_stored_ticks_df.empty:
+                            if all_stored_ticks_df.iloc[0]['timestamp'] <= first_candle_ms:
+                                last_cached_ms = all_stored_ticks_df.iloc[-1]['timestamp']
                                 # only use cached if it's closer than first_candle_ms
                                 since_ms = last_cached_ms if last_cached_ms > first_candle_ms else first_candle_ms
                             # doesn't go far enough
                             else: 
-                                all_stored_ticks = []
+                                all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
 
                     # from_id overrules with exchange set to id paginate
                     # TODO: DEBUG:
-                    # since_ms = 1682609520000
+                    # since_ms = 1695832200000
                     # from_id = None
                     # TODO: /DEBUG
                     [ticks_pair, new_ticks]=self._download_trades_history(pair,
@@ -2367,12 +2369,14 @@ class Exchange:
 
                 if new_ticks:
                     drop_incomplete = False # TODO: remove, no incomplete trades
-                    all_stored_ticks.extend(new_ticks)
+                    # drop 'date' column from stored ticks
+                    all_stored_ticks_list = all_stored_ticks_df[DEFAULT_TRADES_COLUMNS].values.tolist()
+                    all_stored_ticks_list.extend(new_ticks)
                     # NOTE: only process new trades
                     # self._trades = until_first_candle(stored_trades) + fetch_trades
-                    trades_df = self._process_trades_df(pair, timeframe, candle_type, all_stored_ticks, cache, drop_incomplete, first_candle_ms)
+                    trades_df = self._process_trades_df(pair, timeframe, candle_type, all_stored_ticks_list, cache, drop_incomplete, first_candle_ms)
                     results_df[(pair, timeframe, candle_type)] = trades_df
-                    data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS].values.tolist())
+                    data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
 
         return results_df
 
