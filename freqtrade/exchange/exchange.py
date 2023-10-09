@@ -2653,14 +2653,14 @@ class Exchange:
         """
         return 0.0
 
-    def funding_fee_cutoff(self, open_date: datetime):
+    def funding_fee_cutoff(self, open_date: datetime) -> bool:
         """
         Funding fees are only charged at full hours (usually every 4-8h).
         Therefore a trade opening at 10:00:01 will not be charged a funding fee until the next hour.
         :param open_date: The open date for a trade
-        :return: The cutoff open time for when a funding fee is charged
+        :return: True if the date falls on a full hour, False otherwise
         """
-        return open_date.minute > 0 or open_date.second > 0
+        return open_date.minute == 0 and open_date.second == 0
 
     @retrier
     def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False,
@@ -2708,7 +2708,9 @@ class Exchange:
         """
 
         if self.funding_fee_cutoff(open_date):
-            open_date += timedelta(hours=1)
+            # Shift back to 1h candle to avoid missing funding fees
+            # Only really relevant for trades very close to the full hour
+            open_date = timeframe_to_prev_date('1h', open_date)
         timeframe = self._ft_has['mark_ohlcv_timeframe']
         timeframe_ff = self._ft_has.get('funding_fee_timeframe',
                                         self._ft_has['mark_ohlcv_timeframe'])
