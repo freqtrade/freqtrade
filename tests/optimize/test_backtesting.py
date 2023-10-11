@@ -1006,7 +1006,7 @@ def test_backtest_one_detail_futures_funding_fees(
         assert t.nr_of_successful_entries >= 6
         # Funding fees will vary depending on the number of adjustment orders
         # That number is a lot higher with detail data.
-        assert -20 < t.funding_fees < -0.1
+        assert -1.81 < t.funding_fees < -0.1
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
