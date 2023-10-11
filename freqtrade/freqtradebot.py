@@ -835,14 +835,19 @@ class FreqtradeBot(LoggingMixin):
         base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
 
+        funding_fees = 0.0
+        try:
+            funding_fees = self.exchange.get_funding_fees(
+                pair=pair,
+                amount=amount + trade.amount if trade else amount,
+                is_short=is_short,
+                open_date=trade.date_last_filled_utc if trade else open_date
+            )
+        except ExchangeError:
+            logger.warning("Could not find funding fee.")
+
         # This is a new trade
         if trade is None:
-            funding_fees = 0.0
-            try:
-                funding_fees = self.exchange.get_funding_fees(
-                    pair=pair, amount=amount, is_short=is_short, open_date=open_date)
-            except ExchangeError:
-                logger.warning("Could not find funding fee.")
 
             trade = Trade(
                 pair=pair,
@@ -878,6 +883,7 @@ class FreqtradeBot(LoggingMixin):
             trade.is_open = True
             trade.fee_open_currency = None
             trade.open_rate_requested = enter_limit_requested
+            trade.set_funding_fees(funding_fees)
 
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
