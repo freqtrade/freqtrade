@@ -718,12 +718,14 @@ class Backtesting:
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
 
         if self.trading_mode == TradingMode.FUTURES:
-            trade.funding_fees = self.exchange.calculate_funding_fees(
-                self.futures_data[trade.pair],
-                amount=trade.amount,
-                is_short=trade.is_short,
-                open_date=trade.date_last_filled_utc,
-                close_date=exit_candle_time,
+            trade.set_funding_fees(
+                self.exchange.calculate_funding_fees(
+                    self.futures_data[trade.pair],
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.date_last_filled_utc,
+                    close_date=exit_candle_time
+                )
             )
 
         # Check if we need to adjust our current positions
