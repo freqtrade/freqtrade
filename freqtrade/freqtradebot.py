@@ -315,8 +315,8 @@ class FreqtradeBot(LoggingMixin):
     def update_funding_fees(self) -> None:
         if self.trading_mode == TradingMode.FUTURES:
             trades: List[Trade] = Trade.get_open_trades()
-            try:
-                for trade in trades:
+            for trade in trades:
+                try:
                     trade.set_funding_fees(
                         self.exchange.get_funding_fees(
                             pair=trade.pair,
@@ -324,8 +324,8 @@ class FreqtradeBot(LoggingMixin):
                             is_short=trade.is_short,
                             open_date=trade.date_last_filled_utc)
                     )
-            except ExchangeError:
-                logger.warning("Could not update funding fees for open trades.")
+                except ExchangeError:
+                    logger.warning(f"Could not update funding fees for open trade {trade}.")
 
     def startup_backpopulate_precision(self) -> None:
 
