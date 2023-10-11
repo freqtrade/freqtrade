@@ -658,6 +658,14 @@ class LocalTrade:
             return
         self.liquidation_price = liquidation_price
 
+    def set_funding_fees(self, funding_fee: float) -> None:
+        """
+        Assign funding fees to Trade.
+        """
+        if funding_fee is None:
+            return
+        self.funding_fees = funding_fee
+
     def __set_stop_loss(self, stop_loss: float, percent: float):
         """
         Method used internally to set self.stop_loss.

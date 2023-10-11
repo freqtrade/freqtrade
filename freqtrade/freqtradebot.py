@@ -317,13 +317,13 @@ class FreqtradeBot(LoggingMixin):
             trades: List[Trade] = Trade.get_open_trades()
             try:
                 for trade in trades:
-                    funding_fees = self.exchange.get_funding_fees(
-                        pair=trade.pair,
-                        amount=trade.amount,
-                        is_short=trade.is_short,
-                        open_date=trade.date_last_filled_utc
+                    trade.set_funding_fees(
+                        self.exchange.get_funding_fees(
+                            pair=trade.pair,
+                            amount=trade.amount,
+                            is_short=trade.is_short,
+                            open_date=trade.date_last_filled_utc)
                     )
-                    trade.funding_fees = funding_fees
             except ExchangeError:
                 logger.warning("Could not update funding fees for open trades.")
 
@@ -1695,11 +1695,12 @@ class FreqtradeBot(LoggingMixin):
         :return: True if it succeeds False
         """
         try:
-            trade.funding_fees = self.exchange.get_funding_fees(
-                pair=trade.pair,
-                amount=trade.amount,
-                is_short=trade.is_short,
-                open_date=trade.date_last_filled_utc,
+            trade.set_funding_fees(
+                self.exchange.get_funding_fees(
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.date_last_filled_utc)
             )
         except ExchangeError:
             logger.warning("Could not update funding fee.")
