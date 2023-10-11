@@ -174,10 +174,6 @@ class Order(ModelBase):
         self.ft_is_open = True
         if self.status in NON_OPEN_EXCHANGE_STATES:
             self.ft_is_open = False
-            if self.trade:
-                # Assign funding fee up to this point
-                # (represents the funding fee since the last order)
-                self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0 and not self.order_filled_date:
                 self.order_filled_date = dt_from_ts(
                     safe_value_fallback(order, 'lastTradeTimestamp', default_value=dt_ts())
@@ -742,6 +738,8 @@ class LocalTrade:
             return
 
         logger.info(f'Updating trade (id={self.id}) ...')
+        if order.ft_order_side != 'stoploss':
+            order.funding_fee = self.funding_fees
 
         if order.ft_order_side == self.entry_side:
             # Update open rate and actual amount
