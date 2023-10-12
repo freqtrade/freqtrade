@@ -246,7 +246,8 @@ class Order(ModelBase):
         self.ft_is_open = False
         # Assign funding fees to Order.
         # Assumes backtesting will use date_last_filled_utc to calculate future funding fees.
-        self.funding_fee = trade.funding_fees
+        self.funding_fee = trade.funding_fee_running
+        trade.funding_fee_runnign = 0.0
 
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
@@ -665,7 +666,9 @@ class LocalTrade:
         """
         if funding_fee is None:
             return
-        self.funding_fees = funding_fee
+        self.funding_fee_running = funding_fee
+        prior_funding_fees = sum([o.funding_fee for o in self.orders if o.funding_fee])
+        self.funding_fees = prior_funding_fees + funding_fee
 
     def __set_stop_loss(self, stop_loss: float, percent: float):
         """
@@ -748,7 +751,9 @@ class LocalTrade:
 
         logger.info(f'Updating trade (id={self.id}) ...')
         if order.ft_order_side != 'stoploss':
-            order.funding_fee = self.funding_fees
+            order.funding_fee = self.funding_fee_running
+            # Reset running funding fees
+            self.funding_fee_running = 0.0
 
         if order.ft_order_side == self.entry_side:
             # Update open rate and actual amount
