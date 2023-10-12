@@ -3737,6 +3737,18 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_funding_fees(default_conf_usdt, mocker, exchange_name, caplog):
+    now = datetime.now(timezone.utc)
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id=exchange_name)
+    exchange._fetch_and_calculate_funding_fees = MagicMock(side_effect=ExchangeError)
+    assert exchange.get_funding_fees('BTC/USDT:USDT', 1, False, now) == 0.0
+    assert exchange._fetch_and_calculate_funding_fees.call_count == 1
+    assert log_has("Could not update funding fees for BTC/USDT:USDT.", caplog)
+
+
 @pytest.mark.parametrize("exchange_name", ['binance'])
 def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
