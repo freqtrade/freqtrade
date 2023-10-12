@@ -247,7 +247,7 @@ class Order(ModelBase):
         # Assign funding fees to Order.
         # Assumes backtesting will use date_last_filled_utc to calculate future funding fees.
         self.funding_fee = trade.funding_fee_running
-        trade.funding_fee_runnign = 0.0
+        trade.funding_fee_running = 0.0
 
         if (self.ft_order_side == trade.entry_side and self.price):
             trade.open_rate = self.price
