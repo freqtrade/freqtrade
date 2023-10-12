@@ -393,6 +393,7 @@ class LocalTrade:
 
     # Futures properties
     funding_fees: Optional[float] = None
+    funding_fee_running: Optional[float] = None
 
     @property
     def stoploss_or_liquidation(self) -> float:
@@ -1488,6 +1489,8 @@ class Trade(ModelBase, LocalTrade):
 
     # Futures properties
     funding_fees: Mapped[Optional[float]] = mapped_column(
+        Float(), nullable=True, default=None)  # type: ignore
+    funding_fee_running: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=None)  # type: ignore
 
     def __init__(self, **kwargs):
