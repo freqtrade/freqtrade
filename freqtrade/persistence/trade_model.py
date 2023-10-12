@@ -394,6 +394,8 @@ class LocalTrade:
 
     # Futures properties
     funding_fees: Optional[float] = None
+    # Used to keep running funding fees - between the last filled order and now
+    # Shall not be used for calculations!
     funding_fee_running: Optional[float] = None
 
     @property
