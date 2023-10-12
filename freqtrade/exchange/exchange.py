@@ -2815,17 +2815,19 @@ class Exchange:
         :param amount: Trade amount
         :param open_date: Open date of the trade
         :return: funding fee since open_date
-        :raises: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
-            if self._config['dry_run']:
-                funding_fees = self._fetch_and_calculate_funding_fees(
-                    pair, amount, is_short, open_date)
-            else:
-                funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
-            return funding_fees
-        else:
-            return 0.0
+            try:
+                if self._config['dry_run']:
+                    funding_fees = self._fetch_and_calculate_funding_fees(
+                        pair, amount, is_short, open_date)
+                else:
+                    funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
+                return funding_fees
+            except ExchangeError:
+                logger.warning(f"Could not update funding fees for {pair}.")
+
+        return 0.0
 
     def get_liquidation_price(
         self,

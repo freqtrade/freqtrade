@@ -7,7 +7,7 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
-from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
+from freqtrade.exceptions import DDosProtection, ExchangeError, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 from freqtrade.util.datetime_helpers import dt_now, dt_ts
@@ -202,8 +202,11 @@ class Bybit(Exchange):
         """
         # Bybit does not provide "applied" funding fees per position.
         if self.trading_mode == TradingMode.FUTURES:
-            return self._fetch_and_calculate_funding_fees(
-                    pair, amount, is_short, open_date)
+            try:
+                return self._fetch_and_calculate_funding_fees(
+                        pair, amount, is_short, open_date)
+            except ExchangeError:
+                logger.warning(f"Could not update funding fees for {pair}.")
         return 0.0
 
     def fetch_orders(self, pair: str, since: datetime, params: Optional[Dict] = None) -> List[Dict]:
