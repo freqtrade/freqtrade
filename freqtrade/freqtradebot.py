@@ -132,7 +132,7 @@ class FreqtradeBot(LoggingMixin):
             # TODO: This would be more efficient if scheduled in utc time, and performed at each
             # TODO: funding interval, specified by funding_fee_times on the exchange classes
             for time_slot in range(0, 24):
-                for minutes in [0, 15, 30, 45]:
+                for minutes in [1, 31]:
                     t = str(time(time_slot, minutes, 2))
                     self._schedule.every().day.at(t).do(update)
         self.last_process: Optional[datetime] = None
@@ -199,6 +199,7 @@ class FreqtradeBot(LoggingMixin):
         # Only update open orders on startup
         # This will update the database after the initial migration
         self.startup_update_open_orders()
+        self.update_funding_fees()
 
     def process(self) -> None:
         """
@@ -377,9 +378,6 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError as e:
 
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
-
-        if self.trading_mode == TradingMode.FUTURES:
-            self._schedule.run_pending()
 
     def update_trades_without_assigned_fees(self) -> None:
         """

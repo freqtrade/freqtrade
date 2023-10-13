@@ -115,6 +115,7 @@ def migrate_trades_and_orders_table(
     # Futures Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     funding_fees = get_column_def(cols, 'funding_fees', '0.0')
+    funding_fee_running = get_column_def(cols, 'funding_fee_running', 'null')
     max_stake_amount = get_column_def(cols, 'max_stake_amount', 'stake_amount')
 
     # If ticker-interval existed use that, else null.
@@ -163,7 +164,7 @@ def migrate_trades_and_orders_table(
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
-            interest_rate, funding_fees, realized_profit,
+            interest_rate, funding_fees, funding_fee_running, realized_profit,
             amount_precision, price_precision, precision_mode, contract_size,
             max_stake_amount
             )
@@ -192,7 +193,8 @@ def migrate_trades_and_orders_table(
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fees} funding_fees, {realized_profit} realized_profit,
+            {funding_fees} funding_fees, {funding_fee_running} funding_fee_running,
+            {realized_profit} realized_profit,
             {amount_precision} amount_precision, {price_precision} price_precision,
             {precision_mode} precision_mode, {contract_size} contract_size,
             {max_stake_amount} max_stake_amount
@@ -329,8 +331,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    # if not has_column(cols_trades, 'is_stop_loss_trailing'):
-    if not has_column(cols_orders, 'ft_cancel_reason'):
+    # if not has_column(cols_orders, 'ft_cancel_reason'):
+    if not has_column(cols_trades, 'funding_fee_running'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
