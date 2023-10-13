@@ -199,7 +199,7 @@ class FreqtradeBot(LoggingMixin):
         # Only update open orders on startup
         # This will update the database after the initial migration
         self.startup_update_open_orders()
-        # self.update_funding_fees()
+        self.update_funding_fees()
 
     def process(self) -> None:
         """
@@ -378,9 +378,6 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError as e:
 
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
-
-        if self.trading_mode == TradingMode.FUTURES:
-            self._schedule.run_pending()
 
     def update_trades_without_assigned_fees(self) -> None:
         """
