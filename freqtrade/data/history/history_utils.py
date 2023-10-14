@@ -1,9 +1,11 @@
 import logging
+import numbers
 import operator
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import pandas as pd
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
@@ -103,7 +105,9 @@ def load_data(datadir: Path,
                                  data_handler=data_handler,
                                  candle_type=candle_type,
                                  )
+
         if not hist.empty:
+            optimize_dtypes(hist)
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
@@ -114,6 +118,28 @@ def load_data(datadir: Path,
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
     return result
+
+
+def optimize_dtypes(data: DataFrame) -> None:
+    """
+    Automatically downcast Numeric dtypes for minimal possible,
+
+    :param data: dataframe
+
+    :return: `None`
+    """
+    for col in data.columns:
+        # integers
+        if issubclass(data[col].dtypes.type, numbers.Integral):
+            # unsigned integers
+            if data[col].min() >= 0:
+                data[col] = pd.to_numeric(data[col], downcast="unsigned")
+            # signed integers
+            else:
+                data[col] = pd.to_numeric(data[col], downcast="integer")
+        # other real numbers
+        elif issubclass(data[col].dtypes.type, numbers.Real):
+            data[col] = pd.to_numeric(data[col], downcast="float")
 
 
 def refresh_data(*, datadir: Path,
@@ -145,12 +171,12 @@ def refresh_data(*, datadir: Path,
 
 
 def _load_cached_data_for_updating(
-    pair: str,
-    timeframe: str,
-    timerange: Optional[TimeRange],
-    data_handler: IDataHandler,
-    candle_type: CandleType,
-    prepend: bool = False,
+        pair: str,
+        timeframe: str,
+        timerange: Optional[TimeRange],
+        data_handler: IDataHandler,
+        candle_type: CandleType,
+        prepend: bool = False,
 ) -> Tuple[DataFrame, Optional[int], Optional[int]]:
     """
     Load cached data to download more data.
@@ -298,7 +324,6 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             logger.info(f"Skipping pair {pair}...")
             continue
         for timeframe in timeframes:
-
             logger.debug(f'Downloading pair {pair}, {candle_type}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
             _download_pair_history(pair=pair, process=process,
@@ -467,7 +492,6 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
 
 
 def download_data_main(config: Config) -> None:
-
     timerange = TimeRange()
     if 'days' in config:
         time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
@@ -487,7 +511,7 @@ def download_data_main(config: Config) -> None:
     available_pairs = [
         p for p in exchange.get_markets(
             tradable_only=True, active_only=not config.get('include_inactive')
-            ).keys()
+        ).keys()
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
@@ -526,7 +550,7 @@ def download_data_main(config: Config) -> None:
                     f"Historic klines not available for {exchange.name}. "
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
-                    )
+                )
             migrate_binance_futures_data(config)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
