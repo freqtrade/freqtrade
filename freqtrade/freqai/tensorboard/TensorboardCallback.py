@@ -49,7 +49,7 @@ class TensorboardCallback(BaseCallback):
         local_info = self.locals["infos"][0]
         if self.training_env is None:
             return True
-        tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
+        tensorboard_metrics = self.training_env.envs[0].unwrapped.tensorboard_metrics
 
         for metric in local_info:
             if metric not in ["episode", "terminal_observation"]:
