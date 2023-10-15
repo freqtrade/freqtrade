@@ -226,7 +226,7 @@ def crossed(series1, series2, direction=None):
             series1.shift(1) >= series2.shift(1)))
 
     if direction is None:
-        return above or below
+        return above | below
 
     return above if direction == "above" else below
 
