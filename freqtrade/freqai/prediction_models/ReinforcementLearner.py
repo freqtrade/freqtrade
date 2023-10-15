@@ -85,7 +85,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             best_model = self.MODELCLASS.load(dk.data_path / "best_model")
             return best_model
 
-        logger.info('Couldnt find best model, using final model instead.')
+        logger.info("Couldn't find best model, using final model instead.")
 
         return model
 
