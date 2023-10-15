@@ -760,7 +760,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate aligns to open rate
         assert not ln.empty
-        assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
+        assert round(ln.iloc[0]["open"].item(), 6) == round(t["open_rate"], 6)
         # check close trade rate aligns to close rate or is between high and low
         ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert (round(ln1.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
@@ -834,8 +834,8 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
         assert not ln.empty
 
         # assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
-        assert round(ln.iloc[0]["low"], 6) <= round(
-                t["open_rate"], 6) <= round(ln.iloc[0]["high"], 6)
+        assert round(ln.iloc[0]["low"].item(), 6) <= round(
+                t["open_rate"], 6) <= round(ln.iloc[0]["high"].item(), 6)
         # check close trade rate aligns to close rate or is between high and low
         ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
         if use_detail:
@@ -845,8 +845,8 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
             assert not ln1.empty
         ln2 = ln1_1m if ln1.empty else ln1
 
-        assert (round(ln2.iloc[0]["low"], 6) <= round(
-                t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
+        assert (round(ln2.iloc[0]["low"].item(), 6) <= round(
+                t["close_rate"], 6) <= round(ln2.iloc[0]["high"].item(), 6))
 
     assert late_entry > 0
 

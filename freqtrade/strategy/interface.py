@@ -1366,7 +1366,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self, dataframe, metadata, inf_data, populate_fn)
 
         dataframe = self.populate_indicators(dataframe, metadata)
-        if self.dp.runmode not in [RunMode.DRY_RUN, RunMode.LIVE]:
+        if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
             optimize_dtypes(dataframe)
         return dataframe
 
@@ -1383,7 +1383,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         logger.debug(f"Populating enter signals for pair {metadata.get('pair')}.")
 
         df = self.populate_entry_trend(dataframe, metadata)
-        if self.dp.runmode not in [RunMode.DRY_RUN, RunMode.LIVE]:
+        if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
             optimize_dtypes(dataframe)
         if 'enter_long' not in df.columns:
             df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
@@ -1401,7 +1401,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")
         df = self.populate_exit_trend(dataframe, metadata)
-        if self.dp.runmode not in [RunMode.DRY_RUN, RunMode.LIVE]:
+        if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
             optimize_dtypes(dataframe)
         if 'exit_long' not in df.columns:
             df = df.rename({'sell': 'exit_long'}, axis='columns')
