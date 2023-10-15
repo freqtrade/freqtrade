@@ -2,9 +2,9 @@
 Functions to convert data from one format to another
 """
 import logging
+import numbers
 from typing import Dict
 
-import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
@@ -253,27 +253,31 @@ def convert_ohlcv_format(
                 src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
 
 
-def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
+def reduce_dataframe_footprint(df: DataFrame, skip_original: bool = False) -> None:
     """
     Ensure all values are float32 in the incoming dataframe.
     :param df: Dataframe to be converted to float/int 32s
-    :return: Dataframe converted to float/int 32s
+    :param skip_original: if set to True, will skip original columns
+    :return: None
     """
 
     logger.debug(f"Memory usage of dataframe is "
                  f"{df.memory_usage().sum() / 1024**2:.2f} MB")
 
-    df_dtypes = df.dtypes
-    for column, dtype in df_dtypes.items():
-        if column in ['open', 'high', 'low', 'close', 'volume']:
+    for col in df.columns:
+        if skip_original and col in ['open', 'high', 'low', 'close', 'volume']:
             continue
-        if dtype == np.float64:
-            df_dtypes[column] = np.float32
-        elif dtype == np.int64:
-            df_dtypes[column] = np.int32
-    df = df.astype(df_dtypes)
+        # integers
+        if issubclass(df[col].dtypes.type, numbers.Integral):
+            # unsigned integers
+            if df[col].min() >= 0:
+                df[col] = pd.to_numeric(df[col], downcast="unsigned")
+            # signed integers
+            else:
+                df[col] = pd.to_numeric(df[col], downcast="integer")
+        # other real numbers
+        elif issubclass(df[col].dtypes.type, numbers.Real):
+            df[col] = pd.to_numeric(df[col], downcast="float")
 
     logger.debug(f"Memory usage after optimization is: "
                  f"{df.memory_usage().sum() / 1024**2:.2f} MB")
-
-    return df

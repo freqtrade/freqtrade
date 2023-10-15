@@ -1,19 +1,17 @@
 import logging
-import numbers
 import operator
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import pandas as pd
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
                                  DL_DATA_TIMEFRAMES, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
-                                      ohlcv_to_dataframe, trades_df_remove_duplicates,
-                                      trades_list_to_df)
+                                      ohlcv_to_dataframe, reduce_dataframe_footprint,
+                                      trades_df_remove_duplicates, trades_list_to_df)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
@@ -107,7 +105,7 @@ def load_data(datadir: Path,
                                  )
 
         if not hist.empty:
-            optimize_dtypes(hist)
+            reduce_dataframe_footprint(hist)
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
@@ -118,28 +116,6 @@ def load_data(datadir: Path,
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
     return result
-
-
-def optimize_dtypes(data: DataFrame) -> None:
-    """
-    Automatically downcast Numeric dtypes for minimal possible,
-
-    :param data: dataframe
-
-    :return: `None`
-    """
-    for col in data.columns:
-        # integers
-        if issubclass(data[col].dtypes.type, numbers.Integral):
-            # unsigned integers
-            if data[col].min() >= 0:
-                data[col] = pd.to_numeric(data[col], downcast="unsigned")
-            # signed integers
-            else:
-                data[col] = pd.to_numeric(data[col], downcast="integer")
-        # other real numbers
-        elif issubclass(data[col].dtypes.type, numbers.Real):
-            data[col] = pd.to_numeric(data[col], downcast="float")
 
 
 def refresh_data(*, datadir: Path,

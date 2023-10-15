@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Tuple, Union
 from pandas import DataFrame
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
+from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.data.history.history_utils import optimize_dtypes
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
@@ -1367,7 +1367,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         dataframe = self.populate_indicators(dataframe, metadata)
         if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
-            optimize_dtypes(dataframe)
+            reduce_dataframe_footprint(dataframe)
         return dataframe
 
     def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -1384,7 +1384,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         df = self.populate_entry_trend(dataframe, metadata)
         if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
-            optimize_dtypes(dataframe)
+            reduce_dataframe_footprint(dataframe)
         if 'enter_long' not in df.columns:
             df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
 
@@ -1402,7 +1402,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")
         df = self.populate_exit_trend(dataframe, metadata)
         if self.config.get('runmode') not in [RunMode.DRY_RUN, RunMode.LIVE]:
-            optimize_dtypes(dataframe)
+            reduce_dataframe_footprint(dataframe)
         if 'exit_long' not in df.columns:
             df = df.rename({'sell': 'exit_long'}, axis='columns')
         return df
