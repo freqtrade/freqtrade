@@ -171,12 +171,12 @@ def refresh_data(*, datadir: Path,
 
 
 def _load_cached_data_for_updating(
-        pair: str,
-        timeframe: str,
-        timerange: Optional[TimeRange],
-        data_handler: IDataHandler,
-        candle_type: CandleType,
-        prepend: bool = False,
+    pair: str,
+    timeframe: str,
+    timerange: Optional[TimeRange],
+    data_handler: IDataHandler,
+    candle_type: CandleType,
+    prepend: bool = False,
 ) -> Tuple[DataFrame, Optional[int], Optional[int]]:
     """
     Load cached data to download more data.
@@ -299,6 +299,7 @@ def _download_pair_history(pair: str, *,
         logger.exception(
             f'Failed to download history data for pair: "{pair}", timeframe: {timeframe}.'
         )
+
         return False
 
 
@@ -492,6 +493,7 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
 
 
 def download_data_main(config: Config) -> None:
+
     timerange = TimeRange()
     if 'days' in config:
         time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
@@ -511,7 +513,7 @@ def download_data_main(config: Config) -> None:
     available_pairs = [
         p for p in exchange.get_markets(
             tradable_only=True, active_only=not config.get('include_inactive')
-        ).keys()
+            ).keys()
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
@@ -550,7 +552,7 @@ def download_data_main(config: Config) -> None:
                     f"Historic klines not available for {exchange.name}. "
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
-                )
+                    )
             migrate_binance_futures_data(config)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
