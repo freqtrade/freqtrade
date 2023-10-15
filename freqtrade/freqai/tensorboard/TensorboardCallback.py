@@ -50,9 +50,12 @@ class TensorboardCallback(BaseCallback):
         if self.training_env is None:
             return True
 
-        tensorboard_metrics = (
-            self.training_env.envs[0].unwrapped.tensorboard_metrics  # type: ignore[attr-defined]
-        )
+        if hasattr(self.training_env, 'envs'):
+            tensorboard_metrics = self.training_env.envs[0].unwrapped.tensorboard_metrics
+
+        else:
+            # For RL-multiproc - usage of [0] might need to be evaluated
+            tensorboard_metrics = self.training_env.get_attr("tensorboard_metrics")[0]
 
         for metric in local_info:
             if metric not in ["episode", "terminal_observation"]:
