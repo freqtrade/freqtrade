@@ -43,7 +43,7 @@ pydantic==2.4.2
 uvicorn==0.23.2
 pyjwt==2.8.0
 aiofiles==23.2.1
-psutil==5.9.5
+psutil==5.9.6
 
 # Support for colorized terminal output
 colorama==0.4.6
