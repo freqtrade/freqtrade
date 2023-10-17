@@ -5,6 +5,7 @@ import logging
 import numbers
 from typing import Dict
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
@@ -253,14 +254,15 @@ def convert_ohlcv_format(
                 src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
 
 
-def reduce_dataframe_footprint(df: DataFrame, skip_original: bool = False) -> None:
+def reduce_dataframe_footprint(df: DataFrame, skip_original: bool = False) -> DataFrame:
     """
     Ensure all values are float32 in the incoming dataframe.
     :param df: Dataframe to be converted to float/int 32s
     :param skip_original: if set to True, will skip original columns
     :return: None
     """
-
+    # TODO: remove logs. df.memory_usage() is a heavy method and 50%
+    #  of this functions runtime is caused by it.
     logger.debug(f"Memory usage of dataframe is "
                  f"{df.memory_usage().sum() / 1024**2:.2f} MB")
 
@@ -275,9 +277,11 @@ def reduce_dataframe_footprint(df: DataFrame, skip_original: bool = False) -> No
             # signed integers
             else:
                 df[col] = pd.to_numeric(df[col], downcast="integer")
-        # other real numbers
-        elif issubclass(df[col].dtypes.type, numbers.Real):
+        # other real numbers. only call `to_numeric` if type is float64,
+        # so it won't be called for already optimized columns.
+        elif issubclass(df[col].dtypes.type, numbers.Real) and df[col].dtypes.type == np.float64:
             df[col] = pd.to_numeric(df[col], downcast="float")
 
     logger.debug(f"Memory usage after optimization is: "
                  f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+    return df

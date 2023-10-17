@@ -812,7 +812,7 @@ class FreqaiDataKitchen:
         self.get_unique_classes_from_labels(dataframe)
 
         if self.config.get('reduce_df_footprint', False):
-            reduce_dataframe_footprint(dataframe, skip_original=True)
+            dataframe = reduce_dataframe_footprint(dataframe, skip_original=True)
 
         return dataframe
 

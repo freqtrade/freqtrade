@@ -105,7 +105,7 @@ def load_data(datadir: Path,
                                  )
 
         if not hist.empty:
-            reduce_dataframe_footprint(hist)
+            hist = reduce_dataframe_footprint(hist)
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:

@@ -425,7 +425,7 @@ def test_reduce_dataframe_footprint_skip_original():
     assert data['open_copy'].dtype == np.float64
     assert data['close_copy'].dtype == np.float64
 
-    reduce_dataframe_footprint(data, skip_original=True)
+    data = reduce_dataframe_footprint(data, skip_original=True)
 
     # skips ohlcv columns
     assert data['open'].dtype == np.float64
@@ -449,7 +449,7 @@ def test_reduce_dataframe_footprint():
     assert data['open_copy'].dtype == np.float64
     assert data['close_copy'].dtype == np.float64
 
-    reduce_dataframe_footprint(data)
+    data = reduce_dataframe_footprint(data)
 
     # changes ohlcv columns
     assert data['open'].dtype == np.float32
