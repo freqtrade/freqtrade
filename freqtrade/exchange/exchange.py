@@ -2313,6 +2313,7 @@ class Exchange:
                             f"Stopping because until was reached. {t[-1][0]} > {until}")
                         break
                 else:
+                    logger.debug("Stopping as no more trades were returned.")
                     break
             except asyncio.CancelledError:
                 logger.debug("Async operation Interrupted, breaking trades DL loop.")
