@@ -2305,6 +2305,11 @@ class Exchange:
             try:
                 t = await self._async_fetch_trades(pair, since=since)
                 if t:
+                    # No more trades to download available at the exchange,
+                    # So we repeatedly get the same trade over and over again.
+                    if since == t[-1][0] and len(t) == 1:
+                        logger.debug("Stopping because no more trades are available.")
+                        break
                     since = t[-1][0]
                     trades.extend(t)
                     # Reached the end of the defined-download period
