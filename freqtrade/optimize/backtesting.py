@@ -650,7 +650,7 @@ class Backtesting:
                         current_time=current_time,
                         proposed_rate=close_rate, current_profit=current_profit,
                         exit_tag=exit_reason)
-                    if rate != close_rate:
+                    if rate is not None and rate != close_rate:
                         close_rate = price_to_precision(rate, trade.price_precision,
                                                         self.precision_mode)
                     # We can't place orders lower than current low.
@@ -763,7 +763,7 @@ class Backtesting:
             )  # default value is the open rate
             # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
-            if new_rate != propose_rate:
+            if new_rate is not None and new_rate != propose_rate:
                 propose_rate = price_to_precision(new_rate, price_precision,
                                                   self.precision_mode)
             if direction == "short":
