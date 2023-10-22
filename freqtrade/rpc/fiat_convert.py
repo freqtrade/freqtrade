@@ -27,6 +27,7 @@ coingecko_mapping = {
     'usdt': 'tether',
     'busd': 'binance-usd',
     'tusd': 'true-usd',
+    'usdc': 'usd-coin',
 }
 
 
