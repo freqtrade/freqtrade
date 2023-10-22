@@ -1244,10 +1244,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                            and trade.liquidation_price <= (high or current_rate)
                            and trade.is_short)
 
-        if (liq_higher_long or liq_lower_short):
-            logger.debug(f"{trade.pair} - Liquidation price hit. exit_type=ExitType.LIQUIDATION")
-            return ExitCheckTuple(exit_type=ExitType.LIQUIDATION)
-
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
@@ -1267,6 +1263,10 @@ class IStrategy(ABC, HyperStrategyMixin):
                     f"trade opened at {trade.open_rate:.6f}")
 
             return ExitCheckTuple(exit_type=exit_type)
+
+        if (liq_higher_long or liq_lower_short):
+            logger.debug(f"{trade.pair} - Liquidation price hit. exit_type=ExitType.LIQUIDATION")
+            return ExitCheckTuple(exit_type=ExitType.LIQUIDATION)
 
         return ExitCheckTuple(exit_type=ExitType.NONE)
 
