@@ -48,7 +48,9 @@ MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
 DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
-DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
+DEFAULT_TRADES_COLUMNS = ['timestamp', 'id',
+                          'type', 'side', 'price', 'amount', 'cost']
+DEFAULT_ORDERFLOW_COLUMNS = ['level', 'bid', 'ask', 'delta']
 TRADES_DTYPES = {
     'timestamp': 'int64',
     'id': 'str',
