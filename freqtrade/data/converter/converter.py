@@ -2,6 +2,7 @@
 Functions to convert data from one format to another
 """
 import logging
+import time
 from typing import Dict
 
 import numpy as np
@@ -9,7 +10,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 import itertools
 
-from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, DEFAULT_DATAFRAME_COLUMNS, Config
+from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, DEFAULT_TRADES_COLUMNS, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates
 
