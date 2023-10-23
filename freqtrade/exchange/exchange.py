@@ -8,7 +8,6 @@ import logging
 import signal
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-import arrow
 from math import floor
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union, Callable
@@ -1978,11 +1977,11 @@ class Exchange:
             logger.debug(
                 "one_call: %s msecs (%s)",
                 one_call,
-                arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
+                dt_humanize(dt_now() - timedelta(milliseconds=one_call), only_distance=True)
             )
             input_coroutines = [self._async_get_candle_history(
                 pair, timeframe, candle_type, since) for since in
-                range(since_ms, until_ms or (arrow.utcnow().int_timestamp * 1000), one_call)]
+                range(since_ms, until_ms or dt_ts(), one_call)]
 
             data: List = []
             # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
@@ -2023,7 +2022,6 @@ class Exchange:
             one_call,
             dt_humanize(dt_now() - timedelta(milliseconds=one_call), only_distance=True)
         )
-        until_ms = until_ms if until_ms else (arrow.utcnow().int_timestamp * 1000)
         input_coroutines = [self._async_get_trades_history(
             pair, timeframe, candle_type, since) for since in
             range(since_ms, until_ms or dt_ts(), one_call)]
@@ -2385,7 +2383,7 @@ class Exchange:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
-        now = arrow.utcnow().int_timestamp
+        now = int(timeframe_to_prev_date(timeframe).timestamp())
         return plr < now
 
     def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
@@ -2394,7 +2392,7 @@ class Exchange:
         _calculate_ohlcv_candle_start_and_end(df, timeframe)
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = round(df.iloc[-1]["candle_end"].timestamp())
-        now = arrow.utcnow().int_timestamp
+        now = int(timeframe_to_prev_date(timeframe).timestamp())
         return plr < now
 
     def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
@@ -2402,7 +2400,9 @@ class Exchange:
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
         REFRESH_EARLIER_SECONDS = 5
-        return plr < arrow.utcnow().int_timestamp - REFRESH_EARLIER_SECONDS
+
+        now = int(timeframe_to_prev_date(timeframe).timestamp())
+        return plr < now - REFRESH_EARLIER_SECONDS
 
     @retrier_async
     async def _async_get_candle_history(
@@ -2485,10 +2485,9 @@ class Exchange:
         """
         try:
             # Fetch TRADES asynchronously
-            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
             logger.debug(
-                "Fetching pair %s, %s, interval %s, since %s %s...",
-                pair, candle_type, timeframe, since_ms, s
+                "Fetching pair %s, %s, interval %s, since %s ...",
+                pair, candle_type, timeframe, since_ms
             )
             params = deepcopy(self._ft_has.get('trades_params', {}))
             candle_limit = self.trades_candle_limit( 
@@ -2763,8 +2762,6 @@ class Exchange:
         :return Boolean of success
         """
 
-        # if not until:
-        #     until = arrow.utcnow().int_timestamp * 1000
         new_trades = self.get_historic_trades(pair=pair,
                                               since=since,
                                               until=until,
