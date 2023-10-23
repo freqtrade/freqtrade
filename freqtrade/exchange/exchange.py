@@ -2390,18 +2390,10 @@ class Exchange:
         df = self.klines((pair, timeframe, candle_type), True)
         _calculate_ohlcv_candle_start_and_end(df, timeframe)
         interval_in_sec = timeframe_to_seconds(timeframe)
+        # plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
         plr = round(df.iloc[-1]["candle_end"].timestamp())
         now = int(timeframe_to_prev_date(timeframe).timestamp())
         return plr < now
-
-    def _now_is_time_to_refresh_trades(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
-        # Timeframe in seconds
-        interval_in_sec = timeframe_to_seconds(timeframe)
-        plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
-        REFRESH_EARLIER_SECONDS = 5
-
-        now = int(timeframe_to_prev_date(timeframe).timestamp())
-        return plr < now - REFRESH_EARLIER_SECONDS
 
     @retrier_async
     async def _async_get_candle_history(
