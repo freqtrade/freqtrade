@@ -82,6 +82,11 @@ extend-select = [
   # "TCH",  # flake8-type-checking
   "PTH",    # flake8-use-pathlib
 ]
+extend-ignore = [
+  "E241",  # Multiple spaces after comma
+  "E272",  # Multiple spaces before keyword
+  "E221",  # Multiple spaces before operator
+]
 
 [tool.ruff.mccabe]
 max-complexity = 12
