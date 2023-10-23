@@ -2094,7 +2094,6 @@ class Exchange:
                     f"Time jump detected. Evicting trades cache for {pair}, {timeframe}, {candle_type}")
                 del self._trades[(pair, timeframe, candle_type)]
 
-        #TODO: change to trades candle limit
         if (not since_ms or not_all_data):
             # Multiple calls for one pair - to get more history
             one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
@@ -2242,7 +2241,7 @@ class Exchange:
                                  drop_incomplete: Optional[bool] = None
                                  ) -> Dict[PairWithTimeframe, DataFrame]:
             """
-            Refresh in-memory OHLCV asynchronously and set `_trades` with the result
+            Refresh in-memory OHLCV asynchronously and set `_klines` with the result
             Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
             Only used in the dataprovider.refresh() method.
             :param pair_list: List of 2 element tuples containing pair, interval to refresh
