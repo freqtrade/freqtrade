@@ -2333,8 +2333,7 @@ class Exchange:
                     from_id = None
                     if is_in_cache:
                         from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
-
-                        until = arrow.utcnow().int_timestamp * 1000
+                        until = dt_ts() # now
 
                     else: 
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
@@ -2351,7 +2350,7 @@ class Exchange:
 
                     # from_id overrules with exchange set to id paginate
                     # TODO: DEBUG:
-                    # since_ms = 1695832200000
+                    # since_ms = 1698060269000
                     # from_id = None
                     # TODO: /DEBUG
                     [ticks_pair, new_ticks]=self._download_trades_history(pair,
