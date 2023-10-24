@@ -392,8 +392,8 @@ def clean_duplicate_trades(trades: DataFrame, timeframe: str, pair: str, *,
     # group by index and aggregate results to eliminate duplicate ticks
     # check if data has duplicate ticks
     logger.debug(f"Clean duplicated ticks from Trades data {pair}")
-    df = pd.DataFrame(trades_remove_duplicates(
-        trades.values.tolist()), columns=trades.columns)
+    df = pd.DataFrame(trades_df_remove_duplicates(
+        trades), columns=trades.columns)
 
     #
     # from freqtrade.exchange import timeframe_to_minutes
