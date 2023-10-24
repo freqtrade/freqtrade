@@ -22,7 +22,7 @@ from pandas import DataFrame, concat
 from freqtrade.constants import (DEFAULT_TRADES_COLUMNS, DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
                                  BuySell, Config, EntryExit, ExchangeConfig,
                                  ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
-from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list, public_trades_to_dataframe
+from freqtrade.data.converter import clean_duplicate_trades, clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list, public_trades_to_dataframe
 from freqtrade.data.converter.converter import _calculate_ohlcv_candle_start_and_end
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -2361,6 +2361,7 @@ class Exchange:
                 except Exception as e:
                     logger.error(f"Refreshing TRADES data for {pair} failed")
                     logger.error(e)
+                    raise e
 
 
                 if new_ticks:
@@ -2373,6 +2374,9 @@ class Exchange:
                     trades_df = self._process_trades_df(pair, timeframe, candle_type, all_stored_ticks_list, cache, drop_incomplete, first_candle_ms)
                     results_df[(pair, timeframe, candle_type)] = trades_df
                     data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
+
+                else:
+                    raise "no new ticks"
 
         return results_df
 
@@ -2573,7 +2577,8 @@ class Exchange:
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=candle_limit)
             trades = self._trades_contracts_to_amount(trades)
 
-            logger.debug( "Fetched trades for pair %s, datetime: %s (%d).", pair, trades[0]['datetime'],  trades[0]['timestamp']  )
+            if trades:
+                logger.debug("Fetched trades for pair %s, datetime: %s (%d).", pair, trades[0]['datetime'],  trades[0]['timestamp']  )
             return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -2614,10 +2619,13 @@ class Exchange:
             # e.g. Binance returns the "last 1000" candles within a 1h time interval
             # - so we will miss the first trades.
             trade = await self._async_fetch_trades(pair, since=since)
-            # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
-            # DEFAULT_TRADES_COLUMNS: 1 -> id
-            from_id = trade[-1][1]
-            trades.extend(trade[:-1])
+            if trade:
+                # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
+                # DEFAULT_TRADES_COLUMNS: 1 -> id
+                from_id = trade[-1][1]
+                trades.extend(trade[:-1])
+            else:
+                return (pair, trades)
         while True:
             try:
                 t = await self._async_fetch_trades(pair,
