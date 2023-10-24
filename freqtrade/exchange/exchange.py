@@ -165,7 +165,6 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
-        self._required_candle_call_count_max = self._config.get('exchange', {}).get('required_candle_call_count_max', 5)
 
         self._max_trades_candle_limit = self._config.get('exchange', {}).get('trades_candle_limit', 1000)
 
@@ -691,11 +690,11 @@ class Exchange:
             (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
         if self._ft_has['ohlcv_has_history']:
 
-            if required_candle_call_count > self._required_candle_call_count_max:
+            if required_candle_call_count > 5:
                 # Only allow max calls per pair to somewhat limit the impact
                 raise OperationalException(
                     f"This strategy requires {startup_candles} candles to start, "
-                    f"which is more than {self._required_candle_call_count_max} "
+                    f"which is more than 5"
                     f"the amount of candles {self.name} provides for {timeframe}.")
         elif required_candle_call_count > 1:
             raise OperationalException(
@@ -2053,7 +2052,7 @@ class Exchange:
             not_all_data = cache and self.required_candle_call_count > 1
             if cache and (pair, timeframe, candle_type) in self._klines:
                 candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
-                min_date = date_minus_candles(timeframe, candle_limit - self._required_candle_call_count_max).timestamp()
+                min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
                 # Check if 1 call can get us updated candles without hole in the data.
                 if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
                     # Cache can be used - do one-off call.
@@ -2084,7 +2083,7 @@ class Exchange:
         not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._trades:
             candle_limit = self.trades_candle_limit(timeframe, candle_type)
-            min_date = date_minus_candles(timeframe, candle_limit - self._required_candle_call_count_max).timestamp()
+            min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
                 # Cache can be used - do one-off call.
