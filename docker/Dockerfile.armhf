@@ -16,7 +16,8 @@ RUN mkdir /freqtrade \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
-  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers \
+  && pip install --upgrade pip
 
 WORKDIR /freqtrade
 
@@ -25,7 +26,6 @@ FROM base as python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev libffi-dev libopenblas-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
-  && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
 
 # Install TA-lib
