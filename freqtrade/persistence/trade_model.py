@@ -536,6 +536,7 @@ class LocalTrade:
         for key in kwargs:
             setattr(self, key, kwargs[key])
         self.recalc_open_trade_value()
+        self.orders = []
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
             raise OperationalException(
                 f"{self.trading_mode.value} trading requires param interest_rate on trades")
