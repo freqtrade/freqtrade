@@ -2392,9 +2392,8 @@ def test_recalc_trade_from_orders_kucoin():
     trade.update_trade(order3)
     # assert trade.amount == o1_amount + o2_amount
     assert trade.is_open is False
-    # The below values are wrong.
     assert trade.amount == 8e-09
-    assert trade.close_profit_abs == -8270.49735089
+    assert trade.close_profit_abs == 3.90069871
 
 
 @pytest.mark.parametrize('is_short', [True, False])
