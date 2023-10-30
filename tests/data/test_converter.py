@@ -50,8 +50,8 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
     assert 'high' in df.columns
     assert 'low' in df.columns
     assert 'close' in df.columns
-    assert df.loc[:, 'high'][0] == 0.019627
-    assert df.loc[:, 'low'][0] == 0.019626
+    assert df.iloc[0, :]['high'] == 0.019627
+    assert df.iloc[0, :]['low'] == 0.019626
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
