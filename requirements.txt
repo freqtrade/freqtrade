@@ -30,7 +30,7 @@ pyarrow==13.0.0; platform_machine != 'armv7l'
 py_find_1st==1.1.5
 
 # Load ticker files 30% faster
-python-rapidjson==1.12
+python-rapidjson==1.13
 # Properly format api responses
 orjson==3.9.9
 
