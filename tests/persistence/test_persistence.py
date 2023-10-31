@@ -2302,6 +2302,101 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_recalc_trade_from_orders_kucoin():
+    # Taken from https://github.com/freqtrade/freqtrade/issues/9346
+    o1_amount = 11511963.8634448908
+    o2_amount = 11750101.7743937783
+    o3_amount = 23262065.6378386617  # Exit amount - barely doesn't even out
+
+    res = o1_amount + o2_amount - o3_amount
+    assert res > 0.0
+    assert res < 0.1
+    o1_rate = 0.000029901
+    o2_rate = 0.000029295
+    o3_rate = 0.000029822
+
+    o1_cost = o1_amount * o1_rate
+
+    trade = Trade(
+        pair='FLOKI/USDT',
+        stake_amount=o1_cost,
+        open_date=dt_now() - timedelta(hours=2),
+        amount=o1_amount,
+        fee_open=0.001,
+        fee_close=0.001,
+        exchange='binance',
+        open_rate=o1_rate,
+        max_rate=o1_rate,
+        leverage=1,
+    )
+    # Check with 1 order
+    order1 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order1)
+    order2 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o2_rate,
+        average=o2_rate,
+        filled=o2_amount,
+        remaining=0,
+        cost=o2_amount * o2_rate,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order2)
+    trade.recalc_trade_from_orders()
+    assert trade.amount == o1_amount + o2_amount
+    profit = trade.calculate_profit(o3_rate)
+    assert profit.profit_abs == pytest.approx(3.90069871)
+    assert profit.profit_ratio == pytest.approx(0.00566035)
+
+    order3 = Order(
+        ft_order_side='sell',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="sell",
+        price=o3_rate,
+        average=o3_rate,
+        filled=o3_amount,
+        remaining=0,
+        cost=o2_amount * o2_rate,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+
+    trade.orders.append(order3)
+    trade.update_trade(order3)
+    assert trade.is_open is False
+    # Trade closed correctly - but left a minimal amount.
+    assert trade.amount == 8e-09
+    assert trade.close_profit_abs == 3.90069871
+    assert trade.close_profit == 0.00566035
+
+
 @pytest.mark.parametrize('is_short', [True, False])
 def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
 
