@@ -22,22 +22,20 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     no_unlimited_runmodes = {
         RunMode.BACKTEST: 'backtesting',
     }
-    if method in no_unlimited_runmodes.keys():
+    if method in no_unlimited_runmodes:
         from freqtrade.data.btanalysis import get_latest_backtest_filename
 
-        if 'exportfilename' in config:
-            if config['exportfilename'].is_dir():
-                btfile = Path(get_latest_backtest_filename(config['exportfilename']))
-                signals_file = f"{config['exportfilename']}/{btfile.stem}_signals.pkl"
-            else:
-                if config['exportfilename'].exists():
-                    btfile = Path(config['exportfilename'])
-                    signals_file = f"{btfile.parent}/{btfile.stem}_signals.pkl"
-                else:
-                    raise OperationalException(f"{config['exportfilename']} does not exist.")
-        else:
+        if 'exportfilename' not in config:
             raise OperationalException('exportfilename not in config.')
 
+        if config['exportfilename'].is_dir():
+            btfile = Path(get_latest_backtest_filename(config['exportfilename']))
+            signals_file = f"{config['exportfilename']}/{btfile.stem}_signals.pkl"
+        elif config['exportfilename'].exists():
+            btfile = Path(config['exportfilename'])
+            signals_file = f"{btfile.parent}/{btfile.stem}_signals.pkl"
+        else:
+            raise OperationalException(f"{config['exportfilename']} does not exist.")
         if (not Path(signals_file).exists()):
             raise OperationalException(
                 f"Cannot find latest backtest signals file: {signals_file}."

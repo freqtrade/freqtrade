@@ -199,12 +199,10 @@ class FtRestClient:
     def ping(self):
         """simple ping"""
         configstatus = self.show_config()
-        if not configstatus:
+        if not configstatus or configstatus['state'] != "running":
             return {"status": "not_running"}
-        elif configstatus['state'] == "running":
-            return {"status": "pong"}
         else:
-            return {"status": "not_running"}
+            return {"status": "pong"}
 
     def logs(self, limit=None):
         """Show latest logs.

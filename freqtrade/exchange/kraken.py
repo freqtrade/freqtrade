@@ -127,10 +127,9 @@ class Kraken(Exchange):
         stop_price = self.price_to_precision(pair, stop_price, rounding_mode=round_mode)
 
         if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price, leverage, stop_loss=True)
-            return dry_order
-
+            return self.create_dry_run_order(
+                pair, ordertype, side, amount, stop_price, leverage, stop_loss=True
+            )
         try:
             amount = self.amount_to_precision(pair, amount)
 

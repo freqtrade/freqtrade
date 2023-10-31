@@ -344,23 +344,25 @@ class TestCCXTExchange:
     def test_ccxt_get_max_leverage_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
         spot, spot_name = exchange
         if spot:
-            leverage_in_market_spot = EXCHANGES[spot_name].get('leverage_in_spot_market')
-            if leverage_in_market_spot:
+            if leverage_in_market_spot := EXCHANGES[spot_name].get(
+                'leverage_in_spot_market'
+            ):
                 spot_pair = EXCHANGES[spot_name].get('pair', EXCHANGES[spot_name]['pair'])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
-                assert (isinstance(spot_leverage, float) or isinstance(spot_leverage, int))
+                assert isinstance(spot_leverage, (float, int))
                 assert spot_leverage >= 1.0
 
     def test_ccxt_get_max_leverage_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, futures_name = exchange_futures
-        leverage_tiers_public = EXCHANGES[futures_name].get('leverage_tiers_public')
-        if leverage_tiers_public:
+        if leverage_tiers_public := EXCHANGES[futures_name].get(
+            'leverage_tiers_public'
+        ):
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
                 EXCHANGES[futures_name]['pair']
             )
             futures_leverage = futures.get_max_leverage(futures_pair, 20)
-            assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
+            assert isinstance(futures_leverage, (float, int))
             assert futures_leverage >= 1.0
 
     def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
@@ -370,7 +372,7 @@ class TestCCXTExchange:
             EXCHANGES[futures_name]['pair']
         )
         contract_size = futures.get_contract_size(futures_pair)
-        assert (isinstance(contract_size, float) or isinstance(contract_size, int))
+        assert isinstance(contract_size, (float, int))
         assert contract_size >= 0.0
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):

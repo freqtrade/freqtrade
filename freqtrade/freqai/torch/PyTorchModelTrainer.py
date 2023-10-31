@@ -82,7 +82,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         n_epochs = self.n_epochs or self.calc_n_epochs(n_obs=n_obs)
         batch_counter = 0
         for _ in range(n_epochs):
-            for _, batch_data in enumerate(data_loaders_dictionary["train"]):
+            for batch_data in data_loaders_dictionary["train"]:
                 xb, yb = batch_data
                 xb = xb.to(self.device)
                 yb = yb.to(self.device)
@@ -106,7 +106,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             split: str,
     ) -> None:
         self.model.eval()
-        for _, batch_data in enumerate(data_loader_dictionary[split]):
+        for batch_data in data_loader_dictionary[split]:
             xb, yb = batch_data
             xb = xb.to(self.device)
             yb = yb.to(self.device)

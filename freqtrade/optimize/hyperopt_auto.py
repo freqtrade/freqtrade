@@ -24,11 +24,11 @@ def _format_exception_message(space: str, ignore_missing_space: bool) -> None:
            f"but no parameter for this space was not found in your Strategy. "
            )
     if ignore_missing_space:
-        logger.warning(msg + "This space will be ignored.")
+        logger.warning(f"{msg}This space will be ignored.")
     else:
         raise OperationalException(
-            msg + f"Please make sure to have parameters for this space enabled for optimization "
-            f"or remove the '{space}' space from hyperoptimization.")
+            f"{msg}Please make sure to have parameters for this space enabled for optimization or remove the '{space}' space from hyperoptimization."
+        )
 
 
 class HyperOptAuto(IHyperOpt):
@@ -57,15 +57,12 @@ class HyperOptAuto(IHyperOpt):
                 yield attr.get_space(attr_name)
 
     def _get_indicator_space(self, category) -> List:
-        # TODO: is this necessary, or can we call "generate_space" directly?
-        indicator_space = list(self._generate_indicator_space(category))
-        if len(indicator_space) > 0:
+        if indicator_space := list(self._generate_indicator_space(category)):
             return indicator_space
-        else:
-            _format_exception_message(
-                category,
-                self.config.get("hyperopt_ignore_missing_space", False))
-            return []
+        _format_exception_message(
+            category,
+            self.config.get("hyperopt_ignore_missing_space", False))
+        return []
 
     def buy_indicator_space(self) -> List['Dimension']:
         return self._get_indicator_space('buy')

@@ -19,19 +19,16 @@ class RecursiveAnalysisSubFunctions:
             recursive_instances: List[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
         headers = ['indicators']
-        for candle in startups:
-            headers.append(candle)
-
+        headers.extend(iter(startups))
         data = []
         for inst in recursive_instances:
             if len(inst.dict_recursive) > 0:
                 for indicator, values in inst.dict_recursive.items():
                     temp_data = [indicator]
-                    for candle in startups:
-                        temp_data.append(values.get(int(candle), '-'))
+                    temp_data.extend(values.get(int(candle), '-') for candle in startups)
                     data.append(temp_data)
 
-        if len(data) > 0:
+        if data:
             from tabulate import tabulate
             table = tabulate(data, headers=headers, tablefmt="orgtbl")
             print(table)

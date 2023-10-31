@@ -142,10 +142,10 @@ class StrategyResolver(IResolver):
         # Ensure necessary migrations are performed first.
         validate_migrated_strategy_settings(strategy.config)
 
-        if not all(k in strategy.order_types for k in REQUIRED_ORDERTYPES):
+        if any(k not in strategy.order_types for k in REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
-        if not all(k in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
+        if any(k not in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
         trading_mode = strategy.config.get('trading_mode', TradingMode.SPOT)
@@ -208,11 +208,7 @@ class StrategyResolver(IResolver):
             _populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             _buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
             _sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-            if any(x == 2 for x in [
-                _populate_fun_len,
-                _buy_fun_len,
-                _sell_fun_len
-            ]):
+            if 2 in [_populate_fun_len, _buy_fun_len, _sell_fun_len]:
                 raise OperationalException(
                     "Strategy Interface v1 is no longer supported. "
                     "Please update your strategy to implement "
@@ -256,7 +252,7 @@ class StrategyResolver(IResolver):
 
             if len(strat) == 2:
                 temp = Path(tempfile.mkdtemp("freq", "strategy"))
-                name = strat[0] + ".py"
+                name = f"{strat[0]}.py"
 
                 temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
                 temp.joinpath("__init__.py").touch()
@@ -266,15 +262,12 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        strategy = StrategyResolver._load_object(
+        if strategy := StrategyResolver._load_object(
             paths=abs_paths,
             object_name=strategy_name,
             add_source=True,
             kwargs={'config': config},
-        )
-
-        if strategy:
-
+        ):
             return StrategyResolver.validate_strategy(strategy)
 
         raise OperationalException(

@@ -29,11 +29,11 @@ mypy_repo = [repo for repo in f['repos'] if repo['repo']
 
 hooks = mypy_repo[0]['hooks'][0]['additional_dependencies']
 
-errors = []
-for hook in hooks:
-    if hook not in type_reqs:
-        errors.append(f"{hook} is missing in requirements-dev.txt.")
-
+errors = [
+    f"{hook} is missing in requirements-dev.txt."
+    for hook in hooks
+    if hook not in type_reqs
+]
 for req in type_reqs:
     if req not in hooks:
         errors.append(f"{req} is missing in pre-config file.")

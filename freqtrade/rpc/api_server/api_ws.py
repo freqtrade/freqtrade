@@ -82,7 +82,9 @@ async def _process_consumer_request(
             return
 
         # If all topics passed are a valid RPCMessageType, set subscriptions on channel
-        if all([any(x.value == topic for x in RPCMessageType) for topic in data]):
+        if all(
+            any(x.value == topic for x in RPCMessageType) for topic in data
+        ):
             channel.set_subscriptions(data)
 
         # We don't send a response for subscriptions

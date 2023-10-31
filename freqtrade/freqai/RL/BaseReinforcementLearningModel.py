@@ -228,11 +228,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                 now = datetime.now(timezone.utc).timestamp()
                 trade_duration = int((now - trade.open_date_utc.timestamp()) / self.base_tf_seconds)
                 current_profit = trade.calc_profit_ratio(current_rate)
-                if trade.is_short:
-                    market_side = 0
-                else:
-                    market_side = 1
-
+                market_side = 0 if trade.is_short else 1
         return market_side, current_profit, int(trade_duration)
 
     def predict(
@@ -319,10 +315,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                            'dataframe["%-raw_high"] = dataframe["high"]\n'
                            'dataframe["%-raw_low"] = dataframe["low"]\n'
                            'inside `feature_engineering_standard()')
-        elif prices_train.empty:
-            raise OperationalException("No prices found, please follow log warning "
-                                       "instructions to correct the strategy.")
-
         prices_train.rename(columns=rename_dict, inplace=True)
         prices_train.reset_index(drop=True)
 
@@ -339,9 +331,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         """
         Given a dataframe, drop the ohlc data
         """
-        drop_list = ['%-raw_open', '%-raw_low', '%-raw_high', '%-raw_close']
-
         if self.rl_config["drop_ohlc_from_features"]:
+            drop_list = ['%-raw_open', '%-raw_low', '%-raw_high', '%-raw_close']
+
             df.drop(drop_list, axis=1, inplace=True)
             feature_list = dk.training_features_list
             dk.training_features_list = [e for e in feature_list if e not in drop_list]
@@ -354,8 +346,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         perform continual learning.
         For now, this is unused.
         """
-        exists = Path(dk.data_path / f"{dk.model_filename}_model").is_file()
-        if exists:
+        if exists := Path(dk.data_path / f"{dk.model_filename}_model").is_file():
             model = self.MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
         else:
             logger.info('No model file on disk to continue learning from.')
@@ -380,7 +371,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         sets a custom reward based on profit and trade duration.
         """
 
-        def calculate_reward(self, action: int) -> float:  # noqa: C901
+        def calculate_reward(self, action: int) -> float:    # noqa: C901
             """
             An example reward function. This is the one function that users will likely
             wish to inject their own creativity into.
@@ -409,10 +400,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             # reward agent for entering trades
             if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
                     and self._position == Positions.Neutral):
-                if rsi_now < 40:
-                    factor = 40 / rsi_now
-                else:
-                    factor = 1
+                factor = 40 / rsi_now if rsi_now < 40 else 1
                 return 25 * factor
 
             # discourage agent from not entering trades
@@ -427,7 +415,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
             if trade_duration <= max_trade_duration:
                 factor *= 1.5
-            elif trade_duration > max_trade_duration:
+            else:
                 factor *= 0.5
 
             # discourage sitting in position

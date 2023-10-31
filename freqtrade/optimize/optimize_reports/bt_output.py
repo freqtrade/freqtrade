@@ -160,8 +160,8 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
         # Support for prior backtest results
         drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]
 
-    dd_pad_abs = max([len(t['max_drawdown_abs']) for t in strategy_results])
-    dd_pad_per = max([len(dd) for dd in drawdown])
+    dd_pad_abs = max(len(t['max_drawdown_abs']) for t in strategy_results)
+    dd_pad_per = max(len(dd) for dd in drawdown)
     drawdown = [f'{t["max_drawdown_abs"]:>{dd_pad_abs}} {stake_currency}  {dd:>{dd_pad_per}}%'
                 for t, dd in zip(strategy_results, drawdown)]
 
@@ -298,11 +298,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             strat_results['stake_amount'], strat_results['stake_currency']
         ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 
-        message = ("No trades made. "
-                   f"Your starting balance was {start_balance}, "
-                   f"and your stake was {stake_amount}."
-                   )
-        return message
+        return f"No trades made. Your starting balance was {start_balance}, and your stake was {stake_amount}."
 
 
 def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency: str,
@@ -396,24 +392,24 @@ def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
 
 def generate_edge_table(results: dict) -> str:
     floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', 'd', 'd')
-    tabular_data = []
     headers = ['Pair', 'Stoploss', 'Win Rate', 'Risk Reward Ratio',
                'Required Risk Reward', 'Expectancy', 'Total Number of Trades',
                'Average Duration (min)']
 
-    for result in results.items():
-        if result[1].nb_trades > 0:
-            tabular_data.append([
-                result[0],
-                result[1].stoploss,
-                result[1].winrate,
-                result[1].risk_reward_ratio,
-                result[1].required_risk_reward,
-                result[1].expectancy,
-                result[1].nb_trades,
-                round(result[1].avg_trade_duration)
-            ])
-
+    tabular_data = [
+        [
+            result[0],
+            result[1].stoploss,
+            result[1].winrate,
+            result[1].risk_reward_ratio,
+            result[1].required_risk_reward,
+            result[1].expectancy,
+            result[1].nb_trades,
+            round(result[1].avg_trade_duration),
+        ]
+        for result in results.items()
+        if result[1].nb_trades > 0
+    ]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")

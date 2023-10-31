@@ -28,8 +28,7 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
 @pytest.fixture(scope="function")
 def all_conf():
     config_file = Path(__file__).parents[1] / "config_examples/config_full.example.json"
-    conf = load_config_file(str(config_file))
-    return conf
+    return load_config_file(str(config_file))
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
@@ -448,7 +447,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert 'user_data_dir' in config
-    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
+    assert log_has(f"Using data directory: {config['datadir']} ...", caplog)
     assert 'timeframe' in config
     assert not log_has('Parameter -i/--timeframe detected ...', caplog)
 
@@ -492,8 +491,10 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has('Using data directory: {} ...'.format("/foo/bar"), caplog)
-    assert log_has('Using user-data directory: {} ...'.format(Path("/tmp/freqtrade")), caplog)
+    assert log_has('Using data directory: /foo/bar ...', caplog)
+    assert log_has(
+        f'Using user-data directory: {Path("/tmp/freqtrade")} ...', caplog
+    )
     assert 'user_data_dir' in config
 
     assert 'timeframe' in config
@@ -508,10 +509,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert log_has('max_open_trades set to unlimited ...', caplog)
 
     assert 'timerange' in config
-    assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
+    assert log_has(
+        f"Parameter --timerange detected: {config['timerange']} ...", caplog
+    )
 
     assert 'export' in config
-    assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
+    assert log_has(f"Parameter --export detected: {config['export']} ...", caplog)
     assert 'stake_amount' in config
     assert config['stake_amount'] == 'unlimited'
 
@@ -543,7 +546,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
+    assert log_has(f"Using data directory: {config['datadir']} ...", caplog)
     assert 'timeframe' in config
     assert log_has('Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
                    caplog)
@@ -558,7 +561,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'timerange' not in config
 
     assert 'export' in config
-    assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
+    assert log_has(f"Parameter --export detected: {config['export']} ...", caplog)
 
 
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
@@ -1290,10 +1293,7 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Create sections for new and deprecated settings
     # (they may not exist in the config)
     default_conf['sectionA'] = {}
-    default_conf['sectionB'] = {}
-    # Assign deprecated setting
-    default_conf['sectionB']['deprecated_setting'] = 'valB'
-
+    default_conf['sectionB'] = {'deprecated_setting': 'valB'}
     # Both new and deprecated settings exists
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
@@ -1347,10 +1347,7 @@ def test_process_removed_setting(mocker, default_conf, caplog):
     # Create sections for new and deprecated settings
     # (they may not exist in the config)
     default_conf['sectionA'] = {}
-    default_conf['sectionB'] = {}
-    # Assign new setting
-    default_conf['sectionB']['somesetting'] = 'valA'
-
+    default_conf['sectionB'] = {'somesetting': 'valA'}
     # Only new setting exists (nothing should happen)
     process_removed_setting(default_conf,
                             'sectionA', 'somesetting',

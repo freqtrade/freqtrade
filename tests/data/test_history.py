@@ -38,7 +38,7 @@ def _clean_test_file(file: Path) -> None:
     :param file: complete path to the file
     :return: None
     """
-    file_swp = Path(str(file) + '.swp')
+    file_swp = Path(f'{str(file)}.swp')
     # 1. Delete file from the test
     if file.is_file():
         file.unlink()

@@ -131,9 +131,7 @@ class Okx(Exchange):
                     "posSide": self._get_posSide(side, False),
                 })
             self._log_exchange_response('get_leverage', res_lev)
-            already_set = all(float(x['lever']) == leverage for x in res_lev['data'])
-            return already_set
-
+            return all(float(x['lever']) == leverage for x in res_lev['data'])
         except ccxt.BaseError:
             # Assume all errors as "not set yet"
             return False
@@ -218,8 +216,9 @@ class Okx(Exchange):
                        self._api.fetch_canceled_orders):
             try:
                 orders = method(pair, params=params2)
-                orders_f = [order for order in orders if order['id'] == order_id]
-                if orders_f:
+                if orders_f := [
+                    order for order in orders if order['id'] == order_id
+                ]:
                     order = orders_f[0]
                     return self._convert_stop_order(pair, order_id, order)
             except ccxt.BaseError:

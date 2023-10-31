@@ -33,12 +33,11 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         """
         resample_freq = '1D'
         slippage_per_trade_ratio = 0.0005
-        days_in_year = 365
         minimum_acceptable_return = 0.0
 
         # apply slippage per trade to profit_ratio
         results.loc[:, 'profit_ratio_after_slippage'] = \
-            results['profit_ratio'] - slippage_per_trade_ratio
+                results['profit_ratio'] - slippage_per_trade_ratio
 
         # create the index within the min_date and end max_date
         t_index = date_range(start=min_date, end=max_date, freq=resample_freq,
@@ -60,6 +59,7 @@ class SortinoHyperOptLossDaily(IHyperOptLoss):
         down_stdev = math.sqrt((total_downside**2).sum() / len(total_downside))
 
         if down_stdev != 0:
+            days_in_year = 365
             sortino_ratio = expected_returns_mean / down_stdev * math.sqrt(days_in_year)
         else:
             # Define high (negative) sortino ratio to be clear that this is NOT optimal.

@@ -47,9 +47,7 @@ def setup_logging(config: Config) -> None:
     verbosity = config['verbosity']
     logging.root.addHandler(bufferHandler)
 
-    logfile = config.get('logfile')
-
-    if logfile:
+    if logfile := config.get('logfile'):
         s = logfile.split(':')
         if s[0] == 'syslog':
             # Address can be either a string (socket filename) for Unix domain socket or

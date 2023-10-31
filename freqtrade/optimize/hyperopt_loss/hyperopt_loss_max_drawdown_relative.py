@@ -42,5 +42,5 @@ class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
             if max_drawdown == 0:
                 return -total_profit
             return -total_profit / max_drawdown / relative_drawdown
-        except (Exception, ValueError):
+        except Exception:
             return -total_profit

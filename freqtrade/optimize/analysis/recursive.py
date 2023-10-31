@@ -48,7 +48,7 @@ class RecursiveAnalysis(BaseAnalysis):
                 # print(compare_df)
                 for col_name, values in compare_df.items():
                     # print(col_name)
-                    if 'other' == col_name:
+                    if col_name == 'other':
                         continue
                     indicators = values.index
 
@@ -90,7 +90,7 @@ class RecursiveAnalysis(BaseAnalysis):
             # print(compare_df)
             for col_name, values in compare_df.items():
                 # print(col_name)
-                if 'other' == col_name:
+                if col_name == 'other':
                     continue
                 indicators = values.index
 
@@ -115,8 +115,9 @@ class RecursiveAnalysis(BaseAnalysis):
                 shutil.rmtree(path_to_current_identifier)
 
         prepare_data_config = deepcopy(self.local_config)
-        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
-                                            str(self.dt_to_timestamp(varholder.to_dt)))
+        prepare_data_config[
+            'timerange'
+        ] = f"{str(self.dt_to_timestamp(varholder.from_dt))}-{str(self.dt_to_timestamp(varholder.to_dt))}"
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
         backtesting = Backtesting(prepare_data_config, self.exchange)

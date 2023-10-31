@@ -117,8 +117,7 @@ def test_get_timerange_from_live_historic_predictions(mocker, freqai_conf):
     sub_timerange = TimeRange.parse_timerange("20180128-20180130")
     _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "ADA/BTC", freqai.dk)
     base_df["5m"]["date_pred"] = base_df["5m"]["date"]
-    freqai.dd.historic_predictions = {}
-    freqai.dd.historic_predictions["ADA/USDT"] = base_df["5m"]
+    freqai.dd.historic_predictions = {"ADA/USDT": base_df["5m"]}
     freqai.dd.save_historic_predictions_to_disk()
     freqai.dd.save_global_metadata_to_disk({"start_dry_live_date": 1516406400})
 

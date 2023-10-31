@@ -65,7 +65,7 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
     api_mock.create_order.reset_mock()
     order_types = {'stoploss': 'limit', 'stoploss_price_type': 'mark'}
     if limitratio is not None:
-        order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
+        order_types['stoploss_on_exchange_limit_ratio'] = limitratio
 
     order = exchange.create_stoploss(
         pair='ETH/BTC',

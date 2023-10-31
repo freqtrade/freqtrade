@@ -46,8 +46,7 @@ class DefaultPyTorchDataConvertor(PyTorchDataConvertor):
 
     def convert_x(self, df: pd.DataFrame, device: str) -> torch.Tensor:
         numpy_arrays = df.values
-        x = torch.tensor(numpy_arrays, device=device, dtype=torch.float32)
-        return x
+        return torch.tensor(numpy_arrays, device=device, dtype=torch.float32)
 
     def convert_y(self, df: pd.DataFrame, device: str) -> torch.Tensor:
         numpy_arrays = df.values

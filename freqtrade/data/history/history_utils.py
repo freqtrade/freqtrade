@@ -105,11 +105,10 @@ def load_data(datadir: Path,
                                  )
         if not hist.empty:
             result[pair] = hist
-        else:
-            if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
-                logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
-            elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
-                result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
+        elif candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
+            logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
+        elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
+            result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
@@ -177,11 +176,10 @@ def _load_cached_data_for_updating(
         if not prepend and start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
             data = DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
+        elif prepend:
+            end = data.iloc[0]['date']
         else:
-            if prepend:
-                end = data.iloc[0]['date']
-            else:
-                start = data.iloc[-1]['date']
+            start = data.iloc[-1]['date']
     start_ms = int(start.timestamp() * 1000) if start else None
     end_ms = int(end.timestamp() * 1000) if end else None
     return data, start_ms, end_ms
@@ -484,11 +482,11 @@ def download_data_main(config: Config) -> None:
     # Init exchange
     from freqtrade.resolvers.exchange_resolver import ExchangeResolver
     exchange = ExchangeResolver.load_exchange(config, validate=False)
-    available_pairs = [
-        p for p in exchange.get_markets(
+    available_pairs = list(
+        exchange.get_markets(
             tradable_only=True, active_only=not config.get('include_inactive')
-            ).keys()
-    ]
+        ).keys()
+    )
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
     if 'timeframes' not in config:

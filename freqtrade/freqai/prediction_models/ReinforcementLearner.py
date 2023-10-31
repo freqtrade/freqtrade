@@ -91,9 +91,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         if Path(dk.data_path / "best_model.zip").is_file():
             logger.info('Callback found a best model.')
-            best_model = self.MODELCLASS.load(dk.data_path / "best_model")
-            return best_model
-
+            return self.MODELCLASS.load(dk.data_path / "best_model")
         logger.info("Couldn't find best model, using final model instead.")
 
         return model
@@ -145,7 +143,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
             if trade_duration <= max_trade_duration:
                 factor *= 1.5
-            elif trade_duration > max_trade_duration:
+            else:
                 factor *= 0.5
 
             # discourage sitting in position

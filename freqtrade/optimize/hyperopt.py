@@ -333,19 +333,22 @@ class Hyperopt:
             self.backtesting.strategy.trailing_stop = d['trailing_stop']
             self.backtesting.strategy.trailing_stop_positive = d['trailing_stop_positive']
             self.backtesting.strategy.trailing_stop_positive_offset = \
-                d['trailing_stop_positive_offset']
+                    d['trailing_stop_positive_offset']
             self.backtesting.strategy.trailing_only_offset_is_reached = \
-                d['trailing_only_offset_is_reached']
+                    d['trailing_only_offset_is_reached']
 
         if HyperoptTools.has_space(self.config, 'trades'):
-            if self.config["stake_amount"] == "unlimited" and \
-                    (params_dict['max_open_trades'] == -1 or params_dict['max_open_trades'] == 0):
+            if self.config["stake_amount"] == "unlimited" and params_dict[
+                'max_open_trades'
+            ] in [-1, 0]:
                 # Ignore unlimited max open trades if stake amount is unlimited
                 params_dict.update({'max_open_trades': self.config['max_open_trades']})
 
-            updated_max_open_trades = int(params_dict['max_open_trades']) \
-                if (params_dict['max_open_trades'] != -1
-                    and params_dict['max_open_trades'] != 0) else float('inf')
+            updated_max_open_trades = (
+                int(params_dict['max_open_trades'])
+                if params_dict['max_open_trades'] not in [-1, 0]
+                else float('inf')
+            )
 
             self.config.update({'max_open_trades': updated_max_open_trades})
 

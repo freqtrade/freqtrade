@@ -55,14 +55,10 @@ def init_db(db_url: str) -> None:
         raise OperationalException(
             f'Bad db-url {db_url}. For in-memory database, please use `sqlite://`.')
     if db_url == 'sqlite://':
-        kwargs.update({
-            'poolclass': StaticPool,
-        })
+        kwargs['poolclass'] = StaticPool
     # Take care of thread ownership
     if db_url.startswith('sqlite://'):
-        kwargs.update({
-            'connect_args': {'check_same_thread': False},
-        })
+        kwargs['connect_args'] = {'check_same_thread': False}
 
     try:
         engine = create_engine(db_url, future=True, **kwargs)

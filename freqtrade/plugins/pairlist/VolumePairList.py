@@ -172,26 +172,29 @@ class VolumePairList(IPairList):
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
-        else:
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
-            _pairlist = [k for k in self._exchange.get_markets(
+        _pairlist = list(
+            self._exchange.get_markets(
                 quote_currencies=[self._stake_currency],
-                tradable_only=True, active_only=True).keys()]
-            # No point in testing for blacklisted pairs...
-            _pairlist = self.verify_blacklist(_pairlist, logger.info)
-            if not self._use_range:
-                filtered_tickers = [
-                    v for k, v in tickers.items()
-                    if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v.get(self._sort_key) is not None)
-                        and v['symbol'] in _pairlist)]
-                pairlist = [s['symbol'] for s in filtered_tickers]
-            else:
-                pairlist = _pairlist
+                tradable_only=True,
+                active_only=True,
+            ).keys()
+        )
+        # No point in testing for blacklisted pairs...
+        _pairlist = self.verify_blacklist(_pairlist, logger.info)
+        if self._use_range:
+            pairlist = _pairlist
 
-            pairlist = self.filter_pairlist(pairlist, tickers)
-            self._pair_cache['pairlist'] = pairlist.copy()
+        else:
+            filtered_tickers = [
+                v for k, v in tickers.items()
+                if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+                    and (self._use_range or v.get(self._sort_key) is not None)
+                    and v['symbol'] in _pairlist)]
+            pairlist = [s['symbol'] for s in filtered_tickers]
+        pairlist = self.filter_pairlist(pairlist, tickers)
+        self._pair_cache['pairlist'] = pairlist.copy()
 
         return pairlist
 
@@ -223,18 +226,16 @@ class VolumePairList(IPairList):
             self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: "
                           f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
                           f"till {format_ms_time(to_ms)}", logger.info)
-            needed_pairs: ListPairsWithTimeframes = [
-                (p, self._lookback_timeframe, self._def_candletype) for p in
-                [s['symbol'] for s in filtered_tickers]
+            if needed_pairs := [
+                (p, self._lookback_timeframe, self._def_candletype)
+                for p in [s['symbol'] for s in filtered_tickers]
                 if p not in self._pair_cache
-            ]
-
-            # Get all candles
-            candles = {}
-            if needed_pairs:
+            ]:
                 candles = self._exchange.refresh_latest_ohlcv(
                     needed_pairs, since_ms=since_ms, cache=False
                 )
+            else:
+                candles = {}
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p['symbol']].get('contractSize', 1.0) or 1.0
                 pair_candles = candles[

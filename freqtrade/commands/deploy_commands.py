@@ -142,12 +142,10 @@ def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     r = resp.json()
 
     if version:
-        tmp = [x for x in r if x['name'] == version]
-        if tmp:
-            latest_version = tmp[0]['name']
-            assets = tmp[0].get('assets', [])
-        else:
+        if not (tmp := [x for x in r if x['name'] == version]):
             raise ValueError("UI-Version not found.")
+        latest_version = tmp[0]['name']
+        assets = tmp[0].get('assets', [])
     else:
         latest_version = r[0]['name']
         assets = r[0].get('assets', [])

@@ -58,11 +58,7 @@ class Bybit(Exchange):
         # ccxt defaults to swap mode.
         config = {}
         if self.trading_mode == TradingMode.SPOT:
-            config.update({
-                "options": {
-                    "defaultType": "spot"
-                }
-            })
+            config["options"] = {"defaultType": "spot"}
         config.update(super()._ccxt_config)
         return config
 
@@ -171,22 +167,23 @@ class Bybit(Exchange):
         market = self.markets[pair]
         mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
-        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
-
-            if market['inverse']:
-                raise OperationalException(
-                    "Freqtrade does not yet support inverse contracts")
-            initial_margin_rate = 1 / leverage
-
-            # See docstring - ignores extra margin!
-            if is_short:
-                return open_rate * (1 + initial_margin_rate - mm_ratio)
-            else:
-                return open_rate * (1 - initial_margin_rate + mm_ratio)
-
-        else:
+        if (
+            self.trading_mode != TradingMode.FUTURES
+            or self.margin_mode != MarginMode.ISOLATED
+        ):
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+        if market['inverse']:
+            raise OperationalException(
+                "Freqtrade does not yet support inverse contracts")
+        initial_margin_rate = 1 / leverage
+
+            # See docstring - ignores extra margin!
+        return (
+            open_rate * (1 + initial_margin_rate - mm_ratio)
+            if is_short
+            else open_rate * (1 - initial_margin_rate + mm_ratio)
+        )
 
     def get_funding_fees(
             self, pair: str, amount: float, is_short: bool, open_date: datetime) -> float:

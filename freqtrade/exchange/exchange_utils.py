@@ -43,8 +43,9 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     ex_mod = getattr(ccxt, exchange.lower())()
     if not ex_mod or not ex_mod.has:
         return False, ''
-    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
-    if missing:
+    if missing := [
+        k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True
+    ]:
         return False, f"missing: {', '.join(missing)}"
 
     missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
@@ -159,8 +160,9 @@ def date_minus_candles(
         date = datetime.now(timezone.utc)
 
     tf_min = timeframe_to_minutes(timeframe)
-    new_date = timeframe_to_prev_date(timeframe, date) - timedelta(minutes=tf_min * candle_count)
-    return new_date
+    return timeframe_to_prev_date(timeframe, date) - timedelta(
+        minutes=tf_min * candle_count
+    )
 
 
 def market_is_active(market: Dict) -> bool:
@@ -315,7 +317,7 @@ def price_to_precision(
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
-            if not missing == FtPrecise("0"):
+            if missing != FtPrecise("0"):
                 if rounding_mode == ROUND_UP:
                     res = price_str - missing + precision
                 elif rounding_mode == ROUND_DOWN:

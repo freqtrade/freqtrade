@@ -101,7 +101,6 @@ def __run_backtest_bg(btconfig: Config):
     except (Exception, OperationalException, DependencyException) as e:
         logger.exception(f"Backtesting caused an error: {e}")
         ApiBG.bt['bt_error'] = str(e)
-        pass
     finally:
         ApiBG.bgtask_running = False
 

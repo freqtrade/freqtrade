@@ -1,4 +1,5 @@
 """ Freqtrade bot """
+
 __version__ = '2023.11-dev'
 
 if 'dev' in __version__:
@@ -7,9 +8,11 @@ if 'dev' in __version__:
         import subprocess
         freqtrade_basedir = Path(__file__).parent
 
-        __version__ = __version__ + '-' + subprocess.check_output(
+        __version__ = f'{__version__}-' + subprocess.check_output(
             ['git', 'log', '--format="%h"', '-n 1'],
-            stderr=subprocess.DEVNULL, cwd=freqtrade_basedir).decode("utf-8").rstrip().strip('"')
+            stderr=subprocess.DEVNULL,
+            cwd=freqtrade_basedir,
+        ).decode("utf-8").rstrip().strip('"')
 
     except Exception:  # pragma: no cover
         # git not available, ignore

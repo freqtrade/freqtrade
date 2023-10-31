@@ -89,24 +89,22 @@ class IResolver:
             module = importlib.util.module_from_spec(spec)
             try:
                 spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
-            except (AttributeError, ModuleNotFoundError, SyntaxError,
-                    ImportError, NameError) as err:
+            except (AttributeError, SyntaxError, ImportError, NameError) as err:
                 # Catch errors in case a specific module is not installed
                 logger.warning(f"Could not import {module_path} due to '{err}'")
                 if enum_failed:
                     return iter([None])
 
-            valid_objects_gen = (
-                (obj, inspect.getsource(module)) for
-                name, obj in inspect.getmembers(
-                    module, inspect.isclass) if ((object_name is None or object_name == name)
-                                                 and issubclass(obj, cls.object_type)
-                                                 and obj is not cls.object_type
-                                                 and obj.__module__ == module_name
-                                                 )
+            return (
+                (obj, inspect.getsource(module))
+                for name, obj in inspect.getmembers(module, inspect.isclass)
+                if (
+                    (object_name is None or object_name == name)
+                    and issubclass(obj, cls.object_type)
+                    and obj is not cls.object_type
+                    and obj.__module__ == module_name
+                )
             )
-            # The __module__ check ensures we only use strategies that are defined in this folder.
-            return valid_objects_gen
 
     @classmethod
     def _search_object(cls, directory: Path, *, object_name: str, add_source: bool = False
@@ -128,9 +126,7 @@ class IResolver:
                 continue
             module_path = entry.resolve()
 
-            obj = next(cls._get_valid_object(module_path, object_name), None)
-
-            if obj:
+            if obj := next(cls._get_valid_object(module_path, object_name), None):
                 obj[0].__file__ = str(entry)
                 if add_source:
                     obj[0].__source__ = obj[1]
@@ -179,9 +175,9 @@ class IResolver:
                                            user_subdir=cls.user_subdir,
                                            extra_dirs=extra_dirs)
 
-        found_object = cls._load_object(paths=abs_paths, object_name=object_name,
-                                        kwargs=kwargs)
-        if found_object:
+        if found_object := cls._load_object(
+            paths=abs_paths, object_name=object_name, kwargs=kwargs
+        ):
             return found_object
         raise OperationalException(
             f"Impossible to load {cls.object_type_str} '{object_name}'. This class does not exist "
@@ -244,12 +240,17 @@ class IResolver:
                 continue
             module_path = entry.resolve()
             logger.debug(f"Path {module_path}")
-            for obj in cls._get_valid_object(module_path, object_name=None,
-                                             enum_failed=enum_failed):
-                objects.append(
-                    {'name': obj[0].__name__ if obj is not None else '',
-                     'class': obj[0] if obj is not None else None,
-                     'location': entry,
-                     'location_rel': cls._build_rel_location(basedir or directory, entry),
-                     })
+            objects.extend(
+                {
+                    'name': obj[0].__name__ if obj is not None else '',
+                    'class': obj[0] if obj is not None else None,
+                    'location': entry,
+                    'location_rel': cls._build_rel_location(
+                        basedir or directory, entry
+                    ),
+                }
+                for obj in cls._get_valid_object(
+                    module_path, object_name=None, enum_failed=enum_failed
+                )
+            )
         return objects

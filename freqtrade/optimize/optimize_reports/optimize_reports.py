@@ -20,10 +20,9 @@ logger = logging.getLogger(__name__)
 def generate_trade_signal_candles(preprocessed_df: Dict[str, DataFrame],
                                   bt_results: Dict[str, Any]) -> DataFrame:
     signal_candles_only = {}
-    for pair in preprocessed_df.keys():
+    for pair, pairdf in preprocessed_df.items():
         signal_candles_only_df = DataFrame()
 
-        pairdf = preprocessed_df[pair]
         resdf = bt_results['results']
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 
@@ -136,22 +135,19 @@ def generate_tag_metrics(tag_type: str,
 
     tabular_data = []
 
-    if tag_type in results.columns:
-        for tag, count in results[tag_type].value_counts().items():
-            result = results[results[tag_type] == tag]
-            if skip_nan and result['profit_abs'].isnull().all():
-                continue
-
+    if tag_type not in results.columns:
+        return []
+    for tag, count in results[tag_type].value_counts().items():
+        result = results[results[tag_type] == tag]
+        if not skip_nan or not result['profit_abs'].isnull().all():
             tabular_data.append(_generate_result_line(result, starting_balance, tag))
 
-        # Sort by total profit %:
-        tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
+    # Sort by total profit %:
+    tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
 
-        # Append Total
-        tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
-        return tabular_data
-    else:
-        return []
+    # Append Total
+    tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
+    return tabular_data
 
 
 def generate_exit_reason_stats(max_open_trades: IntOrInf, results: DataFrame) -> List[Dict]:
@@ -248,10 +244,10 @@ def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dic
 
 
 def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
-    result = {}
-    for period in BACKTEST_BREAKDOWNS:
-        result[period] = generate_periodic_breakdown_stats(trade_list, period)
-    return result
+    return {
+        period: generate_periodic_breakdown_stats(trade_list, period)
+        for period in BACKTEST_BREAKDOWNS
+    }
 
 
 def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
@@ -395,10 +391,22 @@ def generate_strategy_stats(pairlist: List[str],
     if not is_hyperopt:
         periodic_breakdown = {'periodic_breakdown': generate_all_periodic_breakdown_stats(results)}
 
-    best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
-                    key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
-    worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
-                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
+    best_pair = (
+        max(
+            (pair for pair in pair_results if pair['key'] != 'TOTAL'),
+            key=lambda x: x['profit_sum'],
+        )
+        if len(pair_results) > 1
+        else None
+    )
+    worst_pair = (
+        min(
+            (pair for pair in pair_results if pair['key'] != 'TOTAL'),
+            key=lambda x: x['profit_sum'],
+        )
+        if len(pair_results) > 1
+        else None
+    )
     winning_profit = results.loc[results['profit_abs'] > 0, 'profit_abs'].sum()
     losing_profit = results.loc[results['profit_abs'] < 0, 'profit_abs'].sum()
     profit_factor = winning_profit / abs(losing_profit) if losing_profit else 0.0
@@ -414,24 +422,37 @@ def generate_strategy_stats(pairlist: List[str],
         'results_per_enter_tag': enter_tag_results,
         'exit_reason_summary': exit_reason_stats,
         'left_open_trades': left_open_results,
-
         'total_trades': len(results),
         'trade_count_long': len(results.loc[~results['is_short']]),
         'trade_count_short': len(results.loc[results['is_short']]),
         'total_volume': float(results['stake_amount'].sum()),
-        'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
-        'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
-        'profit_median': results['profit_ratio'].median() if len(results) > 0 else 0,
+        'avg_stake_amount': results['stake_amount'].mean() if results else 0,
+        'profit_mean': results['profit_ratio'].mean() if results else 0,
+        'profit_median': results['profit_ratio'].median() if results else 0,
         'profit_total': results['profit_abs'].sum() / start_balance,
-        'profit_total_long': results.loc[~results['is_short'], 'profit_abs'].sum() / start_balance,
-        'profit_total_short': results.loc[results['is_short'], 'profit_abs'].sum() / start_balance,
+        'profit_total_long': results.loc[
+            ~results['is_short'], 'profit_abs'
+        ].sum()
+        / start_balance,
+        'profit_total_short': results.loc[
+            results['is_short'], 'profit_abs'
+        ].sum()
+        / start_balance,
         'profit_total_abs': results['profit_abs'].sum(),
-        'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
-        'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
-        'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
+        'profit_total_long_abs': results.loc[
+            ~results['is_short'], 'profit_abs'
+        ].sum(),
+        'profit_total_short_abs': results.loc[
+            results['is_short'], 'profit_abs'
+        ].sum(),
+        'cagr': calculate_cagr(
+            backtest_days, start_balance, content['final_balance']
+        ),
         'expectancy': expectancy,
         'expectancy_ratio': expectancy_ratio,
-        'sortino': calculate_sortino(results, min_date, max_date, start_balance),
+        'sortino': calculate_sortino(
+            results, min_date, max_date, start_balance
+        ),
         'sharpe': calculate_sharpe(results, min_date, max_date, start_balance),
         'calmar': calculate_calmar(results, min_date, max_date, start_balance),
         'profit_factor': profit_factor,
@@ -440,10 +461,8 @@ def generate_strategy_stats(pairlist: List[str],
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_end_ts': int(max_date.timestamp() * 1000),
         'backtest_days': backtest_days,
-
         'backtest_run_start_ts': content['backtest_start_time'],
         'backtest_run_end_ts': content['backtest_end_time'],
-
         'trades_per_day': round(len(results) / backtest_days, 2),
         'market_change': market_change,
         'pairlist': pairlist,
@@ -460,19 +479,23 @@ def generate_strategy_stats(pairlist: List[str],
         'canceled_entry_orders': content['canceled_entry_orders'],
         'replaced_entry_orders': content['replaced_entry_orders'],
         'max_open_trades': max_open_trades,
-        'max_open_trades_setting': (config['max_open_trades']
-                                    if config['max_open_trades'] != float('inf') else -1),
+        'max_open_trades_setting': config['max_open_trades']
+        if config['max_open_trades'] != float('inf')
+        else -1,
         'timeframe': config['timeframe'],
         'timeframe_detail': config.get('timeframe_detail', ''),
         'timerange': config.get('timerange', ''),
         'enable_protections': config.get('enable_protections', False),
         'strategy_name': strategy,
-        # Parameters relevant for backtesting
         'stoploss': config['stoploss'],
         'trailing_stop': config.get('trailing_stop', False),
         'trailing_stop_positive': config.get('trailing_stop_positive'),
-        'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset', 0.0),
-        'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached', False),
+        'trailing_stop_positive_offset': config.get(
+            'trailing_stop_positive_offset', 0.0
+        ),
+        'trailing_only_offset_is_reached': config.get(
+            'trailing_only_offset_is_reached', False
+        ),
         'use_custom_stoploss': config.get('use_custom_stoploss', False),
         'minimal_roi': config['minimal_roi'],
         'use_exit_signal': config['use_exit_signal'],
@@ -481,7 +504,7 @@ def generate_strategy_stats(pairlist: List[str],
         'ignore_roi_if_entry_signal': config['ignore_roi_if_entry_signal'],
         **periodic_breakdown,
         **daily_stats,
-        **trade_stats
+        **trade_stats,
     }
 
     try:

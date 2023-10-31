@@ -63,7 +63,7 @@ class Base3ActionRLEnv(BaseEnvironment):
                 self._position = Positions.Short
                 trade_type = "short"
                 self._last_trade_tick = self._current_tick
-            elif action == Actions.Sell.value and not self.can_short:
+            elif action == Actions.Sell.value:
                 self._update_total_profit()
                 self._position = Positions.Neutral
                 trade_type = "exit"
@@ -122,7 +122,4 @@ class Base3ActionRLEnv(BaseEnvironment):
         """
         if self.can_short:
             return action in [Actions.Buy.value, Actions.Sell.value, Actions.Neutral.value]
-        else:
-            if action == Actions.Sell.value and self._position != Positions.Long:
-                return False
-            return True
+        return action != Actions.Sell.value or self._position == Positions.Long

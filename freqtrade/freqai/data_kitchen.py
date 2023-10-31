@@ -351,9 +351,9 @@ class FreqaiDataKitchen:
             timerange_backtest.startts = timerange_train.stopts
             timerange_backtest.stopts = timerange_backtest.startts + int(bt_period)
 
-            if timerange_backtest.stopts > config_timerange.stopts:
-                timerange_backtest.stopts = config_timerange.stopts
-
+            timerange_backtest.stopts = min(
+                timerange_backtest.stopts, config_timerange.stopts
+            )
             tr_backtesting_list.append(timerange_backtest.timerange_str)
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
@@ -387,12 +387,10 @@ class FreqaiDataKitchen:
         features: list = the features to be used for training/prediction
         """
         column_names = dataframe.columns
-        features = [c for c in column_names if "%" in c]
-
-        if not features:
+        if features := [c for c in column_names if "%" in c]:
+            self.training_features_list = features
+        else:
             raise OperationalException("Could not find any features!")
-
-        self.training_features_list = features
 
     def find_labels(self, dataframe: DataFrame) -> None:
         column_names = dataframe.columns
@@ -405,8 +403,7 @@ class FreqaiDataKitchen:
         training than older data.
         """
         wfactor = self.config["freqai"]["feature_parameters"]["weight_factor"]
-        weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
-        return weights
+        return np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
 
     def get_predictions_to_append(self, predictions: DataFrame,
                                   do_predict: npt.ArrayLike,
@@ -433,8 +430,7 @@ class FreqaiDataKitchen:
             append_df["DI_values"] = self.DI_values
 
         dataframe_backtest.reset_index(drop=True, inplace=True)
-        merged_df = pd.concat([dataframe_backtest["date"], append_df], axis=1)
-        return merged_df
+        return pd.concat([dataframe_backtest["date"], append_df], axis=1)
 
     def append_predictions(self, append_df: DataFrame) -> None:
         """
@@ -508,10 +504,7 @@ class FreqaiDataKitchen:
         time = datetime.now(tz=timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
         max_time = self.freqai_config.get("expiration_hours", 0)
-        if max_time > 0:
-            return elapsed_time > max_time
-        else:
-            return False
+        return elapsed_time > max_time if max_time > 0 else False
 
     def check_if_new_training_required(
         self, trained_timestamp: int
@@ -604,10 +597,11 @@ class FreqaiDataKitchen:
 
         for pair in pairs:
             pair = pair.replace(':', '')  # lightgbm doesnt like colons
-            pair_cols = [col for col in dataframe.columns if col.startswith("%")
-                         and f"{pair}_" in col]
-
-            if pair_cols:
+            if pair_cols := [
+                col
+                for col in dataframe.columns
+                if col.startswith("%") and f"{pair}_" in col
+            ]:
                 pair_cols.insert(0, 'date')
                 corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
 
@@ -654,20 +648,10 @@ class FreqaiDataKitchen:
         :param is_corr_pairs: bool = whether the pair is a corr pair or not
         :return: dataframe = dataframe containing the pair data
         """
-        if is_corr_pairs:
-            dataframe = corr_dataframes[pair][tf]
-            if not dataframe.empty:
-                return dataframe
-            else:
-                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
-                return dataframe
-        else:
-            dataframe = base_dataframes[tf]
-            if not dataframe.empty:
-                return dataframe
-            else:
-                dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
-                return dataframe
+        dataframe = corr_dataframes[pair][tf] if is_corr_pairs else base_dataframes[tf]
+        if dataframe.empty:
+            dataframe = strategy.dp.get_pair_dataframe(pair=pair, timeframe=tf)
+        return dataframe
 
     def merge_features(self, df_main: DataFrame, df_to_merge: DataFrame,
                        tf: str, timeframe_inf: str, suffix: str) -> DataFrame:
@@ -726,7 +710,7 @@ class FreqaiDataKitchen:
                 if n == 0:
                     continue
                 df_shift = informative_df[indicators].shift(n)
-                df_shift = df_shift.add_suffix("_shift-" + str(n))
+                df_shift = df_shift.add_suffix(f"_shift-{str(n)}")
                 informative_df = pd.concat((informative_df, df_shift), axis=1)
 
             dataframe = self.merge_features(dataframe.copy(), informative_df,
@@ -877,8 +861,7 @@ class FreqaiDataKitchen:
         """
         Get prediction dataframe from feather file format
         """
-        append_df = pd.read_feather(self.backtesting_results_path)
-        return append_df
+        return pd.read_feather(self.backtesting_results_path)
 
     def check_if_backtest_prediction_is_valid(
         self,
@@ -952,8 +935,9 @@ class FreqaiDataKitchen:
         will be NaN and FreqAI will automatically cut those off of the training
         dataset.
         """
-        buffer = self.freqai_config["feature_parameters"]["buffer_train_data_candles"]
-        if buffer:
+        if buffer := self.freqai_config["feature_parameters"][
+            "buffer_train_data_candles"
+        ]:
             timerange.stopts -= buffer * timeframe_to_seconds(self.config["timeframe"])
             timerange.startts += buffer * timeframe_to_seconds(self.config["timeframe"])
 

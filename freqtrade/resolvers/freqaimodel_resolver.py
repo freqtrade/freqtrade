@@ -47,10 +47,8 @@ class FreqaiModelResolver(IResolver):
                 f"{freqaimodel_name} is a baseclass and cannot be used directly. Please choose "
                 "an existing child class or inherit from this baseclass.\n"
             )
-        freqaimodel = FreqaiModelResolver.load_object(
+        return FreqaiModelResolver.load_object(
             freqaimodel_name,
             config,
             kwargs={"config": config},
         )
-
-        return freqaimodel

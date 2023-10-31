@@ -110,14 +110,11 @@ def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
-    dk = FreqaiDataKitchen(freqaiconf)
-    return dk
+    return FreqaiDataKitchen(freqaiconf)
 
 
 def get_patched_data_drawer(mocker, freqaiconf):
-    # dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
-    dd = FreqaiDataDrawer(freqaiconf)
-    return dd
+    return FreqaiDataDrawer(freqaiconf)
 
 
 def get_patched_freqai_strategy(mocker, freqaiconf):
@@ -128,9 +125,7 @@ def get_patched_freqai_strategy(mocker, freqaiconf):
 
 
 def get_patched_freqaimodel(mocker, freqaiconf):
-    freqaimodel = FreqaiModelResolver.load_freqaimodel(freqaiconf)
-
-    return freqaimodel
+    return FreqaiModelResolver.load_freqaimodel(freqaiconf)
 
 
 def make_unfiltered_dataframe(mocker, freqai_conf):

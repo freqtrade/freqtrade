@@ -277,7 +277,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
                 del run_ids[strategy_name]
                 load_and_merge_backtest_result(strategy_name, filename, results)
 
-        if len(run_ids) == 0:
+        if not run_ids:
             break
     return results
 
@@ -313,30 +313,29 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
     :raise: ValueError if loading goes wrong.
     """
     data = load_backtest_stats(filename)
-    if not isinstance(data, list):
-        # new, nested format
-        if 'strategy' not in data:
-            raise ValueError("Unknown dataformat.")
-
-        if not strategy:
-            if len(data['strategy']) == 1:
-                strategy = list(data['strategy'].keys())[0]
-            else:
-                raise ValueError("Detected backtest result with more than one strategy. "
-                                 "Please specify a strategy.")
-
-        if strategy not in data['strategy']:
-            raise ValueError(f"Strategy {strategy} not available in the backtest result.")
-
-        data = data['strategy'][strategy]['trades']
-        df = pd.DataFrame(data)
-        if not df.empty:
-            df = _load_backtest_data_df_compatibility(df)
-
-    else:
+    if isinstance(data, list):
         # old format - only with lists.
         raise OperationalException(
             "Backtest-results with only trades data are no longer supported.")
+    # new, nested format
+    if 'strategy' not in data:
+        raise ValueError("Unknown dataformat.")
+
+    if not strategy:
+        if len(data['strategy']) == 1:
+            strategy = list(data['strategy'].keys())[0]
+        else:
+            raise ValueError("Detected backtest result with more than one strategy. "
+                             "Please specify a strategy.")
+
+    if strategy not in data['strategy']:
+        raise ValueError(f"Strategy {strategy} not available in the backtest result.")
+
+    data = data['strategy'][strategy]['trades']
+    df = pd.DataFrame(data)
+    if not df.empty:
+        df = _load_backtest_data_df_compatibility(df)
+
     if not df.empty:
         df = df.sort_values("open_date").reset_index(drop=True)
     return df
@@ -407,9 +406,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
     filters = []
     if strategy:
         filters.append(Trade.strategy == strategy)
-    trades = trade_list_to_dataframe(list(Trade.get_trades(filters).all()))
-
-    return trades
+    return trade_list_to_dataframe(list(Trade.get_trades(filters).all()))
 
 
 def load_trades(source: str, db_url: str, exportfilename: Path,
@@ -425,9 +422,7 @@ def load_trades(source: str, db_url: str, exportfilename: Path,
     :return: DataFrame containing trades
     """
     if no_trades:
-        df = pd.DataFrame(columns=BT_DATA_COLUMNS)
-        return df
-
+        return pd.DataFrame(columns=BT_DATA_COLUMNS)
     if source == "DB":
         return load_trades_from_db(db_url)
     elif source == "file":

@@ -14,26 +14,21 @@ from .webserver import ApiServer
 
 
 def get_rpc_optional() -> Optional[RPC]:
-    if ApiServer._has_rpc:
-        return ApiServer._rpc
-    return None
+    return ApiServer._rpc if ApiServer._has_rpc else None
 
 
 async def get_rpc() -> Optional[AsyncIterator[RPC]]:
 
-    _rpc = get_rpc_optional()
-    if _rpc:
-        request_id = str(uuid4())
-        ctx_token = _request_id_ctx_var.set(request_id)
-        Trade.rollback()
-        try:
-            yield _rpc
-        finally:
-            Trade.session.remove()
-            _request_id_ctx_var.reset(ctx_token)
-
-    else:
+    if not (_rpc := get_rpc_optional()):
         raise RPCException('Bot is not in the correct state')
+    request_id = str(uuid4())
+    ctx_token = _request_id_ctx_var.set(request_id)
+    Trade.rollback()
+    try:
+        yield _rpc
+    finally:
+        Trade.session.remove()
+        _request_id_ctx_var.reset(ctx_token)
 
 
 def get_config() -> Dict[str, Any]:
