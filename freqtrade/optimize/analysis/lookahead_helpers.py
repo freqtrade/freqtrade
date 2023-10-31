@@ -7,7 +7,7 @@ import pandas as pd
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.lookahead_analysis import LookaheadAnalysis
+from freqtrade.optimize.analysis.lookahead import LookaheadAnalysis
 from freqtrade.resolvers import StrategyResolver
 
 

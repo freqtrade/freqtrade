@@ -136,6 +136,43 @@ Freqtrade will not attempt to change these settings.
 The Kraken API does only provide 720 historic candles, which is sufficient for Freqtrade dry-run and live trade modes, but is a problem for backtesting.
 To download data for the Kraken exchange, using `--dl-trades` is mandatory, otherwise the bot will download the same 720 candles over and over, and you'll not have enough backtest data.
 
+To speed up downloading, you can download the [trades zip files](https://support.kraken.com/hc/en-us/articles/360047543791-Downloadable-historical-market-data-time-and-sales-) kraken provides.
+These are usually updated once per quarter. Freqtrade expects these files to be placed in `user_data/data/kraken/trades_csv`.
+
+A structure as follows can make sense if using incremental files, with the "full" history in one directory, and incremental files in different directories.
+The assumption for this mode is that the data is downloaded and unzipped keeping filenames as they are.
+Duplicate content will be ignored (based on timestamp) - though the assumption is that there is no gap in the data.
+
+This means, if your "full" history ends in Q4 2022 - then both incremental updates Q1 2023 and Q2 2023 are available.
+Not having this will lead to incomplete data, and therefore invalid results while using the data.
+
+```
+└── trades_csv
+    ├── Kraken_full_history
+    │   ├── BCHEUR.csv
+    │   └── XBTEUR.csv
+    ├── Kraken_Trading_History_Q1_2023
+    │   ├── BCHEUR.csv
+    │   └── XBTEUR.csv
+    └── Kraken_Trading_History_Q2_2023
+        ├── BCHEUR.csv
+        └── XBTEUR.csv
+```
+
+You can convert these files into freqtrade files:
+
+``` bash
+freqtrade convert-trade-data --exchange kraken --format-from kraken_csv --format-to feather
+# Convert trade data to different ohlcv timeframes
+freqtrade trades-to-ohlcv -p BTC/EUR BCH/EUR --exchange kraken -t 1m 5m 15m 1h
+```
+
+The converted data also makes downloading data possible, and will start the download after the latest loaded trade.
+
+``` bash
+freqtrade download-data --exchange kraken --dl-trades -p BTC/EUR BCH/EUR 
+```
+
 !!! Warning "Downloading data from kraken"
     Downloading kraken data will require significantly more memory (RAM) than any other exchange, as the trades-data needs to be converted into candles on your machine.
     It will also take a long time, as freqtrade will need to download every single trade that happened on the exchange for the pair / timerange combination, therefore please be patient.

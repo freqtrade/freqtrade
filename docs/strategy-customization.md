@@ -1008,6 +1008,10 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
+!!! Tip "Identifying problems"
+    You may also want to check the 2 helper commands [lookahead-analysis](lookahead-analysis.md) and [recursive-analysis](recursive-analysis.md), which can each help you figure out problems with your strategy in different ways.
+    Please treat them as what they are - helpers to identify most common problems. A negative result of each does not guarantee that there's none of the above errors included.
+
 ### Colliding signals
 
 When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that enter, and exit immediately. Obviously, this can potentially lead to missed entries.

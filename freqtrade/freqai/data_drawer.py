@@ -296,8 +296,7 @@ class FreqaiDataDrawer:
                            f"for more than {len(dataframe.index)} candles.")
 
         df_concat = pd.concat([hist_preds, new_pred], ignore_index=True, keys=hist_preds.keys())
-        # remove last row because we will append that later in append_model_predictions()
-        df_concat = df_concat.iloc[:-1]
+
         # any missing values will get zeroed out so users can see the exact
         # downtime in FreqUI
         df_concat = df_concat.fillna(0)

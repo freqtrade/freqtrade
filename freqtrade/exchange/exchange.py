@@ -2279,6 +2279,7 @@ class Exchange:
 
                     from_id = t[-1][1]
                 else:
+                    logger.debug("Stopping as no more trades were returned.")
                     break
             except asyncio.CancelledError:
                 logger.debug("Async operation Interrupted, breaking trades DL loop.")
@@ -2304,6 +2305,11 @@ class Exchange:
             try:
                 t = await self._async_fetch_trades(pair, since=since)
                 if t:
+                    # No more trades to download available at the exchange,
+                    # So we repeatedly get the same trade over and over again.
+                    if since == t[-1][0] and len(t) == 1:
+                        logger.debug("Stopping because no more trades are available.")
+                        break
                     since = t[-1][0]
                     trades.extend(t)
                     # Reached the end of the defined-download period
@@ -2312,6 +2318,7 @@ class Exchange:
                             f"Stopping because until was reached. {t[-1][0]} > {until}")
                         break
                 else:
+                    logger.debug("Stopping as no more trades were returned.")
                     break
             except asyncio.CancelledError:
                 logger.debug("Async operation Interrupted, breaking trades DL loop.")
@@ -2653,12 +2660,14 @@ class Exchange:
         """
         return 0.0
 
-    def funding_fee_cutoff(self, open_date: datetime):
+    def funding_fee_cutoff(self, open_date: datetime) -> bool:
         """
+        Funding fees are only charged at full hours (usually every 4-8h).
+        Therefore a trade opening at 10:00:01 will not be charged a funding fee until the next hour.
         :param open_date: The open date for a trade
-        :return: The cutoff open time for when a funding fee is charged
+        :return: True if the date falls on a full hour, False otherwise
         """
-        return open_date.minute > 0 or open_date.second > 0
+        return open_date.minute == 0 and open_date.second == 0
 
     @retrier
     def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False,
@@ -2706,15 +2715,16 @@ class Exchange:
         """
 
         if self.funding_fee_cutoff(open_date):
-            open_date += timedelta(hours=1)
+            # Shift back to 1h candle to avoid missing funding fees
+            # Only really relevant for trades very close to the full hour
+            open_date = timeframe_to_prev_date('1h', open_date)
         timeframe = self._ft_has['mark_ohlcv_timeframe']
         timeframe_ff = self._ft_has.get('funding_fee_timeframe',
                                         self._ft_has['mark_ohlcv_timeframe'])
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
-        open_timestamp = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
-        # close_timestamp = int(close_date.timestamp()) * 1000
+        since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
 
         mark_comb: PairWithTimeframe = (
             pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
@@ -2722,7 +2732,7 @@ class Exchange:
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
-            since_ms=open_timestamp,
+            since_ms=since_ms,
             cache=False,
             drop_incomplete=False,
         )
@@ -2733,8 +2743,7 @@ class Exchange:
         except KeyError:
             raise ExchangeError("Could not find funding rates.") from None
 
-        funding_mark_rates = self.combine_funding_and_mark(
-            funding_rates=funding_rates, mark_rates=mark_rates)
+        funding_mark_rates = self.combine_funding_and_mark(funding_rates, mark_rates)
 
         return self.calculate_funding_fees(
             funding_mark_rates,
@@ -2781,7 +2790,7 @@ class Exchange:
         amount: float,
         is_short: bool,
         open_date: datetime,
-        close_date: Optional[datetime] = None,
+        close_date: datetime,
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
@@ -2797,8 +2806,8 @@ class Exchange:
         fees: float = 0
 
         if not df.empty:
-            df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
-            fees = sum(df['open_fund'] * df['open_mark'] * amount)
+            df1 = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
+            fees = sum(df1['open_fund'] * df1['open_mark'] * amount)
 
         # Negate fees for longs as funding_fees expects it this way based on live endpoints.
         return fees if is_short else -fees
@@ -2813,17 +2822,19 @@ class Exchange:
         :param amount: Trade amount
         :param open_date: Open date of the trade
         :return: funding fee since open_date
-        :raises: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
-            if self._config['dry_run']:
-                funding_fees = self._fetch_and_calculate_funding_fees(
-                    pair, amount, is_short, open_date)
-            else:
-                funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
-            return funding_fees
-        else:
-            return 0.0
+            try:
+                if self._config['dry_run']:
+                    funding_fees = self._fetch_and_calculate_funding_fees(
+                        pair, amount, is_short, open_date)
+                else:
+                    funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
+                return funding_fees
+            except ExchangeError:
+                logger.warning(f"Could not update funding fees for {pair}.")
+
+        return 0.0
 
     def get_liquidation_price(
         self,

@@ -583,7 +583,7 @@ def test_calc_open_close_trade_price(
     oobj.update_from_ccxt_object(entry_order)
     trade.update_trade(oobj)
 
-    trade.funding_fees = funding_fees
+    trade.funding_fee_running = funding_fees
 
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', trade.exit_side)
     oobj._trade_live = trade
@@ -591,7 +591,9 @@ def test_calc_open_close_trade_price(
     trade.update_trade(oobj)
 
     assert trade.is_open is False
+    # Funding fees transfer from funding_fee_running to funding_Fees
     assert trade.funding_fees == funding_fees
+    assert trade.orders[-1].funding_fee == funding_fees
 
     assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
     assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
@@ -2094,11 +2096,10 @@ def test_Trade_object_idem():
         'get_enter_tag_performance',
         'get_mix_tag_performance',
         'get_trading_volume',
-        'from_json',
         'validate_string_len',
     )
     EXCLUDES2 = ('trades', 'trades_open', 'bt_trades_open_pp', 'bt_open_open_trade_count',
-                 'total_profit')
+                 'total_profit', 'from_json',)
 
     # Parent (LocalTrade) should have the same attributes
     for item in trade:

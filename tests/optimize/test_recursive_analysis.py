@@ -8,8 +8,8 @@ import pytest
 from freqtrade.commands.optimize_commands import start_recursive_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.recursive_analysis import RecursiveAnalysis
-from freqtrade.optimize.recursive_analysis_helpers import RecursiveAnalysisSubFunctions
+from freqtrade.optimize.analysis.recursive import RecursiveAnalysis
+from freqtrade.optimize.analysis.recursive_helpers import RecursiveAnalysisSubFunctions
 from tests.conftest import get_args, log_has_re, patch_exchange
 
 
@@ -29,7 +29,7 @@ def test_start_recursive_analysis(mocker):
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.optimize.recursive_analysis_helpers.RecursiveAnalysisSubFunctions',
+        'freqtrade.optimize.analysis.recursive_helpers.RecursiveAnalysisSubFunctions',
         initialize_single_recursive_analysis=single_mock,
         text_table_recursive_analysis_instances=text_table_mock,
     )
@@ -83,7 +83,7 @@ def test_recursive_helper_start(recursive_conf, mocker) -> None:
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.optimize.recursive_analysis_helpers.RecursiveAnalysisSubFunctions',
+        'freqtrade.optimize.analysis.recursive_helpers.RecursiveAnalysisSubFunctions',
         initialize_single_recursive_analysis=single_mock,
         text_table_recursive_analysis_instances=text_table_mock,
     )
@@ -133,7 +133,7 @@ def test_initialize_single_recursive_analysis(recursive_conf, mocker, caplog):
 
     recursive_conf['timeframe'] = '5m'
     recursive_conf['timerange'] = '20180119-20180122'
-    start_mock = mocker.patch('freqtrade.optimize.recursive_analysis.RecursiveAnalysis.start')
+    start_mock = mocker.patch('freqtrade.optimize.analysis.recursive.RecursiveAnalysis.start')
     strategy_obj = {
         'name': "strategy_test_v3_recursive_issue",
         'location': Path(recursive_conf['strategy_path'], f"{recursive_conf['strategy']}.py")

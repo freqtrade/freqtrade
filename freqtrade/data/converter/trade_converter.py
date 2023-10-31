@@ -12,6 +12,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
                                  Config, TradeList)
 from freqtrade.enums import CandleType
+from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
@@ -127,6 +128,16 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
     """
+    if convert_from == 'kraken_csv':
+        if config['exchange']['name'] != 'kraken':
+            raise OperationalException(
+                'Converting from csv is only supported for kraken.'
+                'Please refer to the documentation for details about this special mode.'
+            )
+        from freqtrade.data.converter.trade_converter_kraken import import_kraken_trades_from_csv
+        import_kraken_trades_from_csv(config, convert_to)
+        return
+
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)

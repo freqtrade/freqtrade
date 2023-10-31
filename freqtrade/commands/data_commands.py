@@ -85,7 +85,7 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
                              erase=args['erase'])
     else:
         convert_trades_format(config,
-                              convert_from=args['format_from'], convert_to=args['format_to'],
+                              convert_from=args['format_from_trades'], convert_to=args['format_to'],
                               erase=args['erase'])
 
 

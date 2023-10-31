@@ -40,11 +40,41 @@ usage: freqtrade recursive-analysis [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                     [--startup-candle STARTUP_CANDLES [STARTUP_CANDLES ...]]
 
 optional arguments:
--p PAIR, --pairs PAIR
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
+  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `feather`).
+  -p PAIR, --pairs PAIR
                         Limit command to this pair.
---startup-candle STARTUP_CANDLE [STARTUP_CANDLE ...]
+  --startup-candle STARTUP_CANDLE [STARTUP_CANDLE ...]
                         Provide a space-separated list of startup_candle_count to
                         be checked. Default : `199 399 499 999 1999`.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
 ```
 
 ### Why are odd-numbered default startup candles used?

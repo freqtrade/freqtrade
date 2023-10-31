@@ -8,8 +8,8 @@ import pytest
 from freqtrade.commands.optimize_commands import start_lookahead_analysis
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.lookahead_analysis import Analysis, LookaheadAnalysis
-from freqtrade.optimize.lookahead_analysis_helpers import LookaheadAnalysisSubFunctions
+from freqtrade.optimize.analysis.lookahead import Analysis, LookaheadAnalysis
+from freqtrade.optimize.analysis.lookahead_helpers import LookaheadAnalysisSubFunctions
 from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
@@ -32,7 +32,7 @@ def test_start_lookahead_analysis(mocker):
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
+        'freqtrade.optimize.analysis.lookahead_helpers.LookaheadAnalysisSubFunctions',
         initialize_single_lookahead_analysis=single_mock,
         text_table_lookahead_analysis_instances=text_table_mock,
     )
@@ -117,7 +117,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
     single_mock = MagicMock()
     text_table_mock = MagicMock()
     mocker.patch.multiple(
-        'freqtrade.optimize.lookahead_analysis_helpers.LookaheadAnalysisSubFunctions',
+        'freqtrade.optimize.analysis.lookahead_helpers.LookaheadAnalysisSubFunctions',
         initialize_single_lookahead_analysis=single_mock,
         text_table_lookahead_analysis_instances=text_table_mock,
     )
@@ -324,7 +324,7 @@ def test_initialize_single_lookahead_analysis(lookahead_conf, mocker, caplog):
 
     lookahead_conf['timeframe'] = '5m'
     lookahead_conf['timerange'] = '20180119-20180122'
-    start_mock = mocker.patch('freqtrade.optimize.lookahead_analysis.LookaheadAnalysis.start')
+    start_mock = mocker.patch('freqtrade.optimize.analysis.lookahead.LookaheadAnalysis.start')
     strategy_obj = {
         'name': "strategy_test_v3_with_lookahead_bias",
         'location': Path(lookahead_conf['strategy_path'], f"{lookahead_conf['strategy']}.py")
