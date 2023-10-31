@@ -121,7 +121,7 @@ def add_indicators(fig, row, indicators: Dict[str, Dict], data: pd.DataFrame) ->
                                'marker_line_color': color or 'DarkSlateGrey'})
             else:
                 if color:
-                    kwargs.update({'line': {'color': color}})
+                    kwargs['line'] = {'color': color}
                 kwargs['mode'] = 'lines'
                 if plot_type != 'scatter':
                     logger.warning(f'Indicator {indicator} has unknown plot trace kind {plot_type}'
@@ -400,7 +400,7 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
                     'Indicator "%s" ignored. Reason: This indicator is not '
                     'found in your strategy.', indicator
                 )
-            elif indicator_b not in data:
+            else:
                 logger.info(
                     'fill_to: "%s" ignored. Reason: This indicator is not '
                     'in your strategy.', indicator_b
@@ -418,7 +418,7 @@ def create_scatter(
     if column_name in data.columns:
         df_short = data[data[column_name] == 1]
         if len(df_short) > 0:
-            shorts = go.Scatter(
+            return go.Scatter(
                 x=df_short.date,
                 y=df_short.close,
                 mode='markers',
@@ -428,9 +428,8 @@ def create_scatter(
                     size=9,
                     line=dict(width=1),
                     color=color,
-                )
+                ),
             )
-            return shorts
         else:
             logger.warning(f"No {column_name}-signals found.")
 

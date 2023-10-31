@@ -92,7 +92,7 @@ class NumericParameter(BaseParameter):
         """
         if high is not None and isinstance(low, Sequence):
             raise OperationalException(f'{self.__class__.__name__} space invalid.')
-        if high is None or isinstance(low, Sequence):
+        if high is None:
             if not isinstance(low, Sequence) or len(low) != 2:
                 raise OperationalException(f'{self.__class__.__name__} space must be [low, high]')
             self.low, self.high = low
@@ -271,10 +271,7 @@ class CategoricalParameter(BaseParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.can_optimize():
-            return self.opt_range
-        else:
-            return [self.value]
+        return self.opt_range if self.can_optimize() else [self.value]
 
 
 class BooleanParameter(CategoricalParameter):

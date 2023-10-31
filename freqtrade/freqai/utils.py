@@ -87,9 +87,7 @@ def get_required_data_timerange(config: Config) -> TimeRange:
         - additional_seconds
     )
     stopts = int(time)
-    data_load_timerange = TimeRange('date', 'date', startts, stopts)
-
-    return data_load_timerange
+    return TimeRange('date', 'date', startts, stopts)
 
 
 def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,

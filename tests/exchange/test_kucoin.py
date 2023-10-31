@@ -41,7 +41,7 @@ def test_create_stoploss_order_kucoin(default_conf, mocker, limitratio, expected
     api_mock.create_order.reset_mock()
     order_types = {'stoploss': order_type}
     if limitratio is not None:
-        order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
+        order_types['stoploss_on_exchange_limit_ratio'] = limitratio
     order = exchange.create_stoploss(pair='ETH/BTC', amount=1, stop_price=220,
                                      order_types=order_types, side=side, leverage=1.0)
 

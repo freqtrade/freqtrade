@@ -119,9 +119,7 @@ class KeyValueStore:
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key,
             _KeyValueStoreModel.value_type == ValueTypesEnum.STRING).first()
-        if kv is None:
-            return None
-        return kv.string_value
+        return None if kv is None else kv.string_value
 
     @staticmethod
     def get_datetime_value(key: KeyStoreKeys) -> Optional[datetime]:
@@ -145,9 +143,7 @@ class KeyValueStore:
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key,
             _KeyValueStoreModel.value_type == ValueTypesEnum.FLOAT).first()
-        if kv is None:
-            return None
-        return kv.float_value
+        return None if kv is None else kv.float_value
 
     @staticmethod
     def get_int_value(key: KeyStoreKeys) -> Optional[int]:
@@ -158,9 +154,7 @@ class KeyValueStore:
         kv = _KeyValueStoreModel.session.query(_KeyValueStoreModel).filter(
             _KeyValueStoreModel.key == key,
             _KeyValueStoreModel.value_type == ValueTypesEnum.INT).first()
-        if kv is None:
-            return None
-        return kv.int_value
+        return None if kv is None else kv.int_value
 
 
 def set_startup_time():

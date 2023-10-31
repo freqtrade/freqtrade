@@ -22,7 +22,7 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
     :return:
     """
     tmp_means = []
-    for pair, df in data.items():
+    for df in data.values():
         start = df[column].dropna().iloc[0]
         end = df[column].dropna().iloc[-1]
         tmp_means.append((end - start) / start)
@@ -109,13 +109,12 @@ def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = _calc_drawdown_series(
+    return _calc_drawdown_series(
         profit_results,
         date_col=date_col,
         value_col=value_col,
-        starting_balance=starting_balance)
-
-    return max_drawdown_df
+        starting_balance=starting_balance,
+    )
 
 
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
@@ -242,14 +241,11 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
 
     down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
 
-    if down_stdev != 0 and not np.isnan(down_stdev):
-        sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
-    else:
-        # Define high (negative) sortino ratio to be clear that this is NOT optimal.
-        sortino_ratio = -100
-
-    # print(expected_returns_mean, down_stdev, sortino_ratio)
-    return sortino_ratio
+    return (
+        expected_returns_mean / down_stdev * np.sqrt(365)
+        if down_stdev != 0 and not np.isnan(down_stdev)
+        else -100
+    )
 
 
 def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
@@ -268,14 +264,11 @@ def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetim
     expected_returns_mean = total_profit.sum() / days_period
     up_stdev = np.std(total_profit)
 
-    if up_stdev != 0:
-        sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
-    else:
-        # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
-        sharp_ratio = -100
-
-    # print(expected_returns_mean, up_stdev, sharp_ratio)
-    return sharp_ratio
+    return (
+        expected_returns_mean / up_stdev * np.sqrt(365)
+        if up_stdev != 0
+        else -100
+    )
 
 
 def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
@@ -303,11 +296,8 @@ def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetim
     except ValueError:
         max_drawdown = 0
 
-    if max_drawdown != 0:
-        calmar_ratio = expected_returns_mean / max_drawdown * math.sqrt(365)
-    else:
-        # Define high (negative) calmar ratio to be clear that this is NOT optimal.
-        calmar_ratio = -100
-
-    # print(expected_returns_mean, max_drawdown, calmar_ratio)
-    return calmar_ratio
+    return (
+        expected_returns_mean / max_drawdown * math.sqrt(365)
+        if max_drawdown != 0
+        else -100
+    )

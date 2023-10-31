@@ -48,8 +48,7 @@ class ShortTradeDurHyperOptLoss(IHyperOptLoss):
         trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
         profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
         duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
-        result = trade_loss + profit_loss + duration_loss
-        return result
+        return trade_loss + profit_loss + duration_loss
 
 
 # Create an alias for This to allow the legacy Method to work as well.

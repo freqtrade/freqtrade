@@ -109,25 +109,20 @@ def generate_test_data_raw(timeframe: str, size: int, start: str = '2020-07-05')
     """ Generates data in the ohlcv format used by ccxt """
     df = generate_test_data(timeframe, size, start)
     df['date'] = df.loc[:, 'date'].view(np.int64) // 1000 // 1000
-    return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
+    return [list(x) for x in zip(*(df[x].values.tolist() for x in df.columns))]
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
 # TODO: This should be replaced with AsyncMock once support for python 3.7 is dropped.
 def get_mock_coro(return_value=None, side_effect=None):
     async def mock_coro(*args, **kwargs):
-        if side_effect:
-            if isinstance(side_effect, list):
-                effect = side_effect.pop(0)
-            else:
-                effect = side_effect
-            if isinstance(effect, Exception):
-                raise effect
-            if callable(effect):
-                return effect(*args, **kwargs)
-            return effect
-        else:
+        if not side_effect:
             return return_value
+
+        effect = side_effect.pop(0) if isinstance(side_effect, list) else side_effect
+        if isinstance(effect, Exception):
+            raise effect
+        return effect(*args, **kwargs) if callable(effect) else effect
 
     return Mock(wraps=mock_coro)
 
@@ -459,7 +454,7 @@ def default_conf_usdt(testdatadir):
 
 def get_default_conf(testdatadir):
     """ Returns validated configuration suitable for most tests """
-    configuration = {
+    return {
         "max_open_trades": 1,
         "stake_currency": "BTC",
         "stake_amount": 0.001,
@@ -467,26 +462,18 @@ def get_default_conf(testdatadir):
         "timeframe": '5m',
         "dry_run": True,
         "cancel_open_orders_on_exit": False,
-        "minimal_roi": {
-            "40": 0.0,
-            "30": 0.01,
-            "20": 0.02,
-            "0": 0.04
-        },
+        "minimal_roi": {"40": 0.0, "30": 0.01, "20": 0.02, "0": 0.04},
         "dry_run_wallet": 1000,
         "stoploss": -0.10,
-        "unfilledtimeout": {
-            "entry": 10,
-            "exit": 30
-        },
+        "unfilledtimeout": {"entry": 10, "exit": 30},
         "entry_pricing": {
             "price_last_balance": 0.0,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {
                 "enabled": False,
-                "bids_to_ask_delta": 1
-            }
+                "bids_to_ask_delta": 1,
+            },
         },
         "exit_pricing": {
             "use_order_book": False,
@@ -496,20 +483,13 @@ def get_default_conf(testdatadir):
             "name": "binance",
             "key": "key",
             "secret": "secret",
-            "pair_whitelist": [
-                "ETH/BTC",
-                "LTC/BTC",
-                "XRP/BTC",
-                "NEO/BTC"
-            ],
+            "pair_whitelist": ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC"],
             "pair_blacklist": [
                 "DOGE/BTC",
                 "HOT/BTC",
-            ]
+            ],
         },
-        "pairlists": [
-            {"method": "StaticPairList"}
-        ],
+        "pairlists": [{"method": "StaticPairList"}],
         "telegram": {
             "enabled": False,
             "token": "token",
@@ -529,7 +509,6 @@ def get_default_conf(testdatadir):
         "dataformat_ohlcv": "feather",
         "candle_type_def": CandleType.SPOT,
     }
-    return configuration
 
 
 def get_default_conf_usdt(testdatadir):
@@ -1773,27 +1752,6 @@ def limit_buy_order_canceled_empty(request):
             'remaining': 0.55,
             'fee': {'cost': 0.0, 'rate': None, 'currency': 'USDT'},
             'trades': []
-        }
-    elif exchange_name == 'binance':
-        return {
-            'info': {},
-            'id': '1234512345',
-            'clientOrderId': 'alb1234123',
-            'timestamp': dt_ts(dt_now() - timedelta(minutes=601)),
-            'datetime': (dt_now() - timedelta(minutes=601)).isoformat(),
-            'lastTradeTimestamp': None,
-            'symbol': 'LTC/USDT',
-            'type': 'limit',
-            'side': 'buy',
-            'price': 0.016804,
-            'amount': 0.55,
-            'cost': 0.0,
-            'average': None,
-            'filled': 0.0,
-            'remaining': 0.55,
-            'status': 'canceled',
-            'fee': None,
-            'trades': None
         }
     else:
         return {

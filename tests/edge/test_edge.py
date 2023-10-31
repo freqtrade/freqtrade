@@ -253,11 +253,14 @@ def mocked_load_data(datadir, pairs=[], timeframe='0m',
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': ohlcv_to_dataframe(NEOBTC, '1h', pair="NEO/BTC",
-                                              fill_missing=True),
-                'LTC/BTC': ohlcv_to_dataframe(LTCBTC, '1h', pair="LTC/BTC",
-                                              fill_missing=True)}
-    return pairdata
+    return {
+        'NEO/BTC': ohlcv_to_dataframe(
+            NEOBTC, '1h', pair="NEO/BTC", fill_missing=True
+        ),
+        'LTC/BTC': ohlcv_to_dataframe(
+            LTCBTC, '1h', pair="LTC/BTC", fill_missing=True
+        ),
+    }
 
 
 def test_edge_process_downloaded_data(mocker, edge_conf):

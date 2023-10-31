@@ -55,14 +55,13 @@ def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     folder = Path(directory)
     chown_user_directory(folder)
     if not folder.is_dir():
-        if create_dir:
-            folder.mkdir(parents=True)
-            logger.info(f'Created user-data directory: {folder}')
-        else:
+        if not create_dir:
             raise OperationalException(
                 f"Directory `{folder}` does not exist. "
                 "Please use `freqtrade create-userdir` to create a user directory")
 
+        folder.mkdir(parents=True)
+        logger.info(f'Created user-data directory: {folder}')
     # Create required subdirectories
     for f in sub_dirs:
         subfolder = folder / f

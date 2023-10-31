@@ -61,8 +61,7 @@ class ExchangeResolver(IResolver):
         try:
             ex_class = getattr(exchanges, exchange_name)
 
-            exchange = ex_class(**kwargs)
-            if exchange:
+            if exchange := ex_class(**kwargs):
                 logger.info(f"Using resolved exchange '{exchange_name}'...")
                 return exchange
         except AttributeError:

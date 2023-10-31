@@ -41,8 +41,7 @@ def patch_RPCManager(mocker) -> MagicMock:
     :return: RPCManager.send_msg MagicMock to track if this method is called
     """
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    rpc_mock = mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
-    return rpc_mock
+    return mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
 
 
 # Unit tests
@@ -1124,7 +1123,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     freqtrade.exit_positions(trades)
     assert trade.stoploss_order_id == '13434334'
     assert stoploss.call_count == 1
-    assert trade.is_open is True
+    assert trade.is_open
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1169,7 +1168,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     # Second case: when stoploss is set but it is not yet hit
     # should do nothing and return false
-    stop_order_dict.update({'id': "102"})
+    stop_order_dict['id'] = "102"
     trade.is_open = True
     trade.stoploss_order_id = "102"
     trade.orders.append(
@@ -1201,7 +1200,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     stoploss.reset_mock()
     amount_before = trade.amount
 
-    stop_order_dict.update({'id': "103_1"})
+    stop_order_dict['id'] = "103_1"
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
@@ -1213,7 +1212,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # as a trade actually happened
     caplog.clear()
     freqtrade.enter_positions()
-    stop_order_dict.update({'id': "104"})
+    stop_order_dict['id'] = "104"
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -1243,7 +1242,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
     assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
     assert trade.stoploss_order_id is None
-    assert trade.is_open is False
+    assert not trade.is_open
     caplog.clear()
 
     mocker.patch(f'{EXMS}.create_stoploss', side_effect=ExchangeError())
@@ -1254,7 +1253,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     # Fifth case: fetch_order returns InvalidOrder
     # It should try to add stoploss order
-    stop_order_dict.update({'id': "105"})
+    stop_order_dict['id'] = "105"
     trade.stoploss_order_id = "105"
     stoploss.reset_mock()
     mocker.patch(f'{EXMS}.fetch_stoploss_order', side_effect=InvalidOrderException())
@@ -1311,7 +1310,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     mocker.patch(f'{EXMS}.create_stoploss', stoploss)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id is None
-    assert trade.is_open is False
+    assert not trade.is_open
     assert trade.exit_reason == str(ExitType.EMERGENCY_EXIT)
 
 
@@ -1351,7 +1350,7 @@ def test_handle_stoploss_on_exchange_partial(
     assert stoploss.call_count == 1
     assert trade.stoploss_order_id == "101"
     assert trade.amount == 30
-    stop_order_dict.update({'id': "102"})
+    stop_order_dict['id'] = "102"
     # Stoploss on exchange is cancelled on exchange, but filled partially.
     # Must update trade amount to guarantee successful exit.
     stoploss_order_hit = MagicMock(return_value={
@@ -1409,7 +1408,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     assert stoploss.call_count == 1
     assert trade.stoploss_order_id == "101"
     assert trade.amount == 30
-    stop_order_dict.update({'id': "102"})
+    stop_order_dict['id'] = "102"
     # Stoploss on exchange is open.
     # Freqtrade cancels the stop - but cancel returns a partial filled order.
     stoploss_order_hit = MagicMock(return_value={
@@ -1494,7 +1493,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert log_has_re(r'Stoploss order was cancelled, but unable to recreate one.*', caplog)
     assert trade.stoploss_order_id is None
-    assert trade.is_open is True
+    assert trade.is_open
 
 
 @pytest.mark.parametrize("is_short", [False, True])

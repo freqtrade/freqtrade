@@ -306,15 +306,15 @@ class DataProvider:
         """
         _candle_type = CandleType.from_string(
             candle_type) if candle_type != '' else self._config['candle_type_def']
-        saved_pair: PairWithTimeframe = (pair, str(timeframe), _candle_type)
+        saved_pair: PairWithTimeframe = pair, timeframe, _candle_type
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
 
             # It is not necessary to add the training candles, as they
             # were already added at the beginning of the backtest.
-            startup_candles = self.get_required_startup(str(timeframe), False)
-            tf_seconds = timeframe_to_seconds(str(timeframe))
+            startup_candles = self.get_required_startup(timeframe, False)
+            tf_seconds = timeframe_to_seconds(timeframe)
             timerange.subtract_start(tf_seconds * startup_candles)
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
@@ -331,18 +331,19 @@ class DataProvider:
         freqai_config = self._config.get('freqai', {})
         if not freqai_config.get('enabled', False):
             return self._config.get('startup_candle_count', 0)
-        else:
-            startup_candles = self._config.get('startup_candle_count', 0)
-            indicator_periods = freqai_config['feature_parameters']['indicator_periods_candles']
-            # make sure the startupcandles is at least the set maximum indicator periods
-            self._config['startup_candle_count'] = max(startup_candles, max(indicator_periods))
-            tf_seconds = timeframe_to_seconds(timeframe)
-            train_candles = 0
-            if add_train_candles:
-                train_candles = freqai_config['train_period_days'] * 86400 / tf_seconds
-            total_candles = int(self._config['startup_candle_count'] + train_candles)
-            logger.info(f'Increasing startup_candle_count for freqai to {total_candles}')
-            return total_candles
+        startup_candles = self._config.get('startup_candle_count', 0)
+        indicator_periods = freqai_config['feature_parameters']['indicator_periods_candles']
+        # make sure the startupcandles is at least the set maximum indicator periods
+        self._config['startup_candle_count'] = max(startup_candles, max(indicator_periods))
+        tf_seconds = timeframe_to_seconds(timeframe)
+        train_candles = (
+            freqai_config['train_period_days'] * 86400 / tf_seconds
+            if add_train_candles
+            else 0
+        )
+        total_candles = int(self._config['startup_candle_count'] + train_candles)
+        logger.info(f'Increasing startup_candle_count for freqai to {total_candles}')
+        return total_candles
 
     def get_pair_dataframe(
         self,
@@ -387,17 +388,14 @@ class DataProvider:
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
         pair_key = (pair, timeframe, self._config.get('candle_type_def', CandleType.SPOT))
-        if pair_key in self.__cached_pairs:
-            if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-                df, date = self.__cached_pairs[pair_key]
-            else:
-                df, date = self.__cached_pairs[pair_key]
-                if self.__slice_index is not None:
-                    max_index = self.__slice_index
-                    df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
-            return df, date
-        else:
+        if pair_key not in self.__cached_pairs:
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+        df, date = self.__cached_pairs[pair_key]
+        if self.runmode not in (RunMode.DRY_RUN, RunMode.LIVE):
+            if self.__slice_index is not None:
+                max_index = self.__slice_index
+                df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
+        return df, date
 
     @property
     def runmode(self) -> RunMode:

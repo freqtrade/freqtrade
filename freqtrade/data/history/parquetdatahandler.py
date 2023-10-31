@@ -113,9 +113,7 @@ class ParquetDataHandler(IDataHandler):
         if not filename.exists():
             return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
-        tradesdata = read_parquet(filename)
-
-        return tradesdata
+        return read_parquet(filename)
 
     @classmethod
     def _get_file_extension(cls):

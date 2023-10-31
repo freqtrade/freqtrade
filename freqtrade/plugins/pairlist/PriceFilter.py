@@ -132,13 +132,11 @@ class PriceFilter(IPairList):
                 min_precision = market['precision']['amount']
 
                 min_value = min_amount * price
-                if self._exchange.precisionMode == 4:
-                    # tick size
-                    next_value = (min_amount + min_precision) * price
-                else:
+                if self._exchange.precisionMode != 4:
                     # Decimal places
                     min_precision = pow(0.1, min_precision)
-                    next_value = (min_amount + min_precision) * price
+                # tick size
+                next_value = (min_amount + min_precision) * price
                 diff = next_value - min_value
 
                 if diff > self._max_value:

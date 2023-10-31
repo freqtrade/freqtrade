@@ -212,24 +212,25 @@ class Edge:
     def get_stoploss(self, pair: str) -> float:
         if pair in self._cached_pairs:
             return self._cached_pairs[pair].stoploss
-        else:
-            logger.warning(f'Tried to access stoploss of non-existing pair {pair}, '
-                           'strategy stoploss is returned instead.')
-            return self.strategy.stoploss
+        logger.warning(f'Tried to access stoploss of non-existing pair {pair}, '
+                       'strategy stoploss is returned instead.')
+        return self.strategy.stoploss
 
     def adjust(self, pairs: List[str]) -> list:
         """
         Filters out and sorts "pairs" according to Edge calculated pairs
         """
-        final = []
-        for pair, info in self._cached_pairs.items():
+        final = [
+            pair
+            for pair, info in self._cached_pairs.items()
             if (
-                info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2))
-                and info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))
+                info.expectancy
+                > float(self.edge_config.get('minimum_expectancy', 0.2))
+                and info.winrate
+                > float(self.edge_config.get('minimum_winrate', 0.60))
                 and pair in pairs
-            ):
-                final.append(pair)
-
+            )
+        ]
         if self._final_pairs != final:
             self._final_pairs = final
             if self._final_pairs:
@@ -250,17 +251,21 @@ class Edge:
         """
         return a list of accepted pairs along with their winrate, expectancy and stoploss
         """
-        final = []
-        for pair, info in self._cached_pairs.items():
-            if (info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and
-                    info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))):
-                final.append({
-                    'Pair': pair,
-                    'Winrate': info.winrate,
-                    'Expectancy': info.expectancy,
-                    'Stoploss': info.stoploss,
-                })
-        return final
+        return [
+            {
+                'Pair': pair,
+                'Winrate': info.winrate,
+                'Expectancy': info.expectancy,
+                'Stoploss': info.stoploss,
+            }
+            for pair, info in self._cached_pairs.items()
+            if (
+                info.expectancy
+                > float(self.edge_config.get('minimum_expectancy', 0.2))
+                and info.winrate
+                > float(self.edge_config.get('minimum_winrate', 0.60))
+            )
+        ]
 
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
         """
@@ -372,20 +377,18 @@ class Edge:
         df = df.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
             'pair').first().sort_values(by=['expectancy'], ascending=False).reset_index()
 
-        final = {}
-        for x in df.itertuples():
-            final[x.pair] = PairInfo(
+        return {
+            x.pair: PairInfo(
                 x.stoploss,
                 x.winrate,
                 x.risk_reward_ratio,
                 x.required_risk_reward,
                 x.expectancy,
                 x.nb_trades,
-                x.avg_trade_duration
+                x.avg_trade_duration,
             )
-
-        # Returning a list of pairs in order of "expectancy"
-        return final
+            for x in df.itertuples()
+        }
 
     def _find_trades_for_stoploss_range(self, df, pair: str, stoploss_range) -> list:
         buy_column = df['enter_long'].values
@@ -421,7 +424,7 @@ class Edge:
 
             # Return empty if we don't find trade entry (i.e. buy==1) or
             # we find a buy but at the end of array
-            if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
+            if open_trade_index in [-1, len(buy_column) - 1]:
                 break
             else:
                 # When a buy signal is seen,
@@ -456,7 +459,7 @@ class Edge:
                 exit_index = open_trade_index + stop_index
                 exit_type = ExitType.STOP_LOSS
                 exit_price = stop_price
-            elif stop_index > sell_index:
+            else:
                 # If exit is SELL then we exit at the next candle
                 exit_index = open_trade_index + sell_index + 1
 

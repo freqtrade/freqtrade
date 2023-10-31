@@ -39,19 +39,21 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 
     minutes_inf = timeframe_to_minutes(timeframe_inf)
     minutes = timeframe_to_minutes(timeframe)
-    if minutes == minutes_inf:
-        # No need to forwardshift if the timeframes are identical
+    if (
+        minutes != minutes_inf
+        and minutes < minutes_inf
+        and not informative.empty
+    ):
+        informative['date_merge'] = (
+            informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
+            pd.to_timedelta(minutes, 'm')
+        )
+    elif (
+        minutes != minutes_inf
+        and minutes < minutes_inf
+        or minutes == minutes_inf
+    ):
         informative['date_merge'] = informative[date_column]
-    elif minutes < minutes_inf:
-        # Subtract "small" timeframe so merging is not delayed by 1 small candle
-        # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
-        if not informative.empty:
-            informative['date_merge'] = (
-                informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
-                pd.to_timedelta(minutes, 'm')
-            )
-        else:
-            informative['date_merge'] = informative[date_column]
     else:
         raise ValueError("Tried to merge a faster timeframe to a slower timeframe."
                          "This would create new rows, and can throw off your regular indicators.")
@@ -116,7 +118,7 @@ def stoploss_from_open(
     if (_current_profit == -1 and not is_short) or (is_short and _current_profit == 1):
         return 1
 
-    if is_short is True:
+    if is_short:
         stoploss = -1 + ((1 - open_relative_stop / leverage) / (1 - _current_profit))
     else:
         stoploss = 1 - ((1 + open_relative_stop / leverage) / (1 + _current_profit))

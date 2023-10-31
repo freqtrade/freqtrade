@@ -251,22 +251,19 @@ class FreqaiExampleStrategy(IStrategy):
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        enter_long_conditions = [
+        if enter_long_conditions := [
             df["do_predict"] == 1,
-            df["&-s_close"] > df[f"target_roi_{self.std_dev_multiplier_buy.value}"],
-            ]
-
-        if enter_long_conditions:
+            df["&-s_close"]
+            > df[f"target_roi_{self.std_dev_multiplier_buy.value}"],
+        ]:
             df.loc[
                 reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
             ] = (1, "long")
 
-        enter_short_conditions = [
+        if enter_short_conditions := [
             df["do_predict"] == 1,
             df["&-s_close"] < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"],
-            ]
-
-        if enter_short_conditions:
+        ]:
             df.loc[
                 reduce(lambda x, y: x & y, enter_short_conditions), ["enter_short", "enter_tag"]
             ] = (1, "short")
@@ -274,18 +271,18 @@ class FreqaiExampleStrategy(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [
+        if exit_long_conditions := [
             df["do_predict"] == 1,
-            df["&-s_close"] < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"] * 0.25,
-            ]
-        if exit_long_conditions:
+            df["&-s_close"]
+            < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"] * 0.25,
+        ]:
             df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
 
-        exit_short_conditions = [
+        if exit_short_conditions := [
             df["do_predict"] == 1,
-            df["&-s_close"] > df[f"target_roi_{self.std_dev_multiplier_buy.value}"] * 0.25,
-            ]
-        if exit_short_conditions:
+            df["&-s_close"]
+            > df[f"target_roi_{self.std_dev_multiplier_buy.value}"] * 0.25,
+        ]:
             df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
         return df
@@ -312,8 +309,7 @@ class FreqaiExampleStrategy(IStrategy):
         if side == "long":
             if rate > (last_candle["close"] * (1 + 0.0025)):
                 return False
-        else:
-            if rate < (last_candle["close"] * (1 - 0.0025)):
-                return False
+        elif rate < (last_candle["close"] * (1 - 0.0025)):
+            return False
 
         return True

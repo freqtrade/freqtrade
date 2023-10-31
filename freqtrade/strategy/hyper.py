@@ -63,9 +63,7 @@ class HyperStrategyMixin:
             'sell': list(detect_parameters(cls, 'sell')),
             'protection': list(detect_parameters(cls, 'protection')),
         }
-        params.update({
-            'count': len(params['buy'] + params['sell'] + params['protection'])
-        })
+        params['count'] = len(params['buy'] + params['sell'] + params['protection'])
 
         return params
 
@@ -190,11 +188,17 @@ def detect_parameters(
         if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
             attr = getattr(obj, attr_name)
             if issubclass(attr.__class__, BaseParameter):
-                if (attr_name.startswith(category + '_')
-                        and attr.category is not None and attr.category != category):
+                if (
+                    attr_name.startswith(f'{category}_')
+                    and attr.category is not None
+                    and attr.category != category
+                ):
                     raise OperationalException(
                         f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
 
-                if (category == attr.category or
-                        (attr_name.startswith(category + '_') and attr.category is None)):
+                if (
+                    category == attr.category
+                    or attr_name.startswith(f'{category}_')
+                    and attr.category is None
+                ):
                     yield attr_name, attr

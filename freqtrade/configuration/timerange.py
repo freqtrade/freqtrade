@@ -48,12 +48,8 @@ class TimeRange:
         Returns a string representation of the timerange as used by parse_timerange.
         Follows the format yyyymmdd-yyyymmdd - leaving out the parts that are not set.
         """
-        start = ''
-        stop = ''
-        if startdt := self.startdt:
-            start = startdt.strftime('%Y%m%d')
-        if stopdt := self.stopdt:
-            stop = stopdt.strftime('%Y%m%d')
+        start = startdt.strftime('%Y%m%d') if (startdt := self.startdt) else ''
+        stop = stopdt.strftime('%Y%m%d') if (stopdt := self.stopdt) else ''
         return f"{start}-{stop}"
 
     @property
@@ -61,20 +57,22 @@ class TimeRange:
         """
         Returns a string representation of the start date
         """
-        val = 'unbounded'
-        if (startdt := self.startdt) is not None:
-            val = startdt.strftime(DATETIME_PRINT_FORMAT)
-        return val
+        return (
+            startdt.strftime(DATETIME_PRINT_FORMAT)
+            if (startdt := self.startdt) is not None
+            else 'unbounded'
+        )
 
     @property
     def stop_fmt(self) -> str:
         """
         Returns a string representation of the stop date
         """
-        val = 'unbounded'
-        if (stopdt := self.stopdt) is not None:
-            val = stopdt.strftime(DATETIME_PRINT_FORMAT)
-        return val
+        return (
+            stopdt.strftime(DATETIME_PRINT_FORMAT)
+            if (stopdt := self.stopdt) is not None
+            else 'unbounded'
+        )
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
@@ -129,9 +127,7 @@ class TimeRange:
                   (r'^(\d{13})-(\d{13})$', ('date', 'date')),
                   ]
         for rex, stype in syntax:
-            # Apply the regular expression to text
-            match = re.match(rex, text)
-            if match:  # Regex has matched
+            if match := re.match(rex, text):
                 rvals = match.groups()
                 index = 0
                 start: int = 0

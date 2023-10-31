@@ -140,7 +140,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
     def init_class_names_to_index_mapping(self, class_names):
         self.class_name_to_index = {s: i for i, s in enumerate(class_names)}
-        self.index_to_class_name = {i: s for i, s in enumerate(class_names)}
+        self.index_to_class_name = dict(enumerate(class_names))
         logger.info(f"encoded class name to index: {self.class_name_to_index}")
 
     def convert_label_column_to_int(

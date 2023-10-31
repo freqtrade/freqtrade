@@ -18,13 +18,8 @@ class CandleType(str, Enum):
 
     @staticmethod
     def from_string(value: str) -> 'CandleType':
-        if not value:
-            # Default to spot
-            return CandleType.SPOT
-        return CandleType(value)
+        return CandleType.SPOT if not value else CandleType(value)
 
     @staticmethod
     def get_default(trading_mode: str) -> 'CandleType':
-        if trading_mode == 'futures':
-            return CandleType.FUTURES
-        return CandleType.SPOT
+        return CandleType.FUTURES if trading_mode == 'futures' else CandleType.SPOT

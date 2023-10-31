@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 def migrate_binance_futures_names(config: Config):
 
     if (
-        not (config.get('trading_mode', TradingMode.SPOT) == TradingMode.FUTURES
-             and config['exchange']['name'] == 'binance')
+        config.get('trading_mode', TradingMode.SPOT) != TradingMode.FUTURES
+        or config['exchange']['name'] != 'binance'
     ):
         # only act on new futures
         return
@@ -57,8 +57,8 @@ def _migrate_binance_futures_db(config: Config):
 def migrate_binance_futures_data(config: Config):
 
     if (
-        not (config.get('trading_mode', TradingMode.SPOT) == TradingMode.FUTURES
-             and config['exchange']['name'] == 'binance')
+        config.get('trading_mode', TradingMode.SPOT) != TradingMode.FUTURES
+        or config['exchange']['name'] != 'binance'
     ):
         # only act on new futures
         return

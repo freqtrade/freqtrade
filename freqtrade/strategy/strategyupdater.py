@@ -78,11 +78,7 @@ class StrategyUpdater:
         # parse the code into an AST
         tree = ast_comments.parse(code)
 
-        # use the AST to update the code
-        updated_code = self.modify_ast(tree)
-
-        # return the modified code without executing it
-        return updated_code
+        return self.modify_ast(tree)
 
     # function that uses the ast module to update the code
     def modify_ast(self, tree):  # noqa

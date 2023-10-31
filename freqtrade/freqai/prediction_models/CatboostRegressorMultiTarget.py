@@ -54,23 +54,24 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
                     weight=data_dictionary["test_weights"],
                 )
 
-        init_model = self.get_init_model(dk.pair)
-
-        if init_model:
+        if init_model := self.get_init_model(dk.pair):
             init_models = init_model.estimators_
         else:
             init_models = [None] * y.shape[1]
 
-        fit_params = []
-        for i in range(len(eval_sets)):
-            fit_params.append({
-                    'eval_set': eval_sets[i],  'init_model': init_models[i],
-                    'log_cout': sys.stdout, 'log_cerr': sys.stderr,
-                 })
-
+        fit_params = [
+            {
+                'eval_set': eval_sets[i],
+                'init_model': init_models[i],
+                'log_cout': sys.stdout,
+                'log_cerr': sys.stderr,
+            }
+            for i in range(len(eval_sets))
+        ]
         model = FreqaiMultiOutputRegressor(estimator=cbr)
-        thread_training = self.freqai_info.get('multitarget_parallel_training', False)
-        if thread_training:
+        if thread_training := self.freqai_info.get(
+            'multitarget_parallel_training', False
+        ):
             model.n_jobs = y.shape[1]
         model.fit(X=X, y=y, sample_weight=sample_weight, fit_params=fit_params)
 

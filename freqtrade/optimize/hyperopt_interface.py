@@ -54,13 +54,12 @@ class IHyperOpt(ABC):
         Generates the ROI table that will be used by Hyperopt.
         You may override it in your custom Hyperopt class.
         """
-        roi_table = {}
-        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
-        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
-        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
-        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
-
-        return roi_table
+        return {
+            0: params['roi_p1'] + params['roi_p2'] + params['roi_p3'],
+            params['roi_t3']: params['roi_p1'] + params['roi_p2'],
+            params['roi_t3'] + params['roi_t2']: params['roi_p1'],
+            params['roi_t3'] + params['roi_t2'] + params['roi_t1']: 0,
+        }
 
     def roi_space(self) -> List[Dimension]:
         """

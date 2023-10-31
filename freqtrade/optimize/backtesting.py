@@ -142,7 +142,9 @@ class Backtesting:
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))
 
         # Get maximum required startup period
-        self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        self.required_startup = max(
+            strat.startup_candle_count for strat in self.strategylist
+        )
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         if self.config.get('freqai', {}).get('enabled', False):
@@ -364,8 +366,7 @@ class Backtesting:
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
         # Create dict with data
-        for pair in processed.keys():
-            pair_data = processed[pair]
+        for pair, pair_data in processed.items():
             self.check_abort()
             self.progress.increment()
 
@@ -422,24 +423,24 @@ class Backtesting:
         # possibly due to a cancelled trade exit.
         # exit at open price.
         is_short = trade.is_short or False
-        leverage = trade.leverage or 1.0
-        side_1 = -1 if is_short else 1
         if exit.exit_type == ExitType.LIQUIDATION and trade.liquidation_price:
             stoploss_value = trade.liquidation_price
         else:
             stoploss_value = trade.stop_loss
 
-        if is_short:
-            if stoploss_value < row[LOW_IDX]:
-                return row[OPEN_IDX]
-        else:
-            if stoploss_value > row[HIGH_IDX]:
-                return row[OPEN_IDX]
-
+        if (
+            is_short
+            and stoploss_value < row[LOW_IDX]
+            or not is_short
+            and stoploss_value > row[HIGH_IDX]
+        ):
+            return row[OPEN_IDX]
         # Special case: trailing triggers within same candle as trade opened. Assume most
         # pessimistic price movement, which is moving just enough to arm stoploss and
         # immediately going down to stop price.
         if exit.exit_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
+            leverage = trade.leverage or 1.0
+            side_1 = -1 if is_short else 1
             if (
                 not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                 and self.strategy.trailing_only_offset_is_reached
@@ -471,59 +472,56 @@ class Backtesting:
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
         roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
-        if roi is not None and roi_entry is not None:
-            if roi == -1 and roi_entry % self.timeframe_min == 0:
-                # When force_exiting with ROI=-1, the roi time will always be equal to trade_dur.
-                # If that entry is a multiple of the timeframe (so on candle open)
-                # - we'll use open instead of close
-                return row[OPEN_IDX]
-
-            # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
-            roi_rate = trade.open_rate * roi / leverage
-            open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
-            close_rate = -(roi_rate + open_fee_rate) / ((trade.fee_close or 0.0) - side_1 * 1)
-            if is_short:
-                is_new_roi = row[OPEN_IDX] < close_rate
-            else:
-                is_new_roi = row[OPEN_IDX] > close_rate
-            if (trade_dur > 0 and trade_dur == roi_entry
-                    and roi_entry % self.timeframe_min == 0
-                    and is_new_roi):
-                # new ROI entry came into effect.
-                # use Open rate if open_rate > calculated exit rate
-                return row[OPEN_IDX]
-
-            if (trade_dur == 0 and (
-                (
-                    is_short
-                    # Red candle (for longs)
-                    and row[OPEN_IDX] < row[CLOSE_IDX]  # Red candle
-                    and trade.open_rate > row[OPEN_IDX]  # trade-open above open_rate
-                    and close_rate < row[CLOSE_IDX]  # closes below close
-                )
-                or
-                (
-                    not is_short
-                    # green candle (for shorts)
-                    and row[OPEN_IDX] > row[CLOSE_IDX]  # green candle
-                    and trade.open_rate < row[OPEN_IDX]  # trade-open below open_rate
-                    and close_rate > row[CLOSE_IDX]  # closes above close
-                )
-            )):
-                # ROI on opening candles with custom pricing can only
-                # trigger if the entry was at Open or lower wick.
-                # details: https: // github.com/freqtrade/freqtrade/issues/6261
-                # If open_rate is < open, only allow exits below the close on red candles.
-                raise ValueError("Opening candle ROI on red candles.")
-
-            # Use the maximum between close_rate and low as we
-            # cannot exit outside of a candle.
-            # Applies when a new ROI setting comes in place and the whole candle is above that.
-            return min(max(close_rate, row[LOW_IDX]), row[HIGH_IDX])
-
-        else:
+        if roi is None or roi_entry is None:
             # This should not be reached...
             return row[OPEN_IDX]
+        if roi == -1 and roi_entry % self.timeframe_min == 0:
+            # When force_exiting with ROI=-1, the roi time will always be equal to trade_dur.
+            # If that entry is a multiple of the timeframe (so on candle open)
+            # - we'll use open instead of close
+            return row[OPEN_IDX]
+
+        # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
+        roi_rate = trade.open_rate * roi / leverage
+        open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
+        close_rate = -(roi_rate + open_fee_rate) / ((trade.fee_close or 0.0) - side_1 * 1)
+        is_new_roi = (
+            row[OPEN_IDX] < close_rate if is_short else row[OPEN_IDX] > close_rate
+        )
+        if (trade_dur > 0 and trade_dur == roi_entry
+                and roi_entry % self.timeframe_min == 0
+                and is_new_roi):
+            # new ROI entry came into effect.
+            # use Open rate if open_rate > calculated exit rate
+            return row[OPEN_IDX]
+
+        if (trade_dur == 0 and (
+            (
+                is_short
+                # Red candle (for longs)
+                and row[OPEN_IDX] < row[CLOSE_IDX]  # Red candle
+                and trade.open_rate > row[OPEN_IDX]  # trade-open above open_rate
+                and close_rate < row[CLOSE_IDX]  # closes below close
+            )
+            or
+            (
+                not is_short
+                # green candle (for shorts)
+                and row[OPEN_IDX] > row[CLOSE_IDX]  # green candle
+                and trade.open_rate < row[OPEN_IDX]  # trade-open below open_rate
+                and close_rate > row[CLOSE_IDX]  # closes above close
+            )
+        )):
+            # ROI on opening candles with custom pricing can only
+            # trigger if the entry was at Open or lower wick.
+            # details: https: // github.com/freqtrade/freqtrade/issues/6261
+            # If open_rate is < open, only allow exits below the close on red candles.
+            raise ValueError("Opening candle ROI on red candles.")
+
+        # Use the maximum between close_rate and low as we
+        # cannot exit outside of a candle.
+        # Applies when a new ROI setting comes in place and the whole candle is above that.
+        return min(max(close_rate, row[LOW_IDX]), row[HIGH_IDX])
 
     def _get_adjust_trade_entry_for_candle(
             self, trade: LocalTrade, row: Tuple, current_time: datetime
@@ -561,9 +559,7 @@ class Backtesting:
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
                 return trade
-            if amount > trade.amount:
-                # This is currently ineffective as remaining would become < min tradable
-                amount = trade.amount
+            amount = min(amount, trade.amount)
             remaining = (trade.amount - amount) * current_rate
             if remaining < min_stake:
                 # Remaining stake is too low to be sold.
@@ -597,7 +593,10 @@ class Backtesting:
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
-            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
+            if (
+                order.ft_order_side != trade.exit_side
+                or order.safe_amount != trade.amount
+            ):
                 # trade is still open
                 trade.set_liquidation_price(self.exchange.get_liquidation_price(
                     pair=trade.pair,
@@ -618,68 +617,68 @@ class Backtesting:
             current_time: datetime,
             amount: Optional[float] = None) -> Optional[LocalTrade]:
 
-        if exit_.exit_flag:
-            trade.close_date = current_time
-            exit_reason = exit_.exit_reason
-            amount_ = amount if amount is not None else trade.amount
-            trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
-            try:
-                close_rate = self._get_close_rate(row, trade, exit_, trade_dur)
-            except ValueError:
-                return None
-            # call the custom exit price,with default value as previous close_rate
-            current_profit = trade.calc_profit_ratio(close_rate)
-            order_type = self.strategy.order_types['exit']
-            if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT,
-                                   ExitType.PARTIAL_EXIT):
-                # Checks and adds an exit tag, after checking that the length of the
-                # row has the length for an exit tag column
-                if (
-                    len(row) > EXIT_TAG_IDX
-                    and row[EXIT_TAG_IDX] is not None
-                    and len(row[EXIT_TAG_IDX]) > 0
-                    and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
-                ):
-                    exit_reason = row[EXIT_TAG_IDX]
-                # Custom exit pricing only for exit-signals
-                if order_type == 'limit':
-                    rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                 default_retval=close_rate)(
-                        pair=trade.pair,
-                        trade=trade,  # type: ignore[arg-type]
-                        current_time=current_time,
-                        proposed_rate=close_rate, current_profit=current_profit,
-                        exit_tag=exit_reason)
-                    if rate is not None and rate != close_rate:
-                        close_rate = price_to_precision(rate, trade.price_precision,
-                                                        self.precision_mode)
-                    # We can't place orders lower than current low.
-                    # freqtrade does not support this in live, and the order would fill immediately
-                    if trade.is_short:
-                        close_rate = min(close_rate, row[HIGH_IDX])
-                    else:
-                        close_rate = max(close_rate, row[LOW_IDX])
-            # Confirm trade exit:
-            time_in_force = self.strategy.order_time_in_force['exit']
+        if not exit_.exit_flag:
+            return None
+        trade.close_date = current_time
+        exit_reason = exit_.exit_reason
+        amount_ = amount if amount is not None else trade.amount
+        trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
+        try:
+            close_rate = self._get_close_rate(row, trade, exit_, trade_dur)
+        except ValueError:
+            return None
+        # call the custom exit price,with default value as previous close_rate
+        current_profit = trade.calc_profit_ratio(close_rate)
+        order_type = self.strategy.order_types['exit']
+        if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT,
+                               ExitType.PARTIAL_EXIT):
+            # Checks and adds an exit tag, after checking that the length of the
+            # row has the length for an exit tag column
+            if (
+                len(row) > EXIT_TAG_IDX
+                and row[EXIT_TAG_IDX] is not None
+                and len(row[EXIT_TAG_IDX]) > 0
+                and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
+            ):
+                exit_reason = row[EXIT_TAG_IDX]
+            # Custom exit pricing only for exit-signals
+            if order_type == 'limit':
+                rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                             default_retval=close_rate)(
+                    pair=trade.pair,
+                    trade=trade,  # type: ignore[arg-type]
+                    current_time=current_time,
+                    proposed_rate=close_rate, current_profit=current_profit,
+                    exit_tag=exit_reason)
+                if rate is not None and rate != close_rate:
+                    close_rate = price_to_precision(rate, trade.price_precision,
+                                                    self.precision_mode)
+                # We can't place orders lower than current low.
+                # freqtrade does not support this in live, and the order would fill immediately
+                if trade.is_short:
+                    close_rate = min(close_rate, row[HIGH_IDX])
+                else:
+                    close_rate = max(close_rate, row[LOW_IDX])
+        # Confirm trade exit:
+        time_in_force = self.strategy.order_time_in_force['exit']
 
-            if (exit_.exit_type not in (ExitType.LIQUIDATION, ExitType.PARTIAL_EXIT)
-                    and not strategy_safe_wrapper(
-                    self.strategy.confirm_trade_exit, default_retval=True)(
-                        pair=trade.pair,
-                        trade=trade,  # type: ignore[arg-type]
-                        order_type=order_type,
-                        amount=amount_,
-                        rate=close_rate,
-                        time_in_force=time_in_force,
-                        sell_reason=exit_reason,  # deprecated
-                        exit_reason=exit_reason,
-                        current_time=current_time)):
-                return None
+        if (exit_.exit_type not in (ExitType.LIQUIDATION, ExitType.PARTIAL_EXIT)
+                and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_exit, default_retval=True)(
+                    pair=trade.pair,
+                    trade=trade,  # type: ignore[arg-type]
+                    order_type=order_type,
+                    amount=amount_,
+                    rate=close_rate,
+                    time_in_force=time_in_force,
+                    sell_reason=exit_reason,  # deprecated
+                    exit_reason=exit_reason,
+                    current_time=current_time)):
+            return None
 
-            trade.exit_reason = exit_reason
+        trade.exit_reason = exit_reason
 
-            return self._exit_trade(trade, row, close_rate, amount_)
-        return None
+        return self._exit_trade(trade, row, close_rate, amount_)
 
     def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
                     close_rate: float, amount: Optional[float] = None) -> Optional[LocalTrade]:
@@ -741,8 +740,7 @@ class Backtesting:
             low=row[LOW_IDX], high=row[HIGH_IDX]
         )
         for exit_ in exits:
-            t = self._get_exit_for_signal(trade, row, exit_, current_time)
-            if t:
+            if t := self._get_exit_for_signal(trade, row, exit_, current_time):
                 return t
         return None
 
@@ -850,7 +848,7 @@ class Backtesting:
             return trade
         time_in_force = self.strategy.order_time_in_force['entry']
 
-        if stake_amount and (not min_stake_amount or stake_amount >= min_stake_amount):
+        if not min_stake_amount or stake_amount >= min_stake_amount:
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
             amount_p = (stake_amount / propose_rate) * leverage
@@ -941,7 +939,7 @@ class Backtesting:
         """
         Handling of left open trades at the end of backtesting
         """
-        for pair in open_trades.keys():
+        for pair in open_trades:
             for trade in list(open_trades[pair]):
                 if trade.has_open_orders and trade.nr_of_successful_entries == 0:
                     # Ignore trade if entry-order did not fill yet
@@ -989,8 +987,7 @@ class Backtesting:
         Returns True if the trade should be deleted.
         """
         for order in [o for o in trade.orders if o.ft_is_open]:
-            oc = self.check_order_cancel(trade, order, current_time)
-            if oc:
+            if oc := self.check_order_cancel(trade, order, current_time):
                 # delete trade due to order timeout
                 return True
             elif oc is None and self.check_order_replace(trade, order, current_time, row):
@@ -1008,19 +1005,17 @@ class Backtesting:
                 False if it's Canceled
                 None if the order is still active.
         """
-        timedout = self.strategy.ft_check_timed_out(
-            trade,  # type: ignore[arg-type]
-            order, current_time)
-        if timedout:
+        if timedout := self.strategy.ft_check_timed_out(
+            trade, order, current_time  # type: ignore[arg-type]
+        ):
             if order.side == trade.entry_side:
                 self.timedout_entry_orders += 1
                 if trade.nr_of_successful_entries == 0:
                     # Remove trade due to entry timeout expiration.
                     return True
-                else:
-                    # Close additional entry order
-                    del trade.orders[trade.orders.index(order)]
-                    return False
+                # Close additional entry order
+                del trade.orders[trade.orders.index(order)]
+                return False
             if order.side == trade.exit_side:
                 self.timedout_exit_orders += 1
                 # Close exit order and retry exiting on next signal.
@@ -1046,28 +1041,24 @@ class Backtesting:
                 entry_tag=trade.enter_tag, side=trade.trade_direction
             )  # default value is current order price
 
-            # cancel existing order whenever a new rate is requested (or None)
             if requested_rate == order.ft_price:
                 # assumption: there can't be multiple open entry orders at any given time
                 return False
-            else:
-                del trade.orders[trade.orders.index(order)]
-                self.canceled_entry_orders += 1
+            del trade.orders[trade.orders.index(order)]
+            self.canceled_entry_orders += 1
 
-            # place new order if result was not None
-            if requested_rate:
-                self._enter_trade(pair=trade.pair, row=row, trade=trade,
-                                  requested_rate=requested_rate,
-                                  requested_stake=(
-                                    order.safe_remaining * order.ft_price / trade.leverage),
-                                  direction='short' if trade.is_short else 'long')
-                # Delete trade if no successful entries happened (if placing the new order failed)
-                if not trade.has_open_orders and trade.nr_of_successful_entries == 0:
-                    return True
-                self.replaced_entry_orders += 1
-            else:
+            if not requested_rate:
                 # assumption: there can't be multiple open entry orders at any given time
                 return (trade.nr_of_successful_entries == 0)
+            self._enter_trade(pair=trade.pair, row=row, trade=trade,
+                              requested_rate=requested_rate,
+                              requested_stake=(
+                                order.safe_remaining * order.ft_price / trade.leverage),
+                              direction='short' if trade.is_short else 'long')
+            # Delete trade if no successful entries happened (if placing the new order failed)
+            if not trade.has_open_orders and trade.nr_of_successful_entries == 0:
+                return True
+            self.replaced_entry_orders += 1
         return False
 
     def validate_row(
@@ -1082,9 +1073,7 @@ class Backtesting:
             return None
 
         # Waits until the time-counter reaches the start of the data for this pair.
-        if row[DATE_IDX] > current_time:
-            return None
-        return row
+        return None if row[DATE_IDX] > current_time else row
 
     def _collate_rejected(self, pair, row):
         """
@@ -1128,8 +1117,7 @@ class Backtesting:
             and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
         ):
             if (self.trade_slot_available(open_trade_count_start)):
-                trade = self._enter_trade(pair, row, trade_dir)
-                if trade:
+                if trade := self._enter_trade(pair, row, trade_dir):
                     # TODO: hacky workaround to avoid opening > max_open_trades
                     # This emulates previous behavior - not sure if this is correct
                     # Prevents entering if the trade-slot was freed in this candle

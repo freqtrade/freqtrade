@@ -123,7 +123,7 @@ class Worker:
                 version = __version__
                 strategy_version = self.freqtrade.strategy.version()
                 if (strategy_version is not None):
-                    version += ', strategy_version: ' + strategy_version
+                    version += f', strategy_version: {strategy_version}'
                 logger.info(f"Bot heartbeat. PID={getpid()}, "
                             f"version='{version}', state='{state.name}'")
                 self._heartbeat_msg = now
@@ -153,7 +153,7 @@ class Worker:
             # Offset is added to ensure a new candle has been issued.
             next_tft = next_tf.timestamp() - time.time()
             next_tf_with_offset = next_tft + timeframe_offset
-            if next_tft < sleep_duration and sleep_duration < next_tf_with_offset:
+            if next_tft < sleep_duration < next_tf_with_offset:
                 # Avoid hitting a new loop between the new candle and the candle with offset
                 sleep_duration = next_tf_with_offset
             sleep_duration = min(sleep_duration, next_tf_with_offset)

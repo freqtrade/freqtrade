@@ -130,11 +130,9 @@ class FreqaiDataDrawer:
         """
         Locate and load a previously saved global metadata in present model folder.
         """
-        exists = self.global_metadata_path.is_file()
-        if exists:
+        if exists := self.global_metadata_path.is_file():
             with self.global_metadata_path.open("r") as fp:
-                metatada_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
-                return metatada_dict
+                return rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
         return {}
 
     def load_drawer_from_disk(self):
@@ -143,8 +141,7 @@ class FreqaiDataDrawer:
         present model folder.
         Load any existing metric tracker that may be present.
         """
-        exists = self.pair_dictionary_path.is_file()
-        if exists:
+        if exists := self.pair_dictionary_path.is_file():
             with self.pair_dictionary_path.open("r") as fp:
                 self.pair_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
         else:
@@ -156,8 +153,7 @@ class FreqaiDataDrawer:
         wants to collect metrics.
         """
         if self.freqai_info.get('write_metrics_to_disk', False):
-            exists = self.metric_tracker_path.is_file()
-            if exists:
+            if exists := self.metric_tracker_path.is_file():
                 with self.metric_tracker_path.open("r") as fp:
                     self.metric_tracker = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
                 logger.info("Loading existing metric tracker from disk.")
@@ -243,9 +239,7 @@ class FreqaiDataDrawer:
             trained_timestamp: int = the last time the coin was trained
         """
 
-        pair_dict = self.pair_dict.get(pair)
-
-        if pair_dict:
+        if pair_dict := self.pair_dict.get(pair):
             model_filename = pair_dict["model_filename"]
             trained_timestamp = pair_dict["trained_timestamp"]
         else:
@@ -257,11 +251,9 @@ class FreqaiDataDrawer:
 
     def set_pair_dict_info(self, metadata: dict) -> None:
         pair_in_dict = self.pair_dict.get(metadata["pair"])
-        if pair_in_dict:
-            return
-        else:
+        if not pair_in_dict:
             self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
-            return
+        return
 
     def set_initial_return_values(self, pair: str,
                                   pred_df: DataFrame,
@@ -414,9 +406,7 @@ class FreqaiDataDrawer:
             timestamp = result.group(2)
 
             if coin not in delete_dict:
-                delete_dict[coin] = {}
-                delete_dict[coin]["num_folders"] = 1
-                delete_dict[coin]["timestamps"] = {int(timestamp): dir}
+                delete_dict[coin] = {"num_folders": 1, "timestamps": {int(timestamp): dir}}
             else:
                 delete_dict[coin]["num_folders"] += 1
                 delete_dict[coin]["timestamps"][int(timestamp)] = dir
@@ -524,7 +514,7 @@ class FreqaiDataDrawer:
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
 
-    def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:  # noqa: C901
+    def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:    # noqa: C901
         """
         loads all data required to make a prediction on a sub-train time range
         :returns:
@@ -559,7 +549,10 @@ class FreqaiDataDrawer:
             model = self.model_dictionary[coin]
         elif self.model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
-        elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
+        elif (
+            'stable_baselines' in self.model_type
+            or self.model_type == 'sb3_contrib'
+        ):
             mod = importlib.import_module(
                 self.model_type, self.freqai_info['rl_config']['model_type'])
             MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
@@ -616,17 +609,16 @@ class FreqaiDataDrawer:
                             raise OperationalException("In memory historical data is older than "
                                                        f"oldest DataProvider candle for {pair} on "
                                                        f"timeframe {tf}")
-                        else:
-                            index = -1
-                            logger.warning(
-                                f"No common dates in historical data and dataprovider for {pair}. "
-                                f"Appending latest dataprovider candle to historical data "
-                                "but please be aware that there is likely a gap in the historical "
-                                "data. \n"
-                                f"Historical data ends at {hist_df.iloc[-1]['date']} "
-                                f"while dataprovider starts at {df_dp['date'].iloc[0]} and"
-                                f"ends at {df_dp['date'].iloc[0]}."
-                            )
+                        index = -1
+                        logger.warning(
+                            f"No common dates in historical data and dataprovider for {pair}. "
+                            f"Appending latest dataprovider candle to historical data "
+                            "but please be aware that there is likely a gap in the historical "
+                            "data. \n"
+                            f"Historical data ends at {hist_df.iloc[-1]['date']} "
+                            f"while dataprovider starts at {df_dp['date'].iloc[0]} and"
+                            f"ends at {df_dp['date'].iloc[0]}."
+                        )
 
                     history_data[pair][tf] = pd.concat(
                         [
@@ -717,7 +709,6 @@ class FreqaiDataDrawer:
         end_date = max(all_pairs_end_dates)
         # add 1 day to string timerange to ensure BT module will load all dataframe data
         end_date = end_date + timedelta(days=1)
-        backtesting_timerange = TimeRange(
+        return TimeRange(
             'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
         )
-        return backtesting_timerange

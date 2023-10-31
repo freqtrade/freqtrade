@@ -92,11 +92,7 @@ class PairListManager(LoggingMixin):
 
     def refresh_pairlist(self) -> None:
         """Run pairlist through all configured Pairlist Handlers."""
-        # Tickers should be cached to avoid calling the exchange on each call.
-        tickers: Dict = {}
-        if self._tickers_needed:
-            tickers = self._get_cached_tickers()
-
+        tickers = self._get_cached_tickers() if self._tickers_needed else {}
         # Generate the pairlist with first Pairlist Handler in the chain
         pairlist = self._pairlist_handlers[0].gen_pairlist(tickers)
 

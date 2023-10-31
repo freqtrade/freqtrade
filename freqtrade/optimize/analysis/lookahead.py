@@ -44,12 +44,9 @@ class LookaheadAnalysis(BaseAnalysis):
     def get_result(backtesting: Backtesting, processed: DataFrame):
         min_date, max_date = get_timerange(processed)
 
-        result = backtesting.backtest(
-            processed=deepcopy(processed),
-            start_date=min_date,
-            end_date=max_date
+        return backtesting.backtest(
+            processed=deepcopy(processed), start_date=min_date, end_date=max_date
         )
-        return result
 
     @staticmethod
     def report_signal(result: dict, column_name: str, checked_timestamp: datetime):
@@ -58,14 +55,8 @@ class LookaheadAnalysis(BaseAnalysis):
 
         if row_count == 0:
             return False
-        else:
-
-            df_cut = df[(df[column_name] == checked_timestamp)]
-            if df_cut[column_name].shape[0] == 0:
-                return False
-            else:
-                return True
-        return False
+        df_cut = df[(df[column_name] == checked_timestamp)]
+        return df_cut[column_name].shape[0] != 0
 
     # analyzes two data frames with processed indicators and shows differences between them.
     def analyze_indicators(self, full_vars: VarHolder, cut_vars: VarHolder, current_pair: str):
@@ -119,8 +110,9 @@ class LookaheadAnalysis(BaseAnalysis):
                 shutil.rmtree(path_to_current_identifier)
 
         prepare_data_config = deepcopy(self.local_config)
-        prepare_data_config['timerange'] = (str(self.dt_to_timestamp(varholder.from_dt)) + "-" +
-                                            str(self.dt_to_timestamp(varholder.to_dt)))
+        prepare_data_config[
+            'timerange'
+        ] = f"{str(self.dt_to_timestamp(varholder.from_dt))}-{str(self.dt_to_timestamp(varholder.to_dt))}"
         prepare_data_config['exchange']['pair_whitelist'] = pairs_to_load
 
         if self._fee is not None:

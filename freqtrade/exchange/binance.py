@@ -170,7 +170,6 @@ class Binance(Exchange):
             Isolated-Margin Mode: 0
         """
 
-        side_1 = -1 if is_short else 1
         cross_vars = upnl_ex_1 - mm_ex_1 if self.margin_mode == MarginMode.CROSS else 0.0
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
@@ -184,6 +183,7 @@ class Binance(Exchange):
             )
 
         if self.trading_mode == TradingMode.FUTURES:
+            side_1 = -1 if is_short else 1
             return (
                 (
                     (wallet_balance + cross_vars + maintenance_amt) -
@@ -198,22 +198,21 @@ class Binance(Exchange):
 
     @retrier
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
-        if self.trading_mode == TradingMode.FUTURES:
-            if self._config['dry_run']:
-                leverage_tiers_path = (
-                    Path(__file__).parent / 'binance_leverage_tiers.json'
-                )
-                with leverage_tiers_path.open() as json_file:
-                    return json_load(json_file)
-            else:
-                try:
-                    return self._api.fetch_leverage_tiers()
-                except ccxt.DDoSProtection as e:
-                    raise DDosProtection(e) from e
-                except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                    raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                         f'{e.__class__.__name__}. Message: {e}') from e
-                except ccxt.BaseError as e:
-                    raise OperationalException(e) from e
-        else:
+        if self.trading_mode != TradingMode.FUTURES:
             return {}
+        if self._config['dry_run']:
+            leverage_tiers_path = (
+                Path(__file__).parent / 'binance_leverage_tiers.json'
+            )
+            with leverage_tiers_path.open() as json_file:
+                return json_load(json_file)
+        else:
+            try:
+                return self._api.fetch_leverage_tiers()
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                     f'{e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e

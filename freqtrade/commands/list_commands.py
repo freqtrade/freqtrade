@@ -76,13 +76,18 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
         reset = ''
 
     names = [s['name'] for s in objs]
-    objs_to_print = [{
-        'name': s['name'] if s['name'] else "--",
-        'location': s['location_rel'],
-        'status': (red + "LOAD FAILED" + reset if s['class'] is None
-                   else "OK" if names.count(s['name']) == 1
-                   else yellow + "DUPLICATE NAME" + reset)
-    } for s in objs]
+    objs_to_print = [
+        {
+            'name': s['name'] if s['name'] else "--",
+            'location': s['location_rel'],
+            'status': f"{red}LOAD FAILED{reset}"
+            if s['class'] is None
+            else "OK"
+            if names.count(s['name']) == 1
+            else f"{yellow}DUPLICATE NAME{reset}",
+        }
+        for s in objs
+    ]
     for idx, s in enumerate(objs):
         if 'hyperoptable' in s:
             objs_to_print[idx].update({
@@ -188,9 +193,6 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                         f"{plural(len(quote_currencies), 'currency', 'currencies')}"
                         if quote_currencies else ""))
 
-        headers = ["Id", "Symbol", "Base", "Quote", "Active",
-                   "Spot", "Margin", "Future", "Leverage"]
-
         tabular_data = [{
                 'Id': v['id'],
                 'Symbol': v['symbol'],
@@ -215,6 +217,9 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             print()
 
         if pairs:
+            headers = ["Id", "Symbol", "Base", "Quote", "Active",
+                       "Spot", "Margin", "Future", "Leverage"]
+
             if args.get('print_list', False):
                 # print data as a list, with human-readable summary
                 print(f"{summary_str}: {', '.join(pairs.keys())}.")

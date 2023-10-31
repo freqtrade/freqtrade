@@ -266,8 +266,7 @@ class Order(ModelBase):
             logger.warning(f"{order} is not a valid response object.")
             return
 
-        filtered_orders = [o for o in orders if o.order_id == order.get('id')]
-        if filtered_orders:
+        if filtered_orders := [o for o in orders if o.order_id == order.get('id')]:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
             Trade.commit()
@@ -438,18 +437,17 @@ class LocalTrade:
     @property
     def _date_last_filled_utc(self) -> Optional[datetime]:
         """ Date of the last filled order"""
-        orders = self.select_filled_orders()
-        if orders:
+        if orders := self.select_filled_orders():
             return max(o.order_filled_utc for o in orders if o.order_filled_utc)
         return None
 
     @property
     def date_last_filled_utc(self) -> datetime:
         """ Date of the last filled order - or open_date if no orders are filled"""
-        dt_last_filled = self._date_last_filled_utc
-        if not dt_last_filled:
+        if dt_last_filled := self._date_last_filled_utc:
+            return max([self.open_date_utc, dt_last_filled])
+        else:
             return self.open_date_utc
-        return max([self.open_date_utc, dt_last_filled])
 
     @property
     def open_date_utc(self):
@@ -467,24 +465,15 @@ class LocalTrade:
 
     @property
     def entry_side(self) -> str:
-        if self.is_short:
-            return "sell"
-        else:
-            return "buy"
+        return "sell" if self.is_short else "buy"
 
     @property
     def exit_side(self) -> BuySell:
-        if self.is_short:
-            return "buy"
-        else:
-            return "sell"
+        return "buy" if self.is_short else "sell"
 
     @property
     def trade_direction(self) -> LongShort:
-        if self.is_short:
-            return "short"
-        else:
-            return "long"
+        return "short" if self.is_short else "long"
 
     @property
     def safe_base_currency(self) -> str:
@@ -526,11 +515,11 @@ class LocalTrade:
 
     @property
     def open_orders_ids(self) -> List[str]:
-        open_orders_ids_wo_sl = [
-            oo.order_id for oo in self.open_orders
+        return [
+            oo.order_id
+            for oo in self.open_orders
             if oo.ft_order_side not in ['stoploss']
         ]
-        return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -670,7 +659,7 @@ class LocalTrade:
         if funding_fee is None:
             return
         self.funding_fee_running = funding_fee
-        prior_funding_fees = sum([o.funding_fee for o in self.orders if o.funding_fee])
+        prior_funding_fees = sum(o.funding_fee for o in self.orders if o.funding_fee)
         self.funding_fees = prior_funding_fees + funding_fee
 
     def __set_stop_loss(self, stop_loss: float, percent: float):
@@ -693,7 +682,12 @@ class LocalTrade:
             Skips everything if self.stop_loss is already set.
         :param refresh: Called to refresh stop_loss, allows adjustment in both directions
         """
-        if stoploss is None or (initial and not (self.stop_loss is None or self.stop_loss == 0)):
+        if (
+            stoploss is None
+            or initial
+            and self.stop_loss is not None
+            and self.stop_loss != 0
+        ):
             # Don't modify if called with initial and nothing to do
             return
 
@@ -857,10 +851,7 @@ class LocalTrade:
         """
         open_trade = FtPrecise(amount) * FtPrecise(open_rate)
         fees = open_trade * FtPrecise(self.fee_open)
-        if self.is_short:
-            return float(open_trade - fees)
-        else:
-            return float(open_trade + fees)
+        return float(open_trade - fees) if self.is_short else float(open_trade + fees)
 
     def recalc_open_trade_value(self) -> None:
         """
@@ -894,10 +885,7 @@ class LocalTrade:
         close_trade = amount * FtPrecise(rate)
         fees = close_trade * FtPrecise(fee or 0.0)
 
-        if self.is_short:
-            return close_trade + fees
-        else:
-            return close_trade - fees
+        return close_trade + fees if self.is_short else close_trade - fees
 
     def calc_close_trade_value(self, rate: float, amount: Optional[float] = None) -> float:
         """
@@ -918,13 +906,12 @@ class LocalTrade:
 
             total_interest = self.calculate_interest()
 
-            if self.is_short:
-                amount1 = amount1 + total_interest
-                return float(self._calc_base_close(amount1, rate, self.fee_close))
-            else:
+            if not self.is_short:
                 # Currency already owned for longs, no need to purchase
                 return float(self._calc_base_close(amount1, rate, self.fee_close) - total_interest)
 
+            amount1 = amount1 + total_interest
+            return float(self._calc_base_close(amount1, rate, self.fee_close))
         elif (trading_mode == TradingMode.FUTURES):
             funding_fees = self.funding_fees or 0.0
             # Positive funding_fees -> Trade has gained from fees.
@@ -1018,11 +1005,10 @@ class LocalTrade:
 
         if (short_close_zero or long_close_zero):
             return 0.0
+        if self.is_short:
+            profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
         else:
-            if self.is_short:
-                profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
-            else:
-                profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
+            profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
 
         return float(f"{profit_ratio:.8f}")
 
@@ -1101,10 +1087,7 @@ class LocalTrade:
         Finds order object by Order id.
         :param order_id: Exchange order id
         """
-        for o in self.orders:
-            if o.order_id == order_id:
-                return o
-        return None
+        return next((o for o in self.orders if o.order_id == order_id), None)
 
     def select_order(self, order_side: Optional[str] = None,
                      is_open: Optional[bool] = None, only_filled: bool = False) -> Optional[Order]:
@@ -1122,10 +1105,7 @@ class LocalTrade:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if is_open is False and only_filled:
             orders = [o for o in orders if o.filled and o.status in NON_OPEN_EXCHANGE_STATES]
-        if len(orders) > 0:
-            return orders[-1]
-        else:
-            return None
+        return orders[-1] if len(orders) > 0 else None
 
     def select_filled_orders(self, order_side: Optional[str] = None) -> List['Order']:
         """
@@ -1220,11 +1200,7 @@ class LocalTrade:
 
         # Offline mode - without database
         if is_open is not None:
-            if is_open:
-                sel_trades = LocalTrade.trades_open
-            else:
-                sel_trades = LocalTrade.trades
-
+            sel_trades = LocalTrade.trades_open if is_open else LocalTrade.trades
         else:
             # Not used during backtesting, but might be used by a strategy
             sel_trades = list(LocalTrade.trades + LocalTrade.trades_open)
@@ -1512,9 +1488,7 @@ class Trade(ModelBase, LocalTrade):
     @validates('enter_tag', 'exit_reason')
     def validate_string_len(self, key, value):
         max_len = getattr(self.__class__, key).prop.columns[0].type.length
-        if value and len(value) > max_len:
-            return value[:max_len]
-        return value
+        return value[:max_len] if value and len(value) > max_len else value
 
     def delete(self) -> None:
 
@@ -1545,23 +1519,22 @@ class Trade(ModelBase, LocalTrade):
 
         :return: unsorted List[Trade]
         """
-        if Trade.use_db:
-            trade_filter = []
-            if pair:
-                trade_filter.append(Trade.pair == pair)
-            if open_date:
-                trade_filter.append(Trade.open_date > open_date)
-            if close_date:
-                trade_filter.append(Trade.close_date > close_date)
-            if is_open is not None:
-                trade_filter.append(Trade.is_open.is_(is_open))
-            return cast(List[LocalTrade], Trade.get_trades(trade_filter).all())
-        else:
+        if not Trade.use_db:
             return LocalTrade.get_trades_proxy(
                 pair=pair, is_open=is_open,
                 open_date=open_date,
                 close_date=close_date
             )
+        trade_filter = []
+        if pair:
+            trade_filter.append(Trade.pair == pair)
+        if open_date:
+            trade_filter.append(Trade.open_date > open_date)
+        if close_date:
+            trade_filter.append(Trade.close_date > close_date)
+        if is_open is not None:
+            trade_filter.append(Trade.is_open.is_(is_open))
+        return cast(List[LocalTrade], Trade.get_trades(trade_filter).all())
 
     @staticmethod
     def get_trades_query(trade_filter=None, include_orders: bool = True) -> Select:
@@ -1786,15 +1759,15 @@ class Trade(ModelBase, LocalTrade):
             exit_reason = exit_reason if exit_reason is not None else "Other"
 
             if (exit_reason is not None and enter_tag is not None):
-                mix_tag = enter_tag + " " + exit_reason
-                i = 0
-                if not any(item["mix_tag"] == mix_tag for item in return_list):
+                mix_tag = f"{enter_tag} {exit_reason}"
+                if all(item["mix_tag"] != mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,
                                         'profit': profit,
                                         'profit_pct': round(profit * 100, 2),
                                         'profit_abs': profit_abs,
                                         'count': count})
                 else:
+                    i = 0
                     while i < len(return_list):
                         if return_list[i]["mix_tag"] == mix_tag:
                             return_list[i] = {
@@ -1814,16 +1787,12 @@ class Trade(ModelBase, LocalTrade):
         NOTE: Not supported in Backtesting.
         :returns: Tuple containing (pair, profit_sum)
         """
-        best_pair = Trade.session.execute(
-            select(
-                Trade.pair,
-                func.sum(Trade.close_profit).label('profit_sum')
-            ).filter(Trade.is_open.is_(False) & (Trade.close_date >= start_date))
+        return Trade.session.execute(
+            select(Trade.pair, func.sum(Trade.close_profit).label('profit_sum'))
+            .filter(Trade.is_open.is_(False) & (Trade.close_date >= start_date))
             .group_by(Trade.pair)
             .order_by(desc('profit_sum'))
         ).first()
-
-        return best_pair
 
     @staticmethod
     def get_trading_volume(start_date: datetime = datetime.fromtimestamp(0)) -> float:
@@ -1832,11 +1801,8 @@ class Trade(ModelBase, LocalTrade):
         NOTE: Not supported in Backtesting.
         :returns: Tuple containing (pair, profit_sum)
         """
-        trading_volume = Trade.session.execute(
-            select(
-                func.sum(Order.cost).label('volume')
-            ).filter(
-                Order.order_filled_date >= start_date,
-                Order.status == 'closed'
-            )).scalar_one()
-        return trading_volume
+        return Trade.session.execute(
+            select(func.sum(Order.cost).label('volume')).filter(
+                Order.order_filled_date >= start_date, Order.status == 'closed'
+            )
+        ).scalar_one()

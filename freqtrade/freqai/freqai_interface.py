@@ -526,26 +526,24 @@ class IFreqaiModel(ABC):
                 "svm_params", {"shuffle": False, "nu": 0.01})
             pipe_steps.append(('svm', ds.SVMOutlierExtractor(**svm_params)))
 
-        di = ft_params.get("DI_threshold", 0)
-        if di:
+        if di := ft_params.get("DI_threshold", 0):
             pipe_steps.append(('di', ds.DissimilarityIndex(di_threshold=di, n_jobs=threads)))
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             pipe_steps.append(('dbscan', ds.DBSCAN(n_jobs=threads)))
 
-        sigma = self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0)
-        if sigma:
+        if sigma := self.freqai_info["feature_parameters"].get(
+            'noise_standard_deviation', 0
+        ):
             pipe_steps.append(('noise', ds.Noise(sigma=sigma)))
 
         return Pipeline(pipe_steps)
 
     def define_label_pipeline(self, threads=-1) -> Pipeline:
 
-        label_pipeline = Pipeline([
-            ('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))
-            ])
-
-        return label_pipeline
+        return Pipeline(
+            [('scaler', SKLearnWrapper(MinMaxScaler(feature_range=(-1, 1))))]
+        )
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """
@@ -746,12 +744,11 @@ class IFreqaiModel(ABC):
         return
 
     def get_init_model(self, pair: str) -> Any:
-        if pair not in self.dd.model_dictionary or not self.continual_learning:
-            init_model = None
-        else:
-            init_model = self.dd.model_dictionary[pair]
-
-        return init_model
+        return (
+            None
+            if pair not in self.dd.model_dictionary or not self.continual_learning
+            else self.dd.model_dictionary[pair]
+        )
 
     def _set_train_queue(self):
         """
@@ -855,8 +852,9 @@ class IFreqaiModel(ABC):
         the type of logic implemented by the user.
         :param dk: datakitchen object
         """
-        fit_live_predictions_candles = self.freqai_info.get("fit_live_predictions_candles", 0)
-        if fit_live_predictions_candles:
+        if fit_live_predictions_candles := self.freqai_info.get(
+            "fit_live_predictions_candles", 0
+        ):
             logger.info("Applying fit_live_predictions in backtesting")
             label_columns = [col for col in dk.full_df.columns if (
                 col.startswith("&") and

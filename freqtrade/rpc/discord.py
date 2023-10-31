@@ -31,31 +31,32 @@ class Discord(Webhook):
 
     def send_msg(self, msg) -> None:
 
-        if msg['type'].value in self._config['discord']:
-            logger.info(f"Sending discord message: {msg}")
+        if msg['type'].value not in self._config['discord']:
+            return
+        logger.info(f"Sending discord message: {msg}")
 
-            msg['strategy'] = self.strategy
-            msg['timeframe'] = self.timeframe
-            fields = self._config['discord'].get(msg['type'].value)
-            color = 0x0000FF
-            if msg['type'] in (RPCMessageType.EXIT, RPCMessageType.EXIT_FILL):
-                profit_ratio = msg.get('profit_ratio')
-                color = (0x00FF00 if profit_ratio > 0 else 0xFF0000)
-            title = msg['type'].value
-            if 'pair' in msg:
-                title = f"Trade: {msg['pair']} {msg['type'].value}"
-            embeds = [{
-                'title': title,
-                'color': color,
-                'fields': [],
+        msg['strategy'] = self.strategy
+        msg['timeframe'] = self.timeframe
+        fields = self._config['discord'].get(msg['type'].value)
+        color = 0x0000FF
+        if msg['type'] in (RPCMessageType.EXIT, RPCMessageType.EXIT_FILL):
+            profit_ratio = msg.get('profit_ratio')
+            color = (0x00FF00 if profit_ratio > 0 else 0xFF0000)
+        title = msg['type'].value
+        if 'pair' in msg:
+            title = f"Trade: {msg['pair']} {msg['type'].value}"
+        embeds = [{
+            'title': title,
+            'color': color,
+            'fields': [],
 
-            }]
-            for f in fields:
-                for k, v in f.items():
-                    v = v.format(**msg)
-                    embeds[0]['fields'].append(
-                        {'name': k, 'value': v, 'inline': True})
+        }]
+        for f in fields:
+            for k, v in f.items():
+                v = v.format(**msg)
+                embeds[0]['fields'].append(
+                    {'name': k, 'value': v, 'inline': True})
 
-            # Send the message to discord channel
-            payload = {'embeds': embeds}
-            self._send_msg(payload)
+        # Send the message to discord channel
+        payload = {'embeds': embeds}
+        self._send_msg(payload)

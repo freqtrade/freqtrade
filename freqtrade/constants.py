@@ -3,6 +3,7 @@
 """
 bot constants
 """
+
 from typing import Any, Dict, List, Literal, Tuple
 
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
@@ -25,7 +26,7 @@ PRICING_SIDES = ['ask', 'bid', 'same', 'other']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 _ORDERTIF_POSSIBILITIES = ['GTC', 'FOK', 'IOC', 'PO']
 ORDERTIF_POSSIBILITIES = _ORDERTIF_POSSIBILITIES + [t.lower() for t in _ORDERTIF_POSSIBILITIES]
-STOPLOSS_PRICE_TYPES = [p for p in PriceType]
+STOPLOSS_PRICE_TYPES = list(PriceType)
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',

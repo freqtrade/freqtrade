@@ -133,9 +133,7 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
 
     tsl_positive = float(conf.get('trailing_stop_positive', 0))
     tsl_offset = float(conf.get('trailing_stop_positive_offset', 0))
-    tsl_only_offset = conf.get('trailing_only_offset_is_reached', False)
-
-    if tsl_only_offset:
+    if tsl_only_offset := conf.get('trailing_only_offset_is_reached', False):
         if tsl_positive == 0.0:
             raise OperationalException(
                 'The config trailing_only_offset_is_reached needs '
@@ -210,14 +208,13 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
                 "Using order_book_max != order_book_min in exit_pricing is no longer supported."
                 "Please pick one value and use `order_book_top` in the future."
             )
-        else:
-            # Move value to order_book_top
-            ask_strategy['order_book_top'] = ob_min
-            logger.warning(
-                "DEPRECATED: "
-                "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
-                "for your `exit_pricing` configuration."
-            )
+        # Move value to order_book_top
+        ask_strategy['order_book_top'] = ob_min
+        logger.warning(
+            "DEPRECATED: "
+            "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
+            "for your `exit_pricing` configuration."
+        )
 
 
 def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
@@ -236,16 +233,15 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             raise OperationalException(
                 "Please migrate your time_in_force settings to use 'entry' and 'exit'.")
-        else:
-            logger.warning(
-                "DEPRECATED: Using 'buy' and 'sell' for time_in_force is deprecated."
-                "Please migrate your time_in_force settings to use 'entry' and 'exit'."
-            )
-            process_deprecated_setting(
-                conf, 'order_time_in_force', 'buy', 'order_time_in_force', 'entry')
+        logger.warning(
+            "DEPRECATED: Using 'buy' and 'sell' for time_in_force is deprecated."
+            "Please migrate your time_in_force settings to use 'entry' and 'exit'."
+        )
+        process_deprecated_setting(
+            conf, 'order_time_in_force', 'buy', 'order_time_in_force', 'entry')
 
-            process_deprecated_setting(
-                conf, 'order_time_in_force', 'sell', 'order_time_in_force', 'exit')
+        process_deprecated_setting(
+            conf, 'order_time_in_force', 'sell', 'order_time_in_force', 'exit')
 
 
 def _validate_order_types(conf: Dict[str, Any]) -> None:
@@ -257,23 +253,22 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             raise OperationalException(
                 "Please migrate your order_types settings to use the new wording.")
-        else:
-            logger.warning(
-                "DEPRECATED: Using 'buy' and 'sell' for order_types is deprecated."
-                "Please migrate your order_types settings to use 'entry' and 'exit' wording."
-            )
-            for o, n in [
-                ('buy', 'entry'),
-                ('sell', 'exit'),
-                ('emergencysell', 'emergency_exit'),
-                ('forcesell', 'force_exit'),
-                ('forcebuy', 'force_entry'),
-                ('emergencyexit', 'emergency_exit'),
-                ('forceexit', 'force_exit'),
-                ('forceentry', 'force_entry'),
-            ]:
+        logger.warning(
+            "DEPRECATED: Using 'buy' and 'sell' for order_types is deprecated."
+            "Please migrate your order_types settings to use 'entry' and 'exit' wording."
+        )
+        for o, n in [
+            ('buy', 'entry'),
+            ('sell', 'exit'),
+            ('emergencysell', 'emergency_exit'),
+            ('forcesell', 'force_exit'),
+            ('forcebuy', 'force_entry'),
+            ('emergencyexit', 'emergency_exit'),
+            ('forceexit', 'force_exit'),
+            ('forceentry', 'force_entry'),
+        ]:
 
-                process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
+            process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
 
 
 def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
@@ -282,49 +277,46 @@ def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             raise OperationalException(
                 "Please migrate your unfilledtimeout settings to use the new wording.")
-        else:
+        logger.warning(
+            "DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is deprecated."
+            "Please migrate your unfilledtimeout settings to use 'entry' and 'exit' wording."
+        )
+        for o, n in [
+            ('buy', 'entry'),
+            ('sell', 'exit'),
+        ]:
 
-            logger.warning(
-                "DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is deprecated."
-                "Please migrate your unfilledtimeout settings to use 'entry' and 'exit' wording."
-            )
-            for o, n in [
-                ('buy', 'entry'),
-                ('sell', 'exit'),
-            ]:
-
-                process_deprecated_setting(conf, 'unfilledtimeout', o, 'unfilledtimeout', n)
+            process_deprecated_setting(conf, 'unfilledtimeout', o, 'unfilledtimeout', n)
 
 
 def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
 
-    if conf.get('ask_strategy') or conf.get('bid_strategy'):
-        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-            raise OperationalException(
-                "Please migrate your pricing settings to use the new wording.")
+    if not conf.get('ask_strategy') and not conf.get('bid_strategy'):
+        return
+    if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+        raise OperationalException(
+            "Please migrate your pricing settings to use the new wording.")
+    logger.warning(
+        "DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is deprecated."
+        "Please migrate your settings to use 'entry_pricing' and 'exit_pricing'."
+    )
+    conf['entry_pricing'] = {}
+    for obj in list(conf.get('bid_strategy', {}).keys()):
+        if obj == 'ask_last_balance':
+            process_deprecated_setting(conf, 'bid_strategy', obj,
+                                       'entry_pricing', 'price_last_balance')
         else:
+            process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
+    del conf['bid_strategy']
 
-            logger.warning(
-                "DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is deprecated."
-                "Please migrate your settings to use 'entry_pricing' and 'exit_pricing'."
-            )
-            conf['entry_pricing'] = {}
-            for obj in list(conf.get('bid_strategy', {}).keys()):
-                if obj == 'ask_last_balance':
-                    process_deprecated_setting(conf, 'bid_strategy', obj,
-                                               'entry_pricing', 'price_last_balance')
-                else:
-                    process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
-            del conf['bid_strategy']
-
-            conf['exit_pricing'] = {}
-            for obj in list(conf.get('ask_strategy', {}).keys()):
-                if obj == 'bid_last_balance':
-                    process_deprecated_setting(conf, 'ask_strategy', obj,
-                                               'exit_pricing', 'price_last_balance')
-                else:
-                    process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
-            del conf['ask_strategy']
+    conf['exit_pricing'] = {}
+    for obj in list(conf.get('ask_strategy', {}).keys()):
+        if obj == 'bid_last_balance':
+            process_deprecated_setting(conf, 'ask_strategy', obj,
+                                       'exit_pricing', 'price_last_balance')
+        else:
+            process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
+    del conf['ask_strategy']
 
 
 def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
@@ -336,50 +328,51 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
 
 
 def _validate_freqai_include_timeframes(conf: Dict[str, Any]) -> None:
-    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
-    if freqai_enabled:
-        main_tf = conf.get('timeframe', '5m')
-        freqai_include_timeframes = conf.get('freqai', {}).get('feature_parameters', {}
-                                                               ).get('include_timeframes', [])
+    if not (freqai_enabled := conf.get('freqai', {}).get('enabled', False)):
+        return
+    main_tf = conf.get('timeframe', '5m')
+    freqai_include_timeframes = conf.get('freqai', {}).get('feature_parameters', {}
+                                                           ).get('include_timeframes', [])
 
-        from freqtrade.exchange import timeframe_to_seconds
-        main_tf_s = timeframe_to_seconds(main_tf)
-        offending_lines = []
-        for tf in freqai_include_timeframes:
-            tf_s = timeframe_to_seconds(tf)
-            if tf_s < main_tf_s:
-                offending_lines.append(tf)
-        if offending_lines:
-            raise OperationalException(
-                f"Main timeframe of {main_tf} must be smaller or equal to FreqAI "
-                f"`include_timeframes`.Offending include-timeframes: {', '.join(offending_lines)}")
+    from freqtrade.exchange import timeframe_to_seconds
+    main_tf_s = timeframe_to_seconds(main_tf)
+    offending_lines = []
+    for tf in freqai_include_timeframes:
+        tf_s = timeframe_to_seconds(tf)
+        if tf_s < main_tf_s:
+            offending_lines.append(tf)
+    if offending_lines:
+        raise OperationalException(
+            f"Main timeframe of {main_tf} must be smaller or equal to FreqAI "
+            f"`include_timeframes`.Offending include-timeframes: {', '.join(offending_lines)}")
 
-        # Ensure that the base timeframe is included in the include_timeframes list
-        if main_tf not in freqai_include_timeframes:
-            feature_parameters = conf.get('freqai', {}).get('feature_parameters', {})
-            include_timeframes = [main_tf] + freqai_include_timeframes
-            conf.get('freqai', {}).get('feature_parameters', {}) \
-                .update({**feature_parameters, 'include_timeframes': include_timeframes})
+    # Ensure that the base timeframe is included in the include_timeframes list
+    if main_tf not in freqai_include_timeframes:
+        feature_parameters = conf.get('freqai', {}).get('feature_parameters', {})
+        include_timeframes = [main_tf] + freqai_include_timeframes
+        conf.get('freqai', {}).get('feature_parameters', {}) \
+            .update({**feature_parameters, 'include_timeframes': include_timeframes})
 
 
 def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
-    if conf.get('runmode', RunMode.OTHER) == RunMode.BACKTEST:
-        freqai_enabled = conf.get('freqai', {}).get('enabled', False)
-        timerange = conf.get('timerange')
-        freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
-        if freqai_backtest_live_models and freqai_enabled and timerange:
-            raise OperationalException(
-                'Using timerange parameter is not supported with '
-                '--freqai-backtest-live-models parameter.')
+    if conf.get('runmode', RunMode.OTHER) != RunMode.BACKTEST:
+        return
+    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
+    timerange = conf.get('timerange')
+    freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
+    if freqai_backtest_live_models and freqai_enabled and timerange:
+        raise OperationalException(
+            'Using timerange parameter is not supported with '
+            '--freqai-backtest-live-models parameter.')
 
-        if freqai_backtest_live_models and not freqai_enabled:
-            raise OperationalException(
-                'Using --freqai-backtest-live-models parameter is only '
-                'supported with a FreqAI strategy.')
+    if freqai_backtest_live_models and not freqai_enabled:
+        raise OperationalException(
+            'Using --freqai-backtest-live-models parameter is only '
+            'supported with a FreqAI strategy.')
 
-        if freqai_enabled and not freqai_backtest_live_models and not timerange:
-            raise OperationalException(
-                'Please pass --timerange if you intend to use FreqAI for backtesting.')
+    if freqai_enabled and not freqai_backtest_live_models and not timerange:
+        raise OperationalException(
+            'Please pass --timerange if you intend to use FreqAI for backtesting.')
 
 
 def _validate_consumers(conf: Dict[str, Any]) -> None:
@@ -389,8 +382,11 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
             raise OperationalException("You must specify at least 1 Producer to connect to.")
 
         producer_names = [p['name'] for p in emc_conf.get('producers', [])]
-        duplicates = [item for item, count in Counter(producer_names).items() if count > 1]
-        if duplicates:
+        if duplicates := [
+            item
+            for item, count in Counter(producer_names).items()
+            if count > 1
+        ]:
             raise OperationalException(
                 f"Producer names must be unique. Duplicate: {', '.join(duplicates)}")
         if conf.get('process_only_new_candles', True):

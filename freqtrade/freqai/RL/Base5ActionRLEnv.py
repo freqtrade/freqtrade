@@ -113,17 +113,51 @@ class Base5ActionRLEnv(BaseEnvironment):
         Determine if the signal is a trade signal
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
         """
-        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral) or
-                    (action == Actions.Neutral.value and self._position == Positions.Short) or
-                    (action == Actions.Neutral.value and self._position == Positions.Long) or
-                    (action == Actions.Short_enter.value and self._position == Positions.Short) or
-                    (action == Actions.Short_enter.value and self._position == Positions.Long) or
-                    (action == Actions.Short_exit.value and self._position == Positions.Long) or
-                    (action == Actions.Short_exit.value and self._position == Positions.Neutral) or
-                    (action == Actions.Long_enter.value and self._position == Positions.Long) or
-                    (action == Actions.Long_enter.value and self._position == Positions.Short) or
-                    (action == Actions.Long_exit.value and self._position == Positions.Short) or
-                    (action == Actions.Long_exit.value and self._position == Positions.Neutral))
+        return (
+            (
+                action != Actions.Neutral.value
+                or self._position != Positions.Neutral
+            )
+            and (
+                action != Actions.Neutral.value
+                or self._position != Positions.Short
+            )
+            and (
+                action != Actions.Neutral.value or self._position != Positions.Long
+            )
+            and (
+                action != Actions.Short_enter.value
+                or self._position != Positions.Short
+            )
+            and (
+                action != Actions.Short_enter.value
+                or self._position != Positions.Long
+            )
+            and (
+                action != Actions.Short_exit.value
+                or self._position != Positions.Long
+            )
+            and (
+                action != Actions.Short_exit.value
+                or self._position != Positions.Neutral
+            )
+            and (
+                action != Actions.Long_enter.value
+                or self._position != Positions.Long
+            )
+            and (
+                action != Actions.Long_enter.value
+                or self._position != Positions.Short
+            )
+            and (
+                action != Actions.Long_exit.value
+                or self._position != Positions.Short
+            )
+            and (
+                action != Actions.Long_exit.value
+                or self._position != Positions.Neutral
+            )
+        )
 
     def _is_valid(self, action: int) -> bool:
         # trade signal

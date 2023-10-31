@@ -114,9 +114,7 @@ class FeatherDataHandler(IDataHandler):
         if not filename.exists():
             return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
-        tradesdata = read_feather(filename)
-
-        return tradesdata
+        return read_feather(filename)
 
     @classmethod
     def _get_file_extension(cls):

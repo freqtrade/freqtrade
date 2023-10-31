@@ -83,13 +83,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
 
     config = strategy.config
 
-    if asset:
-        # Insert stake currency if needed.
-        asset = _format_pair_name(config, asset)
-    else:
-        # Not specifying an asset will define informative dataframe for current pair.
-        asset = metadata['pair']
-
+    asset = _format_pair_name(config, asset) if asset else metadata['pair']
     market = strategy.dp.market(asset)
     if market is None:
         raise OperationalException(f'Market {asset} is not available.')
@@ -111,11 +105,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
     inf_dataframe = populate_indicators(strategy, inf_dataframe, inf_metadata)
 
     formatter: Any = None
-    if callable(fmt):
-        formatter = fmt             # A custom user-specified formatter function.
-    else:
-        formatter = fmt.format      # A default string formatter.
-
+    formatter = fmt if callable(fmt) else fmt.format
     fmt_args = {
         'BASE': base.upper(),
         'QUOTE': quote.upper(),
