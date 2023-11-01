@@ -37,7 +37,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
-  && pip install --user /tmp/pyarrow-*.whl \
+  && pip install --user --no-index --find-links /tmp/ pyarrow \
   && pip install --user TA-Lib==0.4.28 \
   && pip install --user --no-cache-dir -r requirements.txt
 
