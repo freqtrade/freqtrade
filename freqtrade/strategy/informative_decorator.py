@@ -81,9 +81,12 @@ def __get_pair_formats(market: Optional[Dict[str, Any]]) -> Dict[str, str]:
     }
 
 
-def _format_pair_name(config, pair: str) -> str:
-    return pair.format(stake_currency=config['stake_currency'],
-                       stake=config['stake_currency']).upper()
+def _format_pair_name(config, pair: str, market: Optional[Dict[str, Any]] = None) -> str:
+    return pair.format(
+        stake_currency=config['stake_currency'],
+        stake=config['stake_currency'],
+        **__get_pair_formats(market),
+    ).upper()
 
 
 def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata: dict,
@@ -98,7 +101,8 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
 
     if asset:
         # Insert stake currency if needed.
-        asset = _format_pair_name(config, asset)
+        market1 = strategy.dp.market(metadata['pair'])
+        asset = _format_pair_name(config, asset, market1)
     else:
         # Not specifying an asset will define informative dataframe for current pair.
         asset = metadata['pair']
