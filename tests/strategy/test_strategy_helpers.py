@@ -277,9 +277,11 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         ('XRP/USDT', '5m', candle_def): test_data_5m,
         ('XRP/USDT', '30m', candle_def): test_data_30m,
         ('XRP/USDT', '1h', candle_def): test_data_1h,
+        ('XRP/BTC', '1h', candle_def): test_data_1h,  # from {base}/BTC
         ('LTC/USDT', '5m', candle_def): test_data_5m,
         ('LTC/USDT', '30m', candle_def): test_data_30m,
         ('LTC/USDT', '1h', candle_def): test_data_1h,
+        ('LTC/BTC', '1h', candle_def): test_data_1h,  # from {base}/BTC
         ('NEO/USDT', '30m', candle_def): test_data_30m,
         ('NEO/USDT', '5m', CandleType.SPOT): test_data_5m,  # Explicit request with '' as candletype
         ('NEO/USDT', '15m', candle_def): test_data_5m,  # Explicit request with '' as candletype
@@ -296,10 +298,12 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         'XRP/USDT', 'LTC/USDT', 'NEO/USDT'
     ])
 
-    assert len(strategy._ft_informative) == 6   # Equal to number of decorators used
+    assert len(strategy._ft_informative) == 7   # Equal to number of decorators used
     informative_pairs = [
         ('XRP/USDT', '1h', candle_def),
+        ('XRP/BTC', '1h', candle_def),
         ('LTC/USDT', '1h', candle_def),
+        ('LTC/BTC', '1h', candle_def),
         ('XRP/USDT', '30m', candle_def),
         ('LTC/USDT', '30m', candle_def),
         ('NEO/USDT', '1h', candle_def),
