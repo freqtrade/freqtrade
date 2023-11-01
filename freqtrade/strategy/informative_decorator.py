@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from pandas import DataFrame
 
@@ -68,6 +68,19 @@ def informative(timeframe: str, asset: str = '',
     return decorator
 
 
+def __get_pair_formats(market: Optional[Dict[str, Any]]) -> Dict[str, str]:
+    if not market:
+        return {}
+    base = market['base']
+    quote = market['quote']
+    return {
+        'base': base.lower(),
+        'BASE': base.upper(),
+        'quote': quote.lower(),
+        'QUOTE': quote.upper(),
+    }
+
+
 def _format_pair_name(config, pair: str) -> str:
     return pair.format(stake_currency=config['stake_currency'],
                        stake=config['stake_currency']).upper()
@@ -93,8 +106,6 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
     market = strategy.dp.market(asset)
     if market is None:
         raise OperationalException(f'Market {asset} is not available.')
-    base = market['base']
-    quote = market['quote']
 
     # Default format. This optimizes for the common case: informative pairs using same stake
     # currency. When quote currency matches stake currency, column name will omit base currency.
@@ -117,10 +128,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
         formatter = fmt.format      # A default string formatter.
 
     fmt_args = {
-        'BASE': base.upper(),
-        'QUOTE': quote.upper(),
-        'base': base.lower(),
-        'quote': quote.lower(),
+        **__get_pair_formats(market),
         'asset': asset,
         'timeframe': timeframe,
     }
