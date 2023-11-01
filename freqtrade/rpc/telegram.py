@@ -240,7 +240,7 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._force_exit_inline, pattern=r"force_exit__\S+"),
-            CallbackQueryHandler(self._force_enter_inline, pattern=r"\S+\/\S+"),
+            CallbackQueryHandler(self._force_enter_inline, pattern=r"force_enter__\S+"),
         ]
         for handle in handles:
             self._app.add_handler(handle)
@@ -1149,12 +1149,19 @@ class Telegram(RPCHandler):
     async def _force_enter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
-            if query.data and '_||_' in query.data:
-                pair, side = query.data.split('_||_')
-                order_side = SignalDirection(side)
-                await query.answer()
-                await query.edit_message_text(text=f"Manually entering {order_side} for {pair}")
-                await self._force_enter_action(pair, None, order_side)
+            if query.data and '__' in query.data:
+                # Input data is "force_enter__<pair|cancel>_<side>"
+                payload = query.data.split("__")[1]
+                if payload == 'cancel':
+                    await query.answer()
+                    await query.edit_message_text(text="Force enter canceled.")
+                    return
+                if payload and '_||_' in payload:
+                    pair, side = payload.split('_||_')
+                    order_side = SignalDirection(side)
+                    await query.answer()
+                    await query.edit_message_text(text=f"Manually entering {order_side} for {pair}")
+                    await self._force_enter_action(pair, None, order_side)
 
     @staticmethod
     def _layout_inline_keyboard(
@@ -1183,12 +1190,14 @@ class Telegram(RPCHandler):
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
             pair_buttons = [
-                InlineKeyboardButton(text=pair, callback_data=f"{pair}_||_{order_side}")
-                for pair in sorted(whitelist)
+                InlineKeyboardButton(
+                    text=pair, callback_data=f"force_enter__{pair}_||_{order_side}"
+                ) for pair in sorted(whitelist)
             ]
             buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
-            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel',
+                                                         callback_data='force_enter__cancel')])
             await self._send_msg(msg="Which pair?",
                                  keyboard=buttons_aligned,
                                  query=update.callback_query)
