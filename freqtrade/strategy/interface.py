@@ -756,12 +756,23 @@ class IStrategy(ABC, HyperStrategyMixin):
             candle_type = (inf_data.candle_type if inf_data.candle_type
                            else self.config.get('candle_type_def', CandleType.SPOT))
             if inf_data.asset:
-                pair_tf = (
-                    _format_pair_name(self.config, inf_data.asset),
-                    inf_data.timeframe,
-                    candle_type,
-                )
-                informative_pairs.append(pair_tf)
+                if any(s in inf_data.asset for s in ("{BASE}", "{base}")):
+                    for pair in self.dp.current_whitelist():
+
+                        pair_tf = (
+                            _format_pair_name(self.config, inf_data.asset, self.dp.market(pair)),
+                            inf_data.timeframe,
+                            candle_type,
+                        )
+                        informative_pairs.append(pair_tf)
+
+                else:
+                    pair_tf = (
+                        _format_pair_name(self.config, inf_data.asset),
+                        inf_data.timeframe,
+                        candle_type,
+                    )
+                    informative_pairs.append(pair_tf)
             else:
                 for pair in self.dp.current_whitelist():
                     informative_pairs.append((pair, inf_data.timeframe, candle_type))

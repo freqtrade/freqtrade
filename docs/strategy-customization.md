@@ -486,17 +486,18 @@ for more information.
 
         :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
         :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
-        current pair.
+                    current pair. Also supports limited pair format strings (see below)
         :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
         specified, defaults to:
-        * {base}_{quote}_{column}_{timeframe} if asset is specified. 
+        * {base}_{quote}_{column}_{timeframe} if asset is specified.
         * {column}_{timeframe} if asset is not specified.
-        Format string supports these format variables:
-        * {asset} - full name of the asset, for example 'BTC/USDT'.
+        Pair format supports these format variables:
         * {base} - base currency in lower case, for example 'eth'.
         * {BASE} - same as {base}, except in upper case.
         * {quote} - quote currency in lower case, for example 'usdt'.
         * {QUOTE} - same as {quote}, except in upper case.
+        Format string additionally supports this variables.
+        * {asset} - full name of the asset, for example 'BTC/USDT'.
         * {column} - name of dataframe column.
         * {timeframe} - timeframe of informative dataframe.
         :param ffill: ffill dataframe after merging informative pair.
