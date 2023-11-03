@@ -30,15 +30,12 @@ RUN  apt-get update \
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
-RUN cd /tmp && /tmp/install_ta-lib.sh && rm -r /tmp/*ta-lib*
-ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Install dependencies
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
-  && pip install --user --no-index --find-links /tmp/ pyarrow \
-  && pip install --user TA-Lib==0.4.28 \
+  && pip install --user --no-index --find-links /tmp/ pyarrow TA-Lib==0.4.28 \
   && pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image
