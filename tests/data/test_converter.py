@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
-from pathlib import Path
 from shutil import copyfile
 
 import numpy as np

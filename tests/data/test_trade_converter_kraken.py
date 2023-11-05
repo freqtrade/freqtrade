@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from pathlib import Path
 from shutil import copytree
 from unittest.mock import PropertyMock
 
