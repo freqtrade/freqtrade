@@ -1515,7 +1515,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
 def test_start_convert_db(fee, tmp_path):
     db_src_file = tmp_path / "db.sqlite"
     db_from = f"sqlite:///{db_src_file}"
-    db_target_file = tmp_path / "/db_target.sqlite"
+    db_target_file = tmp_path / "db_target.sqlite"
     db_to = f"sqlite:///{db_target_file}"
     args = [
         "convert-db",
