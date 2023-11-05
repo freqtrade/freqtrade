@@ -1616,9 +1616,9 @@ def test_api_plot_config(botclient, mocker):
     assert_response(rc)
 
 
-def test_api_strategies(botclient, tmpdir):
+def test_api_strategies(botclient, tmp_path):
     ftbot, client = botclient
-    ftbot.config['user_data_dir'] = Path(tmpdir)
+    ftbot.config['user_data_dir'] = tmp_path
 
     rc = client_get(client, f"{BASE_URI}/strategies")
 
@@ -1701,9 +1701,9 @@ def test_api_exchanges(botclient):
     }
 
 
-def test_api_freqaimodels(botclient, tmpdir, mocker):
+def test_api_freqaimodels(botclient, tmp_path, mocker):
     ftbot, client = botclient
-    ftbot.config['user_data_dir'] = Path(tmpdir)
+    ftbot.config['user_data_dir'] = tmp_path
     mocker.patch(
         "freqtrade.resolvers.freqaimodel_resolver.FreqaiModelResolver.search_all_objects",
         return_value=[
@@ -1739,9 +1739,9 @@ def test_api_freqaimodels(botclient, tmpdir, mocker):
     ]}
 
 
-def test_api_pairlists_available(botclient, tmpdir):
+def test_api_pairlists_available(botclient, tmp_path):
     ftbot, client = botclient
-    ftbot.config['user_data_dir'] = Path(tmpdir)
+    ftbot.config['user_data_dir'] = tmp_path
 
     rc = client_get(client, f"{BASE_URI}/pairlists/available")
 
@@ -1768,9 +1768,9 @@ def test_api_pairlists_available(botclient, tmpdir):
     assert len(volumepl['params']) > 2
 
 
-def test_api_pairlists_evaluate(botclient, tmpdir, mocker):
+def test_api_pairlists_evaluate(botclient, tmp_path, mocker):
     ftbot, client = botclient
-    ftbot.config['user_data_dir'] = Path(tmpdir)
+    ftbot.config['user_data_dir'] = tmp_path
 
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/randomJob")
 
@@ -1905,7 +1905,7 @@ def test_sysinfo(botclient):
     assert 'ram_pct' in result
 
 
-def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
+def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
     try:
         ftbot, client = botclient
         mocker.patch(f'{EXMS}.get_fee', fee)
@@ -1935,8 +1935,8 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
         assert result['status_msg'] == 'Backtest reset'
         ftbot.config['export'] = 'trades'
         ftbot.config['backtest_cache'] = 'day'
-        ftbot.config['user_data_dir'] = Path(tmpdir)
-        ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
+        ftbot.config['user_data_dir'] = tmp_path
+        ftbot.config['exportfilename'] = tmp_path / "backtest_results"
         ftbot.config['exportfilename'].mkdir()
 
         # start backtesting
