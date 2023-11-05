@@ -74,7 +74,7 @@ def test_text_table_bt_results():
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
 
-def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
+def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
     default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     StrategyResolver.load_strategy(default_conf)
 
@@ -185,8 +185,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
 
     # Test storing stats
-    filename = Path(tmpdir / 'btresult.json')
-    filename_last = Path(tmpdir / LAST_BT_RESULT_FN)
+    filename = tmp_path / 'btresult.json'
+    filename_last = tmp_path / LAST_BT_RESULT_FN
     _backup_file(filename_last, copy_file=True)
     assert not filename.is_file()
 
@@ -196,7 +196,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     last_fn = get_latest_backtest_filename(filename_last.parent)
     assert re.match(r"btresult-.*\.json", last_fn)
 
-    filename1 = Path(tmpdir / last_fn)
+    filename1 = tmp_path / last_fn
     assert filename1.is_file()
     content = filename1.read_text()
     assert 'max_drawdown_account' in content
@@ -254,14 +254,14 @@ def test_store_backtest_candles(testdatadir, mocker):
     dump_mock.reset_mock()
 
 
-def test_write_read_backtest_candles(tmpdir):
+def test_write_read_backtest_candles(tmp_path):
 
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # test directory exporting
     sample_date = '2022_01_01_15_05_13'
-    store_backtest_analysis_results(Path(tmpdir), candle_dict, {}, sample_date)
-    stored_file = Path(tmpdir / f'backtest-result-{sample_date}_signals.pkl')
+    store_backtest_analysis_results(tmp_path, candle_dict, {}, sample_date)
+    stored_file = tmp_path / f'backtest-result-{sample_date}_signals.pkl'
     with stored_file.open("rb") as scp:
         pickled_signal_candles = joblib.load(scp)
 
@@ -273,9 +273,9 @@ def test_write_read_backtest_candles(tmpdir):
     _clean_test_file(stored_file)
 
     # test file exporting
-    filename = Path(tmpdir / 'testresult')
+    filename = tmp_path / 'testresult'
     store_backtest_analysis_results(filename, candle_dict, {}, sample_date)
-    stored_file = Path(tmpdir / f'testresult-{sample_date}_signals.pkl')
+    stored_file = tmp_path / f'testresult-{sample_date}_signals.pkl'
     with stored_file.open("rb") as scp:
         pickled_signal_candles = joblib.load(scp)
 

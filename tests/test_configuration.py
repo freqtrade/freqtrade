@@ -601,9 +601,9 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     assert log_has('Verbosity set to 3', caplog)
 
 
-def test_set_logfile(default_conf, mocker, tmpdir):
+def test_set_logfile(default_conf, mocker, tmp_path):
     patched_configuration_load_config_file(mocker, default_conf)
-    f = Path(tmpdir / "test_file.log")
+    f = tmp_path / "test_file.log"
     assert not f.is_file()
     arglist = [
         'trade', '--logfile', str(f),

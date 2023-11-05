@@ -193,8 +193,8 @@ def test_start_no_hyperopt_allowed(mocker, hyperopt_conf, caplog) -> None:
         start_hyperopt(pargs)
 
 
-def test_start_no_data(mocker, hyperopt_conf, tmpdir) -> None:
-    hyperopt_conf['user_data_dir'] = Path(tmpdir)
+def test_start_no_data(mocker, hyperopt_conf, tmp_path) -> None:
+    hyperopt_conf['user_data_dir'] = tmp_path
     patched_configuration_load_config_file(mocker, hyperopt_conf)
     mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame))
     mocker.patch(
@@ -857,14 +857,14 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, space) -> None:
         hyperopt.start()
 
 
-def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
+def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmp_path, fee) -> None:
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.get_fee', fee)
-    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    (tmp_path / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
-        'user_data_dir': Path(tmpdir),
+        'user_data_dir': tmp_path,
         'hyperopt_random_state': 42,
         'spaces': ['all'],
     })
@@ -897,17 +897,17 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
         hyperopt.get_optimizer([], 2)
 
 
-def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, fee) -> None:
+def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path, fee) -> None:
     mocker.patch(f'{EXMS}.validate_config', MagicMock())
     mocker.patch(f'{EXMS}.get_fee', fee)
     mocker.patch(f'{EXMS}._load_markets')
     mocker.patch(f'{EXMS}.markets',
                  PropertyMock(return_value=get_markets()))
-    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    (tmp_path / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
-        'user_data_dir': Path(tmpdir),
+        'user_data_dir': tmp_path,
         'hyperopt_random_state': 42,
         'spaces': ['all'],
         # Enforce parallelity
@@ -938,14 +938,14 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, 
     hyperopt.start()
 
 
-def test_in_strategy_auto_hyperopt_per_epoch(mocker, hyperopt_conf, tmpdir, fee) -> None:
+def test_in_strategy_auto_hyperopt_per_epoch(mocker, hyperopt_conf, tmp_path, fee) -> None:
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.get_fee', fee)
-    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    (tmp_path / 'hyperopt_results').mkdir(parents=True)
 
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
-        'user_data_dir': Path(tmpdir),
+        'user_data_dir': tmp_path,
         'hyperopt_random_state': 42,
         'spaces': ['all'],
         'epochs': 3,
@@ -995,15 +995,15 @@ def test_SKDecimal():
     assert space.transform([1.5, 1.6]) == [150, 160]
 
 
-def test_stake_amount_unlimited_max_open_trades(mocker, hyperopt_conf, tmpdir, fee) -> None:
+def test_stake_amount_unlimited_max_open_trades(mocker, hyperopt_conf, tmp_path, fee) -> None:
     # This test is to ensure that unlimited max_open_trades are ignored for the backtesting
     # if we have an unlimited stake amount
     patch_exchange(mocker)
     mocker.patch(f'{EXMS}.get_fee', fee)
-    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    (tmp_path / 'hyperopt_results').mkdir(parents=True)
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
-        'user_data_dir': Path(tmpdir),
+        'user_data_dir': tmp_path,
         'hyperopt_random_state': 42,
         'spaces': ['trades'],
         'stake_amount': 'unlimited'
