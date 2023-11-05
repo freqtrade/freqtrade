@@ -1,6 +1,5 @@
 import logging
 import sys
-from pathlib import Path
 
 import pytest
 
@@ -75,11 +74,11 @@ def test_set_loggers_syslog():
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_set_loggers_Filehandler(tmpdir):
+def test_set_loggers_Filehandler(tmp_path):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
-    logfile = Path(tmpdir) / 'ft_logfile.log'
+    logfile = tmp_path / 'ft_logfile.log'
     config = {'verbosity': 2,
               'logfile': str(logfile),
               }

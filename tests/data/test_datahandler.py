@@ -328,17 +328,16 @@ def test_hdf5datahandler_trades_load(testdatadir):
 ])
 def test_hdf5datahandler_ohlcv_load_and_resave(
     testdatadir,
-    tmpdir,
+    tmp_path,
     pair,
     timeframe,
     candle_type,
     candle_append,
     startdt, enddt
 ):
-    tmpdir1 = Path(tmpdir)
-    tmpdir2 = tmpdir1
+    tmpdir2 = tmp_path
     if candle_type not in ('', 'spot'):
-        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2 = tmp_path / 'futures'
         tmpdir2.mkdir()
     dh = get_datahandler(testdatadir, 'hdf5')
     ohlcv = dh._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
@@ -348,7 +347,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
     assert not file.is_file()
 
-    dh1 = get_datahandler(tmpdir1, 'hdf5')
+    dh1 = get_datahandler(tmp_path, 'hdf5')
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
@@ -379,17 +378,16 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 def test_generic_datahandler_ohlcv_load_and_resave(
     datahandler,
     testdatadir,
-    tmpdir,
+    tmp_path,
     pair,
     timeframe,
     candle_type,
     candle_append,
     startdt, enddt
 ):
-    tmpdir1 = Path(tmpdir)
-    tmpdir2 = tmpdir1
+    tmpdir2 = tmp_path
     if candle_type not in ('', 'spot'):
-        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2 = tmp_path / 'futures'
         tmpdir2.mkdir()
     # Load data from one common file
     dhbase = get_datahandler(testdatadir, 'feather')
@@ -403,7 +401,7 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
     assert not file.is_file()
 
-    dh1 = get_datahandler(tmpdir1, datahandler)
+    dh1 = get_datahandler(tmp_path, datahandler)
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
@@ -459,15 +457,14 @@ def test_datahandler_trades_load(testdatadir, datahandler):
 
 
 @pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
-def test_datahandler_trades_store(testdatadir, tmpdir, datahandler):
-    tmpdir1 = Path(tmpdir)
+def test_datahandler_trades_store(testdatadir, tmp_path, datahandler):
     dh = get_datahandler(testdatadir, datahandler)
     trades = dh.trades_load('XRP/ETH')
 
-    dh1 = get_datahandler(tmpdir1, datahandler)
+    dh1 = get_datahandler(tmp_path, datahandler)
     dh1.trades_store('XRP/NEW', trades)
 
-    file = tmpdir1 / f'XRP_NEW-trades.{dh1._get_file_extension()}'
+    file = tmp_path / f'XRP_NEW-trades.{dh1._get_file_extension()}'
     assert file.is_file()
     # Load trades back
     trades_new = dh1.trades_load('XRP/NEW')
