@@ -1512,10 +1512,10 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     assert "Pairs for Strategy" in out
 
 
-def test_start_convert_db(mocker, fee, tmpdir, caplog):
-    db_src_file = Path(f"{tmpdir}/db.sqlite")
+def test_start_convert_db(fee, tmp_path):
+    db_src_file = tmp_path / "db.sqlite"
     db_from = f"sqlite:///{db_src_file}"
-    db_target_file = Path(f"{tmpdir}/db_target.sqlite")
+    db_target_file = tmp_path / "/db_target.sqlite"
     db_to = f"sqlite:///{db_target_file}"
     args = [
         "convert-db",
@@ -1542,13 +1542,13 @@ def test_start_convert_db(mocker, fee, tmpdir, caplog):
     assert db_target_file.is_file()
 
 
-def test_start_strategy_updater(mocker, tmpdir):
+def test_start_strategy_updater(mocker, tmp_path):
     sc_mock = mocker.patch('freqtrade.commands.strategy_utils_commands.start_conversion')
     teststrats = Path(__file__).parent.parent / 'strategy/strats'
     args = [
         "strategy-updater",
         "--userdir",
-        str(tmpdir),
+        str(tmp_path),
         "--strategy-path",
         str(teststrats),
     ]
@@ -1562,7 +1562,7 @@ def test_start_strategy_updater(mocker, tmpdir):
     args = [
         "strategy-updater",
         "--userdir",
-        str(tmpdir),
+        str(tmp_path),
         "--strategy-path",
         str(teststrats),
         "--strategy-list",
