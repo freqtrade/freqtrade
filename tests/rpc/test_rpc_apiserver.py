@@ -2194,14 +2194,14 @@ def test_api_ws_subscribe(botclient, mocker):
 
     with client.websocket_connect(ws_url) as ws:
         ws.send_json({'type': 'subscribe', 'data': ['whitelist']})
-        time.sleep(1)
+        time.sleep(0.2)
 
     # Check call count is now 1 as we sent a valid subscribe request
     assert sub_mock.call_count == 1
 
     with client.websocket_connect(ws_url) as ws:
         ws.send_json({'type': 'subscribe', 'data': 'whitelist'})
-        time.sleep(1)
+        time.sleep(0.2)
 
     # Call count hasn't changed as the subscribe request was invalid
     assert sub_mock.call_count == 1
