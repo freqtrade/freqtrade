@@ -23,7 +23,7 @@ tables==3.8.0
 blosc==1.11.1
 joblib==1.3.2
 rich==13.6.0
-pyarrow==13.0.0; platform_machine != 'armv7l'
+pyarrow==14.0.0; platform_machine != 'armv7l'
 
 # find first, C search in arrays
 py_find_1st==1.1.6
