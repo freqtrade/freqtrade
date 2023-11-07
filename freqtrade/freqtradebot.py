@@ -225,8 +225,36 @@ class FreqtradeBot(LoggingMixin):
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
             current_time=datetime.now(timezone.utc))
 
-        self.strategy.analyze(self.active_pair_whitelist)
+        open_trade_pairs_analyzed = []
+        if self.strategy.position_adjustment_enable:
+            open_trade_pairs = [ot.pair for ot in trades]
+            self.strategy.analyze(open_trade_pairs)
 
+            open_trade_pairs_analyzed = open_trade_pairs
+            self.manage_open_trades()
+
+            # Check if we need to adjust our current positions before attempting to buy new trades.
+            with self._exit_lock:
+                self.process_open_trade_positions()
+
+        remaining_pairs_to_analyse = [pair for pair in self.active_pair_whitelist if pair not in open_trade_pairs_analyzed]
+
+        self.strategy.analyze(remaining_pairs_to_analyse)
+        self.manage_open_trades()
+
+        # Then looking for buy opportunities
+        if self.get_free_open_trades():
+            self.enter_positions()
+        if self.trading_mode == TradingMode.FUTURES:
+            self._schedule.run_pending()
+        Trade.commit()
+        self.rpc.process_msg_queue(self.dataprovider._msg_queue)
+        self.last_process = datetime.now(timezone.utc)
+
+    def manage_open_trades(self) -> None:
+        """
+        Manage open orders and exit position if needed
+        """
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace
             self.manage_open_orders()
@@ -238,20 +266,6 @@ class FreqtradeBot(LoggingMixin):
             trades = Trade.get_open_trades()
             # First process current opened trades (positions)
             self.exit_positions(trades)
-
-        # Check if we need to adjust our current positions before attempting to buy new trades.
-        if self.strategy.position_adjustment_enable:
-            with self._exit_lock:
-                self.process_open_trade_positions()
-
-        # Then looking for buy opportunities
-        if self.get_free_open_trades():
-            self.enter_positions()
-        if self.trading_mode == TradingMode.FUTURES:
-            self._schedule.run_pending()
-        Trade.commit()
-        self.rpc.process_msg_queue(self.dataprovider._msg_queue)
-        self.last_process = datetime.now(timezone.utc)
 
     def process_stopped(self) -> None:
         """
