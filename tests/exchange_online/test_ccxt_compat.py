@@ -133,6 +133,7 @@ class TestCCXTExchange:
         exch, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
         l2 = exch.fetch_l2_order_book(pair)
+        orderbook_max_entries = EXCHANGES[exchangename].get('orderbook_max_entries')
         assert 'asks' in l2
         assert 'bids' in l2
         assert len(l2['asks']) >= 1
@@ -143,7 +144,7 @@ class TestCCXTExchange:
             # TODO: Gate is unstable here at the moment, ignoring the limit partially.
             return
         for val in [1, 2, 5, 25, 50, 100]:
-            if val > 50 and exchangename == 'bybit':
+            if orderbook_max_entries and val > orderbook_max_entries:
                 continue
             l2 = exch.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
