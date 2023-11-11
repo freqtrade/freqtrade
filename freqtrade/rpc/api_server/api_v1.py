@@ -52,7 +52,8 @@ logger = logging.getLogger(__name__)
 # 2.31: new /backtest/history/ delete endpoint
 # 2.32: new /backtest/history/ patch endpoint
 # 2.33: Additional weekly/monthly metrics
-API_VERSION = 2.33
+# 2.34: new entries/exits/mix_tags endpoints
+API_VERSION = 2.34
 
 # Public API, requires no auth.
 router_public = APIRouter()
