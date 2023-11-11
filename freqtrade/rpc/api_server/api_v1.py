@@ -84,17 +84,17 @@ def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
 
 
-@router.get('/entries', tags=['info', 'trading'])
+@router.get('/entries', tags=['info'])
 def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_enter_tag_performance(pair)
 
 
-@router.get('/exits', tags=['info', 'trading'])
+@router.get('/exits', tags=['info'])
 def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_exit_reason_performance(pair)
 
 
-@router.get('/mix_tags', tags=['info', 'trading'])
+@router.get('/mix_tags', tags=['info'])
 def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_mix_tag_performance(pair)
 
