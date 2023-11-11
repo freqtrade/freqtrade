@@ -95,37 +95,28 @@ class Count(BaseModel):
     total_stake: float
 
 
-class Entry(BaseModel):
+class __BaseStatsModel(BaseModel):
+    profit_ratio: float
+    profit_pct: float
+    profit_abs: float
+    count: int
+
+
+class Entry(__BaseStatsModel):
     enter_tag: str
-    profit_ratio: float
-    profit_pct: float
-    profit_abs: float
-    count: int
 
 
-class Exit(BaseModel):
+class Exit(__BaseStatsModel):
     exit_reason: str
-    profit_ratio: float
-    profit_pct: float
-    profit_abs: float
-    count: int
 
 
-class MixTag(BaseModel):
+class MixTag(__BaseStatsModel):
     mix_tag: str
-    profit_ratio: float
-    profit_pct: float
-    profit_abs: float
-    count: int
 
 
-class PerformanceEntry(BaseModel):
+class PerformanceEntry(__BaseStatsModel):
     pair: str
     profit: float
-    profit_ratio: float
-    profit_pct: float
-    profit_abs: float
-    count: int
 
 
 class Profit(BaseModel):
