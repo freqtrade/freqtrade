@@ -570,7 +570,7 @@ def populate_any_indicators(
 ```
 
 1. Features - Move to `feature_engineering_expand_all`
-2. Basic features, not expanded across `include_periods_candles` - move to`feature_engineering_expand_basic()`.
+2. Basic features, not expanded across `indicator_periods_candles` - move to`feature_engineering_expand_basic()`.
 3. Standard features which should not be expanded - move to `feature_engineering_standard()`.
 4. Targets - Move this part to `set_freqai_targets()`.
 
