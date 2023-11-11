@@ -141,6 +141,9 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `logs` | Shows last log messages.
 | `status` | Lists all open trades.
 | `count` | Displays number of trades used and available.
+| `entries [pair]` | Shows profit statistics for each enter tags for given pair (or all pairs if pair isn't given). Pair is optional.
+| `exits [pair]` | Shows profit statistics for each exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
+| `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
