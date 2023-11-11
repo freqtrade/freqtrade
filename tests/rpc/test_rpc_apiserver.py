@@ -1063,6 +1063,63 @@ def test_api_performance(botclient, fee):
                           'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
 
+def test_api_entries(botclient, fee):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    # Empty
+    rc = client_get(client, f"{BASE_URI}/entries")
+    assert_response(rc)
+    assert len(rc.json()) == 0
+
+    create_mock_trades(fee)
+    rc = client_get(client, f"{BASE_URI}/entries")
+    assert_response(rc)
+    response = rc.json()
+    assert len(response) == 2
+    resp = response[0]
+    assert resp['enter_tag'] == 'TEST1'
+    assert resp['count'] == 1
+    assert resp['profit_pct'] == 0.5
+
+
+def test_api_exits(botclient, fee):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    # Empty
+    rc = client_get(client, f"{BASE_URI}/exits")
+    assert_response(rc)
+    assert len(rc.json()) == 0
+
+    create_mock_trades(fee)
+    rc = client_get(client, f"{BASE_URI}/exits")
+    assert_response(rc)
+    response = rc.json()
+    assert len(response) == 2
+    resp = response[0]
+    assert resp['exit_reason'] == 'sell_signal'
+    assert resp['count'] == 1
+    assert resp['profit_pct'] == 0.5
+
+
+def test_api_mix_tag(botclient, fee):
+    ftbot, client = botclient
+    patch_get_signal(ftbot)
+    # Empty
+    rc = client_get(client, f"{BASE_URI}/mix_tags")
+    assert_response(rc)
+    assert len(rc.json()) == 0
+
+    create_mock_trades(fee)
+    rc = client_get(client, f"{BASE_URI}/mix_tags")
+    assert_response(rc)
+    response = rc.json()
+    assert len(response) == 2
+    resp = response[0]
+    assert resp['mix_tag'] == 'TEST1 sell_signal'
+    assert resp['count'] == 1
+    assert resp['profit_pct'] == 0.5
+
+
 @pytest.mark.parametrize(
     'is_short,current_rate,open_trade_value',
     [(True, 1.098e-05, 15.0911775),
