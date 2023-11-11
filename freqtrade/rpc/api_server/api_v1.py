@@ -12,15 +12,15 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, DailyWeeklyMonthly,
-                                                  DeleteLockRequest, DeleteTrade,
-                                                  ExchangeListResponse, ForceEnterPayload,
+                                                  DeleteLockRequest, DeleteTrade, Entry,
+                                                  ExchangeListResponse, Exit, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version,
-                                                  WhitelistResponse)
+                                                  MixTag, OpenTradeSchema, PairHistory,
+                                                  PerformanceEntry, Ping, PlotConfig, Profit,
+                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -84,17 +84,17 @@ def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
 
 
-@router.get('/entries', tags=['info'])
+@router.get('/entries', response_model=List[Entry], tags=['info'])
 def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_enter_tag_performance(pair)
 
 
-@router.get('/exits', tags=['info'])
+@router.get('/exits', response_model=List[Exit], tags=['info'])
 def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_exit_reason_performance(pair)
 
 
-@router.get('/mix_tags', tags=['info'])
+@router.get('/mix_tags', response_model=List[MixTag], tags=['info'])
 def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_mix_tag_performance(pair)
 
