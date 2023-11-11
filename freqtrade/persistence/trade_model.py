@@ -1790,7 +1790,7 @@ class Trade(ModelBase, LocalTrade):
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,
-                                        'profit': profit,
+                                        'profit_ratio': profit,
                                         'profit_pct': round(profit * 100, 2),
                                         'profit_abs': profit_abs,
                                         'count': count})
@@ -1799,7 +1799,7 @@ class Trade(ModelBase, LocalTrade):
                         if return_list[i]["mix_tag"] == mix_tag:
                             return_list[i] = {
                                 'mix_tag': mix_tag,
-                                'profit': profit + return_list[i]["profit"],
+                                'profit_ratio': profit + return_list[i]["profit"],
                                 'profit_pct': round(profit + return_list[i]["profit"] * 100, 2),
                                 'profit_abs': profit_abs + return_list[i]["profit_abs"],
                                 'count': 1 + return_list[i]["count"]}

@@ -1378,7 +1378,7 @@ class Telegram(RPCHandler):
             stat_line = (
                 f"{i+1}.\t <code>{trade['mix_tag']}\t"
                 f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
-                f"({trade['profit']:.2%}) "
+                f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
