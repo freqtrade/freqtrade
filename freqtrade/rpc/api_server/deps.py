@@ -56,7 +56,7 @@ def get_exchange(config=Depends(get_config)):
     if not (exchange := ApiBG.exchanges.get(exchange_key)):
         from freqtrade.resolvers import ExchangeResolver
         exchange = ExchangeResolver.load_exchange(
-            config, load_leverage_tiers=False)
+            config, validate=False, load_leverage_tiers=False)
         ApiBG.exchanges[exchange_key] = exchange
     return exchange
 
