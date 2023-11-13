@@ -8,7 +8,7 @@ repos:
         # stages: [push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.5.1"
+    rev: "v1.7.0"
     hooks:
       - id: mypy
         exclude: build_helpers
