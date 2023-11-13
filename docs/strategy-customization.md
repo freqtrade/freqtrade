@@ -173,7 +173,7 @@ You can use [recursive-analysis](recursive-analysis.md) to check and find the co
 In this example strategy, this should be set to 400 (`startup_candle_count = 400`), since the minimum needed history for ema100 calculation to make sure the value is correct is 400 candles.
 
 ``` python
-    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=400)
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
 ```
 
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
