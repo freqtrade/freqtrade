@@ -14,7 +14,7 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 
 !!! Note
     Since 2021.4 release you no longer have to write a separate hyperopt class, but can configure the parameters directly in the strategy.
-    The legacy method is still supported, but it is no longer the recommended way of setting up hyperopt. 
+    The legacy method is still supported, but it is no longer the recommended way of setting up hyperopt.
     The legacy documentation is available at [Legacy Hyperopt](advanced-hyperopt.md#legacy-hyperopt).
 
 ## Install hyperopt dependencies
@@ -198,7 +198,7 @@ Hyperopt will then spawn into different processes (number of processors, or `-j 
 
 For every new set of parameters, freqtrade will run first `populate_entry_trend()` followed by `populate_exit_trend()`, and then run the regular backtesting process to simulate trades.
 
-After backtesting, the results are passed into the [loss function](#loss-functions), which will evaluate if this result was better or worse than previous results.  
+After backtesting, the results are passed into the [loss function](#loss-functions), which will evaluate if this result was better or worse than previous results.
 Based on the loss function result, hyperopt will determine the next set of parameters to try in the next round of backtesting.
 
 ### Configure your Guards and Triggers
@@ -214,7 +214,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 2. Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".
 
 !!! Hint "Guards and Triggers"
-    Technically, there is no difference between Guards and Triggers.  
+    Technically, there is no difference between Guards and Triggers.
     However, this guide will make this distinction to make it clear that signals should not be "sticking".
     Sticking signals are signals that are active for multiple candles. This can lead into entering a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
 
@@ -276,16 +276,16 @@ class MyAwesomeStrategy(IStrategy):
     buy_trigger = CategoricalParameter(["bb_lower", "macd_cross_signal"], default="bb_lower", space="buy")
 ```
 
-The above definition says: I have five parameters I want to randomly combine to find the best combination.  
-`buy_rsi` is an integer parameter, which will be tested between 20 and 40. This space has a size of 20.  
-`buy_adx` is a decimal parameter, which will be evaluated between 20 and 40 with 1 decimal place (so values are 20.1, 20.2, ...). This space has a size of 200.  
+The above definition says: I have five parameters I want to randomly combine to find the best combination.
+`buy_rsi` is an integer parameter, which will be tested between 20 and 40. This space has a size of 20.
+`buy_adx` is a decimal parameter, which will be evaluated between 20 and 40 with 1 decimal place (so values are 20.1, 20.2, ...). This space has a size of 200.
 Then we have three category variables. First two are either `True` or `False`.
 We use these to either enable or disable the ADX and RSI guards.
 The last one we call `trigger` and use it to decide which buy trigger we want to use.
 
 !!! Note "Parameter space assignment"
     Parameters must either be assigned to a variable named `buy_*` or `sell_*` - or contain `space='buy'` | `space='sell'` to be assigned to a space correctly.
-    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.  
+    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.
     Parameters with unclear space (e.g. `adx_period = IntParameter(4, 24, default=14)` - no explicit nor implicit space) will not be detected and will therefore be ignored.
 
 So let's write the buy strategy using these values:
@@ -318,8 +318,8 @@ So let's write the buy strategy using these values:
         return dataframe
 ```
 
-Hyperopt will now call `populate_entry_trend()` many times (`epochs`) with different value combinations.  
-It will use the given historical data and simulate buys based on the buy signals generated with the above function.  
+Hyperopt will now call `populate_entry_trend()` many times (`epochs`) with different value combinations.
+It will use the given historical data and simulate buys based on the buy signals generated with the above function.
 Based on the results, hyperopt will tell you which parameter combination produced the best results (based on the configured [loss function](#loss-functions)).
 
 !!! Note
@@ -337,11 +337,15 @@ There are four parameter types each suited for different purposes.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
 * `BooleanParameter` - Shorthand for `CategoricalParameter([True, False])` - great for "enable" parameters.
 
-!!! Tip "Disabling parameter optimization"
-    Each parameter takes two boolean parameters:
-    * `load` - when set to `False` it will not load values configured in `buy_params` and `sell_params`.
-    * `optimize` - when set to `False` parameter will not be included in optimization process.
-    Use these parameters to quickly prototype various ideas.
+### Parameter options
+
+There are two parameter options that can help you to quickly test various ideas
+
+* `optimize` - when set to `False`, the parameter will not be included in optimization process. (Default: True)
+* `load` - when set to `False`, results of a previous hyperopt run (in `buy_params` and `sell_params` either in your strategy or the JSON output file) will not be used as the starting value for subsequent hyperopts. The default value specified in the parameter will be used instead. (Default: True)
+
+!!! Tip "Effects of `load=False` on backtesting"
+    Be aware that setting the `load` option to `False` will mean backtesting will also use the default value specified in the parameter and *not* the value found through hyperoptimisation.
 
 !!! Warning
     Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.
@@ -357,7 +361,7 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
@@ -374,15 +378,15 @@ class MyAwesomeStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Generate all indicators used by the strategy"""
-        
+
         # Calculate all ema_short values
         for val in self.buy_ema_short.range:
             dataframe[f'ema_short_{val}'] = ta.EMA(dataframe, timeperiod=val)
-        
+
         # Calculate all ema_long values
         for val in self.buy_ema_long.range:
             dataframe[f'ema_long_{val}'] = ta.EMA(dataframe, timeperiod=val)
-        
+
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -455,7 +459,7 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
@@ -489,7 +493,7 @@ class MyAwesomeStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # ...
-        
+
 ```
 
 You can then run hyperopt as follows:
@@ -522,7 +526,7 @@ Result
 
 ``` python
 class MyAwesomeStrategy(IStrategy):
-    
+
     @property
     def protections(self):
         return [
@@ -545,7 +549,7 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
@@ -559,7 +563,7 @@ class MyAwesomeStrategy(IStrategy):
     @property
     def max_entry_position_adjustment(self):
         return self.max_epa.value
-        
+
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # ...
@@ -608,7 +612,7 @@ We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 freqtrade hyperopt --config config.json --hyperopt-loss <hyperoptlossname> --strategy <strategyname> -e 500 --spaces all
 ```
 
-The `-e` option will set how many evaluations hyperopt will do. Since hyperopt uses Bayesian search, running too many epochs at once may not produce greater results. Experience has shown that best results are usually not improving much after 500-1000 epochs.  
+The `-e` option will set how many evaluations hyperopt will do. Since hyperopt uses Bayesian search, running too many epochs at once may not produce greater results. Experience has shown that best results are usually not improving much after 500-1000 epochs.
 Doing multiple runs (executions) with a few 1000 epochs and different random state will most likely produce different results.
 
 The `--spaces all` option determines that all possible parameters should be optimized. Possibilities are listed below.
@@ -684,7 +688,7 @@ You should understand this result like:
 
 ### Automatic parameter application to the strategy
 
-When using Hyperoptable parameters, the result of your hyperopt-run will be written to a json file next to your strategy (so for `MyAwesomeStrategy.py`, the file would be `MyAwesomeStrategy.json`).  
+When using Hyperoptable parameters, the result of your hyperopt-run will be written to a json file next to your strategy (so for `MyAwesomeStrategy.py`, the file would be `MyAwesomeStrategy.json`).
 This file is also updated when using the `hyperopt-show` sub-command, unless `--disable-param-export` is provided to either of the 2 commands.
 
 
