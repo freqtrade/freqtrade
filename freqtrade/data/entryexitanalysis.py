@@ -211,8 +211,9 @@ def prepare_results(analysed_trades, stratname,
                     timerange=None):
     res_df = pd.DataFrame()
     for pair, trades in analysed_trades[stratname].items():
-        trades.dropna(subset=['close_date'], inplace=True)
-        res_df = pd.concat([res_df, trades], ignore_index=True)
+        if (trades.shape[0] > 0):
+            trades.dropna(subset=['close_date'], inplace=True)
+            res_df = pd.concat([res_df, trades], ignore_index=True)
 
     res_df = _select_rows_within_dates(res_df, timerange)
 
