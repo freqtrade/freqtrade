@@ -317,6 +317,10 @@ It's therefore required to pass the UID as well.
 }
 ```
 
+
+!!! Warning "Necessary Verification"
+    Bitmart requires Verification Lvl2 to successfully trade on the spot market through the API - even though trading via UI works just fine with just Lvl1 verification.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
