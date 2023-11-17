@@ -3,6 +3,7 @@ Various tool function for Freqtrade and scripts
 """
 import gzip
 import logging
+from io import StringIO
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
 from urllib.parse import urlparse
@@ -231,7 +232,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     :param data: A JSON string
     :returns: A pandas DataFrame from the JSON string
     """
-    dataframe = pd.read_json(data, orient='split')
+    dataframe = pd.read_json(StringIO(data), orient='split')
     if 'date' in dataframe.columns:
         dataframe['date'] = pd.to_datetime(dataframe['date'], unit='ms', utc=True)
 

@@ -337,11 +337,15 @@ There are four parameter types each suited for different purposes.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
 * `BooleanParameter` - Shorthand for `CategoricalParameter([True, False])` - great for "enable" parameters.
 
-!!! Tip "Disabling parameter optimization"
-    Each parameter takes two boolean parameters:
-    * `load` - when set to `False` it will not load values configured in `buy_params` and `sell_params`.
-    * `optimize` - when set to `False` parameter will not be included in optimization process.
-    Use these parameters to quickly prototype various ideas.
+### Parameter options
+
+There are two parameter options that can help you to quickly test various ideas:
+
+* `optimize` - when set to `False`, the parameter will not be included in optimization process. (Default: True)
+* `load` - when set to `False`, results of a previous hyperopt run (in `buy_params` and `sell_params` either in your strategy or the JSON output file) will not be used as the starting value for subsequent hyperopts. The default value specified in the parameter will be used instead. (Default: True)
+
+!!! Tip "Effects of `load=False` on backtesting"
+    Be aware that setting the `load` option to `False` will mean backtesting will also use the default value specified in the parameter and *not* the value found through hyperoptimisation.
 
 !!! Warning
     Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.

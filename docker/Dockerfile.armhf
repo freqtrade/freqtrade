@@ -11,12 +11,13 @@ ENV FT_APP_ENV="docker"
 # Prepare environment
 RUN mkdir /freqtrade \
   && apt-get update \
-  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-dev libutf8proc-dev libsnappy-dev \
+  && apt-get -y install sudo libatlas3-base libopenblas-base curl sqlite3 libhdf5-dev libutf8proc-dev libsnappy-dev \
   && apt-get clean \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
-  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers \
+  && pip install --upgrade pip
 
 WORKDIR /freqtrade
 
@@ -25,20 +26,16 @@ FROM base as python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev libffi-dev libopenblas-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
-  && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
-RUN cd /tmp && /tmp/install_ta-lib.sh && rm -r /tmp/*ta-lib*
-ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Install dependencies
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
-RUN  pip install --user --no-cache-dir numpy==1.25.2 \
-  && pip install --user /tmp/pyarrow-*.whl \
-  && pip install --user --no-build-isolation TA-Lib==0.4.28 \
+RUN  pip install --user --no-cache-dir numpy \
+  && pip install --user --no-index --find-links /tmp/ pyarrow TA-Lib==0.4.28 \
   && pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image

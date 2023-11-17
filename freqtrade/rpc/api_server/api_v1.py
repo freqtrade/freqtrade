@@ -12,15 +12,15 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, DailyWeeklyMonthly,
-                                                  DeleteLockRequest, DeleteTrade,
-                                                  ExchangeListResponse, ForceEnterPayload,
+                                                  DeleteLockRequest, DeleteTrade, Entry,
+                                                  ExchangeListResponse, Exit, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version,
-                                                  WhitelistResponse)
+                                                  MixTag, OpenTradeSchema, PairHistory,
+                                                  PerformanceEntry, Ping, PlotConfig, Profit,
+                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -52,7 +52,8 @@ logger = logging.getLogger(__name__)
 # 2.31: new /backtest/history/ delete endpoint
 # 2.32: new /backtest/history/ patch endpoint
 # 2.33: Additional weekly/monthly metrics
-API_VERSION = 2.33
+# 2.34: new entries/exits/mix_tags endpoints
+API_VERSION = 2.34
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -81,6 +82,21 @@ def balance(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
 @router.get('/count', response_model=Count, tags=['info'])
 def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
+
+
+@router.get('/entries', response_model=List[Entry], tags=['info'])
+def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_enter_tag_performance(pair)
+
+
+@router.get('/exits', response_model=List[Exit], tags=['info'])
+def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_exit_reason_performance(pair)
+
+
+@router.get('/mix_tags', response_model=List[MixTag], tags=['info'])
+def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_mix_tag_performance(pair)
 
 
 @router.get('/performance', response_model=List[PerformanceEntry], tags=['info'])

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from freqtrade.persistence.trade_model import Trade
+from freqtrade.persistence.trade_model import LocalTrade, Trade
 from tests.conftest import create_mock_trades_usdt
 
 
@@ -207,6 +207,7 @@ def test_trade_serialize_load_back(fee):
     assert t.id == 1
     t.funding_fees = 0.025
     t.orders[0].funding_fee = 0.0125
+    assert len(t.orders) == 2
     Trade.commit()
 
     tjson = t.to_json(False)
@@ -216,6 +217,7 @@ def test_trade_serialize_load_back(fee):
 
     assert trade.id == t.id
     assert trade.funding_fees == t.funding_fees
+    assert len(trade.orders) == len(t.orders)
     assert trade.orders[0].funding_fee == t.orders[0].funding_fee
     excluded = [
         'trade_id', 'quote_currency', 'open_timestamp', 'close_timestamp',
@@ -255,5 +257,10 @@ def test_trade_serialize_load_back(fee):
             failed.append((obj, tattr, value))
 
     assert tjson['orders'][0]['pair'] == order_obj.ft_pair
-    print(failed)
     assert not failed
+
+    trade2 = LocalTrade.from_json(trade_string)
+    assert len(trade2.orders) == len(t.orders)
+
+    trade3 = LocalTrade.from_json(trade_string)
+    assert len(trade3.orders) == len(t.orders)
