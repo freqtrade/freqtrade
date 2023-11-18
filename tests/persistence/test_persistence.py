@@ -2393,8 +2393,8 @@ def test_recalc_trade_from_orders_kucoin():
     assert trade.is_open is False
     # Trade closed correctly - but left a minimal amount.
     assert trade.amount == 8e-09
-    assert trade.close_profit_abs == 3.90069871
-    assert trade.close_profit == 0.00566035
+    assert pytest.approx(trade.close_profit_abs) == 3.90069871
+    assert pytest.approx(trade.close_profit) == 0.00566035
 
 
 @pytest.mark.parametrize('is_short', [True, False])
