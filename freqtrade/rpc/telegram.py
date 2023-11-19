@@ -223,8 +223,8 @@ class Telegram(RPCHandler):
             CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            CommandHandler('marketdir', self._changemarketdir)
-            CommandHandler('order', self._order)
+            CommandHandler('marketdir', self._changemarketdir),
+            CommandHandler('order', self._order),
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
