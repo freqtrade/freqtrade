@@ -224,6 +224,7 @@ class Telegram(RPCHandler):
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
             CommandHandler('marketdir', self._changemarketdir)
+            CommandHandler('order', self._order)
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
@@ -556,6 +557,49 @@ class Telegram(RPCHandler):
         return lines_detail
 
     @authorized_only
+    async def _order(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /order.
+        Returns the orders of the trade
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        trade_ids = []
+        if context.args and len(context.args) > 0:
+            trade_ids = [int(i) for i in context.args if i.isnumeric()]
+
+        results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
+        position_adjust = self._config.get('position_adjustment_enable', False)
+        max_entries = self._config.get('max_entry_position_adjustment', -1)
+        for r in results:
+            lines = [
+                "*Order List for Trade #*`{trade_id}`"
+            ]
+
+            lines_detail = self._prepare_order_details(
+                r['orders'], r['quote_currency'], r['is_open'])
+            lines.extend(lines_detail if lines_detail else "")
+            await self.__send_order_msg(lines, r)
+
+    async def __send_order_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
+        """
+        Send status message.
+        """
+        msg = ''
+
+        for line in lines:
+            if line:
+                if (len(msg) + len(line) + 1) < MAX_MESSAGE_LENGTH:
+                    msg += line + '\n'
+                else:
+                    await self._send_msg(msg.format(**r))
+                    msg = "*Order List for Trade #*`{trade_id}` - continued\n" + line + '\n'
+
+        await self._send_msg(msg.format(**r))
+
+    @authorized_only
     async def _status(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status.
@@ -652,9 +696,9 @@ class Telegram(RPCHandler):
                         "*Open Order:* `{open_orders}`"
                         + ("- `{exit_order_status}`" if r['exit_order_status'] else ""))
 
-            lines_detail = self._prepare_order_details(
-                r['orders'], r['quote_currency'], r['is_open'])
-            lines.extend(lines_detail if lines_detail else "")
+            # lines_detail = self._prepare_order_details(
+            #     r['orders'], r['quote_currency'], r['is_open'])
+            # lines.extend(lines_detail if lines_detail else "")
             await self.__send_status_msg(lines, r)
 
     async def __send_status_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
