@@ -5,7 +5,7 @@
 torch==2.0.1
 #until these branches will be released we can use this
 gymnasium==0.29.1
-stable_baselines3==2.1.0
+stable_baselines3==2.2.1
 sb3_contrib>=2.0.0a9
 # Progress bar for stable-baselines3 and sb3-contrib
 tqdm==4.66.1
