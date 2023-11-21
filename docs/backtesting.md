@@ -170,11 +170,11 @@ freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000
 
 Using a different on-disk historical candle (OHLCV) data source
 
-Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
+Assume you downloaded the history data from the Binance exchange and kept it in the `user_data/data/binance-20180101` directory. 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/bittrex-20180101 
+freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/binance-20180101 
 ```
 
 ---

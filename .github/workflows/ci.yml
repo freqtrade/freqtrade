@@ -90,7 +90,7 @@ jobs:
 
     - name: Backtesting (multi)
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade new-strategy -s AwesomeStrategy
         freqtrade new-strategy -s AwesomeStrategyMin --template minimal
@@ -98,7 +98,7 @@ jobs:
 
     - name: Hyperopt
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -200,14 +200,14 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade new-strategy -s AwesomeStrategyAdv --template advanced
         freqtrade backtesting --datadir tests/testdata --strategy AwesomeStrategyAdv
 
     - name: Hyperopt
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -275,13 +275,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config_examples/config_bittrex.example.json config.json
+        cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
