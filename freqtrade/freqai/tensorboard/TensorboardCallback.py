@@ -19,7 +19,6 @@ class TensorboardCallback(BaseCallback):
     def __init__(self, verbose=1, actions: Type[Enum] = BaseActions):
         super().__init__(verbose)
         self.model: Any = None
-        self.logger: Any = None
         self.actions: Type[Enum] = actions
 
     def _on_training_start(self) -> None:
