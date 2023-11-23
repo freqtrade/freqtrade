@@ -1228,16 +1228,16 @@ class Exchange:
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {limit_rate}. '
-                f'Message: {e}') from e
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {limit_rate} with '
+                f'stop-price {stop_price_norm}. Message: {e}') from e
         except (ccxt.InvalidOrder, ccxt.BadRequest) as e:
             # Errors:
             # `Order would trigger immediately.`
             raise InvalidOrderException(
-                f'Could not create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {limit_rate}. '
-                f'Message: {e}') from e
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {limit_rate} with '
+                f'stop-price {stop_price_norm}. Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
