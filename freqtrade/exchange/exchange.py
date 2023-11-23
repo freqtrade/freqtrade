@@ -1231,7 +1231,7 @@ class Exchange:
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to sell amount {amount} at rate {limit_rate}. '
                 f'Message: {e}') from e
-        except ccxt.InvalidOrder as e:
+        except (ccxt.InvalidOrder, ccxt.BadRequest) as e:
             # Errors:
             # `Order would trigger immediately.`
             raise InvalidOrderException(
