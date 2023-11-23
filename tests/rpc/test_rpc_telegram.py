@@ -347,8 +347,6 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
     msg = msg_mock.call_args_list[3][0][0]
     assert re.search(r'Number of Entries.*2', msg)
     assert re.search(r'Number of Exits.*1', msg)
-    # assert re.search(r'from 1st entry rate', msg)
-    # assert re.search(r'Order Filled', msg)
     assert re.search(r'Close Date:', msg) is None
     assert re.search(r'Close Profit:', msg) is None
 
@@ -409,10 +407,8 @@ async def test_order_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert msg_mock.call_count == 1
 
     msg1 = msg_mock.call_args_list[0][0][0]
-    # msg2 = msg_mock.call_args_list[1][0][0]
 
     assert 'Order List for Trade #*`2`' in msg1
-    # assert 'Trade ID:* `2` - continued' in msg2
 
     msg_mock.reset_mock()
     mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 50)
@@ -547,11 +543,9 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert msg_mock.call_count == 1
 
     msg1 = msg_mock.call_args_list[0][0][0]
-    # msg2 = msg_mock.call_args_list[1][0][0]
 
     assert 'Close Rate' not in msg1
     assert 'Trade ID:* `2`' in msg1
-    # assert 'Trade ID:* `2` - continued' in msg2
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
