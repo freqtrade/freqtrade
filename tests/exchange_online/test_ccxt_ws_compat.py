@@ -11,22 +11,20 @@ from time import sleep
 import pytest
 
 from freqtrade.enums import CandleType
-from freqtrade.exchange.exchange_utils import (timeframe_to_minutes, timeframe_to_next_date,
-                                               timeframe_to_prev_date)
+from freqtrade.exchange.exchange_utils import timeframe_to_prev_date
 from freqtrade.loggers.set_log_levels import set_loggers
 from freqtrade.util.datetime_helpers import dt_now
 from tests.conftest import log_has_re
-from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE, EXCHANGES
+from tests.exchange_online.conftest import EXCHANGE_WS_FIXTURE_TYPE
 
 
 @pytest.mark.longrun
 class TestCCXTExchangeWs:
 
-    def test_ccxt_ohlcv(self, exchange_ws: EXCHANGE_FIXTURE_TYPE, caplog, mocker):
-        exch, exchangename = exchange_ws
+    def test_ccxt_ohlcv(self, exchange_ws: EXCHANGE_WS_FIXTURE_TYPE, caplog, mocker):
+        exch, exchangename, pair = exchange_ws
 
         assert exch._ws_async is not None
-        pair = EXCHANGES[exchangename]['pair']
         timeframe = '1m'
         pair_tf = (pair, timeframe, CandleType.SPOT)
         m_hist = mocker.spy(exch, '_async_get_historic_ohlcv')

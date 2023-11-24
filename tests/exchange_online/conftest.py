@@ -11,6 +11,8 @@ from tests.conftest import EXMS, get_default_conf_usdt
 
 
 EXCHANGE_FIXTURE_TYPE = Tuple[Exchange, str]
+EXCHANGE_WS_FIXTURE_TYPE = Tuple[Exchange, str, str]
+
 
 # Exchanges that should be tested online
 EXCHANGES = {
@@ -412,11 +414,24 @@ def exchange_futures(request, exchange_conf, class_mocker):
     return get_futures_exchange(request.param, exchange_conf, class_mocker)
 
 
+@pytest.fixture(params=["spot", "futures"], scope="class")
+def exchange_mode(request):
+    return request.param
+
+
 @pytest.fixture(params=EXCHANGES, scope="class")
-def exchange_ws(request, exchange_conf):
+def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
     exchange_conf["exchange"]["enable_ws"] = True
-    exchange, name = get_exchange(request.param, exchange_conf)
+    if exchange_mode == "spot":
+        exchange, name = get_exchange(request.param, exchange_conf)
+        pair = EXCHANGES[request.param]["pair"]
+    else:
+        exchange, name = get_futures_exchange(
+            request.param, exchange_conf, class_mocker=class_mocker
+        )
+        pair = EXCHANGES[request.param]["futures_pair"]
+
     if not exchange._has_watch_ohlcv:
         pytest.skip("Exchange does not support watch_ohlcv.")
-    yield exchange, name
+    yield exchange, name, pair
     exchange.close()
