@@ -61,5 +61,6 @@ class TestCCXTExchangeWs:
             sleep(1)
 
         assert m_hist.call_count == 0
+        # shouldn't have tried fetch_ohlcv a second time.
         assert m_cand.call_count == 1
         assert log_has_re(r"watch result.*", caplog)
