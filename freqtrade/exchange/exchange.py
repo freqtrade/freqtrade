@@ -1496,8 +1496,9 @@ class Exchange:
     @retrier
     def fetch_bids_asks(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         """
+        :param symbols: List of symbols to fetch
         :param cached: Allow cached result
-        :return: fetch_tickers result
+        :return: fetch_bids_asks result
         """
         if not self.exchange_has('fetchBidsAsks'):
             return {}
