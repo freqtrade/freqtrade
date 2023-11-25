@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import psutil
 import rapidjson
-from joblib import load
 from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -559,7 +558,8 @@ class FreqaiDataDrawer:
         if dk.live and coin in self.model_dictionary:
             model = self.model_dictionary[coin]
         elif self.model_type == 'joblib':
-            model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
+            with (dk.data_path / f"{dk.model_filename}_model.joblib").open("rb") as fp:
+                model = cloudpickle.load(fp)
         elif 'stable_baselines' in self.model_type or 'sb3_contrib' == self.model_type:
             mod = importlib.import_module(
                 self.model_type, self.freqai_info['rl_config']['model_type'])
