@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import psutil
 import rapidjson
-from joblib import dump, load
+from joblib import load
 from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -471,7 +471,8 @@ class FreqaiDataDrawer:
 
         # Save the trained model
         if self.model_type == 'joblib':
-            dump(model, save_path / f"{dk.model_filename}_model.joblib")
+            with (save_path / f"{dk.model_filename}_model.joblib").open("wb") as fp:
+                cloudpickle.dump(model, fp)
         elif self.model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
         elif self.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
