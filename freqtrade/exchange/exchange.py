@@ -2263,12 +2263,12 @@ class Exchange:
                 candle_date = int(timeframe_to_prev_date(timeframe).timestamp())
                 candles = self._exchange_ws.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
                 x = self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
-                logger.info(f"{pair}, {candle_date < x}, {candle_date}, {x}")
                 if candles and candles[-1][0] > min_date and candle_date < x:
                     # Usable result, update happened after prior candle end date
                     logger.info(f"reuse watch result for {pair}, {timeframe}, {x}")
 
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
+                logger.info(f"Failed to reuse watch {pair}, {candle_date < x}, {candle_date}, {x}")
 
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < last_refresh:
