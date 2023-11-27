@@ -134,9 +134,9 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `reload_config` | Reloads the configuration file.
 | `trades` | List last trades. Limited to 500 trades per call.
 | `trade/<tradeid>` | Get specific trade.
-| `trade/<tradeid>` | DELETE - Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
-| `trade/<tradeid>/open-order` | DELETE - Cancel open order for this trade.
-| `trade/<tradeid>/reload` | GET - Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
+| `trades/<tradeid>` | DELETE - Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `trades/<tradeid>/open-order` | DELETE - Cancel open order for this trade.
+| `trades/<tradeid>/reload` | GET - Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation.
 | `logs` | Shows last log messages.
 | `status` | Lists all open trades.
