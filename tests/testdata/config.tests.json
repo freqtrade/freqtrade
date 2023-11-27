@@ -1,6 +1,6 @@
 {
     "max_open_trades": 3,
-    "stake_currency": "USDT",
+    "stake_currency": "BTC",
     "stake_amount": 0.05,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
@@ -8,8 +8,8 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-        "entry": 10,
-        "exit": 10,
+        "entry": 5,
+        "exit": 5,
         "exit_timeout_count": 0,
         "unit": "minutes"
     },
@@ -23,37 +23,28 @@
             "bids_to_ask_delta": 1
         }
     },
-    "exit_pricing": {
+    "exit_pricing":{
         "price_side": "same",
         "use_order_book": true,
         "order_book_top": 1
     },
     "exchange": {
-        "name": "binance",
+        "name": "gate",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "ccxt_config": {},
-        "ccxt_async_config": {
-        },
+        "ccxt_async_config": {},
         "pair_whitelist": [
-            "ALGO/USDT",
-            "ATOM/USDT",
-            "BAT/USDT",
-            "BCH/USDT",
-            "BRD/USDT",
-            "EOS/USDT",
-            "ETH/USDT",
-            "IOTA/USDT",
-            "LINK/USDT",
-            "LTC/USDT",
-            "NEO/USDT",
-            "NXS/USDT",
-            "XMR/USDT",
-            "XRP/USDT",
-            "XTZ/USDT"
+            "ETH/BTC",
+            "LTC/BTC",
+            "ETC/BTC",
+            "XLM/BTC",
+            "XRP/BTC",
+            "ADA/BTC",
+            "DOT/BTC"
         ],
         "pair_blacklist": [
-            "BNB/.*"
+            "DOGE/BTC"
         ]
     },
     "pairlists": [

@@ -1851,7 +1851,7 @@ def test_fetch_bids_asks(default_conf, mocker):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_tickers(default_conf, mocker, exchange_name):
+def test_get_tickers(default_conf, mocker, exchange_name, caplog):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {
         'symbol': 'ETH/BTC',
@@ -1899,6 +1899,14 @@ def test_get_tickers(default_conf, mocker, exchange_name):
         api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NotSupported("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_tickers()
+
+    caplog.clear()
+    api_mock.fetch_tickers = MagicMock(side_effect=[ccxt.BadSymbol("SomeSymbol"), []])
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    x = exchange.get_tickers()
+    assert x == []
+    assert log_has_re(r'Could not load tickers due to BadSymbol\..*SomeSymbol', caplog)
+    caplog.clear()
 
     api_mock.fetch_tickers = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)

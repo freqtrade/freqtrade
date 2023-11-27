@@ -18,7 +18,7 @@ from tests.conftest import log_has_re
 def test_check_exchange(default_conf, caplog) -> None:
     # Test an officially supported by Freqtrade team exchange
     default_conf['runmode'] = RunMode.DRY_RUN
-    default_conf.get('exchange').update({'name': 'BITTREX'})
+    default_conf.get('exchange').update({'name': 'BINANCE'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
                       caplog)
