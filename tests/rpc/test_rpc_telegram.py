@@ -150,8 +150,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['reload_conf', 'reload_config'], ['show_conf', 'show_config'], "
                    "['stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], "
                    "['bl_delete', 'blacklist_delete'], "
-                   "['logs'], ['edge'], ['health'], ['help'], ['version'], ['marketdir']"
-                   "]")
+                   "['logs'], ['edge'], ['health'], ['help'], ['version'], ['marketdir'], "
+                   "['order']]")
 
     assert log_has(message_str, caplog)
 
@@ -347,8 +347,6 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
     msg = msg_mock.call_args_list[3][0][0]
     assert re.search(r'Number of Entries.*2', msg)
     assert re.search(r'Number of Exits.*1', msg)
-    assert re.search(r'from 1st entry rate', msg)
-    assert re.search(r'Order Filled', msg)
     assert re.search(r'Close Date:', msg) is None
     assert re.search(r'Close Profit:', msg) is None
 
@@ -373,6 +371,105 @@ async def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -
     msg = msg_mock.call_args_list[0][0][0]
     assert re.search(r'Close Date:', msg)
     assert re.search(r'Close Profit:', msg)
+
+
+async def test_order_handle(default_conf, update, ticker, fee, mocker) -> None:
+    default_conf['max_open_trades'] = 3
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _dry_is_price_crossed=MagicMock(return_value=True),
+    )
+    status_table = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _status_table=status_table,
+    )
+
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    patch_get_signal(freqtradebot)
+
+    freqtradebot.state = State.RUNNING
+    msg_mock.reset_mock()
+
+    # Create some test data
+    freqtradebot.enter_positions()
+
+    mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 500)
+
+    msg_mock.reset_mock()
+    context = MagicMock()
+    context.args = ["2"]
+    await telegram._order(update=update, context=context)
+
+    assert msg_mock.call_count == 1
+
+    msg1 = msg_mock.call_args_list[0][0][0]
+
+    assert 'Order List for Trade #*`2`' in msg1
+
+    msg_mock.reset_mock()
+    mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 50)
+    context = MagicMock()
+    context.args = ["2"]
+    await telegram._order(update=update, context=context)
+
+    assert msg_mock.call_count == 2
+
+    msg1 = msg_mock.call_args_list[0][0][0]
+    msg2 = msg_mock.call_args_list[1][0][0]
+
+    assert 'Order List for Trade #*`2`' in msg1
+    assert '*Order List for Trade #*`2` - continued' in msg2
+
+
+@pytest.mark.usefixtures("init_persistence")
+async def test_telegram_order_multi_entry(default_conf, update, mocker, fee) -> None:
+    default_conf['telegram']['enabled'] = False
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        EXMS,
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_open_trades()
+    trade = trades[3]
+    # Average may be empty on some exchanges
+    trade.orders[0].average = 0
+    trade.orders.append(Order(
+        order_id='5412vbb',
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=trade.open_rate * 0.95,
+        average=0,
+        filled=trade.amount,
+        remaining=0,
+        cost=trade.amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    )
+    trade.recalc_trade_from_orders()
+    Trade.commit()
+
+    await telegram._order(update=update, context=MagicMock())
+    assert msg_mock.call_count == 4
+    msg = msg_mock.call_args_list[3][0][0]
+    assert re.search(r'from 1st entry rate', msg)
+    assert re.search(r'Order Filled', msg)
 
 
 async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -443,14 +540,12 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     context.args = ["2"]
     await telegram._status(update=update, context=context)
 
-    assert msg_mock.call_count == 2
+    assert msg_mock.call_count == 1
 
     msg1 = msg_mock.call_args_list[0][0][0]
-    msg2 = msg_mock.call_args_list[1][0][0]
 
     assert 'Close Rate' not in msg1
     assert 'Trade ID:* `2`' in msg1
-    assert 'Trade ID:* `2` - continued' in msg2
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
