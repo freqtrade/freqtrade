@@ -282,7 +282,6 @@ def mock_trade_usdt_5(fee, is_short: bool):
         open_rate=2.0,
         exchange='binance',
         strategy='SampleStrategy',
-        stoploss_order_id=f'prod_stoploss_3455_{direc(is_short)}',
         timeframe=5,
         is_short=is_short,
     )
