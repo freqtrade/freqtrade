@@ -317,7 +317,6 @@ It's therefore required to pass the UID as well.
 }
 ```
 
-
 !!! Warning "Necessary Verification"
     Bitmart requires Verification Lvl2 to successfully trade on the spot market through the API - even though trading via UI works just fine with just Lvl1 verification.
 
