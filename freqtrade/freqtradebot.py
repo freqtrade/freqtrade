@@ -1080,7 +1080,7 @@ class FreqtradeBot(LoggingMixin):
 
             if (
                 not trade.has_open_orders
-                and not trade.stoploss_order_id
+                and not trade.has_open_sl_orders
                 and not self.wallets.check_exit_amount(trade)
             ):
                 logger.warning(
