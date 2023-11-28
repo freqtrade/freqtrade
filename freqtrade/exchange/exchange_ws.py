@@ -118,12 +118,12 @@ class ExchangeWS:
         drop_hint = False
         if refresh_date > candle_date:
             # Refreshed after candle was complete.
-            logger.info(f"{candles[-1][0] // 1000} >= {candle_date}")
+            # logger.info(f"{candles[-1][0] // 1000} >= {candle_date}")
             drop_hint = (candles[-1][0] // 1000) >= candle_date
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
             f"{dt_from_ts(candles[-1][0] // 1000)}, "
-            f"lref={dt_from_ts(self.klines_last_refresh[(pair, timeframe, candle_type)])}"
+            f"lref={dt_from_ts(self.klines_last_refresh[(pair, timeframe, candle_type)])}, "
             f"candle_date={dt_from_ts(candle_date)}, {drop_hint=}"
             )
         return pair, timeframe, candle_type, candles, drop_hint
