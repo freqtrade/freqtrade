@@ -175,6 +175,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/status` | Lists all open trades
 | `/status <trade_id>` | Lists one or more specific trade. Separate multiple <trade_id> with a blank space.
 | `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
+| `/order <trade_id>` | Lists orders of one or more specific trade. Separate multiple <trade_id> with a blank space.
 | `/trades [limit]` | List all recently closed trades in a table format.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.

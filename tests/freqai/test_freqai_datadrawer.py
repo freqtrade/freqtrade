@@ -179,10 +179,9 @@ def test_set_initial_return_values(mocker, freqai_conf):
     hist_pred_df = freqai.dd.historic_predictions[pair]
     model_return_df = freqai.dd.model_return_values[pair]
 
-    assert (hist_pred_df['date_pred'].iloc[-1] ==
-            pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1))
+    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5)
     assert 'date_pred' in hist_pred_df.columns
-    assert hist_pred_df.shape[0] == 7  # Total rows: 5 from historic and 2 new zeros
+    assert hist_pred_df.shape[0] == 8
 
     # compare values in model_return_df with hist_pred_df
     assert (model_return_df["value"].values ==
@@ -234,9 +233,9 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
     hist_pred_df = freqai.dd.historic_predictions[pair]
     model_return_df = freqai.dd.model_return_values[pair]
 
-    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5) - pd.Timedelta(days=1)
+    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5)
     assert 'date_pred' in hist_pred_df.columns
-    assert hist_pred_df.shape[0] == 9  # Total rows: 5 from historic and 4 new zeros
+    assert hist_pred_df.shape[0] == 10
 
     # compare values in model_return_df with hist_pred_df
     assert (model_return_df["value"].values == hist_pred_df.tail(

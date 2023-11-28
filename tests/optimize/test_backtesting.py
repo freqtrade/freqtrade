@@ -665,7 +665,7 @@ def test_backtest__check_trade_exit(default_conf, fee, mocker) -> None:
     ]
 
     # No data available.
-    res = backtesting._check_trade_exit(trade, row_sell)
+    res = backtesting._check_trade_exit(trade, row_sell, row_sell[0].to_pydatetime())
     assert res is not None
     assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
@@ -678,7 +678,7 @@ def test_backtest__check_trade_exit(default_conf, fee, mocker) -> None:
         [], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                      'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag'])
 
-    res = backtesting._check_trade_exit(trade, row)
+    res = backtesting._check_trade_exit(trade, row, row[0].to_pydatetime())
     assert res is None
 
 
@@ -1006,7 +1006,7 @@ def test_backtest_one_detail_futures_funding_fees(
         assert t.nr_of_successful_entries >= 6
         # Funding fees will vary depending on the number of adjustment orders
         # That number is a lot higher with detail data.
-        assert -20 < t.funding_fees < -0.1
+        assert -1.81 < t.funding_fees < -0.1
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:

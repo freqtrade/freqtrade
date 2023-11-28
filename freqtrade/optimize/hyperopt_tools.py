@@ -429,14 +429,18 @@ class HyperoptTools:
         trials = trials.drop(columns=['Total profit'])
 
         if print_colorized:
+            trials2 = trials.astype(str)
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
                     for j in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, j] = f"{Fore.GREEN}{str(trials.loc[i][j])}{Fore.RESET}"
+                        trials2.iat[i, j] = f"{Fore.GREEN}{str(trials.iloc[i, j])}{Fore.RESET}"
                 if trials.loc[i]['is_best'] and highlight_best:
                     for j in range(len(trials.loc[i]) - 3):
-                        trials.iat[i, j] = f"{Style.BRIGHT}{str(trials.loc[i][j])}{Style.RESET_ALL}"
-
+                        trials2.iat[i, j] = (
+                            f"{Style.BRIGHT}{str(trials.iloc[i, j])}{Style.RESET_ALL}"
+                        )
+            trials = trials2
+            del trials2
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit', 'is_random'])
         if remove_header > 0:
             table = tabulate.tabulate(

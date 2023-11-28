@@ -1851,7 +1851,7 @@ def test_fetch_bids_asks(default_conf, mocker):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_tickers(default_conf, mocker, exchange_name):
+def test_get_tickers(default_conf, mocker, exchange_name, caplog):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {
         'symbol': 'ETH/BTC',
@@ -1899,6 +1899,14 @@ def test_get_tickers(default_conf, mocker, exchange_name):
         api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NotSupported("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_tickers()
+
+    caplog.clear()
+    api_mock.fetch_tickers = MagicMock(side_effect=[ccxt.BadSymbol("SomeSymbol"), []])
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    x = exchange.get_tickers()
+    assert x == []
+    assert log_has_re(r'Could not load tickers due to BadSymbol\..*SomeSymbol', caplog)
+    caplog.clear()
 
     api_mock.fetch_tickers = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -3737,6 +3745,18 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_funding_fees(default_conf_usdt, mocker, exchange_name, caplog):
+    now = datetime.now(timezone.utc)
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id=exchange_name)
+    exchange._fetch_and_calculate_funding_fees = MagicMock(side_effect=ExchangeError)
+    assert exchange.get_funding_fees('BTC/USDT:USDT', 1, False, now) == 0.0
+    assert exchange._fetch_and_calculate_funding_fees.call_count == 1
+    assert log_has("Could not update funding fees for BTC/USDT:USDT.", caplog)
+
+
 @pytest.mark.parametrize("exchange_name", ['binance'])
 def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
@@ -4075,7 +4095,10 @@ def test_combine_funding_and_mark(
     ('binance', 1, 2, "2021-09-01 00:00:16", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', 0, 1, "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.00066479999),
     ('binance', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.00091409999),
-    ('binance', 0, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
+    # :01 must be rounded down.
+    ('binance', 0, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.00091409999),
+    ('binance', 0, 2, "2021-08-31 23:58:00", "2021-09-01 08:00:00",  30.0, -0.00091409999),
+    ('binance', 0, 2, "2021-09-01 00:10:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
     # ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
@@ -4191,7 +4214,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
     mocker.patch(f'{EXMS}.timeframes', PropertyMock(return_value=['4h', '8h']))
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
+    d1 = datetime.strptime("2021-08-31 23:00:01 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, True, d1)

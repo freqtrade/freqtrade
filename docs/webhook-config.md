@@ -302,6 +302,7 @@ You can configure this as follows:
 ```
 
 The above represents the default (`exit_fill` and `entry_fill` are optional and will default to the above configuration) - modifications are obviously possible.
+To disable either of the two default values (`entry_fill` / `exit_fill`), you can assign them an empty array (`exit_fill: []`).
 
 Available fields correspond to the fields for webhooks and are documented in the corresponding webhook sections.
 

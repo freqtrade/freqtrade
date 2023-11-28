@@ -219,8 +219,10 @@ def _get_resample_from_period(period: str) -> str:
     raise ValueError(f"Period {period} is not supported.")
 
 
-def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dict[str, Any]]:
-    results = DataFrame.from_records(trade_list)
+def generate_periodic_breakdown_stats(
+        trade_list: Union[List,  DataFrame], period: str) -> List[Dict[str, Any]]:
+
+    results = trade_list if not isinstance(trade_list, list) else DataFrame.from_records(trade_list)
     if len(results) == 0:
         return []
     results['close_date'] = to_datetime(results['close_date'], utc=True)

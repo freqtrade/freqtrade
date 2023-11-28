@@ -159,7 +159,7 @@ class BaseEnvironment(gym.Env):
         function is designed for tracking incremented objects,
         events, actions inside the training environment.
         For example, a user can call this to track the
-        frequency of occurence of an `is_valid` call in
+        frequency of occurrence of an `is_valid` call in
         their `calculate_reward()`:
 
         def calculate_reward(self, action: int) -> float:

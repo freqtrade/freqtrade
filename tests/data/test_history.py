@@ -106,17 +106,16 @@ def test_load_data_startup_candles(mocker, testdatadir) -> None:
 
 @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
-                                      default_conf, tmpdir, candle_type) -> None:
+                                      default_conf, tmp_path, candle_type) -> None:
     """
     Test load_pair_history() with 1 min timeframe
     """
-    tmpdir1 = Path(tmpdir)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    file = tmpdir1 / 'MEME_BTC-1m.feather'
+    file = tmp_path / 'MEME_BTC-1m.feather'
 
     # do not download a new pair if refresh_pairs isn't set
-    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
+    load_pair_history(datadir=tmp_path, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert not file.is_file()
     assert log_has(
         f"No history for MEME/BTC, {candle_type}, 1m found. "
@@ -124,10 +123,10 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     )
 
     # download a new pair if refresh_pairs is set
-    refresh_data(datadir=tmpdir1, timeframe='1m', pairs=['MEME/BTC'],
+    refresh_data(datadir=tmp_path, timeframe='1m', pairs=['MEME/BTC'],
                  exchange=exchange, candle_type=CandleType.SPOT
                  )
-    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
+    load_pair_history(datadir=tmp_path, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert file.is_file()
     assert log_has_re(
         r'\(0/1\) - Download history data for "MEME/BTC", 1m, '
@@ -273,27 +272,26 @@ def test_download_pair_history(
     ohlcv_history_list,
     mocker,
     default_conf,
-    tmpdir,
+    tmp_path,
     candle_type,
     subdir,
     file_tail
 ) -> None:
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-    tmpdir1 = Path(tmpdir)
-    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.feather'
-    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.feather'
-    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.feather'
-    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.feather'
+    file1_1 = tmp_path / f'{subdir}MEME_BTC-1m{file_tail}.feather'
+    file1_5 = tmp_path / f'{subdir}MEME_BTC-5m{file_tail}.feather'
+    file2_1 = tmp_path / f'{subdir}CFI_BTC-1m{file_tail}.feather'
+    file2_5 = tmp_path / f'{subdir}CFI_BTC-5m{file_tail}.feather'
 
     assert not file1_1.is_file()
     assert not file2_1.is_file()
 
-    assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
+    assert _download_pair_history(datadir=tmp_path, exchange=exchange,
                                   pair='MEME/BTC',
                                   timeframe='1m',
                                   candle_type=candle_type)
-    assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
+    assert _download_pair_history(datadir=tmp_path, exchange=exchange,
                                   pair='CFI/BTC',
                                   timeframe='1m',
                                   candle_type=candle_type)
@@ -308,11 +306,11 @@ def test_download_pair_history(
     assert not file1_5.is_file()
     assert not file2_5.is_file()
 
-    assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
+    assert _download_pair_history(datadir=tmp_path, exchange=exchange,
                                   pair='MEME/BTC',
                                   timeframe='5m',
                                   candle_type=candle_type)
-    assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
+    assert _download_pair_history(datadir=tmp_path, exchange=exchange,
                                   pair='CFI/BTC',
                                   timeframe='5m',
                                   candle_type=candle_type)
@@ -340,13 +338,12 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
     assert json_dump_mock.call_count == 3
 
 
-def test_download_backtesting_data_exception(mocker, caplog, default_conf, tmpdir) -> None:
+def test_download_backtesting_data_exception(mocker, caplog, default_conf, tmp_path) -> None:
     mocker.patch(f'{EXMS}.get_historic_ohlcv',
                  side_effect=Exception('File Error'))
-    tmpdir1 = Path(tmpdir)
     exchange = get_patched_exchange(mocker, default_conf)
 
-    assert not _download_pair_history(datadir=tmpdir1, exchange=exchange,
+    assert not _download_pair_history(datadir=tmp_path, exchange=exchange,
                                       pair='MEME/BTC',
                                       timeframe='1m', candle_type='spot')
     assert log_has('Failed to download history data for pair: "MEME/BTC", timeframe: 1m.', caplog)
@@ -570,16 +567,15 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
 
 
 def test_download_trades_history(trades_history, mocker, default_conf, testdatadir, caplog,
-                                 tmpdir, time_machine) -> None:
+                                 tmp_path, time_machine) -> None:
     start_dt = dt_utc(2023, 1, 1)
     time_machine.move_to(start_dt, tick=False)
 
-    tmpdir1 = Path(tmpdir)
     ght_mock = MagicMock(side_effect=lambda pair, *args, **kwargs: (pair, trades_history))
     mocker.patch(f'{EXMS}.get_historic_trades', ght_mock)
     exchange = get_patched_exchange(mocker, default_conf)
-    file1 = tmpdir1 / 'ETH_BTC-trades.json.gz'
-    data_handler = get_datahandler(tmpdir1, data_format='jsongz')
+    file1 = tmp_path / 'ETH_BTC-trades.json.gz'
+    data_handler = get_datahandler(tmp_path, data_format='jsongz')
 
     assert not file1.is_file()
 
@@ -614,7 +610,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
                                         pair='ETH/BTC')
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 
-    file2 = tmpdir1 / 'XRP_ETH-trades.json.gz'
+    file2 = tmp_path / 'XRP_ETH-trades.json.gz'
     copyfile(testdatadir / file2.name, file2)
 
     ght_mock.reset_mock()
