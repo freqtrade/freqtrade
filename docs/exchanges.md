@@ -302,6 +302,24 @@ We do strongly recommend to limit all API keys to the IP you're going to use it 
     Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
     On futures, Bybit supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
 
+## Bitmart
+
+Bitmart requires the API key Memo (the name you give the API key) to go along with the exchange key and secret.
+It's therefore required to pass the UID as well.
+
+```json
+"exchange": {
+    "name": "bitmart",
+    "uid": "your_bitmart_api_key_memo",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+    // ...
+}
+```
+
+!!! Warning "Necessary Verification"
+    Bitmart requires Verification Lvl2 to successfully trade on the spot market through the API - even though trading via UI works just fine with just Lvl1 verification.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
