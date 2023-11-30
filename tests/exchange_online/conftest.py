@@ -227,6 +227,7 @@ EXCHANGES = {
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
+        'orderbook_max_entries': 50,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
         'sample_order': [
@@ -246,6 +247,13 @@ EXCHANGES = {
                 "orderCategory": "0"
             }
         ]
+    },
+    'bitmart': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '1h',
+        'orderbook_max_entries': 50,
     },
     'huobi': {
         'pair': 'ETH/BTC',

@@ -1,6 +1,6 @@
 {
     "max_open_trades": 3,
-    "stake_currency": "BTC",
+    "stake_currency": "USDT",
     "stake_amount": 0.05,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
@@ -36,21 +36,21 @@
         "ccxt_async_config": {
         },
         "pair_whitelist": [
-            "ALGO/BTC",
-            "ATOM/BTC",
-            "BAT/BTC",
-            "BCH/BTC",
-            "BRD/BTC",
-            "EOS/BTC",
-            "ETH/BTC",
-            "IOTA/BTC",
-            "LINK/BTC",
-            "LTC/BTC",
-            "NEO/BTC",
-            "NXS/BTC",
-            "XMR/BTC",
-            "XRP/BTC",
-            "XTZ/BTC"
+            "ALGO/USDT",
+            "ATOM/USDT",
+            "BAT/USDT",
+            "BCH/USDT",
+            "BRD/USDT",
+            "EOS/USDT",
+            "ETH/USDT",
+            "IOTA/USDT",
+            "LINK/USDT",
+            "LTC/USDT",
+            "NEO/USDT",
+            "NXS/USDT",
+            "XMR/USDT",
+            "XRP/USDT",
+            "XTZ/USDT"
         ],
         "pair_blacklist": [
             "BNB/.*"

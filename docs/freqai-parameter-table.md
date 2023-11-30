@@ -74,7 +74,6 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 |  |  **Reinforcement Learning Parameters within the `freqai.rl_config` sub dictionary**
 | `rl_config` | A dictionary containing the control parameters for a Reinforcement Learning model. <br> **Datatype:** Dictionary.
 | `train_cycles` | Training time steps will be set based on the `train_cycles * number of training data points. <br> **Datatype:** Integer.
-| `cpu_count` | Number of processors to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
 | `max_trade_duration_candles`| Guides the agent training to keep trades below desired length. Example usage shown in `prediction_models/ReinforcementLearner.py` within the customizable `calculate_reward()` function. <br> **Datatype:** int.
 | `model_type` | Model string from stable_baselines3 or SBcontrib. Available strings include: `'TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO', 'PPO', 'A2C', 'DQN'`. User should ensure that `model_training_parameters` match those available to the corresponding stable_baselines3 model by visiting their documentaiton. [PPO doc](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html) (external website) <br> **Datatype:** string.
 | `policy_type` | One of the available policy types from stable_baselines3 <br> **Datatype:** string.

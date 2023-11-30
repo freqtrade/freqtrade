@@ -290,9 +290,6 @@ class FreqaiExampleStrategy(IStrategy):
 
         return df
 
-    def get_ticker_indicator(self):
-        return int(self.config["timeframe"][:-1])
-
     def confirm_trade_entry(
         self,
         pair: str,

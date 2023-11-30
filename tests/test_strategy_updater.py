@@ -40,7 +40,7 @@ def test_strategy_updater_start(user_dir, capsys) -> None:
     # Backup file exists
     assert Path(user_dir / "strategies_orig_updater" / 'strategy_test_v2.py').exists()
     # updated file exists
-    new_file = Path(tmpdirp / 'strategy_test_v2.py')
+    new_file = tmpdirp / 'strategy_test_v2.py'
     assert new_file.exists()
     new_code = new_file.read_text()
     assert 'INTERFACE_VERSION = 3' in new_code

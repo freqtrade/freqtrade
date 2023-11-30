@@ -223,7 +223,8 @@ class Telegram(RPCHandler):
             CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            CommandHandler('marketdir', self._changemarketdir)
+            CommandHandler('marketdir', self._changemarketdir),
+            CommandHandler('order', self._order),
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
@@ -240,7 +241,7 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._force_exit_inline, pattern=r"force_exit__\S+"),
-            CallbackQueryHandler(self._force_enter_inline, pattern=r"\S+\/\S+"),
+            CallbackQueryHandler(self._force_enter_inline, pattern=r"force_enter__\S+"),
         ]
         for handle in handles:
             self._app.add_handler(handle)
@@ -556,6 +557,47 @@ class Telegram(RPCHandler):
         return lines_detail
 
     @authorized_only
+    async def _order(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /order.
+        Returns the orders of the trade
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        trade_ids = []
+        if context.args and len(context.args) > 0:
+            trade_ids = [int(i) for i in context.args if i.isnumeric()]
+
+        results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
+        for r in results:
+            lines = [
+                "*Order List for Trade #*`{trade_id}`"
+            ]
+
+            lines_detail = self._prepare_order_details(
+                r['orders'], r['quote_currency'], r['is_open'])
+            lines.extend(lines_detail if lines_detail else "")
+            await self.__send_order_msg(lines, r)
+
+    async def __send_order_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
+        """
+        Send status message.
+        """
+        msg = ''
+
+        for line in lines:
+            if line:
+                if (len(msg) + len(line) + 1) < MAX_MESSAGE_LENGTH:
+                    msg += line + '\n'
+                else:
+                    await self._send_msg(msg.format(**r))
+                    msg = "*Order List for Trade #*`{trade_id}` - continued\n" + line + '\n'
+
+        await self._send_msg(msg.format(**r))
+
+    @authorized_only
     async def _status(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status.
@@ -652,9 +694,6 @@ class Telegram(RPCHandler):
                         "*Open Order:* `{open_orders}`"
                         + ("- `{exit_order_status}`" if r['exit_order_status'] else ""))
 
-            lines_detail = self._prepare_order_details(
-                r['orders'], r['quote_currency'], r['is_open'])
-            lines.extend(lines_detail if lines_detail else "")
             await self.__send_status_msg(lines, r)
 
     async def __send_status_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
@@ -1149,12 +1188,19 @@ class Telegram(RPCHandler):
     async def _force_enter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
-            if query.data and '_||_' in query.data:
-                pair, side = query.data.split('_||_')
-                order_side = SignalDirection(side)
-                await query.answer()
-                await query.edit_message_text(text=f"Manually entering {order_side} for {pair}")
-                await self._force_enter_action(pair, None, order_side)
+            if query.data and '__' in query.data:
+                # Input data is "force_enter__<pair|cancel>_<side>"
+                payload = query.data.split("__")[1]
+                if payload == 'cancel':
+                    await query.answer()
+                    await query.edit_message_text(text="Force enter canceled.")
+                    return
+                if payload and '_||_' in payload:
+                    pair, side = payload.split('_||_')
+                    order_side = SignalDirection(side)
+                    await query.answer()
+                    await query.edit_message_text(text=f"Manually entering {order_side} for {pair}")
+                    await self._force_enter_action(pair, None, order_side)
 
     @staticmethod
     def _layout_inline_keyboard(
@@ -1183,12 +1229,14 @@ class Telegram(RPCHandler):
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
             pair_buttons = [
-                InlineKeyboardButton(text=pair, callback_data=f"{pair}_||_{order_side}")
-                for pair in sorted(whitelist)
+                InlineKeyboardButton(
+                    text=pair, callback_data=f"force_enter__{pair}_||_{order_side}"
+                ) for pair in sorted(whitelist)
             ]
             buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
-            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel',
+                                                         callback_data='force_enter__cancel')])
             await self._send_msg(msg="Which pair?",
                                  keyboard=buttons_aligned,
                                  query=update.callback_query)
@@ -1369,7 +1417,7 @@ class Telegram(RPCHandler):
             stat_line = (
                 f"{i+1}.\t <code>{trade['mix_tag']}\t"
                 f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
-                f"({trade['profit']:.2%}) "
+                f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:

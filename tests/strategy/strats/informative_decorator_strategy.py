@@ -47,6 +47,11 @@ class InformativeDecoratorTest(IStrategy):
         dataframe['rsi'] = 14
         return dataframe
 
+    @informative('1h', '{base}/BTC')
+    def populate_indicators_base_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe['rsi'] = 14
+        return dataframe
+
     # Quote currency different from stake currency test.
     @informative('1h', 'ETH/BTC', candle_type='spot')
     def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

@@ -29,15 +29,15 @@ def test_init_create_session(default_conf):
     assert 'scoped_session' in type(Trade.session).__name__
 
 
-def test_init_custom_db_url(default_conf, tmpdir):
+def test_init_custom_db_url(default_conf, tmp_path):
     # Update path to a value other than default, but still in-memory
-    filename = f"{tmpdir}/freqtrade2_test.sqlite"
-    assert not Path(filename).is_file()
+    filename = tmp_path / "freqtrade2_test.sqlite"
+    assert not filename.is_file()
 
     default_conf.update({'db_url': f'sqlite:///{filename}'})
 
     init_db(default_conf['db_url'])
-    assert Path(filename).is_file()
+    assert filename.is_file()
     r = Trade.session.execute(text("PRAGMA journal_mode"))
     assert r.first() == ('wal',)
 

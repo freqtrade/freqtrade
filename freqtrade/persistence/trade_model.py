@@ -1053,7 +1053,7 @@ class LocalTrade:
                 price = avg_price if is_exit else tmp_price
                 current_stake += price * tmp_amount * side
 
-                if current_amount > ZERO:
+                if current_amount > ZERO and not is_exit:
                     avg_price = current_stake / current_amount
 
             if is_exit:
@@ -1066,7 +1066,10 @@ class LocalTrade:
                 exit_amount = o.safe_amount_after_fee
                 prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
                 close_profit_abs += prof.profit_abs
-                close_profit = prof.profit_ratio
+                if total_stake > 0:
+                    # This needs to be calculated based on the last occuring exit to be aligned
+                    # with realized_profit.
+                    close_profit = (close_profit_abs / total_stake) * self.leverage
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += (tmp_amount * price)
@@ -1780,7 +1783,7 @@ class Trade(ModelBase, LocalTrade):
             .order_by(desc('profit_sum_abs'))
         ).all()
 
-        return_list: List[Dict] = []
+        resp: List[Dict] = []
         for id, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
             enter_tag = enter_tag if enter_tag is not None else "Other"
             exit_reason = exit_reason if exit_reason is not None else "Other"
@@ -1788,24 +1791,25 @@ class Trade(ModelBase, LocalTrade):
             if (exit_reason is not None and enter_tag is not None):
                 mix_tag = enter_tag + " " + exit_reason
                 i = 0
-                if not any(item["mix_tag"] == mix_tag for item in return_list):
-                    return_list.append({'mix_tag': mix_tag,
-                                        'profit': profit,
-                                        'profit_pct': round(profit * 100, 2),
-                                        'profit_abs': profit_abs,
-                                        'count': count})
+                if not any(item["mix_tag"] == mix_tag for item in resp):
+                    resp.append({'mix_tag': mix_tag,
+                                 'profit_ratio': profit,
+                                 'profit_pct': round(profit * 100, 2),
+                                 'profit_abs': profit_abs,
+                                 'count': count})
                 else:
-                    while i < len(return_list):
-                        if return_list[i]["mix_tag"] == mix_tag:
-                            return_list[i] = {
+                    while i < len(resp):
+                        if resp[i]["mix_tag"] == mix_tag:
+                            resp[i] = {
                                 'mix_tag': mix_tag,
-                                'profit': profit + return_list[i]["profit"],
-                                'profit_pct': round(profit + return_list[i]["profit"] * 100, 2),
-                                'profit_abs': profit_abs + return_list[i]["profit_abs"],
-                                'count': 1 + return_list[i]["count"]}
+                                'profit_ratio': profit + resp[i]["profit_ratio"],
+                                'profit_pct': round(profit + resp[i]["profit_ratio"] * 100, 2),
+                                'profit_abs': profit_abs + resp[i]["profit_abs"],
+                                'count': 1 + resp[i]["count"]
+                            }
                         i += 1
 
-        return return_list
+        return resp
 
     @staticmethod
     def get_best_pair(start_date: datetime = datetime.fromtimestamp(0)):

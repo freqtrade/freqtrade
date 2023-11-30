@@ -486,11 +486,14 @@ class Exchange:
         except ccxt.BaseError:
             logger.exception('Unable to initialize markets.')
 
-    def reload_markets(self) -> None:
+    def reload_markets(self, force: bool = False) -> None:
         """Reload markets both sync and async if refresh interval has passed """
         # Check whether markets have to be reloaded
-        if (self._last_markets_refresh > 0) and (
-                self._last_markets_refresh + self.markets_refresh_interval > dt_ts()):
+        if (
+            not force
+            and self._last_markets_refresh > 0
+            and (self._last_markets_refresh + self.markets_refresh_interval > dt_ts())
+        ):
             return None
         logger.debug("Performing scheduled market reload..")
         try:
@@ -1228,16 +1231,16 @@ class Exchange:
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {limit_rate}. '
-                f'Message: {e}') from e
-        except ccxt.InvalidOrder as e:
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {limit_rate} with '
+                f'stop-price {stop_price_norm}. Message: {e}') from e
+        except (ccxt.InvalidOrder, ccxt.BadRequest) as e:
             # Errors:
             # `Order would trigger immediately.`
             raise InvalidOrderException(
-                f'Could not create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {limit_rate}. '
-                f'Message: {e}') from e
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {limit_rate} with '
+                f'stop-price {stop_price_norm}. Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -1496,8 +1499,9 @@ class Exchange:
     @retrier
     def fetch_bids_asks(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         """
+        :param symbols: List of symbols to fetch
         :param cached: Allow cached result
-        :return: fetch_tickers result
+        :return: fetch_bids_asks result
         """
         if not self.exchange_has('fetchBidsAsks'):
             return {}
@@ -1546,6 +1550,12 @@ class Exchange:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
                 f'Message: {e}') from e
+        except ccxt.BadSymbol as e:
+            logger.warning(f"Could not load tickers due to {e.__class__.__name__}. Message: {e} ."
+                           "Reloading markets.")
+            self.reload_markets(True)
+            # Re-raise exception to repeat the call.
+            raise TemporaryError from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -1954,7 +1964,7 @@ class Exchange:
 
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
-                if isinstance(res, Exception):
+                if isinstance(res, BaseException):
                     logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
