@@ -1978,6 +1978,34 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test___now_is_time_to_refresh(default_conf, mocker, exchange_name, time_machine):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'BTC/USDT'
+    candle_type = CandleType.SPOT
+    start_dt = datetime(2023, 12, 1, 0, 10, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+    assert (pair, '5m', candle_type) not in exchange._pairs_last_refresh_time
+
+    # not refreshed yet
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+    last_closed_candle = (start_dt - timedelta(minutes=5)).timestamp()
+    exchange._pairs_last_refresh_time[(pair, '5m', candle_type)] = last_closed_candle
+
+    # next candle not closed yet
+    time_machine.move_to(start_dt + timedelta(minutes=4, seconds=59), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is False
+
+    # next candle closed
+    time_machine.move_to(start_dt + timedelta(minutes=5, seconds=0), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+    # 1 second later (last_refresh_time didn't change)
+    time_machine.move_to(start_dt + timedelta(minutes=5, seconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
