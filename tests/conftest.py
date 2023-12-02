@@ -87,11 +87,13 @@ def get_args(args):
 
 def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     np.random.seed(42)
-    tf_mins = timeframe_to_minutes(timeframe)
 
     base = np.random.normal(20, 2, size=size)
-
-    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+    if timeframe == '1M':
+        date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
+    else:
+        tf_mins = timeframe_to_minutes(timeframe)
+        date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,
