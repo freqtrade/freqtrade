@@ -46,10 +46,16 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
         # Subtract "small" timeframe so merging is not delayed by 1 small candle
         # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
         if not informative.empty:
-            informative['date_merge'] = (
-                informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
-                pd.to_timedelta(minutes, 'm')
-            )
+            if timeframe_inf == '1M':
+                informative['date_merge'] = (
+                    (informative[date_column] + pd.offsets.MonthBegin(1))
+                    - pd.to_timedelta(minutes, 'm')
+                )
+            else:
+                informative['date_merge'] = (
+                    informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
+                    pd.to_timedelta(minutes, 'm')
+                )
         else:
             informative['date_merge'] = informative[date_column]
     else:
