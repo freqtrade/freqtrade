@@ -61,6 +61,32 @@ def test_merge_informative_pair():
     assert result.iloc[8]['date_1h'] is pd.NaT
 
 
+def test_merge_informative_pair_high_tf():
+    # Covers roughly 2 months - until 2023-01-10
+    data = generate_test_data('1h', 1040, '2022-11-28')
+    informative = generate_test_data('1M', 40, '2022-01-01')
+
+    result = merge_informative_pair(data, informative, '1h', '1M', ffill=True)
+    assert isinstance(result, pd.DataFrame)
+    candle1 = result.loc[(result['date'] == '2022-12-31T22:00:00.000Z')]
+    assert candle1.iloc[0]['date'] == pd.Timestamp('2022-12-31T22:00:00.000Z')
+    assert candle1.iloc[0]['date_1M'] == pd.Timestamp('2022-11-01T00:00:00.000Z')
+
+    candle2 = result.loc[(result['date'] == '2022-12-31T23:00:00.000Z')]
+    assert candle2.iloc[0]['date'] == pd.Timestamp('2022-12-31T23:00:00.000Z')
+    assert candle2.iloc[0]['date_1M'] == pd.Timestamp('2022-12-01T00:00:00.000Z')
+
+    # Candle is empty, as the start-date did fail.
+    candle3 = result.loc[(result['date'] == '2022-11-30T22:00:00.000Z')]
+    assert candle3.iloc[0]['date'] == pd.Timestamp('2022-11-30T22:00:00.000Z')
+    assert candle3.iloc[0]['date_1M'] is pd.NaT
+
+    # First candle with 1M data merged.
+    candle4 = result.loc[(result['date'] == '2022-11-30T23:00:00.000Z')]
+    assert candle4.iloc[0]['date'] == pd.Timestamp('2022-11-30T23:00:00.000Z')
+    assert candle4.iloc[0]['date_1M'] == pd.Timestamp('2022-11-01T00:00:00.000Z')
+
+
 def test_merge_informative_pair_same():
     data = generate_test_data('15m', 40)
     informative = generate_test_data('15m', 40)
