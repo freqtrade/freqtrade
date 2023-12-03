@@ -13,6 +13,8 @@ class Discord(Webhook):
     def __init__(self, rpc: 'RPC', config: Config):
         self._config = config
         self.rpc = rpc
+
+        self.bot_name = config.get('bot_name', 'freqtrade')
         self.strategy = config.get('strategy', '')
         self.timeframe = config.get('timeframe', '')
 
@@ -34,6 +36,7 @@ class Discord(Webhook):
         if (fields := self._config['discord'].get(msg['type'].value)):
             logger.info(f"Sending discord message: {msg}")
 
+            msg['bot_name'] = self.bot_name
             msg['strategy'] = self.strategy
             msg['timeframe'] = self.timeframe
             color = 0x0000FF
