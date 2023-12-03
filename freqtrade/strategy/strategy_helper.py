@@ -36,7 +36,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     :return: Merged dataframe
     :raise: ValueError if the secondary timeframe is shorter than the dataframe timeframe
     """
-
+    informative = informative.copy()
     minutes_inf = timeframe_to_minutes(timeframe_inf)
     minutes = timeframe_to_minutes(timeframe)
     if minutes == minutes_inf:
