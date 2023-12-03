@@ -86,9 +86,6 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
                              right_on=date_merge, how='left')
     dataframe = dataframe.drop(date_merge, axis=1)
 
-    # if ffill:
-    #     dataframe = dataframe.ffill()
-
     return dataframe
 
 
