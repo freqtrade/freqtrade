@@ -175,7 +175,7 @@ jobs:
         rm /usr/local/bin/python3-config || true
         rm /usr/local/bin/python3.11-config || true
 
-        brew install hdf5 c-blosc
+        brew install hdf5 c-blosc libomp
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
