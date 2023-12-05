@@ -284,6 +284,10 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = dataframe["date"]
         hist_preds = self.historic_predictions[pair].copy()
 
+        # ensure both dataframes have the same date format so they can be merged
+        new_pred["date_pred"] = pd.to_datetime(new_pred["date_pred"])
+        hist_preds["date_pred"] = pd.to_datetime(hist_preds["date_pred"])
+
         # find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
         common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
@@ -294,7 +298,9 @@ class FreqaiDataDrawer:
                            "predictions. You likely left your FreqAI instance offline "
                            f"for more than {len(dataframe.index)} candles.")
 
-        df_concat = pd.concat([hist_preds, new_pred], ignore_index=True, keys=hist_preds.keys())
+        # reindex new_pred columns to match the historic predictions dataframe
+        new_pred_reindexed = new_pred.reindex(columns=hist_preds.columns)
+        df_concat = pd.concat([hist_preds, new_pred_reindexed], ignore_index=True)
 
         # any missing values will get zeroed out so users can see the exact
         # downtime in FreqUI
