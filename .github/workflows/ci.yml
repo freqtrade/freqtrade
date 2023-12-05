@@ -147,7 +147,6 @@ jobs:
 
     - name: pip cache (macOS)
       uses: actions/cache@v3
-      if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -158,7 +157,6 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - macOS
-      if: runner.os == 'macOS'
       run: |
         # brew update
         # TODO: Should be the brew upgrade
