@@ -143,14 +143,14 @@ jobs:
       id: cache
       with:
         path: ~/dependencies/
-        key: ${{ runner.os }}-${{ env.ImageOS }}-dependencies
+        key: ${{ matrix.os }}-dependencies
 
     - name: pip cache (macOS)
       uses: actions/cache@v3
       if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
-        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
 
     - name: TA binary *nix
       if: steps.cache.outputs.cache-hit != 'true'
