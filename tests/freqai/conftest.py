@@ -20,6 +20,11 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+@pytest.fixture(autouse=True)
+def patch_torch_initlogs(mocker) -> None:
+    mocker.patch("torch._logging._init_logs")
+
+
 @pytest.fixture(scope="function")
 def freqai_conf(default_conf, tmp_path):
     freqaiconf = deepcopy(default_conf)
