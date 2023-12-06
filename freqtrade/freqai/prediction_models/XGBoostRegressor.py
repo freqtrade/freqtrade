@@ -45,7 +45,7 @@ class XGBoostRegressor(BaseRegressionModel):
 
         model = XGBRegressor(**self.model_training_parameters)
 
-        model.set_params(callbacks=[TBCallback(dk.data_path)], activate=self.activate_tensorboard)
+        model.set_params(callbacks=[TBCallback(dk.data_path)])
         model.fit(X=X, y=y, sample_weight=sample_weight, eval_set=eval_set,
                   sample_weight_eval_set=eval_weights, xgb_model=xgb_model)
         # set the callbacks to empty so that we can serialize to disk later
