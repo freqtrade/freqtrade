@@ -22,7 +22,17 @@ def is_mac() -> bool:
 
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
-    mocker.patch("torch._logging._init_logs")
+
+    if is_mac():
+        # Mock torch import completely
+        import sys
+        import types
+
+        module_name = 'torch'
+        mocked_module = types.ModuleType(module_name)
+        sys.modules[module_name] = mocked_module
+    else:
+        mocker.patch("torch._logging._init_logs")
 
 
 @pytest.fixture(scope="function")
