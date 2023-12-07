@@ -109,7 +109,6 @@ def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
             _start_thread=MagicMock(),
         )
     if not ftbot:
-        mocker.patch('freqtrade.exchange.exchange.Exchange._init_async_loop')
         ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     telegram = Telegram(rpc, default_conf)

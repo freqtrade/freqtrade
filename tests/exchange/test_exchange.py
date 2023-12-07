@@ -24,7 +24,7 @@ from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_pat
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
+EXCHANGES = ['binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -3901,11 +3901,11 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("kraken", TradingMode.SPOT, None, False),
     ("kraken", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("kraken", TradingMode.FUTURES, MarginMode.ISOLATED, True),
-    ("bittrex", TradingMode.SPOT, None, False),
-    ("bittrex", TradingMode.MARGIN, MarginMode.CROSS, True),
-    ("bittrex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
-    ("bittrex", TradingMode.FUTURES, MarginMode.CROSS, True),
-    ("bittrex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
+    ("bitmart", TradingMode.SPOT, None, False),
+    ("bitmart", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("bitmart", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("bitmart", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("bitmart", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("gate", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("okx", TradingMode.SPOT, None, False),
     ("okx", TradingMode.MARGIN, MarginMode.CROSS, True),

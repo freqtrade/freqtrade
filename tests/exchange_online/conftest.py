@@ -14,14 +14,6 @@ EXCHANGE_FIXTURE_TYPE = Tuple[Exchange, str]
 
 # Exchanges that should be tested online
 EXCHANGES = {
-    'bittrex': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
-        'hasQuoteVolume': False,
-        'timeframe': '1h',
-        'leverage_tiers_public': False,
-        'leverage_in_spot_market': False,
-    },
     'binance': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
