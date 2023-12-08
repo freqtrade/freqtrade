@@ -63,7 +63,7 @@ def test_merge_informative_pair():
     assert result.iloc[8]['date_1h'] is pd.NaT
 
 
-def test_merge_informative_pair_high_tf():
+def test_merge_informative_pair_monthly():
     # Covers roughly 2 months - until 2023-01-10
     data = generate_test_data('1h', 1040, '2022-11-28')
     informative = generate_test_data('1M', 40, '2022-01-01')
