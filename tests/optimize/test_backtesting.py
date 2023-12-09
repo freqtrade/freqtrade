@@ -975,6 +975,7 @@ def test_backtest_one_detail_futures_funding_fees(
     default_conf_usdt['max_open_trades'] = 1
 
     backtesting = Backtesting(default_conf_usdt)
+    ff_spy = mocker.spy(backtesting.exchange, 'calculate_funding_fees')
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.populate_entry_trend = advise_entry
     backtesting.strategy.adjust_trade_position = adjust_trade_position
@@ -1000,6 +1001,8 @@ def test_backtest_one_detail_futures_funding_fees(
     assert len(results) == 1
 
     assert 'orders' in results.columns
+    # funding_fees have been calculated for each candle
+    assert ff_spy.call_count == (324 if use_detail else 27)
 
     for t in Trade.trades:
         # At least 4 adjustment orders
