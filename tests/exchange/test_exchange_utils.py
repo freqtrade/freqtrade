@@ -41,14 +41,14 @@ def test_check_exchange(default_conf, caplog) -> None:
     caplog.clear()
 
     # Test an officially supported by Freqtrade team exchange - with remapping
-    default_conf.get('exchange').update({'name': 'okex'})
+    default_conf.get('exchange').update({'name': 'okx'})
     assert check_exchange(default_conf)
     assert log_has_re(
-        r"Exchange \"okex\" is officially supported by the Freqtrade development team\.",
+        r"Exchange \"okx\" is officially supported by the Freqtrade development team\.",
         caplog)
     caplog.clear()
     # Test an available exchange, supported by ccxt
-    default_conf.get('exchange').update({'name': 'huobipro'})
+    default_conf.get('exchange').update({'name': 'huobijp'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
                       r"but not officially supported "
