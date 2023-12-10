@@ -853,8 +853,8 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
 
 
 @pytest.mark.parametrize('use_detail,exp_funding_fee, exp_ff_updates', [
-    (True, -0.018054162, 44),
-    (False, -0.01780296, 8),
+    (True, -0.018054162, 11),
+    (False, -0.01780296, 5),
     ])
 def test_backtest_one_detail_futures(
         default_conf_usdt, fee, mocker, testdatadir, use_detail, exp_funding_fee,
