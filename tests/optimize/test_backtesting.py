@@ -940,12 +940,16 @@ def test_backtest_one_detail_futures(
     # assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail,entries,max_stake', [
-    (True, 50, 3000),
-    (False, 6, 360)])
+@pytest.mark.parametrize('use_detail,entries,max_stake,expected_ff', [
+    (True, 50, 3000, -1.18038144),
+    (False, 6, 360, -0.14679994)])
 def test_backtest_one_detail_futures_funding_fees(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail, entries, max_stake
+        default_conf_usdt, fee, mocker, testdatadir, use_detail, entries, max_stake,
+        expected_ff,
 ) -> None:
+    """
+    Funding fees are expected to differ, as the maximum position size differs.
+    """
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
@@ -1013,7 +1017,7 @@ def test_backtest_one_detail_futures_funding_fees(
         # Funding fees will vary depending on the number of adjustment orders
         # That number is a lot higher with detail data.
         assert t.max_stake_amount == max_stake
-        assert -1.81 < t.funding_fees < -0.1
+        assert pytest.approx(t.funding_fees) == expected_ff
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
