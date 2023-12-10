@@ -940,9 +940,12 @@ def test_backtest_one_detail_futures(
     # assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail', [True, False])
+@pytest.mark.parametrize('use_detail,entries,max_stake', [
+    (True, 50, 3000),
+    (False, 6, 360)])
 def test_backtest_one_detail_futures_funding_fees(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+        default_conf_usdt, fee, mocker, testdatadir, use_detail, entries, max_stake
+) -> None:
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
@@ -1005,10 +1008,11 @@ def test_backtest_one_detail_futures_funding_fees(
     assert ff_spy.call_count == (324 if use_detail else 27)
 
     for t in Trade.trades:
-        # At least 4 adjustment orders
-        assert t.nr_of_successful_entries >= 6
+        # At least 6 adjustment orders
+        assert t.nr_of_successful_entries == entries
         # Funding fees will vary depending on the number of adjustment orders
         # That number is a lot higher with detail data.
+        assert t.max_stake_amount == max_stake
         assert -1.81 < t.funding_fees < -0.1
 
 
