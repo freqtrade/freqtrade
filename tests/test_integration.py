@@ -654,12 +654,11 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-50)
     freqtrade.process()
     assert log_has_re("Adjusting amount to trade.amount as it is higher.*", caplog)
-    # assert log_has_re("Remaining amount of 0.0 would be smaller than the minimum of 10.", caplog)
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 3
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
-    assert trade.is_open == False
+    assert trade.is_open is False
 
     # use amount that would trunc to 0.0 once selling
     mocker.patch(f"{EXMS}.amount_to_contract_precision", lambda s, p, v: round(v, 1))
@@ -669,7 +668,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert len(trade.orders) == 3
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
-    assert trade.is_open == False
+    assert trade.is_open is False
     assert log_has_re('Amount to exit is 0.0 due to exchange limits - not exiting.', caplog)
     expected_profit = starting_amount - 60 + trade.realized_profit
     assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
