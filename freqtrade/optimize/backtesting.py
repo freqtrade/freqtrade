@@ -725,16 +725,7 @@ class Backtesting:
             self, trade: LocalTrade, row: Tuple, current_time: datetime
     ) -> Optional[LocalTrade]:
 
-        if self.trading_mode == TradingMode.FUTURES:
-            trade.set_funding_fees(
-                self.exchange.calculate_funding_fees(
-                    self.futures_data[trade.pair],
-                    amount=trade.amount,
-                    is_short=trade.is_short,
-                    open_date=trade.date_last_filled_utc,
-                    close_date=current_time
-                )
-            )
+        self._run_funding_fees(trade, current_time)
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
@@ -752,6 +743,21 @@ class Backtesting:
             if t:
                 return t
         return None
+
+    def _run_funding_fees(self, trade: Trade, current_time: datetime):
+        """
+        Calculate funding fees if necessary and add them to the trade.
+        """
+        if self.trading_mode == TradingMode.FUTURES:
+            trade.set_funding_fees(
+                self.exchange.calculate_funding_fees(
+                    self.futures_data[trade.pair],
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.date_last_filled_utc,
+                    close_date=current_time
+                )
+            )
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
