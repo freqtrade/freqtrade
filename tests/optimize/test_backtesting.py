@@ -947,12 +947,13 @@ def test_backtest_one_detail_futures(
     # assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail,entries,max_stake,expected_ff', [
-    (True, 50, 3000, -1.18038144),
-    (False, 6, 360, -0.14679994)])
+@pytest.mark.parametrize('use_detail,entries,max_stake,ff_updates,expected_ff', [
+    (True, 50, 3000, 54, -1.18038144),
+    (False, 6, 360, 10, -0.14679994),
+])
 def test_backtest_one_detail_futures_funding_fees(
         default_conf_usdt, fee, mocker, testdatadir, use_detail, entries, max_stake,
-        expected_ff,
+        ff_updates, expected_ff,
 ) -> None:
     """
     Funding fees are expected to differ, as the maximum position size differs.
@@ -1015,8 +1016,10 @@ def test_backtest_one_detail_futures_funding_fees(
     assert len(results) == 1
 
     assert 'orders' in results.columns
-    # funding_fees have been calculated for each candle
-    assert ff_spy.call_count == (324 if use_detail else 27)
+    # funding_fees have been calculated for each funding-fee candle
+    # the trade is open for 26 hours - hence we expect the 8h fee to apply 4 times.
+    # Additional counts will happen due each successful entry, which needs to call this, too.
+    assert ff_spy.call_count == ff_updates
 
     for t in Trade.trades:
         # At least 6 adjustment orders
