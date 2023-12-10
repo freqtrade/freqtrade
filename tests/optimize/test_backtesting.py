@@ -851,9 +851,13 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
     assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail', [True, False])
+@pytest.mark.parametrize('use_detail,exp_funding_fee, exp_ff_updates', [
+    (True, -0.018054162, 44),
+    (False, -0.01780296, 8),
+    ])
 def test_backtest_one_detail_futures(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+        default_conf_usdt, fee, mocker, testdatadir, use_detail, exp_funding_fee,
+        exp_ff_updates) -> None:
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
@@ -882,6 +886,8 @@ def test_backtest_one_detail_futures(
     default_conf_usdt['max_open_trades'] = 10
 
     backtesting = Backtesting(default_conf_usdt)
+    ff_spy = mocker.spy(backtesting.exchange, 'calculate_funding_fees')
+
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.populate_entry_trend = advise_entry
     backtesting.strategy.custom_entry_price = custom_entry_price
@@ -936,7 +942,8 @@ def test_backtest_one_detail_futures(
 
         assert (round(ln2.iloc[0]["low"], 6) <= round(
                 t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
-    assert -0.0181 < Trade.trades[1].funding_fees < -0.01
+    assert pytest.approx(Trade.trades[1].funding_fees) == exp_funding_fee
+    assert ff_spy.call_count == exp_ff_updates
     # assert late_entry > 0
 
 
