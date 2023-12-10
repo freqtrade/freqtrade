@@ -283,11 +283,13 @@ class Backtesting:
         else:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
+            self.funding_fee_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+            self.funding_fee_timeframe_secs: int = timeframe_to_seconds(self.funding_fee_timeframe)
             # Load additional futures data.
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
+                timeframe=self.funding_fee_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -299,7 +301,7 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
+                timeframe=self.funding_fee_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -744,20 +746,26 @@ class Backtesting:
                 return t
         return None
 
-    def _run_funding_fees(self, trade: Trade, current_time: datetime):
+    def _run_funding_fees(self, trade: Trade, current_time: datetime, force: bool = False):
         """
         Calculate funding fees if necessary and add them to the trade.
         """
         if self.trading_mode == TradingMode.FUTURES:
-            trade.set_funding_fees(
-                self.exchange.calculate_funding_fees(
-                    self.futures_data[trade.pair],
-                    amount=trade.amount,
-                    is_short=trade.is_short,
-                    open_date=trade.date_last_filled_utc,
-                    close_date=current_time
+
+            if (
+                force
+                or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0
+            ):
+                # Funding fee interval.
+                trade.set_funding_fees(
+                    self.exchange.calculate_funding_fees(
+                        self.futures_data[trade.pair],
+                        amount=trade.amount,
+                        is_short=trade.is_short,
+                        open_date=trade.date_last_filled_utc,
+                        close_date=current_time
+                    )
                 )
-            )
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
