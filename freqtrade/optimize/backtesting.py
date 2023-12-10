@@ -606,6 +606,8 @@ class Backtesting:
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
+            self._run_funding_fees(trade, current_date, force=True)
+
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open
                 trade.set_liquidation_price(self.exchange.get_liquidation_price(
