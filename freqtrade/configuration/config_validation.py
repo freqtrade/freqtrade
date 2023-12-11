@@ -67,7 +67,7 @@ def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> D
         )
 
 
-def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False) -> None:
+def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = False) -> None:
     """
     Validate the configuration consistency.
     Should be ran after loading both configuration and strategy,
