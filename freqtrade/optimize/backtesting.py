@@ -239,7 +239,7 @@ class Backtesting:
         if self.config.get('freqai', {}).get('enabled', False):
             startup_candle_count = self.freqai_startup_candles
         else:
-            startup_candle_count = self.config['startup_candle_count']
+            startup_candle_count = self.required_startup
 
         data = history.load_data(
             datadir=self.config['datadir'],
