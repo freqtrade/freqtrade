@@ -748,7 +748,7 @@ class Backtesting:
                 return t
         return None
 
-    def _run_funding_fees(self, trade: Trade, current_time: datetime, force: bool = False):
+    def _run_funding_fees(self, trade: LocalTrade, current_time: datetime, force: bool = False):
         """
         Calculate funding fees if necessary and add them to the trade.
         """
