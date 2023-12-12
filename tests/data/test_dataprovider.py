@@ -564,3 +564,25 @@ def test_dp_get_required_startup(default_conf_usdt):
     assert dp.get_required_startup('1d', False) == 50
     assert dp.get_required_startup('1d', True) == 70
     assert dp.get_required_startup('1d') == 70
+
+    # scenario from issue https://github.com/freqtrade/freqtrade/issues/9432
+    dp._config['freqai'] = {
+        'enabled': True,
+        'train_period_days': 180,
+        'feature_parameters': {
+            'indicator_periods_candles': [
+                10,
+                20,
+            ]
+        }
+    }
+    dp._config['startup_candle_count'] = 40
+    assert dp.get_required_startup('5m', False) == 40
+    assert dp.get_required_startup('5m', True) == 51880
+
+    assert dp.get_required_startup('1h', False) == 40
+    assert dp.get_required_startup('1h', True) == 4360
+
+    assert dp.get_required_startup('1d', False) == 40
+    assert dp.get_required_startup('1d', True) == 220
+    assert dp.get_required_startup('1d') == 220
