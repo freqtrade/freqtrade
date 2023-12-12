@@ -914,7 +914,8 @@ class RPC:
 
         if not stake_amount:
             # gen stake amount
-            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(pair)
+            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(
+                pair, self._config['max_open_trades'])
 
         # execute buy
         if not order_type:

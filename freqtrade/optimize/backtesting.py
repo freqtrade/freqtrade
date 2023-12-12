@@ -798,7 +798,8 @@ class Backtesting:
         leverage = trade.leverage if trade else 1.0
         if not pos_adjust:
             try:
-                stake_amount = self.wallets.get_trade_stake_amount(pair, None, update=False)
+                stake_amount = self.wallets.get_trade_stake_amount(
+                    pair, self.strategy.max_open_trades, update=False)
             except DependencyException:
                 return 0, 0, 0, 0
 
