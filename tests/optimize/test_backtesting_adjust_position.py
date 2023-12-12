@@ -104,6 +104,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=10)
     mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", return_value=(0.1, 0.1))
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting._run_funding_fees')
 
     patch_exchange(mocker)
     default_conf.update({
