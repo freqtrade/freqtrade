@@ -572,7 +572,7 @@ class Backtesting:
                 # This is currently ineffective as remaining would become < min tradable
                 amount = trade.amount
             remaining = (trade.amount - amount) * current_rate
-            if remaining < min_stake:
+            if 0 < remaining < min_stake:
                 # Remaining stake is too low to be sold.
                 return trade
             exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT)
