@@ -568,11 +568,8 @@ class Backtesting:
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
                 return trade
-            if amount > trade.amount:
-                # This is currently ineffective as remaining would become < min tradable
-                amount = trade.amount
             remaining = (trade.amount - amount) * current_rate
-            if 0 < remaining < min_stake:
+            if remaining != 0 and remaining < min_stake:
                 # Remaining stake is too low to be sold.
                 return trade
             exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT)
