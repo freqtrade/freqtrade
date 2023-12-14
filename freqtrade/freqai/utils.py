@@ -13,7 +13,6 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.exchange.exchange import market_is_active
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
@@ -33,8 +32,11 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
 
     if dp._exchange is None:
         raise OperationalException('No exchange object found.')
-    markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
-               or config.get('include_inactive')]
+    markets = [
+        p for p in dp._exchange.get_markets(
+            tradable_only=True, active_only=not config.get('include_inactive')
+            ).keys()
+    ]
 
     all_pairs = dynamic_expand_pairlist(config, markets)
 
