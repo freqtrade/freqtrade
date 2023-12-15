@@ -709,6 +709,8 @@ class FreqaiDataKitchen:
                 pair, tf, strategy, corr_dataframes, base_dataframes, is_corr_pairs)
             informative_copy = informative_df.copy()
 
+            logger.debug(f"Populating features for {pair} {tf}")
+
             for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
                 df_features = strategy.feature_engineering_expand_all(
                     informative_copy.copy(), t, metadata=metadata)
@@ -788,6 +790,7 @@ class FreqaiDataKitchen:
 
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
+            base_dataframes[self.config["timeframe"]] = dataframe.copy()
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 

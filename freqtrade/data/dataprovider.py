@@ -311,11 +311,14 @@ class DataProvider:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
 
-            # It is not necessary to add the training candles, as they
-            # were already added at the beginning of the backtest.
-            startup_candles = self.get_required_startup(str(timeframe), False)
+            startup_candles = self.get_required_startup(str(timeframe))
             tf_seconds = timeframe_to_seconds(str(timeframe))
             timerange.subtract_start(tf_seconds * startup_candles)
+
+            logger.info(f"Loading data for {pair} {timeframe} "
+                        f"from {timerange.start_fmt} "
+                        f"to {timerange.stop_fmt}")
+
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
                 timeframe=timeframe,
