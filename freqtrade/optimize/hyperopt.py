@@ -500,7 +500,7 @@ class Hyperopt:
         while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
-                asked = unique_list(self.opt.ask(n_points=n_points * 5))
+                asked = unique_list(self.opt.ask(n_points=n_points * 5 if i > 0 else n_points))
                 is_random = [False for _ in range(len(asked))]
             else:
                 asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
