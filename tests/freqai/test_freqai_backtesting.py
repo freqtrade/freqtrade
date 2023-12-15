@@ -51,7 +51,7 @@ def test_freqai_backtest_load_data(freqai_conf, mocker, caplog):
     backtesting = Backtesting(deepcopy(freqai_conf))
     backtesting.load_bt_data()
 
-    assert log_has_re('Increasing startup_candle_count for freqai to.*', caplog)
+    assert log_has_re('Increasing startup_candle_count for freqai on.*to.*', caplog)
 
     Backtesting.cleanup()
 
