@@ -28,6 +28,7 @@ coingecko_mapping = {
     'busd': 'binance-usd',
     'tusd': 'true-usd',
     'usdc': 'usd-coin',
+    'btc': 'bitcoin'
 }
 
 
