@@ -450,8 +450,8 @@ jobs:
 
     - name: Build distribution
       run: |
-        pip install -U setuptools wheel
-        python setup.py sdist bdist_wheel
+        pip install -U build
+        python -m build --sdist --wheel
 
     - name: Upload artifacts 📦
       uses: actions/upload-artifact@v3
