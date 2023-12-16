@@ -455,7 +455,7 @@ jobs:
     - name: Upload artifacts 📦
       uses: actions/upload-artifact@v3
       with:
-        name: freqtrade-${{ github.ref }}
+        name: freqtrade-build
         path: |
           dist
         retention-days: 10
@@ -477,7 +477,7 @@ jobs:
     - name: Download artifact  📦
       uses: actions/download-artifact@v3
       with:
-        name: freqtrade-${{ github.ref }}
+        name: freqtrade-build
         path: dist
 
     - name: Publish to PyPI (Test)
