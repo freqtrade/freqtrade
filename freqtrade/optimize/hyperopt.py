@@ -637,6 +637,8 @@ class Hyperopt:
 
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
+        elif self.num_epochs_saved > 0:
+            print("No good result found for given optimization function.")
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
