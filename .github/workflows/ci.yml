@@ -437,6 +437,11 @@ jobs:
   deploy:
     needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
     runs-on: ubuntu-22.04
+    environment:
+      name: release
+      url: https://pypi.org/p/freqtrade
+    permissions:
+      id-token: write
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
 
@@ -462,16 +467,11 @@ jobs:
       uses: pypa/gh-action-pypi-publish@v1.8.11
       if: (github.event_name == 'release')
       with:
-        user: __token__
-        password: ${{ secrets.pypi_test_password }}
-        repository_url: https://test.pypi.org/legacy/
+        repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@v1.8.11
       if: (github.event_name == 'release')
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_password }}
 
     - name: Dockerhub login
       env:
