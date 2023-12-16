@@ -122,7 +122,7 @@ jobs:
           details: Freqtrade CI failed on ${{ matrix.os }}
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_macos:
+  build-macos:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -229,7 +229,7 @@ jobs:
           details: Test Succeeded!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_windows:
+  build-windows:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -299,7 +299,7 @@ jobs:
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  mypy_version_check:
+  mypy-version-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
@@ -324,7 +324,7 @@ jobs:
         python-version: "3.10"
     - uses: pre-commit/action@v3.0.0
 
-  docs_check:
+  docs-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
@@ -404,10 +404,10 @@ jobs:
   notify-complete:
     needs: [
       build_linux,
-      build_macos,
-      build_windows,
-      docs_check,
-      mypy_version_check,
+      build-macos,
+      build-windows,
+      docs-check,
+      mypy-version-check,
       pre-commit,
       build_linux_online
     ]
@@ -435,10 +435,9 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   build:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+    name: "Build"
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
-
-    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
 
     steps:
     - uses: actions/checkout@v4
@@ -462,6 +461,7 @@ jobs:
         retention-days: 10
 
   deploy-pypi:
+    name: "Deploy to PyPI"
     needs: [ build ]
     runs-on: ubuntu-22.04
     if: (github.event_name == 'release')
@@ -490,7 +490,7 @@ jobs:
 
 
   deploy-docker:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -539,7 +539,8 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-  deploy_arm:
+  deploy-arm:
+    name: "Deploy Docker"
     permissions:
       packages: write
     needs: [ deploy-docker ]
