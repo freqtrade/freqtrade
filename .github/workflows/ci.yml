@@ -434,14 +434,64 @@ jobs:
           details: Test Completed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  deploy:
+  build:
     needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
     runs-on: ubuntu-22.04
+
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Build distribution
+      run: |
+        pip install -U setuptools wheel
+        python setup.py sdist bdist_wheel
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v3
+      with:
+        name: freqtrade-${{ github.ref }}
+        path: |
+          dist
+        retention-days: 10
+
+  deploy-pypi:
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
     environment:
       name: release
       url: https://pypi.org/p/freqtrade
     permissions:
       id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@v3
+      with:
+        name: freqtrade-${{ github.ref }}
+        path: dist
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+
+
+  deploy-docker:
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+    runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
 
@@ -457,21 +507,6 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch
-
-    - name: Build distribution
-      run: |
-        pip install -U setuptools wheel
-        python setup.py sdist bdist_wheel
-
-    - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.11
-      if: (github.event_name == 'release')
-      with:
-        repository-url: https://test.pypi.org/legacy/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.11
-      if: (github.event_name == 'release')
 
     - name: Dockerhub login
       env:
@@ -507,7 +542,7 @@ jobs:
   deploy_arm:
     permissions:
       packages: write
-    needs: [ deploy ]
+    needs: [ deploy-docker ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
