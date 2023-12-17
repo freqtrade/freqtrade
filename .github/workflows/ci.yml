@@ -122,7 +122,7 @@ jobs:
           details: Freqtrade CI failed on ${{ matrix.os }}
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_macos:
+  build-macos:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -229,7 +229,7 @@ jobs:
           details: Test Succeeded!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_windows:
+  build-windows:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -299,7 +299,7 @@ jobs:
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  mypy_version_check:
+  mypy-version-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
@@ -324,7 +324,7 @@ jobs:
         python-version: "3.10"
     - uses: pre-commit/action@v3.0.0
 
-  docs_check:
+  docs-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
@@ -404,10 +404,10 @@ jobs:
   notify-complete:
     needs: [
       build_linux,
-      build_macos,
-      build_windows,
-      docs_check,
-      mypy_version_check,
+      build-macos,
+      build-windows,
+      docs-check,
+      mypy-version-check,
       pre-commit,
       build_linux_online
     ]
@@ -434,8 +434,63 @@ jobs:
           details: Test Completed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+  build:
+    name: "Build"
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Build distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v3
+      with:
+        name: freqtrade-build
+        path: |
+          dist
+        retention-days: 10
+
+  deploy-pypi:
+    name: "Deploy to PyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: release
+      url: https://pypi.org/p/freqtrade
+    permissions:
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@v3
+      with:
+        name: freqtrade-build
+        path: dist
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+
+
+  deploy-docker:
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -452,26 +507,6 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch
-
-    - name: Build distribution
-      run: |
-        pip install -U setuptools wheel
-        python setup.py sdist bdist_wheel
-
-    - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.11
-      if: (github.event_name == 'release')
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_test_password }}
-        repository_url: https://test.pypi.org/legacy/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.11
-      if: (github.event_name == 'release')
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_password }}
 
     - name: Dockerhub login
       env:
@@ -504,10 +539,11 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-  deploy_arm:
+  deploy-arm:
+    name: "Deploy Docker"
     permissions:
       packages: write
-    needs: [ deploy ]
+    needs: [ deploy-docker ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'

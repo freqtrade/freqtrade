@@ -122,4 +122,5 @@ setup(
         'freqai_rl': freqai_rl,
         'all': all_extra,
     },
+    url="https://github.com/freqtrade/freqtrade",
 )
