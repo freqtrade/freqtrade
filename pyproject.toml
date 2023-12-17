@@ -41,7 +41,12 @@ freqtrade = "freqtrade.main:main"
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
-packages = ["freqtrade"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freqtrade*"]
+exclude = ["tests", "tests.*"]
+namespaces = true
 
 [tool.setuptools.dynamic]
 version = {attr = "freqtrade.__version__"}
