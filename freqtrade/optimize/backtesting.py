@@ -147,9 +147,7 @@ class Backtesting:
 
         if self.config.get('freqai', {}).get('enabled', False):
             # For FreqAI, increase the required_startup to includes the training data
-            self.freqai_startup_candles = self.dataprovider.get_required_startup(
-                                                self.timeframe
-                                           )
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
@@ -236,17 +234,12 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        if self.config.get('freqai', {}).get('enabled', False):
-            startup_candle_count = self.freqai_startup_candles
-        else:
-            startup_candle_count = self.required_startup
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=startup_candle_count,
+            startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
             data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
