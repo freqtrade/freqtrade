@@ -30,7 +30,7 @@ def test_validate_is_int():
     assert not validate_is_int('-ee')
 
 
-@pytest.mark.parametrize('exchange', ['bittrex', 'binance', 'kraken'])
+@pytest.mark.parametrize('exchange', ['bybit', 'binance', 'kraken'])
 def test_start_new_config(mocker, caplog, exchange):
     wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
