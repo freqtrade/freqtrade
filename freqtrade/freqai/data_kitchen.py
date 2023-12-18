@@ -244,7 +244,7 @@ class FreqaiDataKitchen:
                 f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
-            if len(unfiltered_df) == 0 and not self.live:
+            if len(filtered_df) == 0 and not self.live:
                 raise OperationalException(
                     f"{self.pair}: all training data dropped due to NaNs. "
                     "You likely did not download enough training data prior "

@@ -67,7 +67,7 @@ def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> D
         )
 
 
-def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False) -> None:
+def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = False) -> None:
     """
     Validate the configuration consistency.
     Should be ran after loading both configuration and strategy,
@@ -86,7 +86,7 @@ def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False)
     _validate_ask_orderbook(conf)
     _validate_freqai_hyperopt(conf)
     _validate_freqai_backtest(conf)
-    _validate_freqai_include_timeframes(conf)
+    _validate_freqai_include_timeframes(conf, preliminary=preliminary)
     _validate_consumers(conf)
     validate_migrated_strategy_settings(conf)
 
@@ -335,7 +335,7 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
             'Using analyze-per-epoch parameter is not supported with a FreqAI strategy.')
 
 
-def _validate_freqai_include_timeframes(conf: Dict[str, Any]) -> None:
+def _validate_freqai_include_timeframes(conf: Dict[str, Any], preliminary: bool) -> None:
     freqai_enabled = conf.get('freqai', {}).get('enabled', False)
     if freqai_enabled:
         main_tf = conf.get('timeframe', '5m')
@@ -355,7 +355,7 @@ def _validate_freqai_include_timeframes(conf: Dict[str, Any]) -> None:
                 f"`include_timeframes`.Offending include-timeframes: {', '.join(offending_lines)}")
 
         # Ensure that the base timeframe is included in the include_timeframes list
-        if main_tf not in freqai_include_timeframes:
+        if not preliminary and main_tf not in freqai_include_timeframes:
             feature_parameters = conf.get('freqai', {}).get('feature_parameters', {})
             include_timeframes = [main_tf] + freqai_include_timeframes
             conf.get('freqai', {}).get('feature_parameters', {}) \

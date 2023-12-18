@@ -242,7 +242,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
     # 2nd Trade that counts with correct pair
     generate_mock_trade(
         pair, fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=180, min_ago_close=30, profit_rate=0.9, is_short=is_short
+        min_ago_open=180, min_ago_close=31, profit_rate=0.9, is_short=is_short
     )
 
     freqtrade.protections.stop_per_pair(pair)

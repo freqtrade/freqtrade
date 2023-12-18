@@ -87,11 +87,15 @@ def get_args(args):
 
 def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     np.random.seed(42)
-    tf_mins = timeframe_to_minutes(timeframe)
 
     base = np.random.normal(20, 2, size=size)
-
-    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+    if timeframe == '1M':
+        date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
+    elif timeframe == '1w':
+        date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
+    else:
+        tf_mins = timeframe_to_minutes(timeframe)
+        date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,
@@ -413,8 +417,8 @@ def patch_gc(mocker) -> None:
 
 
 @pytest.fixture(autouse=True)
-def user_dir(mocker, tmpdir) -> Path:
-    user_dir = Path(tmpdir) / "user_data"
+def user_dir(mocker, tmp_path) -> Path:
+    user_dir = tmp_path / "user_data"
     mocker.patch('freqtrade.configuration.configuration.create_userdata_dir',
                  return_value=user_dir)
     return user_dir

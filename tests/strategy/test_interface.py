@@ -422,7 +422,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
         (0.2, 0.9, ExitType.NONE, None, False, False, 0.3, 0.9, ExitType.NONE, None),
         (0.2, 0.9, ExitType.NONE, None, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
-        (0.2, 0.9, ExitType.NONE, 0.8, False, False, -0.2, 0.9, ExitType.LIQUIDATION, None),
+        (0.2, 0.9, ExitType.NONE, 0.92, False, False, -0.09, 0.9, ExitType.LIQUIDATION, None),
         (0.2, 1.14, ExitType.NONE, None, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS,
          None),
         (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),

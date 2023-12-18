@@ -1,8 +1,10 @@
+import json
 from datetime import datetime, timezone
 
 import pytest
 
-from freqtrade.persistence.trade_model import Trade
+from freqtrade.persistence.trade_model import LocalTrade, Trade
+from tests.conftest import create_mock_trades_usdt
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -194,3 +196,71 @@ def test_trade_fromjson():
     assert last_o.order_filled_utc == datetime(2022, 10, 18, 9, 45, 22, tzinfo=timezone.utc)
     assert isinstance(last_o.order_date, datetime)
     assert last_o.funding_fee == -0.055
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_serialize_load_back(fee):
+
+    create_mock_trades_usdt(fee, None)
+
+    t = Trade.get_trades([Trade.id == 1]).first()
+    assert t.id == 1
+    t.funding_fees = 0.025
+    t.orders[0].funding_fee = 0.0125
+    assert len(t.orders) == 2
+    Trade.commit()
+
+    tjson = t.to_json(False)
+    assert isinstance(tjson, dict)
+    trade_string = json.dumps(tjson)
+    trade = Trade.from_json(trade_string)
+
+    assert trade.id == t.id
+    assert trade.funding_fees == t.funding_fees
+    assert len(trade.orders) == len(t.orders)
+    assert trade.orders[0].funding_fee == t.orders[0].funding_fee
+    excluded = [
+        'trade_id', 'quote_currency', 'open_timestamp', 'close_timestamp',
+        'realized_profit_ratio', 'close_profit_pct',
+        'trade_duration_s', 'trade_duration',
+        'profit_ratio', 'profit_pct', 'profit_abs', 'stop_loss_abs',
+        'initial_stop_loss_abs',
+        'orders',
+    ]
+    failed = []
+    # Ensure all attributes written can be read.
+    for obj, value in tjson.items():
+        if obj in excluded:
+            continue
+        tattr = getattr(trade, obj, None)
+        if isinstance(tattr, datetime):
+            tattr = tattr.strftime('%Y-%m-%d %H:%M:%S')
+        if tattr != value:
+            failed.append((obj, tattr, value))
+
+    assert tjson.get('trade_id') == trade.id
+    assert tjson.get('quote_currency') == trade.stake_currency
+    assert tjson.get('stop_loss_abs') == trade.stop_loss
+    assert tjson.get('initial_stop_loss_abs') == trade.initial_stop_loss
+
+    excluded_o = [
+        'order_filled_timestamp', 'ft_is_entry', 'pair', 'is_open', 'order_timestamp',
+    ]
+    order_obj = trade.orders[0]
+    for obj, value in tjson['orders'][0].items():
+        if obj in excluded_o:
+            continue
+        tattr = getattr(order_obj, obj, None)
+        if isinstance(tattr, datetime):
+            tattr = tattr.strftime('%Y-%m-%d %H:%M:%S')
+        if tattr != value:
+            failed.append((obj, tattr, value))
+
+    assert tjson['orders'][0]['pair'] == order_obj.ft_pair
+    assert not failed
+
+    trade2 = LocalTrade.from_json(trade_string)
+    assert len(trade2.orders) == len(t.orders)
+
+    trade3 = LocalTrade.from_json(trade_string)
+    assert len(trade3.orders) == len(t.orders)

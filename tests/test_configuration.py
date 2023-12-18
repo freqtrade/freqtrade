@@ -104,8 +104,8 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert x == ''
 
 
-def test_load_file_error(tmpdir):
-    testpath = Path(tmpdir) / 'config.json'
+def test_load_file_error(tmp_path):
+    testpath = tmp_path / 'config.json'
     with pytest.raises(OperationalException, match=r"File .* not found!"):
         load_file(testpath)
 
@@ -601,9 +601,9 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     assert log_has('Verbosity set to 3', caplog)
 
 
-def test_set_logfile(default_conf, mocker, tmpdir):
+def test_set_logfile(default_conf, mocker, tmp_path):
     patched_configuration_load_config_file(mocker, default_conf)
-    f = Path(tmpdir / "test_file.log")
+    f = tmp_path / "test_file.log"
     assert not f.is_file()
     arglist = [
         'trade', '--logfile', str(f),
@@ -1145,7 +1145,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
         configuration.get_config()
 
 
-def test_pairlist_resolving_fallback(mocker, tmpdir):
+def test_pairlist_resolving_fallback(mocker, tmp_path):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
     mocker.patch("freqtrade.configuration.configuration.load_file",
@@ -1164,7 +1164,7 @@ def test_pairlist_resolving_fallback(mocker, tmpdir):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == Path(tmpdir) / "user_data/data/binance"
+    assert config['datadir'] == tmp_path / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [

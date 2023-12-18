@@ -19,9 +19,9 @@ def create_results() -> List[Dict]:
     return [{'loss': 1, 'result': 'foo', 'params': {}, 'is_best': True}]
 
 
-def test_save_results_saves_epochs(hyperopt, tmpdir, caplog) -> None:
+def test_save_results_saves_epochs(hyperopt, tmp_path, caplog) -> None:
 
-    hyperopt.results_file = Path(tmpdir / 'ut_results.fthypt')
+    hyperopt.results_file = tmp_path / 'ut_results.fthypt'
 
     hyperopt_epochs = HyperoptTools.load_filtered_results(hyperopt.results_file, {})
     assert log_has_re("Hyperopt file .* not found.", caplog)
@@ -182,9 +182,9 @@ def test_get_strategy_filename(default_conf):
     assert x is None
 
 
-def test_export_params(tmpdir):
+def test_export_params(tmp_path):
 
-    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
+    filename = tmp_path / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -231,11 +231,11 @@ def test_export_params(tmpdir):
     assert "max_open_trades" in content["params"]
 
 
-def test_try_export_params(default_conf, tmpdir, caplog, mocker):
+def test_try_export_params(default_conf, tmp_path, caplog, mocker):
     default_conf['disableparamexport'] = False
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
-    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
+    filename = tmp_path / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {

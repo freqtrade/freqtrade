@@ -21,6 +21,7 @@ from freqtrade.misc import pair_to_filename
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 
 
 logger = logging.getLogger(__name__)
@@ -636,7 +637,7 @@ def load_and_plot_trades(config: Config):
     exchange = ExchangeResolver.load_exchange(config)
     IStrategy.dp = DataProvider(config, exchange)
     strategy.ft_bot_start()
-    strategy.bot_loop_start(datetime.now(timezone.utc))
+    strategy_safe_wrapper(strategy.bot_loop_start)(current_time=datetime.now(timezone.utc))
     plot_elements = init_plotscript(config, list(exchange.markets), strategy.startup_candle_count)
     timerange = plot_elements['timerange']
     trades = plot_elements['trades']

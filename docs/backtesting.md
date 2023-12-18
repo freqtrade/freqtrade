@@ -170,11 +170,11 @@ freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000
 
 Using a different on-disk historical candle (OHLCV) data source
 
-Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
+Assume you downloaded the history data from the Binance exchange and kept it in the `user_data/data/binance-20180101` directory. 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/bittrex-20180101 
+freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/binance-20180101 
 ```
 
 ---
@@ -618,13 +618,13 @@ To compare multiple strategies, a list of Strategies can be provided to backtest
 This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
-All listed Strategies need to be in the same directory.
+All listed Strategies need to be in the same directory, unless also `--recursive-strategy-search` is specified, where sub-directories within the strategy directory are also considered.
 
 ``` bash
 freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
-This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
+This will save the results to `user_data/backtest_results/backtest-result-<datetime>.json`, including results for both `Strategy001` and `Strategy002`.
 There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
 Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.
 

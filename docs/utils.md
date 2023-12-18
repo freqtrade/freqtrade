@@ -427,24 +427,32 @@ zb                  True     missing opt: fetchMyTrades
 Use the `list-timeframes` subcommand to see the list of timeframes available for the exchange.
 
 ```
-usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]
+usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [--exchange EXCHANGE] [-1]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   -1, --one-column      Print output in one column.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
-                        to read config from stdin.
-  -d PATH, --datadir PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH, --data-dir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
+
 
 ```
 
@@ -479,20 +487,17 @@ usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                               [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
-                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
-                              [--trading-mode {spot,margin,futures}]
-
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                              [-a] [--trading-mode {spot,margin,futures}]
 usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                             [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                             [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
                             [--trading-mode {spot,margin,futures}]
-
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   --print-list          Print list of pairs or market symbols. By default data
                         is printed in the tabular format.
   --print-json          Print list of pairs or market symbols in JSON format.
@@ -504,20 +509,22 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
-  --trading-mode {spot,margin,futures}
+  --trading-mode {spot,margin,futures}, --tradingmode {spot,margin,futures}
                         Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
-  -d PATH, --datadir PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH, --data-dir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
@@ -532,7 +539,7 @@ Pairs/markets are sorted by its symbol string in the printed output.
 ### Examples
 
 * Print the list of active pairs with quote currency USD on exchange, specified in the default
-configuration file (i.e. pairs on the "Bittrex" exchange) in JSON format:
+configuration file (i.e. pairs on the "Binance" exchange) in JSON format:
 
 ```
 $ freqtrade list-pairs --quote USD --print-json
@@ -564,7 +571,7 @@ usage: freqtrade test-pairlist [-h] [--userdir PATH] [-v] [-c PATH]
                                [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
                                [-1] [--print-json] [--exchange EXCHANGE]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
@@ -578,8 +585,7 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -1, --one-column      Print output in one column.
   --print-json          Print list of pairs or market symbols in JSON format.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
 
 ```
 

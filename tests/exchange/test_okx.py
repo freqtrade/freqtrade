@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
@@ -269,9 +268,9 @@ def test_additional_exchange_init_okx(default_conf, mocker):
                            "additional_exchange_init", "fetch_accounts")
 
 
-def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, time_machine):
+def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog, time_machine):
 
-    default_conf['datadir'] = Path(tmpdir)
+    default_conf['datadir'] = tmp_path
     # fd_mock = mocker.patch('freqtrade.exchange.exchange.file_dump_json')
     api_mock = MagicMock()
     type(api_mock).has = PropertyMock(return_value={

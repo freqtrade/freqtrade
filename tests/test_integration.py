@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -184,7 +185,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
@@ -204,7 +205,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     # One trade sold
     assert len(trades) == 4
     # stake-amount should now be reduced, since one trade was sold at a loss.
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') < result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2
@@ -440,6 +441,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert trade.open_rate == 1.99
     assert trade.orders[-1].price == 1.96
     assert trade.orders[-1].cost == 120 * leverage
+    time.sleep(0.1)
 
     # Replace new order with diff. order at a lower price
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1.95)

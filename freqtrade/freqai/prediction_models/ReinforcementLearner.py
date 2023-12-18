@@ -1,8 +1,9 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Optional, Type
 
 import torch as th
+from stable_baselines3.common.callbacks import ProgressBarCallback
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
@@ -73,19 +74,27 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                         'trained agent.')
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)
+        callbacks: List[Any] = [self.eval_callback, self.tensorboard_callback]
+        progressbar_callback: Optional[ProgressBarCallback] = None
+        if self.rl_config.get('progress_bar', False):
+            progressbar_callback = ProgressBarCallback()
+            callbacks.insert(0, progressbar_callback)
 
-        model.learn(
-            total_timesteps=int(total_timesteps),
-            callback=[self.eval_callback, self.tensorboard_callback],
-            progress_bar=self.rl_config.get('progress_bar', False)
-        )
+        try:
+            model.learn(
+                total_timesteps=int(total_timesteps),
+                callback=callbacks,
+            )
+        finally:
+            if progressbar_callback:
+                progressbar_callback.on_training_end()
 
         if Path(dk.data_path / "best_model.zip").is_file():
             logger.info('Callback found a best model.')
             best_model = self.MODELCLASS.load(dk.data_path / "best_model")
             return best_model
 
-        logger.info('Couldnt find best model, using final model instead.')
+        logger.info("Couldn't find best model, using final model instead.")
 
         return model
 

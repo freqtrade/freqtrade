@@ -20,14 +20,29 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+@pytest.fixture(autouse=True)
+def patch_torch_initlogs(mocker) -> None:
+
+    if is_mac():
+        # Mock torch import completely
+        import sys
+        import types
+
+        module_name = 'torch'
+        mocked_module = types.ModuleType(module_name)
+        sys.modules[module_name] = mocked_module
+    else:
+        mocker.patch("torch._logging._init_logs")
+
+
 @pytest.fixture(scope="function")
-def freqai_conf(default_conf, tmpdir):
+def freqai_conf(default_conf, tmp_path):
     freqaiconf = deepcopy(default_conf)
     freqaiconf.update(
         {
             "datadir": Path(default_conf["datadir"]),
             "strategy": "freqai_test_strat",
-            "user_data_dir": Path(tmpdir),
+            "user_data_dir": tmp_path,
             "strategy-path": "freqtrade/tests/strategy/strats",
             "freqaimodel": "LightGBMRegressor",
             "freqaimodel_path": "freqai/prediction_models",
