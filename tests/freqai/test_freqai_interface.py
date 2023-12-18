@@ -176,6 +176,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'CatboostClassifier',
     'XGBoostClassifier',
     'XGBoostRFClassifier',
+    'SKLearnRandomForestClassifier',
     'PyTorchMLPClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
