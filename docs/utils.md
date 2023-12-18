@@ -242,7 +242,6 @@ bitkk            True     missing opt: fetchMyTrades
 bitmart          True
 bitmax           True     missing opt: fetchMyTrades
 bitpanda         True
-bittrex          True
 bitvavo          True
 bitz             True     missing opt: fetchMyTrades
 btcalpha         True     missing opt: fetchTicker, fetchTickers
@@ -324,7 +323,6 @@ bitpanda            True
 bitso               False    missing: fetchOHLCV
 bitstamp            True     missing opt: fetchTickers
 bitstamp1           False    missing: fetchOrder, fetchOHLCV
-bittrex             True
 bitvavo             True
 bitz                True     missing opt: fetchMyTrades
 bl3p                False    missing: fetchOrder, fetchOHLCV

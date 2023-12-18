@@ -112,8 +112,8 @@ For convenience `lookback_days` can be specified, which will imply that 1d candl
 !!! Warning "Performance implications when using lookback range"
     If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `VolumeFilter` to narrow the pairlist down for further range volume calculation.
 
-??? Tip "Unsupported exchanges (Bittrex, Gemini)"
-    On some exchanges (like Bittrex and Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
+??? Tip "Unsupported exchanges"
+    On some exchanges (like Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
     To roughly simulate 24h volume, you can use the following configuration.
     Please note that These pairlists will only refresh once per day.
 
