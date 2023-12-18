@@ -453,7 +453,7 @@ jobs:
         python -m build --sdist --wheel
 
     - name: Upload artifacts 📦
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: freqtrade-build
         path: |
