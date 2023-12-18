@@ -39,7 +39,7 @@
     },
     {{ exchange | indent(4) }},
     "pairlists": [
-        {{ '{"method": "StaticPairList"}' if exchange_name == 'bittrex' else  volume_pairlist }}
+        {{ volume_pairlist }}
     ],
     "telegram": {
         "enabled": {{ telegram | lower }},

@@ -377,7 +377,7 @@ def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
         "plot-dataframe",
-        "--config", "config_examples/config_bittrex.example.json",
+        "--config", "tests/testdata/testconfigs/main_test_config.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_dataframe(get_args(args))
@@ -420,7 +420,7 @@ def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
         "plot-profit",
-        "--config", "config_examples/config_bittrex.example.json",
+        "--config", "tests/testdata/testconfigs/main_test_config.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_profit(get_args(args))

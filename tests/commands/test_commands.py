@@ -32,7 +32,7 @@ from tests.conftest_trades import MOCK_TRADE_COUNT
 
 def test_setup_utils_configuration():
     args = [
-        'list-exchanges', '--config', 'config_examples/config_bittrex.example.json',
+        'list-exchanges', '--config', 'tests/testdata/testconfigs/main_test_config.json',
     ]
 
     config = setup_utils_configuration(get_args(args), RunMode.OTHER)
@@ -49,7 +49,7 @@ def test_start_trading_fail(mocker, caplog):
     exitmock = mocker.patch("freqtrade.worker.Worker.exit", MagicMock())
     args = [
         'trade',
-        '-c', 'config_examples/config_bittrex.example.json'
+        '-c', 'tests/testdata/testconfigs/main_test_config.json'
     ]
     start_trading(get_args(args))
     assert exitmock.call_count == 1
@@ -68,7 +68,7 @@ def test_start_webserver(mocker, caplog):
 
     args = [
         'webserver',
-        '-c', 'config_examples/config_bittrex.example.json'
+        '-c', 'tests/testdata/testconfigs/main_test_config.json'
     ]
     start_webserver(get_args(args))
     assert api_server_mock.call_count == 1
@@ -84,7 +84,7 @@ def test_list_exchanges(capsys):
     captured = capsys.readouterr()
     assert re.match(r"Exchanges available for Freqtrade.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
-    assert re.search(r".*bittrex.*", captured.out)
+    assert re.search(r".*bybit.*", captured.out)
 
     # Test with --one-column
     args = [
@@ -95,7 +95,7 @@ def test_list_exchanges(capsys):
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
     assert re.search(r"^binance$", captured.out, re.MULTILINE)
-    assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+    assert re.search(r"^bybit$", captured.out, re.MULTILINE)
 
     # Test with --all
     args = [
@@ -107,7 +107,7 @@ def test_list_exchanges(capsys):
     captured = capsys.readouterr()
     assert re.match(r"All exchanges supported by the ccxt library.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
-    assert re.search(r".*bittrex.*", captured.out)
+    assert re.search(r".*bingx.*", captured.out)
     assert re.search(r".*bitmex.*", captured.out)
 
     # Test with --one-column --all
@@ -120,7 +120,7 @@ def test_list_exchanges(capsys):
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
     assert re.search(r"^binance$", captured.out, re.MULTILINE)
-    assert re.search(r"^bittrex$", captured.out, re.MULTILINE)
+    assert re.search(r"^bingx$", captured.out, re.MULTILINE)
     assert re.search(r"^bitmex$", captured.out, re.MULTILINE)
 
 
@@ -133,7 +133,7 @@ def test_list_timeframes(mocker, capsys):
                            '1h': 'hour',
                            '1d': 'day',
                            }
-    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
+    patch_exchange(mocker, api_mock=api_mock, id='bybit')
     args = [
         "list-timeframes",
     ]
@@ -143,25 +143,25 @@ def test_list_timeframes(mocker, capsys):
                        match=r"This command requires a configured exchange.*"):
         start_list_timeframes(pargs)
 
-    # Test with --config config_examples/config_bittrex.example.json
+    # Test with --config tests/testdata/testconfigs/main_test_config.json
     args = [
         "list-timeframes",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
-    assert re.match("Timeframes available for the exchange `Bittrex`: "
+    assert re.match("Timeframes available for the exchange `Bybit`: "
                     "1m, 5m, 30m, 1h, 1d",
                     captured.out)
 
-    # Test with --exchange bittrex
+    # Test with --exchange bybit
     args = [
         "list-timeframes",
-        "--exchange", "bittrex",
+        "--exchange", "bybit",
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
-    assert re.match("Timeframes available for the exchange `Bittrex`: "
+    assert re.match("Timeframes available for the exchange `Bybit`: "
                     "1m, 5m, 30m, 1h, 1d",
                     captured.out)
 
@@ -190,7 +190,7 @@ def test_list_timeframes(mocker, capsys):
     # Test with --one-column
     args = [
         "list-timeframes",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--one-column",
     ]
     start_list_timeframes(get_args(args))
@@ -217,7 +217,7 @@ def test_list_timeframes(mocker, capsys):
 def test_list_markets(mocker, markets_static, capsys):
 
     api_mock = MagicMock()
-    patch_exchange(mocker, api_mock=api_mock, id='bittrex', mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, id='binance', mock_markets=markets_static)
 
     # Test with no --config
     args = [
@@ -229,15 +229,15 @@ def test_list_markets(mocker, markets_static, capsys):
                        match=r"This command requires a configured exchange.*"):
         start_list_markets(pargs, False)
 
-    # Test with --config config_examples/config_bittrex.example.json
+    # Test with --config tests/testdata/testconfigs/main_test_config.json
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 12 active markets: "
+    assert ("Exchange Binance has 12 active markets: "
             "ADA/USDT:USDT, BLK/BTC, ETH/BTC, ETH/USDT, ETH/USDT:USDT, LTC/BTC, "
             "LTC/ETH, LTC/USD, NEO/BTC, TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
@@ -255,16 +255,16 @@ def test_list_markets(mocker, markets_static, capsys):
     assert re.match("\nExchange Binance has 12 active markets:\n",
                     captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="bittrex", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
     # Test with --all: all markets
     args = [
         "list-markets", "--all",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 14 markets: "
+    assert ("Exchange Binance has 14 markets: "
             "ADA/USDT:USDT, BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, ETH/USDT:USDT, "
             "LTC/BTC, LTC/ETH, LTC/USD, LTC/USDT, NEO/BTC, TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
@@ -272,24 +272,24 @@ def test_list_markets(mocker, markets_static, capsys):
     # Test list-pairs subcommand: active pairs
     args = [
         "list-pairs",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 9 active pairs: "
+    assert ("Exchange Binance has 9 active pairs: "
             "BLK/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, NEO/BTC, TKN/BTC, XRP/BTC.\n"
             in captured.out)
 
     # Test list-pairs subcommand with --all: all pairs
     args = [
         "list-pairs", "--all",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 11 pairs: "
+    assert ("Exchange Binance has 11 pairs: "
             "BLK/BTC, BTT/BTC, ETH/BTC, ETH/USDT, LTC/BTC, LTC/ETH, LTC/USD, LTC/USDT, NEO/BTC, "
             "TKN/BTC, XRP/BTC.\n"
             in captured.out)
@@ -297,133 +297,133 @@ def test_list_markets(mocker, markets_static, capsys):
     # active markets, base=ETH, LTC
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "ETH", "LTC",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 7 active markets with ETH, LTC as base currencies: "
+    assert ("Exchange Binance has 7 active markets with ETH, LTC as base currencies: "
             "ETH/BTC, ETH/USDT, ETH/USDT:USDT, LTC/BTC, LTC/ETH, LTC/USD, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, base=LTC
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 4 active markets with LTC as base currency: "
+    assert ("Exchange Binance has 4 active markets with LTC as base currency: "
             "LTC/BTC, LTC/ETH, LTC/USD, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, quote=USDT, USD
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--quote", "USDT", "USD",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 5 active markets with USDT, USD as quote currencies: "
+    assert ("Exchange Binance has 5 active markets with USDT, USD as quote currencies: "
             "ADA/USDT:USDT, ETH/USDT, ETH/USDT:USDT, LTC/USD, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, quote=USDT
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--quote", "USDT",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 4 active markets with USDT as quote currency: "
+    assert ("Exchange Binance has 4 active markets with USDT as quote currency: "
             "ADA/USDT:USDT, ETH/USDT, ETH/USDT:USDT, XLTCUSDT.\n"
             in captured.out)
 
     # active markets, base=LTC, quote=USDT
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC", "--quote", "USDT",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 1 active market with LTC as base currency and "
+    assert ("Exchange Binance has 1 active market with LTC as base currency and "
             "with USDT as quote currency: XLTCUSDT.\n"
             in captured.out)
 
     # active pairs, base=LTC, quote=USDT
     args = [
         "list-pairs",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC", "--quote", "USD",
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 1 active pair with LTC as base currency and "
+    assert ("Exchange Binance has 1 active pair with LTC as base currency and "
             "with USD as quote currency: LTC/USD.\n"
             in captured.out)
 
     # active markets, base=LTC, quote=USDT, NONEXISTENT
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC", "--quote", "USDT", "NONEXISTENT",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 1 active market with LTC as base currency and "
+    assert ("Exchange Binance has 1 active market with LTC as base currency and "
             "with USDT, NONEXISTENT as quote currencies: XLTCUSDT.\n"
             in captured.out)
 
     # active markets, base=LTC, quote=NONEXISTENT
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC", "--quote", "NONEXISTENT",
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 0 active markets with LTC as base currency and "
+    assert ("Exchange Binance has 0 active markets with LTC as base currency and "
             "with NONEXISTENT as quote currency.\n"
             in captured.out)
 
     # Test tabular output
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 12 active markets:\n"
+    assert ("Exchange Binance has 12 active markets:\n"
             in captured.out)
 
     # Test tabular output, no markets found
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--base", "LTC", "--quote", "NONEXISTENT",
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Exchange Bittrex has 0 active markets with LTC as base currency and "
+    assert ("Exchange Binance has 0 active markets with LTC as base currency and "
             "with NONEXISTENT as quote currency.\n"
             in captured.out)
 
     # Test --print-json
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-json"
     ]
     start_list_markets(get_args(args), False)
@@ -435,7 +435,7 @@ def test_list_markets(mocker, markets_static, capsys):
     # Test --print-csv
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--print-csv"
     ]
     start_list_markets(get_args(args), False)
@@ -447,7 +447,7 @@ def test_list_markets(mocker, markets_static, capsys):
     # Test --one-column
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--one-column"
     ]
     start_list_markets(get_args(args), False)
@@ -459,7 +459,7 @@ def test_list_markets(mocker, markets_static, capsys):
     # Test --one-column
     args = [
         "list-markets",
-        '--config', 'config_examples/config_bittrex.example.json',
+        '--config', 'tests/testdata/testconfigs/main_test_config.json',
         "--one-column"
     ]
     with pytest.raises(OperationalException, match=r"Cannot get markets.*"):
@@ -971,7 +971,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     patched_configuration_load_config_file(mocker, default_conf)
     args = [
         'test-pairlist',
-        '-c', 'config_examples/config_bittrex.example.json'
+        '-c', 'tests/testdata/testconfigs/main_test_config.json'
     ]
 
     start_test_pairlist(get_args(args))
@@ -985,7 +985,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 
     args = [
         'test-pairlist',
-        '-c', 'config_examples/config_bittrex.example.json',
+        '-c', 'tests/testdata/testconfigs/main_test_config.json',
         '--one-column',
     ]
     start_test_pairlist(get_args(args))
@@ -994,7 +994,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 
     args = [
         'test-pairlist',
-        '-c', 'config_examples/config_bittrex.example.json',
+        '-c', 'tests/testdata/testconfigs/main_test_config.json',
         '--print-json',
     ]
     start_test_pairlist(get_args(args))
