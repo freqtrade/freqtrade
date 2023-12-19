@@ -326,7 +326,10 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                  "Please specify a strategy.")
 
         if strategy not in data['strategy']:
-            raise ValueError(f"Strategy {strategy} not available in the backtest result.")
+            raise ValueError(
+                f"Strategy {strategy} not available in the backtest result. "
+                f"Available strategies are '{','.join(data['strategy'].keys())}'"
+                )
 
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
