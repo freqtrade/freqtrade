@@ -549,6 +549,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting._run_funding_fees')
     pair = 'ETH/USDT:USDT'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
@@ -851,9 +852,13 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
     assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail', [True, False])
+@pytest.mark.parametrize('use_detail,exp_funding_fee, exp_ff_updates', [
+    (True, -0.018054162, 11),
+    (False, -0.01780296, 5),
+    ])
 def test_backtest_one_detail_futures(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+        default_conf_usdt, fee, mocker, testdatadir, use_detail, exp_funding_fee,
+        exp_ff_updates) -> None:
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
@@ -882,6 +887,8 @@ def test_backtest_one_detail_futures(
     default_conf_usdt['max_open_trades'] = 10
 
     backtesting = Backtesting(default_conf_usdt)
+    ff_spy = mocker.spy(backtesting.exchange, 'calculate_funding_fees')
+
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.populate_entry_trend = advise_entry
     backtesting.strategy.custom_entry_price = custom_entry_price
@@ -936,13 +943,22 @@ def test_backtest_one_detail_futures(
 
         assert (round(ln2.iloc[0]["low"], 6) <= round(
                 t["close_rate"], 6) <= round(ln2.iloc[0]["high"], 6))
-    assert -0.0181 < Trade.trades[1].funding_fees < -0.01
+    assert pytest.approx(Trade.trades[1].funding_fees) == exp_funding_fee
+    assert ff_spy.call_count == exp_ff_updates
     # assert late_entry > 0
 
 
-@pytest.mark.parametrize('use_detail', [True, False])
+@pytest.mark.parametrize('use_detail,entries,max_stake,ff_updates,expected_ff', [
+    (True, 50, 3000, 54, -1.18038144),
+    (False, 6, 360, 10, -0.14679994),
+])
 def test_backtest_one_detail_futures_funding_fees(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+        default_conf_usdt, fee, mocker, testdatadir, use_detail, entries, max_stake,
+        ff_updates, expected_ff,
+) -> None:
+    """
+    Funding fees are expected to differ, as the maximum position size differs.
+    """
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
@@ -975,6 +991,7 @@ def test_backtest_one_detail_futures_funding_fees(
     default_conf_usdt['max_open_trades'] = 1
 
     backtesting = Backtesting(default_conf_usdt)
+    ff_spy = mocker.spy(backtesting.exchange, 'calculate_funding_fees')
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.populate_entry_trend = advise_entry
     backtesting.strategy.adjust_trade_position = adjust_trade_position
@@ -1000,13 +1017,18 @@ def test_backtest_one_detail_futures_funding_fees(
     assert len(results) == 1
 
     assert 'orders' in results.columns
+    # funding_fees have been calculated for each funding-fee candle
+    # the trade is open for 26 hours - hence we expect the 8h fee to apply 4 times.
+    # Additional counts will happen due each successful entry, which needs to call this, too.
+    assert ff_spy.call_count == ff_updates
 
     for t in Trade.trades:
-        # At least 4 adjustment orders
-        assert t.nr_of_successful_entries >= 6
+        # At least 6 adjustment orders
+        assert t.nr_of_successful_entries == entries
         # Funding fees will vary depending on the number of adjustment orders
         # That number is a lot higher with detail data.
-        assert -1.81 < t.funding_fees < -0.1
+        assert t.max_stake_amount == max_stake
+        assert pytest.approx(t.funding_fees) == expected_ff
 
 
 def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:

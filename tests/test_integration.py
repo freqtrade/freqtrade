@@ -185,7 +185,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
@@ -205,7 +205,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     # One trade sold
     assert len(trades) == 4
     # stake-amount should now be reduced, since one trade was sold at a loss.
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') < result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2

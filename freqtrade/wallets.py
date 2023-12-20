@@ -6,7 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Dict, NamedTuple, Optional
 
-from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config, IntOrInf
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
@@ -262,15 +262,15 @@ class Wallets:
         return min(self.get_total_stake_amount() - Trade.total_open_trades_stakes(), free)
 
     def _calculate_unlimited_stake_amount(self, available_amount: float,
-                                          val_tied_up: float) -> float:
+                                          val_tied_up: float, max_open_trades: IntOrInf) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
         """
-        if self._config['max_open_trades'] == 0:
+        if max_open_trades == 0:
             return 0
 
-        possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
+        possible_stake = (available_amount + val_tied_up) / max_open_trades
         # Theoretical amount can be above available amount - therefore limit to available amount!
         return min(possible_stake, available_amount)
 
@@ -298,7 +298,8 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, edge=None, update: bool = True) -> float:
+    def get_trade_stake_amount(
+            self, pair: str, max_open_trades: IntOrInf, edge=None, update: bool = True) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -322,7 +323,7 @@ class Wallets:
             stake_amount = self._config['stake_amount']
             if stake_amount == UNLIMITED_STAKE_AMOUNT:
                 stake_amount = self._calculate_unlimited_stake_amount(
-                    available_amount, val_tied_up)
+                    available_amount, val_tied_up, max_open_trades)
 
         return self._check_available_stake_amount(stake_amount, available_amount)
 

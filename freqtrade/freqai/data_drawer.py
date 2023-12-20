@@ -323,7 +323,7 @@ class FreqaiDataDrawer:
         index = self.historic_predictions[pair].index[-1:]
         columns = self.historic_predictions[pair].columns
 
-        zeros_df = pd.DataFrame(np.zeros, index=index, columns=columns)
+        zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
         self.historic_predictions[pair] = pd.concat(
             [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0)
         df = self.historic_predictions[pair]

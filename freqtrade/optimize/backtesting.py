@@ -147,9 +147,7 @@ class Backtesting:
 
         if self.config.get('freqai', {}).get('enabled', False):
             # For FreqAI, increase the required_startup to includes the training data
-            self.freqai_startup_candles = self.dataprovider.get_required_startup(
-                                                self.timeframe
-                                           )
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
@@ -236,17 +234,12 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        if self.config.get('freqai', {}).get('enabled', False):
-            startup_candle_count = self.freqai_startup_candles
-        else:
-            startup_candle_count = self.config['startup_candle_count']
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=startup_candle_count,
+            startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
             data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
@@ -283,11 +276,13 @@ class Backtesting:
         else:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
+            self.funding_fee_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+            self.funding_fee_timeframe_secs: int = timeframe_to_seconds(self.funding_fee_timeframe)
             # Load additional futures data.
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
+                timeframe=self.funding_fee_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -299,7 +294,7 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
+                timeframe=self.funding_fee_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -601,6 +596,8 @@ class Backtesting:
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
+            self._run_funding_fees(trade, current_date, force=True)
+
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open
                 trade.set_liquidation_price(self.exchange.get_liquidation_price(
@@ -722,16 +719,7 @@ class Backtesting:
             self, trade: LocalTrade, row: Tuple, current_time: datetime
     ) -> Optional[LocalTrade]:
 
-        if self.trading_mode == TradingMode.FUTURES:
-            trade.set_funding_fees(
-                self.exchange.calculate_funding_fees(
-                    self.futures_data[trade.pair],
-                    amount=trade.amount,
-                    is_short=trade.is_short,
-                    open_date=trade.date_last_filled_utc,
-                    close_date=current_time
-                )
-            )
+        self._run_funding_fees(trade, current_time)
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
@@ -749,6 +737,27 @@ class Backtesting:
             if t:
                 return t
         return None
+
+    def _run_funding_fees(self, trade: LocalTrade, current_time: datetime, force: bool = False):
+        """
+        Calculate funding fees if necessary and add them to the trade.
+        """
+        if self.trading_mode == TradingMode.FUTURES:
+
+            if (
+                force
+                or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0
+            ):
+                # Funding fee interval.
+                trade.set_funding_fees(
+                    self.exchange.calculate_funding_fees(
+                        self.futures_data[trade.pair],
+                        amount=trade.amount,
+                        is_short=trade.is_short,
+                        open_date=trade.date_last_filled_utc,
+                        close_date=current_time
+                    )
+                )
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
@@ -779,7 +788,8 @@ class Backtesting:
         leverage = trade.leverage if trade else 1.0
         if not pos_adjust:
             try:
-                stake_amount = self.wallets.get_trade_stake_amount(pair, None, update=False)
+                stake_amount = self.wallets.get_trade_stake_amount(
+                    pair, self.strategy.max_open_trades, update=False)
             except DependencyException:
                 return 0, 0, 0, 0
 
@@ -961,7 +971,7 @@ class Backtesting:
 
     def trade_slot_available(self, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
-        max_open_trades: IntOrInf = self.config['max_open_trades']
+        max_open_trades: IntOrInf = self.strategy.max_open_trades
         if max_open_trades <= 0 or open_trade_count < max_open_trades:
             return True
         # Rejected trade

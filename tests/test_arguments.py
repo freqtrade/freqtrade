@@ -173,7 +173,7 @@ def test_download_data_options() -> None:
 def test_plot_dataframe_options() -> None:
     args = [
         'plot-dataframe',
-        '-c', 'config_examples/config_bittrex.example.json',
+        '-c', 'tests/testdata/testconfigs/main_test_config.json',
         '--indicators1', 'sma10', 'sma100',
         '--indicators2', 'macd', 'fastd', 'fastk',
         '--plot-limit', '30',
