@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, protected-access
 
+import logging
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
