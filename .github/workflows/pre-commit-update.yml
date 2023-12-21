@@ -34,5 +34,7 @@ jobs:
           add-paths: .pre-commit-config.yaml
           branch: update/pre-commit-hooks
           title: Update pre-commit hooks
+          labels: |
+            Tech maintenance
           commit-message: "chore: update pre-commit hooks"
           body: Update versions of pre-commit hooks to latest version.
