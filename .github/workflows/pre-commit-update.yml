@@ -30,11 +30,12 @@ jobs:
 
       - uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
           add-paths: .pre-commit-config.yaml
-          branch: update/pre-commit-hooks
-          title: Update pre-commit hooks
           labels: |
             Tech maintenance
+          branch: update/pre-commit-hooks
+          title: Update pre-commit hooks
           commit-message: "chore: update pre-commit hooks"
           body: Update versions of pre-commit hooks to latest version.
+          delete-branch: true
