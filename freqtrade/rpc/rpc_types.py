@@ -5,6 +5,9 @@ from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums import RPCMessageType
 
 
+ProfitLossStr = Literal["profit", "loss"]
+
+
 class RPCSendMsgBase(TypedDict):
     pass
     # ty1pe: Literal[RPCMessageType]
@@ -74,7 +77,7 @@ class RPCCancelMsg(__RPCEntryExitMsgBase):
 class RPCExitMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]
     cumulative_profit: float
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     close_rate: float
     profit_amount: float
     profit_ratio: float
@@ -88,7 +91,7 @@ class RPCExitMsg(__RPCEntryExitMsgBase):
 class RPCExitCancelMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT_CANCEL]
     reason: str
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     profit_amount: float
     profit_ratio: float
     sell_reason: Optional[str]

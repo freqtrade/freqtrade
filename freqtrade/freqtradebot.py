@@ -33,8 +33,8 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from freqtrade.rpc.rpc_types import (RPCCancelMsg, RPCEntryMsg, RPCExitCancelMsg, RPCExitMsg,
-                                     RPCProtectionMsg)
+from freqtrade.rpc.rpc_types import (ProfitLossStr, RPCCancelMsg, RPCEntryMsg, RPCExitCancelMsg,
+                                     RPCExitMsg, RPCProtectionMsg)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -1792,7 +1792,7 @@ class FreqtradeBot(LoggingMixin):
             order_rate = trade.safe_close_rate
             profit = trade.calculate_profit(rate=order_rate)
             amount = trade.amount
-        gain = "profit" if profit.profit_ratio > 0 else "loss"
+        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
 
         msg: RPCExitMsg = {
             'type': (RPCMessageType.EXIT_FILL if fill
@@ -1846,7 +1846,7 @@ class FreqtradeBot(LoggingMixin):
         profit = trade.calculate_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
-        gain = "profit" if profit.profit_ratio > 0 else "loss"
+        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
 
         msg: RPCExitCancelMsg = {
             'type': RPCMessageType.EXIT_CANCEL,
