@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
   auto-update:
