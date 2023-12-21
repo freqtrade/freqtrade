@@ -84,7 +84,7 @@ class Webhook(RPCHandler):
             valuedict = self._get_value_dict(msg)
 
             if not valuedict:
-                logger.info("Message type '%s' not configured for webhooks", msg['type'])
+                logger.debug("Message type '%s' not configured for webhooks", msg['type'])
                 return
 
             payload = {key: value.format(**msg) for (key, value) in valuedict.items()}
