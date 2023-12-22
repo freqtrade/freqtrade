@@ -13,7 +13,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
                                   InsufficientFundsError, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
-from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, market_is_active,
+from freqtrade.exchange import (Binance, Bybit, Exchange, Kraken, market_is_active,
                                 timeframe_to_prev_date)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_exchange_credentials)
@@ -24,7 +24,7 @@ from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_pat
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
+EXCHANGES = ['binance', 'kraken', 'gate', 'kucoin', 'bybit', 'okx']
 
 get_entry_rate_data = [
     ('other', 20, 19, 10, 0.0, 20),  # Full ask side
@@ -228,10 +228,10 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
 
-    default_conf['exchange']['name'] = 'Bittrex'
+    default_conf['exchange']['name'] = 'Bybit'
     exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
-    assert isinstance(exchange, Bittrex)
+    assert isinstance(exchange, Bybit)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
     caplog.clear()
@@ -263,8 +263,8 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
 def test_validate_order_time_in_force(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    # explicitly test bittrex, exchanges implementing other policies need separate tests
-    ex = get_patched_exchange(mocker, default_conf, id="bittrex")
+    # explicitly test bybit, exchanges implementing other policies need separate tests
+    ex = get_patched_exchange(mocker, default_conf, id="bybit")
     tif = {
         "buy": "gtc",
         "sell": "gtc",
@@ -273,11 +273,14 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif)
     tif2 = {
         "buy": "fok",
-        "sell": "ioc",
+        "sell": "ioc22",
     }
     with pytest.raises(OperationalException, match=r"Time in force.*not supported for .*"):
         ex.validate_order_time_in_force(tif2)
-
+    tif2 = {
+        "buy": "fok",
+        "sell": "ioc",
+    }
     # Patch to see if this will pass if the values are in the ft dict
     ex._ft_has.update({"order_time_in_force": ["GTC", "FOK", "IOC"]})
     ex.validate_order_time_in_force(tif2)
@@ -915,7 +918,6 @@ def test_validate_ordertypes(default_conf, mocker):
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.validate_pricing')
-    mocker.patch(f'{EXMS}.name', 'Bittrex')
 
     default_conf['order_types'] = {
         'entry': 'limit',
@@ -1978,6 +1980,34 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test___now_is_time_to_refresh(default_conf, mocker, exchange_name, time_machine):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'BTC/USDT'
+    candle_type = CandleType.SPOT
+    start_dt = datetime(2023, 12, 1, 0, 10, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+    assert (pair, '5m', candle_type) not in exchange._pairs_last_refresh_time
+
+    # not refreshed yet
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+    last_closed_candle = (start_dt - timedelta(minutes=5)).timestamp()
+    exchange._pairs_last_refresh_time[(pair, '5m', candle_type)] = last_closed_candle
+
+    # next candle not closed yet
+    time_machine.move_to(start_dt + timedelta(minutes=4, seconds=59), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is False
+
+    # next candle closed
+    time_machine.move_to(start_dt + timedelta(minutes=5, seconds=0), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+    # 1 second later (last_refresh_time didn't change)
+    time_machine.move_to(start_dt + timedelta(minutes=5, seconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, '5m', candle_type) is True
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -2738,7 +2768,6 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     assert res_ohlcv[9][4] == 0.07668
     assert res_ohlcv[9][5] == 16.65244264
 
-    # Bittrex use-case (real data from Bittrex)
     # This OHLCV data is ordered ASC (oldest first, newest last)
     ohlcv = [
         [1527827700000, 0.07659999, 0.0766, 0.07627, 0.07657998, 1.85216924],
@@ -3382,7 +3411,7 @@ def test_get_fee(default_conf, mocker, exchange_name):
 
 
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
+    exchange = get_patched_exchange(mocker, default_conf, id='bitpanda')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
         exchange.create_stoploss(
             pair='ETH/BTC',
@@ -3578,10 +3607,10 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
     timeframes = ('1m', '5m', '1h')
     expected = exchange._ft_has['ohlcv_candle_limit']
     for timeframe in timeframes:
-        if 'ohlcv_candle_limit_per_timeframe' in exchange._ft_has:
-            expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
-            # This should only run for bittrex
-            assert exchange_name == 'bittrex'
+        # if 'ohlcv_candle_limit_per_timeframe' in exchange._ft_has:
+        # expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
+        # This should only run for bittrex
+        # assert exchange_name == 'bittrex'
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == expected
 
 
@@ -3873,11 +3902,11 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("kraken", TradingMode.SPOT, None, False),
     ("kraken", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("kraken", TradingMode.FUTURES, MarginMode.ISOLATED, True),
-    ("bittrex", TradingMode.SPOT, None, False),
-    ("bittrex", TradingMode.MARGIN, MarginMode.CROSS, True),
-    ("bittrex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
-    ("bittrex", TradingMode.FUTURES, MarginMode.CROSS, True),
-    ("bittrex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
+    ("bitmart", TradingMode.SPOT, None, False),
+    ("bitmart", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("bitmart", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("bitmart", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("bitmart", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("gate", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("okx", TradingMode.SPOT, None, False),
     ("okx", TradingMode.MARGIN, MarginMode.CROSS, True),
@@ -4494,10 +4523,10 @@ def test_amount_to_contract_precision(
 
 
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,margin_mode', [
-    # Bittrex
-    ('bittrex', 2.0, False, 'spot', None),
-    ('bittrex', 2.0, False, 'spot', 'cross'),
-    ('bittrex', 2.0, True, 'spot', 'isolated'),
+    # Bybit
+    ('bybit', 2.0, False, 'spot', None),
+    ('bybit', 2.0, False, 'spot', 'cross'),
+    ('bybit', 2.0, True, 'spot', 'isolated'),
     # Binance
     ('binance', 2.0, False, 'spot', None),
     ('binance', 2.0, False, 'spot', 'cross'),
@@ -4919,7 +4948,7 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
         exchange.get_max_leverage("BTC/USDT:USDT", 1000000000.01)
 
 
-@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'gate', 'okx', 'bybit'])
+@pytest.mark.parametrize("exchange_name", ['binance', 'kraken', 'gate', 'okx', 'bybit'])
 def test__get_params(mocker, default_conf, exchange_name):
     api_mock = MagicMock()
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)

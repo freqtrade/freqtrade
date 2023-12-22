@@ -321,7 +321,7 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 To fully utilize compounding profits when using multiple bots on the same exchange account, you'll want to limit each bot to a certain starting balance.
 This can be accomplished by setting `available_capital` to the desired starting balance.
 
-Assuming your account has 10.000 USDT and you want to run 2 different strategies on this exchange.
+Assuming your account has 10000 USDT and you want to run 2 different strategies on this exchange.
 You'd set `available_capital=5000` - granting each bot an initial capital of 5000 USDT.
 The bot will then split this starting balance equally into `max_open_trades` buckets.
 Profitable trades will result in increased stake-sizes for this bot - without affecting the stake-sizes of the other bot.

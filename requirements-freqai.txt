@@ -3,7 +3,7 @@
 -r requirements-plot.txt
 
 # Required for freqai
-scikit-learn==1.1.3
+scikit-learn==1.3.2
 joblib==1.3.2
 catboost==1.2.2; 'arm' not in platform_machine
 lightgbm==4.1.0

@@ -52,6 +52,7 @@ MAP_EXCHANGE_CHILDCLASS = {
 
 SUPPORTED_EXCHANGES = [
     'binance',
+    'bitmart',
     'gate',
     'huobi',
     'kraken',

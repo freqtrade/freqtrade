@@ -29,7 +29,7 @@
         "order_book_top": 1
     },
     "exchange": {
-        "name": "bittrex",
+        "name": "binance",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "ccxt_config": {},

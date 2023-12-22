@@ -470,6 +470,7 @@ class FreqAIModelListResponse(BaseModel):
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
+    timeframe: Optional[str]
 
 
 class AvailablePairs(BaseModel):

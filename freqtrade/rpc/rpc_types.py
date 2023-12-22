@@ -5,6 +5,9 @@ from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums import RPCMessageType
 
 
+ProfitLossStr = Literal["profit", "loss"]
+
+
 class RPCSendMsgBase(TypedDict):
     pass
     # ty1pe: Literal[RPCMessageType]
@@ -41,7 +44,7 @@ class RPCWhitelistMsg(RPCSendMsgBase):
     data: List[str]
 
 
-class __RPCBuyMsgBase(RPCSendMsgBase):
+class __RPCEntryExitMsgBase(RPCSendMsgBase):
     trade_id: int
     buy_tag: Optional[str]
     enter_tag: Optional[str]
@@ -62,19 +65,19 @@ class __RPCBuyMsgBase(RPCSendMsgBase):
     sub_trade: bool
 
 
-class RPCBuyMsg(__RPCBuyMsgBase):
+class RPCEntryMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]
 
 
-class RPCCancelMsg(__RPCBuyMsgBase):
+class RPCCancelMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.ENTRY_CANCEL]
     reason: str
 
 
-class RPCSellMsg(__RPCBuyMsgBase):
+class RPCExitMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]
     cumulative_profit: float
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     close_rate: float
     profit_amount: float
     profit_ratio: float
@@ -85,10 +88,10 @@ class RPCSellMsg(__RPCBuyMsgBase):
     order_rate: Optional[float]
 
 
-class RPCSellCancelMsg(__RPCBuyMsgBase):
+class RPCExitCancelMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT_CANCEL]
     reason: str
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     profit_amount: float
     profit_ratio: float
     sell_reason: Optional[str]
@@ -119,10 +122,10 @@ RPCSendMsg = Union[
     RPCStrategyMsg,
     RPCProtectionMsg,
     RPCWhitelistMsg,
-    RPCBuyMsg,
+    RPCEntryMsg,
     RPCCancelMsg,
-    RPCSellMsg,
-    RPCSellCancelMsg,
+    RPCExitMsg,
+    RPCExitCancelMsg,
     RPCAnalyzedDFMsg,
     RPCNewCandleMsg
     ]

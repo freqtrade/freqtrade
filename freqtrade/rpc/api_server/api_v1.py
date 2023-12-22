@@ -350,6 +350,7 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     return {
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
+        'timeframe': getattr(strategy_obj, 'timeframe', None),
     }
 
 

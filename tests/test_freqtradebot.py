@@ -146,7 +146,7 @@ def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT')
+    result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT', 1)
     assert result == default_conf_usdt['stake_amount']
 
 
@@ -211,12 +211,12 @@ def test_check_available_stake_amount(
 
         if expected[i] is not None:
             limit_buy_order_usdt_open['id'] = str(i)
-            result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT')
+            result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT', 1)
             assert pytest.approx(result) == expected[i]
             freqtrade.execute_entry('ETH/USDT', result)
         else:
             with pytest.raises(DependencyException):
-                freqtrade.wallets.get_trade_stake_amount('ETH/USDT')
+                freqtrade.wallets.get_trade_stake_amount('ETH/USDT', 1)
 
 
 def test_edge_called_in_process(mocker, edge_conf) -> None:
@@ -238,9 +238,9 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     freqtrade = FreqtradeBot(edge_conf)
 
     assert freqtrade.wallets.get_trade_stake_amount(
-        'NEO/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.20
+        'NEO/BTC', 1, freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.20
     assert freqtrade.wallets.get_trade_stake_amount(
-        'LTC/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
+        'LTC/BTC', 1, freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
 
 
 @pytest.mark.parametrize('buy_price_mult,ignore_strat_sl', [
@@ -420,7 +420,8 @@ def test_create_trade_minimal_amount(
     else:
         assert not freqtrade.create_trade('ETH/USDT')
         if not max_open_trades:
-            assert freqtrade.wallets.get_trade_stake_amount('ETH/USDT', freqtrade.edge) == 0
+            assert freqtrade.wallets.get_trade_stake_amount(
+                'ETH/USDT', default_conf_usdt['max_open_trades'], freqtrade.edge) == 0
 
 
 @pytest.mark.parametrize('whitelist,positions', [
@@ -3485,7 +3486,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'kraken', 'bittrex'],
+@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'kraken', 'bybit'],
                          indirect=['limit_buy_order_canceled_empty'])
 def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short, fee,
                                        limit_buy_order_canceled_empty) -> None:
