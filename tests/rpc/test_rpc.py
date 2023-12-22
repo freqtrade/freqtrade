@@ -63,7 +63,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stop_loss_abs': 9.89e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
-        'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
         'initial_stop_loss_abs': 9.89e-06,
