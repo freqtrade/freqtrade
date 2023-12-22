@@ -650,12 +650,27 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     caplog.clear()
 
     # Sell more than what we got (we got ~20 coins left)
-    # First adjusts the amount to 20 - then rejects.
+    # Doesn't exit, as the amount is too high.
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-50)
     freqtrade.process()
-    assert log_has_re("Adjusting amount to trade.amount as it is higher.*", caplog)
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+
+    # Amount too low...
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-(trade.stake_amount * 0.99))
+    freqtrade.process()
+
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+
+    # Amount exactly comes out as exactly 0
+    freqtrade.strategy.adjust_trade_position = MagicMock(
+        return_value=-(trade.amount / trade.leverage * 2.02))
+    freqtrade.process()
+
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 3
+
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
     assert trade.is_open is False
