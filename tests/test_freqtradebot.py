@@ -1118,12 +1118,11 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     freqtrade.enter_positions()
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
-    trade.stoploss_order_id = None
     trade.is_open = True
     trades = [trade]
 
     freqtrade.exit_positions(trades)
-    assert trade.stoploss_order_id == '13434334'
+    assert trade.has_open_sl_orders is True
     assert stoploss.call_count == 1
     assert trade.is_open is True
 
@@ -1535,7 +1534,7 @@ def test_create_stoploss_order_invalid_order(
     caplog.clear()
     rpc_mock.reset_mock()
     freqtrade.create_stoploss_order(trade, 200)
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
     assert trade.exit_reason == ExitType.EMERGENCY_EXIT.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
     assert log_has("Exiting the trade forcefully", caplog)
@@ -1589,14 +1588,13 @@ def test_create_stoploss_order_insufficient_funds(
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     # stoploss_orderid was empty before
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
     assert mock_insuf.call_count == 1
     mock_insuf.reset_mock()
 
-    trade.stoploss_order_id = 'stoploss_orderid'
     freqtrade.create_stoploss_order(trade, 200)
     # No change to stoploss-orderid
-    assert trade.stoploss_order_id == 'stoploss_orderid'
+    assert trade.has_open_sl_orders is False
     assert mock_insuf.call_count == 1
 
 
@@ -5679,7 +5677,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     trade = trades[1]
     reset_open_orders(trade)
     assert not trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = trade.orders[0]
@@ -5689,7 +5687,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 0
     # No change to orderid - as update_trade_state is mocked
     assert not trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -5700,7 +5698,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
 
     # This part in not relevant anymore
     # assert not trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_4(is_short=is_short)
@@ -5708,8 +5706,8 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
     # Found open buy order
-    assert trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_orders is True
+    assert trade.has_open_sl_orders is False
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -5718,7 +5716,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     trade = trades[4]
     reset_open_orders(trade)
     assert not trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_5_stoploss(is_short=is_short)
@@ -5727,7 +5725,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 2
     # stoploss_order_id is "refound" and added to the trade
     assert not trade.has_open_orders
-    assert trade.stoploss_order_id is not None
+    assert trade.has_open_sl_orders is True
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -5738,7 +5736,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     reset_open_orders(trade)
     # This part in not relevant anymore
     # assert not trade.has_open_orders
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_6_sell(is_short=is_short)
@@ -5747,7 +5745,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 1
     # sell-orderid is "refound" and added to the trade
     assert trade.open_orders_ids[0] == order['id']
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     caplog.clear()
 
