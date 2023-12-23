@@ -1759,9 +1759,6 @@ def test_handle_stoploss_on_exchange_trailing_error(
             {'id': exit_order['id']},
         ]),
         get_fee=fee,
-    )
-    mocker.patch.multiple(
-        EXMS,
         create_stoploss=stoploss,
         stoploss_adjust=MagicMock(return_value=True),
     )
@@ -1783,10 +1780,8 @@ def test_handle_stoploss_on_exchange_trailing_error(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_order_id = "abcd"
     trade.stop_loss = 0.2
     trade.stoploss_last_update = (dt_now() - timedelta(minutes=601)).replace(tzinfo=None)
-    trade.is_short = is_short
 
     stoploss_order_hanging = {
         'id': "abcd",
@@ -1798,6 +1793,16 @@ def test_handle_stoploss_on_exchange_trailing_error(
             'stopPrice': '0.1'
         }
     }
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=3,
+            order_id='abcd',
+        )
+    )
     mocker.patch(f'{EXMS}.cancel_stoploss_order',
                  side_effect=InvalidOrderException())
     mocker.patch(f'{EXMS}.fetch_stoploss_order',
@@ -1807,6 +1812,8 @@ def test_handle_stoploss_on_exchange_trailing_error(
 
     # Still try to create order
     assert stoploss.call_count == 1
+    # TODO: Is this actually correct ? This will create a new order every time,
+    assert len(trade.open_sl_orders) == 2
 
     # Fail creating stoploss order
     trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
@@ -1814,7 +1821,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     cancel_mock = mocker.patch(f'{EXMS}.cancel_stoploss_order')
     mocker.patch(f'{EXMS}.create_stoploss', side_effect=ExchangeError())
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
-    assert cancel_mock.call_count == 1
+    assert cancel_mock.call_count == 2
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/USDT\..*", caplog)
 
 
