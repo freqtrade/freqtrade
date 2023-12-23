@@ -1345,11 +1345,11 @@ def test_handle_stoploss_on_exchange_partial(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_order_id = None
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
-    assert trade.stoploss_order_id == "101"
+    assert trade.has_open_sl_orders is True
+    assert trade.open_sl_orders[-1].order_id == "101"
     assert trade.amount == 30
     stop_order_dict.update({'id': "102"})
     # Stoploss on exchange is cancelled on exchange, but filled partially.
@@ -1369,7 +1369,7 @@ def test_handle_stoploss_on_exchange_partial(
     # Stoploss filled partially ...
     assert trade.amount == 15
 
-    assert trade.stoploss_order_id == "102"
+    assert trade.open_sl_orders[-1].order_id == "102"
 
 
 @pytest.mark.parametrize("is_short", [False, True])
