@@ -512,7 +512,7 @@ class LocalTrade:
         return [o for o in self.orders if o.ft_is_open and o.ft_order_side != 'stoploss']
 
     @property
-    def has_open_orders(self) -> int:
+    def has_open_orders(self) -> bool:
         """
         True if there are open orders for this trade excluding stoploss orders
         """
@@ -533,7 +533,7 @@ class LocalTrade:
         ]
 
     @property
-    def has_open_sl_orders(self) -> int:
+    def has_open_sl_orders(self) -> bool:
         """
         True if there are open stoploss orders for this trade
         """
