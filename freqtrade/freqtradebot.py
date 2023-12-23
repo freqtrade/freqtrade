@@ -1219,7 +1219,7 @@ class FreqtradeBot(LoggingMixin):
         logger.debug('Handling stoploss on exchange %s ...', trade)
 
         stoploss_orders = []
-        for slo in trade.sl_orders:
+        for slo in trade.open_sl_orders:
             stoploss_order = None
             try:
                 # First we check if there is already a stoploss on exchange
