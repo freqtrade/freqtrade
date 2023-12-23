@@ -354,7 +354,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
         rpc._rpc_delete('200')
 
     trades = Trade.session.scalars(select(Trade)).all()
-    trades[2].stoploss_order_id = '102'
     trades[2].orders.append(
         Order(
             ft_order_side='stoploss',
