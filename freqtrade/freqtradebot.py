@@ -1307,12 +1307,13 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         # If all stoploss orderd are canceled for some reason we add it again
-        canceled_sl_orders = [o for o in stoploss_orders if o['status'] in ['canceled', 'cancelled']]
+        canceled_sl_orders = [o for o in stoploss_orders
+                              if o['status'] in ('canceled', 'cancelled')]
         if (
-                    trade.is_open and
-                    len(stoploss_orders) > 0 and
-                    len(stoploss_orders) == len(canceled_sl_orders)
-                ):
+            trade.is_open and
+            len(stoploss_orders) > 0 and
+            len(stoploss_orders) == len(canceled_sl_orders)
+        ):
             if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
                 return False
             else:
