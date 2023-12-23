@@ -1403,11 +1403,11 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_order_id = None
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
-    assert trade.stoploss_order_id == "101"
+    assert trade.has_open_sl_orders is True
+    assert trade.open_sl_orders[-1].order_id == "101"
     assert trade.amount == 30
     stop_order_dict.update({'id': "102"})
     # Stoploss on exchange is open.
@@ -1440,7 +1440,8 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     # Canceled Stoploss filled partially ...
     assert log_has_re('Cancelling current stoploss on exchange.*', caplog)
 
-    assert trade.stoploss_order_id == "102"
+    assert trade.has_open_sl_orders is True
+    assert trade.open_sl_orders[-1].order_id == "102"
     assert trade.amount == 15
 
 
@@ -4027,7 +4028,17 @@ def test_execute_trade_exit_sloe_cancel_exception(
     PairLock.session = MagicMock()
 
     freqtrade.config['dry_run'] = False
-    trade.stoploss_order_id = "abcd"
+    trade.orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id='abcd',
+            status='open',
+        )
+    )
 
     freqtrade.execute_trade_exit(trade=trade, limit=1234,
                                  exit_check=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
