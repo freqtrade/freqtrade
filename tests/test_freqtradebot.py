@@ -4130,11 +4130,11 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     freqtrade.manage_open_orders()
     trade = Trade.session.scalars(select(Trade)).first()
     trades = [trade]
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     freqtrade.exit_positions(trades)
     assert trade
-    assert trade.stoploss_order_id == '123'
+    assert trade.has_open_sl_orders is True
     assert not trade.has_open_orders
 
     # Assuming stoploss on exchange is hit
@@ -4161,7 +4161,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_executed)
 
     freqtrade.exit_positions(trades)
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
     assert trade.is_open is False
     assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 4
