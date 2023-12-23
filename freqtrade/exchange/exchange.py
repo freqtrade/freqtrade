@@ -153,6 +153,8 @@ class Exchange:
         """
         self._api: ccxt.Exchange
         self._api_async: ccxt_pro.Exchange = None
+        self._ws_async: ccxt_pro.Exchange = None
+        self._exchange_ws: Optional[ExchangeWS] = None
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
@@ -231,7 +233,6 @@ class Exchange:
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         self._has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws.enabled"]
-        self._exchange_ws: Optional[ExchangeWS] = None
         if exchange_conf.get("enable_ws", True) and self._has_watch_ohlcv:
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
 
