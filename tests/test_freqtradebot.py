@@ -1866,6 +1866,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
             exit_order,
         ]),
         get_fee=fee,
+        is_cancel_order_result_suitable=MagicMock(return_value=True),
     )
     mocker.patch.multiple(
         EXMS,
@@ -1896,7 +1897,6 @@ def test_handle_stoploss_on_exchange_custom_stop(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_order_id = '100'
     trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
     trade.orders.append(
         Order(
@@ -1908,8 +1908,8 @@ def test_handle_stoploss_on_exchange_custom_stop(
             order_id='100',
         )
     )
-
-    stoploss_order_hanging = MagicMock(return_value={
+    Trade.commit()
+    slo = {
         'id': '100',
         'status': 'open',
         'type': 'stop_loss_limit',
@@ -1918,9 +1918,17 @@ def test_handle_stoploss_on_exchange_custom_stop(
         'info': {
             'stopPrice': '2.0805'
         }
-    })
+    }
+    slo_canceled = deepcopy(slo)
+    slo_canceled.update({'status': 'canceled'})
 
-    mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hanging)
+    def fetch_stoploss_order_mock(order_id, *args, **kwargs):
+        x = deepcopy(slo)
+        x['id'] = order_id
+        return x
+
+    mocker.patch(f'{EXMS}.fetch_stoploss_order', MagicMock(fetch_stoploss_order_mock))
+    mocker.patch(f'{EXMS}.cancel_stoploss_order', return_value=slo_canceled)
 
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
@@ -1939,7 +1947,6 @@ def test_handle_stoploss_on_exchange_custom_stop(
     stoploss_order_mock = MagicMock(return_value={'id': 'so1', 'status': 'open'})
     mocker.patch(f'{EXMS}.cancel_stoploss_order', cancel_order_mock)
     mocker.patch(f'{EXMS}.create_stoploss', stoploss_order_mock)
-    trade.stoploss_order_id = '100'
 
     # stoploss should not be updated as the interval is 60 seconds
     assert freqtrade.handle_trade(trade) is False
@@ -1953,10 +1960,12 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     # setting stoploss_on_exchange_interval to 0 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+    cancel_order_mock.assert_not_called()
+    stoploss_order_mock.assert_not_called()
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
-    cancel_order_mock.assert_called_once_with('100', 'ETH/USDT')
+    cancel_order_mock.assert_called_once_with('13434334', 'ETH/USDT')
     # Long uses modified ask - offset, short modified bid + offset
     stoploss_order_mock.assert_called_once_with(
         amount=pytest.approx(trade.amount),
