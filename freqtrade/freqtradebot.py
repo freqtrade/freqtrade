@@ -1299,7 +1299,7 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def manage_trade_stoploss_orders(self, trade, stoploss_orders):
+    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: Dict):
         """
         Perform required actions acording to existing stoploss orders of trade
         :param trade: Corresponding Trade
@@ -1307,7 +1307,7 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         # If all stoploss orderd are canceled for some reason we add it again
-        canceled_sl_orders = [o for o in stoploss_orders if o.status in ['canceled', 'cancelled']]
+        canceled_sl_orders = [o for o in stoploss_orders if o['status'] in ['canceled', 'cancelled']]
         if (
                     trade.is_open and
                     len(stoploss_orders) > 0 and
