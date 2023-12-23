@@ -9,7 +9,7 @@ from sqlalchemy import select
 from freqtrade.edge import PairInfo
 from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -355,8 +355,18 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
         rpc._rpc_delete('200')
 
     trades = Trade.session.scalars(select(Trade)).all()
-    trades[1].stoploss_order_id = '1234'
-    trades[2].stoploss_order_id = '1234'
+    trades[2].stoploss_order_id = '102'
+    trades[2].orders.append(
+        Order(
+            ft_order_side='stoploss',
+            ft_pair=trades[2].pair,
+            ft_is_open=True,
+            ft_amount=trades[2].amount,
+            ft_price=trades[2].stop_loss,
+            order_id='102',
+            status='open',
+        )
+    )
     assert len(trades) > 2
 
     res = rpc._rpc_delete('1')
@@ -369,7 +379,7 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     cancel_mock.reset_mock()
     stoploss_mock.reset_mock()
 
-    res = rpc._rpc_delete('2')
+    res = rpc._rpc_delete('5')
     assert isinstance(res, dict)
     assert stoploss_mock.call_count == 1
     assert res['cancel_order_count'] == 1
