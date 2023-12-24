@@ -2261,15 +2261,25 @@ class Exchange:
 
             last_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
             if self._exchange_ws:
-                candle_date = int(timeframe_to_prev_date(timeframe).timestamp())
+                candle_date = int(timeframe_to_prev_date(timeframe).timestamp() * 1000)
+                prev_candle_date = int(date_minus_candles(timeframe, 1).timestamp() * 1000)
                 candles = self._exchange_ws.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
-                x = self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
-                if candles and candles[-1][0] > min_date and candle_date < x:
-                    # Usable result, update happened after prior candle end date
-                    logger.info(f"reuse watch result for {pair}, {timeframe}, {x}")
+                half_candle = int(candle_date - (candle_date - prev_candle_date) * 0.5)
+                last_refresh_time = int(self._exchange_ws.klines_last_refresh.get(
+                    (pair, timeframe, candle_type), 0) * 1000)
+
+                if (
+                    candles and candles[-1][0] >= prev_candle_date
+                    and last_refresh_time >= half_candle
+                ):
+                    # Usable result, candle contains the previous candle.
+                    # Also, we check if the last refresh time is no more than half the candle ago.
+                    logger.info(f"reuse watch result for {pair}, {timeframe}, {last_refresh_time}")
 
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
-                logger.info(f"Failed to reuse watch {pair}, {candle_date < x}, {candle_date}, {x}")
+                logger.info(
+                    f"Failed to reuse watch {pair}, {candle_date < last_refresh_time}, "
+                    f"{candle_date}, {last_refresh_time}")
 
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < last_refresh:
