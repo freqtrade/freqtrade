@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock
 import numpy as np
 import pandas as pd
 import pytest
+from xdist.scheduler.loadscope import LoadScopeScheduling
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
@@ -54,6 +55,27 @@ def pytest_configure(config):
     )
     if not config.option.longrun:
         setattr(config.option, 'markexpr', 'not longrun')
+
+
+class FixtureScheduler(LoadScopeScheduling):
+    # Based on the suggestion in
+    # https://github.com/pytest-dev/pytest-xdist/issues/18
+
+    def _split_scope(self, nodeid):
+        if 'exchange_online' in nodeid:
+            try:
+                # Extract exchange ID from nodeid
+                exchange_id = nodeid.split('[')[1].split('-')[0].rstrip(']')
+                return exchange_id
+            except Exception as e:
+                print(e)
+                pass
+
+        return nodeid
+
+
+def pytest_xdist_make_scheduler(config, log):
+    return FixtureScheduler(config, log)
 
 
 def log_has(line, logs):
