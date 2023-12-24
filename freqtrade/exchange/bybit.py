@@ -33,6 +33,7 @@ class Bybit(Exchange):
         "ohlcv_candle_limit": 1000,
         "ohlcv_has_history": True,
         "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
+        "ws.enabled": True,
     }
     _ft_has_futures: Dict = {
         "ohlcv_has_history": True,
