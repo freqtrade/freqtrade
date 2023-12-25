@@ -2,8 +2,8 @@ import numpy as np
 from joblib import Parallel
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier, _fit_estimator
-from sklearn.utils.fixes import delayed
 from sklearn.utils.multiclass import check_classification_targets
+from sklearn.utils.parallel import delayed
 from sklearn.utils.validation import has_fit_parameter
 
 from freqtrade.exceptions import OperationalException
