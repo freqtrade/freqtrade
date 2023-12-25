@@ -904,7 +904,7 @@ class FreqtradeBot(LoggingMixin):
         # First cancelling stoploss on exchange ...
         if trade.stoploss_order_id:
             try:
-                logger.info(f"Canceling stoploss on exchange for {trade}")
+                logger.info(f"Cancelling stoploss on exchange for {trade}")
                 co = self.exchange.cancel_stoploss_order_with_result(
                     trade.stoploss_order_id, trade.pair, trade.amount)
                 self.update_trade_state(trade, trade.stoploss_order_id, co, stoploss_order=True)
