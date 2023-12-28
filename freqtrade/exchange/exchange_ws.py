@@ -29,6 +29,7 @@ class ExchangeWS:
         self.klines_last_request: Dict[PairWithTimeframe, float] = {}
         self._thread = Thread(name="ccxt_ws", target=self._start_forever)
         self._thread.start()
+        self.__cleanup_called = False
 
     def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
@@ -41,11 +42,21 @@ class ExchangeWS:
     def cleanup(self) -> None:
         logger.debug("Cleanup called - stopping")
         self._klines_watching.clear()
+        for task in self._background_tasks:
+            task.cancel()
         if hasattr(self, '_loop'):
+            asyncio.run_coroutine_threadsafe(self._cleanup_async(), loop=self._loop)
+            while not self.__cleanup_called:
+                time.sleep(0.1)
+
             self._loop.call_soon_threadsafe(self._loop.stop)
 
         self._thread.join()
         logger.debug("Stopped")
+
+    async def _cleanup_async(self) -> None:
+        await self.ccxt_object.close()
+        self.__cleanup_called = True
 
     def cleanup_expired(self) -> None:
         """
