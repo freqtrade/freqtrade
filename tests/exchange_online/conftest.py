@@ -425,11 +425,13 @@ def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
     if exchange_mode == "spot":
         exchange, name = get_exchange(request.param, exchange_conf)
         pair = EXCHANGES[request.param]["pair"]
-    else:
+    elif EXCHANGES[request.param].get("futures"):
         exchange, name = get_futures_exchange(
             request.param, exchange_conf, class_mocker=class_mocker
         )
         pair = EXCHANGES[request.param]["futures_pair"]
+    else:
+        pytest.skip("Exchange does not support futures.")
 
     if not exchange._has_watch_ohlcv:
         pytest.skip("Exchange does not support watch_ohlcv.")
