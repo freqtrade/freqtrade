@@ -768,13 +768,13 @@ This callback is **not** called when there is an open order (either buy or sell)
 
 Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
 
-Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applxying leverage.
+Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.
 
 ### Increase position
 
-The strategy is expected to return a positive stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional entry order should be made (position is increased -> buy order for long trades, sell order for short trades).
+The strategy is expected to return a positive **stake_amount** (in stake currency) between `min_stake` and `max_stake` if and when an additional entry order should be made (position is increased -> buy order for long trades, sell order for short trades).
 
-If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored. 
+If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
 `max_entry_position_adjustment` property is used to limit the number of additional entries per trade (on top of the first entry order) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment entries.
 
 Additional entries are ignored once you have reached the maximum amount of extra entries that you have set on `max_entry_position_adjustment`, but the callback is called anyway looking for partial exits.
@@ -782,8 +782,8 @@ Additional entries are ignored once you have reached the maximum amount of extra
 ### Decrease position
 
 The strategy is expected to return a negative stake_amount (in stake currency) for a partial exit.
-Returning `-trade.stake_amount` results in a full exit.
-Returning a value more than `-trade.stake_amount` (so remaining stake_amount would become negative) will result in the bot ignoring the signal.
+Returning the full owned stake at that point (based on the current price) (`-(trade.amount / trade.leverage) * current_exit_rate`) results in a full exit.  
+Returning a value more than the above (so remaining stake_amount would become negative) will result in the bot ignoring the signal.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
