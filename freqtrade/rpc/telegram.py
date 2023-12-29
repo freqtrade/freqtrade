@@ -359,15 +359,15 @@ class Telegram(RPCHandler):
                                 if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                                 else "")
 
-        # Check if all sell properties are available.
+        # Check if all exit properties are available.
         # This might not be the case if the message origin is triggered by /forceexit
+        msg['profit_extra'] = ''
         if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
             msg['profit_extra'] = f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}"
-        else:
-            msg['profit_extra'] = ''
+
         msg['profit_extra'] = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
             f"{msg['profit_extra']})")
