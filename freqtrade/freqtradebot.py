@@ -1824,6 +1824,8 @@ class FreqtradeBot(LoggingMixin):
             'fiat_currency': self.config.get('fiat_display_currency'),
             'sub_trade': sub_trade,
             'cumulative_profit': trade.realized_profit,
+            'final_profit_ratio': trade.close_profit if not trade.is_open else None,
+            'is_final_exit': trade.is_open is False,
         }
 
         # Send the message

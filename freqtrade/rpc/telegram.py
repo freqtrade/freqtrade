@@ -373,21 +373,29 @@ class Telegram(RPCHandler):
             f"{msg['profit_extra']})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
+        is_final_exit = msg.get('is_final_exit', False)
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
         profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
-        if is_sub_profit and is_sub_trade:
+        if (is_sub_profit and is_sub_trade) or is_final_exit:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
                 cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
-            exit_wording = f"Partially {exit_wording.lower()}"
-            cp_extra = (
-                f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} "
-                f"{msg['stake_currency']}{cp_extra}`)\n"
-            )
+            if is_final_exit:
+                profit_prefix = 'Sub '
+                cp_extra = (
+                    f"*Final Profit:* `{msg['final_profit_ratio']:.2%} "
+                    f"({msg['cumulative_profit']:.8f} {msg['stake_currency']}{cp_extra})`\n"
+                )
+            else:
+                exit_wording = f"Partially {exit_wording.lower()}"
+                cp_extra = (
+                    f"*Cumulative Profit:* `({msg['cumulative_profit']:.8f} "
+                    f"{msg['stake_currency']}{cp_extra})`\n"
+                )
 
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
