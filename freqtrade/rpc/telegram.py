@@ -373,9 +373,9 @@ class Telegram(RPCHandler):
             f"{msg['profit_extra']})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
-        is_final_exit = msg.get('is_final_exit', False)
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
+        is_final_exit = msg.get('is_final_exit', False) and is_sub_profit
         profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
