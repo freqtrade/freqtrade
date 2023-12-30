@@ -33,8 +33,8 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from freqtrade.rpc.rpc_types import (RPCBuyMsg, RPCCancelMsg, RPCProtectionMsg, RPCSellCancelMsg,
-                                     RPCSellMsg)
+from freqtrade.rpc.rpc_types import (ProfitLossStr, RPCCancelMsg, RPCEntryMsg, RPCExitCancelMsg,
+                                     RPCExitMsg, RPCProtectionMsg)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -580,7 +580,8 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
-            stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
+            stake_amount = self.wallets.get_trade_stake_amount(
+                pair, self.config['max_open_trades'], self.edge)
 
             bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
@@ -903,7 +904,7 @@ class FreqtradeBot(LoggingMixin):
         # First cancelling stoploss on exchange ...
         if trade.stoploss_order_id:
             try:
-                logger.info(f"Canceling stoploss on exchange for {trade}")
+                logger.info(f"Cancelling stoploss on exchange for {trade}")
                 co = self.exchange.cancel_stoploss_order_with_result(
                     trade.stoploss_order_id, trade.pair, trade.amount)
                 self.update_trade_state(trade, trade.stoploss_order_id, co, stoploss_order=True)
@@ -1014,7 +1015,7 @@ class FreqtradeBot(LoggingMixin):
             current_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=False)
 
-        msg: RPCBuyMsg = {
+        msg: RPCEntryMsg = {
             'trade_id': trade.id,
             'type': RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY,
             'buy_tag': trade.enter_tag,
@@ -1791,9 +1792,9 @@ class FreqtradeBot(LoggingMixin):
             order_rate = trade.safe_close_rate
             profit = trade.calculate_profit(rate=order_rate)
             amount = trade.amount
-        gain = "profit" if profit.profit_ratio > 0 else "loss"
+        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
 
-        msg: RPCSellMsg = {
+        msg: RPCExitMsg = {
             'type': (RPCMessageType.EXIT_FILL if fill
                      else RPCMessageType.EXIT),
             'trade_id': trade.id,
@@ -1845,9 +1846,9 @@ class FreqtradeBot(LoggingMixin):
         profit = trade.calculate_profit(rate=profit_rate)
         current_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=False)
-        gain = "profit" if profit.profit_ratio > 0 else "loss"
+        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
 
-        msg: RPCSellCancelMsg = {
+        msg: RPCExitCancelMsg = {
             'type': RPCMessageType.EXIT_CANCEL,
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),

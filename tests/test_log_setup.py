@@ -63,9 +63,9 @@ def test_set_loggers_syslog():
     setup_logging_pre()
     setup_logging(config)
     assert len(logger.handlers) == 3
-    assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
-    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
-    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
+    assert [x for x in logger.handlers if isinstance(x, logging.handlers.SysLogHandler)]
+    assert [x for x in logger.handlers if isinstance(x, FTStdErrStreamHandler)]
+    assert [x for x in logger.handlers if isinstance(x, FTBufferingHandler)]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
     assert len(logger.handlers) == 3
@@ -86,9 +86,9 @@ def test_set_loggers_Filehandler(tmp_path):
     setup_logging_pre()
     setup_logging(config)
     assert len(logger.handlers) == 3
-    assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
-    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
-    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
+    assert [x for x in logger.handlers if isinstance(x, logging.handlers.RotatingFileHandler)]
+    assert [x for x in logger.handlers if isinstance(x, FTStdErrStreamHandler)]
+    assert [x for x in logger.handlers if isinstance(x, FTBufferingHandler)]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
     assert len(logger.handlers) == 3
@@ -112,7 +112,7 @@ def test_set_loggers_journald(mocker):
     setup_logging(config)
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
-    assert [x for x in logger.handlers if type(x) == FTStdErrStreamHandler]
+    assert [x for x in logger.handlers if isinstance(x, FTStdErrStreamHandler)]
     # reset handlers to not break pytest
     logger.handlers = orig_handlers
 

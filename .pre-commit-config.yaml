@@ -2,13 +2,14 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pycqa/flake8
-    rev: "6.0.0"
+    rev: "6.1.0"
     hooks:
       - id: flake8
+        additional_dependencies: [Flake8-pyproject]
         # stages: [push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.7.0"
+    rev: "v1.8.0"
     hooks:
       - id: mypy
         exclude: build_helpers
@@ -22,7 +23,7 @@ repos:
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort
-    rev: "5.12.0"
+    rev: "5.13.2"
     hooks:
       - id: isort
         name: isort (python)
@@ -30,12 +31,12 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.1.1'
+    rev: 'v0.1.9'
     hooks:
       - id: ruff
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: end-of-file-fixer
         exclude: |

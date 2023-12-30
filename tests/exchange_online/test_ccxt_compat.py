@@ -218,9 +218,6 @@ class TestCCXTExchange:
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exc, exchangename = exchange
-        if exchangename in ('bittrex'):
-            # For some weired reason, this test returns random lengths for bittrex.
-            pytest.skip("Exchange doesn't provide stable ohlcv history")
 
         if not exc._ft_has['ohlcv_has_history']:
             pytest.skip("Exchange does not support candle history")

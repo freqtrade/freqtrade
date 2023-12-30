@@ -1,0 +1,44 @@
+name: Pre-commit auto-update
+
+on:
+  # every day at midnight
+  schedule:
+    - cron: "0 3 * * 2"
+  # on demand
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run auto-update
+        run: pre-commit autoupdate
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          add-paths: .pre-commit-config.yaml
+          labels: |
+            Tech maintenance
+          branch: update/pre-commit-hooks
+          title: Update pre-commit hooks
+          commit-message: "chore: update pre-commit hooks"
+          committer: Freqtrade Bot <noreply@github.com>
+          body: Update versions of pre-commit hooks to latest version.
+          delete-branch: true

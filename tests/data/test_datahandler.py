@@ -513,11 +513,11 @@ def test_gethandlerclass():
 
 def test_get_datahandler(testdatadir):
     dh = get_datahandler(testdatadir, 'json')
-    assert type(dh) == JsonDataHandler
+    assert isinstance(dh, JsonDataHandler)
     dh = get_datahandler(testdatadir, 'jsongz')
-    assert type(dh) == JsonGzDataHandler
+    assert isinstance(dh, JsonGzDataHandler)
     dh1 = get_datahandler(testdatadir, 'jsongz', dh)
     assert id(dh1) == id(dh)
 
     dh = get_datahandler(testdatadir, 'hdf5')
-    assert type(dh) == HDF5DataHandler
+    assert isinstance(dh, HDF5DataHandler)

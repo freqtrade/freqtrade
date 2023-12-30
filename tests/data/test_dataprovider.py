@@ -500,3 +500,89 @@ def test_dp__add_external_df(default_conf_usdt):
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert isinstance(res[1], int)
     assert res[1] == 0
+
+
+def test_dp_get_required_startup(default_conf_usdt):
+    timeframe = '1h'
+    default_conf_usdt["timeframe"] = timeframe
+    dp = DataProvider(default_conf_usdt, None)
+
+    # No FreqAI config
+    assert dp.get_required_startup('5m', False) == 0
+    assert dp.get_required_startup('1h', False) == 0
+    assert dp.get_required_startup('1d', False) == 0
+    assert dp.get_required_startup('1d', True) == 0
+    assert dp.get_required_startup('1d') == 0
+
+    dp._config['startup_candle_count'] = 20
+    assert dp.get_required_startup('5m', False) == 20
+    assert dp.get_required_startup('5m', True) == 20
+    assert dp.get_required_startup('1h', False) == 20
+    assert dp.get_required_startup('1h') == 20
+
+    # With freqAI config
+
+    dp._config['freqai'] = {
+        'enabled': True,
+        'train_period_days': 20,
+        'feature_parameters': {
+            'indicator_periods_candles': [
+                5,
+                20,
+            ]
+        }
+    }
+    assert dp.get_required_startup('5m', False) == 20
+    assert dp.get_required_startup('5m', True) == 5780
+
+    assert dp.get_required_startup('1h', False) == 20
+    assert dp.get_required_startup('1h', True) == 500
+
+    assert dp.get_required_startup('1d', False) == 20
+    assert dp.get_required_startup('1d', True) == 40
+    assert dp.get_required_startup('1d') == 40
+
+    # FreqAI kindof ignores startup_candle_count if it's below indicator_periods_candles
+    dp._config['startup_candle_count'] = 0
+    assert dp.get_required_startup('5m', False) == 20
+    assert dp.get_required_startup('5m', True) == 5780
+
+    assert dp.get_required_startup('1h', False) == 20
+    assert dp.get_required_startup('1h', True) == 500
+
+    assert dp.get_required_startup('1d', False) == 20
+    assert dp.get_required_startup('1d', True) == 40
+    assert dp.get_required_startup('1d') == 40
+
+    dp._config['freqai']['feature_parameters']['indicator_periods_candles'][1] = 50
+    assert dp.get_required_startup('5m', False) == 50
+    assert dp.get_required_startup('5m', True) == 5810
+
+    assert dp.get_required_startup('1h', False) == 50
+    assert dp.get_required_startup('1h', True) == 530
+
+    assert dp.get_required_startup('1d', False) == 50
+    assert dp.get_required_startup('1d', True) == 70
+    assert dp.get_required_startup('1d') == 70
+
+    # scenario from issue https://github.com/freqtrade/freqtrade/issues/9432
+    dp._config['freqai'] = {
+        'enabled': True,
+        'train_period_days': 180,
+        'feature_parameters': {
+            'indicator_periods_candles': [
+                10,
+                20,
+            ]
+        }
+    }
+    dp._config['startup_candle_count'] = 40
+    assert dp.get_required_startup('5m', False) == 40
+    assert dp.get_required_startup('5m', True) == 51880
+
+    assert dp.get_required_startup('1h', False) == 40
+    assert dp.get_required_startup('1h', True) == 4360
+
+    assert dp.get_required_startup('1d', False) == 40
+    assert dp.get_required_startup('1d', True) == 220
+    assert dp.get_required_startup('1d') == 220

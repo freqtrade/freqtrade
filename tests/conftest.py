@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock
 import numpy as np
 import pandas as pd
 import pytest
+from xdist.scheduler.loadscope import LoadScopeScheduling
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
@@ -56,6 +57,27 @@ def pytest_configure(config):
         setattr(config.option, 'markexpr', 'not longrun')
 
 
+class FixtureScheduler(LoadScopeScheduling):
+    # Based on the suggestion in
+    # https://github.com/pytest-dev/pytest-xdist/issues/18
+
+    def _split_scope(self, nodeid):
+        if 'exchange_online' in nodeid:
+            try:
+                # Extract exchange ID from nodeid
+                exchange_id = nodeid.split('[')[1].split('-')[0].rstrip(']')
+                return exchange_id
+            except Exception as e:
+                print(e)
+                pass
+
+        return nodeid
+
+
+def pytest_xdist_make_scheduler(config, log):
+    return FixtureScheduler(config, log)
+
+
 def log_has(line, logs):
     """Check if line is found on some caplog's message."""
     return any(line == message for message in logs.messages)
@@ -87,11 +109,15 @@ def get_args(args):
 
 def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     np.random.seed(42)
-    tf_mins = timeframe_to_minutes(timeframe)
 
     base = np.random.normal(20, 2, size=size)
-
-    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+    if timeframe == '1M':
+        date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
+    elif timeframe == '1w':
+        date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
+    else:
+        tf_mins = timeframe_to_minutes(timeframe)
+        date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,
