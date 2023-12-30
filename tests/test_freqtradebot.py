@@ -3777,6 +3777,8 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'sub_trade': False,
         'cumulative_profit': 0.0,
         'stake_amount': pytest.approx(60),
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -3842,6 +3844,8 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'sub_trade': False,
         'cumulative_profit': 0.0,
         'stake_amount': pytest.approx(60),
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -3928,6 +3932,8 @@ def test_execute_trade_exit_custom_exit_price(
         'sub_trade': False,
         'cumulative_profit': 0.0,
         'stake_amount': pytest.approx(60),
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -4001,6 +4007,8 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'sub_trade': False,
         'cumulative_profit': 0.0,
         'stake_amount': pytest.approx(60),
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -4267,7 +4275,8 @@ def test_execute_trade_exit_market_order(
         'sub_trade': False,
         'cumulative_profit': 0.0,
         'stake_amount': pytest.approx(60),
-
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 

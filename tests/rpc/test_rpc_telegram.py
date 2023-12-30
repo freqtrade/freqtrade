@@ -1166,6 +1166,8 @@ async def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
         'stake_amount': 0.0009999999999054,
         'sub_trade': False,
         'cumulative_profit': 0.0,
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -1239,6 +1241,8 @@ async def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee
         'stake_amount': 0.0009999999999054,
         'sub_trade': False,
         'cumulative_profit': 0.0,
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == last_msg
 
 
@@ -1302,6 +1306,8 @@ async def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -
         'stake_amount': 0.0009999999999054,
         'sub_trade': False,
         'cumulative_profit': 0.0,
+        'is_final_exit': False,
+        'final_profit_ratio': None,
     } == msg
 
 
@@ -2220,7 +2226,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n'
             '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
+            '*Cumulative Profit:* `(-0.15746268 ETH / -24.812 USD)`\n'
             '*Enter Tag:* `buy_signal1`\n'
             '*Exit Reason:* `stop_loss`\n'
             '*Direction:* `Long`\n'
