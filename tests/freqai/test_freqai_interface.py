@@ -20,8 +20,8 @@ from tests.freqai.conftest import (get_patched_freqai_strategy, is_mac, make_rl_
                                    mock_pytorch_mlp_model_training_parameters)
 
 
-def is_py11() -> bool:
-    return sys.version_info >= (3, 11)
+def is_py12() -> bool:
+    return sys.version_info >= (3, 12)
 
 
 def is_arm() -> bool:
@@ -523,8 +523,8 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-    if is_py11():
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+    if is_py12():
+        pytest.skip("Reinforcement learning currently not available on python 3.12.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})
