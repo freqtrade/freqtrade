@@ -145,12 +145,13 @@ class Backtesting:
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        if self.config.get('freqai', {}).get('enabled', False):
-            # For FreqAI, increase the required_startup to includes the training data
-            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
-
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
+
+        if self.config.get('freqai', {}).get('enabled', False):
+            # For FreqAI, increase the required_startup to includes the training data
+            # This value should NOT be written to startup_candle_count
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
@@ -239,7 +240,7 @@ class Backtesting:
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.config['startup_candle_count'],
+            startup_candles=self.required_startup,
             fail_without_data=True,
             data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
