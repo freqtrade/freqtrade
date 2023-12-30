@@ -78,6 +78,7 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
     :return: decorated function
     """
 
+    @wraps(command_handler)
     async def wrapper(self, *args, **kwargs):
         """ Decorator logic """
         update = kwargs.get('update') or args[0]
