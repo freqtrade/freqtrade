@@ -189,7 +189,7 @@ def _extract_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
             'backtest_start_ts': v.get('backtest_start_ts', None),
             'backtest_end_ts': v.get('backtest_end_ts', None),
             'timeframe': v.get('timeframe', None),
-            'timeframe_details': v.get('timeframe_details', None),
+            'timeframe_detail': v.get('timeframe_detail', None),
         } for s, v in metadata.items()
     ]
 
