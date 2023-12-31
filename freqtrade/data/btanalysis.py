@@ -175,10 +175,8 @@ def _get_backtest_files(dirname: Path) -> List[Path]:
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
-def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
-    """
-    Get backtest result read from metadata file
-    """
+def _extract_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    metadata = load_backtest_metadata(filename)
     return [
         {
             'filename': filename.stem,
@@ -186,8 +184,15 @@ def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
             'run_id': v['run_id'],
             'notes': v.get('notes', ''),
             'backtest_start_time': v['backtest_start_time'],
-        } for s, v in load_backtest_metadata(filename).items()
+        } for s, v in metadata.items()
     ]
+
+
+def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    """
+    Get backtest result read from metadata file
+    """
+    return _extract_backtest_result(filename)
 
 
 def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
@@ -195,16 +200,9 @@ def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     Get list of backtest results read from metadata files
     """
     return [
-        {
-            'filename': filename.stem,
-            'strategy': s,
-            'run_id': v['run_id'],
-            'notes': v.get('notes', ''),
-            'backtest_start_time': v['backtest_start_time'],
-        }
+        result
         for filename in _get_backtest_files(dirname)
-        for s, v in load_backtest_metadata(filename).items()
-        if v
+        for result in _extract_backtest_result(filename)
     ]
 
 
