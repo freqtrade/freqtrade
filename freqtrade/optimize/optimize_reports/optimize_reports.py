@@ -561,6 +561,10 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         metadata[strategy] = {
             'run_id': content['run_id'],
             'backtest_start_time': content['backtest_start_time'],
+            'timeframe': content['config']['timeframe'],
+            'timeframe_detail': content['config'].get('timeframe_detail', None),
+            'backtest_start_ts': int(min_date.timestamp()),
+            'backtest_end_ts': int(max_date.timestamp()),
         }
         result['strategy'][strategy] = strat_stats
 

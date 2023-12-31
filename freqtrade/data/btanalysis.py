@@ -183,7 +183,13 @@ def _extract_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
             'strategy': s,
             'run_id': v['run_id'],
             'notes': v.get('notes', ''),
+            # Backtest "run" time
             'backtest_start_time': v['backtest_start_time'],
+            # Backtest timerange
+            'backtest_start_ts': v.get('backtest_start_ts', None),
+            'backtest_end_ts': v.get('backtest_end_ts', None),
+            'timeframe': v.get('timeframe', None),
+            'timeframe_details': v.get('timeframe_details', None),
         } for s, v in metadata.items()
     ]
 
