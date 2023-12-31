@@ -15,6 +15,7 @@ STOPLOSS_LIMIT_ORDERTYPE = 'stop-loss-limit'
 
 @pytest.mark.parametrize("order_type,time_in_force,expected_params", [
     ('limit', 'ioc', {'timeInForce': 'IOC', 'trading_agreement': 'agree'}),
+    ('limit', 'PO', {'postOnly': True, 'trading_agreement': 'agree'}),
     ('market', None, {'trading_agreement': 'agree'})
 ])
 def test_kraken_trading_agreement(default_conf, mocker, order_type, time_in_force, expected_params):
