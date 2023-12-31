@@ -183,8 +183,8 @@ def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
         {
             'filename': filename.stem,
             'strategy': s,
-            'notes': v.get('notes', ''),
             'run_id': v['run_id'],
+            'notes': v.get('notes', ''),
             'backtest_start_time': v['backtest_start_time'],
         } for s, v in load_backtest_metadata(filename).items()
     ]
