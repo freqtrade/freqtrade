@@ -127,6 +127,8 @@ Freqtrade will not attempt to change these settings.
 
 ## Kraken
 
+Kraken supports [time_in_force](configuration.md#understand-order_time_in_force) with settings "GTC" (good till cancelled), "IOC" (immediate-or-cancel) and "PO" (Post only) settings.
+
 !!! Tip "Stoploss on Exchange"
     Kraken supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
     You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
