@@ -134,3 +134,4 @@ def test_freqai_backtest_consistent_timerange(mocker, freqai_conf):
 
     gbs.call_args[1]['min_date'] == datetime(2021, 11, 20, 0, 0, tzinfo=timezone.utc)
     gbs.call_args[1]['max_date'] == datetime(2021, 11, 21, 0, 0, tzinfo=timezone.utc)
+    Backtesting.cleanup()
