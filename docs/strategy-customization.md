@@ -367,6 +367,11 @@ class AwesomeStrategy(IStrategy):
     }
 ```
 
+??? info "Orders that don't fill immediately"
+    `minimal_roi` will take the `trade.open_date` as reference, which is the time the trade was initialized / the first order for this trade was placed.  
+    This will also hold true for limit orders that don't fill immediately  (usually in combination with "off-spot" prices through `custom_entry_price()`), as well as for cases where the initial order is replaced through `adjust_entry_price()`.
+    The time used will still be from the initial `trade.open_date` (when the initial order was first placed), not from the newly placed order date.
+
 ### Stoploss
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
