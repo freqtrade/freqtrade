@@ -1468,7 +1468,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     )
     mocker.patch.multiple(
         EXMS,
-        fetch_stoploss_order=MagicMock(return_value={'status': 'canceled', 'id': 100}),
+        fetch_stoploss_order=MagicMock(return_value={'status': 'canceled', 'id': '100'}),
         create_stoploss=MagicMock(side_effect=ExchangeError()),
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -1478,7 +1478,6 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     trade.is_open = True
-    trade.stoploss_order_id = "100"
     trade.orders.append(
         Order(
             ft_order_side='stoploss',
@@ -1493,8 +1492,8 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
     assert trade
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert log_has_re(r'Stoploss order was cancelled, but unable to recreate one.*', caplog)
-    assert trade.stoploss_order_id is None
+    assert log_has_re(r'All Stoploss orders are cancelled, but unable to recreate one\.', caplog)
+    assert trade.has_open_sl_orders is False
     assert trade.is_open is True
 
 
