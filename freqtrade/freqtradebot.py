@@ -1229,8 +1229,6 @@ class FreqtradeBot(LoggingMixin):
             # We check if stoploss order is fulfilled
             if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
                 trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-                self.update_trade_state(trade, slo.order_id, stoploss_order,
-                                        stoploss_order=True)
                 self._notify_exit(trade, "stoploss", True)
                 self.handle_protections(trade.pair, trade.trade_direction)
                 return True
