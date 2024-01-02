@@ -1160,9 +1160,9 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     freqtrade.enter_positions()
     trade = Trade.session.scalars(select(Trade)).first()
-    trade.is_short = is_short
-    trade.is_open = True
-    trade.stoploss_order_id = None
+    assert trade.is_short == is_short
+    assert trade.is_open
+    assert trade.stoploss_order_id is None
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
@@ -1170,34 +1170,21 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     # Second case: when stoploss is set but it is not yet hit
     # should do nothing and return false
-    stop_order_dict.update({'id': "102"})
     trade.is_open = True
-    trade.stoploss_order_id = "102"
-    trade.orders.append(
-        Order(
-            ft_order_side='stoploss',
-            ft_pair=trade.pair,
-            ft_is_open=True,
-            ft_amount=trade.amount,
-            ft_price=trade.stop_loss,
-            order_id='102',
-            status='open',
-        )
-    )
 
-    hanging_stoploss_order = MagicMock(return_value={'status': 'open'})
+    hanging_stoploss_order = MagicMock(return_value={'id': '13434334', 'status': 'open'})
     mocker.patch(f'{EXMS}.fetch_stoploss_order', hanging_stoploss_order)
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert trade.stoploss_order_id == "102"
+    hanging_stoploss_order.assert_called_once_with('13434334', trade.pair)
+    assert trade.stoploss_order_id == "13434334"
 
     # Third case: when stoploss was set but it was canceled for some reason
     # should set a stoploss immediately and return False
     caplog.clear()
     trade.is_open = True
-    trade.stoploss_order_id = "102"
 
-    canceled_stoploss_order = MagicMock(return_value={'id': '103_1', 'status': 'canceled'})
+    canceled_stoploss_order = MagicMock(return_value={'id': '13434334', 'status': 'canceled'})
     mocker.patch(f'{EXMS}.fetch_stoploss_order', canceled_stoploss_order)
     stoploss.reset_mock()
     amount_before = trade.amount
@@ -1213,25 +1200,14 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # should unset stoploss_order_id and return true
     # as a trade actually happened
     caplog.clear()
-    freqtrade.enter_positions()
-    stop_order_dict.update({'id': "104"})
+    stop_order_dict.update({'id': "103_1"})
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_order_id = "104"
-    trade.orders.append(Order(
-        ft_order_side='stoploss',
-        order_id='104',
-        ft_pair=trade.pair,
-        ft_is_open=True,
-        ft_amount=trade.amount,
-        ft_price=0.0,
-    ))
-    assert trade
 
     stoploss_order_hit = MagicMock(return_value={
-        'id': "104",
+        'id': "103_1",
         'status': 'closed',
         'type': 'stop_loss_limit',
         'price': 3,
