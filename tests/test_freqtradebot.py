@@ -1249,7 +1249,40 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 0
 
-    # Seventh case: emergency exit triggered
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_stoploss_on_exchange_emergency(mocker, default_conf_usdt, fee, is_short,
+                                               limit_order) -> None:
+    stop_order_dict = {'id': "13434334"}
+    stoploss = MagicMock(return_value=stop_order_dict)
+    enter_order = limit_order[entry_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=MagicMock(side_effect=[
+            enter_order,
+            exit_order,
+        ]),
+        get_fee=fee,
+        create_stoploss=stoploss
+    )
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+
+    freqtrade.enter_positions()
+    trade = Trade.session.scalars(select(Trade)).first()
+    assert trade.is_short == is_short
+    assert trade.is_open
+    assert trade.stoploss_order_id is None
+
+    # emergency exit triggered
     # Trailing stop should not act anymore
     stoploss_order_cancelled = MagicMock(side_effect=[{
         'id': "107",
@@ -1263,7 +1296,6 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'info': {'stopPrice': 22},
     }])
     trade.stoploss_order_id = "107"
-    trade.is_open = True
     trade.stoploss_last_update = dt_now() - timedelta(hours=1)
     trade.stop_loss = 24
     trade.exit_reason = None
