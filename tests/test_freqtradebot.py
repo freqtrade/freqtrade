@@ -1279,7 +1279,7 @@ def test_handle_stoploss_on_exchange_emergency(mocker, default_conf_usdt, fee, i
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     assert trade.is_open
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     # emergency exit triggered
     # Trailing stop should not act anymore
@@ -1294,7 +1294,6 @@ def test_handle_stoploss_on_exchange_emergency(mocker, default_conf_usdt, fee, i
         'remaining': enter_order['amount'],
         'info': {'stopPrice': 22},
     }])
-    trade.stoploss_order_id = "107"
     trade.stoploss_last_update = dt_now() - timedelta(hours=1)
     trade.stop_loss = 24
     trade.exit_reason = None
@@ -1311,14 +1310,14 @@ def test_handle_stoploss_on_exchange_emergency(mocker, default_conf_usdt, fee, i
     )
     freqtrade.config['trailing_stop'] = True
     stoploss = MagicMock(side_effect=InvalidOrderException())
-
+    assert trade.has_open_sl_orders is True
     Trade.commit()
     mocker.patch(f'{EXMS}.cancel_stoploss_order_with_result',
                  side_effect=InvalidOrderException())
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_cancelled)
     mocker.patch(f'{EXMS}.create_stoploss', stoploss)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
     assert trade.is_open is False
     assert trade.exit_reason == str(ExitType.EMERGENCY_EXIT)
 
