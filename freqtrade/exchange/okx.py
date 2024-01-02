@@ -228,7 +228,7 @@ class Okx(Exchange):
                 f'StoplossOrder not found (pair: {pair} id: {order_id}).')
 
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
-        if order['type'] == 'stop':
+        if order.get('type', '') == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
