@@ -1161,11 +1161,11 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     assert trade.is_open
-    assert trade.stoploss_order_id is None
+    assert trade.has_open_sl_orders is False
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
-    assert trade.stoploss_order_id == "13434334"
+    assert trade.open_sl_orders[-1].order_id == "13434334"
 
     # Second case: when stoploss is set but it is not yet hit
     # should do nothing and return false
@@ -1176,7 +1176,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     hanging_stoploss_order.assert_called_once_with('13434334', trade.pair)
-    assert trade.stoploss_order_id == "13434334"
+    assert len(trade.open_sl_orders) == 1
+    assert trade.open_sl_orders[-1].order_id == "13434334"
 
     # Third case: when stoploss was set but it was canceled for some reason
     # should set a stoploss immediately and return False
@@ -1192,7 +1193,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
-    assert trade.stoploss_order_id == "103_1"
+    assert len(trade.open_sl_orders) == 1
+    assert trade.open_sl_orders[-1].order_id == "103_1"
     assert trade.amount == amount_before
 
     # Fourth case: when stoploss is set and it is hit
@@ -1218,7 +1220,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
     assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
-    assert trade.stoploss_order_id is None
+    assert len(trade.open_sl_orders) == 0
     assert trade.is_open is False
     caplog.clear()
 
@@ -1226,26 +1228,27 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_open = True
     freqtrade.handle_stoploss_on_exchange(trade)
     assert log_has('Unable to place a stoploss order on exchange.', caplog)
-    assert trade.stoploss_order_id is None
+    assert len(trade.open_sl_orders) == 0
 
     # Fifth case: fetch_order returns InvalidOrder
     # It should try to add stoploss order
     stop_order_dict.update({'id': "105"})
-    trade.stoploss_order_id = "105"
     stoploss.reset_mock()
     mocker.patch(f'{EXMS}.fetch_stoploss_order', side_effect=InvalidOrderException())
     mocker.patch(f'{EXMS}.create_stoploss', stoploss)
     freqtrade.handle_stoploss_on_exchange(trade)
+    assert len(trade.open_sl_orders) == 1
     assert stoploss.call_count == 1
 
     # Sixth case: Closed Trade
     # Should not create new order
-    trade.stoploss_order_id = None
     trade.is_open = False
+    trade.open_sl_orders[-1].ft_is_open = False
     stoploss.reset_mock()
     mocker.patch(f'{EXMS}.fetch_order')
     mocker.patch(f'{EXMS}.create_stoploss', stoploss)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.has_open_sl_orders is False
     assert stoploss.call_count == 0
 
 
