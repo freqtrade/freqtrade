@@ -54,7 +54,7 @@ def freqai_conf(default_conf, tmp_path):
                 "backtest_period_days": 10,
                 "live_retrain_hours": 0,
                 "expiration_hours": 1,
-                "identifier": "uniqe-id100",
+                "identifier": "unique-id100",
                 "live_trained_timestamp": 0,
                 "data_kitchen_thread_count": 2,
                 "activate_tensorboard": False,

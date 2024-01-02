@@ -1604,12 +1604,15 @@ def test_create_stoploss_order_insufficient_funds(
 ])
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(
-    mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, hang_price
+    mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, hang_price,
+    time_machine,
 ) -> None:
     # When trailing stoploss is set
     enter_order = limit_order[entry_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
-    stoploss = MagicMock(return_value={'id': 13434334, 'status': 'open'})
+    stoploss = MagicMock(return_value={'id': '13434334', 'status': 'open'})
+    start_dt = dt_now()
+    time_machine.move_to(start_dt, tick=False)
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         EXMS,
@@ -1683,6 +1686,8 @@ def test_handle_stoploss_on_exchange_trailing(
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
+    assert trade.stoploss_order_id == '13434334'
+
     # price jumped 2x
     mocker.patch(
         f'{EXMS}.fetch_ticker',
@@ -1704,16 +1709,15 @@ def test_handle_stoploss_on_exchange_trailing(
     cancel_order_mock.assert_not_called()
     stoploss_order_mock.assert_not_called()
 
+    # Move time by 10s ... so stoploss order should be replaced.
+    time_machine.move_to(start_dt + timedelta(minutes=10), tick=False)
+
     assert freqtrade.handle_trade(trade) is False
     assert trade.stop_loss == stop_price[1]
-    trade.stoploss_order_id = '100'
-
-    # setting stoploss_on_exchange_interval to 0 seconds
-    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
-    cancel_order_mock.assert_called_once_with('100', 'ETH/USDT')
+    cancel_order_mock.assert_called_once_with('13434334', 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
         amount=30,
         pair='ETH/USDT',

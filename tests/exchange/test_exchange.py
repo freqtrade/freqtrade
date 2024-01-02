@@ -3194,7 +3194,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     mocker.patch(f'{mock_prefix}.fetch_stoploss_order', side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co['amount'] == 555
-    assert co == {'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
+    assert co == {'id': '_', 'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
 
     with pytest.raises(InvalidOrderException):
         exc = InvalidOrderException("Did not find order")

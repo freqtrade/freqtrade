@@ -10,7 +10,7 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from functools import partial
+from functools import partial, wraps
 from html import escape
 from itertools import chain
 from math import isnan
@@ -44,6 +44,23 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 
+def safe_async_db(func: Callable[..., Any]):
+    """
+    Decorator to safely handle sessions when switching async context
+    :param func: function to decorate
+    :return: decorated function
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """ Decorator logic """
+        try:
+            return func(*args, **kwargs)
+        finally:
+            Trade.session.remove()
+
+    return wrapper
+
+
 @dataclass
 class TimeunitMappings:
     header: str
@@ -61,6 +78,7 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
     :return: decorated function
     """
 
+    @wraps(command_handler)
     async def wrapper(self, *args, **kwargs):
         """ Decorator logic """
         update = kwargs.get('update') or args[0]
@@ -1150,7 +1168,7 @@ class Telegram(RPCHandler):
             try:
                 loop = asyncio.get_running_loop()
                 # Workaround to avoid nested loops
-                await loop.run_in_executor(None, self._rpc._rpc_force_exit, trade_id)
+                await loop.run_in_executor(None, safe_async_db(self._rpc._rpc_force_exit), trade_id)
             except RPCException as e:
                 await self._send_msg(str(e))
 
@@ -1176,6 +1194,7 @@ class Telegram(RPCHandler):
     async def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
             try:
+                @safe_async_db
                 def _force_enter():
                     self._rpc._rpc_force_entry(pair, price, order_side=order_side)
                 loop = asyncio.get_running_loop()

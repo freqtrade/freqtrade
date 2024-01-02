@@ -80,6 +80,7 @@ skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+addopts = "--dist loadscope"
 
 [tool.mypy]
 ignore_missing_imports = true

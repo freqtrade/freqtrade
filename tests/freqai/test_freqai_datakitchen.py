@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
 
 from freqtrade.configuration import TimeRange
@@ -135,3 +136,63 @@ def test_get_full_model_path(mocker, freqai_conf, model):
 
     model_path = freqai.dk.get_full_models_path(freqai_conf)
     assert model_path.is_dir() is True
+
+
+def test_get_pair_data_for_features_with_prealoaded_data(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    _, base_df = freqai.dd.get_base_and_corr_dataframes(timerange, "LTC/BTC", freqai.dk)
+    df = freqai.dk.get_pair_data_for_features("LTC/BTC", "5m", strategy, base_dataframes=base_df)
+
+    assert df is base_df["5m"]
+    assert not df.empty
+
+
+def test_get_pair_data_for_features_without_preloaded_data(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180115-20180130"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    base_df = {'5m': pd.DataFrame()}
+    df = freqai.dk.get_pair_data_for_features("LTC/BTC", "5m", strategy, base_dataframes=base_df)
+
+    assert df is not base_df["5m"]
+    assert not df.empty
+    assert df.iloc[0]['date'].strftime("%Y-%m-%d %H:%M:%S") == "2018-01-11 23:00:00"
+    assert df.iloc[-1]['date'].strftime("%Y-%m-%d %H:%M:%S") == "2018-01-30 00:00:00"
+
+
+def test_populate_features(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180115-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(timerange, "LTC/BTC", freqai.dk)
+    mocker.patch.object(strategy, 'feature_engineering_expand_all', return_value=base_df["5m"])
+    df = freqai.dk.populate_features(base_df["5m"], "LTC/BTC", strategy,
+                                     base_dataframes=base_df, corr_dataframes=corr_df)
+
+    strategy.feature_engineering_expand_all.assert_called_once()
+    pd.testing.assert_frame_equal(base_df["5m"],
+                                  strategy.feature_engineering_expand_all.call_args[0][0])
+
+    assert df.iloc[0]['date'].strftime("%Y-%m-%d %H:%M:%S") == "2018-01-15 00:00:00"

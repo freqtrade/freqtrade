@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from typing_extensions import TypedDict
 
@@ -26,3 +26,7 @@ class BacktestHistoryEntryType(BacktestMetadataType):
     filename: str
     strategy: str
     notes: str
+    backtest_start_ts: Optional[int]
+    backtest_end_ts: Optional[int]
+    timeframe: Optional[str]
+    timeframe_detail: Optional[str]

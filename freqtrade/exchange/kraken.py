@@ -26,6 +26,7 @@ class Kraken(Exchange):
         "stoploss_on_exchange": True,
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",
+        "order_time_in_force": ["GTC", "IOC", "PO"],
         "ohlcv_candle_limit": 720,
         "ohlcv_has_history": False,
         "trades_pagination": "id",
@@ -187,6 +188,9 @@ class Kraken(Exchange):
         )
         if leverage > 1.0:
             params['leverage'] = round(leverage)
+        if time_in_force == 'PO':
+            params.pop('timeInForce', None)
+            params['postOnly'] = True
         return params
 
     def calculate_funding_fees(
