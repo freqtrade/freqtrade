@@ -322,7 +322,7 @@ class Exchange:
     def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """ Log exchange responses """
         if self.log_responses:
-            add_info_str = "" if add_info is None else f" {add_info}:"
+            add_info_str = "" if add_info is None else f" {add_info}: "
             logger.info(f"API {endpoint}: {add_info_str}{response}")
 
     def ohlcv_candle_limit(
