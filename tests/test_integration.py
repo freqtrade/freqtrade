@@ -11,8 +11,7 @@ from freqtrade.rpc.rpc import RPC
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has_re, patch_get_signal
 
 
-def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
-                                                     limit_buy_order, mocker) -> None:
+def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, mocker) -> None:
     """
     Tests workflow of selling stoploss_on_exchange.
     Sells
