@@ -117,7 +117,7 @@ Here we compile some external materials that provide deeper looks into various c
 
 ## Support
 
-You can find support for FreqAI in a variety of places, including the (Freqtrade discord)[https://discord.gg/Jd8JYeWHc4], the dedicated (FreqAI discord)[https://discord.gg/7AMWACmbjT], and in (github issues)[https://github.com/freqtrade/freqtrade/issues].
+You can find support for FreqAI in a variety of places, including the [Freqtrade discord](https://discord.gg/Jd8JYeWHc4), the dedicated [FreqAI discord](https://discord.gg/7AMWACmbjT), and in [github issues](https://github.com/freqtrade/freqtrade/issues).
 
 ## Credits
 
