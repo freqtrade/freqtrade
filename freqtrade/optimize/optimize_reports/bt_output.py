@@ -63,7 +63,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
 def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
-    :param sell_reason_stats: Exit reason metrics
+    :param exit_reason_stats: Exit reason metrics
     :param stake_currency: Stakecurrency used
     :return: pretty printed table with tabulate as string
     """
@@ -322,13 +322,8 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if (results.get('results_per_enter_tag') is not None
-            or results.get('results_per_buy_tag') is not None):
-        # results_per_buy_tag is deprecated and should be removed 2 versions after short golive.
-        table = text_table_tags(
-            "enter_tag",
-            results.get('results_per_enter_tag', results.get('results_per_buy_tag')),
-            stake_currency=stake_currency)
+    if (results.get('results_per_enter_tag') is not None):
+        table = text_table_tags("enter_tag", results['results_per_enter_tag'], stake_currency)
 
         if isinstance(table, str) and len(table) > 0:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
