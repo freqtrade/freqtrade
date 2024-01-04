@@ -2512,8 +2512,10 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_entry_rate_data)
 def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
-                        last, last_ab, expected) -> None:
+                        last, last_ab, expected, time_machine) -> None:
     caplog.set_level(logging.DEBUG)
+    start_dt = datetime(2023, 12, 1, 0, 10, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
     if last_ab is None:
         del default_conf['entry_pricing']['price_last_balance']
     else:
@@ -2521,16 +2523,27 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
     default_conf['entry_pricing']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch(f'{EXMS}.fetch_ticker', return_value={'ask': ask, 'last': last, 'bid': bid})
+    log_msg = "Using cached entry rate for ETH/BTC."
 
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
-    assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
+    assert not log_has(log_msg, caplog)
 
+    time_machine.move_to(start_dt + timedelta(minutes=29), tick=False)
+    # Running a 2nd time without Refresh!
+    caplog.clear()
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
-    assert log_has("Using cached entry rate for ETH/BTC.", caplog)
+    assert log_has(log_msg, caplog)
+
+    time_machine.move_to(start_dt + timedelta(minutes=31), tick=False)
+    # Running a 2nd time - forces refresh due to ttl timeout
+    caplog.clear()
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
+    assert not log_has(log_msg, caplog)
+
     # Running a 2nd time with Refresh on!
     caplog.clear()
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
-    assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
+    assert not log_has(log_msg, caplog)
 
 
 @pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_exit_rate_data)
