@@ -41,11 +41,11 @@ FreqAI stores new model files after each successful training. These files become
 
 ```json
     "freqai": {
-        "purge_old_models": true,
+        "purge_old_models": 4,
     }
 ```
 
-This will automatically purge all models older than the two most recently trained ones to save disk space.
+This will automatically purge all models older than the four most recently trained ones to save disk space. Inputing "0" will never purge any models.
 
 ## Backtesting
 
