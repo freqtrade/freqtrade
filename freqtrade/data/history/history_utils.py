@@ -18,8 +18,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.util import dt_ts, format_ms_time
-from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util.migrations import migrate_data
 
 
 logger = logging.getLogger(__name__)
@@ -531,7 +531,7 @@ def download_data_main(config: Config) -> None:
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
                     )
-            migrate_binance_futures_data(config)
+            migrate_data(config)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
