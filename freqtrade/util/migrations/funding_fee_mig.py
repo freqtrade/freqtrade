@@ -23,7 +23,5 @@ def migrate_funding_fee_timeframe(config: Config, exchange: Optional[Exchange]):
 
     ff_timeframe = exchange.get_option('funding_fee_timeframe')
 
-    logger.warning('Migrating funding fees to correct timeframe.')
-
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
     dhc.fix_funding_fee_timeframe(ff_timeframe)

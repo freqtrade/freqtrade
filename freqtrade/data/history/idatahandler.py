@@ -413,6 +413,10 @@ class IDataHandler(ABC):
             f for f in paircombs if f[2] == CandleType.FUNDING_RATE and f[1] != ff_timeframe
         ]
 
+        if funding_rate_combs:
+            logger.warning(
+                f'Migrating {len(funding_rate_combs)} funding fees to correct timeframe.')
+
         for pair, timeframe, candletype in funding_rate_combs:
             old_name = self._pair_data_filename(self._datadir, pair, timeframe, candletype)
             new_name = self._pair_data_filename(self._datadir, pair, ff_timeframe, candletype)
@@ -422,8 +426,8 @@ class IDataHandler(ABC):
                 continue
 
             if Path(new_name).exists():
-                logger.warning(f'{new_name} already exists, skipping.')
-                continue
+                logger.warning(f'{new_name} already exists, Removing.')
+                Path(new_name).unlink()
 
             Path(old_name).rename(new_name)
 
