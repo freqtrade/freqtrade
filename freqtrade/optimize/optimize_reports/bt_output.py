@@ -329,12 +329,13 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    exit_reasons = results.get('exit_reason_summary', results.get('sell_reason_summary'))
-    table = text_table_exit_reason(exit_reason_stats=exit_reasons,
-                                   stake_currency=stake_currency)
-    if isinstance(table, str) and len(table) > 0:
-        print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
-    print(table)
+    exit_reasons = results.get('exit_reason_summary')
+    if exit_reasons:
+        table = text_table_exit_reason(exit_reason_stats=exit_reasons,
+                                       stake_currency=stake_currency)
+        if isinstance(table, str) and len(table) > 0:
+            print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
+        print(table)
 
     for period in backtest_breakdown:
         if period in results.get('periodic_breakdown', {}):
