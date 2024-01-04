@@ -1556,7 +1556,7 @@ def test_create_stoploss_order_invalid_order(
 
     # Rpc is sending first buy, then sell
     assert rpc_mock.call_count == 2
-    assert rpc_mock.call_args_list[0][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
+    assert rpc_mock.call_args_list[0][0][0]['exit_reason'] == ExitType.EMERGENCY_EXIT.value
     assert rpc_mock.call_args_list[0][0][0]['order_type'] == 'market'
     assert rpc_mock.call_args_list[0][0][0]['type'] == 'exit'
     assert rpc_mock.call_args_list[1][0][0]['type'] == 'exit_fill'
@@ -3781,7 +3781,6 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'base_currency': 'ETH',
-        'sell_reason': ExitType.ROI.value,
         'exit_reason': ExitType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -3846,7 +3845,6 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'stake_currency': 'USDT',
         'base_currency': 'ETH',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.STOP_LOSS.value,
         'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -3932,7 +3930,6 @@ def test_execute_trade_exit_custom_exit_price(
         'stake_currency': 'USDT',
         'base_currency': 'ETH',
         'fiat_currency': 'USD',
-        'sell_reason': 'foo',
         'exit_reason': 'foo',
         'open_date': ANY,
         'close_date': ANY,
@@ -4005,7 +4002,6 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'base_currency': 'ETH',
-        'sell_reason': ExitType.STOP_LOSS.value,
         'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -4271,7 +4267,6 @@ def test_execute_trade_exit_market_order(
         'stake_currency': 'USDT',
         'base_currency': 'ETH',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.ROI.value,
         'exit_reason': ExitType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
