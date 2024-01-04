@@ -158,7 +158,7 @@ class Backtesting:
         self._can_short = self.trading_mode != TradingMode.SPOT
         self._position_stacking: bool = self.config.get('position_stacking', False)
         self.enable_protections: bool = self.config.get('enable_protections', False)
-        migrate_data(config)
+        migrate_data(config, self.exchange)
 
         self.init_backtest()
 
