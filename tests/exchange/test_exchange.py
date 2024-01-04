@@ -2548,25 +2548,40 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
 
 @pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_exit_rate_data)
 def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
-                       last, last_ab, expected) -> None:
+                       last, last_ab, expected, time_machine) -> None:
     caplog.set_level(logging.DEBUG)
+    start_dt = datetime(2023, 12, 1, 0, 10, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
 
     default_conf['exit_pricing']['price_side'] = side
     if last_ab is not None:
         default_conf['exit_pricing']['price_last_balance'] = last_ab
     mocker.patch(f'{EXMS}.fetch_ticker', return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
+    log_msg = "Using cached exit rate for ETH/BTC."
 
     # Test regular mode
     exchange = get_patched_exchange(mocker, default_conf)
     rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=True)
-    assert not log_has("Using cached exit rate for ETH/BTC.", caplog)
+    assert not log_has(log_msg, caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=False)
-    assert rate == expected
-    assert log_has("Using cached exit rate for ETH/BTC.", caplog)
+    caplog.clear()
+    assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
+    assert log_has(log_msg, caplog)
+
+    time_machine.move_to(start_dt + timedelta(minutes=29), tick=False)
+    # Caching still active - TTL didn't expire
+    caplog.clear()
+    assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
+    assert log_has(log_msg, caplog)
+
+    time_machine.move_to(start_dt + timedelta(minutes=32), tick=False)
+    # Caching expired - refresh forced
+    caplog.clear()
+    assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
+    assert not log_has(log_msg, caplog)
 
 
 @pytest.mark.parametrize("entry,is_short,side,ask,bid,last,last_ab,expected", [
