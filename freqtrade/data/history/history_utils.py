@@ -317,12 +317,13 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # All exchanges need FundingRate for futures trading.
             # The timeframe is aligned to the mark-price timeframe.
             combs = ((CandleType.FUNDING_RATE, tf_funding_rate), (fr_candle_type, tf_mark))
-            for funding_candle_type, tf in combs:
+            for candle_type_f, tf in combs:
+                logger.debug(f'Downloading pair {pair}, {candle_type_f}, interval {tf}.')
                 _download_pair_history(pair=pair, process=process,
                                        datadir=datadir, exchange=exchange,
                                        timerange=timerange, data_handler=data_handler,
                                        timeframe=str(tf), new_pairs_days=new_pairs_days,
-                                       candle_type=funding_candle_type,
+                                       candle_type=candle_type_f,
                                        erase=erase, prepend=prepend)
 
     return pairs_not_available
