@@ -81,7 +81,6 @@ class RPCExitMsg(__RPCEntryExitMsgBase):
     close_rate: float
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
     # current_rate: Optional[float]
@@ -94,7 +93,6 @@ class RPCExitCancelMsg(__RPCEntryExitMsgBase):
     gain: ProfitLossStr
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
 
