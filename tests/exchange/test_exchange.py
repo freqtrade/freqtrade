@@ -2528,13 +2528,13 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
     assert not log_has(log_msg, caplog)
 
-    time_machine.move_to(start_dt + timedelta(minutes=29), tick=False)
+    time_machine.move_to(start_dt + timedelta(minutes=4), tick=False)
     # Running a 2nd time without Refresh!
     caplog.clear()
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
     assert log_has(log_msg, caplog)
 
-    time_machine.move_to(start_dt + timedelta(minutes=31), tick=False)
+    time_machine.move_to(start_dt + timedelta(minutes=6), tick=False)
     # Running a 2nd time - forces refresh due to ttl timeout
     caplog.clear()
     assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
@@ -2571,13 +2571,13 @@ def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
     assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
     assert log_has(log_msg, caplog)
 
-    time_machine.move_to(start_dt + timedelta(minutes=29), tick=False)
+    time_machine.move_to(start_dt + timedelta(minutes=4), tick=False)
     # Caching still active - TTL didn't expire
     caplog.clear()
     assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
     assert log_has(log_msg, caplog)
 
-    time_machine.move_to(start_dt + timedelta(minutes=32), tick=False)
+    time_machine.move_to(start_dt + timedelta(minutes=6), tick=False)
     # Caching expired - refresh forced
     caplog.clear()
     assert exchange.get_rate(pair, side="exit", is_short=False, refresh=False) == expected
