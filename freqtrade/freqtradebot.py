@@ -1809,7 +1809,6 @@ class FreqtradeBot(LoggingMixin):
             'profit_ratio': profit.profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
-            'sell_reason': trade.exit_reason,  # Deprecated
             'exit_reason': trade.exit_reason,
             'open_date': trade.open_date_utc,
             'close_date': trade.close_date_utc or datetime.now(timezone.utc),
@@ -1860,7 +1859,6 @@ class FreqtradeBot(LoggingMixin):
             'profit_ratio': profit.profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
-            'sell_reason': trade.exit_reason,  # Deprecated
             'exit_reason': trade.exit_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
