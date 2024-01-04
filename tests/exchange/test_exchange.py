@@ -55,7 +55,7 @@ get_entry_rate_data = [
     ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
 ]
 
-get_sell_rate_data = [
+get_exit_rate_data = [
     ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
     ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
     ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
@@ -2533,7 +2533,7 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
     assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
 
-@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_exit_rate_data)
 def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -2649,9 +2649,9 @@ def test_get_exit_rate_exception(default_conf, mocker, is_short):
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_entry_rate_data)
 @pytest.mark.parametrize("side2", ['bid', 'ask'])
 @pytest.mark.parametrize("use_order_book", [True, False])
-def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
-                               last, last_ab, expected,
-                               side2, use_order_book, order_book_l2) -> None:
+def test_get_rates_testing_entry(mocker, default_conf, caplog, side, ask, bid,
+                                 last, last_ab, expected,
+                                 side2, use_order_book, order_book_l2) -> None:
     caplog.set_level(logging.DEBUG)
     if last_ab is None:
         del default_conf['entry_pricing']['price_last_balance']
@@ -2685,10 +2685,10 @@ def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
     assert api_mock.fetch_ticker.call_count == 1
 
 
-@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_exit_rate_data)
 @pytest.mark.parametrize("side2", ['bid', 'ask'])
 @pytest.mark.parametrize("use_order_book", [True, False])
-def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
+def test_get_rates_testing_exit(default_conf, mocker, caplog, side, bid, ask,
                                 last, last_ab, expected,
                                 side2, use_order_book, order_book_l2) -> None:
     caplog.set_level(logging.DEBUG)
