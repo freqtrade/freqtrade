@@ -83,6 +83,8 @@ class FreqtradeBot(LoggingMixin):
         PairLocks.timeframe = self.config['timeframe']
 
         self.pairlists = PairListManager(self.exchange, self.config)
+        self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
+        self.last_process: Optional[datetime] = None
 
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
@@ -119,8 +121,6 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
-
         self._schedule = Scheduler()
 
         if self.trading_mode == TradingMode.FUTURES:
@@ -135,7 +135,6 @@ class FreqtradeBot(LoggingMixin):
                 for minutes in [1, 31]:
                     t = str(time(time_slot, minutes, 2))
                     self._schedule.every().day.at(t).do(update)
-        self.last_process: Optional[datetime] = None
 
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
