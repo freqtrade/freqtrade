@@ -379,7 +379,7 @@ class Telegram(RPCHandler):
         profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
-        if (is_sub_profit and is_sub_trade) or is_final_exit:
+        if is_sub_trade or is_final_exit:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
