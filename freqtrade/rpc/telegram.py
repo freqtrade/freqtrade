@@ -348,7 +348,6 @@ class Telegram(RPCHandler):
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
         fiat_currency = msg['fiat_currency']
-        msg['amount'] = round(msg['amount'], 8)
         msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
         msg['duration'] = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
@@ -408,7 +407,7 @@ class Telegram(RPCHandler):
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
             f"*Direction:* `{msg['direction']}`\n"
             f"{msg['leverage_text']}"
-            f"*Amount:* `{msg['amount']:.8f}`\n"
+            f"*Amount:* `{round(msg['amount'], 8):.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
         if msg['type'] == RPCMessageType.EXIT:
