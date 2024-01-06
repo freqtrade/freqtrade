@@ -6,7 +6,7 @@ from tabulate import tabulate
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
 from freqtrade.types import BacktestResultType
-from freqtrade.util import decimals_per_coin, round_coin_value
+from freqtrade.util import decimals_per_coin, fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_curren
         t.get('exit_reason', t.get('sell_reason')), t['trades'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
-        round_coin_value(t['profit_total_abs'], stake_currency, False),
+        fmt_coin(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
     ] for t in exit_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
@@ -134,7 +134,7 @@ def text_table_periodic_breakdown(days_breakdown_stats: List[Dict[str, Any]],
         'Losses',
     ]
     output = [[
-        d['date'], round_coin_value(d['profit_abs'], stake_currency, False),
+        d['date'], fmt_coin(d['profit_abs'], stake_currency, False),
         d['wins'], d['draws'], d['loses'],
     ] for d in days_breakdown_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
@@ -187,9 +187,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
              f"{strat_results.get('trade_count_short', 0)}"),
             ('Total profit Long %', f"{strat_results['profit_total_long']:.2%}"),
             ('Total profit Short %', f"{strat_results['profit_total_short']:.2%}"),
-            ('Absolute profit Long', round_coin_value(strat_results['profit_total_long_abs'],
+            ('Absolute profit Long', fmt_coin(strat_results['profit_total_long_abs'],
                                                       strat_results['stake_currency'])),
-            ('Absolute profit Short', round_coin_value(strat_results['profit_total_short_abs'],
+            ('Absolute profit Short', fmt_coin(strat_results['profit_total_short_abs'],
                                                        strat_results['stake_currency'])),
         ] if strat_results.get('trade_count_short', 0) > 0 else []
 
@@ -203,11 +203,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Absolute Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
             if 'max_drawdown_account' in strat_results else (
                 'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
-            ('Absolute Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+            ('Absolute Drawdown', fmt_coin(strat_results['max_drawdown_abs'],
                                                    strat_results['stake_currency'])),
-            ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
+            ('Drawdown high', fmt_coin(strat_results['max_drawdown_high'],
                                                strat_results['stake_currency'])),
-            ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
+            ('Drawdown low', fmt_coin(strat_results['max_drawdown_low'],
                                               strat_results['stake_currency'])),
             ('Drawdown Start', strat_results['drawdown_start']),
             ('Drawdown End', strat_results['drawdown_end']),
@@ -230,11 +230,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Total/Daily Avg Trades',
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
 
-            ('Starting balance', round_coin_value(strat_results['starting_balance'],
+            ('Starting balance', fmt_coin(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
-            ('Final balance', round_coin_value(strat_results['final_balance'],
+            ('Final balance', fmt_coin(strat_results['final_balance'],
                                                strat_results['stake_currency'])),
-            ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
+            ('Absolute profit ', fmt_coin(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
             ('CAGR %', f"{strat_results['cagr']:.2%}" if 'cagr' in strat_results else 'N/A'),
@@ -249,9 +249,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',
              f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),
-            ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
+            ('Avg. stake amount', fmt_coin(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
-            ('Total trade volume', round_coin_value(strat_results['total_volume'],
+            ('Total trade volume', fmt_coin(strat_results['total_volume'],
                                                     strat_results['stake_currency'])),
             *short_metrics,
             ('', ''),  # Empty line to improve readability
@@ -263,9 +263,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Worst trade', f"{worst_trade['pair']} "
                             f"{worst_trade['profit_ratio']:.2%}"),
 
-            ('Best day', round_coin_value(strat_results['backtest_best_day_abs'],
+            ('Best day', fmt_coin(strat_results['backtest_best_day_abs'],
                                           strat_results['stake_currency'])),
-            ('Worst day', round_coin_value(strat_results['backtest_worst_day_abs'],
+            ('Worst day', fmt_coin(strat_results['backtest_worst_day_abs'],
                                            strat_results['stake_currency'])),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
@@ -281,9 +281,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *entry_adjustment_metrics,
             ('', ''),  # Empty line to improve readability
 
-            ('Min balance', round_coin_value(strat_results['csum_min'],
+            ('Min balance', fmt_coin(strat_results['csum_min'],
                                              strat_results['stake_currency'])),
-            ('Max balance', round_coin_value(strat_results['csum_max'],
+            ('Max balance', fmt_coin(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
             *drawdown_metrics,
@@ -292,9 +292,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
-        start_balance = round_coin_value(strat_results['starting_balance'],
+        start_balance = fmt_coin(strat_results['starting_balance'],
                                          strat_results['stake_currency'])
-        stake_amount = round_coin_value(
+        stake_amount = fmt_coin(
             strat_results['stake_amount'], strat_results['stake_currency']
         ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 

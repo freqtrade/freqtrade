@@ -24,10 +24,10 @@ def round_value(value: float, decimals: int, keep_trailing_zeros=False) -> str:
     return val
 
 
-def round_coin_value(
+def fmt_coin(
         value: float, coin: str, show_coin_name=True, keep_trailing_zeros=False) -> str:
     """
-    Get price value for this coin
+    Format price value for this coin
     :param value: Value to be printed
     :param coin: Which coin are we printing the price / value for
     :param show_coin_name: Return string in format: "222.22 USDT" or "222.22"

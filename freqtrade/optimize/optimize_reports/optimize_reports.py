@@ -11,7 +11,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
 from freqtrade.types import BacktestResultType
-from freqtrade.util import decimals_per_coin, round_coin_value
+from freqtrade.util import decimals_per_coin, fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
         # Update "key" to strategy (results_per_pair has it as "Total").
         tabular_data[-1]['key'] = strategy
         tabular_data[-1]['max_drawdown_account'] = result['max_drawdown_account']
-        tabular_data[-1]['max_drawdown_abs'] = round_coin_value(
+        tabular_data[-1]['max_drawdown_abs'] = fmt_coin(
             result['max_drawdown_abs'], result['stake_currency'], False)
     return tabular_data
 

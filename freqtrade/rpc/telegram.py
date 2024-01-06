@@ -33,7 +33,7 @@ from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
-from freqtrade.util import dt_humanize, round_coin_value
+from freqtrade.util import dt_humanize, fmt_coin
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
@@ -353,7 +353,7 @@ class Telegram(RPCHandler):
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
         profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')  # type: ignore
-        total = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+        total = fmt_coin(msg['stake_amount'], msg['stake_currency'])
 
         message += f"*Total:* `{total}{profit_fiat_extra}`"
 
@@ -422,7 +422,7 @@ class Telegram(RPCHandler):
         if is_sub_trade:
             stake_amount_fiat = self.__format_profit_fiat(msg, 'stake_amount')
 
-            rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            rem = fmt_coin(msg['stake_amount'], msg['stake_currency'])
             message += f"\n*Remaining:* `{rem}{stake_amount_fiat}`"
         else:
             message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
@@ -556,7 +556,7 @@ class Telegram(RPCHandler):
             if order_nr == 1:
                 lines.append(
                     f"*Amount:* {cur_entry_amount:.8g} "
-                    f"({round_coin_value(order['cost'], quote_currency)})"
+                    f"({fmt_coin(order['cost'], quote_currency)})"
                 )
                 lines.append(f"*Average Price:* {cur_entry_average:.8g}")
             else:
@@ -566,7 +566,7 @@ class Telegram(RPCHandler):
                     lines.append("({})".format(dt_humanize(order["order_filled_date"],
                                                            granularity=["day", "hour", "minute"])))
                 lines.append(f"*Amount:* {cur_entry_amount:.8g} "
-                             f"({round_coin_value(order['cost'], quote_currency)})")
+                             f"({fmt_coin(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average:.8g} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
                 lines.append(f"*Order Filled:* {order['order_filled_date']}")
@@ -652,12 +652,12 @@ class Telegram(RPCHandler):
             r['num_exits'] = len([o for o in r['orders'] if not o['ft_is_entry']
                                  and not o['ft_order_side'] == 'stoploss'])
             r['exit_reason'] = r.get('exit_reason', "")
-            r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
-            r['max_stake_amount_r'] = round_coin_value(
+            r['stake_amount_r'] = fmt_coin(r['stake_amount'], r['quote_currency'])
+            r['max_stake_amount_r'] = fmt_coin(
                 r['max_stake_amount'] or r['stake_amount'], r['quote_currency'])
-            r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
-            r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
-            r['total_profit_abs_r'] = round_coin_value(
+            r['profit_abs_r'] = fmt_coin(r['profit_abs'], r['quote_currency'])
+            r['realized_profit_r'] = fmt_coin(r['realized_profit'], r['quote_currency'])
+            r['total_profit_abs_r'] = fmt_coin(
                 r['total_profit_abs'], r['quote_currency'])
             lines = [
                 "*Trade ID:* `{trade_id}`" +
@@ -800,7 +800,7 @@ class Telegram(RPCHandler):
         )
         stats_tab = tabulate(
             [[f"{period['date']:{val.dateformat}} ({period['trade_count']})",
-              f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
+              f"{fmt_coin(period['abs_profit'], stats['stake_currency'])}",
               f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
               f"{period['rel_profit']:.2%}",
               ] for period in stats['data']],
@@ -902,19 +902,19 @@ class Telegram(RPCHandler):
             # Message to display
             if stats['closed_trade_count'] > 0:
                 markdown_msg = ("*ROI:* Closed trades\n"
-                                f"∙ `{round_coin_value(profit_closed_coin, stake_cur)} "
+                                f"∙ `{fmt_coin(profit_closed_coin, stake_cur)} "
                                 f"({profit_closed_ratio_mean:.2%}) "
                                 f"({profit_closed_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                                f"∙ `{round_coin_value(profit_closed_fiat, fiat_disp_cur)}`\n")
+                                f"∙ `{fmt_coin(profit_closed_fiat, fiat_disp_cur)}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
 
             markdown_msg += (
                 f"*ROI:* All trades\n"
-                f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
+                f"∙ `{fmt_coin(profit_all_coin, stake_cur)} "
                 f"({profit_all_ratio_mean:.2%}) "
                 f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"∙ `{fmt_coin(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*Bot started:* `{stats['bot_start_date']}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
@@ -928,14 +928,14 @@ class Telegram(RPCHandler):
                 markdown_msg += (
                     f"\n*Avg. Duration:* `{avg_duration}`\n"
                     f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`\n"
-                    f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
+                    f"*Trading volume:* `{fmt_coin(stats['trading_volume'], stake_cur)}`\n"
                     f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
                     f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
-                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['max_drawdown_abs'], stake_cur)})`\n"
                     f"    from `{stats['max_drawdown_start']} "
-                    f"({round_coin_value(stats['drawdown_high'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['drawdown_high'], stake_cur)})`\n"
                     f"    to `{stats['max_drawdown_end']} "
-                    f"({round_coin_value(stats['drawdown_low'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['drawdown_low'], stake_cur)})`\n"
                 )
         await self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                              query=update.callback_query)
@@ -1003,9 +1003,9 @@ class Telegram(RPCHandler):
         output = ''
         if self._config['dry_run']:
             output += "*Warning:* Simulated balances in Dry Mode.\n"
-        starting_cap = round_coin_value(result['starting_capital'], self._config['stake_currency'])
+        starting_cap = fmt_coin(result['starting_capital'], self._config['stake_currency'])
         output += f"Starting capital: `{starting_cap}`"
-        starting_cap_fiat = round_coin_value(
+        starting_cap_fiat = fmt_coin(
             result['starting_capital_fiat'], self._config['fiat_display_currency']
         ) if result['starting_capital_fiat'] > 0 else ''
         output += (f" `, {starting_cap_fiat}`.\n"
@@ -1025,9 +1025,9 @@ class Telegram(RPCHandler):
                         f"\t`{curr['side']}: {curr['position']:.8f}`\n"
                         f"\t`Leverage: {curr['leverage']:.1f}`\n"
                         f"\t`Est. {curr['stake']}: "
-                        f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                        f"{fmt_coin(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
-                    est_stake = round_coin_value(
+                    est_stake = fmt_coin(
                         curr['est_stake' if full_result else 'est_stake_bot'], curr['stake'], False)
 
                     curr_output = (
@@ -1055,13 +1055,13 @@ class Telegram(RPCHandler):
                 f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
                 f"(< {balance_dust_level} {result['stake']}):*\n"
                 f"\t`Est. {result['stake']}: "
-                f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+                f"{fmt_coin(total_dust_balance, result['stake'], False)}`\n")
         tc = result['trade_count'] > 0
         stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
         fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
-        value = round_coin_value(
+        value = fmt_coin(
             result['value' if full_result else 'value_bot'], result['symbol'], False)
-        total_stake = round_coin_value(
+        total_stake = fmt_coin(
             result['total' if full_result else 'total_bot'], result['stake'], False)
         output += (
             f"\n*Estimated Value{' (Bot managed assets only)' if not full_result else ''}*:\n"
@@ -1340,7 +1340,7 @@ class Telegram(RPCHandler):
         for i, trade in enumerate(trades):
             stat_line = (
                 f"{i+1}.\t <code>{trade['pair']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1372,7 +1372,7 @@ class Telegram(RPCHandler):
         for i, trade in enumerate(trades):
             stat_line = (
                 f"{i+1}.\t <code>{trade['enter_tag']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1404,7 +1404,7 @@ class Telegram(RPCHandler):
         for i, trade in enumerate(trades):
             stat_line = (
                 f"{i+1}.\t <code>{trade['exit_reason']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1436,7 +1436,7 @@ class Telegram(RPCHandler):
         for i, trade in enumerate(trades):
             stat_line = (
                 f"{i+1}.\t <code>{trade['mix_tag']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 

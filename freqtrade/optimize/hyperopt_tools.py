@@ -17,7 +17,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_dict, safe_value_fallback2
 from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
 from freqtrade.optimize.optimize_reports import generate_wins_draws_losses
-from freqtrade.util import round_coin_value
+from freqtrade.util import fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -406,7 +406,7 @@ class HyperoptTools:
 
         trials[f"Max Drawdown{' (Acct)' if has_account_drawdown else ''}"] = trials.apply(
             lambda x: "{} {}".format(
-                round_coin_value(x['max_drawdown_abs'], stake_currency, keep_trailing_zeros=True),
+                fmt_coin(x['max_drawdown_abs'], stake_currency, keep_trailing_zeros=True),
                 (f"({x['max_drawdown_account']:,.2%})"
                     if has_account_drawdown
                     else f"({x['max_drawdown']:,.2%})"
@@ -421,7 +421,7 @@ class HyperoptTools:
 
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
-                round_coin_value(x['Total profit'], stake_currency, keep_trailing_zeros=True),
+                fmt_coin(x['Total profit'], stake_currency, keep_trailing_zeros=True),
                 f"({x['Profit']:,.2%})".rjust(10, ' ')
             ).rjust(25 + len(stake_currency))
             if x['Total profit'] != 0.0 else '--'.rjust(25 + len(stake_currency)),

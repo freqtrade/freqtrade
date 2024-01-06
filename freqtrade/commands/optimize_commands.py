@@ -5,7 +5,7 @@ from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.util import round_coin_value
+from freqtrade.util import fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,8 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
         # tradable_balance_ratio
         if (config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT
                 and config['stake_amount'] > wallet_size):
-            wallet = round_coin_value(wallet_size, config['stake_currency'])
-            stake = round_coin_value(config['stake_amount'], config['stake_currency'])
+            wallet = fmt_coin(wallet_size, config['stake_currency'])
+            stake = fmt_coin(config['stake_amount'], config['stake_currency'])
             raise OperationalException(
                 f"Starting balance ({wallet}) is smaller than stake_amount {stake}. "
                 f"Wallet is calculated as `dry_run_wallet * tradable_balance_ratio`."
