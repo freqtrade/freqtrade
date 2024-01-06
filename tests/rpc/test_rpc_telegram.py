@@ -2014,7 +2014,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg(msg)
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
 
     assert msg_mock.call_args[0][0] == (
         f'\N{LARGE BLUE CIRCLE} *Binance (dry):* {enter} ETH/BTC (#1)\n'
@@ -2118,7 +2118,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'amount': 1333.3333333333335,
         'open_date': dt_now() - timedelta(hours=1)
     })
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
+    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
@@ -2343,7 +2343,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
             'close_date': dt_now(),
         })
 
-        leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
+        leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
             '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
@@ -2433,7 +2433,7 @@ def test_send_msg_buy_notification_no_fiat(
         'open_date': dt_now() - timedelta(hours=1)
     })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
@@ -2480,7 +2480,7 @@ def test_send_msg_sell_notification_no_fiat(
         'close_date': dt_now(),
     })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
