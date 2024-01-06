@@ -329,11 +329,7 @@ class Telegram(RPCHandler):
         return ''
 
     def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
-        if self._rpc._fiat_converter:
-            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-        else:
-            msg['stake_amount_fiat'] = 0
+
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
@@ -348,7 +344,7 @@ class Telegram(RPCHandler):
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
-            message += f"*Leverage:* `{msg['leverage']}`\n"
+            message += f"*Leverage:* `{msg['leverage']:.1g}`\n"
 
         if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
@@ -356,94 +352,92 @@ class Telegram(RPCHandler):
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
-        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')
+        total = round_coin_value(msg['stake_amount'], msg['stake_currency'])
 
-        if msg.get('fiat_currency'):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+        message += f"*Total:* `{total}{profit_fiat_extra}`"
 
-        message += ")`"
         return message
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
-        msg['amount'] = round(msg['amount'], 8)
-        msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
-        msg['duration'] = msg['close_date'].replace(
+        duration = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
-        msg['duration_min'] = msg['duration'].total_seconds() / 60
+        duration_min = duration.total_seconds() / 60
 
-        msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
-        msg['emoji'] = self._get_sell_emoji(msg)
-        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
-                                if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
-                                else "")
+        leverage_text = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
+                         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
+                         else "")
 
-        # Check if all sell properties are available.
-        # This might not be the case if the message origin is triggered by /forceexit
-        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-                and self._rpc._fiat_converter):
-            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}"
-        else:
-            msg['profit_extra'] = ''
-        msg['profit_extra'] = (
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'profit_amount')
+
+        profit_extra = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-            f"{msg['profit_extra']})")
+            f"{profit_fiat_extra})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
-        profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
+        is_final_exit = msg.get('is_final_exit', False) and is_sub_profit
+        profit_prefix = 'Sub ' if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
-        if is_sub_profit and is_sub_trade:
-            if self._rpc._fiat_converter:
-                cp_fiat = self._rpc._fiat_converter.convert_amount(
-                    msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
-                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
-            exit_wording = f"Partially {exit_wording.lower()}"
-            cp_extra = (
-                f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} "
-                f"{msg['stake_currency']}{cp_extra}`)\n"
-            )
+        if is_sub_trade or is_final_exit:
+            cp_fiat = self.__format_profit_fiat(msg, 'cumulative_profit')
 
+            if is_final_exit:
+                profit_prefix = 'Sub '
+                cp_extra = (
+                    f"*Final Profit:* `{msg['final_profit_ratio']:.2%} "
+                    f"({msg['cumulative_profit']:.8f} {msg['stake_currency']}{cp_fiat})`\n"
+                )
+            else:
+                exit_wording = f"Partially {exit_wording.lower()}"
+                if msg['cumulative_profit']:
+                    cp_extra = (
+                        f"*Cumulative Profit:* `{msg['cumulative_profit']:.8f} "
+                        f"{msg['stake_currency']}{cp_fiat}`\n"
+                    )
+        enter_tag = f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message = (
-            f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
+            f"{self._get_exit_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
-            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"`{msg['profit_ratio']:.2%}{profit_extra}`\n"
             f"{cp_extra}"
-            f"*Enter Tag:* `{msg['enter_tag']}`\n"
+            f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
             f"*Direction:* `{msg['direction']}`\n"
-            f"{msg['leverage_text']}"
-            f"*Amount:* `{msg['amount']:.8f}`\n"
+            f"{leverage_text}"
+            f"*Amount:* `{round(msg['amount'], 8):.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
         if msg['type'] == RPCMessageType.EXIT:
             message += f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
             if msg['order_rate']:
                 message += f"*Exit Rate:* `{msg['order_rate']:.8f}`"
-
         elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
+
         if is_sub_trade:
-            if self._rpc._fiat_converter:
-                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-            else:
-                msg['stake_amount_fiat'] = 0
+            stake_amount_fiat = self.__format_profit_fiat(msg, 'stake_amount')
+
             rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Remaining:* `({rem}"
-
-            if msg.get('fiat_currency', None):
-                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-
-            message += ")`"
+            message += f"\n*Remaining:* `{rem}{stake_amount_fiat}`"
         else:
-            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
+            message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message
+
+    def __format_profit_fiat(self, msg: Dict[str, Any], key: str) -> str:
+        """
+        Format Fiat currency to append to regular profit output
+        """
+        profit_fiat_extra = ''
+        if self._rpc._fiat_converter and (fiat_currency := msg.get('fiat_currency')):
+            profit_fiat = self._rpc._fiat_converter.convert_amount(
+                    msg[key], msg['stake_currency'], fiat_currency)
+            profit_fiat_extra = f" / {profit_fiat:.3f} {fiat_currency}"
+        return profit_fiat_extra
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
         if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
@@ -519,14 +513,14 @@ class Telegram(RPCHandler):
                 self._send_msg(message, disable_notification=(noti == 'silent')),
                 self._loop)
 
-    def _get_sell_emoji(self, msg):
+    def _get_exit_emoji(self, msg):
         """
-        Get emoji for sell-side
+        Get emoji for exit-messages
         """
 
-        if float(msg['profit_percent']) >= 5.0:
+        if float(msg['profit_ratio']) >= 0.05:
             return "\N{ROCKET}"
-        elif float(msg['profit_percent']) >= 0.0:
+        elif float(msg['profit_ratio']) >= 0.0:
             return "\N{EIGHT SPOKED ASTERISK}"
         elif msg['exit_reason'] == "stop_loss":
             return "\N{WARNING SIGN}"
