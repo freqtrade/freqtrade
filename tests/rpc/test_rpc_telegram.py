@@ -2156,7 +2156,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
     )
 
 
-def test_send_msg_sell_notification(default_conf, mocker) -> None:
+def test_send_msg_exit_notification(default_conf, mocker) -> None:
 
     with time_machine.travel("2022-09-01 05:00:00 +00:00", tick=False):
         telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -2275,7 +2275,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
-async def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
+async def test_send_msg_exit_cancel_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -2313,7 +2313,7 @@ async def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     ('Long', 'long_signal_01', 1.0),
     ('Long', 'long_signal_01', 5.0),
     ('Short', 'short_signal_01', 2.0)])
-def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
+def test_send_msg_exit_fill_notification(default_conf, mocker, direction,
                                          enter_signal, leverage) -> None:
 
     default_conf['telegram']['notification_settings']['exit_fill'] = 'on'
@@ -2451,7 +2451,7 @@ def test_send_msg_buy_notification_no_fiat(
     ('Long', 'long_signal_01', 5.0),
     ('Short', 'short_signal_01', 2.0),
 ])
-def test_send_msg_sell_notification_no_fiat(
+def test_send_msg_exit_notification_no_fiat(
         default_conf, mocker, direction, enter_signal, leverage, time_machine) -> None:
     del default_conf['fiat_display_currency']
     time_machine.move_to('2022-05-02 00:00:00 +00:00', tick=False)
@@ -2505,12 +2505,12 @@ def test_send_msg_sell_notification_no_fiat(
     ({'profit_ratio': -0.05, 'exit_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
     ({'profit_ratio': -0.02, 'exit_reason': 'sell_signal'}, "\N{CROSS MARK}"),
 ])
-def test__sell_emoji(default_conf, mocker, msg, expected):
+def test__exit_emoji(default_conf, mocker, msg, expected):
     del default_conf['fiat_display_currency']
 
     telegram, _, _ = get_telegram_testobject(mocker, default_conf)
 
-    assert telegram._get_sell_emoji(msg) == expected
+    assert telegram._get_exit_emoji(msg) == expected
 
 
 async def test_telegram__send_msg(default_conf, mocker, caplog) -> None:

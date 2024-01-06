@@ -381,7 +381,7 @@ class Telegram(RPCHandler):
                     )
         enter_tag = f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message = (
-            f"{self._get_sell_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
+            f"{self._get_exit_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
@@ -495,9 +495,9 @@ class Telegram(RPCHandler):
                 self._send_msg(message, disable_notification=(noti == 'silent')),
                 self._loop)
 
-    def _get_sell_emoji(self, msg):
+    def _get_exit_emoji(self, msg):
         """
-        Get emoji for sell-side
+        Get emoji for exit-messages
         """
 
         if float(msg['profit_ratio']) >= 0.05:
