@@ -188,9 +188,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Total profit Long %', f"{strat_results['profit_total_long']:.2%}"),
             ('Total profit Short %', f"{strat_results['profit_total_short']:.2%}"),
             ('Absolute profit Long', fmt_coin(strat_results['profit_total_long_abs'],
-                                                      strat_results['stake_currency'])),
+                                              strat_results['stake_currency'])),
             ('Absolute profit Short', fmt_coin(strat_results['profit_total_short_abs'],
-                                                       strat_results['stake_currency'])),
+                                               strat_results['stake_currency'])),
         ] if strat_results.get('trade_count_short', 0) > 0 else []
 
         drawdown_metrics = []
@@ -204,11 +204,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             if 'max_drawdown_account' in strat_results else (
                 'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
             ('Absolute Drawdown', fmt_coin(strat_results['max_drawdown_abs'],
-                                                   strat_results['stake_currency'])),
+                                           strat_results['stake_currency'])),
             ('Drawdown high', fmt_coin(strat_results['max_drawdown_high'],
-                                               strat_results['stake_currency'])),
+                                       strat_results['stake_currency'])),
             ('Drawdown low', fmt_coin(strat_results['max_drawdown_low'],
-                                              strat_results['stake_currency'])),
+                                      strat_results['stake_currency'])),
             ('Drawdown Start', strat_results['drawdown_start']),
             ('Drawdown End', strat_results['drawdown_end']),
         ])
@@ -231,11 +231,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
 
             ('Starting balance', fmt_coin(strat_results['starting_balance'],
-                                                  strat_results['stake_currency'])),
+                                          strat_results['stake_currency'])),
             ('Final balance', fmt_coin(strat_results['final_balance'],
-                                               strat_results['stake_currency'])),
+                                       strat_results['stake_currency'])),
             ('Absolute profit ', fmt_coin(strat_results['profit_total_abs'],
-                                                  strat_results['stake_currency'])),
+                                          strat_results['stake_currency'])),
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
             ('CAGR %', f"{strat_results['cagr']:.2%}" if 'cagr' in strat_results else 'N/A'),
             ('Sortino', f"{strat_results['sortino']:.2f}" if 'sortino' in strat_results else 'N/A'),
@@ -250,9 +250,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Avg. daily profit %',
              f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),
             ('Avg. stake amount', fmt_coin(strat_results['avg_stake_amount'],
-                                                   strat_results['stake_currency'])),
+                                           strat_results['stake_currency'])),
             ('Total trade volume', fmt_coin(strat_results['total_volume'],
-                                                    strat_results['stake_currency'])),
+                                            strat_results['stake_currency'])),
             *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
@@ -264,9 +264,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                             f"{worst_trade['profit_ratio']:.2%}"),
 
             ('Best day', fmt_coin(strat_results['backtest_best_day_abs'],
-                                          strat_results['stake_currency'])),
+                                  strat_results['stake_currency'])),
             ('Worst day', fmt_coin(strat_results['backtest_worst_day_abs'],
-                                           strat_results['stake_currency'])),
+                                   strat_results['stake_currency'])),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
@@ -281,10 +281,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *entry_adjustment_metrics,
             ('', ''),  # Empty line to improve readability
 
-            ('Min balance', fmt_coin(strat_results['csum_min'],
-                                             strat_results['stake_currency'])),
-            ('Max balance', fmt_coin(strat_results['csum_max'],
-                                             strat_results['stake_currency'])),
+            ('Min balance', fmt_coin(strat_results['csum_min'], strat_results['stake_currency'])),
+            ('Max balance', fmt_coin(strat_results['csum_max'], strat_results['stake_currency'])),
 
             *drawdown_metrics,
             ('Market change', f"{strat_results['market_change']:.2%}"),
@@ -292,8 +290,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
-        start_balance = fmt_coin(strat_results['starting_balance'],
-                                         strat_results['stake_currency'])
+        start_balance = fmt_coin(strat_results['starting_balance'], strat_results['stake_currency'])
         stake_amount = fmt_coin(
             strat_results['stake_amount'], strat_results['stake_currency']
         ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
