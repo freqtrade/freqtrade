@@ -376,8 +376,8 @@ class Telegram(RPCHandler):
                 exit_wording = f"Partially {exit_wording.lower()}"
                 if msg['cumulative_profit']:
                     cp_extra = (
-                        f"*Cumulative Profit:* `({msg['cumulative_profit']:.8f} "
-                        f"{msg['stake_currency']}{cp_fiat})`\n"
+                        f"*Cumulative Profit:* `{msg['cumulative_profit']:.8f} "
+                        f"{msg['stake_currency']}{cp_fiat}`\n"
                     )
         enter_tag = f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message = (
@@ -405,7 +405,7 @@ class Telegram(RPCHandler):
             stake_amount_fiat = self.__format_profit_fiat(msg, 'stake_amount')
 
             rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Remaining:* `({rem}{stake_amount_fiat})`"
+            message += f"\n*Remaining:* `{rem}{stake_amount_fiat}`"
         else:
             message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message

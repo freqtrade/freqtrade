@@ -2226,7 +2226,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n'
             '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Cumulative Profit:* `(-0.15746268 ETH / -24.812 USD)`\n'
+            '*Cumulative Profit:* `-0.15746268 ETH / -24.812 USD`\n'
             '*Enter Tag:* `buy_signal1`\n'
             '*Exit Reason:* `stop_loss`\n'
             '*Direction:* `Long`\n'
@@ -2234,7 +2234,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Exit Rate:* `0.00003201`\n'
-            '*Remaining:* `(0.01 ETH / -24.812 USD)`'
+            '*Remaining:* `0.01 ETH / -24.812 USD`'
             )
 
         msg_mock.reset_mock()
