@@ -51,6 +51,7 @@ class __RPCEntryExitMsgBase(RPCSendMsgBase):
     exchange: str
     pair: str
     base_currency: str
+    quote_currency: str
     leverage: Optional[float]
     direction: str
     limit: float
