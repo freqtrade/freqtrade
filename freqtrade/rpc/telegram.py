@@ -347,28 +347,19 @@ class Telegram(RPCHandler):
         return message
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
-        fiat_currency = msg['fiat_currency']
         duration = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         duration_min = duration.total_seconds() / 60
 
-        emoji = self._get_sell_emoji(msg)
         leverage_text = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
                          if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                          else "")
 
-        # Check if all exit properties are available.
-        # This might not be the case if the message origin is triggered by /forceexit
-        profit_extra = ''
-
-        if self._rpc._fiat_converter and fiat_currency:
-            profit_fiat = self._rpc._fiat_converter.convert_amount(
-                msg['profit_amount'], msg['stake_currency'], fiat_currency)
-            profit_extra = f" / {profit_fiat:.3f} {fiat_currency}"
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'profit_amount')
 
         profit_extra = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-            f"{profit_extra})")
+            f"{profit_fiat_extra})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         is_sub_trade = msg.get('sub_trade')
@@ -378,25 +369,23 @@ class Telegram(RPCHandler):
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
         if is_sub_trade or is_final_exit:
-            if self._rpc._fiat_converter:
-                cp_fiat = self._rpc._fiat_converter.convert_amount(
-                    msg['cumulative_profit'], msg['stake_currency'], fiat_currency)
-                cp_extra = f" / {cp_fiat:.3f} {fiat_currency}"
+            cp_fiat = self.__format_profit_fiat(msg, 'cumulative_profit')
+
             if is_final_exit:
                 profit_prefix = 'Sub '
                 cp_extra = (
                     f"*Final Profit:* `{msg['final_profit_ratio']:.2%} "
-                    f"({msg['cumulative_profit']:.8f} {msg['stake_currency']}{cp_extra})`\n"
+                    f"({msg['cumulative_profit']:.8f} {msg['stake_currency']}{cp_fiat})`\n"
                 )
             else:
                 exit_wording = f"Partially {exit_wording.lower()}"
                 cp_extra = (
                     f"*Cumulative Profit:* `({msg['cumulative_profit']:.8f} "
-                    f"{msg['stake_currency']}{cp_extra})`\n"
+                    f"{msg['stake_currency']}{cp_fiat})`\n"
                 )
 
         message = (
-            f"{emoji} *{self._exchange_from_msg(msg)}:* "
+            f"{self._get_sell_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
@@ -413,25 +402,28 @@ class Telegram(RPCHandler):
             message += f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
             if msg['order_rate']:
                 message += f"*Exit Rate:* `{msg['order_rate']:.8f}`"
-
         elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
+
         if is_sub_trade:
-            if self._rpc._fiat_converter:
-                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['stake_amount'], msg['stake_currency'], fiat_currency)
-            else:
-                msg['stake_amount_fiat'] = 0
+            stake_amount_fiat = self.__format_profit_fiat(msg, 'stake_amount')
+
             rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Remaining:* `({rem}"
-
-            if fiat_currency:
-                message += f", {round_coin_value(msg['stake_amount_fiat'], fiat_currency)}"
-
-            message += ")`"
+            message += f"\n*Remaining:* `({rem}{stake_amount_fiat})`"
         else:
             message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message
+
+    def __format_profit_fiat(self, msg: Dict[str, Any], key: str) -> str:
+        """
+        Format Fiat currency to append to regular profit output
+        """
+        profit_fiat_extra = ''
+        if self._rpc._fiat_converter and (fiat_currency := msg.get('fiat_currency')):
+            profit_fiat = self._rpc._fiat_converter.convert_amount(
+                    msg[key], msg['stake_currency'], fiat_currency)
+            profit_fiat_extra = f" / {profit_fiat:.3f} {fiat_currency}"
+        return profit_fiat_extra
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
         if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:

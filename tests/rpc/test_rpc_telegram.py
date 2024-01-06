@@ -2234,7 +2234,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Exit Rate:* `0.00003201`\n'
-            '*Remaining:* `(0.01 ETH, -24.812 USD)`'
+            '*Remaining:* `(0.01 ETH / -24.812 USD)`'
             )
 
         msg_mock.reset_mock()
