@@ -347,6 +347,7 @@ class Telegram(RPCHandler):
         return message
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
+        fiat_currency = msg['fiat_currency']
         msg['amount'] = round(msg['amount'], 8)
         msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
         msg['duration'] = msg['close_date'].replace(
@@ -362,11 +363,11 @@ class Telegram(RPCHandler):
         # Check if all exit properties are available.
         # This might not be the case if the message origin is triggered by /forceexit
         msg['profit_extra'] = ''
-        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-                and self._rpc._fiat_converter):
-            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}"
+
+        if self._rpc._fiat_converter and fiat_currency:
+            profit_fiat = self._rpc._fiat_converter.convert_amount(
+                msg['profit_amount'], msg['stake_currency'], fiat_currency)
+            msg['profit_extra'] = f" / {profit_fiat:.3f} {fiat_currency}"
 
         msg['profit_extra'] = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
@@ -382,8 +383,8 @@ class Telegram(RPCHandler):
         if is_sub_trade or is_final_exit:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
-                    msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
-                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
+                    msg['cumulative_profit'], msg['stake_currency'], fiat_currency)
+                cp_extra = f" / {cp_fiat:.3f} {fiat_currency}"
             if is_final_exit:
                 profit_prefix = 'Sub '
                 cp_extra = (
@@ -421,14 +422,14 @@ class Telegram(RPCHandler):
         if is_sub_trade:
             if self._rpc._fiat_converter:
                 msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+                    msg['stake_amount'], msg['stake_currency'], fiat_currency)
             else:
                 msg['stake_amount_fiat'] = 0
             rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
             message += f"\n*Remaining:* `({rem}"
 
-            if msg.get('fiat_currency', None):
-                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            if fiat_currency:
+                message += f", {round_coin_value(msg['stake_amount_fiat'], fiat_currency)}"
 
             message += ")`"
         else:
