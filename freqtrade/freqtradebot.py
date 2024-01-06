@@ -18,7 +18,7 @@ from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfi
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, SignalDirection,
+from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, SignalDirection,
                              State, TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
@@ -1002,10 +1002,8 @@ class FreqtradeBot(LoggingMixin):
         if open_rate is None:
             open_rate = trade.open_rate
 
-        current_rate = trade.open_rate_requested
-        if self.dataprovider.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            current_rate = self.exchange.get_rate(
-                trade.pair, side='entry', is_short=trade.is_short, refresh=False)
+        current_rate = self.exchange.get_rate(
+            trade.pair, side='entry', is_short=trade.is_short, refresh=False)
 
         msg: RPCEntryMsg = {
             'trade_id': trade.id,
