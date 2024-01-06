@@ -40,7 +40,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.types import BacktestResultType, get_BacktestResultType_default
-from freqtrade.util.binance_mig import migrate_binance_futures_data
+from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
 
 
@@ -158,7 +158,7 @@ class Backtesting:
         self._can_short = self.trading_mode != TradingMode.SPOT
         self._position_stacking: bool = self.config.get('position_stacking', False)
         self.enable_protections: bool = self.config.get('enable_protections', False)
-        migrate_binance_futures_data(config)
+        migrate_data(config, self.exchange)
 
         self.init_backtest()
 
@@ -277,8 +277,10 @@ class Backtesting:
         else:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
-            self.funding_fee_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+            self.funding_fee_timeframe: str = self.exchange.get_option('funding_fee_timeframe')
             self.funding_fee_timeframe_secs: int = timeframe_to_seconds(self.funding_fee_timeframe)
+            mark_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+
             # Load additional futures data.
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
@@ -295,7 +297,7 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.funding_fee_timeframe,
+                timeframe=mark_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,

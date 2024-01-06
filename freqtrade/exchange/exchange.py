@@ -80,6 +80,7 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
+        "funding_fee_timeframe": "8h",
         "ccxt_futures_name": "swap",
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
@@ -2734,17 +2735,16 @@ class Exchange:
             # Only really relevant for trades very close to the full hour
             open_date = timeframe_to_prev_date('1h', open_date)
         timeframe = self._ft_has['mark_ohlcv_timeframe']
-        timeframe_ff = self._ft_has.get('funding_fee_timeframe',
-                                        self._ft_has['mark_ohlcv_timeframe'])
+        timeframe_ff = self._ft_has['funding_fee_timeframe']
+        mark_price_type = CandleType.from_string(self._ft_has["mark_ohlcv_price"])
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
         since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
 
-        mark_comb: PairWithTimeframe = (
-            pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
-
+        mark_comb: PairWithTimeframe = (pair, timeframe, mark_price_type)
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
+
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
             since_ms=since_ms,

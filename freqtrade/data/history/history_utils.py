@@ -18,8 +18,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.util import dt_ts, format_ms_time
-from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util.migrations import migrate_data
 
 
 logger = logging.getLogger(__name__)
@@ -311,15 +311,19 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # Predefined candletype (and timeframe) depending on exchange
             # Downloads what is necessary to backtest based on futures data.
             tf_mark = exchange.get_option('mark_ohlcv_timeframe')
+            tf_funding_rate = exchange.get_option('funding_fee_timeframe')
+
             fr_candle_type = CandleType.from_string(exchange.get_option('mark_ohlcv_price'))
             # All exchanges need FundingRate for futures trading.
             # The timeframe is aligned to the mark-price timeframe.
-            for funding_candle_type in (CandleType.FUNDING_RATE, fr_candle_type):
+            combs = ((CandleType.FUNDING_RATE, tf_funding_rate), (fr_candle_type, tf_mark))
+            for candle_type_f, tf in combs:
+                logger.debug(f'Downloading pair {pair}, {candle_type_f}, interval {tf}.')
                 _download_pair_history(pair=pair, process=process,
                                        datadir=datadir, exchange=exchange,
                                        timerange=timerange, data_handler=data_handler,
-                                       timeframe=str(tf_mark), new_pairs_days=new_pairs_days,
-                                       candle_type=funding_candle_type,
+                                       timeframe=str(tf), new_pairs_days=new_pairs_days,
+                                       candle_type=candle_type_f,
                                        erase=erase, prepend=prepend)
 
     return pairs_not_available
@@ -527,7 +531,7 @@ def download_data_main(config: Config) -> None:
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
                     )
-            migrate_binance_futures_data(config)
+            migrate_data(config, exchange)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
