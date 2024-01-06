@@ -360,7 +360,7 @@ class Telegram(RPCHandler):
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
         is_final_exit = msg.get('is_final_exit', False) and is_sub_profit
-        profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
+        profit_prefix = 'Sub ' if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
         if is_sub_trade or is_final_exit:
@@ -374,11 +374,12 @@ class Telegram(RPCHandler):
                 )
             else:
                 exit_wording = f"Partially {exit_wording.lower()}"
-                cp_extra = (
-                    f"*Cumulative Profit:* `({msg['cumulative_profit']:.8f} "
-                    f"{msg['stake_currency']}{cp_fiat})`\n"
-                )
-
+                if msg['cumulative_profit']:
+                    cp_extra = (
+                        f"*Cumulative Profit:* `({msg['cumulative_profit']:.8f} "
+                        f"{msg['stake_currency']}{cp_fiat})`\n"
+                    )
+        enter_tag = f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message = (
             f"{self._get_sell_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
@@ -386,7 +387,7 @@ class Telegram(RPCHandler):
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{profit_extra}`\n"
             f"{cp_extra}"
-            f"*Enter Tag:* `{msg['enter_tag']}`\n"
+            f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
             f"*Direction:* `{msg['direction']}`\n"
             f"{leverage_text}"
