@@ -348,10 +348,9 @@ class Telegram(RPCHandler):
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
         fiat_currency = msg['fiat_currency']
-        msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
-        msg['duration'] = msg['close_date'].replace(
+        duration = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
-        msg['duration_min'] = msg['duration'].total_seconds() / 60
+        duration_min = duration.total_seconds() / 60
 
         msg['emoji'] = self._get_sell_emoji(msg)
         msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
@@ -431,7 +430,7 @@ class Telegram(RPCHandler):
 
             message += ")`"
         else:
-            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
+            message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
@@ -513,9 +512,9 @@ class Telegram(RPCHandler):
         Get emoji for sell-side
         """
 
-        if float(msg['profit_percent']) >= 5.0:
+        if float(msg['profit_ratio']) >= 0.05:
             return "\N{ROCKET}"
-        elif float(msg['profit_percent']) >= 0.0:
+        elif float(msg['profit_ratio']) >= 0.0:
             return "\N{EIGHT SPOKED ASTERISK}"
         elif msg['exit_reason'] == "stop_loss":
             return "\N{WARNING SIGN}"

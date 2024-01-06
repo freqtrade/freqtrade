@@ -2497,13 +2497,13 @@ def test_send_msg_sell_notification_no_fiat(
 
 
 @pytest.mark.parametrize('msg,expected', [
-    ({'profit_percent': 20.1, 'exit_reason': 'roi'}, "\N{ROCKET}"),
-    ({'profit_percent': 5.1, 'exit_reason': 'roi'}, "\N{ROCKET}"),
-    ({'profit_percent': 2.56, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': 1.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': 0.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': -5.0, 'exit_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
-    ({'profit_percent': -2.0, 'exit_reason': 'sell_signal'}, "\N{CROSS MARK}"),
+    ({'profit_ratio': 0.201, 'exit_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_ratio': 0.051, 'exit_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_ratio': 0.0256, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_ratio': 0.01, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_ratio': 0.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_ratio': -0.05, 'exit_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
+    ({'profit_ratio': -0.02, 'exit_reason': 'sell_signal'}, "\N{CROSS MARK}"),
 ])
 def test__sell_emoji(default_conf, mocker, msg, expected):
     del default_conf['fiat_display_currency']
