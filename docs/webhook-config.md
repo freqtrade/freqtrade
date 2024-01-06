@@ -134,6 +134,7 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `order_type`
 * `current_rate`
@@ -155,6 +156,7 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `order_type`
 * `current_rate`
@@ -176,6 +178,7 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `order_type`
 * `current_rate`
@@ -199,6 +202,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `exit_reason`
 * `order_type`
@@ -224,6 +228,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `exit_reason`
 * `order_type`
@@ -249,6 +254,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `base_currency`
+* `quote_currency`
 * `fiat_currency`
 * `exit_reason`
 * `order_type`
