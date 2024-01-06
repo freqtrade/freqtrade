@@ -118,6 +118,9 @@ class RPCNewCandleMsg(RPCSendMsgBase):
     data: PairWithTimeframe
 
 
+RPCOrderMsg = Union[RPCEntryMsg, RPCExitMsg, RPCExitCancelMsg, RPCCancelMsg]
+
+
 RPCSendMsg = Union[
     RPCStatusMsg,
     RPCStrategyMsg,

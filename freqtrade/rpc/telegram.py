@@ -15,7 +15,7 @@ from html import escape
 from itertools import chain
 from math import isnan
 from threading import Thread
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
 
 from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
@@ -32,7 +32,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
-from freqtrade.rpc.rpc_types import RPCSendMsg
+from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
 from freqtrade.util import dt_humanize, round_coin_value
 
 
@@ -304,7 +304,7 @@ class Telegram(RPCHandler):
         asyncio.run_coroutine_threadsafe(self._cleanup_telegram(), self._loop)
         self._thread.join()
 
-    def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
+    def _exchange_from_msg(self, msg: RPCOrderMsg) -> str:
         """
         Extracts the exchange name from the given message.
         :param msg: The message to extract the exchange name from.
@@ -328,7 +328,7 @@ class Telegram(RPCHandler):
 
         return ''
 
-    def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
+    def _format_entry_msg(self, msg: RPCEntryMsg) -> str:
 
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
@@ -352,14 +352,14 @@ class Telegram(RPCHandler):
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
-        profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')  # type: ignore
         total = round_coin_value(msg['stake_amount'], msg['stake_currency'])
 
         message += f"*Total:* `{total}{profit_fiat_extra}`"
 
         return message
 
-    def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
+    def _format_exit_msg(self, msg: RPCExitMsg) -> str:
         duration = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         duration_min = duration.total_seconds() / 60
@@ -428,7 +428,11 @@ class Telegram(RPCHandler):
             message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message
 
-    def __format_profit_fiat(self, msg: Dict[str, Any], key: str) -> str:
+    def __format_profit_fiat(
+            self,
+            msg: RPCExitMsg,
+            key: Literal['stake_amount', 'profit_amount', 'cumulative_profit']
+    ) -> str:
         """
         Format Fiat currency to append to regular profit output
         """
@@ -439,47 +443,50 @@ class Telegram(RPCHandler):
             profit_fiat_extra = f" / {profit_fiat:.3f} {fiat_currency}"
         return profit_fiat_extra
 
-    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
-        if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
+    def compose_message(self, msg: RPCSendMsg) -> Optional[str]:
+        if msg['type'] == RPCMessageType.ENTRY or msg['type'] == RPCMessageType.ENTRY_FILL:
             message = self._format_entry_msg(msg)
 
-        elif msg_type in [RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]:
+        elif msg['type'] == RPCMessageType.EXIT or msg['type'] == RPCMessageType.EXIT_FILL:
             message = self._format_exit_msg(msg)
 
-        elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
-            msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
+        elif (
+            msg['type'] == RPCMessageType.ENTRY_CANCEL
+            or msg['type'] == RPCMessageType.EXIT_CANCEL
+        ):
+            message_side = 'enter' if msg['type'] == RPCMessageType.ENTRY_CANCEL else 'exit'
             message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
                        f"Cancelling {'partial ' if msg.get('sub_trade') else ''}"
-                       f"{msg['message_side']} Order for {msg['pair']} "
+                       f"{message_side} Order for {msg['pair']} "
                        f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
-        elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
+        elif msg['type'] == RPCMessageType.PROTECTION_TRIGGER:
             message = (
                 f"*Protection* triggered due to {msg['reason']}. "
                 f"`{msg['pair']}` will be locked until `{msg['lock_end_time']}`."
             )
 
-        elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
+        elif msg['type'] == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
             message = (
                 f"*Protection* triggered due to {msg['reason']}. "
                 f"*All pairs* will be locked until `{msg['lock_end_time']}`."
             )
 
-        elif msg_type == RPCMessageType.STATUS:
+        elif msg['type'] == RPCMessageType.STATUS:
             message = f"*Status:* `{msg['status']}`"
 
-        elif msg_type == RPCMessageType.WARNING:
+        elif msg['type'] == RPCMessageType.WARNING:
             message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
-        elif msg_type == RPCMessageType.EXCEPTION:
+        elif msg['type'] == RPCMessageType.EXCEPTION:
             # Errors will contain exceptions, which are wrapped in tripple ticks.
             message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
-        elif msg_type == RPCMessageType.STARTUP:
+        elif msg['type'] == RPCMessageType.STARTUP:
             message = f"{msg['status']}"
-        elif msg_type == RPCMessageType.STRATEGY_MSG:
+        elif msg['type'] == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
         else:
-            logger.debug("Unknown message type: %s", msg_type)
+            logger.debug("Unknown message type: %s", msg['type'])
             return None
         return message
 
@@ -507,7 +514,7 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(deepcopy(msg), msg_type)  # type: ignore
+        message = self.compose_message(deepcopy(msg))
         if message:
             asyncio.run_coroutine_threadsafe(
                 self._send_msg(message, disable_notification=(noti == 'silent')),
