@@ -330,7 +330,7 @@ class Telegram(RPCHandler):
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
-            message += f"*Leverage:* `{msg['leverage']}`\n"
+            message += f"*Leverage:* `{msg['leverage']:.1g}`\n"
 
         if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
@@ -356,7 +356,7 @@ class Telegram(RPCHandler):
 
         msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
-        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
+        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
                                 if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                                 else "")
 
