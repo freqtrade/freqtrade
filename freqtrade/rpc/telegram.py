@@ -352,23 +352,23 @@ class Telegram(RPCHandler):
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         duration_min = duration.total_seconds() / 60
 
-        msg['emoji'] = self._get_sell_emoji(msg)
-        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
-                                if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
-                                else "")
+        emoji = self._get_sell_emoji(msg)
+        leverage_text = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
+                         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
+                         else "")
 
         # Check if all exit properties are available.
         # This might not be the case if the message origin is triggered by /forceexit
-        msg['profit_extra'] = ''
+        profit_extra = ''
 
         if self._rpc._fiat_converter and fiat_currency:
             profit_fiat = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], fiat_currency)
-            msg['profit_extra'] = f" / {profit_fiat:.3f} {fiat_currency}"
+            profit_extra = f" / {profit_fiat:.3f} {fiat_currency}"
 
-        msg['profit_extra'] = (
+        profit_extra = (
             f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-            f"{msg['profit_extra']})")
+            f"{profit_extra})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         is_sub_trade = msg.get('sub_trade')
@@ -396,16 +396,16 @@ class Telegram(RPCHandler):
                 )
 
         message = (
-            f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
+            f"{emoji} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
-            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"`{msg['profit_ratio']:.2%}{profit_extra}`\n"
             f"{cp_extra}"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
             f"*Direction:* `{msg['direction']}`\n"
-            f"{msg['leverage_text']}"
+            f"{leverage_text}"
             f"*Amount:* `{round(msg['amount'], 8):.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
