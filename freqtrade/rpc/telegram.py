@@ -354,7 +354,6 @@ class Telegram(RPCHandler):
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         msg['duration_min'] = msg['duration'].total_seconds() / 60
 
-        msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
         msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
                                 if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
