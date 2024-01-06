@@ -9,8 +9,8 @@ import pytest
 
 from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
                             file_load_json, is_file_in_dir, json_to_dataframe, pair_to_filename,
-                            parse_db_uri_for_logging, plural, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2)
+                            parse_db_uri_for_logging, plural, round_coin_value, round_value,
+                            safe_value_fallback, safe_value_fallback2)
 
 
 def test_decimals_per_coin():
@@ -35,6 +35,18 @@ def test_round_coin_value():
     assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
     assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
     assert round_coin_value(222.2, 'USDT', False, True) == '222.200'
+
+
+def test_round_value():
+
+    assert round_value(222.222222, 3) == '222.222'
+    assert round_value(222.2, 3) == '222.2'
+    assert round_value(222.00, 3) == '222'
+    assert round_value(222.12745, 3) == '222.127'
+    assert round_value(0.1274512123, 8) == '0.12745121'
+    assert round_value(0.1274512123, 5) == '0.12745'
+    assert round_value(222.2, 3, True) == '222.200'
+    assert round_value(222.2, 0, True) == '222'
 
 
 def test_file_dump_json(mocker) -> None:
