@@ -14,9 +14,10 @@ from pandas import isna, json_normalize
 from freqtrade.constants import FTHYPT_FILEVERSION, Config
 from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
+from freqtrade.misc import deep_merge_dicts, round_dict, safe_value_fallback2
 from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
 from freqtrade.optimize.optimize_reports import generate_wins_draws_losses
+from freqtrade.util import round_coin_value
 
 
 logger = logging.getLogger(__name__)

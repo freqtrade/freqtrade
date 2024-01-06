@@ -29,11 +29,11 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN, Config
 from freqtrade.enums import MarketDirection, RPCMessageType, SignalDirection, TradingMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import chunks, plural, round_coin_value
+from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize
+from freqtrade.util import dt_humanize, round_coin_value
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH

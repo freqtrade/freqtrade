@@ -10,8 +10,8 @@ from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntO
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
-from freqtrade.misc import decimals_per_coin, round_coin_value
 from freqtrade.types import BacktestResultType
+from freqtrade.util import decimals_per_coin, round_coin_value
 
 
 logger = logging.getLogger(__name__)

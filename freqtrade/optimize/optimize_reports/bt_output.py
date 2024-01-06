@@ -4,9 +4,9 @@ from typing import Any, Dict, List
 from tabulate import tabulate
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
-from freqtrade.misc import decimals_per_coin, round_coin_value
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
 from freqtrade.types import BacktestResultType
+from freqtrade.util import decimals_per_coin, round_coin_value
 
 
 logger = logging.getLogger(__name__)
