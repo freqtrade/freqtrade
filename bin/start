@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+echo "> start"
+# bin/download-data
+bin/clean-models
+bin/clean-backtest-results
+bin/backtesting
+bin/plot-dataframe

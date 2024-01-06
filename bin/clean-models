@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+echo "> clean-models"
+rm -rf /freqtrade/user_data/models/*

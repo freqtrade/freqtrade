@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+echo "> clean-backtest-results"
+rm -rf /freqtrade/user_data/backtest_results/*.json

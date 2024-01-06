@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+echo "> download-data"
+freqtrade download-data \
+  --exchange kucoin \
+  --days 700 \
+  --pairs BTC/USDT ETH/USDT ADA/USDT \
+  --timeframe 3m 5m 15m 1h 1d

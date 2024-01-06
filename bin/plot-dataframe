@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+echo "> plot-dataframe"
+freqtrade plot-dataframe \
+  --config /freqtrade/user_data/config_freqai.example.json \
+  --strategy-path /freqtrade/user_data/strategies \
+  --strategy FreqaiExampleHybridStrategy \
+  --freqaimodel HydraClassifier \
+  --pairs ADA/USDT \
+  --indicators1 "&-s_labels" \
+  --timerange 20231201-20231231 \
+  --timeframe 3m

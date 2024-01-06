@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+echo "> backtesting"
+# freqtrade \
+python -m debugpy --listen 0.0.0.0:5678 --wait-for-client freqtrade \
+  backtesting \
+    --logfile /freqtrade/user_data/logs/freqtrade.log \
+    --config /freqtrade/user_data/config_freqai.example.json \
+    --strategy-path /freqtrade/user_data/strategies \
+    --strategy FreqaiExampleHybridStrategy \
+    --freqaimodel HydraClassifier \
+    --timerange 20231201-20231231 \
+    --timeframe 3m
