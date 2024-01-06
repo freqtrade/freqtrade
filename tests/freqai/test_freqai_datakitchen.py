@@ -157,6 +157,7 @@ def test_get_pair_data_for_features_with_prealoaded_data(mocker, freqai_conf):
 
 def test_get_pair_data_for_features_without_preloaded_data(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180115-20180130"})
+    freqai_conf['runmode'] = 'backtest'
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)

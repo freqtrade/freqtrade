@@ -299,8 +299,11 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
 def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180124"})
-    freqai_conf.get("freqai", {}).update({"backtest_period_days": 0.5})
-    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf['runmode'] = 'backtest'
+    freqai_conf.get("freqai", {}).update({
+        "backtest_period_days": 0.5,
+        "save_backtest_models": True,
+    })
     freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
         {"indicator_periods_candles": [2]})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -327,6 +330,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
 
 def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf['runmode'] = 'backtest'
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
         {"indicator_periods_candles": [2]})
@@ -390,6 +394,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
 
 def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
+    freqai_conf['runmode'] = 'backtest'
     freqai_conf.get("freqai", {}).update({"fit_live_predictions_candles": 10})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
