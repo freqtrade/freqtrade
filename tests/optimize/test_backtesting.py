@@ -1132,6 +1132,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
 def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     default_conf['max_open_trades'] = 10
+    default_conf['runmode'] = 'backtest'
     mocker.patch(f'{EXMS}.get_fee', fee)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=100000)
@@ -1298,6 +1299,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f'{EXMS}.get_fee', fee)
     default_conf['max_open_trades'] = 10
+    default_conf['runmode'] = 'backtest'
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
@@ -1342,6 +1344,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         dataframe['exit_short'] = 0
         return dataframe
 
+    default_conf['runmode'] = 'backtest'
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f'{EXMS}.get_fee', fee)
