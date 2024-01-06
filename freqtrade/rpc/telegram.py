@@ -311,11 +311,7 @@ class Telegram(RPCHandler):
         return ''
 
     def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
-        if self._rpc._fiat_converter:
-            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-        else:
-            msg['stake_amount_fiat'] = 0
+
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
@@ -338,12 +334,11 @@ class Telegram(RPCHandler):
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
-        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')
+        total = round_coin_value(msg['stake_amount'], msg['stake_currency'])
 
-        if msg.get('fiat_currency'):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+        message += f"*Total:* `{total}{profit_fiat_extra}`"
 
-        message += ")`"
         return message
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:

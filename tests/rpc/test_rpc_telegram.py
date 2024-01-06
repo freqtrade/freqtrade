@@ -2024,7 +2024,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         f'{leverage_text}'
         '*Open Rate:* `0.00001099`\n'
         '*Current Rate:* `0.00001099`\n'
-        '*Total:* `(0.01465333 BTC, 180.895 USD)`'
+        '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
@@ -2125,7 +2125,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
         '*Open Rate:* `0.00001099`\n'
-        '*Total:* `(0.01465333 BTC, 180.895 USD)`'
+        '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
     msg_mock.reset_mock()
@@ -2152,7 +2152,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
         '*Open Rate:* `0.00001099`\n'
-        '*Total:* `(0.01465333 BTC, 180.895 USD)`'
+        '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
 
@@ -2441,7 +2441,7 @@ def test_send_msg_buy_notification_no_fiat(
         f'{leverage_text}'
         '*Open Rate:* `0.00001099`\n'
         '*Current Rate:* `0.00001099`\n'
-        '*Total:* `(0.01465333 BTC)`'
+        '*Total:* `0.01465333 BTC`'
     )
 
 
