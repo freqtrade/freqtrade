@@ -347,7 +347,7 @@ class Telegram(RPCHandler):
             message += f"*Leverage:* `{msg['leverage']:.1g}`\n"
 
         message += f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
-        if msg['type'] == RPCMessageType.ENTRY:
+        if msg['type'] == RPCMessageType.ENTRY and msg['current_rate']:
             message += f"*Current Rate:* `{fmt_coin(msg['current_rate'], msg['quote_currency'])}`\n"
 
         profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')  # type: ignore
@@ -410,7 +410,7 @@ class Telegram(RPCHandler):
             f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
             f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         )
-        if msg['type'] == RPCMessageType.EXIT:
+        if msg['type'] == RPCMessageType.EXIT and msg['current_rate']:
             message += f"*Current Rate:* `{fmt_coin(msg['current_rate'], msg['quote_currency'])}`\n"
             if msg['order_rate']:
                 message += f"*Exit Rate:* `{fmt_coin(msg['order_rate'], msg['quote_currency'])}`"
