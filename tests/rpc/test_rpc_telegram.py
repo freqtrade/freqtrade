@@ -2005,6 +2005,8 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
+        'quote_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
@@ -2022,8 +2024,8 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f'{leverage_text}'
-        '*Open Rate:* `0.00001099`\n'
-        '*Current Rate:* `0.00001099`\n'
+        '*Open Rate:* `0.00001099 BTC`\n'
+        '*Current Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
@@ -2113,6 +2115,8 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'stake_amount': 0.01465333,
         'direction': entered,
         'stake_currency': 'BTC',
+        'quote_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
         'amount': 1333.3333333333335,
@@ -2124,7 +2128,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
-        '*Open Rate:* `0.00001099`\n'
+        '*Open Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
@@ -2140,6 +2144,8 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'sub_trade': True,
         'direction': entered,
         'stake_currency': 'BTC',
+        'quote_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
         'amount': 1333.3333333333335,
@@ -2151,7 +2157,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
-        '*Open Rate:* `0.00001099`\n'
+        '*Open Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
@@ -2171,14 +2177,16 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             'leverage': 1.0,
             'direction': 'Long',
             'gain': 'loss',
-            'order_rate': 3.201e-05,
+            'order_rate': 3.201e-04,
             'amount': 1333.3333333333335,
             'order_type': 'market',
-            'open_rate': 7.5e-05,
-            'current_rate': 3.201e-05,
+            'open_rate': 7.5e-04,
+            'current_rate': 3.201e-04,
             'profit_amount': -0.05746268,
             'profit_ratio': -0.57405275,
             'stake_currency': 'ETH',
+            'quote_currency': 'ETH',
+            'base_currency': 'KEY',
             'fiat_currency': 'USD',
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
@@ -2187,14 +2195,14 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH / -24.812 USD)`\n'
             '*Enter Tag:* `buy_signal1`\n'
             '*Exit Reason:* `stop_loss`\n'
             '*Direction:* `Long`\n'
             '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Exit Rate:* `0.00003201`\n'
+            '*Open Rate:* `0.00075 ETH`\n'
+            '*Current Rate:* `0.00032 ETH`\n'
+            '*Exit Rate:* `0.00032 ETH`\n'
             '*Duration:* `1:00:00 (60.0 min)`'
         )
 
@@ -2206,15 +2214,17 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             'pair': 'KEY/ETH',
             'direction': 'Long',
             'gain': 'loss',
-            'order_rate': 3.201e-05,
+            'order_rate': 3.201e-04,
             'amount': 1333.3333333333335,
             'order_type': 'market',
-            'open_rate': 7.5e-05,
-            'current_rate': 3.201e-05,
+            'open_rate': 7.5e-04,
+            'current_rate': 3.201e-04,
             'cumulative_profit': -0.15746268,
             'profit_amount': -0.05746268,
             'profit_ratio': -0.57405275,
             'stake_currency': 'ETH',
+            'quote_currency': 'ETH',
+            'base_currency': 'KEY',
             'fiat_currency': 'USD',
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
@@ -2225,15 +2235,15 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n'
-            '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Cumulative Profit:* `-0.15746268 ETH / -24.812 USD`\n'
+            '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746 ETH / -24.812 USD)`\n'
+            '*Cumulative Profit:* `-0.15746 ETH / -24.812 USD`\n'
             '*Enter Tag:* `buy_signal1`\n'
             '*Exit Reason:* `stop_loss`\n'
             '*Direction:* `Long`\n'
             '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Exit Rate:* `0.00003201`\n'
+            '*Open Rate:* `0.00075 ETH`\n'
+            '*Current Rate:* `0.00032 ETH`\n'
+            '*Exit Rate:* `0.00032 ETH`\n'
             '*Remaining:* `0.01 ETH / -24.812 USD`'
             )
 
@@ -2245,14 +2255,16 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             'pair': 'KEY/ETH',
             'direction': 'Long',
             'gain': 'loss',
-            'order_rate': 3.201e-05,
+            'order_rate': 3.201e-04,
             'amount': 1333.3333333333335,
             'order_type': 'market',
-            'open_rate': 7.5e-05,
-            'current_rate': 3.201e-05,
+            'open_rate': 7.5e-04,
+            'current_rate': 3.201e-04,
             'profit_amount': -0.05746268,
             'profit_ratio': -0.57405275,
             'stake_currency': 'ETH',
+            'quote_currency': 'ETH',
+            'base_currency': 'KEY',
             'fiat_currency': None,
             'enter_tag': 'buy_signal1',
             'exit_reason': ExitType.STOP_LOSS.value,
@@ -2261,14 +2273,14 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
         })
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
             '*Enter Tag:* `buy_signal1`\n'
             '*Exit Reason:* `stop_loss`\n'
             '*Direction:* `Long`\n'
             '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Exit Rate:* `0.00003201`\n'
+            '*Open Rate:* `0.00075 ETH`\n'
+            '*Current Rate:* `0.00032 ETH`\n'
+            '*Exit Rate:* `0.00032 ETH`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
         )
         # Reset singleton function to avoid random breaks
@@ -2328,14 +2340,16 @@ def test_send_msg_exit_fill_notification(default_conf, mocker, direction,
             'leverage': leverage,
             'direction': direction,
             'gain': 'loss',
-            'limit': 3.201e-05,
+            'limit': 3.201e-04,
             'amount': 1333.3333333333335,
             'order_type': 'market',
-            'open_rate': 7.5e-05,
-            'close_rate': 3.201e-05,
+            'open_rate': 7.5e-04,
+            'close_rate': 3.201e-04,
             'profit_amount': -0.05746268,
             'profit_ratio': -0.57405275,
             'stake_currency': 'ETH',
+            'quote_currency': 'ETH',
+            'base_currency': 'KEY',
             'fiat_currency': None,
             'enter_tag': enter_signal,
             'exit_reason': ExitType.STOP_LOSS.value,
@@ -2346,14 +2360,14 @@ def test_send_msg_exit_fill_notification(default_conf, mocker, direction,
         leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
-            '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+            '*Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
             f'*Enter Tag:* `{enter_signal}`\n'
             '*Exit Reason:* `stop_loss`\n'
             f"*Direction:* `{direction}`\n"
             f"{leverage_text}"
             '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Exit Rate:* `0.00003201`\n'
+            '*Open Rate:* `0.00075 ETH`\n'
+            '*Exit Rate:* `0.00032 ETH`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
         )
 
@@ -2427,6 +2441,8 @@ def test_send_msg_buy_notification_no_fiat(
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
+        'quote_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': None,
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
@@ -2439,8 +2455,8 @@ def test_send_msg_buy_notification_no_fiat(
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f'{leverage_text}'
-        '*Open Rate:* `0.00001099`\n'
-        '*Current Rate:* `0.00001099`\n'
+        '*Open Rate:* `0.00001099 BTC`\n'
+        '*Current Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC`'
     )
 
@@ -2465,14 +2481,16 @@ def test_send_msg_exit_notification_no_fiat(
         'gain': 'loss',
         'leverage': leverage,
         'direction': direction,
-        'order_rate': 3.201e-05,
+        'order_rate': 3.201e-04,
         'amount': 1333.3333333333335,
         'order_type': 'limit',
-        'open_rate': 7.5e-05,
-        'current_rate': 3.201e-05,
+        'open_rate': 7.5e-04,
+        'current_rate': 3.201e-04,
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
+        'quote_currency': 'ETH',
+        'base_currency': 'KEY',
         'fiat_currency': 'USD',
         'enter_tag': enter_signal,
         'exit_reason': ExitType.STOP_LOSS.value,
@@ -2483,15 +2501,15 @@ def test_send_msg_exit_notification_no_fiat(
     leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+        '*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
         f'*Direction:* `{direction}`\n'
         f'{leverage_text}'
         '*Amount:* `1333.33333333`\n'
-        '*Open Rate:* `0.00007500`\n'
-        '*Current Rate:* `0.00003201`\n'
-        '*Exit Rate:* `0.00003201`\n'
+        '*Open Rate:* `0.00075 ETH`\n'
+        '*Current Rate:* `0.00032 ETH`\n'
+        '*Exit Rate:* `0.00032 ETH`\n'
         '*Duration:* `2:35:03 (155.1 min)`'
     )
 
