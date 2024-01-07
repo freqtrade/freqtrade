@@ -146,7 +146,8 @@ class MarketCapFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
-        marketcap_list = self._marketcap_cache.get('marketcap')
+        # marketcap_list = self._marketcap_cache.get('marketcap')
+        marketcap_list = []
         can_filter = False
 
         if marketcap_list:
