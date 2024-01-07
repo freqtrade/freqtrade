@@ -1,92 +1,14 @@
-from freqtrade.freqai.base_models.BasePyTorchClassifier import BasePyTorchClassifier
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.torch.PyTorchDataConvertor import (
-    PyTorchDataConvertor,
-    DefaultPyTorchDataConvertor,
-)
+from freqtrade.freqai.torch.HydraModel import HydraModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
-from pandas import DataFrame
 from pathlib import Path
 from torch.optim.optimizer import Optimizer
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import copy
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-
-
-class HydraModel(nn.Module):
-    n_kernels_per_group: int
-    n_groups: int
-    dilations: torch.Tensor
-    num_dilations: int
-    paddings: torch.Tensor
-    divisor: int
-    h: int
-    W: torch.Tensor
-
-    def __init__(
-        self,
-        input_length: int,
-        n_kernels_per_group: int = 8,
-        n_groups: int = 64,
-        seed: int | None = None,
-    ) -> None:
-        super().__init__()
-        if seed is not None:
-            torch.manual_seed(seed)
-        self.n_kernels_per_group = n_kernels_per_group  # num kernels per group
-        self.n_groups = n_groups  # num groups
-        max_exponent = np.log2((input_length - 1) / (9 - 1))  # kernel length = 9
-        self.dilations = 2 ** torch.arange(int(max_exponent) + 1)
-        self.num_dilations = len(self.dilations)
-        self.paddings = torch.div((9 - 1) * self.dilations, 2, rounding_mode="floor").int()
-        self.divisor = min(2, self.n_groups)
-        self.h = self.n_groups // self.divisor
-        self.W = torch.randn(
-            self.num_dilations, self.divisor, self.n_kernels_per_group * self.h, 1, 9
-        )
-        self.W = self.W - self.W.mean(-1, keepdims=True)
-        self.W = self.W / self.W.abs().sum(-1, keepdims=True)
-
-    def batch(self, X: torch.Tensor, batch_size: int = 256):
-        num_examples = X.shape[0]
-        if num_examples <= batch_size:
-            return self(X)
-        else:
-            Z = []
-            batches = torch.arange(num_examples).split(batch_size)
-            for batch in batches:
-                Z.append(self(X[batch]))
-            return torch.cat(Z)
-
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
-        num_examples: int = X.shape[0]
-        Z = []
-        for dilation_index in range(self.num_dilations):
-            n_dilations = int(self.dilations[dilation_index].item())
-            n_padding = int(self.paddings[dilation_index].item())
-            for diff_index in range(self.divisor):
-                _Z = F.conv1d(
-                    X if diff_index == 0 else torch.diff(X),
-                    self.W[dilation_index, diff_index],
-                    dilation=n_dilations,
-                    padding=n_padding,
-                ).view(num_examples, self.h, self.n_kernels_per_group, -1)
-                max_values, max_indices = _Z.max(2)
-                count_max = torch.zeros(num_examples, self.h, self.n_kernels_per_group)
-                min_values, min_indices = _Z.min(2)
-                count_min = torch.zeros(num_examples, self.h, self.n_kernels_per_group)
-                count_max.scatter_add_(-1, max_indices, max_values)
-                count_min.scatter_add_(-1, min_indices, torch.ones_like(min_values))
-                Z.append(count_max)
-                Z.append(count_min)
-        Z = torch.cat(Z, 1).view(num_examples, -1)
-        return Z
 
 
 class HydraTrainer(PyTorchModelTrainer):
@@ -383,7 +305,16 @@ class HydraTrainer(PyTorchModelTrainer):
 
         return transform, best_model, optimizer, f_mean, f_std, validation_accuracy
 
-    def predict(self, X: np.ndarray, y: np.ndarray, transform, model, f_mean, f_std, **kwargs):
+    def predict(
+        self,
+        X: np.ndarray,
+        # y: np.ndarray,
+        transform,
+        model,
+        f_mean,
+        f_std,
+        **kwargs,
+    ):
         args: dict[str, Any] = {
             "batch_size": 256,
             "test_size": None,
@@ -400,12 +331,12 @@ class HydraTrainer(PyTorchModelTrainer):
 
         predictions = []
 
-        correct = 0
+        # correct = 0
         total = 0
 
         for batch_index, batch in enumerate(batches):
             X_test = torch.tensor(X[batch]).float().unsqueeze(1)
-            Y_test = torch.tensor(y[batch]).long()
+            # Y_test = torch.tensor(y[batch]).long()
 
             X_test_transform = transform(X_test).clamp(0).sqrt()
 
@@ -418,110 +349,16 @@ class HydraTrainer(PyTorchModelTrainer):
             predictions.append(_predictions)
 
             total += len(X_test)
-            correct += (_predictions == Y_test).long().sum()
+            # correct += (_predictions == Y_test).long().sum()
 
-        return np.concatenate(predictions), correct / total
+        return np.concatenate(predictions)
+        # , correct / total
 
     def save(self, path: Path):
-        print("MONGOOL")
+        print("doesn't work")
         # torch.save({
         #     "model_state_dict": self.model.state_dict(),
         #     "optimizer_state_dict": self.optimizer.state_dict(),
         #     "model_meta_data": self.model_meta_data,
         #     "pytrainer": self
         # }, path)
-
-
-class HydraClassifier(BasePyTorchClassifier):
-    trainer: HydraTrainer
-
-    @property
-    def data_convertor(self) -> PyTorchDataConvertor:
-        return DefaultPyTorchDataConvertor(target_tensor_type=torch.long)
-
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        config = self.freqai_info.get("model_training_parameters", {})
-        self.learning_rate: float = config.get("learning_rate", 3e-4)
-        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs", {})
-        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs", {})
-        self.class_names = ["up", "down", "nan"]
-
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
-        class_names = self.get_class_names()
-        self.convert_label_column_to_int(data_dictionary, dk, class_names)
-
-        self.trainer = self.get_init_model(dk.pair) or HydraTrainer(
-            model_meta_data={"class_names": class_names},
-            device=self.device,
-            tb_logger=self.tb_logger,
-            **self.trainer_kwargs,
-        )
-
-        self.trainer.fit(data_dictionary, self.splits)
-
-        return self.trainer
-
-    def predict(
-        self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
-        class_names = self.get_class_names()
-
-        if not self.class_name_to_index:
-            self.init_class_names_to_index_mapping(class_names)
-
-        dk.find_features(unfiltered_df)
-        filtered_df, _ = dk.filter_features(
-            unfiltered_df, dk.training_features_list, training_filter=False
-        )
-
-        dk.data_dictionary["prediction_features"] = filtered_df
-
-        dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
-            dk.data_dictionary["prediction_features"], outlier_check=True
-        )
-
-        X: np.ndarray = dk.data_dictionary["prediction_features"].to_numpy()
-        y: np.ndarray = dk.data_dictionary["prediction_labels"].to_numpy()
-
-        trainer = self.trainer
-        predictions, score = trainer.predict(
-            X, y, trainer.transform, trainer.model, trainer.f_mean, trainer.f_std
-        )
-        df_predictions = DataFrame(predictions, columns=[dk.label_list[0]])
-        dk.do_predict = outliers
-        return (df_predictions, dk.do_predict)
-
-
-class SparseScaler:
-    mask: bool
-    exponent: int
-    fitted: bool
-    epsilon: torch.Tensor
-    sigma: torch.Tensor
-    mu: torch.Tensor
-
-    def __init__(self, mask: bool = True, exponent: int = 4) -> None:
-        self.mask = mask
-        self.exponent = exponent
-        self.fitted = False
-
-    def fit(self, X: torch.Tensor) -> None:
-        assert not self.fitted, "Already fitted."
-        X = X.clamp(0).sqrt()
-        self.epsilon = (X == 0).float().mean(0) ** self.exponent + 1e-8
-        self.mu = X.mean(0)
-        self.sigma = X.std(0) + self.epsilon
-        self.fitted = True
-
-    def transform(self, X: torch.Tensor) -> torch.Tensor:
-        assert self.fitted, "Not fitted."
-        X = X.clamp(0).sqrt()
-        if self.mask:
-            return ((X - self.mu) * (X != 0)) / self.sigma
-        else:
-            return (X - self.mu) / self.sigma
-
-    def fit_transform(self, X: torch.Tensor) -> torch.Tensor:
-        self.fit(X)
-        return self.transform(X)

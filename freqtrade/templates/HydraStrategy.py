@@ -1,4 +1,3 @@
-from datetime import datetime
 from pandas import DataFrame, Series
 from technical import qtpylib
 from typing import Dict

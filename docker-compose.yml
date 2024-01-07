@@ -8,9 +8,9 @@ services:
     restart: unless-stopped
     container_name: freqtrade
     volumes:
-      # - "./freqtrade:/freqtrade/freqtrade"
-      # - "./freqtrade:/freqtrade"
       - "./bin:/freqtrade/bin"
+      - "./freqtrade/freqai:/freqtrade/freqai"
+      - "./freqtrade/templates:/freqtrade/templates"
       - "./user_data:/freqtrade/user_data"
     ports:
       - "5678:5678"
