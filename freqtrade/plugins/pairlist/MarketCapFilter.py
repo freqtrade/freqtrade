@@ -98,7 +98,7 @@ class MarketCapFilter(IPairList):
         """
         # Generate dynamic whitelist
         # Must always run if this pairlist is not the first in the list.
-        pairlist = self._marketcap_cache.get('pairlist_mc')
+        # pairlist = self._marketcap_cache.get('pairlist_mc')
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
@@ -121,7 +121,7 @@ class MarketCapFilter(IPairList):
             #     pairlist = _pairlist
 
             pairlist = self.filter_pairlist(_pairlist, tickers)
-            self._marketcap_cache['pairlist_mc'] = pairlist.copy()
+            # self._marketcap_cache['pairlist_mc'] = pairlist.copy()
 
         return pairlist
 
