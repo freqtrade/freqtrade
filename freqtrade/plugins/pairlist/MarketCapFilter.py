@@ -170,11 +170,8 @@ class MarketCapFilter(IPairList):
             # option B
             for mc_pair in marketcap_list:
                 test_pair = f"{mc_pair.upper()}/{self._stake_currency.upper()}"
-                logger.info(f"Check test pair name {test_pair}")
                 if test_pair in pairlist:
-                    logger.info(f"{test_pair} is in pairlist")
                     filtered_pairlist.append(test_pair)
-                    logger.info(f"{len(filtered_pairlist)} pairs in filtered pairlist")
                     if len(filtered_pairlist) == self._max_rank:
                         break
 
