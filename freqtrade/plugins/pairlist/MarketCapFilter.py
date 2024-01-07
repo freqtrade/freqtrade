@@ -156,9 +156,7 @@ class MarketCapFilter(IPairList):
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
             if data:
-                marketcap_list = []
-                for row in data:
-                    marketcap_list.append(row['symbol'])
+                marketcap_list = [row['symbol'] for row in data]
 
                 if len(marketcap_list) > 0:
                     self._marketcap_cache['marketcap'] = marketcap_list
