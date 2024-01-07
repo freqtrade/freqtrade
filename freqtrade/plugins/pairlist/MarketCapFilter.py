@@ -120,10 +120,14 @@ class MarketCapFilter(IPairList):
         if can_filter:
             filtered_pairlist = []
             top_marketcap = marketcap_list[:self._max_rank:]
-            logger.info(top_marketcap)
-            logger.info(len(top_marketcap))
 
-            # for pair in pairlist:
+            for pair in pairlist:
+                base = pair.split('/')[0]
+                if base.lower() in top_marketcap:
+                    filtered_pairlist.append(pair)
+
+            if len(filtered_pairlist) > 0:
+                return filtered_pairlist
 
 
         return pairlist
