@@ -154,15 +154,25 @@ class MarketCapFilter(IPairList):
 
         if can_filter:
             filtered_pairlist = []
-            top_marketcap = marketcap_list[:self._max_rank:]
 
-            for pair in pairlist:
-                base = pair.split('/')[0]
-                if base.lower() in top_marketcap:
-                    filtered_pairlist.append(pair)
-                else:
-                    logger.info(f"Remove {pair} from whitelist because it's not in "
-                                f"top {self._max_rank} market cap")
+            # option A
+            # top_marketcap = marketcap_list[:self._max_rank:]
+
+            # for pair in pairlist:
+            #     base = pair.split('/')[0]
+            #     if base.lower() in top_marketcap:
+            #         filtered_pairlist.append(pair)
+            #     else:
+            #         logger.info(f"Remove {pair} from whitelist because it's not in "
+            #                     f"top {self._max_rank} market cap")
+
+            # option B
+            for mc_pair in marketcap_list:
+                test_pair = f"{mc_pair.upper()}/{self._stake_currency.upper}"
+                if test_pair in pairlist:
+                    filtered_pairlist.append(test_pair)
+                    if len(filtered_pairlist) == self._max_rank:
+                        break
 
             if len(filtered_pairlist) > 0:
                 return filtered_pairlist
