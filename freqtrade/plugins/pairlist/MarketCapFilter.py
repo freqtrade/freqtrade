@@ -90,6 +90,41 @@ class MarketCapFilter(IPairList):
             }
         }
 
+    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+        """
+        Generate the pairlist
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
+        :return: List of pairs
+        """
+        # Generate dynamic whitelist
+        # Must always run if this pairlist is not the first in the list.
+        pairlist = self._marketcap_cache.get('pairlist_mc')
+        if pairlist:
+            # Item found - no refresh necessary
+            return pairlist.copy()
+        else:
+            # Use fresh pairlist
+            # Check if pair quote currency equals to the stake currency.
+            _pairlist = [k for k in self._exchange.get_markets(
+                quote_currencies=[self._stake_currency],
+                tradable_only=True, active_only=True).keys()]
+            # No point in testing for blacklisted pairs...
+            _pairlist = self.verify_blacklist(_pairlist, logger.info)
+            # if not self._use_range:
+            #     filtered_tickers = [
+            #         v for k, v in tickers.items()
+            #         if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+            #             and (self._use_range or v.get(self._sort_key) is not None)
+            #             and v['symbol'] in _pairlist)]
+            #     pairlist = [s['symbol'] for s in filtered_tickers]
+            # else:
+            #     pairlist = _pairlist
+
+            pairlist = self.filter_pairlist(_pairlist, tickers)
+            self._marketcap_cache['pairlist_mc'] = pairlist.copy()
+
+        return pairlist
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
