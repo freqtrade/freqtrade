@@ -125,6 +125,9 @@ class MarketCapFilter(IPairList):
                 base = pair.split('/')[0]
                 if base.lower() in top_marketcap:
                     filtered_pairlist.append(pair)
+                else:
+                    logger.info(f"Remove {pair} from whitelist because it's not in "
+                                f"top {self._max_rank} market cap")
 
             if len(filtered_pairlist) > 0:
                 return filtered_pairlist
