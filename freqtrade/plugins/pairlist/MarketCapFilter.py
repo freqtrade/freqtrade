@@ -104,7 +104,7 @@ class MarketCapFilter(IPairList):
         if marketcap_list:
             can_filter = True
         else:
-            data = self._coingekko.get_coins_markets(vs_currencies='usd', order='market_cap_desc',
+            data = self._coingekko.get_coins_markets(vs_currency='usd', order='market_cap_desc',
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
             if data:
