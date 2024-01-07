@@ -2008,6 +2008,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         'quote_currency': 'BTC',
         'base_currency': 'ETH',
         'fiat_currency': 'USD',
+        'sub_trade': False,
         'current_rate': 1.099e-05,
         'amount': 1333.3333333333335,
         'analyzed_candle': {'open': 1.1, 'high': 2.2, 'low': 1.0, 'close': 1.5},
@@ -2016,14 +2017,16 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg(msg)
-    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
 
     assert msg_mock.call_args[0][0] == (
-        f'\N{LARGE BLUE CIRCLE} *Binance (dry):* {enter} ETH/BTC (#1)\n'
+        f'\N{LARGE BLUE CIRCLE} *Binance (dry):* New Trade (#1)\n'
+        f'*Pair:* `ETH/BTC`\n'
         '*Candle OHLC*: `1.1, 2.2, 1.0, 1.5`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
-        f'{leverage_text}'
+        f'*Direction:* `{enter}'
+        f'{leverage_text}`\n'
         '*Open Rate:* `0.00001099 BTC`\n'
         '*Current Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC / 180.895 USD`'
@@ -2114,6 +2117,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'leverage': leverage,
         'stake_amount': 0.01465333,
         'direction': entered,
+        'sub_trade': False,
         'stake_currency': 'BTC',
         'quote_currency': 'BTC',
         'base_currency': 'ETH',
@@ -2122,12 +2126,14 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'amount': 1333.3333333333335,
         'open_date': dt_now() - timedelta(hours=1)
     })
-    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.1g}x)' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
+        f'\N{CHECK MARK} *Binance (dry):* New Trade filled (#1)\n'
+        f'*Pair:* `ETH/BTC`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
-        f"{leverage_text}"
+        f'*Direction:* `{entered}'
+        f"{leverage_text}`\n"
         '*Open Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
@@ -2153,12 +2159,14 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
     })
 
     assert msg_mock.call_args[0][0] == (
-        f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
+        f'\N{CHECK MARK} *Binance (dry):* Position increase filled (#1)\n'
+        f'*Pair:* `ETH/BTC`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
-        f"{leverage_text}"
+        f'*Direction:* `{entered}'
+        f"{leverage_text}`\n"
         '*Open Rate:* `0.00001099 BTC`\n'
-        '*Total:* `0.01465333 BTC / 180.895 USD`'
+        '*New Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
 
@@ -2357,13 +2365,13 @@ def test_send_msg_exit_fill_notification(default_conf, mocker, direction,
             'close_date': dt_now(),
         })
 
-        leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
+        leverage_text = f' ({leverage:.1g}x)`\n' if leverage and leverage != 1.0 else '`\n'
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
             '*Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
             f'*Enter Tag:* `{enter_signal}`\n'
             '*Exit Reason:* `stop_loss`\n'
-            f"*Direction:* `{direction}`\n"
+            f"*Direction:* `{direction}"
             f"{leverage_text}"
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00075 ETH`\n'
@@ -2438,6 +2446,7 @@ def test_send_msg_buy_notification_no_fiat(
         'open_rate': 1.099e-05,
         'order_type': 'limit',
         'direction': enter,
+        'sub_trade': False,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -2449,12 +2458,14 @@ def test_send_msg_buy_notification_no_fiat(
         'open_date': dt_now() - timedelta(hours=1)
     })
 
-    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
+        f'\N{LARGE BLUE CIRCLE} *Binance:* New Trade (#1)\n'
+        '*Pair:* `ETH/BTC`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
-        f'{leverage_text}'
+        f'*Direction:* `{enter}'
+        f'{leverage_text}`\n'
         '*Open Rate:* `0.00001099 BTC`\n'
         '*Current Rate:* `0.00001099 BTC`\n'
         '*Total:* `0.01465333 BTC`'
@@ -2481,6 +2492,7 @@ def test_send_msg_exit_notification_no_fiat(
         'gain': 'loss',
         'leverage': leverage,
         'direction': direction,
+        'sub_trade': False,
         'order_rate': 3.201e-04,
         'amount': 1333.3333333333335,
         'order_type': 'limit',
@@ -2498,14 +2510,14 @@ def test_send_msg_exit_notification_no_fiat(
         'close_date': dt_now(),
     })
 
-    leverage_text = f'*Leverage:* `{leverage:.1g}`\n' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
-        f'*Direction:* `{direction}`\n'
-        f'{leverage_text}'
+        f'*Direction:* `{direction}'
+        f'{leverage_text}`\n'
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00075 ETH`\n'
         '*Current Rate:* `0.00032 ETH`\n'

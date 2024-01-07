@@ -415,8 +415,7 @@ class Telegram(RPCHandler):
             f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
             f"*Direction:* `{msg['direction']}"
-            f"{leverage_text}"
-            "`\n"
+            f"{leverage_text}`\n"
             f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
             f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         )
