@@ -108,12 +108,22 @@ class MarketCapFilter(IPairList):
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
             if data:
-                pairs_data = []
+                marketcap_list = []
                 for row in data:
-                    pairs_data.append(row['symbol'])
+                    marketcap_list.append(row['symbol'])
 
-                if len(pairs_data) > 0:
-                    logger.info(pairs_data)
-                    self._marketcap_cache['marketcap'] = pairs_data
+                if len(marketcap_list) > 0:
+                    self._marketcap_cache['marketcap'] = marketcap_list
+                    can_filter = True
+
+
+        if can_filter:
+            filtered_pairlist = []
+            top_marketcap = marketcap_list[:self._max_rank:]
+            logger.info(top_marketcap)
+            logger.info(len(top_marketcap))
+
+            # for pair in pairlist:
+
 
         return pairlist
