@@ -48,7 +48,7 @@ class MarketCapFilter(IPairList):
 
         if self._limit > 250:
             raise OperationalException(
-                "This filter only support up to rank 250."
+                "This filter only support limit value up to 250."
             )
 
         if not self._validate_keys(self._mode):
@@ -124,15 +124,6 @@ class MarketCapFilter(IPairList):
                 tradable_only=True, active_only=True).keys()]
             # No point in testing for blacklisted pairs...
             _pairlist = self.verify_blacklist(_pairlist, logger.info)
-            # if not self._use_range:
-            #     filtered_tickers = [
-            #         v for k, v in tickers.items()
-            #         if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-            #             and (self._use_range or v.get(self._sort_key) is not None)
-            #             and v['symbol'] in _pairlist)]
-            #     pairlist = [s['symbol'] for s in filtered_tickers]
-            # else:
-            #     pairlist = _pairlist
 
             pairlist = self.filter_pairlist(_pairlist, tickers)
             # self._marketcap_cache['pairlist_mc'] = pairlist.copy()
