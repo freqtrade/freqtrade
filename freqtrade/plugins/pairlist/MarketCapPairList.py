@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 MODE_VALUES = ['top_rank', 'total_assets']
 
 
-class MarketCapFilter(IPairList):
+class MarketCapPairList(IPairList):
 
     is_pairlist_generator = True
 
@@ -116,7 +116,6 @@ class MarketCapFilter(IPairList):
         else:
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
-            logger.info("Get active pairs for the market")
             _pairlist = [k for k in self._exchange.get_markets(
                 quote_currencies=[self._stake_currency],
                 tradable_only=True, active_only=True).keys()]
@@ -142,7 +141,6 @@ class MarketCapFilter(IPairList):
         if marketcap_list:
             can_filter = True
         else:
-            logger.info("Get top 250 marketcap coins from coingecko")
             data = self._coingekko.get_coins_markets(vs_currency='usd', order='market_cap_desc',
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
@@ -157,7 +155,6 @@ class MarketCapFilter(IPairList):
         if can_filter:
             filtered_pairlist = []
 
-            logger.info("Create filtered pairlist")
 
             if self._mode == 'top_rank':
                 top_marketcap = marketcap_list[:self._limit:]
