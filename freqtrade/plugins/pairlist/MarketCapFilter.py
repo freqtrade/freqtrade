@@ -11,7 +11,6 @@ from cachetools import TTLCache
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 from freqtrade.util import dt_now, format_ms_time
@@ -110,8 +109,7 @@ class MarketCapFilter(IPairList):
         """
         # Generate dynamic whitelist
         # Must always run if this pairlist is not the first in the list.
-        # pairlist = self._marketcap_cache.get('pairlist_mc')
-        pairlist=[]
+        pairlist = self._marketcap_cache.get('pairlist_mc')
         if pairlist:
             # Item found - no refresh necessary
             return pairlist.copy()
@@ -126,7 +124,7 @@ class MarketCapFilter(IPairList):
             _pairlist = self.verify_blacklist(_pairlist, logger.info)
 
             pairlist = self.filter_pairlist(_pairlist, tickers)
-            # self._marketcap_cache['pairlist_mc'] = pairlist.copy()
+            self._marketcap_cache['pairlist_mc'] = pairlist.copy()
 
         return pairlist
 
@@ -138,8 +136,7 @@ class MarketCapFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
-        # marketcap_list = self._marketcap_cache.get('marketcap')
-        marketcap_list = []
+        marketcap_list = self._marketcap_cache.get('marketcap')
         can_filter = False
 
         if marketcap_list:
@@ -175,7 +172,8 @@ class MarketCapFilter(IPairList):
 
             else:
                 market = self._config['trading_mode']
-                pair_format = f"{self._stake_currency.upper()}" if (market == 'spot') else f"{self._stake_currency.upper()}:{self._stake_currency.upper()}"
+                pair_format = f"{self._stake_currency.upper()}" if (market == 'spot')
+                              else f"{self._stake_currency.upper()}:{self._stake_currency.upper()}"
                 for mc_pair in marketcap_list:
                     test_pair = f"{mc_pair.upper()}/{pair_format}"
                     if test_pair in pairlist:
@@ -185,6 +183,5 @@ class MarketCapFilter(IPairList):
 
             if len(filtered_pairlist) > 0:
                 return filtered_pairlist
-
 
         return pairlist
