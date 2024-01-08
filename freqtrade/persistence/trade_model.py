@@ -1637,7 +1637,7 @@ class Trade(ModelBase, LocalTrade):
         Retrieves total realized profit
         """
         if Trade.use_db:
-            total_profit: float = Trade.session.execute(
+            total_profit = Trade.session.execute(
                 select(func.sum(Trade.close_profit_abs)).filter(Trade.is_open.is_(False))
             ).scalar_one()
         else:
@@ -1845,4 +1845,4 @@ class Trade(ModelBase, LocalTrade):
                 Order.order_filled_date >= start_date,
                 Order.status == 'closed'
             )).scalar_one()
-        return trading_volume
+        return trading_volume or 0.0
