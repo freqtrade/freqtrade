@@ -1,6 +1,5 @@
-from joblib import Parallel
 from sklearn.multioutput import MultiOutputRegressor, _fit_estimator
-from sklearn.utils.fixes import delayed
+from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.validation import has_fit_parameter
 
 

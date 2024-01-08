@@ -80,6 +80,7 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
+        "funding_fee_timeframe": "8h",
         "ccxt_futures_name": "swap",
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
@@ -121,11 +122,12 @@ class Exchange:
         # Cache for 10 minutes ...
         self._cache_lock = Lock()
         self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=2, ttl=60 * 10)
-        # Cache values for 1800 to avoid frequent polling of the exchange for prices
+        # Cache values for 300 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
-        self._exit_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
-        self._entry_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        # Shouldn't be too high either, as it'll freeze UI updates in case of open orders.
+        self._exit_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=300)
+        self._entry_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=300)
 
         # Holds candles
         self._klines: Dict[PairWithTimeframe, DataFrame] = {}
@@ -319,10 +321,11 @@ class Exchange:
         """
         pass
 
-    def _log_exchange_response(self, endpoint, response) -> None:
+    def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """ Log exchange responses """
         if self.log_responses:
-            logger.info(f"API {endpoint}: {response}")
+            add_info_str = "" if add_info is None else f" {add_info}: "
+            logger.info(f"API {endpoint}: {add_info_str}{response}")
 
     def ohlcv_candle_limit(
             self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
@@ -330,6 +333,7 @@ class Exchange:
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        TODO: this is most likely no longer needed since only bittrex needed this.
         :param timeframe: Timeframe to check
         :param candle_type: Candle-type
         :param since_ms: Starting timestamp
@@ -1383,7 +1387,7 @@ class Exchange:
             order = self.fetch_stoploss_order(order_id, pair)
         except InvalidOrderException:
             logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+            order = {'id': order_id, 'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
 
         return order
 
@@ -2413,6 +2417,8 @@ class Exchange:
                 symbol=pair,
                 since=since
             )
+            self._log_exchange_response('funding_history', funding_history,
+                                        add_info=f"pair: {pair}, since: {since}")
             return sum(fee['amount'] for fee in funding_history)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -2729,17 +2735,16 @@ class Exchange:
             # Only really relevant for trades very close to the full hour
             open_date = timeframe_to_prev_date('1h', open_date)
         timeframe = self._ft_has['mark_ohlcv_timeframe']
-        timeframe_ff = self._ft_has.get('funding_fee_timeframe',
-                                        self._ft_has['mark_ohlcv_timeframe'])
+        timeframe_ff = self._ft_has['funding_fee_timeframe']
+        mark_price_type = CandleType.from_string(self._ft_has["mark_ohlcv_price"])
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
         since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
 
-        mark_comb: PairWithTimeframe = (
-            pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
-
+        mark_comb: PairWithTimeframe = (pair, timeframe, mark_price_type)
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
+
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
             since_ms=since_ms,

@@ -403,6 +403,34 @@ class IDataHandler(ABC):
             return
         file_old.rename(file_new)
 
+    def fix_funding_fee_timeframe(self, ff_timeframe: str):
+        """
+        Temporary method to migrate data from old funding fee timeframe to the correct timeframe
+        Applies to bybit and okx, where funding-fee and mark candles have different timeframes.
+        """
+        paircombs = self.ohlcv_get_available_data(self._datadir, TradingMode.FUTURES)
+        funding_rate_combs = [
+            f for f in paircombs if f[2] == CandleType.FUNDING_RATE and f[1] != ff_timeframe
+        ]
+
+        if funding_rate_combs:
+            logger.warning(
+                f'Migrating {len(funding_rate_combs)} funding fees to correct timeframe.')
+
+        for pair, timeframe, candletype in funding_rate_combs:
+            old_name = self._pair_data_filename(self._datadir, pair, timeframe, candletype)
+            new_name = self._pair_data_filename(self._datadir, pair, ff_timeframe, candletype)
+
+            if not Path(old_name).exists():
+                logger.warning(f'{old_name} does not exist, skipping.')
+                continue
+
+            if Path(new_name).exists():
+                logger.warning(f'{new_name} already exists, Removing.')
+                Path(new_name).unlink()
+
+            Path(old_name).rename(new_name)
+
 
 def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     """

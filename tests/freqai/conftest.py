@@ -20,6 +20,21 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+@pytest.fixture(autouse=True)
+def patch_torch_initlogs(mocker) -> None:
+
+    if is_mac():
+        # Mock torch import completely
+        import sys
+        import types
+
+        module_name = 'torch'
+        mocked_module = types.ModuleType(module_name)
+        sys.modules[module_name] = mocked_module
+    else:
+        mocker.patch("torch._logging._init_logs")
+
+
 @pytest.fixture(scope="function")
 def freqai_conf(default_conf, tmp_path):
     freqaiconf = deepcopy(default_conf)
@@ -39,7 +54,7 @@ def freqai_conf(default_conf, tmp_path):
                 "backtest_period_days": 10,
                 "live_retrain_hours": 0,
                 "expiration_hours": 1,
-                "identifier": "uniqe-id100",
+                "identifier": "unique-id100",
                 "live_trained_timestamp": 0,
                 "data_kitchen_thread_count": 2,
                 "activate_tensorboard": False,

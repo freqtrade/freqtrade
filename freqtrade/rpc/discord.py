@@ -15,6 +15,7 @@ class Discord(Webhook):
         self.rpc = rpc
         self.strategy = config.get('strategy', '')
         self.timeframe = config.get('timeframe', '')
+        self.bot_name = config.get('bot_name', '')
 
         self._url = config['discord']['webhook_url']
         self._format = 'json'
@@ -36,6 +37,7 @@ class Discord(Webhook):
 
             msg['strategy'] = self.strategy
             msg['timeframe'] = self.timeframe
+            msg['bot_name'] = self.bot_name
             color = 0x0000FF
             if msg['type'] in (RPCMessageType.EXIT, RPCMessageType.EXIT_FILL):
                 profit_ratio = msg.get('profit_ratio')

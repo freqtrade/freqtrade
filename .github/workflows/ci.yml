@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -44,7 +44,6 @@ jobs:
 
     - name: pip cache (linux)
       uses: actions/cache@v3
-      if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -55,7 +54,6 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - *nix
-      if: runner.os == 'Linux'
       run: |
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
@@ -122,18 +120,18 @@ jobs:
           details: Freqtrade CI failed on ${{ matrix.os }}
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_macos:
+  build-macos:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest ]
+        os: [ "macos-latest", "macos-13" ]
         python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         check-latest: true
@@ -143,14 +141,13 @@ jobs:
       id: cache
       with:
         path: ~/dependencies/
-        key: ${{ runner.os }}-dependencies
+        key: ${{ matrix.os }}-dependencies
 
     - name: pip cache (macOS)
       uses: actions/cache@v3
-      if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
-        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+        key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
 
     - name: TA binary *nix
       if: steps.cache.outputs.cache-hit != 'true'
@@ -158,7 +155,6 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - macOS
-      if: runner.os == 'macOS'
       run: |
         # brew update
         # TODO: Should be the brew upgrade
@@ -166,16 +162,21 @@ jobs:
         # https://github.com/actions/runner-images/issues/6817
         rm /usr/local/bin/2to3 || true
         rm /usr/local/bin/2to3-3.11 || true
+        rm /usr/local/bin/2to3-3.12 || true
         rm /usr/local/bin/idle3 || true
         rm /usr/local/bin/idle3.11 || true
+        rm /usr/local/bin/idle3.12 || true
         rm /usr/local/bin/pydoc3 || true
         rm /usr/local/bin/pydoc3.11 || true
+        rm /usr/local/bin/pydoc3.12 || true
         rm /usr/local/bin/python3 || true
         rm /usr/local/bin/python3.11 || true
+        rm /usr/local/bin/python3.12 || true
         rm /usr/local/bin/python3-config || true
         rm /usr/local/bin/python3.11-config || true
+        rm /usr/local/bin/python3.12-config || true
 
-        brew install hdf5 c-blosc
+        brew install hdf5 c-blosc libomp
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
@@ -231,7 +232,7 @@ jobs:
           details: Test Succeeded!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  build_windows:
+  build-windows:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -243,7 +244,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -301,13 +302,13 @@ jobs:
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  mypy_version_check:
+  mypy-version-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
@@ -321,12 +322,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - uses: pre-commit/action@v3.0.0
 
-  docs_check:
+  docs-check:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
@@ -336,7 +337,7 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
 
@@ -362,9 +363,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.9"
+        python-version: "3.11"
 
     - name: Cache_dependencies
       uses: actions/cache@v3
@@ -375,7 +376,6 @@ jobs:
 
     - name: pip cache (linux)
       uses: actions/cache@v3
-      if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -386,7 +386,6 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - *nix
-      if: runner.os == 'Linux'
       run: |
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
@@ -399,17 +398,17 @@ jobs:
       env:
         CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
+        pytest --random-order --longrun --durations 20 -n auto --dist loadscope
 
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [
       build_linux,
-      build_macos,
-      build_windows,
-      docs_check,
-      mypy_version_check,
+      build-macos,
+      build-windows,
+      docs-check,
+      mypy-version-check,
       pre-commit,
       build_linux_online
     ]
@@ -436,8 +435,63 @@ jobs:
           details: Test Completed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
+  build:
+    name: "Build"
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Build distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v4
+      with:
+        name: freqtrade-build
+        path: |
+          dist
+        retention-days: 10
+
+  deploy-pypi:
+    name: "Deploy to PyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: release
+      url: https://pypi.org/p/freqtrade
+    permissions:
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@v4
+      with:
+        name: freqtrade-build
+        path: dist
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.11
+
+
+  deploy-docker:
+    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -446,7 +500,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
 
@@ -454,26 +508,6 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch
-
-    - name: Build distribution
-      run: |
-        pip install -U setuptools wheel
-        python setup.py sdist bdist_wheel
-
-    - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.10
-      if: (github.event_name == 'release')
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_test_password }}
-        repository_url: https://test.pypi.org/legacy/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.10
-      if: (github.event_name == 'release')
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_password }}
 
     - name: Dockerhub login
       env:
@@ -506,10 +540,11 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-  deploy_arm:
+  deploy-arm:
+    name: "Deploy Docker"
     permissions:
       packages: write
-    needs: [ deploy ]
+    needs: [ deploy-docker ]
     # Only run on 64bit machines
     runs-on: [self-hosted, linux, ARM64]
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'

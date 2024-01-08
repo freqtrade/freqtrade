@@ -67,12 +67,12 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
-    args = ['trade', '-c', 'config_examples/config_bittrex.example.json']
+    args = ['trade', '-c', 'tests/testdata/testconfigs/main_test_config.json']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config_examples/config_bittrex.example.json ...', caplog)
+    assert log_has('Using config: tests/testdata/testconfigs/main_test_config.json ...', caplog)
     assert log_has('Fatal exception!', caplog)
 
 
@@ -85,12 +85,12 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.wallets.Wallets.update', MagicMock())
     mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
-    args = ['trade', '-c', 'config_examples/config_bittrex.example.json']
+    args = ['trade', '-c', 'tests/testdata/testconfigs/main_test_config.json']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config_examples/config_bittrex.example.json ...', caplog)
+    assert log_has('Using config: tests/testdata/testconfigs/main_test_config.json ...', caplog)
     assert log_has('SIGINT received, aborting ...', caplog)
 
 
@@ -106,12 +106,12 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
-    args = ['trade', '-c', 'config_examples/config_bittrex.example.json']
+    args = ['trade', '-c', 'tests/testdata/testconfigs/main_test_config.json']
 
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit):
         main(args)
-    assert log_has('Using config: config_examples/config_bittrex.example.json ...', caplog)
+    assert log_has('Using config: tests/testdata/testconfigs/main_test_config.json ...', caplog)
     assert log_has('Oh snap!', caplog)
 
 
@@ -160,13 +160,13 @@ def test_main_reload_config(mocker, default_conf, caplog) -> None:
     args = Arguments([
         'trade',
         '-c',
-        'config_examples/config_bittrex.example.json'
+        'tests/testdata/testconfigs/main_test_config.json'
     ]).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
-        main(['trade', '-c', 'config_examples/config_bittrex.example.json'])
+        main(['trade', '-c', 'tests/testdata/testconfigs/main_test_config.json'])
 
-    assert log_has('Using config: config_examples/config_bittrex.example.json ...', caplog)
+    assert log_has('Using config: tests/testdata/testconfigs/main_test_config.json ...', caplog)
     assert worker_mock.call_count == 4
     assert reconfigure_mock.call_count == 1
     assert isinstance(worker.freqtrade, FreqtradeBot)
@@ -187,7 +187,7 @@ def test_reconfigure(mocker, default_conf) -> None:
     args = Arguments([
         'trade',
         '-c',
-        'config_examples/config_bittrex.example.json'
+        'tests/testdata/testconfigs/main_test_config.json'
     ]).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     freqtrade = worker.freqtrade

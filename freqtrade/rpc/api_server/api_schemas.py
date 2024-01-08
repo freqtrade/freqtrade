@@ -471,6 +471,7 @@ class FreqAIModelListResponse(BaseModel):
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
+    timeframe: Optional[str]
 
 
 class AvailablePairs(BaseModel):
@@ -537,6 +538,10 @@ class BacktestHistoryEntry(BaseModel):
     run_id: str
     backtest_start_time: int
     notes: Optional[str] = ''
+    backtest_start_ts: Optional[int] = None
+    backtest_end_ts: Optional[int] = None
+    timeframe: Optional[str] = None
+    timeframe_detail: Optional[str] = None
 
 
 class BacktestMetadataUpdate(BaseModel):

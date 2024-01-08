@@ -25,13 +25,13 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin
 from freqtrade.persistence import KeyStoreKeys, KeyValueStore, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize, dt_now, dt_ts_def, format_date, shorten_date
+from freqtrade.util import (decimals_per_coin, dt_humanize, dt_now, dt_ts_def, format_date,
+                            shorten_date)
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -121,8 +121,8 @@ class RPC:
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
             'stake_amount': str(config['stake_amount']),
             'available_capital': config.get('available_capital'),
-            'max_open_trades': (config['max_open_trades']
-                                if config['max_open_trades'] != float('inf') else -1),
+            'max_open_trades': (config.get('max_open_trades', 0)
+                                if config.get('max_open_trades', 0) != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
             'stoploss': config.get('stoploss'),
             'stoploss_on_exchange': config.get('order_types',
@@ -914,7 +914,8 @@ class RPC:
 
         if not stake_amount:
             # gen stake amount
-            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(pair)
+            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(
+                pair, self._config['max_open_trades'])
 
         # execute buy
         if not order_type:

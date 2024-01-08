@@ -11,8 +11,7 @@ from freqtrade.rpc.rpc import RPC
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has_re, patch_get_signal
 
 
-def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
-                                                     limit_buy_order, mocker) -> None:
+def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, mocker) -> None:
     """
     Tests workflow of selling stoploss_on_exchange.
     Sells
@@ -185,7 +184,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 4
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) == result1
 
     rpc._rpc_force_entry('TKN/BTC', None)
 
@@ -205,7 +204,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     # One trade sold
     assert len(trades) == 4
     # stake-amount should now be reduced, since one trade was sold at a loss.
-    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') < result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC', 5) < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2
@@ -650,28 +649,42 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     caplog.clear()
 
     # Sell more than what we got (we got ~20 coins left)
-    # First adjusts the amount to 20 - then rejects.
+    # Doesn't exit, as the amount is too high.
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-50)
     freqtrade.process()
-    assert log_has_re("Adjusting amount to trade.amount as it is higher.*", caplog)
-    assert log_has_re("Remaining amount of 0.0 would be smaller than the minimum of 10.", caplog)
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
+
+    # Amount too low...
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-(trade.stake_amount * 0.99))
+    freqtrade.process()
+
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+
+    # Amount exactly comes out as exactly 0
+    freqtrade.strategy.adjust_trade_position = MagicMock(
+        return_value=-(trade.amount / trade.leverage * 2.02))
+    freqtrade.process()
+
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 3
+
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
-    assert trade.is_open
+    assert trade.is_open is False
 
     # use amount that would trunc to 0.0 once selling
     mocker.patch(f"{EXMS}.amount_to_contract_precision", lambda s, p, v: round(v, 1))
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-0.01)
     freqtrade.process()
     trade = Trade.get_trades().first()
-    assert len(trade.orders) == 2
+    assert len(trade.orders) == 3
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
-    assert trade.is_open
+    assert trade.is_open is False
     assert log_has_re('Amount to exit is 0.0 due to exchange limits - not exiting.', caplog)
-    expected_profit = starting_amount - 40.1980 + trade.realized_profit
+    expected_profit = starting_amount - 60 + trade.realized_profit
     assert pytest.approx(freqtrade.wallets.get_free('USDT')) == expected_profit
     if spot:
         assert pytest.approx(freqtrade.wallets.get_total('USDT')) == expected_profit

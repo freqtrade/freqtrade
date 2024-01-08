@@ -728,7 +728,6 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
 
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.session.scalars(select(Trade)).all()
-    trades[1].stoploss_order_id = '1234'
     Trade.commit()
     assert len(trades) > 2
 
@@ -745,9 +744,9 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert cancel_mock.call_count == 0
 
     assert len(trades) - 1 == len(Trade.session.scalars(select(Trade)).all())
-    rc = client_delete(client, f"{BASE_URI}/trades/2")
+    rc = client_delete(client, f"{BASE_URI}/trades/5")
     assert_response(rc)
-    assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 1 open orders.'
+    assert rc.json()['result_msg'] == 'Deleted trade 5. Closed 1 open orders.'
     assert len(trades) - 2 == len(Trade.session.scalars(select(Trade)).all())
     assert stoploss_mock.call_count == 1
 
@@ -1770,6 +1769,7 @@ def test_api_freqaimodels(botclient, tmp_path, mocker):
             {'name': 'LightGBMRegressorMultiTarget'},
             {'name': 'ReinforcementLearner'},
             {'name': 'ReinforcementLearner_multiproc'},
+            {'name': 'SKlearnRandomForestClassifier'},
             {'name': 'XGBoostClassifier'},
             {'name': 'XGBoostRFClassifier'},
             {'name': 'XGBoostRFRegressor'},
@@ -1788,6 +1788,7 @@ def test_api_freqaimodels(botclient, tmp_path, mocker):
         'LightGBMRegressorMultiTarget',
         'ReinforcementLearner',
         'ReinforcementLearner_multiproc',
+        'SKlearnRandomForestClassifier',
         'XGBoostClassifier',
         'XGBoostRFClassifier',
         'XGBoostRFRegressor',

@@ -508,8 +508,9 @@ def test_refresh_backtest_ohlcv_data(
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "unlink", MagicMock())
+    default_conf['trading_mode'] = trademode
 
-    ex = get_patched_exchange(mocker, default_conf)
+    ex = get_patched_exchange(mocker, default_conf, id='bybit')
     timerange = TimeRange.parse_timerange("20190101-20190102")
     refresh_backtest_ohlcv_data(exchange=ex, pairs=["ETH/BTC", "XRP/BTC"],
                                 timeframes=["1m", "5m"], datadir=testdatadir,
@@ -521,6 +522,9 @@ def test_refresh_backtest_ohlcv_data(
     assert dl_mock.call_args[1]['timerange'].starttype == 'date'
 
     assert log_has_re(r"Downloading pair ETH/BTC, .* interval 1m\.", caplog)
+    if trademode == 'futures':
+        assert log_has_re(r"Downloading pair ETH/BTC, funding_rate, interval 8h\.", caplog)
+        assert log_has_re(r"Downloading pair ETH/BTC, mark, interval 4h\.", caplog)
 
 
 def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):

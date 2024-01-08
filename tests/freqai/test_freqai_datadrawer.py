@@ -15,6 +15,7 @@ from tests.freqai.conftest import get_patched_freqai_strategy
 
 
 def test_update_historic_data(mocker, freqai_conf):
+    freqai_conf['runmode'] = 'backtest'
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
