@@ -172,8 +172,9 @@ class MarketCapFilter(IPairList):
 
             else:
                 market = self._config['trading_mode']
-                pair_format = f"{self._stake_currency.upper()}" if (market == 'spot')
-                              else f"{self._stake_currency.upper()}:{self._stake_currency.upper()}"
+                pair_format = f"{self._stake_currency.upper()}"
+                if (market == 'futures'):
+                    pair_format += f":{self._stake_currency.upper()}"
                 for mc_pair in marketcap_list:
                     test_pair = f"{mc_pair.upper()}/{pair_format}"
                     if test_pair in pairlist:
