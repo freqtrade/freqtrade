@@ -237,17 +237,17 @@ The optional `bearer_token` will be included in the requests Authorization Heade
     {
         "method": "MarketCapPairList",
         "mode": "top_rank",
-        "limit": 20,
+        "number_assets": 20,
         "refresh_period": 86400
     }
 ]
 ```
 
 ##### `top_rank` mode
-In this mode, it will return pairlist consist of active and not-blaclisted pairs that are placed at the top `limit` rank of the marketcap.
+In this mode, it will return pairlist consist of active and not-blaclisted pairs that are placed at the top `number_assets` rank of the marketcap.
 
 ##### `total_assets` mode
-In this mode, it will return pairlist consist of `limit` number of active and not-blaclisted pairs sorted by their marketcap rank.
+In this mode, it will return pairlist consist of `number_assets` number of active and not-blaclisted pairs sorted by their marketcap rank.
 
 The refresh_period setting allows to define the period (in seconds), at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (refresh_period) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
 

@@ -32,22 +32,22 @@ class MarketCapPairList(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        if 'limit' not in self._pairlistconfig:
+        if 'number_assets' not in self._pairlistconfig:
             raise OperationalException(
-                '`limit` not specified. Please check your configuration '
-                'for "pairlist.config.limit"')
+                '`number_assets` not specified. Please check your configuration '
+                'for "pairlist.config.number_assets"')
 
         self._stake_currency = config['stake_currency']
         self._mode = self._pairlistconfig.get('mode', 'top_rank')
-        self._limit = self._pairlistconfig['limit']
+        self._number_assets = self._pairlistconfig['number_assets']
         self._refresh_period = self._pairlistconfig.get('refresh_period', 86400)
         self._marketcap_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._def_candletype = self._config['candle_type_def']
         self._coingekko: CoinGeckoAPI = CoinGeckoAPI()
 
-        if self._limit > 250:
+        if self._number_assets > 250:
             raise OperationalException(
-                "This filter only support limit value up to 250."
+                "This filter only support number_assets value up to 250."
             )
 
         if not self._validate_keys(self._mode):
@@ -71,16 +71,20 @@ class MarketCapPairList(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - Only use top {self._pairlistconfig['limit']} market cap pairs."
+        num = self._pairlistconfig['number_assets']
+        msg = f"{self.name} - Only include pairs ranked within top {num} market cap."
+        if self._mode == "total_assets":
+            msg = f"{self.name} - top {num} pairs sorted by market cap."
+        return msg
 
     @staticmethod
     def description() -> str:
-        return "Filter pair list based on market cap."
+        return "Provides pair list based on CoinGecko's market cap rank."
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
         return {
-            "limit": {
+            "number_assets": {
                 "type": "number",
                 "default": 30,
                 "description": "Max market cap rank",
@@ -157,7 +161,7 @@ class MarketCapPairList(IPairList):
 
 
             if self._mode == 'top_rank':
-                top_marketcap = marketcap_list[:self._limit:]
+                top_marketcap = marketcap_list[:self._number_assets:]
 
                 for pair in pairlist:
                     base = pair.split('/')[0]
@@ -165,7 +169,7 @@ class MarketCapPairList(IPairList):
                         filtered_pairlist.append(pair)
                     else:
                         logger.info(f"Remove {pair} from whitelist because it's not ranked "
-                                    f"within top {self._limit} market cap")
+                                    f"within top {self._number_assets} market cap")
 
             else:
                 market = self._config['trading_mode']
@@ -176,7 +180,7 @@ class MarketCapPairList(IPairList):
                     test_pair = f"{mc_pair.upper()}/{pair_format}"
                     if test_pair in pairlist:
                         filtered_pairlist.append(test_pair)
-                        if len(filtered_pairlist) == self._limit:
+                        if len(filtered_pairlist) == self._number_assets:
                             break
 
             if len(filtered_pairlist) > 0:
