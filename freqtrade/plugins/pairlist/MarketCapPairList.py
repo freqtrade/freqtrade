@@ -8,6 +8,7 @@ from datetime import timedelta
 from typing import Any, Dict, List, Literal
 
 from cachetools import TTLCache
+from pycoingecko import CoinGeckoAPI
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
@@ -15,7 +16,6 @@ from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 from freqtrade.util import dt_now, format_ms_time
 
-from pycoingecko import CoinGeckoAPI
 
 logger = logging.getLogger(__name__)
 
