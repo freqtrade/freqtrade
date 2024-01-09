@@ -4,17 +4,15 @@ Market Cap PairList provider
 Provides dynamic pair list based on Market Cap
 """
 import logging
-from datetime import timedelta
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List
 
 from cachetools import TTLCache
 from pycoingecko import CoinGeckoAPI
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
-from freqtrade.util import dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +51,6 @@ class MarketCapPairList(IPairList):
         if not self._validate_keys(self._mode):
             raise OperationalException(
                 f'key {self._mode} not in {MODE_VALUES}')
-
 
     @property
     def needstickers(self) -> bool:
@@ -150,15 +147,11 @@ class MarketCapPairList(IPairList):
                                                      locale='en')
             if data:
                 marketcap_list = [row['symbol'] for row in data]
-
-                if len(marketcap_list) > 0:
-                    self._marketcap_cache['marketcap'] = marketcap_list
-                    can_filter = True
-
+                self._marketcap_cache['marketcap'] = marketcap_list
+                can_filter = True
 
         if can_filter:
             filtered_pairlist = []
-
 
             if self._mode == 'top_rank':
                 top_marketcap = marketcap_list[:self._number_assets:]
