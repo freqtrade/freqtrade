@@ -7,6 +7,7 @@ from fastapi.exceptions import HTTPException
 from freqtrade.constants import Config
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence import FtNoDBContext
 from freqtrade.rpc.api_server.api_schemas import (BackgroundTaskStatus, BgJobStarted,
                                                   ExchangeModePayloadMixin, PairListsPayload,
                                                   PairListsResponse, WhitelistEvaluateResponse)
@@ -57,16 +58,16 @@ def __run_pairlist(job_id: str, config_loc: Config):
 
         ApiBG.jobs[job_id]['is_running'] = True
         from freqtrade.plugins.pairlistmanager import PairListManager
-
-        exchange = get_exchange(config_loc)
-        pairlists = PairListManager(exchange, config_loc)
-        pairlists.refresh_pairlist()
-        ApiBG.jobs[job_id]['result'] = {
-                'method': pairlists.name_list,
-                'length': len(pairlists.whitelist),
-                'whitelist': pairlists.whitelist
-            }
-        ApiBG.jobs[job_id]['status'] = 'success'
+        with FtNoDBContext():
+            exchange = get_exchange(config_loc)
+            pairlists = PairListManager(exchange, config_loc)
+            pairlists.refresh_pairlist()
+            ApiBG.jobs[job_id]['result'] = {
+                    'method': pairlists.name_list,
+                    'length': len(pairlists.whitelist),
+                    'whitelist': pairlists.whitelist
+                }
+            ApiBG.jobs[job_id]['status'] = 'success'
     except (OperationalException, Exception) as e:
         logger.exception(e)
         ApiBG.jobs[job_id]['error'] = str(e)
