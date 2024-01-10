@@ -21,4 +21,3 @@ def test_FtNoDBContext(timeframe):
 
     assert Trade.use_db is True
     assert PairLocks.use_db is True
-
