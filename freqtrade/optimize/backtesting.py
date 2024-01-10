@@ -33,7 +33,8 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  show_backtest_results,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
+from freqtrade.persistence import (LocalTrade, Order, PairLocks, Trade, disable_database_use,
+                                   enable_database_use)
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -177,8 +178,7 @@ class Backtesting:
     @staticmethod
     def cleanup():
         LoggingMixin.show_output = True
-        PairLocks.use_db = True
-        Trade.use_db = True
+        enable_database_use()
 
     def init_backtest_detail(self) -> None:
         # Load detail timeframe if specified
@@ -325,9 +325,7 @@ class Backtesting:
             self.futures_data = {}
 
     def disable_database_use(self):
-        PairLocks.use_db = False
-        PairLocks.timeframe = self.timeframe
-        Trade.use_db = False
+        disable_database_use(self.timeframe)
 
     def prepare_backtest(self, enable_protections):
         """
