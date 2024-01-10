@@ -20,3 +20,14 @@ def enable_database_use() -> None:
     PairLocks.use_db = True
     PairLocks.timeframe = ''
     Trade.use_db = True
+
+
+class FtNoDBContext:
+    def __init__(self, timeframe: str = ''):
+        self.timeframe = timeframe
+
+    def __enter__(self):
+        disable_database_use(self.timeframe)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        enable_database_use()
