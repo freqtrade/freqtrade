@@ -68,8 +68,10 @@ class Configuration:
         config: Config = load_from_files(self.args.get("config", []))
 
         # Load environment variables
-        env_data = enironment_vars_to_dict()
-        config = deep_merge_dicts(env_data, config)
+        from freqtrade.commands.arguments import NO_CONF_ALLOWED
+        if self.args.get('command') not in NO_CONF_ALLOWED:
+            env_data = enironment_vars_to_dict()
+            config = deep_merge_dicts(env_data, config)
 
         # Normalize config
         if 'internals' not in config:
