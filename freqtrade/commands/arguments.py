@@ -238,7 +238,7 @@ class Arguments:
         # add new-config subcommand
         build_config_cmd = subparsers.add_parser(
             'new-config',
-            help="Create new config"
+            help="Create new config",
         )
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
@@ -246,7 +246,7 @@ class Arguments:
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser(
             'new-strategy',
-            help="Create new strategy"
+            help="Create new strategy",
         )
         build_strategy_cmd.set_defaults(func=start_new_strategy)
         self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
@@ -324,15 +324,20 @@ class Arguments:
         self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
 
         # Add edge subcommand
-        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
-                                         parents=[_common_parser, _strategy_parser])
+        edge_cmd = subparsers.add_parser(
+            'edge',
+            help='Edge module.',
+            parents=[_common_parser, _strategy_parser]
+        )
         edge_cmd.set_defaults(func=start_edge)
         self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
-                                             parents=[_common_parser, _strategy_parser],
-                                             )
+        hyperopt_cmd = subparsers.add_parser(
+            'hyperopt',
+            help='Hyperopt module.',
+            parents=[_common_parser, _strategy_parser],
+        )
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
