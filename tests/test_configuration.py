@@ -15,7 +15,7 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
+from freqtrade.configuration.environment_vars import _flat_vars_to_nested_dict
 from freqtrade.configuration.load_config import (load_config_file, load_file, load_from_files,
                                                  log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
@@ -1419,7 +1419,7 @@ def test_flat_vars_to_nested_dict(caplog):
             'chat_id': '2151'
         }
     }
-    res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
+    res = _flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
     assert res == expected
 
     assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
