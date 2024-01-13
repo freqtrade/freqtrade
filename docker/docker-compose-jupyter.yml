@@ -6,7 +6,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.jupyter
     restart: unless-stopped
-    container_name: freqtrade
+    # container_name: freqtrade
     ports:
       - "127.0.0.1:8888:8888"
     volumes:
