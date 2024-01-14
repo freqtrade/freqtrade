@@ -935,4 +935,3 @@ Should results not match, check the following factors:
 * Pay special care to the stoploss, max_open_trades and trailing stoploss parameters, as these are often set in configuration files, which override changes to the strategy. Check the logs of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss`, `max_open_trades` or `trailing_stop`).
 * Verify that you do not have an unexpected parameters JSON file overriding the parameters or the default hyperopt settings in your strategy.
 * Verify that any protections that are enabled in backtesting are also enabled when hyperopting, and vice versa.
-
