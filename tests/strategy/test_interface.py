@@ -1019,3 +1019,30 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
+
+
+@pytest.mark.parametrize('function,raises', [
+    ('populate_entry_trend', True),
+    ('advise_entry', True),
+    ('populate_exit_trend', True),
+    ('advise_exit', True),
+])
+def test_pandas_warning_direct(ohlcv_history, function, raises):
+
+    df = _STRATEGY.populate_indicators(ohlcv_history, {'pair': 'ETH/BTC'})
+    if raises:
+        with pytest.warns(FutureWarning):
+            # Test for Future warning
+            # FutureWarning: Setting an item of incompatible dtype is
+            # deprecated and will raise in a future error of pandas
+            # https://github.com/pandas-dev/pandas/issues/56503
+            getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+    else:
+        getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+
+
+def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker):
+
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    with pytest.warns(FutureWarning):
+        _STRATEGY.analyze_pair('ETH/BTC')
