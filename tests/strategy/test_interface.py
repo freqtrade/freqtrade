@@ -1023,9 +1023,9 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
 @pytest.mark.parametrize('function,raises', [
     ('populate_entry_trend', True),
-    ('advise_entry', True),
+    ('advise_entry', False),
     ('populate_exit_trend', True),
-    ('advise_exit', True),
+    ('advise_exit', False),
 ])
 def test_pandas_warning_direct(ohlcv_history, function, raises):
 
@@ -1041,8 +1041,8 @@ def test_pandas_warning_direct(ohlcv_history, function, raises):
         getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
 
 
-def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker):
+def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
 
     mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
-    with pytest.warns(FutureWarning):
-        _STRATEGY.analyze_pair('ETH/BTC')
+    _STRATEGY.analyze_pair('ETH/BTC')
+    assert len(recwarn) == 0
