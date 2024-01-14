@@ -105,7 +105,7 @@ def test_returns_latest_signal(ohlcv_history):
     _STRATEGY.config['trading_mode'] = 'spot'
 
 
-def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
+def test_analyze_pair_empty(mocker, caplog, ohlcv_history):
     mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
