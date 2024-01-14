@@ -1,4 +1,5 @@
 import platform
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
@@ -13,6 +14,10 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
+
+
+def is_py12() -> bool:
+    return sys.version_info >= (3, 12)
 
 
 def is_mac() -> bool:
@@ -31,7 +36,7 @@ def patch_torch_initlogs(mocker) -> None:
         module_name = 'torch'
         mocked_module = types.ModuleType(module_name)
         sys.modules[module_name] = mocked_module
-    else:
+    elif not is_py12():
         mocker.patch("torch._logging._init_logs")
 
 
