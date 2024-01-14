@@ -1603,9 +1603,9 @@ def test_api_pair_history(botclient, mocker):
     assert 'data' in result
     data = result['data']
     assert len(data) == 289
-    # analyed DF has 28 columns
-    assert len(result['columns']) == 28
-    assert len(data[0]) == 28
+    # analyed DF has 30 columns
+    assert len(result['columns']) == 30
+    assert len(data[0]) == 30
     date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
     rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
 
