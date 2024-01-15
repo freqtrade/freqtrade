@@ -930,8 +930,8 @@ To achieve same the results (number of trades, their durations, profit, etc.) as
 Should results not match, check the following factors:
 
 * You may have added parameters to hyperopt in `populate_indicators()` where they will be calculated only once **for all epochs**. If you are, for example, trying to optimise multiple SMA timeperiod values, the hyperoptable timeperiod parameter should be placed in `populate_entry_trend()` which is calculated every epoch. See [Optimizing an indicator parameter](https://www.freqtrade.io/en/stable/hyperopt/#optimizing-an-indicator-parameter).
-* Double-check to make sure you transferred all hyperopted values into your strategy correctly.
+* If you have disabled the auto-export of hyperopt parameters into the JSON parameters file, double-check to make sure you transferred all hyperopted values into your strategy correctly.
 * Check the logs to verify what parameters are being set and what values are being used.
 * Pay special care to the stoploss, max_open_trades and trailing stoploss parameters, as these are often set in configuration files, which override changes to the strategy. Check the logs of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss`, `max_open_trades` or `trailing_stop`).
 * Verify that you do not have an unexpected parameters JSON file overriding the parameters or the default hyperopt settings in your strategy.
-* Verify that any protections that are enabled in backtesting are also enabled when hyperopting, and vice versa.
+* Verify that any protections that are enabled in backtesting are also enabled when hyperopting, and vice versa. When using `--space protection`, protections are auto-enabled for hyperopting.
