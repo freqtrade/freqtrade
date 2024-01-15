@@ -29,7 +29,7 @@ class Kraken(Exchange):
         "order_time_in_force": ["GTC", "IOC", "PO"],
         "ohlcv_candle_limit": 720,
         "ohlcv_has_history": False,
-        "trades_pagination": "id",
+        "trades_pagination": "time",
         "trades_pagination_arg": "since",
         "mark_ohlcv_timeframe": "4h",
     }
