@@ -107,6 +107,11 @@ class Order(ModelBase):
         return self.amount or self.ft_amount
 
     @property
+    def safe_placement_price(self) -> float:
+        """Price at which the order was placed"""
+        return self.price or self.stop_price or self.ft_price
+
+    @property
     def safe_price(self) -> float:
         return self.average or self.price or self.stop_price or self.ft_price
 
