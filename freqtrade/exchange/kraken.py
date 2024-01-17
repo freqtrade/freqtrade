@@ -22,8 +22,9 @@ class Kraken(Exchange):
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
-        "stop_price_param": "stopPrice",
-        "stop_price_prop": "stopPrice",
+        "stop_price_param": "stopLossPrice",
+        "stop_price_prop": "stopLossPrice",
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
         "order_time_in_force": ["GTC", "IOC", "PO"],
         "ohlcv_candle_limit": 720,
         "ohlcv_has_history": False,
