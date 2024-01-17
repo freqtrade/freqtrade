@@ -8,11 +8,9 @@ from pandas import DataFrame
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange_utils import ROUND_DOWN, ROUND_UP
 from freqtrade.exchange.types import Tickers
 
 
@@ -24,8 +22,9 @@ class Kraken(Exchange):
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
-        "stop_price_param": "stopPrice",
-        "stop_price_prop": "stopPrice",
+        "stop_price_param": "stopLossPrice",
+        "stop_price_prop": "stopLossPrice",
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
         "order_time_in_force": ["GTC", "IOC", "PO"],
         "ohlcv_candle_limit": 720,
         "ohlcv_has_history": False,
@@ -87,75 +86,6 @@ class Kraken(Exchange):
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
-        """
-        Verify stop_loss against stoploss-order value (limit or price)
-        Returns True if adjustment is necessary.
-        """
-        return (order['type'] in ('stop-loss', 'stop-loss-limit') and (
-                (side == "sell" and stop_loss > float(order['price'])) or
-                (side == "buy" and stop_loss < float(order['price']))
-                ))
-
-    @retrier(retries=0)
-    def create_stoploss(self, pair: str, amount: float, stop_price: float,
-                        order_types: Dict, side: BuySell, leverage: float) -> Dict:
-        """
-        Creates a stoploss market order.
-        Stoploss market orders is the only stoploss type supported by kraken.
-        TODO: investigate if this can be combined with generic implementation
-              (careful, prices are reversed)
-        """
-        params = self._params.copy()
-        if self.trading_mode == TradingMode.FUTURES:
-            params.update({'reduceOnly': True})
-
-        round_mode = ROUND_DOWN if side == 'buy' else ROUND_UP
-        if order_types.get('stoploss', 'market') == 'limit':
-            ordertype = "stop-loss-limit"
-            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            if side == "sell":
-                limit_rate = stop_price * limit_price_pct
-            else:
-                limit_rate = stop_price * (2 - limit_price_pct)
-            params['price2'] = self.price_to_precision(pair, limit_rate, rounding_mode=round_mode)
-        else:
-            ordertype = "stop-loss"
-
-        stop_price = self.price_to_precision(pair, stop_price, rounding_mode=round_mode)
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price, leverage, stop_loss=True)
-            return dry_order
-
-        try:
-            amount = self.amount_to_precision(pair, amount)
-
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=stop_price, params=params)
-            self._log_exchange_response('create_stoploss_order', order)
-            logger.info('stoploss order added for %s. '
-                        'stop price: %s.', pair, stop_price)
-            return order
-        except ccxt.InsufficientFunds as e:
-            raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
-                f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
-                f'Message: {e}') from e
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Could not create {ordertype} {side} order on market {pair}. '
-                f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
-                f'Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
