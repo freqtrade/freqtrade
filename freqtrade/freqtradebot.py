@@ -1289,7 +1289,7 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: Dict):
+    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: List[Dict]):
         """
         Perform required actions acording to existing stoploss orders of trade
         :param trade: Corresponding Trade
