@@ -1675,6 +1675,7 @@ def test_handle_stoploss_on_exchange_trailing(
             ft_amount=trade.amount,
             ft_price=trade.stop_loss,
             order_id='100',
+            order_date=dt_now() - timedelta(minutes=20),
         )
     )
 
@@ -1767,8 +1768,9 @@ def test_handle_stoploss_on_exchange_trailing(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_stoploss_on_exchange_trailing_error(
-    mocker, default_conf_usdt, fee, caplog, limit_order, is_short
+    mocker, default_conf_usdt, fee, caplog, limit_order, is_short, time_machine
 ) -> None:
+    time_machine.move_to(dt_now() - timedelta(minutes=601))
     enter_order = limit_order[entry_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
     # When trailing stoploss is set
@@ -1809,7 +1811,6 @@ def test_handle_stoploss_on_exchange_trailing_error(
     trade.is_short = is_short
     trade.is_open = True
     trade.stop_loss = 0.2
-    trade.stoploss_last_update = (dt_now() - timedelta(minutes=601)).replace(tzinfo=None)
 
     stoploss_order_hanging = {
         'id': "abcd",
@@ -1829,12 +1830,14 @@ def test_handle_stoploss_on_exchange_trailing_error(
             ft_amount=trade.amount,
             ft_price=3,
             order_id='abcd',
+            order_date=dt_now(),
         )
     )
     mocker.patch(f'{EXMS}.cancel_stoploss_order',
                  side_effect=InvalidOrderException())
     mocker.patch(f'{EXMS}.fetch_stoploss_order',
                  return_value=stoploss_order_hanging)
+    time_machine.shift(timedelta(minutes=50))
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/USDT.*", caplog)
 
@@ -1844,10 +1847,10 @@ def test_handle_stoploss_on_exchange_trailing_error(
     assert len(trade.open_sl_orders) == 2
 
     # Fail creating stoploss order
-    trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
     caplog.clear()
     cancel_mock = mocker.patch(f'{EXMS}.cancel_stoploss_order')
     mocker.patch(f'{EXMS}.create_stoploss', side_effect=ExchangeError())
+    time_machine.shift(timedelta(minutes=50))
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 2
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/USDT\..*", caplog)
