@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import inspect, select, text, tuple_, update
+from sqlalchemy import inspect, select, text, update
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.trade_model import Order, Trade
