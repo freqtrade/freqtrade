@@ -1383,8 +1383,9 @@ def test_handle_stoploss_on_exchange_partial(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_stoploss_on_exchange_partial_cancel_here(
-        mocker, default_conf_usdt, fee, is_short, limit_order, caplog) -> None:
+        mocker, default_conf_usdt, fee, is_short, limit_order, caplog, time_machine) -> None:
     stop_order_dict = {'id': "101", "status": "open"}
+    time_machine.move_to(dt_now())
     default_conf_usdt['trailing_stop'] = True
     stoploss = MagicMock(return_value=stop_order_dict)
     enter_order = limit_order[entry_side(is_short)]
@@ -1443,7 +1444,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     })
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
     mocker.patch(f'{EXMS}.cancel_stoploss_order_with_result', stoploss_order_cancel)
-    trade.stoploss_last_update = dt_now() - timedelta(minutes=10)
+    time_machine.shift(timedelta(minutes=15))
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     # Canceled Stoploss filled partially ...
@@ -1934,7 +1935,6 @@ def test_handle_stoploss_on_exchange_custom_stop(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
-    trade.stoploss_last_update = dt_now() - timedelta(minutes=601)
     trade.orders.append(
         Order(
             ft_order_side='stoploss',
@@ -1942,6 +1942,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
             ft_is_open=True,
             ft_amount=trade.amount,
             ft_price=trade.stop_loss,
+            order_date=dt_now() - timedelta(minutes=601),
             order_id='100',
         )
     )
