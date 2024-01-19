@@ -364,8 +364,6 @@ class LocalTrade:
     # percentage value of the initial stop loss
     initial_stop_loss_pct: Optional[float] = None
     is_stop_loss_trailing: bool = False
-    # last update time of the stoploss order on exchange
-    stoploss_last_update: Optional[datetime] = None
     # absolute value of the highest reached price
     max_rate: Optional[float] = None
     # Lowest price reached
@@ -455,8 +453,8 @@ class LocalTrade:
 
     @property
     def stoploss_last_update_utc(self):
-        if self.stoploss_last_update:
-            return self.stoploss_last_update.replace(tzinfo=timezone.utc)
+        if self.has_open_sl_orders:
+            return max(o.order_date_utc for o in self.open_sl_orders)
         return None
 
     @property
@@ -638,10 +636,10 @@ class LocalTrade:
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
-            'stoploss_last_update': (self.stoploss_last_update.strftime(DATETIME_PRINT_FORMAT)
-                                     if self.stoploss_last_update else None),
-            'stoploss_last_update_timestamp': int(self.stoploss_last_update.replace(
-                tzinfo=timezone.utc).timestamp() * 1000) if self.stoploss_last_update else None,
+            'stoploss_last_update': (self.stoploss_last_update_utc.strftime(DATETIME_PRINT_FORMAT)
+                                     if self.stoploss_last_update_utc else None),
+            'stoploss_last_update_timestamp': int(self.stoploss_last_update_utc.timestamp() * 1000
+                                                  ) if self.stoploss_last_update_utc else None,
             'initial_stop_loss_abs': self.initial_stop_loss,
             'initial_stop_loss_ratio': (self.initial_stop_loss_pct
                                         if self.initial_stop_loss_pct else None),
@@ -1378,10 +1376,6 @@ class LocalTrade:
             exit_order_status=data["exit_order_status"],
             stop_loss=data["stop_loss_abs"],
             stop_loss_pct=data["stop_loss_ratio"],
-            stoploss_last_update=(
-                datetime.fromtimestamp(data["stoploss_last_update_timestamp"] // 1000,
-                                       tz=timezone.utc)
-                if data["stoploss_last_update_timestamp"] else None),
             initial_stop_loss=data["initial_stop_loss_abs"],
             initial_stop_loss_pct=data["initial_stop_loss_ratio"],
             min_rate=data["min_rate"],
@@ -1487,8 +1481,6 @@ class Trade(ModelBase, LocalTrade):
         Float(), nullable=True)  # type: ignore
     is_stop_loss_trailing: Mapped[bool] = mapped_column(
         nullable=False, default=False)  # type: ignore
-    # last update time of the stoploss order on exchange
-    stoploss_last_update: Mapped[Optional[datetime]] = mapped_column(nullable=True)  # type: ignore
     # absolute value of the highest reached price
     max_rate: Mapped[Optional[float]] = mapped_column(
         Float(), nullable=True, default=0.0)  # type: ignore

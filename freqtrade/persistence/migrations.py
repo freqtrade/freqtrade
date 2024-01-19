@@ -91,7 +91,6 @@ def migrate_trades_and_orders_table(
     is_stop_loss_trailing = get_column_def(
         cols, 'is_stop_loss_trailing',
         f'coalesce({stop_loss_pct}, 0.0) <> coalesce({initial_stop_loss_pct}, 0.0)')
-    stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
     min_rate = get_column_def(cols, 'min_rate', 'null')
     exit_reason = get_column_def(cols, 'sell_reason', get_column_def(cols, 'exit_reason', 'null'))
@@ -159,7 +158,7 @@ def migrate_trades_and_orders_table(
             open_rate_requested, close_rate, close_rate_requested, close_profit,
             stake_amount, amount, amount_requested, open_date, close_date,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
-            is_stop_loss_trailing, stoploss_last_update,
+            is_stop_loss_trailing,
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
@@ -179,7 +178,6 @@ def migrate_trades_and_orders_table(
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {is_stop_loss_trailing} is_stop_loss_trailing,
-            {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate,
             case when {exit_reason} = 'sell_signal' then 'exit_signal'
                  when {exit_reason} = 'custom_sell' then 'custom_exit'
