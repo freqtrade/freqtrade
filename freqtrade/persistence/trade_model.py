@@ -170,6 +170,8 @@ class Order(ModelBase):
         order_date = safe_value_fallback(order, 'timestamp')
         if order_date:
             self.order_date = datetime.fromtimestamp(order_date / 1000, tz=timezone.utc)
+        elif not self.order_date:
+            self.order_date = dt_now()
 
         self.ft_is_open = True
         if self.status in NON_OPEN_EXCHANGE_STATES:
