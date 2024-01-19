@@ -276,23 +276,20 @@ def fix_old_dry_orders(engine):
     with engine.begin() as connection:
 
         # Update current dry-run Orders where
+        # - stoploss order is Open (will be replaced eventually)
+        # 2nd query:
         # - current Order is open
         # - current Trade is closed
         # - current Order trade_id not equal to current Trade.id
         # - current Order not stoploss
-        # TODO: is this still necessary ? how can this be done now ?
-        # stmt = update(Order).where(
-        #     Order.ft_is_open.is_(True),
-        #     tuple_(Order.ft_trade_id, Order.order_id).not_in(
-        #         select(
-        #             Trade.id, Trade.stoploss_order_id
-        #         ).where(Trade.stoploss_order_id.is_not(None))
-        #           ),
-        #     Order.ft_order_side == 'stoploss',
-        #     Order.order_id.like('dry%'),
 
-        # ).values(ft_is_open=False)
-        # connection.execute(stmt)
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            Order.ft_order_side == 'stoploss',
+            Order.order_id.like('dry%'),
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
 
         # Close dry-run orders for closed trades.
         stmt = update(Order).where(
