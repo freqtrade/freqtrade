@@ -20,7 +20,7 @@ from freqtrade.exchange.exchange_utils import (ROUND_DOWN, ROUND_UP, amount_to_c
                                                timeframe_to_seconds, validate_exchange)
 from freqtrade.exchange.gate import Gate
 from freqtrade.exchange.hitbtc import Hitbtc
-from freqtrade.exchange.huobi import Huobi
+from freqtrade.exchange.htx import Htx
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
 from freqtrade.exchange.okx import Okx
