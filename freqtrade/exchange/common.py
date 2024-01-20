@@ -48,13 +48,14 @@ MAP_EXCHANGE_CHILDCLASS = {
     'binanceusdm': 'binance',
     'okex': 'okx',
     'gateio': 'gate',
+    'htx': 'huboi',
 }
 
 SUPPORTED_EXCHANGES = [
     'binance',
     'bitmart',
     'gate',
-    'huobi',
+    'htx',
     'kraken',
     'okx',
 ]
