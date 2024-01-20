@@ -3489,7 +3489,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
 
     ex = Kraken(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination') == 'time'
     assert ex.get_option('trades_pagination_arg') == 'since'
 
     # Binance defines different values
