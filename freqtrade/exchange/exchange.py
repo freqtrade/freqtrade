@@ -2250,6 +2250,13 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch trade data. Msg: {e}') from e
 
+    def _valid_trade_pagination_id(self, pair: str, from_id: str) -> bool:
+        """
+        Verify trade-pagination id is valid.
+        Workaround for odd Kraken issue where ID is sometimes wrong.
+        """
+        return True
+
     async def _async_get_trade_history_id(self, pair: str,
                                           until: int,
                                           since: Optional[int] = None,
@@ -2266,7 +2273,7 @@ class Exchange:
 
         trades: List[List] = []
 
-        if not from_id:
+        if not from_id or not self._valid_trade_pagination_id(pair, from_id):
             # Fetch first elements using timebased method to get an ID to paginate on
             # Depending on the Exchange, this can introduce a drift at the start of the interval
             # of up to an hour.

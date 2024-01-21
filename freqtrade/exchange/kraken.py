@@ -172,3 +172,15 @@ class Kraken(Exchange):
 
             trades[-1]['id'] = trades[-1].get('info', [])[-1]
         return trades
+
+    def _valid_trade_pagination_id(self, pair: str, from_id: str) -> bool:
+        """
+        Verify trade-pagination id is valid.
+        Workaround for odd Kraken issue where ID is sometimes wrong.
+        """
+        # Regular id's are in timestamp format 1705443695120072285
+        # If the id is smaller than 19 characters, it's not a valid timestamp.
+        if len(from_id) >= 19:
+            return True
+        logger.debug("trade-pagination id is not valid. Fallback to timestamp.")
+        return False
