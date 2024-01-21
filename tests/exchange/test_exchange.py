@@ -2961,6 +2961,21 @@ async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
     assert exchange._ft_has['trades_pagination_arg'] in fetch_trades_cal[1][1]['params']
 
 
+@pytest.mark.parametrize('trade_id, expected', [
+    ('1234', True),
+    ('170544369512007228', True),
+    ('1705443695120072285', True),
+    ('170544369512007228555', True),
+])
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test__valid_trade_pagination_id(mocker, default_conf_usdt, exchange_name, trade_id, expected):
+    if exchange_name == 'kraken':
+        pytest.skip("Kraken has a different pagination id format, and an explicit test.")
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id=exchange_name)
+
+    assert exchange._valid_trade_pagination_id('XRP/USDT', trade_id) == expected
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_time(default_conf, mocker, caplog, exchange_name,
