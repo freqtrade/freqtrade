@@ -158,7 +158,7 @@ class MarketCapPairList(IPairList):
                         filtered_pairlist.append(pair)
                     else:
                         self.log_once(f"Remove {pair} from whitelist because it's not ranked "
-                                      f"within top {self._number_assets} market cap")
+                                      f"within top {self._number_assets} market cap", logger.info)
 
             else:
                 market = self._config['trading_mode']
