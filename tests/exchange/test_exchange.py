@@ -2844,10 +2844,14 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
     exchange._api_async.fetch_trades = get_mock_coro(fetch_trades_result)
 
     pair = 'ETH/BTC'
-    res = await exchange._async_fetch_trades(pair, since=None, params=None)
+    res, pagid = await exchange._async_fetch_trades(pair, since=None, params=None)
     assert isinstance(res, list)
     assert isinstance(res[0], list)
     assert isinstance(res[1], list)
+    if exchange._trades_pagination == 'id':
+        assert pagid == '126181333'
+    else:
+        assert pagid == 1565798399872
 
     assert exchange._api_async.fetch_trades.call_count == 1
     assert exchange._api_async.fetch_trades.call_args[0][0] == pair
@@ -2856,11 +2860,17 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
     assert log_has_re(f"Fetching trades for pair {pair}, since .*", caplog)
     caplog.clear()
     exchange._api_async.fetch_trades.reset_mock()
-    res = await exchange._async_fetch_trades(pair, since=None, params={'from': '123'})
+    res, pagid = await exchange._async_fetch_trades(pair, since=None, params={'from': '123'})
     assert exchange._api_async.fetch_trades.call_count == 1
     assert exchange._api_async.fetch_trades.call_args[0][0] == pair
     assert exchange._api_async.fetch_trades.call_args[1]['limit'] == 1000
     assert exchange._api_async.fetch_trades.call_args[1]['params'] == {'from': '123'}
+
+    if exchange._trades_pagination == 'id':
+        assert pagid == '126181333'
+    else:
+        assert pagid == 1565798399872
+
     assert log_has_re(f"Fetching trades for pair {pair}, params: .*", caplog)
     exchange.close()
 
@@ -2915,8 +2925,9 @@ async def test__async_fetch_trades_contract_size(default_conf, mocker, caplog, e
     )
 
     pair = 'ETH/USDT:USDT'
-    res = await exchange._async_fetch_trades(pair, since=None, params=None)
+    res, pagid = await exchange._async_fetch_trades(pair, since=None, params=None)
     assert res[0][5] == 300
+    assert pagid is not None
     exchange.close()
 
 
