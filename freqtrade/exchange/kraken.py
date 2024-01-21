@@ -30,6 +30,7 @@ class Kraken(Exchange):
         "ohlcv_has_history": False,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
+        "trades_pagination_overlap": False,
         "mark_ohlcv_timeframe": "4h",
     }
 
@@ -157,7 +158,7 @@ class Kraken(Exchange):
 
         return fees if is_short else -fees
 
-    def _get_trade_pagination_next_value(self, trades: List[Dict]) -> str:
+    def _get_trade_pagination_next_value(self, trades: List[Dict]):
         """
         Extract pagination id for the next "from_id" value
         Applies only to fetch_trade_history by id.

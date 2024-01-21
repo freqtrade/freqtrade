@@ -2287,6 +2287,9 @@ class Exchange:
         trades: List[List] = []
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
         # DEFAULT_TRADES_COLUMNS: 1 -> id
+        has_overlap = self._ft_has.get('trades_pagination_overlap', True)
+        # Skip last trade by default since its the key for the next call
+        x = slice(None, -1) if has_overlap else slice(None)
 
         if not from_id or not self._valid_trade_pagination_id(pair, from_id):
             # Fetch first elements using timebased method to get an ID to paginate on
@@ -2295,19 +2298,19 @@ class Exchange:
             # e.g. Binance returns the "last 1000" candles within a 1h time interval
             # - so we will miss the first trades.
             t, from_id = await self._async_fetch_trades(pair, since=since)
-            trades.extend(t[:-1])
+            trades.extend(t[x])
         while True:
             try:
                 t, from_id_next = await self._async_fetch_trades(
                     pair, params={self._trades_pagination_arg: from_id})
                 if t:
-                    # Skip last id since its the key for the next call
-                    trades.extend(t[:-1])
+                    trades.extend(t[x])
                     if from_id == from_id_next or t[-1][0] > until:
                         logger.debug(f"Stopping because from_id did not change. "
                                      f"Reached {t[-1][0]} > {until}")
                         # Reached the end of the defined-download period - add last trade as well.
-                        trades.extend(t[-1:])
+                        if has_overlap:
+                            trades.extend(t[-1:])
                         break
 
                     from_id = from_id_next
