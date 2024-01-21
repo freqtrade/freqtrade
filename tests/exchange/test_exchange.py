@@ -2849,7 +2849,10 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
     assert isinstance(res[0], list)
     assert isinstance(res[1], list)
     if exchange._trades_pagination == 'id':
-        assert pagid == '126181333'
+        if exchange_name == 'kraken':
+            assert pagid == 1565798399872512133
+        else:
+            assert pagid == '126181333'
     else:
         assert pagid == 1565798399872
 
@@ -2867,7 +2870,10 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
     assert exchange._api_async.fetch_trades.call_args[1]['params'] == {'from': '123'}
 
     if exchange._trades_pagination == 'id':
-        assert pagid == '126181333'
+        if exchange_name == 'kraken':
+            assert pagid == 1565798399872512133
+        else:
+            assert pagid == '126181333'
     else:
         assert pagid == 1565798399872
 
