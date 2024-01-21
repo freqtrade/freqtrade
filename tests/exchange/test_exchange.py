@@ -2937,6 +2937,9 @@ async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
                                            fetch_trades_result):
 
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    if exchange._trades_pagination != 'id':
+        exchange.close()
+        pytest.skip("Exchange does not support pagination by trade id")
     pagination_arg = exchange._trades_pagination_arg
 
     async def mock_get_trade_hist(pair, *args, **kwargs):
@@ -3002,6 +3005,9 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    if exchange._trades_pagination != 'time':
+        exchange.close()
+        pytest.skip("Exchange does not support pagination by timestamp")
     # Monkey-patch async function
     exchange._api_async.fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
     pair = 'ETH/BTC'
@@ -3034,9 +3040,9 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
 
     async def mock_get_trade_hist(pair, *args, **kwargs):
         if kwargs['since'] == trades_history[0][0]:
-            return trades_history[:-1]
+            return trades_history[:-1], trades_history[:-1][-1][0]
         else:
-            return []
+            return [], None
 
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
