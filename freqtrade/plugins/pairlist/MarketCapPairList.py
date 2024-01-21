@@ -137,20 +137,16 @@ class MarketCapPairList(IPairList):
         :return: new whitelist
         """
         marketcap_list = self._marketcap_cache.get('marketcap')
-        can_filter = False
 
-        if marketcap_list:
-            can_filter = True
-        else:
+        if marketcap_list is None:
             data = self._coingekko.get_coins_markets(vs_currency='usd', order='market_cap_desc',
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
             if data:
                 marketcap_list = [row['symbol'] for row in data]
                 self._marketcap_cache['marketcap'] = marketcap_list
-                can_filter = True
 
-        if can_filter:
+        if marketcap_list:
             filtered_pairlist = []
 
             if self._mode == 'top_rank':
@@ -161,8 +157,8 @@ class MarketCapPairList(IPairList):
                     if base.lower() in top_marketcap:
                         filtered_pairlist.append(pair)
                     else:
-                        logger.info(f"Remove {pair} from whitelist because it's not ranked "
-                                    f"within top {self._number_assets} market cap")
+                        self.log_once(f"Remove {pair} from whitelist because it's not ranked "
+                                      f"within top {self._number_assets} market cap")
 
             else:
                 market = self._config['trading_mode']
