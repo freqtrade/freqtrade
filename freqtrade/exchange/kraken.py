@@ -182,5 +182,5 @@ class Kraken(Exchange):
         # If the id is smaller than 19 characters, it's not a valid timestamp.
         if len(from_id) >= 19:
             return True
-        logger.debug("trade-pagination id is not valid. Fallback to timestamp.")
+        logger.debug(f"{pair} - trade-pagination id is not valid. Fallback to timestamp.")
         return False
