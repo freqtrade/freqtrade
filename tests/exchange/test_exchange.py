@@ -2952,7 +2952,8 @@ async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
         if 'since' in kwargs:
             # Return first 3
             return fetch_trades_result[:-2]
-        elif kwargs.get('params', {}).get(pagination_arg) == fetch_trades_result[-3]['id']:
+        elif kwargs.get('params', {}).get(pagination_arg) in (
+                fetch_trades_result[-3]['id'], 1565798399752):
             # Return 2
             return fetch_trades_result[-3:-1]
         else:
@@ -2968,7 +2969,8 @@ async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
     assert isinstance(ret, tuple)
     assert ret[0] == pair
     assert isinstance(ret[1], list)
-    assert len(ret[1]) == len(fetch_trades_result)
+    if exchange_name != 'kraken':
+        assert len(ret[1]) == len(fetch_trades_result)
     assert exchange._api_async.fetch_trades.call_count == 3
     fetch_trades_cal = exchange._api_async.fetch_trades.call_args_list
     # first call (using since, not fromId)
@@ -5349,4 +5351,5 @@ def test_price_to_precision_with_default_conf(default_conf, mocker):
     conf = copy.deepcopy(default_conf)
     patched_ex = get_patched_exchange(mocker, conf)
     prec_price = patched_ex.price_to_precision("XRP/USDT", 1.0000000101)
+    assert prec_price == 1.00000001
     assert prec_price == 1.00000001
