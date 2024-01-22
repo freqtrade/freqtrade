@@ -36,14 +36,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (linux)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -137,14 +137,14 @@ jobs:
         check-latest: true
 
     - name: Cache_dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ matrix.os }}-dependencies
 
     - name: pip cache (macOS)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/Library/Caches/pip
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -249,7 +249,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Pip cache (Windows)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -368,14 +368,14 @@ jobs:
         python-version: "3.11"
 
     - name: Cache_dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (linux)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
