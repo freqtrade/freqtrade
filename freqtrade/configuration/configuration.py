@@ -366,7 +366,6 @@ class Configuration:
             ('analysis_rejected', 'Analyse rejected signals: {}'),
             ('analysis_to_csv', 'Store analysis tables to CSV: {}'),
             ('analysis_csv_path', 'Path to store analysis CSVs: {}'),
-            ('analysis_csv_path', 'Path to store analysis CSVs: {}'),
             # Lookahead analysis results
             ('targeted_trade_amount', 'Targeted Trade amount: {}'),
             ('minimum_trade_amount', 'Minimum Trade amount: {}'),
