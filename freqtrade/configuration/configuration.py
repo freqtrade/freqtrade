@@ -237,12 +237,12 @@ class Configuration:
 
         configurations = [
             ('timeframe_detail',
-                'Parameter --timeframe-detail detected, using {} for intra-candle backtesting ...'),
+             'Parameter --timeframe-detail detected, using {} for intra-candle backtesting ...'),
             ('backtest_show_pair_list', 'Parameter --show-pair-list detected.'),
             ('stake_amount',
-                'Parameter --stake-amount detected, overriding stake_amount to: {} ...'),
+             'Parameter --stake-amount detected, overriding stake_amount to: {} ...'),
             ('dry_run_wallet',
-                'Parameter --dry-run-wallet detected, overriding dry_run_wallet to: {} ...'),
+             'Parameter --dry-run-wallet detected, overriding dry_run_wallet to: {} ...'),
             ('fee', 'Parameter --fee detected, setting fee to: {} ...'),
             ('timerange', 'Parameter --timerange detected: {} ...'),
             ]
@@ -256,14 +256,14 @@ class Configuration:
 
         configurations = [
             ('recursive_strategy_search',
-                'Recursively searching for a strategy in the strategies folder.'),
+             'Recursively searching for a strategy in the strategies folder.'),
             ('timeframe', 'Overriding timeframe with Command line argument'),
             ('export', 'Parameter --export detected: {} ...'),
             ('backtest_breakdown', 'Parameter --breakdown detected ...'),
             ('backtest_cache', 'Parameter --cache={} detected ...'),
             ('disableparamexport', 'Parameter --disableparamexport detected: {} ...'),
             ('freqai_backtest_live_models',
-                'Parameter --freqai-backtest-live-models detected ...'),
+             'Parameter --freqai-backtest-live-models detected ...'),
         ]
         self._args_to_config_loop(config, configurations)
 
