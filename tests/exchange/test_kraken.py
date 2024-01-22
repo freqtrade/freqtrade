@@ -271,3 +271,14 @@ def test_stoploss_adjust_kraken(mocker, default_conf, sl1, sl2, sl3, side):
     # diff. order type ...
     order['type'] = 'limit'
     assert exchange.stoploss_adjust(sl3, order, side=side)
+
+
+@pytest.mark.parametrize('trade_id, expected', [
+    ('1234', False),
+    ('170544369512007228', False),
+    ('1705443695120072285', True),
+    ('170544369512007228555', True),
+])
+def test__valid_trade_pagination_id_kraken(mocker, default_conf_usdt, trade_id, expected):
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id='kraken')
+    assert exchange._valid_trade_pagination_id('XRP/USDT', trade_id) == expected

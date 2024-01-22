@@ -30,6 +30,7 @@ class Kraken(Exchange):
         "ohlcv_has_history": False,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
+        "trades_pagination_overlap": False,
         "mark_ohlcv_timeframe": "4h",
     }
 
@@ -157,18 +158,30 @@ class Kraken(Exchange):
 
         return fees if is_short else -fees
 
-    def _trades_contracts_to_amount(self, trades: List) -> List:
+    def _get_trade_pagination_next_value(self, trades: List[Dict]):
         """
-        Fix "last" id issue for kraken data downloads
-        This whole override can probably be removed once the following
-        issue is closed in ccxt: https://github.com/ccxt/ccxt/issues/15827
+        Extract pagination id for the next "from_id" value
+        Applies only to fetch_trade_history by id.
         """
-        super()._trades_contracts_to_amount(trades)
-        if (
-            len(trades) > 0
-            and isinstance(trades[-1].get('info'), list)
-            and len(trades[-1].get('info', [])) > 7
-        ):
+        if len(trades) > 0:
+            if (
+                isinstance(trades[-1].get('info'), list)
+                and len(trades[-1].get('info', [])) > 7
+            ):
+                # Trade response's "last" value.
+                return trades[-1].get('info', [])[-1]
+            # Fall back to timestamp if info is somehow empty.
+            return trades[-1].get('timestamp')
+        return None
 
-            trades[-1]['id'] = trades[-1].get('info', [])[-1]
-        return trades
+    def _valid_trade_pagination_id(self, pair: str, from_id: str) -> bool:
+        """
+        Verify trade-pagination id is valid.
+        Workaround for odd Kraken issue where ID is sometimes wrong.
+        """
+        # Regular id's are in timestamp format 1705443695120072285
+        # If the id is smaller than 19 characters, it's not a valid timestamp.
+        if len(from_id) >= 19:
+            return True
+        logger.debug(f"{pair} - trade-pagination id is not valid. Fallback to timestamp.")
+        return False
