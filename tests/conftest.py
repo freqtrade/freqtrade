@@ -112,6 +112,8 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     base = np.random.normal(20, 2, size=size)
     if timeframe == '1M':
         date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
+    elif timeframe == '3M':
+        date = pd.date_range(start, periods=size, freq='3MS', tz='UTC')
     elif timeframe == '1w':
         date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
     else:
