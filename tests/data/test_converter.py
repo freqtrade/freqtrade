@@ -160,7 +160,10 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     assert data.equals(df1)
 
     data1 = data.copy()
-    data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('30s')
+    if timeframe in ('1M', '3M', '1y'):
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('1w')
+    else:
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + (pd.to_timedelta(timeframe) / 2)
     df2 = ohlcv_to_dataframe(data1, timeframe, 'UNITTEST/USDT')
 
     assert len(df2) == len(data) - 1
