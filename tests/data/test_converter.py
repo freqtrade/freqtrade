@@ -52,6 +52,20 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
     assert 'close' in df.columns
     assert df.iloc[0, :]['high'] == 0.019627
     assert df.iloc[0, :]['low'] == 0.019626
+    assert df.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:00+0000')
+
+    df_1h = trades_to_ohlcv(trades_history_df, '1h')
+    assert len(df_1h) == 1
+    assert df_1h.iloc[0, :]['high'] == 0.019627
+    assert df_1h.iloc[0, :]['low'] == 0.019626
+    assert df_1h.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:00:00+0000')
+
+    df_1s = trades_to_ohlcv(trades_history_df, '1s')
+    assert len(df_1s) == 2
+    assert df_1s.iloc[0, :]['high'] == 0.019627
+    assert df_1s.iloc[0, :]['low'] == 0.019627
+    assert df_1s.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:49+0000')
+    assert df_1s.iloc[-1, :]['date'] == pd.Timestamp('2019-08-14 15:59:59+0000')
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
