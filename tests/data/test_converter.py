@@ -17,6 +17,7 @@ from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler
 from freqtrade.enums import CandleType
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from tests.conftest import generate_test_data, log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
@@ -136,12 +137,34 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '3M', '1y'
 ])
 def test_ohlcv_to_dataframe_multi(timeframe):
-    data = generate_test_data(timeframe, 40)
-    assert len(data) == 40
+    data = generate_test_data(timeframe, 180)
+    assert len(data) == 180
     df = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT')
     assert len(df) == len(data) - 1
     df1 = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT', drop_incomplete=False)
     assert len(df1) == len(data)
+
+    data1 = data.copy()
+    data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('30s')
+    df2 = ohlcv_to_dataframe(data1, timeframe, 'UNITTEST/USDT')
+
+    assert len(df2) == len(data) - 1
+    tfs = timeframe_to_seconds(timeframe)
+    tfm = timeframe_to_minutes(timeframe)
+    if tfm < 43200:
+        # minute based resampling does not work on timefrmaes > 1 week
+        ohlcv_dict = {
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum'
+        }
+        dfs = data1.resample(f"{tfs}s", on='date').agg(ohlcv_dict).reset_index(drop=False)
+        dfm = data1.resample(f"{tfm}min", on='date').agg(ohlcv_dict).reset_index(drop=False)
+
+        assert dfs.equals(dfm)
+        assert dfs.equals(df1)
 
 
 def test_ohlcv_to_dataframe_1M():
