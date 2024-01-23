@@ -117,8 +117,8 @@ class Backtesting:
             raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
-        self.disable_database_use()
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+        self.disable_database_use()
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
         self._validate_pairlists_for_backtesting()
