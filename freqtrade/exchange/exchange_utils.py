@@ -124,6 +124,8 @@ def timeframe_to_resample_freq(timeframe: str) -> str:
     form ('1m', '5m', '1h', '1d', '1w', etc.) to the resample frequency
     used by pandas ('1T', '5T', '1H', '1D', '1W', etc.)
     """
+    if timeframe == '1y':
+        return '1YS'
     timeframe_seconds = timeframe_to_seconds(timeframe)
     timeframe_minutes = timeframe_seconds // 60
     resample_interval = f'{timeframe_seconds}s'

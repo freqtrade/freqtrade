@@ -133,6 +133,7 @@ def test_timeframe_to_msecs():
     ("1d", '86400s'),
     ("1w", '604800s'),
     ("1M", '1MS'),
+    ("1y", '1YS'),
 ])
 def test_timeframe_to_resample_freq(timeframe, expected):
     assert timeframe_to_resample_freq(timeframe) == expected
