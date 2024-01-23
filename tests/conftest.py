@@ -18,8 +18,7 @@ from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_list_to_df
 from freqtrade.edge import PairInfo
 from freqtrade.enums import CandleType, MarginMode, RunMode, SignalDirection, TradingMode
-from freqtrade.exchange import Exchange
-from freqtrade.exchange.exchange import timeframe_to_minutes
+from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
@@ -117,7 +116,11 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
         date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
     else:
         tf_mins = timeframe_to_minutes(timeframe)
-        date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+        if tf_mins >= 1:
+            date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+        else:
+            tf_secs = timeframe_to_seconds(timeframe)
+            date = pd.date_range(start, periods=size, freq=f'{tf_secs}s', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,
