@@ -134,7 +134,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
 
 @pytest.mark.parametrize('timeframe', [
-    '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '3M', '1y'
+    '1s', '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '3M', '1y'
 ])
 def test_ohlcv_to_dataframe_multi(timeframe):
     data = generate_test_data(timeframe, 180)
@@ -151,8 +151,8 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     assert len(df2) == len(data) - 1
     tfs = timeframe_to_seconds(timeframe)
     tfm = timeframe_to_minutes(timeframe)
-    if tfm < 43200:
-        # minute based resampling does not work on timefrmaes > 1 week
+    if 1 <= tfm < 43200:
+        # minute based resampling does not work on timeframes > 1 week
         ohlcv_dict = {
             'open': 'first',
             'high': 'max',
