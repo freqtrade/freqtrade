@@ -167,7 +167,7 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     tfs = timeframe_to_seconds(timeframe)
     tfm = timeframe_to_minutes(timeframe)
     if 1 <= tfm < 43200:
-        # minute based resampling does not work on timeframes > 1 week
+        # minute based resampling does not work on timeframes >= 1 month
         ohlcv_dict = {
             'open': 'first',
             'high': 'max',
