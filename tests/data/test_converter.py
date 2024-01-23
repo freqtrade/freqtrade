@@ -18,7 +18,7 @@ from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
 from freqtrade.data.history.idatahandler import IDataHandler
 from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from tests.conftest import generate_test_data, log_has, log_has_re
+from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
 
@@ -66,6 +66,35 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
     assert df_1s.iloc[0, :]['low'] == 0.019627
     assert df_1s.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:49+0000')
     assert df_1s.iloc[-1, :]['date'] == pd.Timestamp('2019-08-14 15:59:59+0000')
+
+
+@pytest.mark.parametrize('timeframe,rows,days,candles,start,end,weekday', [
+    ('1s', 20_000, 5, 19522, '2020-01-01 00:00:05', '2020-01-05 23:59:27', None),
+    ('1m', 20_000, 5, 6745, '2020-01-01 00:00:00', '2020-01-05 23:59:00', None),
+    ('5m', 20_000, 5, 1440, '2020-01-01 00:00:00', '2020-01-05 23:55:00', None),
+    ('15m', 20_000, 5, 480, '2020-01-01 00:00:00', '2020-01-05 23:45:00', None),
+    ('1h', 20_000, 5, 120, '2020-01-01 00:00:00', '2020-01-05 23:00:00', None),
+    ('2h', 20_000, 5, 60, '2020-01-01 00:00:00', '2020-01-05 22:00:00', None),
+    ('4h', 20_000, 5, 30, '2020-01-01 00:00:00', '2020-01-05 20:00:00', None),
+    ('8h', 20_000, 5, 15, '2020-01-01 00:00:00', '2020-01-05 16:00:00', None),
+    ('12h', 20_000, 5, 10, '2020-01-01 00:00:00', '2020-01-05 12:00:00', None),
+    ('1d', 20_000, 5, 5, '2020-01-01 00:00:00', '2020-01-05 00:00:00', 'Sunday'),
+    ('7d', 20_000, 37, 6, '2020-01-01 00:00:00', '2020-02-05 00:00:00', 'Monday'),
+    ('1w', 20_000, 50, 8, '2020-01-01 00:00:00', '2020-02-19 00:00:00', 'Monday'),
+    ('1M', 20_000, 74, 3, '2020-01-01 00:00:00', '2020-03-01 00:00:00', None),
+    ('3M', 20_000, 100, 2, '2020-01-01 00:00:00', '2020-04-01 00:00:00', None),
+    ('1y', 20_000, 1000, 3, '2020-01-01 00:00:00', '2022-01-01 00:00:00', None),
+])
+def test_trades_to_ohlcv_multi(timeframe, rows, days, candles, start, end, weekday):
+    trades_history = generate_trades_history(n_rows=rows, days=days)
+    df = trades_to_ohlcv(trades_history, timeframe)
+    assert not df.empty
+    assert len(df) == candles
+    assert df.iloc[0, :]['date'] == pd.Timestamp(f'{start}+0000')
+    assert df.iloc[-1, :]['date'] == pd.Timestamp(f'{end}+0000')
+    if weekday:
+        # Weekday is only relevant for daily and weekly candles.
+        assert df.iloc[-1, :]['date'].day_name() == weekday
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
