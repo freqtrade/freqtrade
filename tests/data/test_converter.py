@@ -132,7 +132,9 @@ def test_ohlcv_fill_up_missing_data2(caplog):
                       f"{len(data)} - after: {len(data2)}.*", caplog)
 
 
-@pytest.mark.parametrize('timeframe', ['1m', '5m', '15m', '1h', '1d', '1M'])
+@pytest.mark.parametrize('timeframe', [
+    '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '1y'
+])
 def test_ohlcv_to_dataframe_multi(timeframe):
     data = generate_test_data(timeframe, 40)
     assert len(data) == 40
