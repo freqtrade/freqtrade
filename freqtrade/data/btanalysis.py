@@ -357,8 +357,8 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     :param timeframe: Timeframe used for backtest
     :return: dataframe with open-counts per time-period in timeframe
     """
-    from freqtrade.exchange import timeframe_as_resample_freq
-    timeframe_freq = timeframe_as_resample_freq(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
                                      freq=timeframe_freq))
              for row in results[['open_date', 'close_date']].iterrows()]

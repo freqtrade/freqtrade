@@ -70,11 +70,11 @@ def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
     :return: OHLCV Dataframe.
     :raises: ValueError if no trades are provided
     """
-    from freqtrade.exchange import timeframe_as_resample_freq
+    from freqtrade.exchange import timeframe_to_resample_freq
     if trades.empty:
         raise ValueError('Trade-list empty.')
     df = trades.set_index('date', drop=True)
-    resample_interval = timeframe_as_resample_freq(timeframe)
+    resample_interval = timeframe_to_resample_freq(timeframe)
     df_new = df['price'].resample(resample_interval).ohlc()
     df_new['volume'] = df['amount'].resample(resample_interval).sum()
     df_new['date'] = df_new.index

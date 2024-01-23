@@ -118,7 +118,7 @@ def timeframe_to_msecs(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
-def timeframe_as_resample_freq(timeframe: str) -> str:
+def timeframe_to_resample_freq(timeframe: str) -> str:
     """
     Translates the timeframe interval value written in the human readable
     form ('1m', '5m', '1h', '1d', '1w', etc.) to the resample frequency

@@ -8,9 +8,9 @@ from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGIT
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, amount_to_precision,
-                                date_minus_candles, price_to_precision, timeframe_as_resample_freq,
-                                timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
-                                timeframe_to_prev_date, timeframe_to_seconds)
+                                date_minus_candles, price_to_precision, timeframe_to_minutes,
+                                timeframe_to_msecs, timeframe_to_next_date, timeframe_to_prev_date,
+                                timeframe_to_resample_freq, timeframe_to_seconds)
 from freqtrade.exchange.check_exchange import check_exchange
 from tests.conftest import log_has_re
 
@@ -134,8 +134,8 @@ def test_timeframe_to_msecs():
     ("1w", '604800s'),
     ("1M", '1MS'),
 ])
-def test_timeframe_as_resample_freq(timeframe, expected):
-    assert timeframe_as_resample_freq(timeframe) == expected
+def test_timeframe_to_resample_freq(timeframe, expected):
+    assert timeframe_to_resample_freq(timeframe) == expected
 
 
 def test_timeframe_to_prev_date():

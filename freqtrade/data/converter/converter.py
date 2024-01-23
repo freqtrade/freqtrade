@@ -84,7 +84,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
 
     """
-    from freqtrade.exchange import timeframe_as_resample_freq
+    from freqtrade.exchange import timeframe_to_resample_freq
 
     ohlcv_dict = {
         'open': 'first',
@@ -93,7 +93,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         'close': 'last',
         'volume': 'sum'
     }
-    resample_interval = timeframe_as_resample_freq(timeframe)
+    resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
     df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 
