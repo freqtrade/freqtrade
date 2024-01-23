@@ -163,14 +163,15 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     if timeframe in ('1M', '3M', '1y'):
         data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('1w')
     else:
+        # Shift by half a timeframe
         data1.loc[:, 'date'] = data1.loc[:, 'date'] + (pd.to_timedelta(timeframe) / 2)
     df2 = ohlcv_to_dataframe(data1, timeframe, 'UNITTEST/USDT')
 
     assert len(df2) == len(data) - 1
     tfs = timeframe_to_seconds(timeframe)
     tfm = timeframe_to_minutes(timeframe)
-    if 1 <= tfm < 43200:
-        # minute based resampling does not work on timeframes >= 1 month
+    if 1 <= tfm < 10000:
+        # minute based resampling does not work on timeframes >= 1 week
         ohlcv_dict = {
             'open': 'first',
             'high': 'max',

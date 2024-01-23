@@ -116,7 +116,7 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
         date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
     elif timeframe == '3M':
         date = pd.date_range(start, periods=size, freq='3MS', tz='UTC')
-    elif timeframe == '1w':
+    elif timeframe == '1w' or timeframe == '7d':
         date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
     else:
         tf_mins = timeframe_to_minutes(timeframe)
