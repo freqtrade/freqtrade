@@ -5,7 +5,7 @@ import logging
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from freqtrade import constants
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
@@ -235,54 +235,37 @@ class Configuration:
             except ValueError:
                 pass
 
-        self._args_to_config(config, argname='timeframe_detail',
-                             logstring='Parameter --timeframe-detail detected, '
-                             'using {} for intra-candle backtesting ...')
+        configurations = [
+            ('timeframe_detail',
+             'Parameter --timeframe-detail detected, using {} for intra-candle backtesting ...'),
+            ('backtest_show_pair_list', 'Parameter --show-pair-list detected.'),
+            ('stake_amount',
+             'Parameter --stake-amount detected, overriding stake_amount to: {} ...'),
+            ('dry_run_wallet',
+             'Parameter --dry-run-wallet detected, overriding dry_run_wallet to: {} ...'),
+            ('fee', 'Parameter --fee detected, setting fee to: {} ...'),
+            ('timerange', 'Parameter --timerange detected: {} ...'),
+            ]
 
-        self._args_to_config(config, argname='backtest_show_pair_list',
-                             logstring='Parameter --show-pair-list detected.')
-
-        self._args_to_config(config, argname='stake_amount',
-                             logstring='Parameter --stake-amount detected, '
-                             'overriding stake_amount to: {} ...')
-        self._args_to_config(config, argname='dry_run_wallet',
-                             logstring='Parameter --dry-run-wallet detected, '
-                             'overriding dry_run_wallet to: {} ...')
-        self._args_to_config(config, argname='fee',
-                             logstring='Parameter --fee detected, '
-                             'setting fee to: {} ...')
-
-        self._args_to_config(config, argname='timerange',
-                             logstring='Parameter --timerange detected: {} ...')
+        self._args_to_config_loop(config, configurations)
 
         self._process_datadir_options(config)
 
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
-        self._args_to_config(
-            config,
-            argname='recursive_strategy_search',
-            logstring='Recursively searching for a strategy in the strategies folder.',
-        )
-
-        self._args_to_config(config, argname='timeframe',
-                             logstring='Overriding timeframe with Command line argument')
-
-        self._args_to_config(config, argname='export',
-                             logstring='Parameter --export detected: {} ...')
-
-        self._args_to_config(config, argname='backtest_breakdown',
-                             logstring='Parameter --breakdown detected ...')
-
-        self._args_to_config(config, argname='backtest_cache',
-                             logstring='Parameter --cache={} detected ...')
-
-        self._args_to_config(config, argname='disableparamexport',
-                             logstring='Parameter --disableparamexport detected: {} ...')
-
-        self._args_to_config(config, argname='freqai_backtest_live_models',
-                             logstring='Parameter --freqai-backtest-live-models detected ...')
+        configurations = [
+            ('recursive_strategy_search',
+             'Recursively searching for a strategy in the strategies folder.'),
+            ('timeframe', 'Overriding timeframe with Command line argument'),
+            ('export', 'Parameter --export detected: {} ...'),
+            ('backtest_breakdown', 'Parameter --breakdown detected ...'),
+            ('backtest_cache', 'Parameter --cache={} detected ...'),
+            ('disableparamexport', 'Parameter --disableparamexport detected: {} ...'),
+            ('freqai_backtest_live_models',
+             'Parameter --freqai-backtest-live-models detected ...'),
+        ]
+        self._args_to_config_loop(config, configurations)
 
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
@@ -293,31 +276,18 @@ class Configuration:
             logger.info('Parameter --stoplosses detected: %s ...', self.args["stoploss_range"])
 
         # Hyperopt section
-        self._args_to_config(config, argname='hyperopt',
-                             logstring='Using Hyperopt class name: {}')
 
-        self._args_to_config(config, argname='hyperopt_path',
-                             logstring='Using additional Hyperopt lookup path: {}')
-
-        self._args_to_config(config, argname='hyperoptexportfilename',
-                             logstring='Using hyperopt file: {}')
-
-        self._args_to_config(config, argname='lookahead_analysis_exportfilename',
-                             logstring='Saving lookahead analysis results into {} ...')
-
-        self._args_to_config(config, argname='epochs',
-                             logstring='Parameter --epochs detected ... '
-                             'Will run Hyperopt with for {} epochs ...'
-                             )
-
-        self._args_to_config(config, argname='spaces',
-                             logstring='Parameter -s/--spaces detected: {}')
-
-        self._args_to_config(config, argname='analyze_per_epoch',
-                             logstring='Parameter --analyze-per-epoch detected.')
-
-        self._args_to_config(config, argname='print_all',
-                             logstring='Parameter --print-all detected ...')
+        configurations = [
+            ('hyperopt', 'Using Hyperopt class name: {}'),
+            ('hyperopt_path', 'Using additional Hyperopt lookup path: {}'),
+            ('hyperoptexportfilename', 'Using hyperopt file: {}'),
+            ('lookahead_analysis_exportfilename', 'Saving lookahead analysis results into {} ...'),
+            ('epochs', 'Parameter --epochs detected ... Will run Hyperopt with for {} epochs ...'),
+            ('spaces', 'Parameter -s/--spaces detected: {}'),
+            ('analyze_per_epoch', 'Parameter --analyze-per-epoch detected.'),
+            ('print_all', 'Parameter --print-all detected ...'),
+        ]
+        self._args_to_config_loop(config, configurations)
 
         if 'print_colorized' in self.args and not self.args["print_colorized"]:
             logger.info('Parameter --no-color detected ...')
@@ -325,123 +295,55 @@ class Configuration:
         else:
             config.update({'print_colorized': True})
 
-        self._args_to_config(config, argname='print_json',
-                             logstring='Parameter --print-json detected ...')
+        configurations = [
+            ('print_json', 'Parameter --print-json detected ...'),
+            ('export_csv', 'Parameter --export-csv detected: {}'),
+            ('hyperopt_jobs', 'Parameter -j/--job-workers detected: {}'),
+            ('hyperopt_random_state', 'Parameter --random-state detected: {}'),
+            ('hyperopt_min_trades', 'Parameter --min-trades detected: {}'),
+            ('hyperopt_loss', 'Using Hyperopt loss class name: {}'),
+            ('hyperopt_show_index', 'Parameter -n/--index detected: {}'),
+            ('hyperopt_list_best', 'Parameter --best detected: {}'),
+            ('hyperopt_list_profitable', 'Parameter --profitable detected: {}'),
+            ('hyperopt_list_min_trades', 'Parameter --min-trades detected: {}'),
+            ('hyperopt_list_max_trades', 'Parameter --max-trades detected: {}'),
+            ('hyperopt_list_min_avg_time', 'Parameter --min-avg-time detected: {}'),
+            ('hyperopt_list_max_avg_time', 'Parameter --max-avg-time detected: {}'),
+            ('hyperopt_list_min_avg_profit', 'Parameter --min-avg-profit detected: {}'),
+            ('hyperopt_list_max_avg_profit', 'Parameter --max-avg-profit detected: {}'),
+            ('hyperopt_list_min_total_profit', 'Parameter --min-total-profit detected: {}'),
+            ('hyperopt_list_max_total_profit', 'Parameter --max-total-profit detected: {}'),
+            ('hyperopt_list_min_objective', 'Parameter --min-objective detected: {}'),
+            ('hyperopt_list_max_objective', 'Parameter --max-objective detected: {}'),
+            ('hyperopt_list_no_details', 'Parameter --no-details detected: {}'),
+            ('hyperopt_show_no_header', 'Parameter --no-header detected: {}'),
+            ('hyperopt_ignore_missing_space', 'Paramter --ignore-missing-space detected: {}'),
+        ]
 
-        self._args_to_config(config, argname='export_csv',
-                             logstring='Parameter --export-csv detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_jobs',
-                             logstring='Parameter -j/--job-workers detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_random_state',
-                             logstring='Parameter --random-state detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_min_trades',
-                             logstring='Parameter --min-trades detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_loss',
-                             logstring='Using Hyperopt loss class name: {}')
-
-        self._args_to_config(config, argname='hyperopt_show_index',
-                             logstring='Parameter -n/--index detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_best',
-                             logstring='Parameter --best detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_profitable',
-                             logstring='Parameter --profitable detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_min_trades',
-                             logstring='Parameter --min-trades detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_max_trades',
-                             logstring='Parameter --max-trades detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_min_avg_time',
-                             logstring='Parameter --min-avg-time detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_max_avg_time',
-                             logstring='Parameter --max-avg-time detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_min_avg_profit',
-                             logstring='Parameter --min-avg-profit detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_max_avg_profit',
-                             logstring='Parameter --max-avg-profit detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_min_total_profit',
-                             logstring='Parameter --min-total-profit detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_max_total_profit',
-                             logstring='Parameter --max-total-profit detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_min_objective',
-                             logstring='Parameter --min-objective detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_max_objective',
-                             logstring='Parameter --max-objective detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_list_no_details',
-                             logstring='Parameter --no-details detected: {}')
-
-        self._args_to_config(config, argname='hyperopt_show_no_header',
-                             logstring='Parameter --no-header detected: {}')
-
-        self._args_to_config(config, argname="hyperopt_ignore_missing_space",
-                             logstring="Paramter --ignore-missing-space detected: {}")
+        self._args_to_config_loop(config, configurations)
 
     def _process_plot_options(self, config: Config) -> None:
 
-        self._args_to_config(config, argname='pairs',
-                             logstring='Using pairs {}')
-
-        self._args_to_config(config, argname='indicators1',
-                             logstring='Using indicators1: {}')
-
-        self._args_to_config(config, argname='indicators2',
-                             logstring='Using indicators2: {}')
-
-        self._args_to_config(config, argname='trade_ids',
-                             logstring='Filtering on trade_ids: {}')
-
-        self._args_to_config(config, argname='plot_limit',
-                             logstring='Limiting plot to: {}')
-
-        self._args_to_config(config, argname='plot_auto_open',
-                             logstring='Parameter --auto-open detected.')
-
-        self._args_to_config(config, argname='trade_source',
-                             logstring='Using trades from: {}')
-
-        self._args_to_config(config, argname='prepend_data',
-                             logstring='Prepend detected. Allowing data prepending.')
-        self._args_to_config(config, argname='erase',
-                             logstring='Erase detected. Deleting existing data.')
-
-        self._args_to_config(config, argname='no_trades',
-                             logstring='Parameter --no-trades detected.')
-
-        self._args_to_config(config, argname='timeframes',
-                             logstring='timeframes --timeframes: {}')
-
-        self._args_to_config(config, argname='days',
-                             logstring='Detected --days: {}')
-
-        self._args_to_config(config, argname='include_inactive',
-                             logstring='Detected --include-inactive-pairs: {}')
-
-        self._args_to_config(config, argname='download_trades',
-                             logstring='Detected --dl-trades: {}')
-
-        self._args_to_config(config, argname='dataformat_ohlcv',
-                             logstring='Using "{}" to store OHLCV data.')
-
-        self._args_to_config(config, argname='dataformat_trades',
-                             logstring='Using "{}" to store trades data.')
-
-        self._args_to_config(config, argname='show_timerange',
-                             logstring='Detected --show-timerange')
+        configurations = [
+            ('pairs', 'Using pairs {}'),
+            ('indicators1', 'Using indicators1: {}'),
+            ('indicators2', 'Using indicators2: {}'),
+            ('trade_ids', 'Filtering on trade_ids: {}'),
+            ('plot_limit', 'Limiting plot to: {}'),
+            ('plot_auto_open', 'Parameter --auto-open detected.'),
+            ('trade_source', 'Using trades from: {}'),
+            ('prepend_data', 'Prepend detected. Allowing data prepending.'),
+            ('erase', 'Erase detected. Deleting existing data.'),
+            ('no_trades', 'Parameter --no-trades detected.'),
+            ('timeframes', 'timeframes --timeframes: {}'),
+            ('days', 'Detected --days: {}'),
+            ('include_inactive', 'Detected --include-inactive-pairs: {}'),
+            ('download_trades', 'Detected --dl-trades: {}'),
+            ('dataformat_ohlcv', 'Using "{}" to store OHLCV data.'),
+            ('dataformat_trades', 'Using "{}" to store trades data.'),
+            ('show_timerange', 'Detected --show-timerange'),
+        ]
+        self._args_to_config_loop(config, configurations)
 
     def _process_data_options(self, config: Config) -> None:
         self._args_to_config(config, argname='new_pairs_days',
@@ -455,45 +357,27 @@ class Configuration:
                              logstring='Detected --candle-types: {}')
 
     def _process_analyze_options(self, config: Config) -> None:
-        self._args_to_config(config, argname='analysis_groups',
-                             logstring='Analysis reason groups: {}')
+        configurations = [
+            ('analysis_groups', 'Analysis reason groups: {}'),
+            ('enter_reason_list', 'Analysis enter tag list: {}'),
+            ('exit_reason_list', 'Analysis exit tag list: {}'),
+            ('indicator_list', 'Analysis indicator list: {}'),
+            ('timerange', 'Filter trades by timerange: {}'),
+            ('analysis_rejected', 'Analyse rejected signals: {}'),
+            ('analysis_to_csv', 'Store analysis tables to CSV: {}'),
+            ('analysis_csv_path', 'Path to store analysis CSVs: {}'),
+            # Lookahead analysis results
+            ('targeted_trade_amount', 'Targeted Trade amount: {}'),
+            ('minimum_trade_amount', 'Minimum Trade amount: {}'),
+            ('lookahead_analysis_exportfilename', 'Path to store lookahead-analysis-results: {}'),
+            ('startup_candle', 'Startup candle to be used on recursive analysis: {}'),
+        ]
+        self._args_to_config_loop(config, configurations)
 
-        self._args_to_config(config, argname='enter_reason_list',
-                             logstring='Analysis enter tag list: {}')
+    def _args_to_config_loop(self, config, configurations: List[Tuple[str, str]]) -> None:
 
-        self._args_to_config(config, argname='exit_reason_list',
-                             logstring='Analysis exit tag list: {}')
-
-        self._args_to_config(config, argname='indicator_list',
-                             logstring='Analysis indicator list: {}')
-
-        self._args_to_config(config, argname='timerange',
-                             logstring='Filter trades by timerange: {}')
-
-        self._args_to_config(config, argname='analysis_rejected',
-                             logstring='Analyse rejected signals: {}')
-
-        self._args_to_config(config, argname='analysis_to_csv',
-                             logstring='Store analysis tables to CSV: {}')
-
-        self._args_to_config(config, argname='analysis_csv_path',
-                             logstring='Path to store analysis CSVs: {}')
-
-        self._args_to_config(config, argname='analysis_csv_path',
-                             logstring='Path to store analysis CSVs: {}')
-
-        # Lookahead analysis results
-        self._args_to_config(config, argname='targeted_trade_amount',
-                             logstring='Targeted Trade amount: {}')
-
-        self._args_to_config(config, argname='minimum_trade_amount',
-                             logstring='Minimum Trade amount: {}')
-
-        self._args_to_config(config, argname='lookahead_analysis_exportfilename',
-                             logstring='Path to store lookahead-analysis-results: {}')
-
-        self._args_to_config(config, argname='startup_candle',
-                             logstring='Startup candle to be used on recursive analysis: {}')
+        for argname, logstring in configurations:
+            self._args_to_config(config, argname=argname, logstring=logstring)
 
     def _process_runmode(self, config: Config) -> None:
 
