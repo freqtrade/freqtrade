@@ -118,6 +118,7 @@ class Backtesting:
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+        self.timeframe_td = timedelta(minutes=self.timeframe_min)
         self.disable_database_use()
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
@@ -1205,10 +1206,10 @@ class Backtesting:
 
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = defaultdict(int)
-        current_time = start_date + timedelta(minutes=self.timeframe_min)
+        current_time = start_date + self.timeframe_td
 
         self.progress.init_step(BacktestState.BACKTEST, int(
-            (end_date - start_date) / timedelta(minutes=self.timeframe_min)))
+            (end_date - start_date) / self.timeframe_td))
         # Loop timerange and get candle for each pair at that point in time
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
@@ -1235,7 +1236,7 @@ class Backtesting:
                     # Spread out into detail timeframe.
                     # Should only happen when we are either in a trade for this pair
                     # or when we got the signal for a new trade.
-                    exit_candle_end = current_detail_time + timedelta(minutes=self.timeframe_min)
+                    exit_candle_end = current_detail_time + self.timeframe_td
 
                     detail_data = self.detail_data[pair]
                     detail_data = detail_data.loc[
@@ -1271,7 +1272,7 @@ class Backtesting:
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
-            current_time += timedelta(minutes=self.timeframe_min)
+            current_time += self.timeframe_td
 
         self.handle_left_open(LocalTrade.bt_trades_open_pp, data=data)
         self.wallets.update()
