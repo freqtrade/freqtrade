@@ -118,7 +118,10 @@ def generate_trades_history(n_rows, start_date: Optional[datetime] = None, days=
     random_timestamps_in_seconds = np.random.uniform(_start_timestamp, _end_timestamp, n_rows)
     timestamp = pd.to_datetime(random_timestamps_in_seconds, unit='s')
 
-    id = [f'a{np.random.randint(1e6, 1e7-1)}cd{np.random.randint(100, 999)}' for _ in range(n_rows)]
+    id = [
+        f'a{np.random.randint(1e6, 1e7 - 1)}cd{np.random.randint(100, 999)}'
+        for _ in range(n_rows)
+    ]
 
     side = np.random.choice(['buy', 'sell'], n_rows)
 

@@ -255,7 +255,7 @@ class FreqaiDataKitchen:
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
                 worst_indicator = str(unfiltered_df.count().idxmin())
                 logger.warning(
-                    f" {(1 - len(filtered_df)/len(unfiltered_df)) * 100:.0f} percent "
+                    f" {(1 - len(filtered_df) / len(unfiltered_df)) * 100:.0f} percent "
                     " of training data dropped due to NaNs, model may perform inconsistent "
                     f"with expectations. Verify {worst_indicator}"
                 )
