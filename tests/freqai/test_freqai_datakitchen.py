@@ -76,7 +76,7 @@ def test_filter_features(mocker, freqai_conf):
     freqai, unfiltered_dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
     freqai.dk.find_features(unfiltered_dataframe)
 
-    filtered_df, labels = freqai.dk.filter_features(
+    filtered_df, _labels = freqai.dk.filter_features(
             unfiltered_dataframe,
             freqai.dk.training_features_list,
             freqai.dk.label_list,

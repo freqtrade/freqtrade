@@ -108,7 +108,7 @@ def test_fetch_pairlist_timeout_keep_last_pairlist(mocker, rpl_config, caplog):
 
     remote_pairlist._last_pairlist = ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
     assert log_has(f"Was not able to fetch pairlist from: {remote_pairlist._pairlist_url}", caplog)
     assert log_has("Keeping last fetched pairlist", caplog)
     assert pairs == ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
@@ -281,7 +281,7 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers)
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config["pairlists"][1], 1)
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["XRP/USDT"]
 
@@ -334,7 +334,7 @@ def test_remote_pairlist_whitelist(mocker, rpl_config, processing_mode, markets,
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config["pairlists"][1], 1)
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["XRP/USDT"]
 

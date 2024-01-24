@@ -1004,7 +1004,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param is_short: Indicating existing trade direction.
         :return: (enter, exit) A bool-tuple with enter / exit values.
         """
-        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        latest, _latest_date = self.get_latest_candle(pair, timeframe, dataframe)
         if latest is None:
             return False, False, None
 

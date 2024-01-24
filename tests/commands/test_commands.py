@@ -1509,7 +1509,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     pargs['config'] = None
     start_backtesting_show(pargs)
     assert sbr.call_count == 1
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert "Pairs for Strategy" in out
 
 
