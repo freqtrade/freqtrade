@@ -15,6 +15,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     """
     Test Pairlist configuration
     """
+    from freqtrade.persistence import FtNoDBContext
     from freqtrade.plugins.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
@@ -24,11 +25,12 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     if not quote_currencies:
         quote_currencies = [config.get('stake_currency')]
     results = {}
-    for curr in quote_currencies:
-        config['stake_currency'] = curr
-        pairlists = PairListManager(exchange, config)
-        pairlists.refresh_pairlist()
-        results[curr] = pairlists.whitelist
+    with FtNoDBContext():
+        for curr in quote_currencies:
+            config['stake_currency'] = curr
+            pairlists = PairListManager(exchange, config)
+            pairlists.refresh_pairlist()
+            results[curr] = pairlists.whitelist
 
     for curr, pairlist in results.items():
         if not args.get('print_one_column', False) and not args.get('list_pairs_print_json', False):

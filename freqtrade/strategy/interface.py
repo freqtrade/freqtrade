@@ -1004,7 +1004,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param is_short: Indicating existing trade direction.
         :return: (enter, exit) A bool-tuple with enter / exit values.
         """
-        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        latest, _latest_date = self.get_latest_candle(pair, timeframe, dataframe)
         if latest is None:
             return False, False, None
 
@@ -1388,7 +1388,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
 
         logger.debug(f"Populating enter signals for pair {metadata.get('pair')}.")
-
+        # Initialize column to work around Pandas bug #56503.
+        dataframe.loc[:, 'enter_tag'] = ''
         df = self.populate_entry_trend(dataframe, metadata)
         if 'enter_long' not in df.columns:
             df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
@@ -1404,6 +1405,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             currently traded pair
         :return: DataFrame with exit column
         """
+        # Initialize column to work around Pandas bug #56503.
+        dataframe.loc[:, 'exit_tag'] = ''
         logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")
         df = self.populate_exit_trend(dataframe, metadata)
         if 'exit_long' not in df.columns:

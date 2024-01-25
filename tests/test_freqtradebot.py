@@ -627,15 +627,16 @@ def test_process_exchange_failures(default_conf_usdt, ticker_usdt, mocker) -> No
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
-        create_order=MagicMock(side_effect=TemporaryError)
+        reload_markets=MagicMock(side_effect=TemporaryError),
+        create_order=MagicMock(side_effect=TemporaryError),
     )
-    sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
+    sleep_mock = mocker.patch('time.sleep')
 
     worker = Worker(args=None, config=default_conf_usdt)
     patch_get_signal(worker.freqtrade)
 
     worker._process_running()
-    assert sleep_mock.has_calls()
+    assert sleep_mock.called is True
 
 
 def test_process_operational_exception(default_conf_usdt, ticker_usdt, mocker) -> None:

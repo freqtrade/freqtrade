@@ -1445,12 +1445,13 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert ("\n|    Pair |   Timeframe |   Type |                From |                  To |\n"
-            in captured.out)
+    assert (
+        "\n|    Pair |   Timeframe |   Type "
+        "|                From |                  To |   Candles |\n") in captured.out
     assert "UNITTEST/BTC" not in captured.out
     assert (
-            "\n| XRP/ETH |          1m |   spot | 2019-10-11 00:00:00 | 2019-10-13 11:19:00 |\n"
-            in captured.out)
+        "\n| XRP/ETH |          1m |   spot | "
+        "2019-10-11 00:00:00 | 2019-10-13 11:19:00 |      2469 |\n") in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1508,7 +1509,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     pargs['config'] = None
     start_backtesting_show(pargs)
     assert sbr.call_count == 1
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert "Pairs for Strategy" in out
 
 

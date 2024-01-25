@@ -54,7 +54,7 @@ class BaseAnalysis:
             self.full_varHolder.from_dt = parsed_timerange.startdt
 
         if parsed_timerange.stopdt is None:
-            self.full_varHolder.to_dt = datetime.utcnow()
+            self.full_varHolder.to_dt = datetime.now(timezone.utc)
         else:
             self.full_varHolder.to_dt = parsed_timerange.stopdt
 
