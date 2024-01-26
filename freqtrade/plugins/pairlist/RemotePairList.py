@@ -185,30 +185,26 @@ class RemotePairList(IPairList):
                 try:
                     pairlist = self.process_json(jsonparse)
                 except Exception as e:
-
-                    if self._init_done:
-                        pairlist = self.return_last_pairlist()
-                        logger.warning(f'Error while processing JSON data: {type(e)}')
-                    else:
-                        raise OperationalException(f'Error while processing JSON data: {type(e)}')
-
+                    pairlist = self.init_check(f'Failed processing JSON data: {type(e)}')
             else:
-                if self._init_done:
-                    self.log_once(f'Error: RemotePairList is not of type JSON: '
-                                  f' {self._pairlist_url}', logger.info)
-                    pairlist = self.return_last_pairlist()
-                else:
-                    raise OperationalException('RemotePairList is not of type JSON, abort.')
+                pairlist = self.init_check(f'RemotePairList is not of type JSON: '
+                                           f' {self._pairlist_url}')
 
         except requests.exceptions.RequestException:
-            self.log_once(f'Was not able to fetch pairlist from:'
-                          f' {self._pairlist_url}', logger.info)
-
-            pairlist = self.return_last_pairlist()
+            pairlist = self.init_check(f'Was not able to fetch pairlist from:'
+                                       f' {self._pairlist_url}')
 
             time_elapsed = 0
 
         return pairlist, time_elapsed
+
+    def init_check(self, error: str):
+        if self._init_done:
+            self.log_once("Error: " + error, logger.info)
+            pairlist = self.return_last_pairlist()
+        else:
+            raise OperationalException(error)
+        return pairlist
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
@@ -242,15 +238,10 @@ class RemotePairList(IPairList):
                             jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
                             pairlist = self.process_json(jsonparse)
                         except Exception as e:
-                            if self._init_done:
-                                pairlist = self.return_last_pairlist()
-                                logger.warning(f'Error while processing JSON data: {type(e)}')
-                                logger.debug(f'Error while processing JSON data: {e}')
-                            else:
-                                raise OperationalException('Error while processing'
-                                                           f'JSON data: {type(e)}')
+                            pairlist = self.init_check(f'processing JSON data: {type(e)}')
                 else:
-                    raise ValueError(f"{self._pairlist_url} does not exist.")
+                    pairlist = self.init_check(f"{self._pairlist_url} does not exist.")
+
             else:
                 # Fetch Pairlist from Remote URL
                 pairlist, time_elapsed = self.fetch_pairlist()
