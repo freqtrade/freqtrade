@@ -198,7 +198,7 @@ class RemotePairList(IPairList):
 
         return pairlist, time_elapsed
 
-    def init_check(self, error: str):
+    def init_check(self, error: str) -> List[str]:
         if self._init_done:
             self.log_once("Error: " + error, logger.info)
             pairlist = self.return_last_pairlist()
