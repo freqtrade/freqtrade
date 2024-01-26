@@ -187,7 +187,7 @@ class RemotePairList(IPairList):
                 except Exception as e:
                     pairlist = self.init_check(f'Failed processing JSON data: {type(e)}')
             else:
-                pairlist = self.init_check(f'RemotePairList is not of type JSON: '
+                pairlist = self.init_check(f'RemotePairList is not of type JSON.'
                                            f' {self._pairlist_url}')
 
         except requests.exceptions.RequestException:
