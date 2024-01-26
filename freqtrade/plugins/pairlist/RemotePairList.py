@@ -281,8 +281,7 @@ class RemotePairList(IPairList):
 
     def save_pairlist(self, pairlist: List[str], filename: str) -> None:
         pairlist_data = {
-            "pairs": pairlist,
-            "refresh_period": self._refresh_period
+            "pairs": pairlist
         }
         try:
             file_path = Path(filename)
