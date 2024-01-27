@@ -185,26 +185,25 @@ class RemotePairList(IPairList):
                 try:
                     pairlist = self.process_json(jsonparse)
                 except Exception as e:
-                    pairlist = self.init_check(f'Failed processing JSON data: {type(e)}')
+                    pairlist = self._handle_error(f'Failed processing JSON data: {type(e)}')
             else:
-                pairlist = self.init_check(f'RemotePairList is not of type JSON.'
-                                           f' {self._pairlist_url}')
+                pairlist = self._handle_error(f'RemotePairList is not of type JSON.'
+                                              f' {self._pairlist_url}')
 
         except requests.exceptions.RequestException:
-            pairlist = self.init_check(f'Was not able to fetch pairlist from:'
-                                       f' {self._pairlist_url}')
+            pairlist = self._handle_error(f'Was not able to fetch pairlist from:'
+                                          f' {self._pairlist_url}')
 
             time_elapsed = 0
 
         return pairlist, time_elapsed
 
-    def init_check(self, error: str) -> List[str]:
+    def _handle_error(self, error: str) -> List[str]:
         if self._init_done:
             self.log_once("Error: " + error, logger.info)
-            pairlist = self.return_last_pairlist()
+            return self.return_last_pairlist()
         else:
             raise OperationalException(error)
-        return pairlist
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
@@ -238,9 +237,9 @@ class RemotePairList(IPairList):
                             jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
                             pairlist = self.process_json(jsonparse)
                         except Exception as e:
-                            pairlist = self.init_check(f'processing JSON data: {type(e)}')
+                            pairlist = self._handle_error(f'processing JSON data: {type(e)}')
                 else:
-                    pairlist = self.init_check(f"{self._pairlist_url} does not exist.")
+                    pairlist = self._handle_error(f"{self._pairlist_url} does not exist.")
 
             else:
                 # Fetch Pairlist from Remote URL
