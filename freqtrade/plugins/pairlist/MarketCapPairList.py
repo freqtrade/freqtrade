@@ -153,7 +153,7 @@ class MarketCapPairList(IPairList):
                 top_marketcap = marketcap_list[:self._number_assets:]
 
                 for pair in pairlist:
-                    base = pair.split('/')[0]
+                    base = self._exchange.get_pair_base_currency(pair)
                     if base.lower() in top_marketcap:
                         filtered_pairlist.append(pair)
                     else:

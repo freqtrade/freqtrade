@@ -1542,7 +1542,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
     ],  ['ETH/USDT', 'XRP/USDT'])
 ])
-def test_MarketCapPairList_filter(mocker, default_conf_usdt, pairlists, result):
+def test_MarketCapPairList_filter(mocker, default_conf_usdt, markets, pairlists, result):
     test_value = [
         {
             "symbol": "btc",
@@ -1579,7 +1579,10 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt, pairlists, result):
     default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
     default_conf_usdt['trading_mode'] = 'spot'
     default_conf_usdt['pairlists'] = pairlists
-    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    mocker.patch.multiple(EXMS,
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          )
 
     mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
                  return_value=test_value)
