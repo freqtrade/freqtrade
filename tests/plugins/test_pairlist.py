@@ -1540,7 +1540,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
     ([
         # MarketCapPairList as generator
         {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
-    ],  ['ETH/USDT', 'XRP/USDT'])
+    ],  ['BTC/USDT', 'ETH/USDT', 'XRP/USDT'])
 ])
 def test_MarketCapPairList_filter(mocker, default_conf_usdt, markets, pairlists, result):
     test_value = [
