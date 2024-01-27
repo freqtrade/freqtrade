@@ -575,6 +575,8 @@ The valid values are:
 "BTC", "ETH", "XRP", "LTC", "BCH", "BNB"
 ```
 
+Removing `fiat_display_currency` completely from the configuration will skip initializing coingecko, and will not show any FIAT currency conversion. This has no importance for the correct functioning of the bot.
+
 ## Using Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will

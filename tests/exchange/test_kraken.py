@@ -183,19 +183,17 @@ def test_create_stoploss_order_kraken(default_conf, mocker, ordertype, side, adj
     assert 'info' in order
     assert order['id'] == order_id
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
-    if ordertype == 'limit':
-        assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_LIMIT_ORDERTYPE
-        assert api_mock.create_order.call_args_list[0][1]['params'] == {
-            'trading_agreement': 'agree',
-            'price2': adjustedprice
-        }
-    else:
-        assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
-        assert api_mock.create_order.call_args_list[0][1]['params'] == {
-            'trading_agreement': 'agree'}
+    assert api_mock.create_order.call_args_list[0][1]['type'] == ordertype
+    assert api_mock.create_order.call_args_list[0][1]['params'] == {
+        'trading_agreement': 'agree',
+        'stopLossPrice': 220
+    }
     assert api_mock.create_order.call_args_list[0][1]['side'] == side
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
-    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
+    if ordertype == 'limit':
+        assert api_mock.create_order.call_args_list[0][1]['price'] == adjustedprice
+    else:
+        assert api_mock.create_order.call_args_list[0][1]['price'] is None
 
     # test exception handling
     with pytest.raises(DependencyException):
@@ -253,7 +251,7 @@ def test_create_stoploss_order_dry_run_kraken(default_conf, mocker, side):
     assert 'info' in order
     assert 'type' in order
 
-    assert order['type'] == STOPLOSS_ORDERTYPE
+    assert order['type'] == 'market'
     assert order['price'] == 220
     assert order['amount'] == 1
 
@@ -265,11 +263,22 @@ def test_create_stoploss_order_dry_run_kraken(default_conf, mocker, side):
 def test_stoploss_adjust_kraken(mocker, default_conf, sl1, sl2, sl3, side):
     exchange = get_patched_exchange(mocker, default_conf, id='kraken')
     order = {
-        'type': STOPLOSS_ORDERTYPE,
-        'price': 1500,
+        'type': 'market',
+        'stopLossPrice': 1500,
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
-    # Test with invalid order case ...
-    order['type'] = 'stop_loss_limit'
-    assert not exchange.stoploss_adjust(sl3, order, side=side)
+    # diff. order type ...
+    order['type'] = 'limit'
+    assert exchange.stoploss_adjust(sl3, order, side=side)
+
+
+@pytest.mark.parametrize('trade_id, expected', [
+    ('1234', False),
+    ('170544369512007228', False),
+    ('1705443695120072285', True),
+    ('170544369512007228555', True),
+])
+def test__valid_trade_pagination_id_kraken(mocker, default_conf_usdt, trade_id, expected):
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id='kraken')
+    assert exchange._valid_trade_pagination_id('XRP/USDT', trade_id) == expected

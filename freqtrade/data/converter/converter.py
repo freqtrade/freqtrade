@@ -84,7 +84,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
 
     """
-    from freqtrade.exchange import timeframe_to_minutes
+    from freqtrade.exchange import timeframe_to_resample_freq
 
     ohlcv_dict = {
         'open': 'first',
@@ -93,13 +93,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         'close': 'last',
         'volume': 'sum'
     }
-    timeframe_minutes = timeframe_to_minutes(timeframe)
-    resample_interval = f'{timeframe_minutes}min'
-    if timeframe_minutes >= 43200 and timeframe_minutes < 525600:
-        # Monthly candles need special treatment to stick to the 1st of the month
-        resample_interval = f'{timeframe}S'
-    elif timeframe_minutes > 43200:
-        resample_interval = timeframe
+    resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
     df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 

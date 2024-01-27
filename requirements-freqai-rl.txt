@@ -2,10 +2,10 @@
 -r requirements-freqai.txt
 
 # Required for freqai-rl
-torch==2.1.2
+torch==2.1.2; python_version < '3.12'
 #until these branches will be released we can use this
-gymnasium==0.29.1
-stable_baselines3==2.2.1
-sb3_contrib>=2.0.0a9
+gymnasium==0.29.1; python_version < '3.12'
+stable_baselines3==2.2.1; python_version < '3.12'
+sb3_contrib>=2.0.0a9; python_version < '3.12'
 # Progress bar for stable-baselines3 and sb3-contrib
 tqdm==4.66.1

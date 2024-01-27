@@ -18,8 +18,8 @@ from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfi
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, SignalDirection,
-                             State, TradingMode)
+from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, SignalDirection, State,
+                             TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, remove_exchange_credentials,
@@ -1424,11 +1424,11 @@ class FreqtradeBot(LoggingMixin):
             # New candle
             proposed_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=True)
-            adjusted_entry_price = strategy_safe_wrapper(self.strategy.adjust_entry_price,
-                                                         default_retval=order_obj.price)(
+            adjusted_entry_price = strategy_safe_wrapper(
+                self.strategy.adjust_entry_price, default_retval=order_obj.safe_placement_price)(
                 trade=trade, order=order_obj, pair=trade.pair,
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
-                current_order_rate=order_obj.safe_price, entry_tag=trade.enter_tag,
+                current_order_rate=order_obj.safe_placement_price, entry_tag=trade.enter_tag,
                 side=trade.trade_direction)
 
             replacing = True
@@ -1436,7 +1436,7 @@ class FreqtradeBot(LoggingMixin):
             if not adjusted_entry_price:
                 replacing = False
                 cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
-            if order_obj.price != adjusted_entry_price:
+            if order_obj.safe_placement_price != adjusted_entry_price:
                 # cancel existing order if new price is supplied or None
                 res = self.handle_cancel_enter(trade, order, order_obj, cancel_reason,
                                                replacing=replacing)

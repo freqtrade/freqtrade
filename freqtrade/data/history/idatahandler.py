@@ -94,21 +94,22 @@ class IDataHandler(ABC):
         """
 
     def ohlcv_data_min_max(self, pair: str, timeframe: str,
-                           candle_type: CandleType) -> Tuple[datetime, datetime]:
+                           candle_type: CandleType) -> Tuple[datetime, datetime, int]:
         """
         Returns the min and max timestamp for the given pair and timeframe.
         :param pair: Pair to get min/max for
         :param timeframe: Timeframe to get min/max for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :return: (min, max)
+        :return: (min, max, len)
         """
-        data = self._ohlcv_load(pair, timeframe, None, candle_type)
-        if data.empty:
+        df = self._ohlcv_load(pair, timeframe, None, candle_type)
+        if df.empty:
             return (
                 datetime.fromtimestamp(0, tz=timezone.utc),
-                datetime.fromtimestamp(0, tz=timezone.utc)
+                datetime.fromtimestamp(0, tz=timezone.utc),
+                0,
             )
-        return data.iloc[0]['date'].to_pydatetime(), data.iloc[-1]['date'].to_pydatetime()
+        return df.iloc[0]['date'].to_pydatetime(), df.iloc[-1]['date'].to_pydatetime(), len(df)
 
     @abstractmethod
     def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange],

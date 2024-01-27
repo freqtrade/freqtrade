@@ -8,7 +8,7 @@ from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
-                                 DL_DATA_TIMEFRAMES, Config)
+                                 DL_DATA_TIMEFRAMES, DOCS_LINK, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
                                       ohlcv_to_dataframe, trades_df_remove_duplicates,
                                       trades_list_to_df)
@@ -503,6 +503,12 @@ def download_data_main(config: Config) -> None:
         exchange.validate_pairs(expanded_pairs)
     logger.info(f"About to download pairs: {expanded_pairs}, "
                 f"intervals: {config['timeframes']} to {config['datadir']}")
+
+    if len(expanded_pairs) == 0:
+        logger.warning(
+            "No pairs available for download. "
+            "Please make sure you're using the correct Pair naming for your selected trade mode. \n"
+            f"More info: {DOCS_LINK}/bot-basics/#pair-naming")
 
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)

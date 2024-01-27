@@ -255,7 +255,7 @@ class FreqaiDataKitchen:
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
                 worst_indicator = str(unfiltered_df.count().idxmin())
                 logger.warning(
-                    f" {(1 - len(filtered_df)/len(unfiltered_df)) * 100:.0f} percent "
+                    f" {(1 - len(filtered_df) / len(unfiltered_df)) * 100:.0f} percent "
                     " of training data dropped due to NaNs, model may perform inconsistent "
                     f"with expectations. Verify {worst_indicator}"
                 )
@@ -432,8 +432,12 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
+        user_cols = [col for col in dataframe_backtest.columns if col.startswith("%%")]
+        cols = ["date"]
+        cols.extend(user_cols)
+
         dataframe_backtest.reset_index(drop=True, inplace=True)
-        merged_df = pd.concat([dataframe_backtest["date"], append_df], axis=1)
+        merged_df = pd.concat([dataframe_backtest[cols], append_df], axis=1)
         return merged_df
 
     def append_predictions(self, append_df: DataFrame) -> None:
@@ -451,7 +455,8 @@ class FreqaiDataKitchen:
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
-        to_keep = [col for col in dataframe.columns if not col.startswith("&")]
+        to_keep = [col for col in dataframe.columns if
+                   not col.startswith("&") and not col.startswith("%%")]
         self.return_dataframe = pd.merge(dataframe[to_keep],
                                          self.full_df, how='left', on='date')
         self.return_dataframe[self.full_df.columns] = (

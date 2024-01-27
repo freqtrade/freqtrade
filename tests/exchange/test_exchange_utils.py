@@ -10,7 +10,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, amount_to_precision,
                                 date_minus_candles, price_to_precision, timeframe_to_minutes,
                                 timeframe_to_msecs, timeframe_to_next_date, timeframe_to_prev_date,
-                                timeframe_to_seconds)
+                                timeframe_to_resample_freq, timeframe_to_seconds)
 from freqtrade.exchange.check_exchange import check_exchange
 from tests.conftest import log_has_re
 
@@ -122,6 +122,21 @@ def test_timeframe_to_msecs():
     assert timeframe_to_msecs("10m") == 600000
     assert timeframe_to_msecs("1h") == 3600000
     assert timeframe_to_msecs("1d") == 86400000
+
+
+@pytest.mark.parametrize("timeframe,expected", [
+    ("1s", '1s'),
+    ("15s", '15s'),
+    ("5m", '300s'),
+    ("10m", '600s'),
+    ("1h", '3600s'),
+    ("1d", '86400s'),
+    ("1w", '1W-MON'),
+    ("1M", '1MS'),
+    ("1y", '1YS'),
+])
+def test_timeframe_to_resample_freq(timeframe, expected):
+    assert timeframe_to_resample_freq(timeframe) == expected
 
 
 def test_timeframe_to_prev_date():

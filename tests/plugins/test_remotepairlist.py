@@ -82,7 +82,7 @@ def test_fetch_pairlist_mock_response_html(mocker, rpl_config):
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config['pairlists'][0], 0)
 
-    with pytest.raises(OperationalException, match='RemotePairList is not of type JSON, abort.'):
+    with pytest.raises(OperationalException, match='RemotePairList is not of type JSON.'):
         remote_pairlist.fetch_pairlist()
 
 
@@ -107,9 +107,11 @@ def test_fetch_pairlist_timeout_keep_last_pairlist(mocker, rpl_config, caplog):
                                      rpl_config['pairlists'][0], 0)
 
     remote_pairlist._last_pairlist = ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
+    remote_pairlist._init_done = True
+    pairlist_url = rpl_config['pairlists'][0]['pairlist_url']
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
-    assert log_has(f"Was not able to fetch pairlist from: {remote_pairlist._pairlist_url}", caplog)
+    assert log_has(f'Error: Was not able to fetch pairlist from: ' f'{pairlist_url}', caplog)
     assert log_has("Keeping last fetched pairlist", caplog)
     assert pairs == ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
 
@@ -281,7 +283,7 @@ def test_remote_pairlist_blacklist(mocker, rpl_config, caplog, markets, tickers)
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config["pairlists"][1], 1)
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["XRP/USDT"]
 
@@ -334,7 +336,7 @@ def test_remote_pairlist_whitelist(mocker, rpl_config, processing_mode, markets,
     remote_pairlist = RemotePairList(exchange, pairlistmanager, rpl_config,
                                      rpl_config["pairlists"][1], 1)
 
-    pairs, time_elapsed = remote_pairlist.fetch_pairlist()
+    pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
     assert pairs == ["XRP/USDT"]
 
