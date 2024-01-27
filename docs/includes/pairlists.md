@@ -230,7 +230,7 @@ The optional `bearer_token` will be included in the requests Authorization Heade
 
 #### MarketCapPairList
 
-`MarketCapPairList` employs sorting/filtering of pairs by their marketcap rank based of CoinGecko. It will only recognize coins up to the coin placed at rank 250. The number of pairs in the resulted pairlist will be slightly different depends on the `mode` defined in the config (available mode are `top_rank` and `total_assets`). The marketcap data from 
+`MarketCapPairList` employs sorting/filtering of pairs by their marketcap rank based of CoinGecko. It will only recognize coins up to the coin placed at rank 250. The number of pairs in the resulted pairlist will be slightly different depends on the `mode` defined in the config (available mode are `top_rank` and `total_assets`).
 
 ```json
 "pairlists": [
@@ -244,12 +244,12 @@ The optional `bearer_token` will be included in the requests Authorization Heade
 ```
 
 ##### `top_rank` mode
-In this mode, it will return pairlist consist of active and not-blaclisted pairs that are placed at the top `number_assets` rank of the marketcap.
+In this mode, it will return pairlist consist of active and not-blacklisted pairs that are placed at the top `number_assets` rank of the marketcap.
 
 ##### `total_assets` mode
-In this mode, it will return pairlist consist of `number_assets` number of active and not-blaclisted pairs sorted by their marketcap rank.
+In this mode, it will return pairlist consist of `number_assets` number of active and not-blacklisted pairs sorted by their marketcap rank.
 
-The refresh_period setting allows to define the period (in seconds), at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (refresh_period) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
+The `refresh_period` setting define the period (in seconds) at which the marketcap rank data will be cached. Defaults to 86,400s (1 day). The pairlist cache (refresh_period) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
 
 #### AgeFilter
 
