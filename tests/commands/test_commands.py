@@ -772,7 +772,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
     assert dl_mock.call_count == 1
 
@@ -788,7 +788,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
 
 
