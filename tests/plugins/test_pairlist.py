@@ -1516,9 +1516,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
 
 
 def test_MarketCapPairList_filter(mocker, default_conf_usdt):
-    mock_response = MagicMock()
-
-    mock_response.json.return_value = [
+    test_value = [
         {
             "symbol": "btc",
         },
@@ -1551,20 +1549,16 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
         }
     ]
 
-    mock_response.headers = {
-        "content-type": "application/json"
-    }
-
     # Test top 2 mc
     default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
     default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList"},
+        {"method": "StaticPairList", "allow_inactive": True},
         {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
     ]
     mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
-    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList._coingekko.get_coins_markets",
-                 return_value=mock_response)
+    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+                 return_value=test_value)
 
     exchange = get_patched_exchange(mocker, default_conf_usdt)
 
@@ -1578,7 +1572,7 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
 
     # Test top 6 mc
     default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList"},
+        {"method": "StaticPairList", "allow_inactive": True},
         {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 6}
     ]
 
