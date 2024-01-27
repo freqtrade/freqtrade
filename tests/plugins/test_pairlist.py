@@ -1515,40 +1515,39 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
 
 
-
 def test_MarketCapPairList_filter(mocker, default_conf_usdt):
     mock_response = MagicMock()
 
     mock_response.json.return_value = [
         {
-        "symbol": "btc",
+            "symbol": "btc",
         },
         {
-        "symbol": "eth",
+            "symbol": "eth",
         },
         {
-        "symbol": "usdt",
+            "symbol": "usdt",
         },
         {
-        "symbol": "bnb",
+            "symbol": "bnb",
         },
         {
-        "symbol": "sol",
+            "symbol": "sol",
         },
         {
-        "symbol": "xrp",
+            "symbol": "xrp",
         },
         {
-        "symbol": "usdc",
+            "symbol": "usdc",
         },
         {
-        "symbol": "steth",
+            "symbol": "steth",
         },
         {
-        "symbol": "ada",
+            "symbol": "ada",
         },
         {
-        "symbol": "avax",
+            "symbol": "avax",
         }
     ]
 
