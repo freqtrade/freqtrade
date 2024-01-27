@@ -1513,3 +1513,80 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         pm.refresh_pairlist()
         assert pm.whitelist == []
         assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
+
+
+
+def test_MarketCapPairList_filter(mocker, default_conf_usdt):
+    mock_response = MagicMock()
+
+    mock_response.json.return_value = [
+        {
+        "symbol": "btc",
+        },
+        {
+        "symbol": "eth",
+        },
+        {
+        "symbol": "usdt",
+        },
+        {
+        "symbol": "bnb",
+        },
+        {
+        "symbol": "sol",
+        },
+        {
+        "symbol": "xrp",
+        },
+        {
+        "symbol": "usdc",
+        },
+        {
+        "symbol": "steth",
+        },
+        {
+        "symbol": "ada",
+        },
+        {
+        "symbol": "avax",
+        }
+    ]
+
+    mock_response.headers = {
+        "content-type": "application/json"
+    }
+
+    # Test top 2 mc
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
+    ]
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+
+    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList._coingekko.get_coins_markets",
+                 return_value=mock_response)
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+
+    pm.refresh_pairlist()
+
+    whitelist = ['ETH/USDT', 'BTC/USDT']
+
+    assert set(whitelist) == set(pm.whitelist)
+
+    # Test top 6 mc
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 6}
+    ]
+
+    pm = PairListManager(exchange, default_conf_usdt)
+
+    pm.refresh_pairlist()
+
+    whitelist = ['ETH/USDT', 'XRP/USDT', 'BTC/USDT']
+
+    assert set(whitelist) == set(pm.whitelist)
