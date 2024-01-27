@@ -210,8 +210,7 @@ The `pairlist_url` option specifies the URL of the remote server where the pairl
 
 The `save_to_file` option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.
 
-??? Note
-    Example:
+??? Example "Multi bot with shared pairlist example"
     
     `save_to_file` can be used to save the pairlist to a file with Bot1:
 
