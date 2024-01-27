@@ -137,6 +137,12 @@ class RemotePairList(IPairList):
                 "description": "Bearer token",
                 "help": "Bearer token - used for auth against the upstream service.",
             },
+            "save_to_file": {
+                "type": "string",
+                "default": "",
+                "description": "Filename to save processed pairlist to.",
+                "help": "Specify a filename to save the processed pairlist in JSON format.",
+            },
         }
 
     def process_json(self, jsonparse) -> List[str]:
