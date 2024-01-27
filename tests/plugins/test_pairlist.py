@@ -1515,7 +1515,34 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
 
 
-def test_MarketCapPairList_filter(mocker, default_conf_usdt):
+@pytest.mark.parametrize('pairlists,result', [
+    ([
+        # Test top 2 mc
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
+    ], ['ETH/USDT', 'BTC/USDT']),
+    ([
+        # Test top 6 mc
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 6}
+    ], ['ETH/USDT', 'XRP/USDT', 'BTC/USDT']),
+    ([
+        # Test total assets mode, 2 assets
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 2}
+    ], ['BTC/USDT', 'ETH/USDT']),
+
+    ([
+        # Test total assets mode, 5 assets
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
+    ], ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
+    ([
+        # MarketCapPairList as generator
+        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
+    ],  ['ETH/USDT', 'XRP/USDT'])
+])
+def test_MarketCapPairList_filter(mocker, default_conf_usdt, pairlists, result):
     test_value = [
         {
             "symbol": "btc",
@@ -1549,13 +1576,9 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
         }
     ]
 
-    # Test top 2 mc
     default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
     default_conf_usdt['trading_mode'] = 'spot'
-    default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
-    ]
+    default_conf_usdt['pairlists'] = pairlists
     mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
 
     mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
@@ -1564,51 +1587,6 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
 
     pm = PairListManager(exchange, default_conf_usdt)
-
     pm.refresh_pairlist()
 
-    whitelist = ['ETH/USDT', 'BTC/USDT']
-
-    assert whitelist == pm.whitelist
-
-    # Test top 6 mc
-    default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 6}
-    ]
-
-    pm = PairListManager(exchange, default_conf_usdt)
-
-    pm.refresh_pairlist()
-
-    whitelist = ['ETH/USDT', 'XRP/USDT', 'BTC/USDT']
-
-    assert whitelist == pm.whitelist
-
-    # Test total assets mode, 2 assets
-    default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 2}
-    ]
-
-    pm = PairListManager(exchange, default_conf_usdt)
-
-    pm.refresh_pairlist()
-
-    whitelist = ['BTC/USDT', 'ETH/USDT']
-
-    assert whitelist == pm.whitelist
-
-    # Test total assets mode, 5 assets
-    default_conf_usdt['pairlists'] = [
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
-    ]
-
-    pm = PairListManager(exchange, default_conf_usdt)
-
-    pm.refresh_pairlist()
-
-    whitelist = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']
-
-    assert whitelist == pm.whitelist
+    assert pm.whitelist == result
