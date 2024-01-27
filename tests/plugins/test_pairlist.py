@@ -1551,6 +1551,7 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
 
     # Test top 2 mc
     default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
+    default_conf_usdt['trading_mode'] = 'spot'
     default_conf_usdt['pairlists'] = [
         {"method": "StaticPairList", "allow_inactive": True},
         {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
@@ -1568,7 +1569,7 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
 
     whitelist = ['ETH/USDT', 'BTC/USDT']
 
-    assert set(whitelist) == set(pm.whitelist)
+    assert whitelist == pm.whitelist
 
     # Test top 6 mc
     default_conf_usdt['pairlists'] = [
@@ -1582,4 +1583,32 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt):
 
     whitelist = ['ETH/USDT', 'XRP/USDT', 'BTC/USDT']
 
-    assert set(whitelist) == set(pm.whitelist)
+    assert whitelist == pm.whitelist
+
+    # Test total assets mode, 2 assets
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 2}
+    ]
+
+    pm = PairListManager(exchange, default_conf_usdt)
+
+    pm.refresh_pairlist()
+
+    whitelist = ['BTC/USDT', 'ETH/USDT']
+
+    assert whitelist == pm.whitelist
+
+    # Test total assets mode, 5 assets
+    default_conf_usdt['pairlists'] = [
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
+    ]
+
+    pm = PairListManager(exchange, default_conf_usdt)
+
+    pm.refresh_pairlist()
+
+    whitelist = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']
+
+    assert whitelist == pm.whitelist
