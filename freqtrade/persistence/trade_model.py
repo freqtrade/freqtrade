@@ -89,6 +89,8 @@ class Order(ModelBase):
     funding_fee: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
     ft_fee_base: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    ft_order_tag: Mapped[Optional[str]] = mapped_column(String(CUSTOM_TAG_MAX_LENGTH),
+                                                        nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
