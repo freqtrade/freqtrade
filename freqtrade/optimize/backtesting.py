@@ -554,7 +554,8 @@ class Backtesting:
                 check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
             if check_adjust_entry:
                 pos_trade = self._enter_trade(
-                    trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade)
+                    trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade,
+                    entry_tag1=order_tag)
                 if pos_trade is not None:
                     self.wallets.update()
                     return pos_trade
@@ -836,7 +837,9 @@ class Backtesting:
                      stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None,
                      requested_rate: Optional[float] = None,
-                     requested_stake: Optional[float] = None) -> Optional[LocalTrade]:
+                     requested_stake: Optional[float] = None,
+                     entry_tag1: Optional[str] = None
+                     ) -> Optional[LocalTrade]:
         """
         :param trade: Trade to adjust - initial entry if None
         :param requested_rate: Adjusted entry rate
@@ -844,7 +847,7 @@ class Backtesting:
         """
 
         current_time = row[DATE_IDX].to_pydatetime()
-        entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
+        entry_tag = entry_tag1 or (row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None)
         # let's call the custom entry price, using the open price as default price
         order_type = self.strategy.order_types['entry']
         pos_adjust = trade is not None and requested_rate is None
