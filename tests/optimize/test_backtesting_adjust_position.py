@@ -148,7 +148,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert pytest.approx(trade.amount) == 47.61904762 * leverage
     assert len(trade.orders) == 1
     # Increase position by 100
-    backtesting.strategy.adjust_trade_position = MagicMock(return_value=100)
+    backtesting.strategy.adjust_trade_position = MagicMock(return_value=(100, 'PartIncrease'))
 
     trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
 
@@ -156,6 +156,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert pytest.approx(trade.stake_amount) == 200.0
     assert pytest.approx(trade.amount) == 95.23809524 * leverage
     assert len(trade.orders) == 2
+    assert trade.orders[-1].ft_order_tag == 'PartIncrease'
     assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
 
     # Reduce by more than amount - no change to trade.
@@ -171,13 +172,14 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
 
     # Reduce position by 50
-    backtesting.strategy.adjust_trade_position = MagicMock(return_value=-100)
+    backtesting.strategy.adjust_trade_position = MagicMock(return_value=(-100, 'partDecrease'))
     trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
 
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
     assert pytest.approx(trade.amount) == 47.61904762 * leverage
     assert len(trade.orders) == 3
+    assert trade.orders[-1].ft_order_tag == 'partDecrease'
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
     assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
