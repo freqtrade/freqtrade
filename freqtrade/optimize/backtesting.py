@@ -537,22 +537,14 @@ class Backtesting:
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
-        resp = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                     default_retval=None, supress_error=True)(
+        stake_amount, order_tag = self.strategy._adjust_trade_position_internal(
             trade=trade,  # type: ignore[arg-type]
             current_time=current_time, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
             max_stake=min(max_stake, stake_available),
             current_entry_rate=current_rate, current_exit_rate=current_rate,
-            current_entry_profit=current_profit, current_exit_profit=current_profit)
-        order_tag = ''
-        if isinstance(resp, tuple):
-            if len(resp) >= 1:
-                stake_amount = resp[0]
-            if len(resp) > 1:
-                order_tag = resp[1] or ''
-        else:
-            stake_amount = resp
+            current_entry_profit=current_profit, current_exit_profit=current_profit
+        )
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:

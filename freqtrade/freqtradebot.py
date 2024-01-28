@@ -645,8 +645,7 @@ class FreqtradeBot(LoggingMixin):
         max_entry_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_entry_rate)
         stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
-        resp = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                     default_retval=None, supress_error=True)(
+        stake_amount, order_tag = self.strategy._adjust_trade_position_internal(
             trade=trade,
             current_time=datetime.now(timezone.utc), current_rate=current_entry_rate,
             current_profit=current_entry_profit, min_stake=min_entry_stake,
@@ -654,14 +653,6 @@ class FreqtradeBot(LoggingMixin):
             current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate,
             current_entry_profit=current_entry_profit, current_exit_profit=current_exit_profit
         )
-        order_tag = ''
-        if isinstance(resp, tuple):
-            if len(resp) >= 1:
-                stake_amount = resp[0]
-            if len(resp) > 1:
-                order_tag = resp[1] or ''
-        else:
-            stake_amount = resp
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
