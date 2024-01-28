@@ -734,7 +734,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             current_entry_rate: float, current_exit_rate: float,
             current_entry_profit: float, current_exit_profit: float,
             **kwargs
-            ) -> Tuple[Optional[float], str]:
+    ) -> Tuple[Optional[float], str]:
         """
         wrapper around adjust_trade_position to handle the return value
         """
