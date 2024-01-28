@@ -242,6 +242,7 @@ class Order(ModelBase):
                 'remaining': self.remaining,
                 'ft_fee_base': self.ft_fee_base,
                 'funding_fee': self.funding_fee,
+                'ft_order_tag': self.ft_order_tag,
             })
         return resp
 
@@ -1407,6 +1408,7 @@ class LocalTrade:
                 ft_price=order["price"],
                 remaining=order["remaining"],
                 funding_fee=order.get("funding_fee", None),
+                ft_order_tag=order.get("ft_order_tag", None),
             )
             trade.orders.append(order_obj)
 

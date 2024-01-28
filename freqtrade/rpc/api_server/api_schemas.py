@@ -261,6 +261,7 @@ class OrderSchema(BaseModel):
     order_timestamp: Optional[int] = None
     order_filled_timestamp: Optional[int] = None
     ft_fee_base: Optional[float] = None
+    ft_order_tag: Optional[str] = None
 
 
 class TradeSchema(BaseModel):
