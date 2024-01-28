@@ -681,11 +681,11 @@ class Backtesting:
 
             trade.exit_reason = exit_reason
 
-            return self._exit_trade(trade, row, close_rate, amount_)
+            return self._exit_trade(trade, row, close_rate, amount_, exit_reason)
         return None
 
-    def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
-                    close_rate: float, amount: float) -> Optional[LocalTrade]:
+    def _exit_trade(self, trade: LocalTrade, sell_row: Tuple, close_rate: float,
+                    amount: float, exit_reason: Optional[str]) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         exit_candle_time = sell_row[DATE_IDX].to_pydatetime()
         order_type = self.strategy.order_types['exit']
@@ -712,6 +712,7 @@ class Backtesting:
             filled=0,
             remaining=amount,
             cost=amount * close_rate,
+            ft_order_tag=exit_reason,
         )
         order._trade_bt = trade
         trade.orders.append(order)
@@ -944,6 +945,7 @@ class Backtesting:
                 filled=0,
                 remaining=amount,
                 cost=amount * propose_rate + trade.fee_open,
+                ft_order_tag=entry_tag,
             )
             order._trade_bt = trade
             trade.orders.append(order)
@@ -963,7 +965,8 @@ class Backtesting:
                     # Ignore trade if entry-order did not fill yet
                     continue
                 exit_row = data[pair][-1]
-                self._exit_trade(trade, exit_row, exit_row[OPEN_IDX], trade.amount)
+                self._exit_trade(trade, exit_row, exit_row[OPEN_IDX], trade.amount,
+                                 ExitType.FORCE_EXIT.value)
                 trade.orders[-1].close_bt_order(exit_row[DATE_IDX].to_pydatetime(), trade)
 
                 trade.close_date = exit_row[DATE_IDX].to_pydatetime()
