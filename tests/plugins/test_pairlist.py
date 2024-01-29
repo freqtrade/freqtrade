@@ -1517,29 +1517,29 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
 
 @pytest.mark.parametrize('pairlists,result', [
     ([
-        # Test top 2 mc
+        # Get 2 pairs
         {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 2}
-    ], ['ETH/USDT', 'BTC/USDT']),
-    ([
-        # Test top 6 mc
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "top_rank", "number_assets": 6}
-    ], ['ETH/USDT', 'XRP/USDT', 'BTC/USDT']),
-    ([
-        # Test total assets mode, 2 assets
-        {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 2}
+        {"method": "MarketCapPairList", "number_assets": 2}
     ], ['BTC/USDT', 'ETH/USDT']),
+    ([
+        # Get 6 pairs
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "number_assets": 6}
+    ], ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'ADA/USDT']),
+    ([
+        # Get 3 pairs within top 6 ranks
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "max_rank": 6, "number_assets": 3}
+    ], ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
 
     ([
-        # Test total assets mode, 5 assets
+        # Get 4 pairs within top 8 ranks
         {"method": "StaticPairList", "allow_inactive": True},
-        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
+        {"method": "MarketCapPairList", "max_rank": 8, "number_assets": 4}
     ], ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
     ([
         # MarketCapPairList as generator
-        {"method": "MarketCapPairList", "mode": "total_assets", "number_assets": 5}
+        {"method": "MarketCapPairList", "number_assets": 5}
     ],  ['BTC/USDT', 'ETH/USDT', 'XRP/USDT'])
 ])
 def test_MarketCapPairList_filter(mocker, default_conf_usdt, markets, pairlists, result):
@@ -1576,7 +1576,7 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt, markets, pairlists,
         }
     ]
 
-    default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT'])
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT', 'ADA/USDT'])
     default_conf_usdt['trading_mode'] = 'spot'
     default_conf_usdt['pairlists'] = pairlists
     mocker.patch.multiple(EXMS,
