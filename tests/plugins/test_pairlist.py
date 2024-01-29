@@ -18,6 +18,7 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
+from freqtrade.util.datetime_helpers import dt_now
 from tests.conftest import (EXMS, create_mock_trades_usdt, get_patched_exchange,
                             get_patched_freqtradebot, log_has, log_has_re, num_log_has)
 
@@ -1586,3 +1587,53 @@ def test_MarketCapPairList_filter(mocker, default_conf_usdt, trade_mode, markets
     pm.refresh_pairlist()
 
     assert pm.whitelist == result
+
+
+def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machine):
+    test_value = [
+        {"symbol": "btc"},
+        {"symbol": "eth"},
+        {"symbol": "usdt"},
+        {"symbol": "bnb"},
+        {"symbol": "sol"},
+        {"symbol": "xrp"},
+        {"symbol": "usdc"},
+        {"symbol": "steth"},
+        {"symbol": "ada"},
+        {"symbol": "avax"},
+    ]
+
+    default_conf_usdt['trading_mode'] = 'spot'
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT', 'ADA/USDT'])
+    default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList", "number_assets": 2}]
+
+    markets_mock = MagicMock(return_value=markets)
+    mocker.patch.multiple(EXMS,
+                          get_markets=markets_mock,
+                          exchange_has=MagicMock(return_value=True),
+                          )
+
+    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+                 return_value=test_value)
+
+    start_dt = dt_now()
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    time_machine.move_to(start_dt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    markets_mock.reset_mock()
+    pm.refresh_pairlist()
+    assert markets_mock.call_count == 3
+    markets_mock.reset_mock()
+
+    time_machine.move_to(start_dt + timedelta(hours=20))
+    pm.refresh_pairlist()
+    # Cached pairlist ...
+    assert markets_mock.call_count == 1
+
+    markets_mock.reset_mock()
+    time_machine.move_to(start_dt + timedelta(days=2))
+    pm.refresh_pairlist()
+    # No longer cached pairlist ...
+    assert markets_mock.call_count == 3
