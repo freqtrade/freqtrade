@@ -1637,3 +1637,19 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     pm.refresh_pairlist()
     # No longer cached pairlist ...
     assert markets_mock.call_count == 3
+
+
+def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, markets, time_machine):
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList"}]
+    with pytest.raises(OperationalException, match=r"`number_assets` not specified.*"):
+        # No number_assets
+        PairListManager(exchange, default_conf_usdt)
+
+    default_conf_usdt['pairlists'] = [{
+        "method": "MarketCapPairList", 'number_assets': 20, 'max_rank': 260
+    }]
+    with pytest.raises(OperationalException,
+                       match="This filter only support marketcap rank up to 250."):
+        PairListManager(exchange, default_conf_usdt)
