@@ -1555,7 +1555,9 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         {"method": "MarketCapPairList", "number_assets": 2}
     ], 'futures', ['ETH/USDT:USDT', 'ADA/USDT:USDT']),
 ])
-def test_MarketCapPairList_filter(mocker, default_conf_usdt, trade_mode, markets, pairlists, result):
+def test_MarketCapPairList_filter(
+        mocker, default_conf_usdt, trade_mode, markets, pairlists, result
+):
     test_value = [
         {"symbol": "btc"},
         {"symbol": "eth"},
