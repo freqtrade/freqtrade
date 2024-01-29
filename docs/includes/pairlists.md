@@ -280,9 +280,9 @@ The optional `bearer_token` will be included in the requests Authorization Heade
 ]
 ```
 
-`number_assets` will defines the maximum number of pairs returned by the pairlist. `max_rank` will defines the maximum rank used in creating/filtering the pairlist. Please note that it's normal that some coins that placed within `max_rank` might not included in the resulted pairlist. It's because some coins might not have active trading pairs in your preferred market/stake/exchange.
+`number_assets` defines the maximum number of pairs returned by the pairlist. `max_rank` will determine the maximum rank used in creating/filtering the pairlist. It's expected that some coins within the top `max_rank` marketcap will not be included in the resulting pairlist since not all pairs will have active trading pairs in your preferred market/stake/exchange combination.
 
-`refresh_period` setting define the period (in seconds) at which the marketcap rank data will be cached. Defaults to 86,400s (1 day). The pairlist cache (`refresh_period`) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
+`refresh_period` setting defines the period (in seconds) at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (`refresh_period`) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
 
 #### AgeFilter
 
