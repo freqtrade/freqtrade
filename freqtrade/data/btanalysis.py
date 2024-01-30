@@ -175,19 +175,30 @@ def _get_backtest_files(dirname: Path) -> List[Path]:
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
-def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
-    """
-    Get backtest result read from metadata file
-    """
+def _extract_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    metadata = load_backtest_metadata(filename)
     return [
         {
             'filename': filename.stem,
             'strategy': s,
-            'notes': v.get('notes', ''),
             'run_id': v['run_id'],
+            'notes': v.get('notes', ''),
+            # Backtest "run" time
             'backtest_start_time': v['backtest_start_time'],
-        } for s, v in load_backtest_metadata(filename).items()
+            # Backtest timerange
+            'backtest_start_ts': v.get('backtest_start_ts', None),
+            'backtest_end_ts': v.get('backtest_end_ts', None),
+            'timeframe': v.get('timeframe', None),
+            'timeframe_detail': v.get('timeframe_detail', None),
+        } for s, v in metadata.items()
     ]
+
+
+def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    """
+    Get backtest result read from metadata file
+    """
+    return _extract_backtest_result(filename)
 
 
 def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
@@ -195,16 +206,9 @@ def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     Get list of backtest results read from metadata files
     """
     return [
-        {
-            'filename': filename.stem,
-            'strategy': s,
-            'run_id': v['run_id'],
-            'notes': v.get('notes', ''),
-            'backtest_start_time': v['backtest_start_time'],
-        }
+        result
         for filename in _get_backtest_files(dirname)
-        for s, v in load_backtest_metadata(filename).items()
-        if v
+        for result in _extract_backtest_result(filename)
     ]
 
 
@@ -353,10 +357,10 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     :param timeframe: Timeframe used for backtest
     :return: dataframe with open-counts per time-period in timeframe
     """
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_min = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
-                                     freq=f"{timeframe_min}min"))
+                                     freq=timeframe_freq))
              for row in results[['open_date', 'close_date']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -364,7 +368,7 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
-    df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
+    df_final = df2.resample(timeframe_freq)[['pair']].count()
     df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
     return df_final
 

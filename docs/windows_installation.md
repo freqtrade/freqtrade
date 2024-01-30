@@ -22,7 +22,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 
 ### 2. Install ta-lib
 
-Install ta-lib according to the [ta-lib documentation](https://github.com/mrjbq7/ta-lib#windows).
+Install ta-lib according to the [ta-lib documentation](https://github.com/TA-Lib/ta-lib-python#windows).
 
 As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), Freqtrade provides these dependencies (in the binary wheel format) for the latest 3 Python versions (3.9, 3.10 and 3.11) and for 64bit Windows.
 These Wheels are also used by CI running on windows, and are therefore tested together with freqtrade.

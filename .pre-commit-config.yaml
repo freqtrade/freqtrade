@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pycqa/flake8
-    rev: "6.1.0"
+    rev: "7.0.0"
     hooks:
       - id: flake8
         additional_dependencies: [Flake8-pyproject]
@@ -16,10 +16,10 @@ repos:
         additional_dependencies:
           - types-cachetools==5.3.0.7
           - types-filelock==3.2.7
-          - types-requests==2.31.0.10
-          - types-tabulate==0.9.0.3
-          - types-python-dateutil==2.8.19.14
-          - SQLAlchemy==2.0.23
+          - types-requests==2.31.0.20240125
+          - types-tabulate==0.9.0.20240106
+          - types-python-dateutil==2.8.19.20240106
+          - SQLAlchemy==2.0.25
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort
@@ -31,7 +31,7 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.1.9'
+    rev: 'v0.1.14'
     hooks:
       - id: ruff
 

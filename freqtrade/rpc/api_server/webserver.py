@@ -107,7 +107,7 @@ class ApiServer(RPCHandler):
             ApiServer._message_stream.publish(msg)
 
     def handle_rpc_exception(self, request, exc):
-        logger.exception(f"API Error calling: {exc}")
+        logger.error(f"API Error calling: {exc}")
         return JSONResponse(
             status_code=502,
             content={'error': f"Error querying {request.url.path}: {exc.message}"}

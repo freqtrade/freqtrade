@@ -7,25 +7,25 @@
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
-ruff==0.1.9
+ruff==0.1.14
 mypy==1.8.0
 pre-commit==3.6.0
-pytest==7.4.3
-pytest-asyncio==0.21.1
+pytest==7.4.4
+pytest-asyncio==0.23.4
 pytest-cov==4.1.0
 pytest-mock==3.12.0
-pytest-random-order==1.1.0
+pytest-random-order==1.1.1
 pytest-xdist==3.5.0
 isort==5.13.2
 # For datetime mocking
 time-machine==2.13.0
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==7.13.1
+nbconvert==7.14.2
 
 # mypy types
 types-cachetools==5.3.0.7
 types-filelock==3.2.7
-types-requests==2.31.0.10
-types-tabulate==0.9.0.3
-types-python-dateutil==2.8.19.14
+types-requests==2.31.0.20240125
+types-tabulate==0.9.0.20240106
+types-python-dateutil==2.8.19.20240106

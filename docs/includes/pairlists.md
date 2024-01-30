@@ -192,7 +192,8 @@ The RemotePairList is defined in the pairlists section of the configuration sett
         "refresh_period": 1800,
         "keep_pairlist_on_failure": true,
         "read_timeout": 60,
-        "bearer_token": "my-bearer-token"
+        "bearer_token": "my-bearer-token",
+        "save_to_file": "user_data/filename.json" 
     }
 ]
 ```
@@ -206,6 +207,42 @@ In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs pre
 In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.
 
 The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
+
+The `save_to_file` option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.
+
+??? Example "Multi bot with shared pairlist example"
+    
+    `save_to_file` can be used to save the pairlist to a file with Bot1:
+
+    ```json
+    "pairlists": [
+        {
+            "method": "RemotePairList",
+            "mode": "whitelist",
+            "pairlist_url": "https://example.com/pairlist",
+            "number_assets": 10,
+            "refresh_period": 1800,
+            "keep_pairlist_on_failure": true,
+            "read_timeout": 60,
+            "save_to_file": "user_data/filename.json" 
+        }
+    ]
+    ```
+
+    This saved pairlist file can be loaded by Bot2, or any additional bot with this configuration:
+
+    ```json
+    "pairlists": [
+        {
+            "method": "RemotePairList",
+            "mode": "whitelist",
+            "pairlist_url": "file:///user_data/filename.json",
+            "number_assets": 10,
+            "refresh_period": 10,
+            "keep_pairlist_on_failure": true,
+        }
+    ]
+    ```    
 
 The user is responsible for providing a server or local file that returns a JSON object with the following structure:
 

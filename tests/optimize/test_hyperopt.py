@@ -254,7 +254,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
             'is_best': True
         }
     )
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert all(x in out
                for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "00:20:00"])
 
@@ -333,7 +333,7 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     # Should be called for historical candle data
     assert dumper.call_count == 1
@@ -577,7 +577,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     result_str = (
         '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi"'
         ':{},"stoploss":null,"trailing_stop":null,"max_open_trades":null}'
@@ -624,7 +624,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert '{"params":{"mfi-value":null,"sell-mfi-value":null},"minimal_roi":{},"stoploss":null}' in out  # noqa: E501
     # Should be called for historical candle data
     assert dumper.call_count == 1
@@ -666,7 +666,7 @@ def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert '{"minimal_roi":{},"stoploss":null}' in out
 
     assert dumper.call_count == 1
@@ -704,7 +704,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
@@ -777,7 +777,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
     assert dumper.call_count == 1
@@ -819,7 +819,7 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
 
     parallel.assert_called_once()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert 'Best result:\n\n*    1/1: foo result Objective: 1.00000\n' in out
     assert dumper.called
     assert dumper.call_count == 1
@@ -1051,7 +1051,7 @@ def test_max_open_trades_dump(mocker, hyperopt_conf, tmp_path, fee, capsys) -> N
 
     hyperopt.start()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
 
     assert 'max_open_trades = -1' in out
     assert 'max_open_trades = inf' not in out
@@ -1070,7 +1070,7 @@ def test_max_open_trades_dump(mocker, hyperopt_conf, tmp_path, fee, capsys) -> N
 
     hyperopt.start()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
 
     assert '"max_open_trades":-1' in out
 

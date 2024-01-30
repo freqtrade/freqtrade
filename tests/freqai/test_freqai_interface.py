@@ -1,7 +1,6 @@
 import logging
 import platform
 import shutil
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -16,12 +15,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import (get_patched_freqai_strategy, is_mac, make_rl_config,
+from tests.freqai.conftest import (get_patched_freqai_strategy, is_mac, is_py12, make_rl_config,
                                    mock_pytorch_mlp_model_training_parameters)
-
-
-def is_py11() -> bool:
-    return sys.version_info >= (3, 11)
 
 
 def is_arm() -> bool:
@@ -30,10 +25,14 @@ def is_arm() -> bool:
 
 
 def can_run_model(model: str) -> None:
+    is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
+
+    if is_py12() and ("Catboost" in model or is_pytorch_model):
+        pytest.skip("Model not supported on python 3.12 yet.")
+
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM.")
 
-    is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
     if is_pytorch_model and is_mac() and not is_arm():
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
@@ -299,8 +298,11 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
 def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180124"})
-    freqai_conf.get("freqai", {}).update({"backtest_period_days": 0.5})
-    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf['runmode'] = 'backtest'
+    freqai_conf.get("freqai", {}).update({
+        "backtest_period_days": 0.5,
+        "save_backtest_models": True,
+    })
     freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
         {"indicator_periods_candles": [2]})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -327,6 +329,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
 
 def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf['runmode'] = 'backtest'
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
         {"indicator_periods_candles": [2]})
@@ -390,6 +393,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
 
 def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
+    freqai_conf['runmode'] = 'backtest'
     freqai_conf.get("freqai", {}).update({"fit_live_predictions_candles": 10})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -523,8 +527,8 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-    if is_py11():
-        pytest.skip("Reinforcement learning currently not available on python 3.11.")
+    if is_py12():
+        pytest.skip("Reinforcement learning currently not available on python 3.12.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})

@@ -107,8 +107,8 @@ def test_recursive_helper_text_table_recursive_analysis_instances(recursive_conf
 
     instance = RecursiveAnalysis(recursive_conf, strategy_obj)
     instance.dict_recursive = dict_diff
-    table, headers, data = (RecursiveAnalysisSubFunctions.
-                            text_table_recursive_analysis_instances([instance]))
+    _table, _headers, data = (RecursiveAnalysisSubFunctions.
+                              text_table_recursive_analysis_instances([instance]))
 
     # check row contents for a try that has too few signals
     assert data[0][0] == 'rsi'
@@ -119,8 +119,8 @@ def test_recursive_helper_text_table_recursive_analysis_instances(recursive_conf
     dict_diff = dict()
     instance = RecursiveAnalysis(recursive_conf, strategy_obj)
     instance.dict_recursive = dict_diff
-    table, headers, data = (RecursiveAnalysisSubFunctions.
-                            text_table_recursive_analysis_instances([instance]))
+    _table, _headers, data = (RecursiveAnalysisSubFunctions.
+                              text_table_recursive_analysis_instances([instance]))
     assert len(data) == 0
 
 

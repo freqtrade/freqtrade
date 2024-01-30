@@ -51,6 +51,7 @@ class __RPCEntryExitMsgBase(RPCSendMsgBase):
     exchange: str
     pair: str
     base_currency: str
+    quote_currency: str
     leverage: Optional[float]
     direction: str
     limit: float
@@ -81,11 +82,12 @@ class RPCExitMsg(__RPCEntryExitMsgBase):
     close_rate: float
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
     # current_rate: Optional[float]
     order_rate: Optional[float]
+    final_profit_ratio: Optional[float]
+    is_final_exit: bool
 
 
 class RPCExitCancelMsg(__RPCEntryExitMsgBase):
@@ -94,7 +96,6 @@ class RPCExitCancelMsg(__RPCEntryExitMsgBase):
     gain: ProfitLossStr
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
 
@@ -115,6 +116,9 @@ class RPCNewCandleMsg(RPCSendMsgBase):
     """New candle ping message, issued once per new candle/pair"""
     type: Literal[RPCMessageType.NEW_CANDLE]
     data: PairWithTimeframe
+
+
+RPCOrderMsg = Union[RPCEntryMsg, RPCExitMsg, RPCExitCancelMsg, RPCCancelMsg]
 
 
 RPCSendMsg = Union[

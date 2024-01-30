@@ -33,14 +33,15 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  show_backtest_results,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
+from freqtrade.persistence import (LocalTrade, Order, PairLocks, Trade, disable_database_use,
+                                   enable_database_use)
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.types import BacktestResultType, get_BacktestResultType_default
-from freqtrade.util.binance_mig import migrate_binance_futures_data
+from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
 
 
@@ -116,8 +117,9 @@ class Backtesting:
             raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
-        self.disable_database_use()
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
+        self.timeframe_td = timedelta(minutes=self.timeframe_min)
+        self.disable_database_use()
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
         self._validate_pairlists_for_backtesting()
@@ -145,19 +147,20 @@ class Backtesting:
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        if self.config.get('freqai', {}).get('enabled', False):
-            # For FreqAI, increase the required_startup to includes the training data
-            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
-
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
+
+        if self.config.get('freqai', {}).get('enabled', False):
+            # For FreqAI, increase the required_startup to includes the training data
+            # This value should NOT be written to startup_candle_count
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
         self._position_stacking: bool = self.config.get('position_stacking', False)
         self.enable_protections: bool = self.config.get('enable_protections', False)
-        migrate_binance_futures_data(config)
+        migrate_data(config, self.exchange)
 
         self.init_backtest()
 
@@ -176,8 +179,7 @@ class Backtesting:
     @staticmethod
     def cleanup():
         LoggingMixin.show_output = True
-        PairLocks.use_db = True
-        Trade.use_db = True
+        enable_database_use()
 
     def init_backtest_detail(self) -> None:
         # Load detail timeframe if specified
@@ -239,7 +241,7 @@ class Backtesting:
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.config['startup_candle_count'],
+            startup_candles=self.required_startup,
             fail_without_data=True,
             data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
@@ -276,8 +278,10 @@ class Backtesting:
         else:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
-            self.funding_fee_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+            self.funding_fee_timeframe: str = self.exchange.get_option('funding_fee_timeframe')
             self.funding_fee_timeframe_secs: int = timeframe_to_seconds(self.funding_fee_timeframe)
+            mark_timeframe: str = self.exchange.get_option('mark_ohlcv_timeframe')
+
             # Load additional futures data.
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
@@ -294,7 +298,7 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.funding_fee_timeframe,
+                timeframe=mark_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -322,9 +326,7 @@ class Backtesting:
             self.futures_data = {}
 
     def disable_database_use(self):
-        PairLocks.use_db = False
-        PairLocks.timeframe = self.timeframe
-        Trade.use_db = False
+        disable_database_use(self.timeframe)
 
     def prepare_backtest(self, enable_protections):
         """
@@ -530,7 +532,7 @@ class Backtesting:
     def _get_adjust_trade_entry_for_candle(
             self, trade: LocalTrade, row: Tuple, current_time: datetime
     ) -> LocalTrade:
-        current_rate = row[OPEN_IDX]
+        current_rate: float = row[OPEN_IDX]
         current_profit = trade.calc_profit_ratio(current_rate)
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
@@ -563,11 +565,8 @@ class Backtesting:
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
                 return trade
-            if amount > trade.amount:
-                # This is currently ineffective as remaining would become < min tradable
-                amount = trade.amount
             remaining = (trade.amount - amount) * current_rate
-            if remaining < min_stake:
+            if min_stake and remaining != 0 and remaining < min_stake:
                 # Remaining stake is too low to be sold.
                 return trade
             exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT)
@@ -1207,10 +1206,10 @@ class Backtesting:
 
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = defaultdict(int)
-        current_time = start_date + timedelta(minutes=self.timeframe_min)
+        current_time = start_date + self.timeframe_td
 
         self.progress.init_step(BacktestState.BACKTEST, int(
-            (end_date - start_date) / timedelta(minutes=self.timeframe_min)))
+            (end_date - start_date) / self.timeframe_td))
         # Loop timerange and get candle for each pair at that point in time
         while current_time <= end_date:
             open_trade_count_start = LocalTrade.bt_open_open_trade_count
@@ -1237,7 +1236,7 @@ class Backtesting:
                     # Spread out into detail timeframe.
                     # Should only happen when we are either in a trade for this pair
                     # or when we got the signal for a new trade.
-                    exit_candle_end = current_detail_time + timedelta(minutes=self.timeframe_min)
+                    exit_candle_end = current_detail_time + self.timeframe_td
 
                     detail_data = self.detail_data[pair]
                     detail_data = detail_data.loc[
@@ -1273,7 +1272,7 @@ class Backtesting:
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
-            current_time += timedelta(minutes=self.timeframe_min)
+            current_time += self.timeframe_td
 
         self.handle_left_open(LocalTrade.bt_trades_open_pp, data=data)
         self.wallets.update()

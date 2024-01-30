@@ -152,7 +152,7 @@ class StrategyTestV3(IStrategy):
             (
                 qtpylib.crossed_below(dataframe['rsi'], self.sell_rsi.value)
             ),
-            'enter_short'] = 1
+            ('enter_short', 'enter_tag')] = (1, 'short_Tag')
 
         return dataframe
 
@@ -176,7 +176,7 @@ class StrategyTestV3(IStrategy):
             (
                 qtpylib.crossed_above(dataframe['rsi'], self.buy_rsi.value)
             ),
-            'exit_short'] = 1
+            ('exit_short', 'exit_tag')] = (1, 'short_Tag')
 
         return dataframe
 
