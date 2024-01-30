@@ -221,6 +221,7 @@ class Order(ModelBase):
             'order_filled_timestamp': int(self.order_filled_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
             'ft_is_entry': self.ft_order_side == entry_side,
+            'ft_order_tag': self.ft_order_tag,
         }
         if not minified:
             resp.update({
@@ -242,7 +243,6 @@ class Order(ModelBase):
                 'remaining': self.remaining,
                 'ft_fee_base': self.ft_fee_base,
                 'funding_fee': self.funding_fee,
-                'ft_order_tag': self.ft_order_tag,
             })
         return resp
 
