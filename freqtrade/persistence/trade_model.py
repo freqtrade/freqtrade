@@ -214,6 +214,10 @@ class Order(ModelBase):
         return order
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
+        """
+        :param minified: If True, only return a subset of the data is returned.
+                         Only used for backtesting.
+        """
         resp = {
             'amount': self.safe_amount,
             'safe_price': self.safe_price,
