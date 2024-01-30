@@ -508,7 +508,7 @@ jobs:
       id: extract-branch
       run: |
         echo "GITHUB_REF=`${GITHUB_REF}`"
-        echo "branch=${GITHUB_REF##*/})" >> "$GITHUB_OUTPUT"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
@@ -557,7 +557,7 @@ jobs:
       id: extract-branch
       run: |
         echo "GITHUB_REF=`${GITHUB_REF}`"
-        echo "branch=${GITHUB_REF##*/})" >> "$GITHUB_OUTPUT"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
