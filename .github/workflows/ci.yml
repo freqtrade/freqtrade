@@ -505,9 +505,10 @@ jobs:
         python-version: "3.11"
 
     - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: extract_branch
+      id: extract-branch
+      run: |
+        echo "GITHUB_REF='${GITHUB_REF}'"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
@@ -536,7 +537,7 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ steps.extract-branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_multi.sh
 
@@ -553,9 +554,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: extract_branch
+      id: extract-branch
+      run: |
+        echo "GITHUB_REF='${GITHUB_REF}'"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
@@ -566,7 +568,7 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ steps.extract-branch.outputs.branch }}
         GHCR_USERNAME: ${{ github.actor }}
         GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
