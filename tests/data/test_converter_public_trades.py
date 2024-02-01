@@ -9,11 +9,12 @@ from pandas import DataFrame
 
 from freqtrade.configuration import Configuration
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS
-from freqtrade.data.converter import (populate_dataframe_with_trades, public_trades_to_dataframe,
-                                      trades_to_volumeprofile_with_total_delta_bid_ask)
+from freqtrade.data.converter import (
+    populate_dataframe_with_trades, public_trades_to_dataframe)
+from freqtrade.data.converter.converter import (
+    trades_to_volumeprofile_with_total_delta_bid_ask)
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, testdatadir
 
 
 BIN_SIZE_SCALE = 0.5
@@ -26,23 +27,17 @@ def read_csv(filename, converter_columns: list = ['side', 'type']):
 
 @pytest.fixture(scope="module")
 def populate_dataframe_with_trades_dataframe():
-    return pd.read_json('tests/testdata/populate_dataframe_with_trades_dataframe.json').copy()
+    return pd.read_feather('tests/testdata/populate_dataframe_with_trades_DF.feather')
 
 
 @pytest.fixture(scope="module")
 def populate_dataframe_with_trades_trades():
-    # dataframe['date'] = pd.to_datetime(dataframe['date'], unit='ms', utc=True)
-    return pd.read_feather('tests/testdata/populate_dataframe_with_trades_trades.feather').copy()
+    return pd.read_feather('tests/testdata/populate_dataframe_with_trades_TRADES.feather')
 
 
 @pytest.fixture(scope="module")
 def candles():
     return pd.read_json('tests/testdata/candles.json').copy()
-
-
-@pytest.fixture(scope="module")
-def trades():
-    return pd.read_json('tests/testdata/trades.json').copy()
 
 
 @pytest.fixture(scope="module")
@@ -96,7 +91,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     dataframe = populate_dataframe_with_trades_dataframe.copy()
     trades = populate_dataframe_with_trades_trades.copy()
     dataframe['date'] = pd.to_datetime(
-        dataframe['date'], unit='ms').dt.tz_localize('UTC')
+        dataframe['date'], unit='ms')
     dataframe = dataframe.copy().tail().reset_index(drop=True)
     config = {'timeframe': '5m',
               'orderflow': {'scale': 0.005, 'imbalance_volume': 0, 'imbalance_ratio': 300, 'stacked_imbalance_range': 3}}
@@ -106,38 +101,38 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     t = results['trades']
     of = results['orderflow']
     assert 0 != len(results)  # 13 columns
-    assert 4073 == len(t)
+    assert 151 == len(t)
 
     # orderflow/cluster/footprint
-    assert 506 == len(of)
-    assert [39.0, 0.0, -22.598, 22.598, 0.0,
-            22.598, 39.0] == of.iloc[0].values.tolist()
-    assert [0.0, 4.0, 0.319, 0.0, 0.319, 0.319,
-            4.0] == of.iloc[-1].values.tolist()
+    assert 23 == len(of)
+    assert [0.0, 1.0, 4.999, 0.0, 4.999, 4.999,
+            1.0] == of.iloc[0].values.tolist()
+    assert [0.0, 1.0, 0.103, 0.0, 0.103, 0.103,
+            1.0] == of.iloc[-1].values.tolist()
     of = df.iloc[-1]['orderflow']
-    assert 434 == len(of)
-    assert [18.0, 0.0, -3.367, 3.367, 0.0, 3.367,
-            18.0] == of.iloc[0].values.tolist()
-    assert [0.0, 3.0, 0.144, 0.0, 0.144, 0.144,
-            3.0] == of.iloc[-1].values.tolist()
+    assert 19 == len(of)
+    assert [1.0, 0.0, -12.536, 12.536, 0.0,
+            12.536, 1.0] == of.iloc[0].values.tolist()
+    assert [4.0, 3.0, -40.94800000000001, 59.18200000000001,
+            18.233999999999998, 77.41600000000001, 7.0] == of.iloc[-1].values.tolist()
 
-    assert -46.62299999999999 == results['delta']
-    assert -97.12800000000034 == results['min_delta']
-    assert 0.088 == results['max_delta']
+    assert -50.519000000000005 == results['delta']
+    assert -79.469 == results['min_delta']
+    assert 17.298 == results['max_delta']
     assert np.isnan(results['stacked_imbalances_bid'])
-    assert 24219.7 == results['stacked_imbalances_ask']
+    assert np.isnan(results['stacked_imbalances_ask'])
 
     results = df.iloc[-3]
-    assert 143.56099999999998 == results['delta']
-    assert 0.0 == results['min_delta']
-    assert 146.74999999999997 == results['max_delta']
-    assert 24233.9 == results['stacked_imbalances_bid']
+    assert -112.71399999999994 == results['delta']
+    assert -120.673 == results['min_delta']
+    assert 11.664 == results['max_delta']
+    assert np.isnan(results['stacked_imbalances_bid'])
     assert np.isnan(results['stacked_imbalances_ask'])
 
     results = df.iloc[-1]
-    assert 95.00900000000013 == results['delta']
-    assert -8.579999999999998 == results['min_delta']
-    assert 107.73599999999985 == results['max_delta']
+    assert -49.30200000000002 == results['delta']
+    assert -70.222 == results['min_delta']
+    assert 11.213000000000003 == results['max_delta']
     assert np.isnan(results['stacked_imbalances_bid'])
     assert np.isnan(results['stacked_imbalances_ask'])
 
@@ -149,13 +144,12 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
     # slice of unnecessary trades
     dataframe['date'] = pd.to_datetime(
-        dataframe['date'], unit='ms').dt.tz_localize('UTC')
-    # dataframe = dataframe.copy().reset_index(drop=True)
+        dataframe['date'], unit='ms')
     dataframe = dataframe.copy().tail().reset_index(drop=True)
     trades = trades.copy().loc[trades.date >= dataframe.date[0]]
     trades.reset_index(inplace=True, drop=True)
 
-    assert trades['id'][0] == '1637515870'
+    assert trades['id'][0] == '313881442'
 
     config = {
         'timeframe': '5m',
@@ -167,17 +161,17 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     assert result.index.values.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume', 'trades', 'orderflow',
                                             'bid', 'ask', 'delta', 'min_delta', 'max_delta', 'total_trades', 'stacked_imbalances_bid', 'stacked_imbalances_ask']
 
-    assert -46.62299999999999 == result['delta']
-    assert 521.726 == result['bid']
-    assert 475.103 == result['ask']
+    assert -50.519000000000005 == result['delta']
+    assert 219.961 == result['bid']
+    assert 169.442 == result['ask']
 
-    assert 4073 == len(result.trades)
+    assert 151 == len(result.trades)
     t = result['trades'].iloc[0]
     assert trades['id'][0] == t["id"]
     assert int(trades['timestamp'][0]) == int(t['timestamp'])
-    assert 'buy' == t['side']
-    assert '1637515870' == t['id']
-    assert 24229.1 == t['price']
+    assert 'sell' == t['side']
+    assert '313881442' == t['id']
+    assert 234.72 == t['price']
 
 
 def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_simple, candles):
@@ -275,16 +269,12 @@ def do_plot(pair, data, trades, plot_config=None):
 
 # need to be at last to see if some test changed the testdata
 # always need to use .copy() to avoid changing the testdata
-def test_public_trades_testdata_sanity(candles, trades, public_trades_list, public_trades_list_simple,
-                                       public_trades_list_simple_bidask, public_trades_list_simple_results,
+def test_public_trades_testdata_sanity(candles, public_trades_list, public_trades_list_simple,
                                        populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades):
     assert 10999 == len(candles)
-    assert 1811 == len(trades)
     assert 1000 == len(public_trades_list)
-    assert 3 == len(public_trades_list_simple_results)
-    assert 7 == len(public_trades_list_simple_bidask)
     assert 999 == len(populate_dataframe_with_trades_dataframe)
-    assert 8033249 == len(populate_dataframe_with_trades_trades)
+    assert 293532 == len(populate_dataframe_with_trades_trades)
 
     assert 7 == len(public_trades_list_simple)
     assert 5 == public_trades_list_simple.loc[
@@ -300,8 +290,6 @@ def test_public_trades_testdata_sanity(candles, trades, public_trades_list, publ
 
     assert public_trades_list.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost', 'date']
-    assert public_trades_list_simple_results.columns.tolist() == [
-        'level', 'bid', 'ask', 'delta']
     assert public_trades_list_simple.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price',
         'amount', 'cost', 'date']
@@ -310,13 +298,6 @@ def test_public_trades_testdata_sanity(candles, trades, public_trades_list, publ
     assert populate_dataframe_with_trades_trades.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price',
         'amount', 'cost', 'date']
-
-    public_trades_list_simple_results = pd.DataFrame([[0, 0, 0, 0], [23437.5, 0.245, 0.0, -0.245], [23438.0, 0.0, 0.14, 0.140]],
-                                                     columns=public_trades_list_simple_results.columns)
-    pd.testing.assert_series_equal(
-        public_trades_list_simple_results['delta'], public_trades_list_simple_results['delta'], check_index=False)
-    assert public_trades_list_simple_results.values.tolist(
-    ) == public_trades_list_simple_results.values.tolist()
 
 
 class ReporterPlugin:
