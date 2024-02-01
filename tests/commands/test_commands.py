@@ -772,7 +772,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
     assert dl_mock.call_count == 1
 
@@ -788,7 +788,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
 
 
@@ -1445,12 +1445,13 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert ("\n|    Pair |   Timeframe |   Type |                From |                  To |\n"
-            in captured.out)
+    assert (
+        "\n|    Pair |   Timeframe |   Type "
+        "|                From |                  To |   Candles |\n") in captured.out
     assert "UNITTEST/BTC" not in captured.out
     assert (
-            "\n| XRP/ETH |          1m |   spot | 2019-10-11 00:00:00 | 2019-10-13 11:19:00 |\n"
-            in captured.out)
+        "\n| XRP/ETH |          1m |   spot | "
+        "2019-10-11 00:00:00 | 2019-10-13 11:19:00 |      2469 |\n") in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1508,7 +1509,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     pargs['config'] = None
     start_backtesting_show(pargs)
     assert sbr.call_count == 1
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert "Pairs for Strategy" in out
 
 

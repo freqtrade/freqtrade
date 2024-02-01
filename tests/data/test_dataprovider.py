@@ -194,7 +194,7 @@ def test_get_producer_df(default_conf):
     assert la == empty_la
 
     # non existent timeframe, empty dataframe
-    datframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
+    _dataframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
     assert dataframe.empty
     assert la == empty_la
 

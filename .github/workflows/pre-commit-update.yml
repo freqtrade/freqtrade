@@ -36,6 +36,7 @@ jobs:
           add-paths: .pre-commit-config.yaml
           labels: |
             Tech maintenance
+            Dependencies
           branch: update/pre-commit-hooks
           title: Update pre-commit hooks
           commit-message: "chore: update pre-commit hooks"

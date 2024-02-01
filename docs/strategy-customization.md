@@ -156,9 +156,9 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 Out of the box, freqtrade installs the following technical libraries:
 
-* [ta-lib](http://mrjbq7.github.io/ta-lib/)
-* [pandas-ta](https://twopirllc.github.io/pandas-ta/)
-* [technical](https://github.com/freqtrade/technical/)
+- [ta-lib](https://ta-lib.github.io/ta-lib-python/)
+- [pandas-ta](https://twopirllc.github.io/pandas-ta/)
+- [technical](https://github.com/freqtrade/technical/)
 
 Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
 
@@ -1009,8 +1009,8 @@ This is a common pain-point, which can cause huge differences between backtestin
 
 The following lists some common patterns which should be avoided to prevent frustration:
 
-- don't use `shift(-1)`. This uses data from the future, which is not available.
-- don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
+- don't use `shift(-1)` or other negative values. This uses data from the future in backtesting, which is not available in dry or live modes.
+- don't use `.iloc[-1]` or any other absolute position in the dataframe within `populate_` functions, as this will be different between dry-run and backtesting. Absolute `iloc` indexing is safe to use in callbacks however - see [Strategy Callbacks](strategy-callbacks.md).
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 

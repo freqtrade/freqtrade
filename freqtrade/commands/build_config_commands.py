@@ -109,7 +109,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "binance",
                 "binanceus",
                 "gate",
-                "huobi",
+                "htx",
                 "kraken",
                 "kucoin",
                 "okx",

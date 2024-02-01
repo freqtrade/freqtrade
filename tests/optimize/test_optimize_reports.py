@@ -513,7 +513,7 @@ def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
 
     show_sorted_pairlist(default_conf, bt_data)
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert 'Pairs for Strategy StrategyTestV3: \n[' in out
     assert 'TOTAL' not in out
     assert '"ETH/BTC",  // ' in out

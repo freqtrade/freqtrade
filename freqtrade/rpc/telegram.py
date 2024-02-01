@@ -333,19 +333,28 @@ class Telegram(RPCHandler):
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        entry_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
-                      else {'enter': 'Short', 'entered': 'Shorted'})
+        terminology = {
+            '1_enter': 'New Trade',
+            '1_entered': 'New Trade filled',
+            'x_enter': 'Increasing position',
+            'x_entered': 'Position increase filled',
+        }
+
+        key = f"{'x' if msg['sub_trade'] else '1'}_{'entered' if is_fill else 'enter'}"
+        wording = terminology[key]
+
         message = (
             f"{emoji} *{self._exchange_from_msg(msg)}:*"
-            f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
-            f" (#{msg['trade_id']})\n"
+            f" {wording} (#{msg['trade_id']})\n"
+            f"*Pair:* `{msg['pair']}`\n"
         )
         message += self._add_analyzed_candle(msg['pair'])
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
+        message += f"*Direction:* `{msg['direction']}"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
-            message += f"*Leverage:* `{msg['leverage']:.1g}`\n"
-
+            message += f" ({msg['leverage']:.1g}x)"
+        message += "`\n"
         message += f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         if msg['type'] == RPCMessageType.ENTRY and msg['current_rate']:
             message += f"*Current Rate:* `{fmt_coin(msg['current_rate'], msg['quote_currency'])}`\n"
@@ -353,7 +362,7 @@ class Telegram(RPCHandler):
         profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')  # type: ignore
         total = fmt_coin(msg['stake_amount'], msg['quote_currency'])
 
-        message += f"*Total:* `{total}{profit_fiat_extra}`"
+        message += f"*{'New ' if msg['sub_trade'] else ''}Total:* `{total}{profit_fiat_extra}`"
 
         return message
 
@@ -362,7 +371,7 @@ class Telegram(RPCHandler):
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         duration_min = duration.total_seconds() / 60
 
-        leverage_text = (f"*Leverage:* `{msg['leverage']:.1g}`\n"
+        leverage_text = (f" ({msg['leverage']:.1g}x)"
                          if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                          else "")
 
@@ -405,8 +414,8 @@ class Telegram(RPCHandler):
             f"{cp_extra}"
             f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
-            f"*Direction:* `{msg['direction']}`\n"
-            f"{leverage_text}"
+            f"*Direction:* `{msg['direction']}"
+            f"{leverage_text}`\n"
             f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
             f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         )
@@ -1337,7 +1346,7 @@ class Telegram(RPCHandler):
         output = "<b>Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['pair']}\t"
+                f"{i + 1}.\t <code>{trade['pair']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
@@ -1369,7 +1378,7 @@ class Telegram(RPCHandler):
         output = "<b>Entry Tag Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['enter_tag']}\t"
+                f"{i + 1}.\t <code>{trade['enter_tag']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
@@ -1401,7 +1410,7 @@ class Telegram(RPCHandler):
         output = "<b>Exit Reason Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['exit_reason']}\t"
+                f"{i + 1}.\t <code>{trade['exit_reason']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
@@ -1433,7 +1442,7 @@ class Telegram(RPCHandler):
         output = "<b>Mix Tag Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['mix_tag']}\t"
+                f"{i + 1}.\t <code>{trade['mix_tag']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")

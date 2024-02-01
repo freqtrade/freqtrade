@@ -134,10 +134,10 @@ def start_list_data(args: Dict[str, Any]) -> None:
         print(tabulate([
             (pair, timeframe, candle_type,
                 start.strftime(DATETIME_PRINT_FORMAT),
-                end.strftime(DATETIME_PRINT_FORMAT))
-            for pair, timeframe, candle_type, start, end in sorted(
+                end.strftime(DATETIME_PRINT_FORMAT), length)
+            for pair, timeframe, candle_type, start, end, length in sorted(
                 paircombs1,
                 key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2]))
             ],
-            headers=("Pair", "Timeframe", "Type", 'From', 'To'),
+            headers=("Pair", "Timeframe", "Type", 'From', 'To', 'Candles'),
             tablefmt='psql', stralign='right'))

@@ -61,10 +61,10 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_minutes = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
+    _trades_sum = trades.resample(timeframe_freq, on='close_date'
                                   )[['profit_abs']].sum()
     df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
     # Set first value to 0
