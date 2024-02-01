@@ -34,7 +34,7 @@ def setup_logging(filename: str):
             logging.StreamHandler()
         ]
     )
-
+ 
 
 def parse_args():
     parser = argparse.ArgumentParser()
