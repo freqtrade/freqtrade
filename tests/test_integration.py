@@ -536,7 +536,7 @@ def test_dca_order_adjust_entry_replace_fails(
     # Create DCA order for 2nd trade (so we have 2 open orders on 2 trades)
     # this 2nd order won't fill.
 
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=20)
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(20, 'PeNF'))
 
     freqtrade.process()
 
@@ -627,12 +627,13 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert log_has_re(
         r"Remaining amount of \d\.\d+.* would be smaller than the minimum of 10.", caplog)
 
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-20)
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-20, 'PES'))
 
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
     assert trade.orders[-1].ft_order_side == 'sell'
+    assert trade.orders[-1].ft_order_tag == 'PES'
     assert pytest.approx(trade.stake_amount) == 40.198
     assert pytest.approx(trade.amount) == 20.099 * leverage
     assert trade.open_rate == 2.0

@@ -645,8 +645,7 @@ class FreqtradeBot(LoggingMixin):
         max_entry_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_entry_rate)
         stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
-        stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
-                                             default_retval=None, supress_error=True)(
+        stake_amount, order_tag = self.strategy._adjust_trade_position_internal(
             trade=trade,
             current_time=datetime.now(timezone.utc), current_rate=current_entry_rate,
             current_profit=current_entry_profit, min_stake=min_entry_stake,
@@ -665,7 +664,8 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     logger.debug("Max adjustment entries is set to unlimited.")
             self.execute_entry(trade.pair, stake_amount, price=current_entry_rate,
-                               trade=trade, is_short=trade.is_short, mode='pos_adjust')
+                               trade=trade, is_short=trade.is_short, mode='pos_adjust',
+                               enter_tag=order_tag)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -684,7 +684,7 @@ class FreqtradeBot(LoggingMixin):
                 return
 
             self.execute_trade_exit(trade, current_exit_rate, exit_check=ExitCheckTuple(
-                exit_type=ExitType.PARTIAL_EXIT), sub_trade_amt=amount)
+                exit_type=ExitType.PARTIAL_EXIT), sub_trade_amt=amount, exit_tag=order_tag)
 
     def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
         """
@@ -782,6 +782,7 @@ class FreqtradeBot(LoggingMixin):
             leverage=leverage
         )
         order_obj = Order.parse_from_ccxt_object(order, pair, side, amount, enter_limit_requested)
+        order_obj.ft_order_tag = enter_tag
         order_id = order['id']
         order_status = order.get('status')
         logger.info(f"Order {order_id} was created for {pair} and status is {order_status}.")
@@ -1753,6 +1754,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side, amount, limit)
+        order_obj.ft_order_tag = exit_reason
         trade.orders.append(order_obj)
 
         trade.exit_order_status = ''

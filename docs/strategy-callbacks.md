@@ -767,6 +767,7 @@ This callback is **not** called when there is an open order (either buy or sell)
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
+Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2nd element the tag (e.g. `return 250, 'increase_favorable_conditions'`).
 
 Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.
 
@@ -833,7 +834,8 @@ class DigDeeperStrategy(IStrategy):
                               min_stake: Optional[float], max_stake: float,
                               current_entry_rate: float, current_exit_rate: float,
                               current_entry_profit: float, current_exit_profit: float,
-                              **kwargs) -> Optional[float]:
+                              **kwargs
+                              ) -> Union[Optional[float], Tuple[Optional[float], Optional[str]]]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -859,11 +861,12 @@ class DigDeeperStrategy(IStrategy):
         :return float: Stake amount to adjust your trade,
                        Positive values to increase position, Negative values to decrease position.
                        Return None for no action.
+                       Optionally, return a tuple with a 2nd element with an order reason
         """
 
         if current_profit > 0.05 and trade.nr_of_successful_exits == 0:
             # Take half of the profit at +5%
-            return -(trade.stake_amount / 2)
+            return -(trade.stake_amount / 2), 'half_profit_5%'
 
         if current_profit > -0.05:
             return None
@@ -891,7 +894,7 @@ class DigDeeperStrategy(IStrategy):
             stake_amount = filled_entries[0].stake_amount
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
-            return stake_amount
+            return stake_amount, '1/3rd_increase'
         except Exception as exception:
             return None
 
