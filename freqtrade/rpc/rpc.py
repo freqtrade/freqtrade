@@ -25,13 +25,13 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.exchange.types import Tickers
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin
 from freqtrade.persistence import KeyStoreKeys, KeyValueStore, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize, dt_now, dt_ts_def, format_date, shorten_date
+from freqtrade.util import (decimals_per_coin, dt_humanize, dt_now, dt_ts_def, format_date,
+                            shorten_date)
 from freqtrade.wallets import PositionWallet, Wallet
 
 

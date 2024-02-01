@@ -89,6 +89,8 @@ class Order(ModelBase):
     funding_fee: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
 
     ft_fee_base: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
+    ft_order_tag: Mapped[Optional[str]] = mapped_column(String(CUSTOM_TAG_MAX_LENGTH),
+                                                        nullable=True)
 
     @property
     def order_date_utc(self) -> datetime:
@@ -105,6 +107,11 @@ class Order(ModelBase):
     @property
     def safe_amount(self) -> float:
         return self.amount or self.ft_amount
+
+    @property
+    def safe_placement_price(self) -> float:
+        """Price at which the order was placed"""
+        return self.price or self.stop_price or self.ft_price
 
     @property
     def safe_price(self) -> float:
@@ -146,7 +153,7 @@ class Order(ModelBase):
 
         return (f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "
                 f"side={self.side}, filled={self.safe_filled}, price={self.safe_price}, "
-                f"status={self.status}, date={self.order_date:{DATETIME_PRINT_FORMAT}})")
+                f"status={self.status}, date={self.order_date_utc:{DATETIME_PRINT_FORMAT}})")
 
     def update_from_ccxt_object(self, order):
         """
@@ -156,20 +163,20 @@ class Order(ModelBase):
         if self.order_id != str(order['id']):
             raise DependencyException("Order-id's don't match")
 
-        self.status = order.get('status', self.status)
-        self.symbol = order.get('symbol', self.symbol)
-        self.order_type = order.get('type', self.order_type)
-        self.side = order.get('side', self.side)
-        self.price = order.get('price', self.price)
-        self.amount = order.get('amount', self.amount)
-        self.filled = order.get('filled', self.filled)
-        self.average = order.get('average', self.average)
-        self.remaining = order.get('remaining', self.remaining)
-        self.cost = order.get('cost', self.cost)
-        self.stop_price = order.get('stopPrice', self.stop_price)
-
-        if 'timestamp' in order and order['timestamp'] is not None:
-            self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
+        self.status = safe_value_fallback(order, 'status', default_value=self.status)
+        self.symbol = safe_value_fallback(order, 'symbol', default_value=self.symbol)
+        self.order_type = safe_value_fallback(order, 'type', default_value=self.order_type)
+        self.side = safe_value_fallback(order, 'side', default_value=self.side)
+        self.price = safe_value_fallback(order, 'price', default_value=self.price)
+        self.amount = safe_value_fallback(order, 'amount', default_value=self.amount)
+        self.filled = safe_value_fallback(order, 'filled', default_value=self.filled)
+        self.average = safe_value_fallback(order, 'average', default_value=self.average)
+        self.remaining = safe_value_fallback(order, 'remaining', default_value=self.remaining)
+        self.cost = safe_value_fallback(order, 'cost', default_value=self.cost)
+        self.stop_price = safe_value_fallback(order, 'stopPrice', default_value=self.stop_price)
+        order_date = safe_value_fallback(order, 'timestamp')
+        if order_date:
+            self.order_date = datetime.fromtimestamp(order_date / 1000, tz=timezone.utc)
 
         self.ft_is_open = True
         if self.status in NON_OPEN_EXCHANGE_STATES:
@@ -207,6 +214,10 @@ class Order(ModelBase):
         return order
 
     def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
+        """
+        :param minified: If True, only return a subset of the data is returned.
+                         Only used for backtesting.
+        """
         resp = {
             'amount': self.safe_amount,
             'safe_price': self.safe_price,
@@ -214,6 +225,7 @@ class Order(ModelBase):
             'order_filled_timestamp': int(self.order_filled_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
             'ft_is_entry': self.ft_order_side == entry_side,
+            'ft_order_tag': self.ft_order_tag,
         }
         if not minified:
             resp.update({
@@ -542,7 +554,9 @@ class LocalTrade:
                 f"{self.trading_mode.value} trading requires param interest_rate on trades")
 
     def __repr__(self):
-        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
+        open_since = (
+            self.open_date_utc.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
+        )
 
         return (
             f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
@@ -551,6 +565,11 @@ class LocalTrade:
         )
 
     def to_json(self, minified: bool = False) -> Dict[str, Any]:
+        """
+        :param minified: If True, only return a subset of the data is returned.
+                         Only used for backtesting.
+        :return: Dictionary with trade data
+        """
         filled_or_open_orders = self.select_filled_or_open_orders()
         orders_json = [order.to_json(self.entry_side, minified) for order in filled_or_open_orders]
 
@@ -1393,6 +1412,7 @@ class LocalTrade:
                 ft_price=order["price"],
                 remaining=order["remaining"],
                 funding_fee=order.get("funding_fee", None),
+                ft_order_tag=order.get("ft_order_tag", None),
             )
             trade.orders.append(order_obj)
 
@@ -1603,7 +1623,7 @@ class Trade(ModelBase, LocalTrade):
         :return: unsorted query object
         """
         query = Trade.get_trades_query(trade_filter, include_orders)
-        # this sholud remain split. if use_db is False, session is not available and the above will
+        # this should remain split. if use_db is False, session is not available and the above will
         # raise an exception.
         return Trade.session.scalars(query)
 
@@ -1635,7 +1655,7 @@ class Trade(ModelBase, LocalTrade):
         Retrieves total realized profit
         """
         if Trade.use_db:
-            total_profit: float = Trade.session.execute(
+            total_profit = Trade.session.execute(
                 select(func.sum(Trade.close_profit_abs)).filter(Trade.is_open.is_(False))
             ).scalar_one()
         else:
@@ -1843,4 +1863,4 @@ class Trade(ModelBase, LocalTrade):
                 Order.order_filled_date >= start_date,
                 Order.status == 'closed'
             )).scalar_one()
-        return trading_volume
+        return trading_volume or 0.0

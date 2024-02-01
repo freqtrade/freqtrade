@@ -489,7 +489,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
             candle = dataframe.iloc[-1].squeeze()
-            sign = 1 if trade.is_short else -1
+            side = 1 if trade.is_short else -1
             return stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), 
                                           current_rate, is_short=trade.is_short,
                                           leverage=trade.leverage)
@@ -760,21 +760,31 @@ The `position_adjustment_enable` strategy property enables the usage of `adjust_
 For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
 `adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging) or to increase or decrease positions.
 
-`max_entry_position_adjustment` property is used to limit the number of additional entries per trade (on top of the first entry order) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment entries.
-
-The strategy is expected to return a stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional entry order should be made (position is increased -> buy order for long trades, sell order for short trades).
-If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
 Additional orders also result in additional fees and those orders don't count towards `max_open_trades`.
 
 This callback is **not** called when there is an open order (either buy or sell) waiting for execution.
 
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
-Additional entries are ignored once you have reached the maximum amount of extra entries that you have set on `max_entry_position_adjustment`, but the callback is called anyway looking for partial exits.
-
 Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
+Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2nd element the tag (e.g. `return 250, 'increase_favorable_conditions'`).
 
 Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.
+
+### Increase position
+
+The strategy is expected to return a positive **stake_amount** (in stake currency) between `min_stake` and `max_stake` if and when an additional entry order should be made (position is increased -> buy order for long trades, sell order for short trades).
+
+If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
+`max_entry_position_adjustment` property is used to limit the number of additional entries per trade (on top of the first entry order) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment entries.
+
+Additional entries are ignored once you have reached the maximum amount of extra entries that you have set on `max_entry_position_adjustment`, but the callback is called anyway looking for partial exits.
+
+### Decrease position
+
+The strategy is expected to return a negative stake_amount (in stake currency) for a partial exit.
+Returning the full owned stake at that point (based on the current price) (`-(trade.amount / trade.leverage) * current_exit_rate`) results in a full exit.  
+Returning a value more than the above (so remaining stake_amount would become negative) will result in the bot ignoring the signal.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
@@ -824,7 +834,8 @@ class DigDeeperStrategy(IStrategy):
                               min_stake: Optional[float], max_stake: float,
                               current_entry_rate: float, current_exit_rate: float,
                               current_entry_profit: float, current_exit_profit: float,
-                              **kwargs) -> Optional[float]:
+                              **kwargs
+                              ) -> Union[Optional[float], Tuple[Optional[float], Optional[str]]]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -850,11 +861,12 @@ class DigDeeperStrategy(IStrategy):
         :return float: Stake amount to adjust your trade,
                        Positive values to increase position, Negative values to decrease position.
                        Return None for no action.
+                       Optionally, return a tuple with a 2nd element with an order reason
         """
 
         if current_profit > 0.05 and trade.nr_of_successful_exits == 0:
             # Take half of the profit at +5%
-            return -(trade.stake_amount / 2)
+            return -(trade.stake_amount / 2), 'half_profit_5%'
 
         if current_profit > -0.05:
             return None
@@ -882,7 +894,7 @@ class DigDeeperStrategy(IStrategy):
             stake_amount = filled_entries[0].stake_amount
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
-            return stake_amount
+            return stake_amount, '1/3rd_increase'
         except Exception as exception:
             return None
 

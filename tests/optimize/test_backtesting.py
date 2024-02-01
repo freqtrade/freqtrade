@@ -734,7 +734,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
-         'enter_tag': [None, None],
+         'enter_tag': ['', ''],
          "leverage": [1.0, 1.0],
          "is_short": [False, False],
          'open_timestamp': [1517251200000, 1517283000000],
@@ -742,14 +742,18 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'orders': [
             [
                 {'amount': 0.00957442, 'safe_price': 0.104445, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.00957442, 'safe_price': 0.10496853383458644, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ], [
                 {'amount': 0.0097064, 'safe_price': 0.10302485, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.0097064, 'safe_price': 0.10354126528822055, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ]
          ]
          })
@@ -1132,6 +1136,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
 def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     default_conf['max_open_trades'] = 10
+    default_conf['runmode'] = 'backtest'
     mocker.patch(f'{EXMS}.get_fee', fee)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=100000)
@@ -1298,6 +1303,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f'{EXMS}.get_fee', fee)
     default_conf['max_open_trades'] = 10
+    default_conf['runmode'] = 'backtest'
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
@@ -1342,6 +1348,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         dataframe['exit_short'] = 0
         return dataframe
 
+    default_conf['runmode'] = 'backtest'
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f'{EXMS}.get_fee', fee)

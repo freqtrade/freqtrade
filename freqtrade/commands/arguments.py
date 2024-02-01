@@ -219,27 +219,35 @@ class Arguments:
                                                 )
 
         # Add trade subcommand
-        trade_cmd = subparsers.add_parser('trade', help='Trade module.',
-                                          parents=[_common_parser, _strategy_parser])
+        trade_cmd = subparsers.add_parser(
+            'trade',
+            help='Trade module.',
+            parents=[_common_parser, _strategy_parser]
+        )
         trade_cmd.set_defaults(func=start_trading)
         self._build_args(optionlist=ARGS_TRADE, parser=trade_cmd)
 
         # add create-userdir subcommand
-        create_userdir_cmd = subparsers.add_parser('create-userdir',
-                                                   help="Create user-data directory.",
-                                                   )
+        create_userdir_cmd = subparsers.add_parser(
+            'create-userdir',
+            help="Create user-data directory.",
+        )
         create_userdir_cmd.set_defaults(func=start_create_userdir)
         self._build_args(optionlist=ARGS_CREATE_USERDIR, parser=create_userdir_cmd)
 
         # add new-config subcommand
-        build_config_cmd = subparsers.add_parser('new-config',
-                                                 help="Create new config")
+        build_config_cmd = subparsers.add_parser(
+            'new-config',
+            help="Create new config",
+        )
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
 
         # add new-strategy subcommand
-        build_strategy_cmd = subparsers.add_parser('new-strategy',
-                                                   help="Create new strategy")
+        build_strategy_cmd = subparsers.add_parser(
+            'new-strategy',
+            help="Create new strategy",
+        )
         build_strategy_cmd.set_defaults(func=start_new_strategy)
         self._build_args(optionlist=ARGS_BUILD_STRATEGY, parser=build_strategy_cmd)
 
@@ -289,8 +297,11 @@ class Arguments:
         self._build_args(optionlist=ARGS_LIST_DATA, parser=list_data_cmd)
 
         # Add backtesting subcommand
-        backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
-                                                parents=[_common_parser, _strategy_parser])
+        backtesting_cmd = subparsers.add_parser(
+            'backtesting',
+            help='Backtesting module.',
+            parents=[_common_parser, _strategy_parser]
+        )
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
@@ -304,22 +315,29 @@ class Arguments:
         self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
 
         # Add backtesting analysis subcommand
-        analysis_cmd = subparsers.add_parser('backtesting-analysis',
-                                             help='Backtest Analysis module.',
-                                             parents=[_common_parser])
+        analysis_cmd = subparsers.add_parser(
+            'backtesting-analysis',
+            help='Backtest Analysis module.',
+            parents=[_common_parser]
+        )
         analysis_cmd.set_defaults(func=start_analysis_entries_exits)
         self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
 
         # Add edge subcommand
-        edge_cmd = subparsers.add_parser('edge', help='Edge module.',
-                                         parents=[_common_parser, _strategy_parser])
+        edge_cmd = subparsers.add_parser(
+            'edge',
+            help='Edge module.',
+            parents=[_common_parser, _strategy_parser]
+        )
         edge_cmd.set_defaults(func=start_edge)
         self._build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.',
-                                             parents=[_common_parser, _strategy_parser],
-                                             )
+        hyperopt_cmd = subparsers.add_parser(
+            'hyperopt',
+            help='Hyperopt module.',
+            parents=[_common_parser, _strategy_parser],
+        )
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self._build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
@@ -447,16 +465,20 @@ class Arguments:
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)
 
         # Add webserver subcommand
-        webserver_cmd = subparsers.add_parser('webserver', help='Webserver module.',
-                                              parents=[_common_parser])
+        webserver_cmd = subparsers.add_parser(
+            'webserver',
+            help='Webserver module.',
+            parents=[_common_parser]
+        )
         webserver_cmd.set_defaults(func=start_webserver)
         self._build_args(optionlist=ARGS_WEBSERVER, parser=webserver_cmd)
 
         # Add strategy_updater subcommand
-        strategy_updater_cmd = subparsers.add_parser('strategy-updater',
-                                                     help='updates outdated strategy'
-                                                          'files to the current version',
-                                                     parents=[_common_parser])
+        strategy_updater_cmd = subparsers.add_parser(
+            'strategy-updater',
+            help='updates outdated strategy files to the current version',
+            parents=[_common_parser]
+        )
         strategy_updater_cmd.set_defaults(func=start_strategy_update)
         self._build_args(optionlist=ARGS_STRATEGY_UPDATER, parser=strategy_updater_cmd)
 
@@ -464,8 +486,8 @@ class Arguments:
         lookahead_analayis_cmd = subparsers.add_parser(
             'lookahead-analysis',
             help="Check for potential look ahead bias.",
-            parents=[_common_parser, _strategy_parser])
-
+            parents=[_common_parser, _strategy_parser]
+        )
         lookahead_analayis_cmd.set_defaults(func=start_lookahead_analysis)
 
         self._build_args(optionlist=ARGS_LOOKAHEAD_ANALYSIS,
@@ -475,8 +497,8 @@ class Arguments:
         recursive_analayis_cmd = subparsers.add_parser(
             'recursive-analysis',
             help="Check for potential recursive formula issue.",
-            parents=[_common_parser, _strategy_parser])
-
+            parents=[_common_parser, _strategy_parser]
+        )
         recursive_analayis_cmd.set_defaults(func=start_recursive_analysis)
 
         self._build_args(optionlist=ARGS_RECURSIVE_ANALYSIS,

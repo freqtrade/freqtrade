@@ -5,6 +5,9 @@ from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums import RPCMessageType
 
 
+ProfitLossStr = Literal["profit", "loss"]
+
+
 class RPCSendMsgBase(TypedDict):
     pass
     # ty1pe: Literal[RPCMessageType]
@@ -41,13 +44,14 @@ class RPCWhitelistMsg(RPCSendMsgBase):
     data: List[str]
 
 
-class __RPCBuyMsgBase(RPCSendMsgBase):
+class __RPCEntryExitMsgBase(RPCSendMsgBase):
     trade_id: int
     buy_tag: Optional[str]
     enter_tag: Optional[str]
     exchange: str
     pair: str
     base_currency: str
+    quote_currency: str
     leverage: Optional[float]
     direction: str
     limit: float
@@ -62,36 +66,36 @@ class __RPCBuyMsgBase(RPCSendMsgBase):
     sub_trade: bool
 
 
-class RPCBuyMsg(__RPCBuyMsgBase):
+class RPCEntryMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]
 
 
-class RPCCancelMsg(__RPCBuyMsgBase):
+class RPCCancelMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.ENTRY_CANCEL]
     reason: str
 
 
-class RPCSellMsg(__RPCBuyMsgBase):
+class RPCExitMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]
     cumulative_profit: float
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     close_rate: float
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
     # current_rate: Optional[float]
     order_rate: Optional[float]
+    final_profit_ratio: Optional[float]
+    is_final_exit: bool
 
 
-class RPCSellCancelMsg(__RPCBuyMsgBase):
+class RPCExitCancelMsg(__RPCEntryExitMsgBase):
     type: Literal[RPCMessageType.EXIT_CANCEL]
     reason: str
-    gain: str  # Literal["profit", "loss"]
+    gain: ProfitLossStr
     profit_amount: float
     profit_ratio: float
-    sell_reason: Optional[str]
     exit_reason: Optional[str]
     close_date: datetime
 
@@ -114,15 +118,18 @@ class RPCNewCandleMsg(RPCSendMsgBase):
     data: PairWithTimeframe
 
 
+RPCOrderMsg = Union[RPCEntryMsg, RPCExitMsg, RPCExitCancelMsg, RPCCancelMsg]
+
+
 RPCSendMsg = Union[
     RPCStatusMsg,
     RPCStrategyMsg,
     RPCProtectionMsg,
     RPCWhitelistMsg,
-    RPCBuyMsg,
+    RPCEntryMsg,
     RPCCancelMsg,
-    RPCSellMsg,
-    RPCSellCancelMsg,
+    RPCExitMsg,
+    RPCExitCancelMsg,
     RPCAnalyzedDFMsg,
     RPCNewCandleMsg
     ]

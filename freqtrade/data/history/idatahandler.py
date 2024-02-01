@@ -94,21 +94,22 @@ class IDataHandler(ABC):
         """
 
     def ohlcv_data_min_max(self, pair: str, timeframe: str,
-                           candle_type: CandleType) -> Tuple[datetime, datetime]:
+                           candle_type: CandleType) -> Tuple[datetime, datetime, int]:
         """
         Returns the min and max timestamp for the given pair and timeframe.
         :param pair: Pair to get min/max for
         :param timeframe: Timeframe to get min/max for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :return: (min, max)
+        :return: (min, max, len)
         """
-        data = self._ohlcv_load(pair, timeframe, None, candle_type)
-        if data.empty:
+        df = self._ohlcv_load(pair, timeframe, None, candle_type)
+        if df.empty:
             return (
                 datetime.fromtimestamp(0, tz=timezone.utc),
-                datetime.fromtimestamp(0, tz=timezone.utc)
+                datetime.fromtimestamp(0, tz=timezone.utc),
+                0,
             )
-        return data.iloc[0]['date'].to_pydatetime(), data.iloc[-1]['date'].to_pydatetime()
+        return df.iloc[0]['date'].to_pydatetime(), df.iloc[-1]['date'].to_pydatetime(), len(df)
 
     @abstractmethod
     def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange],
@@ -402,6 +403,34 @@ class IDataHandler(ABC):
             logger.warning(f"{file_new} exists already, can't migrate {pair}.")
             return
         file_old.rename(file_new)
+
+    def fix_funding_fee_timeframe(self, ff_timeframe: str):
+        """
+        Temporary method to migrate data from old funding fee timeframe to the correct timeframe
+        Applies to bybit and okx, where funding-fee and mark candles have different timeframes.
+        """
+        paircombs = self.ohlcv_get_available_data(self._datadir, TradingMode.FUTURES)
+        funding_rate_combs = [
+            f for f in paircombs if f[2] == CandleType.FUNDING_RATE and f[1] != ff_timeframe
+        ]
+
+        if funding_rate_combs:
+            logger.warning(
+                f'Migrating {len(funding_rate_combs)} funding fees to correct timeframe.')
+
+        for pair, timeframe, candletype in funding_rate_combs:
+            old_name = self._pair_data_filename(self._datadir, pair, timeframe, candletype)
+            new_name = self._pair_data_filename(self._datadir, pair, ff_timeframe, candletype)
+
+            if not Path(old_name).exists():
+                logger.warning(f'{old_name} does not exist, skipping.')
+                continue
+
+            if Path(new_name).exists():
+                logger.warning(f'{new_name} already exists, Removing.')
+                Path(new_name).unlink()
+
+            Path(old_name).rename(new_name)
 
 
 def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:

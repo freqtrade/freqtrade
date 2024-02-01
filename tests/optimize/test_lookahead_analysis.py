@@ -143,8 +143,8 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis
-    table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
+    _table, _headers, data = (LookaheadAnalysisSubFunctions.
+                              text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
 
     # check row contents for a try that has too few signals
     assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
@@ -158,14 +158,14 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     analysis.false_exit_signals = 10
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis
-    table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
+    _table, _headers, data = (LookaheadAnalysisSubFunctions.
+                              text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
     assert data[0][2].__contains__("error")
 
     # edit it into not showing an error
     instance.failed_bias_check = False
-    table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
+    _table, _headers, data = (LookaheadAnalysisSubFunctions.
+                              text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
     assert data[0][0] == 'strategy_test_v3_with_lookahead_bias.py'
     assert data[0][1] == 'strategy_test_v3_with_lookahead_bias'
     assert data[0][2]  # True
@@ -176,8 +176,8 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     analysis.false_indicators.append('falseIndicator1')
     analysis.false_indicators.append('falseIndicator2')
-    table, headers, data = (LookaheadAnalysisSubFunctions.
-                            text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
+    _table, _headers, data = (LookaheadAnalysisSubFunctions.
+                              text_table_lookahead_analysis_instances(lookahead_conf, [instance]))
 
     assert data[0][6] == 'falseIndicator1, falseIndicator2'
 
@@ -185,7 +185,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert len(data) == 1
 
     # check amount of multiple rows
-    table, headers, data = (LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    _table, _headers, data = (LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance, instance, instance]))
     assert len(data) == 3
 

@@ -10,12 +10,12 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from functools import partial
+from functools import partial, wraps
 from html import escape
 from itertools import chain
 from math import isnan
 from threading import Thread
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
 
 from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
@@ -29,11 +29,11 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN, Config
 from freqtrade.enums import MarketDirection, RPCMessageType, SignalDirection, TradingMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import chunks, plural, round_coin_value
+from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
-from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import dt_humanize
+from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
+from freqtrade.util import dt_humanize, fmt_coin, round_value
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
@@ -42,6 +42,23 @@ MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
 logger = logging.getLogger(__name__)
 
 logger.debug('Included module rpc.telegram ...')
+
+
+def safe_async_db(func: Callable[..., Any]):
+    """
+    Decorator to safely handle sessions when switching async context
+    :param func: function to decorate
+    :return: decorated function
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """ Decorator logic """
+        try:
+            return func(*args, **kwargs)
+        finally:
+            Trade.session.remove()
+
+    return wrapper
 
 
 @dataclass
@@ -61,6 +78,7 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
     :return: decorated function
     """
 
+    @wraps(command_handler)
     async def wrapper(self, *args, **kwargs):
         """ Decorator logic """
         update = kwargs.get('update') or args[0]
@@ -286,7 +304,7 @@ class Telegram(RPCHandler):
         asyncio.run_coroutine_threadsafe(self._cleanup_telegram(), self._loop)
         self._thread.join()
 
-    def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
+    def _exchange_from_msg(self, msg: RPCOrderMsg) -> str:
         """
         Extracts the exchange name from the given message.
         :param msg: The message to extract the exchange name from.
@@ -310,164 +328,172 @@ class Telegram(RPCHandler):
 
         return ''
 
-    def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
-        if self._rpc._fiat_converter:
-            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-        else:
-            msg['stake_amount_fiat'] = 0
+    def _format_entry_msg(self, msg: RPCEntryMsg) -> str:
+
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        entry_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
-                      else {'enter': 'Short', 'entered': 'Shorted'})
+        terminology = {
+            '1_enter': 'New Trade',
+            '1_entered': 'New Trade filled',
+            'x_enter': 'Increasing position',
+            'x_entered': 'Position increase filled',
+        }
+
+        key = f"{'x' if msg['sub_trade'] else '1'}_{'entered' if is_fill else 'enter'}"
+        wording = terminology[key]
+
         message = (
             f"{emoji} *{self._exchange_from_msg(msg)}:*"
-            f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
-            f" (#{msg['trade_id']})\n"
+            f" {wording} (#{msg['trade_id']})\n"
+            f"*Pair:* `{msg['pair']}`\n"
         )
         message += self._add_analyzed_candle(msg['pair'])
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
-        message += f"*Amount:* `{msg['amount']:.8f}`\n"
+        message += f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
+        message += f"*Direction:* `{msg['direction']}"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
-            message += f"*Leverage:* `{msg['leverage']}`\n"
+            message += f" ({msg['leverage']:.1g}x)"
+        message += "`\n"
+        message += f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
+        if msg['type'] == RPCMessageType.ENTRY and msg['current_rate']:
+            message += f"*Current Rate:* `{fmt_coin(msg['current_rate'], msg['quote_currency'])}`\n"
 
-        if msg['type'] in [RPCMessageType.ENTRY_FILL]:
-            message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-        elif msg['type'] in [RPCMessageType.ENTRY]:
-            message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
-                       f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'stake_amount')  # type: ignore
+        total = fmt_coin(msg['stake_amount'], msg['quote_currency'])
 
-        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        message += f"*{'New ' if msg['sub_trade'] else ''}Total:* `{total}{profit_fiat_extra}`"
 
-        if msg.get('fiat_currency'):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-
-        message += ")`"
         return message
 
-    def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
-        msg['amount'] = round(msg['amount'], 8)
-        msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
-        msg['duration'] = msg['close_date'].replace(
+    def _format_exit_msg(self, msg: RPCExitMsg) -> str:
+        duration = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
-        msg['duration_min'] = msg['duration'].total_seconds() / 60
+        duration_min = duration.total_seconds() / 60
 
-        msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
-        msg['emoji'] = self._get_sell_emoji(msg)
-        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
-                                if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
-                                else "")
+        leverage_text = (f" ({msg['leverage']:.1g}x)"
+                         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
+                         else "")
 
-        # Check if all sell properties are available.
-        # This might not be the case if the message origin is triggered by /forceexit
-        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-                and self._rpc._fiat_converter):
-            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}"
-        else:
-            msg['profit_extra'] = ''
-        msg['profit_extra'] = (
-            f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-            f"{msg['profit_extra']})")
+        profit_fiat_extra = self.__format_profit_fiat(msg, 'profit_amount')
+
+        profit_extra = (
+            f" ({msg['gain']}: {fmt_coin(msg['profit_amount'], msg['quote_currency'])}"
+            f"{profit_fiat_extra})")
 
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
-        profit_prefix = ('Sub ' if is_sub_profit else 'Cumulative ') if is_sub_trade else ''
+        is_final_exit = msg.get('is_final_exit', False) and is_sub_profit
+        profit_prefix = 'Sub ' if is_sub_trade else ''
         cp_extra = ''
         exit_wording = 'Exited' if is_fill else 'Exiting'
-        if is_sub_profit and is_sub_trade:
-            if self._rpc._fiat_converter:
-                cp_fiat = self._rpc._fiat_converter.convert_amount(
-                    msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
-                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
-            exit_wording = f"Partially {exit_wording.lower()}"
-            cp_extra = (
-                f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} "
-                f"{msg['stake_currency']}{cp_extra}`)\n"
-            )
+        if is_sub_trade or is_final_exit:
+            cp_fiat = self.__format_profit_fiat(msg, 'cumulative_profit')
 
+            if is_final_exit:
+                profit_prefix = 'Sub '
+                cp_extra = (
+                    f"*Final Profit:* `{msg['final_profit_ratio']:.2%} "
+                    f"({msg['cumulative_profit']:.8f} {msg['quote_currency']}{cp_fiat})`\n"
+                )
+            else:
+                exit_wording = f"Partially {exit_wording.lower()}"
+                if msg['cumulative_profit']:
+                    cp_extra = (
+                        f"*Cumulative Profit:* `"
+                        f"{fmt_coin(msg['cumulative_profit'], msg['stake_currency'])}{cp_fiat}`\n"
+                    )
+        enter_tag = f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message = (
-            f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
+            f"{self._get_exit_emoji(msg)} *{self._exchange_from_msg(msg)}:* "
             f"{exit_wording} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
-            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"`{msg['profit_ratio']:.2%}{profit_extra}`\n"
             f"{cp_extra}"
-            f"*Enter Tag:* `{msg['enter_tag']}`\n"
+            f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
-            f"*Direction:* `{msg['direction']}`\n"
-            f"{msg['leverage_text']}"
-            f"*Amount:* `{msg['amount']:.8f}`\n"
-            f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+            f"*Direction:* `{msg['direction']}"
+            f"{leverage_text}`\n"
+            f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
+            f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         )
-        if msg['type'] == RPCMessageType.EXIT:
-            message += f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+        if msg['type'] == RPCMessageType.EXIT and msg['current_rate']:
+            message += f"*Current Rate:* `{fmt_coin(msg['current_rate'], msg['quote_currency'])}`\n"
             if msg['order_rate']:
-                message += f"*Exit Rate:* `{msg['order_rate']:.8f}`"
-
+                message += f"*Exit Rate:* `{fmt_coin(msg['order_rate'], msg['quote_currency'])}`"
         elif msg['type'] == RPCMessageType.EXIT_FILL:
-            message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
+            message += f"*Exit Rate:* `{fmt_coin(msg['close_rate'], msg['quote_currency'])}`"
+
         if is_sub_trade:
-            if self._rpc._fiat_converter:
-                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-            else:
-                msg['stake_amount_fiat'] = 0
-            rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Remaining:* `({rem}"
+            stake_amount_fiat = self.__format_profit_fiat(msg, 'stake_amount')
 
-            if msg.get('fiat_currency', None):
-                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-
-            message += ")`"
+            rem = fmt_coin(msg['stake_amount'], msg['quote_currency'])
+            message += f"\n*Remaining:* `{rem}{stake_amount_fiat}`"
         else:
-            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
+            message += f"\n*Duration:* `{duration} ({duration_min:.1f} min)`"
         return message
 
-    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
-        if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
+    def __format_profit_fiat(
+            self,
+            msg: RPCExitMsg,
+            key: Literal['stake_amount', 'profit_amount', 'cumulative_profit']
+    ) -> str:
+        """
+        Format Fiat currency to append to regular profit output
+        """
+        profit_fiat_extra = ''
+        if self._rpc._fiat_converter and (fiat_currency := msg.get('fiat_currency')):
+            profit_fiat = self._rpc._fiat_converter.convert_amount(
+                    msg[key], msg['stake_currency'], fiat_currency)
+            profit_fiat_extra = f" / {profit_fiat:.3f} {fiat_currency}"
+        return profit_fiat_extra
+
+    def compose_message(self, msg: RPCSendMsg) -> Optional[str]:
+        if msg['type'] == RPCMessageType.ENTRY or msg['type'] == RPCMessageType.ENTRY_FILL:
             message = self._format_entry_msg(msg)
 
-        elif msg_type in [RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]:
+        elif msg['type'] == RPCMessageType.EXIT or msg['type'] == RPCMessageType.EXIT_FILL:
             message = self._format_exit_msg(msg)
 
-        elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
-            msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
+        elif (
+            msg['type'] == RPCMessageType.ENTRY_CANCEL
+            or msg['type'] == RPCMessageType.EXIT_CANCEL
+        ):
+            message_side = 'enter' if msg['type'] == RPCMessageType.ENTRY_CANCEL else 'exit'
             message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
                        f"Cancelling {'partial ' if msg.get('sub_trade') else ''}"
-                       f"{msg['message_side']} Order for {msg['pair']} "
+                       f"{message_side} Order for {msg['pair']} "
                        f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
-        elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
+        elif msg['type'] == RPCMessageType.PROTECTION_TRIGGER:
             message = (
                 f"*Protection* triggered due to {msg['reason']}. "
                 f"`{msg['pair']}` will be locked until `{msg['lock_end_time']}`."
             )
 
-        elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
+        elif msg['type'] == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
             message = (
                 f"*Protection* triggered due to {msg['reason']}. "
                 f"*All pairs* will be locked until `{msg['lock_end_time']}`."
             )
 
-        elif msg_type == RPCMessageType.STATUS:
+        elif msg['type'] == RPCMessageType.STATUS:
             message = f"*Status:* `{msg['status']}`"
 
-        elif msg_type == RPCMessageType.WARNING:
+        elif msg['type'] == RPCMessageType.WARNING:
             message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
-        elif msg_type == RPCMessageType.EXCEPTION:
+        elif msg['type'] == RPCMessageType.EXCEPTION:
             # Errors will contain exceptions, which are wrapped in tripple ticks.
             message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
-        elif msg_type == RPCMessageType.STARTUP:
+        elif msg['type'] == RPCMessageType.STARTUP:
             message = f"{msg['status']}"
-        elif msg_type == RPCMessageType.STRATEGY_MSG:
+        elif msg['type'] == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
         else:
-            logger.debug("Unknown message type: %s", msg_type)
+            logger.debug("Unknown message type: %s", msg['type'])
             return None
         return message
 
@@ -495,20 +521,20 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(deepcopy(msg), msg_type)  # type: ignore
+        message = self.compose_message(deepcopy(msg))
         if message:
             asyncio.run_coroutine_threadsafe(
                 self._send_msg(message, disable_notification=(noti == 'silent')),
                 self._loop)
 
-    def _get_sell_emoji(self, msg):
+    def _get_exit_emoji(self, msg):
         """
-        Get emoji for sell-side
+        Get emoji for exit-messages
         """
 
-        if float(msg['profit_percent']) >= 5.0:
+        if float(msg['profit_ratio']) >= 0.05:
             return "\N{ROCKET}"
-        elif float(msg['profit_percent']) >= 0.0:
+        elif float(msg['profit_ratio']) >= 0.0:
             return "\N{EIGHT SPOKED ASTERISK}"
         elif msg['exit_reason'] == "stop_loss":
             return "\N{WARNING SIGN}"
@@ -537,7 +563,7 @@ class Telegram(RPCHandler):
             if order_nr == 1:
                 lines.append(
                     f"*Amount:* {cur_entry_amount:.8g} "
-                    f"({round_coin_value(order['cost'], quote_currency)})"
+                    f"({fmt_coin(order['cost'], quote_currency)})"
                 )
                 lines.append(f"*Average Price:* {cur_entry_average:.8g}")
             else:
@@ -547,7 +573,7 @@ class Telegram(RPCHandler):
                     lines.append("({})".format(dt_humanize(order["order_filled_date"],
                                                            granularity=["day", "hour", "minute"])))
                 lines.append(f"*Amount:* {cur_entry_amount:.8g} "
-                             f"({round_coin_value(order['cost'], quote_currency)})")
+                             f"({fmt_coin(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {cur_entry_average:.8g} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
                 lines.append(f"*Order Filled:* {order['order_filled_date']}")
@@ -633,12 +659,12 @@ class Telegram(RPCHandler):
             r['num_exits'] = len([o for o in r['orders'] if not o['ft_is_entry']
                                  and not o['ft_order_side'] == 'stoploss'])
             r['exit_reason'] = r.get('exit_reason', "")
-            r['stake_amount_r'] = round_coin_value(r['stake_amount'], r['quote_currency'])
-            r['max_stake_amount_r'] = round_coin_value(
+            r['stake_amount_r'] = fmt_coin(r['stake_amount'], r['quote_currency'])
+            r['max_stake_amount_r'] = fmt_coin(
                 r['max_stake_amount'] or r['stake_amount'], r['quote_currency'])
-            r['profit_abs_r'] = round_coin_value(r['profit_abs'], r['quote_currency'])
-            r['realized_profit_r'] = round_coin_value(r['realized_profit'], r['quote_currency'])
-            r['total_profit_abs_r'] = round_coin_value(
+            r['profit_abs_r'] = fmt_coin(r['profit_abs'], r['quote_currency'])
+            r['realized_profit_r'] = fmt_coin(r['realized_profit'], r['quote_currency'])
+            r['total_profit_abs_r'] = fmt_coin(
                 r['total_profit_abs'], r['quote_currency'])
             lines = [
                 "*Trade ID:* `{trade_id}`" +
@@ -781,7 +807,7 @@ class Telegram(RPCHandler):
         )
         stats_tab = tabulate(
             [[f"{period['date']:{val.dateformat}} ({period['trade_count']})",
-              f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
+              f"{fmt_coin(period['abs_profit'], stats['stake_currency'])}",
               f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
               f"{period['rel_profit']:.2%}",
               ] for period in stats['data']],
@@ -883,19 +909,19 @@ class Telegram(RPCHandler):
             # Message to display
             if stats['closed_trade_count'] > 0:
                 markdown_msg = ("*ROI:* Closed trades\n"
-                                f"∙ `{round_coin_value(profit_closed_coin, stake_cur)} "
+                                f"∙ `{fmt_coin(profit_closed_coin, stake_cur)} "
                                 f"({profit_closed_ratio_mean:.2%}) "
                                 f"({profit_closed_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                                f"∙ `{round_coin_value(profit_closed_fiat, fiat_disp_cur)}`\n")
+                                f"∙ `{fmt_coin(profit_closed_fiat, fiat_disp_cur)}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
 
             markdown_msg += (
                 f"*ROI:* All trades\n"
-                f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
+                f"∙ `{fmt_coin(profit_all_coin, stake_cur)} "
                 f"({profit_all_ratio_mean:.2%}) "
                 f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"∙ `{fmt_coin(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*Bot started:* `{stats['bot_start_date']}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
@@ -909,14 +935,14 @@ class Telegram(RPCHandler):
                 markdown_msg += (
                     f"\n*Avg. Duration:* `{avg_duration}`\n"
                     f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`\n"
-                    f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
+                    f"*Trading volume:* `{fmt_coin(stats['trading_volume'], stake_cur)}`\n"
                     f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
                     f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
-                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['max_drawdown_abs'], stake_cur)})`\n"
                     f"    from `{stats['max_drawdown_start']} "
-                    f"({round_coin_value(stats['drawdown_high'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['drawdown_high'], stake_cur)})`\n"
                     f"    to `{stats['max_drawdown_end']} "
-                    f"({round_coin_value(stats['drawdown_low'], stake_cur)})`\n"
+                    f"({fmt_coin(stats['drawdown_low'], stake_cur)})`\n"
                 )
         await self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                              query=update.callback_query)
@@ -984,9 +1010,9 @@ class Telegram(RPCHandler):
         output = ''
         if self._config['dry_run']:
             output += "*Warning:* Simulated balances in Dry Mode.\n"
-        starting_cap = round_coin_value(result['starting_capital'], self._config['stake_currency'])
+        starting_cap = fmt_coin(result['starting_capital'], self._config['stake_currency'])
         output += f"Starting capital: `{starting_cap}`"
-        starting_cap_fiat = round_coin_value(
+        starting_cap_fiat = fmt_coin(
             result['starting_capital_fiat'], self._config['fiat_display_currency']
         ) if result['starting_capital_fiat'] > 0 else ''
         output += (f" `, {starting_cap_fiat}`.\n"
@@ -1006,9 +1032,9 @@ class Telegram(RPCHandler):
                         f"\t`{curr['side']}: {curr['position']:.8f}`\n"
                         f"\t`Leverage: {curr['leverage']:.1f}`\n"
                         f"\t`Est. {curr['stake']}: "
-                        f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                        f"{fmt_coin(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
-                    est_stake = round_coin_value(
+                    est_stake = fmt_coin(
                         curr['est_stake' if full_result else 'est_stake_bot'], curr['stake'], False)
 
                     curr_output = (
@@ -1036,13 +1062,13 @@ class Telegram(RPCHandler):
                 f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
                 f"(< {balance_dust_level} {result['stake']}):*\n"
                 f"\t`Est. {result['stake']}: "
-                f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+                f"{fmt_coin(total_dust_balance, result['stake'], False)}`\n")
         tc = result['trade_count'] > 0
         stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
         fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
-        value = round_coin_value(
+        value = fmt_coin(
             result['value' if full_result else 'value_bot'], result['symbol'], False)
-        total_stake = round_coin_value(
+        total_stake = fmt_coin(
             result['total' if full_result else 'total_bot'], result['stake'], False)
         output += (
             f"\n*Estimated Value{' (Bot managed assets only)' if not full_result else ''}*:\n"
@@ -1150,7 +1176,7 @@ class Telegram(RPCHandler):
             try:
                 loop = asyncio.get_running_loop()
                 # Workaround to avoid nested loops
-                await loop.run_in_executor(None, self._rpc._rpc_force_exit, trade_id)
+                await loop.run_in_executor(None, safe_async_db(self._rpc._rpc_force_exit), trade_id)
             except RPCException as e:
                 await self._send_msg(str(e))
 
@@ -1176,6 +1202,7 @@ class Telegram(RPCHandler):
     async def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
             try:
+                @safe_async_db
                 def _force_enter():
                     self._rpc._rpc_force_entry(pair, price, order_side=order_side)
                 loop = asyncio.get_running_loop()
@@ -1319,8 +1346,8 @@ class Telegram(RPCHandler):
         output = "<b>Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['pair']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{i + 1}.\t <code>{trade['pair']}\t"
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1351,8 +1378,8 @@ class Telegram(RPCHandler):
         output = "<b>Entry Tag Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['enter_tag']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{i + 1}.\t <code>{trade['enter_tag']}\t"
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1383,8 +1410,8 @@ class Telegram(RPCHandler):
         output = "<b>Exit Reason Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['exit_reason']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{i + 1}.\t <code>{trade['exit_reason']}\t"
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 
@@ -1415,8 +1442,8 @@ class Telegram(RPCHandler):
         output = "<b>Mix Tag Performance:</b>\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i+1}.\t <code>{trade['mix_tag']}\t"
-                f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                f"{i + 1}.\t <code>{trade['mix_tag']}\t"
+                f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})</code>\n")
 

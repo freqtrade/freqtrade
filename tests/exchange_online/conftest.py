@@ -247,7 +247,7 @@ EXCHANGES = {
         'timeframe': '1h',
         'orderbook_max_entries': 50,
     },
-    'huobi': {
+    'htx': {
         'pair': 'ETH/BTC',
         'stake_currency': 'BTC',
         'hasQuoteVolume': True,

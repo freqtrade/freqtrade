@@ -70,7 +70,7 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=4.0.0',
+        'ccxt>=4.2.15',
         'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=20.1',
         'arrow>=1.0.0',

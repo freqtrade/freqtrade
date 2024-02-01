@@ -261,6 +261,7 @@ class OrderSchema(BaseModel):
     order_timestamp: Optional[int] = None
     order_filled_timestamp: Optional[int] = None
     ft_fee_base: Optional[float] = None
+    ft_order_tag: Optional[str] = None
 
 
 class TradeSchema(BaseModel):
@@ -538,6 +539,10 @@ class BacktestHistoryEntry(BaseModel):
     run_id: str
     backtest_start_time: int
     notes: Optional[str] = ''
+    backtest_start_ts: Optional[int] = None
+    backtest_end_ts: Optional[int] = None
+    timeframe: Optional[str] = None
+    timeframe_detail: Optional[str] = None
 
 
 class BacktestMetadataUpdate(BaseModel):

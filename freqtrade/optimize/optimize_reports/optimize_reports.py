@@ -10,8 +10,8 @@ from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntO
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
-from freqtrade.misc import decimals_per_coin, round_coin_value
 from freqtrade.types import BacktestResultType
+from freqtrade.util import decimals_per_coin, fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
         # Update "key" to strategy (results_per_pair has it as "Total").
         tabular_data[-1]['key'] = strategy
         tabular_data[-1]['max_drawdown_account'] = result['max_drawdown_account']
-        tabular_data[-1]['max_drawdown_abs'] = round_coin_value(
+        tabular_data[-1]['max_drawdown_abs'] = fmt_coin(
             result['max_drawdown_abs'], result['stake_currency'], False)
     return tabular_data
 
@@ -561,6 +561,10 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         metadata[strategy] = {
             'run_id': content['run_id'],
             'backtest_start_time': content['backtest_start_time'],
+            'timeframe': content['config']['timeframe'],
+            'timeframe_detail': content['config'].get('timeframe_detail', None),
+            'backtest_start_ts': int(min_date.timestamp()),
+            'backtest_end_ts': int(max_date.timestamp()),
         }
         result['strategy'][strategy] = strat_stats
 

@@ -17,7 +17,8 @@ from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler
 from freqtrade.enums import CandleType
-from tests.conftest import generate_test_data, log_has, log_has_re
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
 
@@ -51,6 +52,49 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
     assert 'close' in df.columns
     assert df.iloc[0, :]['high'] == 0.019627
     assert df.iloc[0, :]['low'] == 0.019626
+    assert df.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:00+0000')
+
+    df_1h = trades_to_ohlcv(trades_history_df, '1h')
+    assert len(df_1h) == 1
+    assert df_1h.iloc[0, :]['high'] == 0.019627
+    assert df_1h.iloc[0, :]['low'] == 0.019626
+    assert df_1h.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:00:00+0000')
+
+    df_1s = trades_to_ohlcv(trades_history_df, '1s')
+    assert len(df_1s) == 2
+    assert df_1s.iloc[0, :]['high'] == 0.019627
+    assert df_1s.iloc[0, :]['low'] == 0.019627
+    assert df_1s.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:49+0000')
+    assert df_1s.iloc[-1, :]['date'] == pd.Timestamp('2019-08-14 15:59:59+0000')
+
+
+@pytest.mark.parametrize('timeframe,rows,days,candles,start,end,weekday', [
+    ('1s', 20_000, 5, 19522, '2020-01-01 00:00:05', '2020-01-05 23:59:27', None),
+    ('1m', 20_000, 5, 6745, '2020-01-01 00:00:00', '2020-01-05 23:59:00', None),
+    ('5m', 20_000, 5, 1440, '2020-01-01 00:00:00', '2020-01-05 23:55:00', None),
+    ('15m', 20_000, 5, 480, '2020-01-01 00:00:00', '2020-01-05 23:45:00', None),
+    ('1h', 20_000, 5, 120, '2020-01-01 00:00:00', '2020-01-05 23:00:00', None),
+    ('2h', 20_000, 5, 60, '2020-01-01 00:00:00', '2020-01-05 22:00:00', None),
+    ('4h', 20_000, 5, 30, '2020-01-01 00:00:00', '2020-01-05 20:00:00', None),
+    ('8h', 20_000, 5, 15, '2020-01-01 00:00:00', '2020-01-05 16:00:00', None),
+    ('12h', 20_000, 5, 10, '2020-01-01 00:00:00', '2020-01-05 12:00:00', None),
+    ('1d', 20_000, 5, 5, '2020-01-01 00:00:00', '2020-01-05 00:00:00', 'Sunday'),
+    ('7d', 20_000, 37, 6, '2020-01-06 00:00:00', '2020-02-10 00:00:00', 'Monday'),
+    ('1w', 20_000, 37, 6, '2020-01-06 00:00:00', '2020-02-10 00:00:00', 'Monday'),
+    ('1M', 20_000, 74, 3, '2020-01-01 00:00:00', '2020-03-01 00:00:00', None),
+    ('3M', 20_000, 100, 2, '2020-01-01 00:00:00', '2020-04-01 00:00:00', None),
+    ('1y', 20_000, 1000, 3, '2020-01-01 00:00:00', '2022-01-01 00:00:00', None),
+])
+def test_trades_to_ohlcv_multi(timeframe, rows, days, candles, start, end, weekday):
+    trades_history = generate_trades_history(n_rows=rows, days=days)
+    df = trades_to_ohlcv(trades_history, timeframe)
+    assert not df.empty
+    assert len(df) == candles
+    assert df.iloc[0, :]['date'] == pd.Timestamp(f'{start}+0000')
+    assert df.iloc[-1, :]['date'] == pd.Timestamp(f'{end}+0000')
+    if weekday:
+        # Weekday is only relevant for daily and weekly candles.
+        assert df.iloc[-1, :]['date'].day_name() == weekday
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
@@ -130,6 +174,45 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
     assert log_has_re(f"Missing data fillup for UNITTEST/BTC, {timeframe}: before: "
                       f"{len(data)} - after: {len(data2)}.*", caplog)
+
+
+@pytest.mark.parametrize('timeframe', [
+    '1s', '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '3M', '1y'
+])
+def test_ohlcv_to_dataframe_multi(timeframe):
+    data = generate_test_data(timeframe, 180)
+    assert len(data) == 180
+    df = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT')
+    assert len(df) == len(data) - 1
+    df1 = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT', drop_incomplete=False)
+    assert len(df1) == len(data)
+    assert data.equals(df1)
+
+    data1 = data.copy()
+    if timeframe in ('1M', '3M', '1y'):
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('1w')
+    else:
+        # Shift by half a timeframe
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + (pd.to_timedelta(timeframe) / 2)
+    df2 = ohlcv_to_dataframe(data1, timeframe, 'UNITTEST/USDT')
+
+    assert len(df2) == len(data) - 1
+    tfs = timeframe_to_seconds(timeframe)
+    tfm = timeframe_to_minutes(timeframe)
+    if 1 <= tfm < 10000:
+        # minute based resampling does not work on timeframes >= 1 week
+        ohlcv_dict = {
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum'
+        }
+        dfs = data1.resample(f"{tfs}s", on='date').agg(ohlcv_dict).reset_index(drop=False)
+        dfm = data1.resample(f"{tfm}min", on='date').agg(ohlcv_dict).reset_index(drop=False)
+
+        assert dfs.equals(dfm)
+        assert dfs.equals(df1)
 
 
 def test_ohlcv_to_dataframe_1M():

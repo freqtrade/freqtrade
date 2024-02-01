@@ -52,6 +52,7 @@ class RemotePairList(IPairList):
         self._read_timeout = self._pairlistconfig.get('read_timeout', 60)
         self._bearer_token = self._pairlistconfig.get('bearer_token', '')
         self._init_done = False
+        self._save_to_file = self._pairlistconfig.get('save_to_file', None)
         self._last_pairlist: List[Any] = list()
 
         if self._mode not in ['whitelist', 'blacklist']:
@@ -136,6 +137,12 @@ class RemotePairList(IPairList):
                 "description": "Bearer token",
                 "help": "Bearer token - used for auth against the upstream service.",
             },
+            "save_to_file": {
+                "type": "string",
+                "default": "",
+                "description": "Filename to save processed pairlist to.",
+                "help": "Specify a filename to save the processed pairlist in JSON format.",
+            },
         }
 
     def process_json(self, jsonparse) -> List[str]:
@@ -184,30 +191,25 @@ class RemotePairList(IPairList):
                 try:
                     pairlist = self.process_json(jsonparse)
                 except Exception as e:
-
-                    if self._init_done:
-                        pairlist = self.return_last_pairlist()
-                        logger.warning(f'Error while processing JSON data: {type(e)}')
-                    else:
-                        raise OperationalException(f'Error while processing JSON data: {type(e)}')
-
+                    pairlist = self._handle_error(f'Failed processing JSON data: {type(e)}')
             else:
-                if self._init_done:
-                    self.log_once(f'Error: RemotePairList is not of type JSON: '
-                                  f' {self._pairlist_url}', logger.info)
-                    pairlist = self.return_last_pairlist()
-                else:
-                    raise OperationalException('RemotePairList is not of type JSON, abort.')
+                pairlist = self._handle_error(f'RemotePairList is not of type JSON.'
+                                              f' {self._pairlist_url}')
 
         except requests.exceptions.RequestException:
-            self.log_once(f'Was not able to fetch pairlist from:'
-                          f' {self._pairlist_url}', logger.info)
-
-            pairlist = self.return_last_pairlist()
+            pairlist = self._handle_error(f'Was not able to fetch pairlist from:'
+                                          f' {self._pairlist_url}')
 
             time_elapsed = 0
 
         return pairlist, time_elapsed
+
+    def _handle_error(self, error: str) -> List[str]:
+        if self._init_done:
+            self.log_once("Error: " + error, logger.info)
+            return self.return_last_pairlist()
+        else:
+            raise OperationalException(error)
 
     def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
@@ -236,20 +238,15 @@ class RemotePairList(IPairList):
 
                 if file_path.exists():
                     with file_path.open() as json_file:
-                        # Load the JSON data into a dictionary
-                        jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
-
                         try:
+                            # Load the JSON data into a dictionary
+                            jsonparse = rapidjson.load(json_file, parse_mode=CONFIG_PARSE_MODE)
                             pairlist = self.process_json(jsonparse)
                         except Exception as e:
-                            if self._init_done:
-                                pairlist = self.return_last_pairlist()
-                                logger.warning(f'Error while processing JSON data: {type(e)}')
-                            else:
-                                raise OperationalException('Error while processing'
-                                                           f'JSON data: {type(e)}')
+                            pairlist = self._handle_error(f'processing JSON data: {type(e)}')
                 else:
-                    raise ValueError(f"{self._pairlist_url} does not exist.")
+                    pairlist = self._handle_error(f"{self._pairlist_url} does not exist.")
+
             else:
                 # Fetch Pairlist from Remote URL
                 pairlist, time_elapsed = self.fetch_pairlist()
@@ -273,7 +270,22 @@ class RemotePairList(IPairList):
 
         self._last_pairlist = list(pairlist)
 
+        if self._save_to_file:
+            self.save_pairlist(pairlist, self._save_to_file)
+
         return pairlist
+
+    def save_pairlist(self, pairlist: List[str], filename: str) -> None:
+        pairlist_data = {
+            "pairs": pairlist
+        }
+        try:
+            file_path = Path(filename)
+            with file_path.open('w') as json_file:
+                rapidjson.dump(pairlist_data, json_file)
+                logger.info(f"Processed pairlist saved to {filename}")
+        except Exception as e:
+            logger.error(f"Error saving processed pairlist to {filename}: {e}")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
