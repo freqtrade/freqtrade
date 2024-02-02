@@ -298,28 +298,3 @@ def test_public_trades_testdata_sanity(candles, public_trades_list, public_trade
     assert populate_dataframe_with_trades_trades.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price',
         'amount', 'cost', 'date']
-
-
-class ReporterPlugin:
-    def pytest_sessionfinish(self):
-        print("*** test run reporting finishing")
-
-
-# # invoke self to be able to debug
-if __name__ == "__main__":
-    import os
-    import sys
-
-    # print cwd
-    print("cwd: ", os.getcwd())
-    try:
-        import pytest
-        retval = pytest.main(
-            ["--stepwise", "-k", "test_public_trades", "-vvv"], plugins=[ReporterPlugin()])
-        sys.exit(retval)
-    except ImportError:
-        print("Please install pytest to run tests")
-        sys.exit(1)
-    except Exception as e:
-        print(e)
-        sys.exit(1)
