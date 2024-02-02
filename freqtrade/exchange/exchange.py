@@ -447,8 +447,7 @@ class Exchange:
     def trades(self, pair_interval: PairWithTimeframe, copy: bool = True) -> DataFrame:
         if pair_interval in self._trades:
             if copy:
-                import copy
-                return copy.deepcopy(self._trades[pair_interval]) 
+                return self._trades[pair_interval].copy() 
             else:
                 return self._trades[pair_interval]
         else:
