@@ -23,7 +23,7 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHAN
                                  BuySell, Config, EntryExit, ExchangeConfig,
                                  ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, TradingMode
+from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -595,7 +595,11 @@ class Exchange:
             raise OperationalException(
                 f"Invalid timeframe '{timeframe}'. This exchange supports: {self.timeframes}")
 
-        if timeframe and timeframe_to_minutes(timeframe) < 1:
+        if (
+            timeframe
+            and self._config['runmode'] != RunMode.UTIL_EXCHANGE
+            and timeframe_to_minutes(timeframe) < 1
+        ):
             raise OperationalException("Timeframes < 1m are currently not supported by Freqtrade.")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
