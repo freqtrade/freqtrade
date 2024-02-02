@@ -4209,7 +4209,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     assert not trade.has_open_orders
 
     # Assuming stoploss on exchange is hit
-    # trade should be sold at the price of stoploss, with exit_reaeon STOPLOSS_ON_EXCHANGE
+    # trade should be sold at the price of stoploss, with exit_reason STOPLOSS_ON_EXCHANGE
     stoploss_executed = MagicMock(return_value={
         "id": "123",
         "timestamp": 1542707426845,
