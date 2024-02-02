@@ -49,7 +49,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
     stoploss_order_closed['filled'] = stoploss_order_closed['amount']
 
     # Sell first trade based on stoploss, keep 2nd and 3rd trade open
-    stop_orders = [stoploss_order_closed, stoploss_order_open, stoploss_order_open]
+    stop_orders = [stoploss_order_closed, stoploss_order_open.copy(), stoploss_order_open.copy()]
     stoploss_order_mock = MagicMock(
         side_effect=stop_orders)
     # Sell 3rd trade (not called for the first trade)
@@ -100,9 +100,10 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
         stop_order = stop_orders[idx]
         stop_order['id'] = f"stop{idx}"
         oobj = Order.parse_from_ccxt_object(stop_order, trade.pair, 'stoploss')
+        oobj.ft_is_open = True
 
         trade.orders.append(oobj)
-        trade.stoploss_order_id = f"stop{idx}"
+        assert len(trade.open_sl_orders) == 1
 
     n = freqtrade.exit_positions(trades)
     assert n == 2
@@ -113,6 +114,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
 
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1
+    assert stoploss_order_mock.call_count == 3
     # Wallets must be updated between stoploss cancellation and selling, and will be updated again
     # during update_trade_state
     assert wallets_mock.call_count == 4

@@ -185,13 +185,14 @@ class Backtesting:
         # Load detail timeframe if specified
         self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
         if self.timeframe_detail:
-            self.timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
-            if self.timeframe_min <= self.timeframe_detail_min:
+            timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
+            self.timeframe_detail_td = timedelta(minutes=timeframe_detail_min)
+            if self.timeframe_min <= timeframe_detail_min:
                 raise OperationalException(
                     "Detail timeframe must be smaller than strategy timeframe.")
 
         else:
-            self.timeframe_detail_min = 0
+            self.timeframe_detail_td = timedelta(seconds=0)
         self.detail_data: Dict[str, DataFrame] = {}
         self.futures_data: Dict[str, DataFrame] = {}
 
@@ -1268,7 +1269,7 @@ class Backtesting:
                         open_trade_count_start = self.backtest_loop(
                             det_row, pair, current_time_det, end_date,
                             open_trade_count_start, trade_dir, is_first)
-                        current_time_det += timedelta(minutes=self.timeframe_detail_min)
+                        current_time_det += self.timeframe_detail_td
                         is_first = False
                 else:
                     self.dataprovider._set_dataframe_max_date(current_time)

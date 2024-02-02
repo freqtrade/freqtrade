@@ -9,7 +9,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.enums import CandleType, MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
                                   InsufficientFundsError, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
@@ -796,7 +796,9 @@ def test_validate_timeframes_failed(default_conf, mocker):
 
     mocker.patch(f'{EXMS}._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch(f'{EXMS}._load_markets', MagicMock(return_value={}))
-    mocker.patch(f'{EXMS}.validate_pairs', MagicMock())
+    mocker.patch(f'{EXMS}.validate_pairs')
+    mocker.patch(f'{EXMS}.validate_stakecurrency')
+    mocker.patch(f'{EXMS}.validate_pricing')
     with pytest.raises(OperationalException,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
@@ -805,6 +807,10 @@ def test_validate_timeframes_failed(default_conf, mocker):
     with pytest.raises(OperationalException,
                        match=r"Timeframes < 1m are currently not supported by Freqtrade."):
         Exchange(default_conf)
+
+    # Will not raise an exception in util mode.
+    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
+    Exchange(default_conf)
 
 
 def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):

@@ -315,7 +315,6 @@ class TradeSchema(BaseModel):
     stop_loss_abs: Optional[float] = None
     stop_loss_ratio: Optional[float] = None
     stop_loss_pct: Optional[float] = None
-    stoploss_order_id: Optional[str] = None
     stoploss_last_update: Optional[str] = None
     stoploss_last_update_timestamp: Optional[int] = None
     initial_stop_loss_abs: Optional[float] = None

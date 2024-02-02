@@ -266,7 +266,6 @@ def mock_trade_5(fee, is_short: bool):
         exchange='binance',
         strategy='SampleStrategy',
         enter_tag='TEST1',
-        stoploss_order_id=f'prod_stoploss_{direc(is_short)}_3455',
         timeframe=5,
         is_short=is_short,
         stop_loss_pct=0.10,
