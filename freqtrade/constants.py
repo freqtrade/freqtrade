@@ -591,7 +591,7 @@ CONF_SCHEMA = {
                                        "properties": {
                                            "shuffle": {"type": "boolean", "default": False},
                                            "nu": {"type": "number", "default": 0.1}
-                                       },
+                                           },
                                        },
                         "shuffle_after_split": {"type": "boolean", "default": False},
                         "buffer_train_data_candles": {"type": "integer", "default": 0}
