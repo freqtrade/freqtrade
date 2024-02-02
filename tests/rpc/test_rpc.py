@@ -63,7 +63,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stop_loss_abs': 9.89e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
-        'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
         'initial_stop_loss_abs': 9.89e-06,
@@ -355,7 +354,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
         rpc._rpc_delete('200')
 
     trades = Trade.session.scalars(select(Trade)).all()
-    trades[2].stoploss_order_id = '102'
     trades[2].orders.append(
         Order(
             ft_order_side='stoploss',
