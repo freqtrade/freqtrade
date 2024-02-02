@@ -448,7 +448,7 @@ class DataProvider:
         # refresh latest ohlcv data
         self._exchange.refresh_latest_ohlcv(final_pairs)
         # refresh latest trades data
-        self.refresh_latest_trades(final_pairs)
+        self.refresh_latest_trades(pairlist)
 
     def refresh_latest_trades(self,
                               pairlist: ListPairsWithTimeframes) -> None:
