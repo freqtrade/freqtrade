@@ -2310,7 +2310,7 @@ class Exchange:
 
     def refresh_latest_trades(self, 
                               pair_list: ListPairsWithTimeframes ,
-                              data_handler: Callable,# IDataHandler, 
+                              data_handler: Callable,# using IDataHandler ends with circular import, 
                               *, 
                               cache: bool = True, 
                               ) -> Dict[PairWithTimeframe, DataFrame]:
