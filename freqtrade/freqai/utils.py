@@ -123,7 +123,7 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         elif "xgb" in str(mdl.__class__):
             feature_importance = mdl.feature_importances_
         else:
-            logger.info('Model type does not support for generating feature importances.')
+            logger.info('Model type does not support generating feature importances.')
             return
 
         # Data preparation
