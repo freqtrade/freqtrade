@@ -23,7 +23,7 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, price_to_precision,
-                                timeframe_to_minutes, timeframe_to_seconds)
+                                timeframe_to_seconds)
 from freqtrade.exchange.exchange import Exchange
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
@@ -117,8 +117,9 @@ class Backtesting:
             raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
-        self.timeframe_min = timeframe_to_minutes(self.timeframe)
-        self.timeframe_td = timedelta(minutes=self.timeframe_min)
+        self.timeframe_secs = timeframe_to_seconds(self.timeframe)
+        self.timeframe_min = self.timeframe_secs // 60
+        self.timeframe_td = timedelta(seconds=self.timeframe_secs)
         self.disable_database_use()
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
@@ -185,9 +186,9 @@ class Backtesting:
         # Load detail timeframe if specified
         self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
         if self.timeframe_detail:
-            timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
-            self.timeframe_detail_td = timedelta(minutes=timeframe_detail_min)
-            if self.timeframe_min <= timeframe_detail_min:
+            timeframe_detail_secs = timeframe_to_seconds(self.timeframe_detail)
+            self.timeframe_detail_td = timedelta(seconds=timeframe_detail_secs)
+            if self.timeframe_secs <= timeframe_detail_secs:
                 raise OperationalException(
                     "Detail timeframe must be smaller than strategy timeframe.")
 
