@@ -3342,7 +3342,7 @@ def leverage_tiers():
                 'maintAmt': 386950.0
             },
         ],
-        "ADA/BUSD:BUSD": [
+        "ADA/USDT:USDT": [
             {
                 "minNotional": 0,
                 "maxNotional": 100000,
@@ -3386,7 +3386,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             },
         ],
-        'BNB/BUSD:BUSD': [
+        'XRP/USDT:USDT': [
             {
                 "minNotional": 0,       # stake(before leverage) = 0
                 "maxNotional": 100000,  # max stake(before leverage) = 5000

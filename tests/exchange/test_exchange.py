@@ -4969,8 +4969,8 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
 
 
 @pytest.mark.parametrize('pair,value,mmr,maintAmt', [
-    ('ADA/BUSD:BUSD', 500, 0.025, 0.0),
-    ('ADA/BUSD:BUSD', 20000000, 0.5, 1527500.0),
+    ('ADA/USDT:USDT', 500, 0.025, 0.0),
+    ('ADA/USDT:USDT', 20000000, 0.5, 1527500.0),
     ('ZEC/USDT:USDT', 500, 0.01, 0.0),
     ('ZEC/USDT:USDT', 20000000, 0.5, 654500.0),
 ])
@@ -5005,10 +5005,10 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
 
     exchange._leverage_tiers = leverage_tiers
 
-    assert exchange.get_max_leverage("BNB/BUSD:BUSD", 1.0) == 20.0
+    assert exchange.get_max_leverage("XRP/USDT:USDT", 1.0) == 20.0
     assert exchange.get_max_leverage("BNB/USDT:USDT", 100.0) == 75.0
     assert exchange.get_max_leverage("BTC/USDT:USDT", 170.30) == 125.0
-    assert pytest.approx(exchange.get_max_leverage("BNB/BUSD:BUSD", 99999.9)) == 5.000005
+    assert pytest.approx(exchange.get_max_leverage("XRP/USDT:USDT", 99999.9)) == 5.000005
     assert pytest.approx(exchange.get_max_leverage("BNB/USDT:USDT", 1500)) == 33.333333333333333
     assert exchange.get_max_leverage("BTC/USDT:USDT", 300000000) == 2.0
     assert exchange.get_max_leverage("BTC/USDT:USDT", 600000000) == 1.0  # Last tier
