@@ -30,7 +30,7 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.REPO_SCOPED_TOKEN }}
           add-paths: .pre-commit-config.yaml
