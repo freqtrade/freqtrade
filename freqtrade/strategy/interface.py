@@ -15,8 +15,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
-from freqtrade.exchange import (timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
-                                timeframe_to_seconds)
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
