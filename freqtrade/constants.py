@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import Any, Dict, List, Literal, Tuple, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 

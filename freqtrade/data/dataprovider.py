@@ -12,10 +12,11 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.history.idatahandler import get_datahandler
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
-                                 PairWithTimeframe, ListTicksWithTimeframes)
+                                 ListTicksWithTimeframes, PairWithTimeframe)
+from freqtrade.data.converter import public_trades_to_dataframe
 from freqtrade.data.history import load_pair_history
+from freqtrade.data.history.idatahandler import get_datahandler
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
@@ -25,7 +26,6 @@ from freqtrade.rpc import RPCManager
 from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg
 from freqtrade.util import PeriodicCache
 
-from freqtrade.data.converter import public_trades_to_dataframe
 
 logger = logging.getLogger(__name__)
 

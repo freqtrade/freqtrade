@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor
 from threading import Lock
-from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union, Callable
+from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
 import ccxt.async_support as ccxt_async
@@ -19,14 +19,15 @@ from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, concat
 
-from freqtrade.constants import (DEFAULT_TRADES_COLUMNS, DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
-                                 BuySell, Config, EntryExit, ExchangeConfig,
-                                 ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
-
-from freqtrade.data.converter import clean_duplicate_trades, clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list, public_trades_to_dataframe
+from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_COLUMNS,
+                                 NON_OPEN_EXCHANGE_STATES, BidAsk, BuySell, Config, EntryExit,
+                                 ExchangeConfig, ListPairsWithTimeframes, MakerTaker, OBLiteral,
+                                 PairWithTimeframe)
+from freqtrade.data.converter import (clean_duplicate_trades, clean_ohlcv_dataframe,
+                                      ohlcv_to_dataframe, public_trades_to_dataframe,
+                                      trades_dict_to_list)
 from freqtrade.data.converter.converter import _calculate_ohlcv_candle_start_and_end
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
-
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)

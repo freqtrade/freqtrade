@@ -9,10 +9,8 @@ from pandas import DataFrame
 
 from freqtrade.configuration import Configuration
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS
-from freqtrade.data.converter import (
-    populate_dataframe_with_trades, public_trades_to_dataframe)
-from freqtrade.data.converter.converter import (
-    trades_to_volumeprofile_with_total_delta_bid_ask)
+from freqtrade.data.converter import populate_dataframe_with_trades, public_trades_to_dataframe
+from freqtrade.data.converter.converter import trades_to_volumeprofile_with_total_delta_bid_ask
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exchange.exchange import timeframe_to_minutes
 
