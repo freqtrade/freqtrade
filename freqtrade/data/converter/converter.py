@@ -83,7 +83,11 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
         df.drop(columns=['datetime'], inplace=True)
 
 
-def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades: DataFrame, *, pair: str) -> DataFrame:
+def populate_dataframe_with_trades(config: Config,
+                                   dataframe: DataFrame,
+                                   trades: DataFrame,
+                                   *,
+                                   pair: str) -> DataFrame:
     """
     Populates a dataframe with trades
     :param dataframe: Dataframe to populate
@@ -122,26 +126,34 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
                     timeframe)
                 candle_next = candle_start + \
                     pd.Timedelta(minutes=timeframe_minutes)
-                # skip if there are no trades at next candle because that this candle isn't finished yet
-                # if not np.any((candle_next == df.candle_start)):
+                # skip if there are no trades at next candle
+                # because that this candle isn't finished yet
                 if candle_next not in trades_grouped_by_candle_start.groups:
                     logger.warning(
-                        f"candle at {candle_start} with {len(trades_grouped_df)} trades might be unfinished, because no finished trades at {candle_next}")
+                        f"candle at {candle_start} with {len(trades_grouped_df)} trades might be unfinished, because no finished trades at {candle_next}") # noqa
 
                 # add trades to each candle
                 df.loc[is_between, 'trades'] = df.loc[is_between,
                                                       'trades'].apply(lambda _: trades_grouped_df)
                 # calculate orderflow for each candle
                 df.loc[is_between, 'orderflow'] = df.loc[is_between, 'orderflow'].apply(
-                    lambda _: trades_to_volumeprofile_with_total_delta_bid_ask(pd.DataFrame(trades_grouped_df), scale=config_orderflow['scale']))
+                    lambda _: trades_to_volumeprofile_with_total_delta_bid_ask(
+                        pd.DataFrame(trades_grouped_df),
+                        scale=config_orderflow['scale']))
                 # calculate imbalances for each candle's orderflow
                 df.loc[is_between, 'imbalances'] = df.loc[is_between, 'orderflow'].apply(
-                    lambda x: trades_orderflow_to_imbalances(x, imbalance_ratio=config_orderflow['imbalance_ratio'], imbalance_volume=config_orderflow['imbalance_volume']))
+                    lambda x: trades_orderflow_to_imbalances(x,
+                                                             imbalance_ratio=config_orderflow['imbalance_ratio'],
+                                                             imbalance_volume=config_orderflow['imbalance_volume']))
 
                 df.loc[is_between, 'stacked_imbalances_bid'] = df.loc[is_between,
-                                                                      'imbalances'].apply(lambda x: stacked_imbalance_bid(x, stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
+                                                                      'imbalances'].apply(
+                                                                          lambda x: stacked_imbalance_bid(x,  # noqa: E501
+                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
                 df.loc[is_between, 'stacked_imbalances_ask'] = df.loc[is_between,
-                                                                      'imbalances'].apply(lambda x: stacked_imbalance_ask(x, stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
+                                                                      'imbalances'].apply(
+                                                                          lambda x: stacked_imbalance_ask(x,  # noqa: E501
+                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
 
                 buy = df.loc[is_between, 'bid'].apply(lambda _: np.where(
                     trades_grouped_df['side'].str.contains('buy'), 0, trades_grouped_df['amount']))
@@ -188,9 +200,11 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
     return dataframe
 
 
-# TODO: remove timeframe and pair
-def public_trades_to_dataframe(trades: list, timeframe: str, pair: str, *,
-                               fill_missing: bool = True, drop_incomplete: bool = True) -> DataFrame:
+def public_trades_to_dataframe(trades: list,
+                               timeframe: str,
+                               pair: str, *,
+                               fill_missing: bool = True,
+                               drop_incomplete: bool = True) -> DataFrame:
     """
     Converts a list with candle (TRADES) data (in format returned by ccxt.fetch_trades)
     to a Dataframe
@@ -278,12 +292,17 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     ask_imbalance_filtered = np.where(
         df.total_volume < imbalance_volume, False, ask_imbalance)
     dataframe = DataFrame(
-        {'bid_imbalance': bid_imbalance_filtered, 'ask_imbalance': ask_imbalance_filtered}, index=df.index)
+        {'bid_imbalance': bid_imbalance_filtered,
+         'ask_imbalance': ask_imbalance_filtered},
+         index=df.index)
 
     return dataframe
 
 
-def stacked_imbalance(df: DataFrame, label: str = "bid", stacked_imbalance_range: int = 3, should_reverse: bool = False):
+def stacked_imbalance(df: DataFrame,
+                      label: str = "bid",
+                      stacked_imbalance_range: int = 3,
+                      should_reverse: bool = False):
     """
     y * (y.groupby((y != y.shift()).cumsum()).cumcount() + 1)
     https://stackoverflow.com/questions/27626542/counting-consecutive-positive-values-in-python-pandas-array
@@ -297,7 +316,6 @@ def stacked_imbalance(df: DataFrame, label: str = "bid", stacked_imbalance_range
                                               stacked_imbalance_range]
     stacked_imbalance_price = np.nan
     if not max_stacked_imbalance_idx.empty:
-        # TODO: do better than just take first
         idx = max_stacked_imbalance_idx[0] if not should_reverse else np.flipud(
             max_stacked_imbalance_idx)[0]
         stacked_imbalance_price = imbalance.index[idx]
@@ -393,16 +411,6 @@ def clean_duplicate_trades(trades: DataFrame, timeframe: str, pair: str, *,
     df = pd.DataFrame(trades_df_remove_duplicates(
         trades), columns=trades.columns)
 
-    #
-    # from freqtrade.exchange import timeframe_to_minutes
-    # timeframe_minutes = timeframe_to_minutes(timeframe)
-    # sum_dict = {}
-    # for col in ['amount']:  # TODO: remove side,etc
-    #     sum_dict[col] = 'sum'
-    # group by index and aggregate results to eliminate duplicate ticks
-    # df = data.groupby(
-    #     by='date', as_index=False, sort=True).agg(sum_dict)  # NOTE: sum doesn't make much sense for eliminating duplicates?
-
     return df
 
 
@@ -417,10 +425,7 @@ def drop_incomplete_and_fill_missing_trades(data: DataFrame, timeframe: str, pai
         data.drop(data.tail(1).index, inplace=True)
         logger.debug('Dropping last trade')
 
-    if fill_missing:
-        return trades_fill_up_missing_data(data, timeframe, pair)
-    else:
-        return data
+    return data
 
 
 def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) -> DataFrame:
