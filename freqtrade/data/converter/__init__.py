@@ -13,6 +13,7 @@ from freqtrade.data.converter.trade_converter import (convert_trades_format,
 
 
 __all__ = [
+    'clean_duplicate_trades',
     'clean_ohlcv_dataframe',
     'convert_ohlcv_format',
     'ohlcv_fill_up_missing_data',
@@ -23,6 +24,8 @@ __all__ = [
     'trim_dataframes',
     'convert_trades_format',
     'convert_trades_to_ohlcv',
+    'populate_dataframe_with_trades',
+    'public_trades_to_dataframe',
     'trades_convert_types',
     'trades_df_remove_duplicates',
     'trades_dict_to_list',
