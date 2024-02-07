@@ -40,7 +40,7 @@ from freqtrade.exchange.exchange_utils import (ROUND, ROUND_DOWN, ROUND_UP, Ccxt
                                                timeframe_to_minutes, timeframe_to_msecs,
                                                timeframe_to_next_date, timeframe_to_prev_date,
                                                timeframe_to_seconds)
-from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
+from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers, TRADESResponse
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -170,7 +170,7 @@ class Exchange:
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
-        self._max_trades_candle_limit = self._config.get('exchange', {}).get('trades_candle_limit', 1000)
+        self._max_trades_candle_limit = self._config.get('exchange', {}).get('trades_candle_limit', 1000)  # noqa: E501
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
@@ -2064,8 +2064,8 @@ class Exchange:
         return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
     def _build_coroutine_get_ohlcv(
-        self, pair: str, timeframe: str, candle_type: CandleType,
-        since_ms: Optional[int], cache: bool) -> Coroutine[Any, Any, OHLCVResponse]:
+            self, pair: str, timeframe: str, candle_type: CandleType,
+            since_ms: Optional[int], cache: bool) -> Coroutine[Any, Any, OHLCVResponse]:
         not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
@@ -2176,7 +2176,8 @@ class Exchange:
                         timeframe, candle_type, since_ms)
                     target_candle = one_call * self.required_candle_call_count
                     now = timeframe_to_next_date(timeframe)
-                    since_ms = int((now - timedelta(seconds=target_candle // 1000)).timestamp() * 1000)
+                    since_ms = int((now - timedelta(seconds=target_candle // 1000)).timestamp()
+                                   * 1000)
 
                 else: since_ms = plr
 
@@ -2380,11 +2381,17 @@ class Exchange:
                 if new_ticks:
                     drop_incomplete = False # TODO: remove, no incomplete trades
                     # drop 'date' column from stored ticks
-                    all_stored_ticks_list = all_stored_ticks_df[DEFAULT_TRADES_COLUMNS].values.tolist()
+                    all_stored_ticks_list = all_stored_ticks_df[DEFAULT_TRADES_COLUMNS].values.tolist()  # noqa: E501
                     all_stored_ticks_list.extend(new_ticks)
                     # NOTE: only process new trades
                     # self._trades = until_first_candle(stored_trades) + fetch_trades
-                    trades_df = self._process_trades_df(pair, timeframe, candle_type, all_stored_ticks_list, cache, drop_incomplete, first_candle_ms)
+                    trades_df = self._process_trades_df(pair,
+                                                        timeframe,
+                                                        candle_type,
+                                                        all_stored_ticks_list,
+                                                        cache,
+                                                        drop_incomplete,
+                                                        first_candle_ms)
                     results_df[(pair, timeframe, candle_type)] = trades_df
                     data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
 
