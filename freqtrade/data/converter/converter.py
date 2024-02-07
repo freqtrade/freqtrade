@@ -292,9 +292,9 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     ask_imbalance_filtered = np.where(
         df.total_volume < imbalance_volume, False, ask_imbalance)
     dataframe = DataFrame(
-        {'bid_imbalance': bid_imbalance_filtered,
-         'ask_imbalance': ask_imbalance_filtered},
-         index=df.index)
+        {"bid_imbalance": bid_imbalance_filtered, "ask_imbalance": ask_imbalance_filtered},
+        index=df.index,
+    )
 
     return dataframe
 
