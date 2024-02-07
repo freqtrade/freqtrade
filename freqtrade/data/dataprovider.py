@@ -13,7 +13,7 @@ from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
-                                 ListTicksWithTimeframes, PairWithTimeframe)
+                                 PairWithTimeframe)
 from freqtrade.data.converter import public_trades_to_dataframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.data.history.idatahandler import get_datahandler

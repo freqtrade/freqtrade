@@ -447,7 +447,7 @@ class Exchange:
     def trades(self, pair_interval: PairWithTimeframe, copy: bool = True) -> DataFrame:
         if pair_interval in self._trades:
             if copy:
-                return self._trades[pair_interval].copy() 
+                return self._trades[pair_interval].copy()
             else:
                 return self._trades[pair_interval]
         else:
@@ -2310,7 +2310,7 @@ class Exchange:
 
     def refresh_latest_trades(self,
                               pair_list: ListPairsWithTimeframes,
-                              data_handler: Callable, # using IDataHandler ends with circular import, 
+                              data_handler: Callable, # using IDataHandler ends with circular import,
                               *,
                               cache: bool = True,
                               ) -> Dict[PairWithTimeframe, DataFrame]:
@@ -2342,13 +2342,13 @@ class Exchange:
                 # fetch trades since latest _trades and
                 # store together with existing trades
                 try:
-                    until = None 
+                    until = None
                     from_id = None
                     if is_in_cache:
                         from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
                         until = dt_ts() # now
 
-                    else: 
+                    else:
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
                         all_stored_ticks_df = data_handler.trades_load(f"{pair}-cached")
 
@@ -2358,7 +2358,7 @@ class Exchange:
                                 # only use cached if it's closer than first_candle_ms
                                 since_ms = last_cached_ms if last_cached_ms > first_candle_ms else first_candle_ms
                             # doesn't go far enough
-                            else: 
+                            else:
                                 all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
 
                     # from_id overrules with exchange set to id paginate
@@ -2406,7 +2406,7 @@ class Exchange:
         # Timeframe in seconds
         df = self.klines((pair, timeframe, candle_type), True)
         _calculate_ohlcv_candle_start_and_end(df, timeframe)
-        interval_in_sec = timeframe_to_seconds(timeframe)
+        timeframe_to_seconds(timeframe)
         # plr = self._trades_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
         plr = round(df.iloc[-1]["candle_end"].timestamp())
         now = int(timeframe_to_prev_date(timeframe).timestamp())
@@ -2498,7 +2498,7 @@ class Exchange:
                 pair, candle_type, timeframe, since_ms
             )
             params = deepcopy(self._ft_has.get('trades_params', {}))
-            candle_limit = self.trades_candle_limit( 
+            candle_limit = self.trades_candle_limit(
                 timeframe, candle_type=candle_type, since_ms=since_ms)
 
             if candle_type and candle_type != CandleType.SPOT:
@@ -2777,7 +2777,7 @@ class Exchange:
                     pass
             return self.loop.run_until_complete(task)
 
-    def _download_trades_history(self, 
+    def _download_trades_history(self,
                                  pair: str,
                                  *,
                                  new_pairs_days: int = 30,
