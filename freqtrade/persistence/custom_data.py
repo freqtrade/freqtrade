@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Self, Sequence
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, select
-from sqlalchemy.orm import Mapped, Query, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.persistence.base import ModelBase, SessionType
@@ -45,16 +45,18 @@ class CustomData(ModelBase):
                 f'value={self.cd_value}, trade_id={self.ft_trade_id}, created={create_time}, ' +
                 f'updated={update_time})')
 
-    @staticmethod
-    def query_cd(key: Optional[str] = None, trade_id: Optional[int] = None) -> Query:
+    @classmethod
+    def query_cd(cls, key: Optional[str] = None,
+                 trade_id: Optional[int] = None) -> Sequence['CustomData']:
         """
         Get all CustomData, if trade_id is not specified
         return will be for generic values not tied to a trade
         :param trade_id: id of the Trade
         """
         filters = []
-        filters.append(CustomData.ft_trade_id == trade_id if trade_id is not None else 0)
+        if trade_id is not None:
+            filters.append(CustomData.ft_trade_id == trade_id)
         if key is not None:
             filters.append(CustomData.cd_key.ilike(key))
 
-        return CustomData.session.scalars(select(CustomData))
+        return CustomData.session.scalars(select(CustomData)).all()

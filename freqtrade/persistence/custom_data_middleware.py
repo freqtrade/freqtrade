@@ -37,11 +37,11 @@ class CustomDataWrapper:
             trade_id = 0
 
         if CustomDataWrapper.use_db:
-            filtered_custom_data = CustomData.query_cd(trade_id=trade_id, key=key).all()
-            for index, data_entry in enumerate(filtered_custom_data):
+            filtered_custom_data = []
+            for data_entry in CustomData.query_cd(trade_id=trade_id, key=key):
                 if data_entry.cd_type not in CustomDataWrapper.unserialized_types:
                     data_entry.cd_value = json.loads(data_entry.cd_value)
-                filtered_custom_data[index] = data_entry
+                filtered_custom_data.append(data_entry)
             return filtered_custom_data
         else:
             filtered_custom_data = [
@@ -110,6 +110,6 @@ class CustomDataWrapper:
     def get_all_custom_data() -> List[CustomData]:
 
         if CustomDataWrapper.use_db:
-            return CustomData.session.scalars(select(CustomData)).all()
+            return list(CustomData.query_cd())
         else:
             return CustomDataWrapper.custom_data
