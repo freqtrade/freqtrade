@@ -23,10 +23,9 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_
                                  NON_OPEN_EXCHANGE_STATES, BidAsk, BuySell, Config, EntryExit,
                                  ExchangeConfig, ListPairsWithTimeframes, MakerTaker, OBLiteral,
                                  PairWithTimeframe)
-from freqtrade.data.converter import (clean_duplicate_trades, clean_ohlcv_dataframe,
-                                      ohlcv_to_dataframe, public_trades_to_dataframe,
-                                      trades_dict_to_list)
-from freqtrade.data.converter.converter import _calculate_ohlcv_candle_start_and_end
+from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
+from freqtrade.data.converter.converter import (_calculate_ohlcv_candle_start_and_end,
+                                                clean_duplicate_trades, public_trades_to_dataframe)
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
@@ -175,8 +174,6 @@ class Exchange:
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
-
-        self._trades_bin_size_scale = self._config.get('exchange', {}).get('bin_size_scale', 0.5)
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -698,16 +695,16 @@ class Exchange:
             if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
-        # Allow max calls to the exchange per pair
+        # Allow 5 calls to the exchange per pair
         required_candle_call_count = int(
             (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
         if self._ft_has['ohlcv_has_history']:
 
             if required_candle_call_count > 5:
-                # Only allow max calls per pair to somewhat limit the impact
+                # Only allow 5 calls per pair to somewhat limit the impact
                 raise OperationalException(
                     f"This strategy requires {startup_candles} candles to start, "
-                    f"which is more than 5x"
+                    "which is more than 5x "
                     f"the amount of candles {self.name} provides for {timeframe}.")
         elif required_candle_call_count > 1:
             raise OperationalException(
@@ -1997,8 +1994,7 @@ class Exchange:
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
-            dt_humanize(dt_now() - timedelta(milliseconds=one_call),
-                        only_distance=True)
+            dt_humanize(dt_now() - timedelta(milliseconds=one_call), only_distance=True)
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, candle_type, since) for since in
@@ -2073,11 +2069,10 @@ class Exchange:
         not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
-            min_date = date_minus_candles(
-                timeframe, candle_limit - 5).timestamp()
+            min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
-                   # Cache can be used - do one-off call.
+                # Cache can be used - do one-off call.
                 not_all_data = False
             else:
                 # Time jump detected, evict cache
@@ -2089,7 +2084,6 @@ class Exchange:
             # Multiple calls for one pair - to get more history
             since_ms = self.needed_candle_ms(timeframe, candle_type)
 
-        # TODO: fetch_trades and return as results
         if since_ms:
             return self._async_get_historic_ohlcv(
                 pair, timeframe, since_ms=since_ms, raise_=True, candle_type=candle_type)
@@ -2132,12 +2126,12 @@ class Exchange:
                 pair, timeframe, since_ms=since_ms, candle_type=candle_type)
 
     def _build_ohlcv_dl_jobs(
-        self, pair_list: ListPairsWithTimeframes, since_ms: Optional[int],
-        cache: bool) -> Tuple[List[Coroutine], List[Tuple[str, str, CandleType]]]:
+            self, pair_list: ListPairsWithTimeframes, since_ms: Optional[int],
+            cache: bool) -> Tuple[List[Coroutine], List[Tuple[str, str, CandleType]]]:
         """
         Build Coroutines to execute as part of refresh_latest_ohlcv
         """
-        input_coroutines: List[Coroutine[Any, Any, Ticker]] = []
+        input_coroutines: List[Coroutine[Any, Any, OHLCVResponse]] = []
         cached_pairs = []
         for pair, timeframe, candle_type in set(pair_list):
             if (timeframe not in self.timeframes
@@ -2210,7 +2204,7 @@ class Exchange:
 
     def _process_ohlcv_df(self, pair: str, timeframe: str, c_type: CandleType, ticks: List[List],
                           cache: bool, drop_incomplete: bool) -> DataFrame:
-           # keeping last candle time as last refreshed time of the pair
+        # keeping last candle time as last refreshed time of the pair
         if ticks and cache:
             idx = -2 if drop_incomplete and len(ticks) > 1 else -1
             self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[idx][0] // 1000
@@ -2223,11 +2217,9 @@ class Exchange:
                 # Reassign so we return the updated, combined df
                 ohlcv_df = clean_ohlcv_dataframe(concat([old, ohlcv_df], axis=0), timeframe, pair,
                                                  fill_missing=True, drop_incomplete=False)
-                candle_limit = self.ohlcv_candle_limit(
-                    timeframe, self._config['candle_type_def'])
+                candle_limit = self.ohlcv_candle_limit(timeframe, self._config['candle_type_def'])
                 # Age out old candles
-                ohlcv_df = ohlcv_df.tail(
-                    candle_limit + self._startup_candle_count)
+                ohlcv_df = ohlcv_df.tail(candle_limit + self._startup_candle_count)
                 ohlcv_df = ohlcv_df.reset_index(drop=True)
                 self._klines[(pair, timeframe, c_type)] = ohlcv_df
             else:
@@ -2237,7 +2229,6 @@ class Exchange:
     def _process_trades_df(self, pair: str, timeframe: str, c_type: CandleType, ticks: List[List],
                            cache: bool, drop_incomplete: bool, first_required_candle_date: Optional[int]) -> DataFrame:
         # keeping parsed dataframe in cache
-        # TODO: pass last_full_candle_date to drop as incomplete
         trades_df = public_trades_to_dataframe(ticks, timeframe, pair=pair, fill_missing=False,
                                                drop_incomplete=drop_incomplete)
         # keeping last candle time as last refreshed time of the pair
@@ -2270,22 +2261,19 @@ class Exchange:
         Only used in the dataprovider.refresh() method.
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
-        :param cache: Assign result to _trades. Usefull for one-off downloads like for pairlists
+        :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
         :param drop_incomplete: Control candle dropping.
             Specifying None defaults to _ohlcv_partial_candle
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
-        logger.debug(
-            "Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
+        logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
 
         # Gather coroutines to run
-        input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(
-            pair_list, since_ms, cache)
+        input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
 
         results_df = {}
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
-
             async def gather_stuff():
                 return await asyncio.gather(*input_coro, return_exceptions=True)
 
@@ -2294,19 +2282,17 @@ class Exchange:
 
             for res in results:
                 if isinstance(res, Exception):
-                    logger.warning(
-                        f"Async code raised an exception: {repr(res)}")
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     continue
                 # Deconstruct tuple (has 5 elements)
                 pair, timeframe, c_type, ticks, drop_hint = res
-                drop_incomplete = drop_hint if drop_incomplete is None else drop_incomplete
-                # TODO: here ohlcv candles get saved into self._trades
+                drop_incomplete_ = drop_hint if drop_incomplete is None else drop_incomplete
                 ohlcv_df = self._process_ohlcv_df(
-                    pair, timeframe, c_type, ticks, cache, drop_incomplete)
+                    pair, timeframe, c_type, ticks, cache, drop_incomplete_)
 
                 results_df[(pair, timeframe, c_type)] = ohlcv_df
 
-        # Return cached trades
+        # Return cached klines
         for pair, timeframe, c_type in cached_pairs:
             results_df[(pair, timeframe, c_type)] = self.klines(
                 (pair, timeframe, c_type),
@@ -2412,6 +2398,7 @@ class Exchange:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
         plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        # current,active candle open date
         now = int(timeframe_to_prev_date(timeframe).timestamp())
         return plr < now
 
@@ -2522,7 +2509,6 @@ class Exchange:
                     pair, since=since_ms,
                     limit=candle_limit, params=params)
             else:
-                # TODO: debug?
                 # Funding rate
                 data = await self._fetch_funding_rate_history(
                     pair=pair,

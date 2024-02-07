@@ -32,8 +32,7 @@ def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
     :return: DataFrame
     """
-    logger.debug(
-        f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
+    logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
     cols = DEFAULT_DATAFRAME_COLUMNS
     df = DataFrame(ohlcv, columns=cols)
 
@@ -455,8 +454,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     df.reset_index(inplace=True)
     len_before = len(dataframe)
     len_after = len(df)
-    pct_missing = (len_after - len_before) / \
-        len_before if len_before > 0 else 0
+    pct_missing = (len_after - len_before) / len_before if len_before > 0 else 0
     if len_before != len_after:
         message = (f"Missing data fillup for {pair}, {timeframe}: "
                    f"before: {len_before} - after: {len_after} - {pct_missing:.2%}")
@@ -501,8 +499,7 @@ def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange,
     processed: Dict[str, DataFrame] = {}
 
     for pair, df in preprocessed.items():
-        trimed_df = trim_dataframe(
-            df, timerange, startup_candles=startup_candles)
+        trimed_df = trim_dataframe(df, timerange, startup_candles=startup_candles)
         if not trimed_df.empty:
             processed[pair] = trimed_df
         else:
@@ -558,18 +555,15 @@ def convert_ohlcv_format(
     candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', [
         c.value for c in CandleType])]
     logger.info(candle_types)
-    paircombs = src.ohlcv_get_available_data(
-        config['datadir'], TradingMode.SPOT)
-    paircombs.extend(src.ohlcv_get_available_data(
-        config['datadir'], TradingMode.FUTURES))
+    paircombs = src.ohlcv_get_available_data(config['datadir'], TradingMode.SPOT)
+    paircombs.extend(src.ohlcv_get_available_data(config['datadir'], TradingMode.FUTURES))
 
     if 'pairs' in config:
         # Filter pairs
         paircombs = [comb for comb in paircombs if comb[0] in config['pairs']]
 
     if 'timeframes' in config:
-        paircombs = [comb for comb in paircombs if comb[1]
-                     in config['timeframes']]
+        paircombs = [comb for comb in paircombs if comb[1] in config['timeframes']]
     paircombs = [comb for comb in paircombs if comb[2] in candle_types]
 
     paircombs = sorted(paircombs, key=lambda x: (x[0], x[1], x[2].value))
@@ -586,8 +580,7 @@ def convert_ohlcv_format(
                               drop_incomplete=False,
                               startup_candles=0,
                               candle_type=candle_type)
-        logger.info(
-            f"Converting {len(data)} {timeframe} {candle_type} candles for {pair}")
+        logger.info(f"Converting {len(data)} {timeframe} {candle_type} candles for {pair}")
         if len(data) > 0:
             trg.ohlcv_store(
                 pair=pair,
@@ -597,8 +590,7 @@ def convert_ohlcv_format(
             )
             if erase and convert_from != convert_to:
                 logger.info(f"Deleting source data for {pair} / {timeframe}")
-                src.ohlcv_purge(pair=pair, timeframe=timeframe,
-                                candle_type=candle_type)
+                src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)
 
 
 def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
