@@ -9,14 +9,11 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import (
-    DEFAULT_DATAFRAME_COLUMNS,
-    DEFAULT_ORDERFLOW_COLUMNS,
-    DEFAULT_TRADES_COLUMNS,
-    Config,
-)
+from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_ORDERFLOW_COLUMNS,
+                                 DEFAULT_TRADES_COLUMNS, Config)
 from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates
 from freqtrade.enums import CandleType, TradingMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +292,8 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     ask_imbalance_filtered = np.where(
         df.total_volume < imbalance_volume, False, ask_imbalance)
     dataframe = DataFrame(
-        {"bid_imbalance": bid_imbalance_filtered, "ask_imbalance": ask_imbalance_filtered},
+        {"bid_imbalance": bid_imbalance_filtered,
+         "ask_imbalance": ask_imbalance_filtered},
         index=df.index,
     )
 
