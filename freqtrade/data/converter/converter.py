@@ -9,11 +9,14 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_ORDERFLOW_COLUMNS,
-                                 DEFAULT_TRADES_COLUMNS, Config)
+from freqtrade.constants import (
+    DEFAULT_DATAFRAME_COLUMNS,
+    DEFAULT_ORDERFLOW_COLUMNS,
+    DEFAULT_TRADES_COLUMNS,
+    Config,
+)
 from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates
 from freqtrade.enums import CandleType, TradingMode
-
 
 logger = logging.getLogger(__name__)
 
