@@ -41,7 +41,8 @@ This Freqtrade deployment uses free available strategies like Strategy001. By de
 ```
 # Make sure you are in the default k8s namespace 
 cd docker/helm-chart
-helm template -f values-base.yaml -f values-minikube.yaml -f values-minikube-creds.yaml --set configcreds.exchange.key="kraken-api-key" --set configcreds.exchange.secret="kraken-api-secret" . | kubectl --context minikube apply -f -
+minikube start --vm=true --driver=docker
+helm template -f values-base.yaml -f values-minikube.yaml -f values-minikube-creds.yaml --set configcreds.exchange.key="kraken-api-key" --set configcreds.exchange.secret="kraken-api-secret" -n default . | kubectl --context minikube apply -n default -f -
 ```
 
 ## Logging
