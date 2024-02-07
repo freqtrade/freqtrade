@@ -314,12 +314,11 @@ def stacked_imbalance_ask(df: DataFrame, stacked_imbalance_range: int = 3):
     return stacked_imbalance(df, 'ask', stacked_imbalance_range, should_reverse=True)
 
 
-def orderflow_to_volume_profile(orderflow: DataFrame):
+def orderflow_to_volume_profile(df: DataFrame):
     """
     :param orderflow: dataframe
     :return: volume profile dataframe
     """
-    df = orderflow
     bid = df.groupby('level').bid.sum()
     ask = df.groupby('level').ask.sum()
     df.groupby('level')['level'].sum()
