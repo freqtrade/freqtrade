@@ -1,0 +1,22 @@
+---
+kubernetes:
+  nodePort: 32327
+
+configcreds:
+  bot_name: freqtrade-kraken-minikube
+  timeframe: 5m
+  trading_mode: spot
+  stake_amount: unlimited
+  exchange:
+    name: kraken
+    key: 
+    secret: 
+  telegram:
+    enabled: false
+    token: ""
+    chat_id: ""
+bot:
+  enabled: true
+  strategy_name: Strategy001
+  pvc_size: 1Gi
+  freqaimodel: LightGBMRegressor

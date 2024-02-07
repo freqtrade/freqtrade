@@ -1,0 +1,4 @@
+apiVersion: v2
+description: Freqtrade
+name: freqtrade
+version: 0.0.0

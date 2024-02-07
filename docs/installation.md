@@ -5,6 +5,7 @@ This page explains how to prepare your environment for running the bot.
 The freqtrade documentation describes various ways to install freqtrade
 
 * [Docker images](docker_quickstart.md) (separate page)
+* [Kubernetes/Helm Chart](kubernetes_quickstart.md) (separate page)
 * [Script Installation](#script-installation)
 * [Manual Installation](#manual-installation)
 * [Installation with Conda](#installation-with-conda)

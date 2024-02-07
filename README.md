@@ -75,7 +75,7 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 
 ## Quick start
 
-Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/) on how to get started quickly.
+Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/ or [Kubernetes Quickstart documentationi](https://www.freqtrade.io/en/stable/kubernetes_quickstart/) ) on how to get started quickly.
 
 For further (native) installation methods, please refer to the [Installation documentation page](https://www.freqtrade.io/en/stable/installation/).
 

@@ -1,0 +1,226 @@
+---
+config:
+  timeframe: 5m
+  stoploss: -0.10
+  trailing_stop: false
+  trailing_only_offset_is_reached: true
+  trailing_stop_positive: 0.01
+  trailing_stop_positive_offset: 0.03
+  use_custom_stoploss: false
+  has_downtime_protection: false
+  hold_support_enabled: true
+  process_only_new_candles: true
+  use_exit_signal: false
+  exit_profit_only: true
+  ignore_roi_if_entry_signal: true
+  stake_amount_type: quote_currency
+  entry_pricing:
+    price_side: other
+    use_order_book: true
+    order_book_top: 1
+    price_last_balance: 0
+    check_depth_of_market:
+      enabled: false
+      bids_to_ask_delta: 1
+  exit_pricing:
+    price_side: other
+    use_order_book: true
+    order_book_top: 1
+  dataformat_ohlcv: feather
+  dataformat_trades: feather
+  download_trades: true
+  dry_run: true
+  dry_run_wallet: 4000
+  stake_amount: unlimited
+  position_adjustment_enable: true
+  trading_mode: spot
+  max_open_trades: 3
+  amend_last_stake_amount: true
+  stake_currency: USDT
+  tradable_balance_ratio: 0.99
+  fiat_display_currency: EUR
+  db_url: "sqlite:///user_data/tradesv3.sqlite"
+  cancel_open_orders_on_exit: false
+  order_types:
+    entry: "market"
+    force_entry: "market"
+    force_exit: "market"
+    exit: limit
+    stoploss: "market"
+    stoploss_on_exchange: false
+  # margin_mode: ""
+  minimal_roi:
+    "0": 0.1
+    "20160": 0.09
+    "40160": 0
+  unfilledtimeout:
+    entry: 10
+    exit: 30
+    exit_timeout_count: 0
+    unit: minutes
+  exchange:
+    ccxt_config:
+      enableRateLimit: true
+      rateLimit: 1200
+      options:
+        defaultType: spot
+        leverage: 10
+    ccxt_async_config:
+      enableRateLimit: true
+      rateLimit: 1200
+      options:
+        defaultType: spot
+        leverage: 10
+    pair_whitelist: ["BTC/USDT", "USDC/USDT", "ETH/USDT", "DOT/USDT", "XMR/USDT",
+      "LTC/USDT", "XRP/USDT", "ADA/USDT", "DAI/USDT", "SOL/USDT",
+      "LINK/USDT", "EOS/USDT", "DOGE/USDT", "MATIC/USDT", "ATOM/USDT",
+      "BCH/USDT", "SHIB/USDT", "AVAX/USDT", "ALGO/USDT", "APE/USDT",
+      "XTZ/USDT", "MANA/USDT", "USTC/USDT"]
+    pair_blacklist: [
+      ".*(3L|3S|5L|5S|UP|DOWN)/.*",
+      "(AUD|BRZ|CAD|CHF|EUR|GBP|HKD|IDRT|JPY|NGN|RUB|SGD|TRY|UAH|USD|ZAR)/.*",
+      "(BUSD|CUSD|CUSDT|DAI|PAXG|SUSD|TUSD|USDC|USDN|USDP|USDT|VAI|UST|USDD|USDJ|USTC|AUSD|OUSD)/.*",
+      "(ACM|AFA|ALA|ALL|ALPINE|APL|ASR|ATM|BAR|CAI|CITY|FOR|GAL|GOZ|IBFK|JUV|LEG|LOCK-1|NAVI|NMR|NOV|PFL|PORTO|PSG|ROUSH|STV|TH|TRA|UCH|UFC|YBO)/.*",
+      "(1EARTH|ILA|MEM|AMPL|BOBA|CWAR|OMG|XYM|POLX|CARR|SKEY|KLV|KRL|KOK|DMTR|CHMB|CPOOL|MLS|RBS|SRBS|SYLO|VR|KARA|LUNA|SRBP|PSL|AI|QKC|EPK|BAX|UQC|ZBC|PLATO|ACA|XCN|MC
+      |FTT|SRM|PRMX|SWP|XWG|PIAS|KICKS|TIME|BNX|WEMIX|HI.*|ALBT|ANC|CIX100|GLCH|MIR|XTAG|CELT|TEM|ZKT|MVP|ADB|AXPR|H2O|FT|BNC|BNX|STG|RLY|HNT|MARS4|DRGN|WXT|ROSN|KYL|FRR|STARLY
+      |RBP|UNB|ARNM|NGC|CARE|REAP|TEM|EDG|GOM2|GRIN|INDI|LOVE|NGM|SHFT|ASTRA|PEPE|SOLVE|SUKU|ECOX|JASMY|GFT|PNT|AMB|BASIC|LMWR|VEGA|COCOS|PKF|SHX|DAPPT|BOB|ID|ZPAY|XHV|PCX|MODEFI
+      |PEPE2|TRIBE|RFUEL|SIN|UBX|NOM|QUARTZ|XED|DG|SLCL|PLGR|OPCT|GMB|COV|TAUM|HAWK|LAVAX|CPC|AOA|EFX|FKX|JAR|NRG|REV|OXEN|UBX|CIX100|LOC|IXS|FORESTPLUS|BNS|MNET|EQZ|LACE|VID|H3RO3S
+      |2CRZ|RACEFI|WOM|DERO|MLN|MEME|TOKEN)/.*"]
+  pairlists:
+    - method: RemotePairList
+      number_assets: 50
+      pairlist_url: https://remotepairlist.com?q=a503ef5fb31a365c
+      processing_mode: append
+      mode: whitelist
+      sort_key: quoteVolume
+      refresh_period: 900
+      keep_pairlist_on_failure: true
+      read_timeout: 60
+    - method: AgeFilter
+      min_days_listed: 3
+    - method: PriceFilter
+      low_price_ratio: 0.003
+    - method: SpreadFilter
+      max_spread_ratio: 0.008
+    - method: RangeStabilityFilter
+      lookback_days: 3
+      min_rate_of_change: 0.03
+      refresh_period: 1800
+    - method: ShuffleFilter
+  freqai:
+    enabled: true
+    fit_live_predictions_candles: 300
+    purge_old_models: true
+    train_period_days: 30
+    identifier: unique-id
+    live_retrain_hours: 1
+    feature_parameters:
+      include_timeframes:
+        - 5m
+      include_corr_pairlist:
+        - ATOM/USDT
+        - MATIC/USDT
+        - ADA/USDT
+        - ALGO/USDT
+        - APE/USDT
+        - ATOM/USDT
+        - AVAX/USDT
+        - BCH/USDT
+        - BTC/USDT
+        - DAI/USDT
+        - DOGE/USDT
+        - DOT/USDT
+        - EOS/USDT
+        - ETH/USDT
+        - LINK/USDT
+        - LTC/USDT
+        - MANA/USDT
+        - MATIC/USDT
+        - SHIB/USDT
+        - SOL/USDT
+        - XMR/USDT
+        - XRP/USDT
+        - XTZ/USDT
+      label_period_candles: 20
+      include_shifted_candles: 2
+      DI_threshold: 0.9
+      weight_factor: 0.9
+      principal_component_analysis: false
+      use_SVM_to_remove_outliers: true
+      indicator_periods_candles:
+        - 3
+        - 10
+        - 20
+    data_split_parameters:
+      test_size: 0
+      random_state: 1
+    model_training_parameters:
+      n_estimators: 800
+  telegram:
+    keyboard:
+      - - /forcelong
+        - /balance
+        - /profit
+        - /reload_config
+        - /stopentry
+      - - /status table
+        - /performance
+        - /mix_tags
+        - /start
+        - /stop
+      - - /show_config
+        - /whitelist
+        - /logs
+        - /trades
+        - /forceexit
+  api_server:
+    enabled: true
+    listen_ip_address: 0.0.0.0
+    listen_port: 8084
+    verbosity: error
+    enable_openapi: true
+    jwt_secret_key: >
+      235573d45bb26d0cbf1986893b12d4aaf0cf4934f3566d9459d818ec7fbb851b
+    ws_token: acnQI1n44GG9lJ51fLKqWQvVJF5k5q7xsw
+    CORS_origins:
+      - "http://127.0.0.1:8084"
+      - "http://localhost:8084"
+      - "http://0.0.0.0:8084"
+    username: freqtrade
+    password: "&&Random!!"
+  initial_state: running
+  force_entry_enable: true
+  internals:
+    process_throttle_secs: 5
+
+backtesting:
+  enabled: false
+  download_data: false
+  timerange:
+  timeframes: 1h
+  strategy_list: Strategy005
+  fee:
+  pvc_size: 1Gi
+  results:
+    enable_export: false
+    reader_enabled: false
+    pvc_size: 1Gi
+
+image:
+  base: docker.io/freqtradeorg/freqtrade
+  tag: 2024.1_freqairl
+
+bot:
+  debug: false
+  debuglevel: -vvv
+  enabled: true
+  pvc_size: 1Gi
+  freqaimodel: LightGBMRegressor
+
+ingress:
+  enabled: false
+
+create_config_configmap: true
+create_strategies_configmap: true
+
+strategies: []

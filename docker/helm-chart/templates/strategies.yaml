@@ -1,0 +1,12 @@
+{{- if .Values.create_strategies_configmap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freqtrade-strategies-{{ .Release.Namespace }}
+data:
+{{- if .Values.strategies }}
+{{ .Values.strategies | toYaml | indent 2 }}
+{{- else }}
+{{ (.Files.Glob "strategies/*").AsConfig | indent 2 }}
+{{- end }}
+{{- end }}

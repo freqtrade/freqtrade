@@ -1,0 +1,107 @@
+---
+{{- if .Values.bot.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freqtrade-{{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: freqtrade-{{ .Release.Namespace }}
+  template:
+    metadata:
+      labels:
+        app: freqtrade-{{ .Release.Namespace }}
+    spec:
+      # nodeName: {{ .Values.kubernetes.nodeNameBackTestingResultsReader }} # pool-dersalvador-y5w2t # pool-dersalvador-ylyw0
+      initContainers:
+      - name: take-sqlite-dir-ownership
+        image: {{ .Values.image.base }}:{{ .Values.image.tag }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 0
+        command:
+        - bash
+        args: ["-c","chown -R ftuser:ftuser /sqlite; chown -R ftuser:ftuser /freqtrade; ls -ltra /sqlite" ] 
+        volumeMounts:
+        - mountPath: /sqlite
+          name: sqlite
+      containers:
+      - name: freqtrade-{{ .Release.Namespace }}
+        image: {{ .Values.image.base }}:{{ .Values.image.tag }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","sleep 60"]
+        #env:
+        #- name: PYTHONPATH
+        #  value: /freqtrade:/freqtrade/user_data
+        command:
+        - freqtrade
+        args:
+        - trade
+{{- if .Values.bot.debug }}
+        - {{ .Values.bot.debuglevel }}
+{{- end }}
+        - --config
+        - /freqtrade/config/config-{{ .Release.Namespace }}.json
+        - --config
+        - /freqtrade/configcreds/configcreds-{{ .Release.Namespace }}.json
+        - --strategy-path
+        - /freqtrade/user_data/extra_strategies
+        - --strategy
+        - {{ .Values.bot.strategy_name }}
+        - --db-url
+        - sqlite:////sqlite/tradesv3.sqlite
+        - --recursive-strategy-search
+        - --freqaimodel 
+        - {{ .Values.bot.freqaimodel }}
+        - --freqaimodel-path 
+        - /freqtrade/freqtrade/freqai/prediction_models
+        - --log-file 
+        - /tmp/freqtrade.log
+        - --data-dir
+        - /freqtrade/user_data/data
+        volumeMounts:
+        - name: user-data
+          subPath: nfi-hold-trades.json
+          mountPath: /freqtrade/user_data
+        - name: strategies
+          mountPath: /freqtrade/user_data/strategies
+        - name: extra-strategies
+          mountPath: /freqtrade/user_data/extra_strategies
+        - name: configcreds
+          mountPath: /freqtrade/configcreds
+        - name: config
+          mountPath: /freqtrade/config
+        - name: sqlite
+          mountPath: /sqlite
+        ports:
+        - name: api
+          containerPort: {{ .Values.config.api_server.listen_port }}
+      imagePullSecrets:
+      - name: deploy-key-gcr
+      volumes:
+      - name: user-data
+        persistentVolumeClaim:
+          claimName: freqtrade-user-data
+      - name: extra-strategies
+        persistentVolumeClaim:
+          claimName: freqtrade-extra-strategies
+      - name: configcreds
+        configMap:
+          name: freqtrade-config-creds-{{ .Release.Namespace }}
+      - name: nfi-hold-trades
+        configMap:
+          name: freqtrade-nfi-hold-trades-{{ .Release.Namespace }}
+      - name: config
+        configMap:
+          name: freqtrade-config-{{ .Release.Namespace }}
+      - name: strategies
+        configMap:
+          name: freqtrade-strategies-{{ .Release.Namespace }}
+      - name: sqlite
+        persistentVolumeClaim:
+          claimName: freqtrade-sqlite
+---
+{{- end }}

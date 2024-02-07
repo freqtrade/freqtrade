@@ -1,0 +1,16 @@
+{{- if (and .Values.bot.enabled .Values.config.api_server.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: freqtrade-{{ .Release.Namespace }}
+  labels:
+    app: freqtrade-{{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: {{ .Values.config.api_server.listen_port }}
+    targetPort: api
+  selector:
+    app: freqtrade-{{ .Release.Namespace }}
+{{- end }}

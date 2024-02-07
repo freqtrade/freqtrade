@@ -97,4 +97,4 @@ For any questions not covered by the documentation or for further information ab
 
 ## Ready to try?
 
-Begin by reading the installation guide [for docker](docker_quickstart.md) (recommended), or for [installation without docker](installation.md).
+Begin by reading the installation guide [for docker](docker_quickstart.md) (recommended), or for [installation without docker](installation.md) or for [kubernetes using minikube](kubernetes_quickstart.md).

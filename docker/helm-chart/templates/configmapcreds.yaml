@@ -1,0 +1,12 @@
+---
+{{- if .Values.create_config_configmap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freqtrade-config-creds-{{ .Release.Namespace }}
+  labels:
+     app: freqtrade-config-creds
+data:
+  configcreds-{{ .Release.Namespace }}.json: |
+{{ toPrettyJson .Values.configcreds | indent 4 }}
+{{- end }}
