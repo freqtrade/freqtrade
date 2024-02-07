@@ -2006,9 +2006,8 @@ class Exchange:
 
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
-                if isinstance(res, Exception):
-                    logger.warning(
-                        f"Async code raised an exception: {repr(res)}")
+                if isinstance(res, BaseException):
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
                     continue
