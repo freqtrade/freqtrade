@@ -79,8 +79,8 @@ def init_db(db_url: str) -> None:
     Order.session = Trade.session
     PairLock.session = Trade.session
     _KeyValueStoreModel.session = Trade.session
-    CustomData._session = scoped_session(sessionmaker(bind=engine, autoflush=True),
-                                         scopefunc=get_request_or_thread_id)
+    CustomData.session = scoped_session(sessionmaker(bind=engine, autoflush=True),
+                                        scopefunc=get_request_or_thread_id)
 
     previous_tables = inspect(engine).get_table_names()
     ModelBase.metadata.create_all(engine)
