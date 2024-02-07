@@ -117,7 +117,7 @@ def populate_dataframe_with_trades(config: Config, dataframe: DataFrame, trades:
         for candle_start in trades_grouped_by_candle_start.groups:
             trades_grouped_df = trades[candle_start == trades['candle_start']]
             is_between = (candle_start == df['candle_start'])
-            if np.any(is_between == True):
+            if np.any(is_between == True):  # noqa: E712
                 (timeframe_frequency, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(
                     timeframe)
                 candle_next = candle_start + \
