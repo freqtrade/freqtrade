@@ -1467,7 +1467,8 @@ class Trade(ModelBase, LocalTrade):
     orders: Mapped[List[Order]] = relationship(
         "Order", order_by="Order.id", cascade="all, delete-orphan", lazy="selectin",
         innerjoin=True)  # type: ignore
-    custom_data = relationship("CustomData", order_by="CustomData.id", cascade="all, delete-orphan")
+    custom_data: Mapped[List[CustomData]] = relationship(
+        "CustomData", order_by="CustomData.id", cascade="all, delete-orphan")  # type: ignore
 
     exchange: Mapped[str] = mapped_column(String(25), nullable=False)  # type: ignore
     pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)  # type: ignore

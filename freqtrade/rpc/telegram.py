@@ -1770,7 +1770,7 @@ class Telegram(RPCHandler):
         )
 
     @authorized_only
-    def _list_custom_data(self, update: Update, context: CallbackContext) -> None:
+    async def _list_custom_data(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /list_custom_data <id> <key>.
         List custom_data for specified trade (and key if supplied).
@@ -1807,14 +1807,14 @@ class Telegram(RPCHandler):
                         msg = "Message dropped because length exceeds "
                         msg += f"maximum allowed characters: {MAX_MESSAGE_LENGTH}"
                         logger.warning(msg)
-                    self._send_msg(msg)
+                    await self._send_msg(msg)
             else:
                 message = f"Didn't find any custom-data entries for Trade ID: `{trade_id}`"
                 message += f" and Key: `{key}`." if key is not None else ""
-                self._send_msg(message)
+                await self._send_msg(message)
 
         except RPCException as e:
-            self._send_msg(str(e))
+            await self._send_msg(str(e))
 
     async def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                           reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:

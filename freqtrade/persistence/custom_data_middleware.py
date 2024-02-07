@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 from typing import Any, List, Optional
 
+from sqlalchemy import select
+
 from freqtrade.persistence.custom_data import CustomData
 
 
@@ -86,8 +88,8 @@ class CustomDataWrapper:
 
         if CustomDataWrapper.use_db and value_db is not None:
             data_entry.cd_value = value_db
-            CustomData.query.session.add(data_entry)
-            CustomData.query.session.commit()
+            CustomData.session.add(data_entry)
+            CustomData.session.commit()
         elif not CustomDataWrapper.use_db:
             cd_index = -1
             for index, data_entry in enumerate(CustomDataWrapper.custom_data):
@@ -97,7 +99,7 @@ class CustomDataWrapper:
 
             if cd_index >= 0:
                 data_entry.cd_type = value_type
-                data_entry.value = value
+                data_entry.cd_value = value
                 data_entry.updated_at = datetime.utcnow()
 
                 CustomDataWrapper.custom_data[cd_index] = data_entry
@@ -108,6 +110,6 @@ class CustomDataWrapper:
     def get_all_custom_data() -> List[CustomData]:
 
         if CustomDataWrapper.use_db:
-            return CustomData.query.all()
+            return CustomData.session.scalars(select(CustomData)).all()
         else:
             return CustomDataWrapper.custom_data

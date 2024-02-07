@@ -1,14 +1,15 @@
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Query, relationship
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, select
+from sqlalchemy.orm import Mapped, Query, mapped_column, relationship
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.base import ModelBase, SessionType
+from freqtrade.util import dt_now
 
 
-class CustomData(_DECL_BASE):
+class CustomData(ModelBase):
     """
     CustomData database model
     Keeps records of metadata as key/value store
@@ -18,20 +19,22 @@ class CustomData(_DECL_BASE):
       - One metadata entry can only be associated with one Trade
     """
     __tablename__ = 'trade_custom_data'
+    session: ClassVar[SessionType]
+
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
     __table_args__ = (UniqueConstraint('ft_trade_id', 'cd_key', name="_trade_id_cd_key"),)
 
-    id = Column(Integer, primary_key=True)
-    ft_trade_id = Column(Integer, ForeignKey('trades.id'), index=True, default=0)
+    id = mapped_column(Integer, primary_key=True)
+    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True, default=0)
 
     trade = relationship("Trade", back_populates="custom_data")
 
-    cd_key = Column(String(255), nullable=False)
-    cd_type = Column(String(25), nullable=False)
-    cd_value = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True)
+    cd_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    cd_type: Mapped[str] = mapped_column(String(25), nullable=False)
+    cd_value: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=dt_now)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     def __repr__(self):
         create_time = (self.created_at.strftime(DATETIME_PRINT_FORMAT)
@@ -54,4 +57,4 @@ class CustomData(_DECL_BASE):
         if key is not None:
             filters.append(CustomData.cd_key.ilike(key))
 
-        return CustomData.query.filter(*filters)
+        return CustomData.session.scalars(select(CustomData))
