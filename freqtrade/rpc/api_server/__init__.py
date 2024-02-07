@@ -1,2 +1,1 @@
-# flake8: noqa: F401
-from .webserver import ApiServer
+from .webserver import ApiServer  # noqa: F401

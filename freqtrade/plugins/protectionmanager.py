@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from freqtrade.constants import LongShort
+from freqtrade.constants import Config, LongShort
 from freqtrade.persistence import PairLocks
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
@@ -15,9 +15,9 @@ from freqtrade.resolvers import ProtectionResolver
 logger = logging.getLogger(__name__)
 
 
-class ProtectionManager():
+class ProtectionManager:
 
-    def __init__(self, config: Dict, protections: List) -> None:
+    def __init__(self, config: Config, protections: List) -> None:
         self._config = config
 
         self._protection_handlers: List[IProtection] = []

@@ -5,6 +5,7 @@
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
+from typing import Optional, Union
 
 from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
@@ -76,7 +77,7 @@ class SampleStrategy(IStrategy):
     exit_short_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
 
     # Number of candles the strategy requires before producing valid signals
-    startup_candle_count: int = 30
+    startup_candle_count: int = 200
 
     # Optional order type mapping.
     order_types = {
@@ -88,8 +89,8 @@ class SampleStrategy(IStrategy):
 
     # Optional order time in force.
     order_time_in_force = {
-        'entry': 'gtc',
-        'exit': 'gtc'
+        'entry': 'GTC',
+        'exit': 'GTC'
     }
 
     plot_config = {

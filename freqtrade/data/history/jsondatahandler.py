@@ -1,16 +1,14 @@
 import logging
-import re
-from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
-from freqtrade.data.converter import trades_dict_to_list
-from freqtrade.enums import CandleType, TradingMode
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
+from freqtrade.data.converter import trades_dict_to_list, trades_list_to_df
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 
@@ -22,48 +20,6 @@ class JsonDataHandler(IDataHandler):
 
     _use_zip = False
     _columns = DEFAULT_DATAFRAME_COLUMNS
-
-    @classmethod
-    def ohlcv_get_available_data(
-            cls, datadir: Path, trading_mode: TradingMode) -> ListPairsWithTimeframes:
-        """
-        Returns a list of all pairs with ohlcv data available in this datadir
-        :param datadir: Directory to search for ohlcv files
-        :param trading_mode: trading-mode to be used
-        :return: List of Tuples of (pair, timeframe)
-        """
-        if trading_mode == 'futures':
-            datadir = datadir.joinpath('futures')
-        _tmp = [
-            re.search(
-                cls._OHLCV_REGEX, p.name
-            ) for p in datadir.glob(f"*.{cls._get_file_extension()}")]
-        return [
-            (
-                cls.rebuild_pair_from_filename(match[1]),
-                cls.rebuild_timeframe_from_filename(match[2]),
-                CandleType.from_string(match[3])
-            ) for match in _tmp if match and len(match.groups()) > 1]
-
-    @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
-        """
-        Returns a list of all pairs with ohlcv data available in this datadir
-        for the specified timeframe
-        :param datadir: Directory to search for ohlcv files
-        :param timeframe: Timeframe to search pairs for
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :return: List of Pairs
-        """
-        candle = ""
-        if candle_type != CandleType.SPOT:
-            datadir = datadir.joinpath('futures')
-            candle = f"-{candle_type}"
-
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + '.json)', p.name)
-                for p in datadir.glob(f"*{timeframe}{candle}.{cls._get_file_extension()}")]
-        # Check if regex found something and only return these results
-        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def ohlcv_store(
             self, pair: str, timeframe: str, data: DataFrame, candle_type: CandleType) -> None:
@@ -119,10 +75,7 @@ class JsonDataHandler(IDataHandler):
             return DataFrame(columns=self._columns)
         pairdata = pairdata.astype(dtype={'open': 'float', 'high': 'float',
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
-        pairdata['date'] = to_datetime(pairdata['date'],
-                                       unit='ms',
-                                       utc=True,
-                                       infer_datetime_format=True)
+        pairdata['date'] = to_datetime(pairdata['date'], unit='ms', utc=True)
         return pairdata
 
     def ohlcv_append(
@@ -141,57 +94,46 @@ class JsonDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    @classmethod
-    def trades_get_pairs(cls, datadir: Path) -> List[str]:
-        """
-        Returns a list of all pairs for which trade data is available in this
-        :param datadir: Directory to search for ohlcv files
-        :return: List of Pairs
-        """
-        _tmp = [re.search(r'^(\S+)(?=\-trades.json)', p.name)
-                for p in datadir.glob(f"*trades.{cls._get_file_extension()}")]
-        # Check if regex found something and only return these results to avoid exceptions.
-        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
-
-    def trades_store(self, pair: str, data: TradeList) -> None:
+    def _trades_store(self, pair: str, data: DataFrame) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         filename = self._pair_trades_filename(self._datadir, pair)
-        misc.file_dump_json(filename, data, is_zip=self._use_zip)
+        trades = data.values.tolist()
+        misc.file_dump_json(filename, trades, is_zip=self._use_zip)
 
-    def trades_append(self, pair: str, data: TradeList):
+    def trades_append(self, pair: str, data: DataFrame):
         """
         Append data to existing files
         :param pair: Pair - used for filename
-        :param data: List of Lists containing trade data,
+        :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
+    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
         :param timerange: Timerange to load trades for - currently not implemented
-        :return: List of trades
+        :return: Dataframe containing trades
         """
         filename = self._pair_trades_filename(self._datadir, pair)
         tradesdata = misc.file_load_json(filename)
 
         if not tradesdata:
-            return []
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
         if isinstance(tradesdata[0], dict):
             # Convert trades dict to list
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
             pass
-        return tradesdata
+        return trades_list_to_df(tradesdata, convert=False)
 
     @classmethod
     def _get_file_extension(cls):

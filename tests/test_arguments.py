@@ -133,7 +133,7 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args['command'] == 'backtesting'
     assert call_args['func'] is not None
     assert call_args['timeframe'] == '1m'
-    assert type(call_args['strategy_list']) is list
+    assert isinstance(call_args['strategy_list'], list)
     assert len(call_args['strategy_list']) == 2
 
 
@@ -173,7 +173,7 @@ def test_download_data_options() -> None:
 def test_plot_dataframe_options() -> None:
     args = [
         'plot-dataframe',
-        '-c', 'config_examples/config_bittrex.example.json',
+        '-c', 'tests/testdata/testconfigs/main_test_config.json',
         '--indicators1', 'sma10', 'sma100',
         '--indicators2', 'macd', 'fastd', 'fastk',
         '--plot-limit', '30',

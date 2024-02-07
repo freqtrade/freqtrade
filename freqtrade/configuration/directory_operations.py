@@ -1,16 +1,18 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from freqtrade.constants import USER_DATA_FILES
+from freqtrade.configuration.detect_environment import running_in_docker
+from freqtrade.constants import (USER_DATA_FILES, USERPATH_FREQAIMODELS, USERPATH_HYPEROPTS,
+                                 USERPATH_NOTEBOOKS, USERPATH_STRATEGIES, Config)
 from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
 
 
-def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Path:
+def create_datadir(config: Config, datadir: Optional[str] = None) -> Path:
 
     folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:
@@ -29,8 +31,7 @@ def chown_user_directory(directory: Path) -> None:
     Use Sudo to change permissions of the home-directory if necessary
     Only applies when running in docker!
     """
-    import os
-    if os.environ.get('FT_APP_ENV') == 'docker':
+    if running_in_docker():
         try:
             import subprocess
             subprocess.check_output(
@@ -49,8 +50,8 @@ def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     :param create_dir: Create directory if it does not exist.
     :return: Path object containing the directory
     """
-    sub_dirs = ["backtest_results", "data", "hyperopts", "hyperopt_results", "logs",
-                "notebooks", "plot", "strategies", ]
+    sub_dirs = ["backtest_results", "data", USERPATH_HYPEROPTS, "hyperopt_results", "logs",
+                USERPATH_NOTEBOOKS, "plot", USERPATH_STRATEGIES, USERPATH_FREQAIMODELS]
     folder = Path(directory)
     chown_user_directory(folder)
     if not folder.is_dir():

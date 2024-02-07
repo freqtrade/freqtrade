@@ -4,15 +4,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import arrow
 import pytest
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
+from freqtrade.enums import ExitCheckTuple, ExitType, HyperoptState, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
@@ -20,6 +21,7 @@ from freqtrade.strategy.hyper import detect_parameters
 from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
                                            DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.util import dt_now
 from tests.conftest import (CURRENT_TEST_STRATEGY, TRADE_SIDES, create_mock_trades, log_has,
                             log_has_re)
 
@@ -32,7 +34,7 @@ _STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    ohlcv_history.loc[1, 'date'] = dt_now()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['enter_long'] = 0
@@ -103,7 +105,7 @@ def test_returns_latest_signal(ohlcv_history):
     _STRATEGY.config['trading_mode'] = 'spot'
 
 
-def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
+def test_analyze_pair_empty(mocker, caplog, ohlcv_history):
     mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
@@ -157,7 +159,7 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    ohlcv_history.loc[1, 'date'] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['exit_long'] = 0
@@ -178,7 +180,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow()
+    ohlcv_history.loc[1, 'date'] = dt_now()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
@@ -213,16 +215,16 @@ def test_ignore_expired_candle(default_conf):
 
     current_time = latest_date + timedelta(seconds=30 + 300)
 
-    assert not strategy.ignore_expired_candle(
+    assert strategy.ignore_expired_candle(
         latest_date=latest_date,
         current_time=current_time,
         timeframe_seconds=300,
         enter=True
-    ) is True
+    ) is not True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
-    ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
+    ohlcv_history.loc[1, 'date'] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history['sell'] = 0
@@ -287,7 +289,14 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
     processed = strategy.advise_all_indicators(data)
-    assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
+    assert len(processed['UNITTEST/BTC']) == 103
+
+
+def test_freqai_not_initialized(default_conf) -> None:
+    strategy = StrategyResolver.load_strategy(default_conf)
+    strategy.ft_bot_start()
+    with pytest.raises(OperationalException, match=r'freqAI is not enabled\.'):
+        strategy.freqai.start()
 
 
 def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
@@ -314,21 +323,21 @@ def test_min_roi_reached(default_conf, fee) -> None:
             pair='ETH/BTC',
             stake_amount=0.001,
             amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            open_date=dt_now() - timedelta(hours=1),
             fee_open=fee.return_value,
             fee_close=fee.return_value,
             exchange='binance',
             open_rate=1,
         )
 
-        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+        assert strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+        assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=39))
 
-        assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
-        assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+        assert not strategy.min_roi_reached(trade, -0.01, dt_now() - timedelta(minutes=1))
+        assert strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=1))
 
 
 def test_min_roi_reached2(default_conf, fee) -> None:
@@ -352,25 +361,25 @@ def test_min_roi_reached2(default_conf, fee) -> None:
             pair='ETH/BTC',
             stake_amount=0.001,
             amount=5,
-            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            open_date=dt_now() - timedelta(hours=1),
             fee_open=fee.return_value,
             fee_close=fee.return_value,
             exchange='binance',
             open_rate=1,
         )
 
-        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+        assert strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-        assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+        assert strategy.min_roi_reached(trade, 0.071, dt_now() - timedelta(minutes=39))
 
-        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
-        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=26))
+        assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=26))
 
         # Should not trigger with 20% profit since after 55 minutes only 30% is active.
-        assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
-        assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+        assert not strategy.min_roi_reached(trade, 0.20, dt_now() - timedelta(minutes=2))
+        assert strategy.min_roi_reached(trade, 0.31, dt_now() - timedelta(minutes=2))
 
 
 def test_min_roi_reached3(default_conf, fee) -> None:
@@ -386,25 +395,25 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=5,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
     )
 
-    assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
-    assert not strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+    assert not strategy.min_roi_reached(trade, 0.02, dt_now() - timedelta(minutes=56))
+    assert not strategy.min_roi_reached(trade, 0.12, dt_now() - timedelta(minutes=56))
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-    assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+    assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=39))
+    assert strategy.min_roi_reached(trade, 0.071, dt_now() - timedelta(minutes=39))
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
-    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+    assert not strategy.min_roi_reached(trade, 0.04, dt_now() - timedelta(minutes=26))
+    assert strategy.min_roi_reached(trade, 0.06, dt_now() - timedelta(minutes=26))
 
     # Should not trigger with 20% profit since after 55 minutes only 30% is active.
-    assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
-    assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+    assert not strategy.min_roi_reached(trade, 0.20, dt_now() - timedelta(minutes=2))
+    assert strategy.min_roi_reached(trade, 0.31, dt_now() - timedelta(minutes=2))
 
 
 @pytest.mark.parametrize(
@@ -413,7 +422,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
         (0.2, 0.9, ExitType.NONE, None, False, False, 0.3, 0.9, ExitType.NONE, None),
         (0.2, 0.9, ExitType.NONE, None, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
-        (0.2, 0.9, ExitType.NONE, 0.8, False, False, -0.2, 0.9, ExitType.LIQUIDATION, None),
+        (0.2, 0.9, ExitType.NONE, 0.92, False, False, -0.09, 0.9, ExitType.LIQUIDATION, None),
         (0.2, 1.14, ExitType.NONE, None, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS,
          None),
         (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),
@@ -432,15 +441,15 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         (0.05, 0.9, ExitType.NONE, None, False, True, 0.09, 0.9, ExitType.NONE,
          lambda **kwargs: None),
     ])
-def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
-                           profit2, adjusted2, expected2, custom_stop) -> None:
+def test_ft_stoploss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
+                             profit2, adjusted2, expected2, custom_stop) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -455,11 +464,11 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, t
     if custom_stop:
         strategy.custom_stoploss = custom_stop
 
-    now = arrow.utcnow().datetime
+    now = dt_now()
     current_rate = trade.open_rate * (1 + profit)
-    sl_flag = strategy.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                         current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None)
+    sl_flag = strategy.ft_stoploss_reached(current_rate=current_rate, trade=trade,
+                                           current_time=now, current_profit=profit,
+                                           force_stoploss=0, high=None)
     assert isinstance(sl_flag, ExitCheckTuple)
     assert sl_flag.exit_type == expected
     if expected == ExitType.NONE:
@@ -469,9 +478,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, t
     assert round(trade.stop_loss, 2) == adjusted
     current_rate2 = trade.open_rate * (1 + profit2)
 
-    sl_flag = strategy.stop_loss_reached(current_rate=current_rate2, trade=trade,
-                                         current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None)
+    sl_flag = strategy.ft_stoploss_reached(current_rate=current_rate2, trade=trade,
+                                           current_time=now, current_profit=profit2,
+                                           force_stoploss=0, high=None)
     assert sl_flag.exit_type == expected2
     if expected2 == ExitType.NONE:
         assert sl_flag.exit_flag is False
@@ -489,14 +498,15 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        leverage=1.0,
     )
 
-    now = arrow.utcnow().datetime
+    now = dt_now()
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
@@ -521,13 +531,13 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     assert res[0].exit_reason == 'hello world'
 
     caplog.clear()
-    strategy.custom_exit = MagicMock(return_value='h' * 100)
+    strategy.custom_exit = MagicMock(return_value='h' * CUSTOM_TAG_MAX_LENGTH * 2)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res[0].exit_type == ExitType.CUSTOM_EXIT
     assert res[0].exit_flag is True
-    assert res[0].exit_reason == 'h' * 64
+    assert res[0].exit_reason == 'h' * (CUSTOM_TAG_MAX_LENGTH)
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
@@ -538,13 +548,14 @@ def test_should_sell(default_conf, fee) -> None:
         pair='ETH/BTC',
         stake_amount=0.01,
         amount=1,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_date=dt_now() - timedelta(hours=1),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        leverage=1.0,
     )
-    now = arrow.utcnow().datetime
+    now = dt_now()
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
@@ -559,7 +570,7 @@ def test_should_sell(default_conf, fee) -> None:
     assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
 
     strategy.min_roi_reached = MagicMock(return_value=True)
-    strategy.stop_loss_reached = MagicMock(
+    strategy.ft_stoploss_reached = MagicMock(
         return_value=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
 
     res = strategy.should_exit(trade, 1, now,
@@ -583,7 +594,7 @@ def test_should_sell(default_conf, fee) -> None:
         ExitCheckTuple(exit_type=ExitType.ROI),
         ]
 
-    strategy.stop_loss_reached = MagicMock(
+    strategy.ft_stoploss_reached = MagicMock(
             return_value=ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS))
     # Regular exit signal
     res = strategy.should_exit(trade, 1, now,
@@ -719,7 +730,7 @@ def test_is_pair_locked(default_conf):
 
     pair = 'ETH/BTC'
     assert not strategy.is_pair_locked(pair)
-    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime)
+    strategy.lock_pair(pair, dt_now() + timedelta(minutes=4))
     # ETH/BTC locked for 4 minutes
     assert strategy.is_pair_locked(pair)
 
@@ -737,7 +748,7 @@ def test_is_pair_locked(default_conf):
 
     # Lock with reason
     reason = "TestLockR"
-    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime, reason)
+    strategy.lock_pair(pair, dt_now() + timedelta(minutes=4), reason)
     assert strategy.is_pair_locked(pair)
     strategy.unlock_reason(reason)
     assert not strategy.is_pair_locked(pair)
@@ -840,7 +851,9 @@ def test_strategy_safe_wrapper_trade_copy(fee):
 
 
 def test_hyperopt_parameters():
+    HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
     from skopt.space import Categorical, Integer, Real
+
     with pytest.raises(OperationalException, match=r"Name is determined.*"):
         IntParameter(low=0, high=5, default=1, name='hello')
 
@@ -918,6 +931,12 @@ def test_hyperopt_parameters():
 
     assert list(boolpar.range) == [True, False]
 
+    HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
+    assert len(list(intpar.range)) == 1
+    assert len(list(fltpar.range)) == 1
+    assert len(list(catpar.range)) == 1
+    assert len(list(boolpar.range)) == 1
+
 
 def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategyV2'})
@@ -970,7 +989,8 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
             }
         }
     }
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
     assert strategy.stoploss == -0.05
@@ -989,11 +1009,40 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
         }
     }
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 return_value=expected_result)
     with pytest.raises(OperationalException, match="Invalid parameter file provided."):
         StrategyResolver.load_strategy(default_conf)
 
-    mocker.patch('freqtrade.strategy.hyper.json_load', MagicMock(side_effect=ValueError()))
+    mocker.patch('freqtrade.strategy.hyper.HyperoptTools.load_params',
+                 MagicMock(side_effect=ValueError()))
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
+
+
+@pytest.mark.parametrize('function,raises', [
+    ('populate_entry_trend', True),
+    ('advise_entry', False),
+    ('populate_exit_trend', True),
+    ('advise_exit', False),
+])
+def test_pandas_warning_direct(ohlcv_history, function, raises):
+
+    df = _STRATEGY.populate_indicators(ohlcv_history, {'pair': 'ETH/BTC'})
+    if raises:
+        with pytest.warns(FutureWarning):
+            # Test for Future warning
+            # FutureWarning: Setting an item of incompatible dtype is
+            # deprecated and will raise in a future error of pandas
+            # https://github.com/pandas-dev/pandas/issues/56503
+            getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+    else:
+        getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+
+
+def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
+
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    _STRATEGY.analyze_pair('ETH/BTC')
+    assert len(recwarn) == 0

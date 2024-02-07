@@ -3,11 +3,12 @@ This module contains the argument manager class
 """
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
-import arrow
+from typing_extensions import Self
 
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.exceptions import OperationalException
 
 
@@ -28,6 +29,52 @@ class TimeRange:
         self.stoptype: Optional[str] = stoptype
         self.startts: int = startts
         self.stopts: int = stopts
+
+    @property
+    def startdt(self) -> Optional[datetime]:
+        if self.startts:
+            return datetime.fromtimestamp(self.startts, tz=timezone.utc)
+        return None
+
+    @property
+    def stopdt(self) -> Optional[datetime]:
+        if self.stopts:
+            return datetime.fromtimestamp(self.stopts, tz=timezone.utc)
+        return None
+
+    @property
+    def timerange_str(self) -> str:
+        """
+        Returns a string representation of the timerange as used by parse_timerange.
+        Follows the format yyyymmdd-yyyymmdd - leaving out the parts that are not set.
+        """
+        start = ''
+        stop = ''
+        if startdt := self.startdt:
+            start = startdt.strftime('%Y%m%d')
+        if stopdt := self.stopdt:
+            stop = stopdt.strftime('%Y%m%d')
+        return f"{start}-{stop}"
+
+    @property
+    def start_fmt(self) -> str:
+        """
+        Returns a string representation of the start date
+        """
+        val = 'unbounded'
+        if (startdt := self.startdt) is not None:
+            val = startdt.strftime(DATETIME_PRINT_FORMAT)
+        return val
+
+    @property
+    def stop_fmt(self) -> str:
+        """
+        Returns a string representation of the stop date
+        """
+        val = 'unbounded'
+        if (stopdt := self.stopdt) is not None:
+            val = stopdt.strftime(DATETIME_PRINT_FORMAT)
+        return val
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
@@ -62,15 +109,15 @@ class TimeRange:
             self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
             self.starttype = 'date'
 
-    @staticmethod
-    def parse_timerange(text: Optional[str]) -> 'TimeRange':
+    @classmethod
+    def parse_timerange(cls, text: Optional[str]) -> Self:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
         :return: Start and End range period
         """
-        if text is None:
-            return TimeRange(None, None, 0, 0)
+        if not text:
+            return cls(None, None, 0, 0)
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
@@ -92,7 +139,8 @@ class TimeRange:
                 if stype[0]:
                     starts = rvals[index]
                     if stype[0] == 'date' and len(starts) == 8:
-                        start = arrow.get(starts, 'YYYYMMDD').int_timestamp
+                        start = int(datetime.strptime(starts, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(starts) == 13:
                         start = int(starts) // 1000
                     else:
@@ -101,7 +149,8 @@ class TimeRange:
                 if stype[1]:
                     stops = rvals[index]
                     if stype[1] == 'date' and len(stops) == 8:
-                        stop = arrow.get(stops, 'YYYYMMDD').int_timestamp
+                        stop = int(datetime.strptime(stops, '%Y%m%d').replace(
+                            tzinfo=timezone.utc).timestamp())
                     elif len(stops) == 13:
                         stop = int(stops) // 1000
                     else:
@@ -109,5 +158,5 @@ class TimeRange:
                 if start > stop > 0:
                     raise OperationalException(
                         f'Start date is after stop date for timerange "{text}"')
-                return TimeRange(stype[0], stype[1], start, stop)
+                return cls(stype[0], stype[1], start, stop)
         raise OperationalException(f'Incorrect syntax for timerange "{text}"')

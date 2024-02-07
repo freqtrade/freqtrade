@@ -8,10 +8,10 @@ from pandas import DataFrame
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.types import Tickers
 
 
 logger = logging.getLogger(__name__)
@@ -22,10 +22,15 @@ class Kraken(Exchange):
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "stop_price_param": "stopLossPrice",
+        "stop_price_prop": "stopLossPrice",
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
+        "order_time_in_force": ["GTC", "IOC", "PO"],
         "ohlcv_candle_limit": 720,
         "ohlcv_has_history": False,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
+        "trades_pagination_overlap": False,
         "mark_ohlcv_timeframe": "4h",
     }
 
@@ -45,7 +50,7 @@ class Kraken(Exchange):
         return (parent_check and
                 market.get('darkpool', False) is False)
 
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         # Only fetch tickers for current stake currency
         # Otherwise the request for kraken becomes too large.
         symbols = list(self.get_markets(quote_currencies=[self._config['stake_currency']]))
@@ -85,79 +90,11 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
-        """
-        Verify stop_loss against stoploss-order value (limit or price)
-        Returns True if adjustment is necessary.
-        """
-        return (order['type'] in ('stop-loss', 'stop-loss-limit') and (
-                (side == "sell" and stop_loss > float(order['price'])) or
-                (side == "buy" and stop_loss < float(order['price']))
-                ))
-
-    @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float,
-                 order_types: Dict, side: BuySell, leverage: float) -> Dict:
-        """
-        Creates a stoploss market order.
-        Stoploss market orders is the only stoploss type supported by kraken.
-        TODO: investigate if this can be combined with generic implementation
-              (careful, prices are reversed)
-        """
-        params = self._params.copy()
-        if self.trading_mode == TradingMode.FUTURES:
-            params.update({'reduceOnly': True})
-
-        if order_types.get('stoploss', 'market') == 'limit':
-            ordertype = "stop-loss-limit"
-            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            if side == "sell":
-                limit_rate = stop_price * limit_price_pct
-            else:
-                limit_rate = stop_price * (2 - limit_price_pct)
-            params['price2'] = self.price_to_precision(pair, limit_rate)
-        else:
-            ordertype = "stop-loss"
-
-        stop_price = self.price_to_precision(pair, stop_price)
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price, leverage, stop_loss=True)
-            return dry_order
-
-        try:
-            amount = self.amount_to_precision(pair, amount)
-
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=stop_price, params=params)
-            self._log_exchange_response('create_stoploss_order', order)
-            logger.info('stoploss order added for %s. '
-                        'stop price: %s.', pair, stop_price)
-            return order
-        except ccxt.InsufficientFunds as e:
-            raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
-                f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
-                f'Message: {e}') from e
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Could not create {ordertype} {side} order on market {pair}. '
-                f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
-                f'Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
     def _set_leverage(
         self,
         leverage: float,
         pair: Optional[str] = None,
-        trading_mode: Optional[TradingMode] = None
+        accept_fail: bool = False,
     ):
         """
         Kraken set's the leverage as an option in the order object, so we need to
@@ -171,7 +108,7 @@ class Kraken(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc'
+        time_in_force: str = 'GTC'
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -182,6 +119,9 @@ class Kraken(Exchange):
         )
         if leverage > 1.0:
             params['leverage'] = round(leverage)
+        if time_in_force == 'PO':
+            params.pop('timeInForce', None)
+            params['postOnly'] = True
         return params
 
     def calculate_funding_fees(
@@ -190,7 +130,7 @@ class Kraken(Exchange):
         amount: float,
         is_short: bool,
         open_date: datetime,
-        close_date: Optional[datetime] = None,
+        close_date: datetime,
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
@@ -217,3 +157,31 @@ class Kraken(Exchange):
             fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)
 
         return fees if is_short else -fees
+
+    def _get_trade_pagination_next_value(self, trades: List[Dict]):
+        """
+        Extract pagination id for the next "from_id" value
+        Applies only to fetch_trade_history by id.
+        """
+        if len(trades) > 0:
+            if (
+                isinstance(trades[-1].get('info'), list)
+                and len(trades[-1].get('info', [])) > 7
+            ):
+                # Trade response's "last" value.
+                return trades[-1].get('info', [])[-1]
+            # Fall back to timestamp if info is somehow empty.
+            return trades[-1].get('timestamp')
+        return None
+
+    def _valid_trade_pagination_id(self, pair: str, from_id: str) -> bool:
+        """
+        Verify trade-pagination id is valid.
+        Workaround for odd Kraken issue where ID is sometimes wrong.
+        """
+        # Regular id's are in timestamp format 1705443695120072285
+        # If the id is smaller than 19 characters, it's not a valid timestamp.
+        if len(from_id) >= 19:
+            return True
+        logger.debug(f"{pair} - trade-pagination id is not valid. Fallback to timestamp.")
+        return False

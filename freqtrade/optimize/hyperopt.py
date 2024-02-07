@@ -13,24 +13,27 @@ from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import progressbar
 import rapidjson
-from colorama import Fore, Style
 from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from joblib.externals import cloudpickle
 from pandas import DataFrame
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress, TaskProgressColumn, TextColumn,
+                           TimeElapsedColumn, TimeRemainingColumn)
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
+from freqtrade.data.metrics import calculate_market_change
+from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
-from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
+from freqtrade.optimize.hyperopt_tools import (HyperoptStateContainer, HyperoptTools,
+                                               hyperopt_serializer)
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
@@ -41,8 +44,6 @@ with warnings.catch_warnings():
     from skopt import Optimizer
     from skopt.space import Dimension
 
-progressbar.streams.wrap_stderr()
-progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
@@ -59,25 +60,30 @@ class Hyperopt:
     """
     Hyperopt class, this class contains all the logic to run a hyperopt simulation
 
-    To run a backtest:
+    To start a hyperopt run:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
         self.protection_space: List[Dimension] = []
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
+        self.max_open_trades_space: List[Dimension] = []
         self.dimensions: List[Dimension] = []
 
         self.config = config
+        self.min_date: datetime
+        self.max_date: datetime
 
         self.backtesting = Backtesting(self.config)
         self.pairlist = self.backtesting.pairlists.whitelist
         self.custom_hyperopt: HyperOptAuto
+        self.analyze_per_epoch = self.config.get('analyze_per_epoch', False)
+        HyperoptStateContainer.set_state(HyperoptState.STARTUP)
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
@@ -105,16 +111,15 @@ class Hyperopt:
 
         self.clean_hyperopt()
 
+        self.market_change = 0.0
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
-        if self.config.get('use_max_market_positions', True):
-            self.max_open_trades = self.config['max_open_trades']
-        else:
+        if not self.config.get('use_max_market_positions', True):
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-            self.max_open_trades = 0
-        self.position_stacking = self.config.get('position_stacking', False)
+            self.backtesting.strategy.max_open_trades = float('inf')
+            config.update({'max_open_trades': self.backtesting.strategy.max_open_trades})
 
         if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_exit_signal is enabled
@@ -126,7 +131,7 @@ class Hyperopt:
         self.print_json = self.config.get('print_json', False)
 
     @staticmethod
-    def get_lock_filename(config: Dict[str, Any]) -> str:
+    def get_lock_filename(config: Config) -> str:
 
         return str(config['user_data_dir'] / 'hyperopt.lock')
 
@@ -202,6 +207,10 @@ class Hyperopt:
             result['stoploss'] = {p.name: params.get(p.name) for p in self.stoploss_space}
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
+        if HyperoptTools.has_space(self.config, 'trades'):
+            result['max_open_trades'] = {
+                'max_open_trades': self.backtesting.strategy.max_open_trades
+                if self.backtesting.strategy.max_open_trades != float('inf') else -1}
 
         return result
 
@@ -222,6 +231,8 @@ class Hyperopt:
                 'trailing_stop_positive_offset': strategy.trailing_stop_positive_offset,
                 'trailing_only_offset_is_reached': strategy.trailing_only_offset_is_reached,
             }
+        if not HyperoptTools.has_space(self.config, 'trades'):
+            result['max_open_trades'] = {'max_open_trades': strategy.max_open_trades}
         return result
 
     def print_results(self, results) -> None:
@@ -250,6 +261,7 @@ class Hyperopt:
             logger.debug("Hyperopt has 'protection' space")
             # Enable Protections if protection space is selected.
             self.config['enable_protections'] = True
+            self.backtesting.enable_protections = True
             self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
@@ -272,8 +284,13 @@ class Hyperopt:
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
 
+        if HyperoptTools.has_space(self.config, 'trades'):
+            logger.debug("Hyperopt has 'trades' space")
+            self.max_open_trades_space = self.custom_hyperopt.max_open_trades_space()
+
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
-                           + self.roi_space + self.stoploss_space + self.trailing_space)
+                           + self.roi_space + self.stoploss_space + self.trailing_space
+                           + self.max_open_trades_space)
 
     def assign_params(self, params_dict: Dict, category: str) -> None:
         """
@@ -284,12 +301,13 @@ class Hyperopt:
                 # noinspection PyProtectedMember
                 attr.value = params_dict[attr_name]
 
-    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
+    def generate_optimizer(self, raw_params: List[Any]) -> Dict[str, Any]:
         """
         Used Optimize function.
         Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
+        HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
@@ -319,15 +337,30 @@ class Hyperopt:
             self.backtesting.strategy.trailing_only_offset_is_reached = \
                 d['trailing_only_offset_is_reached']
 
+        if HyperoptTools.has_space(self.config, 'trades'):
+            if self.config["stake_amount"] == "unlimited" and \
+                    (params_dict['max_open_trades'] == -1 or params_dict['max_open_trades'] == 0):
+                # Ignore unlimited max open trades if stake amount is unlimited
+                params_dict.update({'max_open_trades': self.config['max_open_trades']})
+
+            updated_max_open_trades = int(params_dict['max_open_trades']) \
+                if (params_dict['max_open_trades'] != -1
+                    and params_dict['max_open_trades'] != 0) else float('inf')
+
+            self.config.update({'max_open_trades': updated_max_open_trades})
+
+            self.backtesting.strategy.max_open_trades = updated_max_open_trades
+
         with self.data_pickle_file.open('rb') as f:
             processed = load(f, mmap_mode='r')
+            if self.analyze_per_epoch:
+                # Data is not yet analyzed, rerun populate_indicators.
+                processed = self.advise_and_trim(processed)
+
         bt_results = self.backtesting.backtest(
             processed=processed,
             start_date=self.min_date,
-            end_date=self.max_date,
-            max_open_trades=self.max_open_trades,
-            position_stacking=self.position_stacking,
-            enable_protections=self.config.get('enable_protections', False),
+            end_date=self.max_date
         )
         backtest_end_time = datetime.now(timezone.utc)
         bt_results.update({
@@ -346,7 +379,8 @@ class Hyperopt:
 
         strat_stats = generate_strategy_stats(
             self.pairlist, self.backtesting.strategy.get_strategy_name(),
-            backtesting_results, min_date, max_date, market_change=0
+            backtesting_results, min_date, max_date, market_change=self.market_change,
+            is_hyperopt=True,
         )
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
@@ -399,29 +433,48 @@ class Hyperopt:
             model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
 
-    def run_optimizer_parallel(self, parallel, asked, i) -> List:
+    def run_optimizer_parallel(
+            self, parallel: Parallel, asked: List[List]) -> List[Dict[str, Any]]:
+        """ Start optimizer in a parallel way """
         return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
+                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
-    def prepare_hyperopt_data(self) -> None:
-        data, timerange = self.backtesting.load_bt_data()
-        self.backtesting.load_bt_data_detail()
-        logger.info("Dataload complete. Calculating indicators")
-
+    def advise_and_trim(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe to get correct dates for output.
-        processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
-        self.min_date, self.max_date = get_timerange(processed)
+        # This is only used to keep track of min/max date after trimming.
+        # The result is NOT returned from this method, actual trimming happens in backtesting.
+        trimmed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
+        self.min_date, self.max_date = get_timerange(trimmed)
+        if not self.market_change:
+            self.market_change = calculate_market_change(trimmed, 'close')
 
-        logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'({(self.max_date - self.min_date).days} days)..')
-        # Store non-trimmed data - will be trimmed after signal generation.
-        dump(preprocessed, self.data_pickle_file)
+        # Real trimming will happen as part of backtesting.
+        return preprocessed
+
+    def prepare_hyperopt_data(self) -> None:
+        HyperoptStateContainer.set_state(HyperoptState.DATALOAD)
+        data, self.timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
+        logger.info("Dataload complete. Calculating indicators")
+
+        if not self.analyze_per_epoch:
+            HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
+
+            preprocessed = self.advise_and_trim(data)
+
+            logger.info(f'Hyperopting with data from '
+                        f'{self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'({(self.max_date - self.min_date).days} days)..')
+            # Store non-trimmed data - will be trimmed after signal generation.
+            dump(preprocessed, self.data_pickle_file)
+        else:
+            dump(data, self.data_pickle_file)
 
     def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
         """
@@ -447,7 +500,7 @@ class Hyperopt:
         while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
-                asked = unique_list(self.opt.ask(n_points=n_points * 5))
+                asked = unique_list(self.opt.ask(n_points=n_points * 5 if i > 0 else n_points))
                 is_random = [False for _ in range(len(asked))]
             else:
                 asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
@@ -468,6 +521,30 @@ class Hyperopt:
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
 
+    def evaluate_result(self, val: Dict[str, Any], current: int, is_random: bool):
+        """
+        Evaluate results returned from generate_optimizer
+        """
+        val['current_epoch'] = current
+        val['is_initial_point'] = current <= INITIAL_POINTS
+
+        logger.debug("Optimizer epoch evaluated: %s", val)
+
+        is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
+        # This value is assigned here and not in the optimization method
+        # to keep proper order in the list of results. That's because
+        # evaluations can take different time. Here they are aligned in the
+        # order they will be shown to the user.
+        val['is_best'] = is_best
+        val['is_random'] = is_random
+        self.print_results(val)
+
+        if is_best:
+            self.current_best_loss = val['loss']
+            self.current_best_epoch = val
+
+        self._save_result(val)
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state'))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -483,6 +560,7 @@ class Hyperopt:
         self.backtesting.exchange._api_async = None
         self.backtesting.exchange.loop = None  # type: ignore
         self.backtesting.exchange._loop_lock = None  # type: ignore
+        self.backtesting.exchange._cache_lock = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
 
@@ -502,66 +580,48 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
 
                 # Define progressbar
-                if self.print_colorized:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                            fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
-                            marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
-                else:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
-                with progressbar.ProgressBar(
-                    max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
-                    widgets=widgets
+                with Progress(
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(bar_width=None),
+                    MofNCompleteColumn(),
+                    TaskProgressColumn(),
+                    "•",
+                    TimeElapsedColumn(),
+                    "•",
+                    TimeRemainingColumn(),
+                    expand=True,
                 ) as pbar:
-                    EVALS = ceil(self.total_epochs / jobs)
-                    for i in range(EVALS):
+                    task = pbar.add_task("Epochs", total=self.total_epochs)
+
+                    start = 0
+
+                    if self.analyze_per_epoch:
+                        # First analysis not in parallel mode when using --analyze-per-epoch.
+                        # This allows dataprovider to load it's informative cache.
+                        asked, is_random = self.get_asked_points(n_points=1)
+                        f_val0 = self.generate_optimizer(asked[0])
+                        self.opt.tell(asked, [f_val0['loss']])
+                        self.evaluate_result(f_val0, 1, is_random[0])
+                        pbar.update(task, advance=1)
+                        start += 1
+
+                    evals = ceil((self.total_epochs - start) / jobs)
+                    for i in range(evals):
                         # Correct the number of epochs to be processed for the last
                         # iteration (should not exceed self.total_epochs in total)
-                        n_rest = (i + 1) * jobs - self.total_epochs
+                        n_rest = (i + 1) * jobs - (self.total_epochs - start)
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
                         asked, is_random = self.get_asked_points(n_points=current_jobs)
-                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        f_val = self.run_optimizer_parallel(parallel, asked)
                         self.opt.tell(asked, [v['loss'] for v in f_val])
 
-                        # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
                             # Use human-friendly indexes here (starting from 1)
-                            current = i * jobs + j + 1
-                            val['current_epoch'] = current
-                            val['is_initial_point'] = current <= INITIAL_POINTS
+                            current = i * jobs + j + 1 + start
 
-                            logger.debug(f"Optimizer epoch evaluated: {val}")
-
-                            is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
-                            # This value is assigned here and not in the optimization method
-                            # to keep proper order in the list of results. That's because
-                            # evaluations can take different time. Here they are aligned in the
-                            # order they will be shown to the user.
-                            val['is_best'] = is_best
-                            val['is_random'] = is_random[j]
-                            self.print_results(val)
-
-                            if is_best:
-                                self.current_best_loss = val['loss']
-                                self.current_best_epoch = val
-
-                            self._save_result(val)
-
-                            pbar.update(current)
+                            self.evaluate_result(val, current, is_random[j])
+                            pbar.update(task, advance=1)
 
         except KeyboardInterrupt:
             print('User interrupted..')
@@ -577,6 +637,10 @@ class Hyperopt:
 
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
+        elif self.num_epochs_saved > 0:
+            print(
+                f"No good result found for given optimization function in {self.num_epochs_saved} "
+                f"{plural(self.num_epochs_saved, 'epoch')}.")
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.

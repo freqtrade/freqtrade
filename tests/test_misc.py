@@ -1,50 +1,20 @@
 # pragma pylint: disable=missing-docstring,C0103
 
-import datetime
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
 
-from freqtrade.misc import (decimals_per_coin, deep_merge_dicts, file_dump_json, file_load_json,
-                            format_ms_time, pair_to_filename, parse_db_uri_for_logging, plural,
-                            render_template, render_template_with_fallback, round_coin_value,
-                            safe_value_fallback, safe_value_fallback2, shorten_date)
-
-
-def test_decimals_per_coin():
-    assert decimals_per_coin('USDT') == 3
-    assert decimals_per_coin('EUR') == 3
-    assert decimals_per_coin('BTC') == 8
-    assert decimals_per_coin('ETH') == 5
-
-
-def test_round_coin_value():
-    assert round_coin_value(222.222222, 'USDT') == '222.222 USDT'
-    assert round_coin_value(222.2, 'USDT', keep_trailing_zeros=True) == '222.200 USDT'
-    assert round_coin_value(222.2, 'USDT') == '222.2 USDT'
-    assert round_coin_value(222.12745, 'EUR') == '222.127 EUR'
-    assert round_coin_value(0.1274512123, 'BTC') == '0.12745121 BTC'
-    assert round_coin_value(0.1274512123, 'ETH') == '0.12745 ETH'
-
-    assert round_coin_value(222.222222, 'USDT', False) == '222.222'
-    assert round_coin_value(222.2, 'USDT', False) == '222.2'
-    assert round_coin_value(222.00, 'USDT', False) == '222'
-    assert round_coin_value(222.12745, 'EUR', False) == '222.127'
-    assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
-    assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
-    assert round_coin_value(222.2, 'USDT', False, True) == '222.200'
-
-
-def test_shorten_date() -> None:
-    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
-    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
-    assert shorten_date(str_data) == str_shorten_data
+from freqtrade.misc import (dataframe_to_json, deep_merge_dicts, file_dump_json, file_load_json,
+                            is_file_in_dir, json_to_dataframe, pair_to_filename,
+                            parse_db_uri_for_logging, plural, safe_value_fallback,
+                            safe_value_fallback2)
 
 
 def test_file_dump_json(mocker) -> None:
-    file_open = mocker.patch('freqtrade.misc.open', MagicMock())
+    file_open = mocker.patch('freqtrade.misc.Path.open', MagicMock())
     json_dump = mocker.patch('rapidjson.dump', MagicMock())
     file_dump_json(Path('somefile'), [1, 2, 3])
     assert file_open.call_count == 1
@@ -67,6 +37,24 @@ def test_file_load_json(mocker, testdatadir) -> None:
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
     ret = file_load_json(testdatadir / 'UNITTEST_BTC-8m.json')
     assert ret
+
+
+def test_is_file_in_dir(tmp_path):
+
+    # Create a temporary directory and file
+    dir_path = tmp_path / "subdir"
+    dir_path.mkdir()
+    file_path = dir_path / "test.txt"
+    file_path.touch()
+
+    # Test that the function returns True when the file is in the directory
+    assert is_file_in_dir(file_path, dir_path) is True
+
+    # Test that the function returns False when the file is not in the directory
+    assert is_file_in_dir(file_path, tmp_path) is False
+
+    file_path2 = tmp_path / "../../test2.txt"
+    assert is_file_in_dir(file_path2, tmp_path) is False
 
 
 @pytest.mark.parametrize("pair,expected_result", [
@@ -95,19 +83,6 @@ def test_pair_to_filename(pair, expected_result):
     assert pair_s == expected_result
 
 
-def test_format_ms_time() -> None:
-    # Date 2018-04-10 18:02:01
-    date_in_epoch_ms = 1523383321000
-    date = format_ms_time(date_in_epoch_ms)
-    assert type(date) is str
-    res = datetime.datetime(2018, 4, 10, 18, 2, 1, tzinfo=datetime.timezone.utc)
-    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
-    res = datetime.datetime(2017, 12, 13, 8, 2, 1, tzinfo=datetime.timezone.utc)
-    # Date 2017-12-13 08:02:01
-    date_in_epoch_ms = 1513152121000
-    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
-
-
 def test_safe_value_fallback():
     dict1 = {'keya': None, 'keyb': 2, 'keyc': 5, 'keyd': None}
     assert safe_value_fallback(dict1, 'keya', 'keyb') == 2
@@ -122,6 +97,8 @@ def test_safe_value_fallback():
 
     assert safe_value_fallback(dict1, 'keyNo', 'keyNo') is None
     assert safe_value_fallback(dict1, 'keyNo', 'keyNo', 55) == 55
+    assert safe_value_fallback(dict1, 'keyNo', default_value=55) == 55
+    assert safe_value_fallback(dict1, 'keyNo', None, default_value=55) == 55
 
 
 def test_safe_value_fallback2():
@@ -177,20 +154,6 @@ def test_plural() -> None:
     assert plural(-1.5, "ox", "oxen") == "oxen"
 
 
-def test_render_template_fallback(mocker):
-    from jinja2.exceptions import TemplateNotFound
-    with pytest.raises(TemplateNotFound):
-        val = render_template(
-            templatefile='subtemplates/indicators_does-not-exist.j2',)
-
-    val = render_template_with_fallback(
-        templatefile='subtemplates/indicators_does-not-exist.j2',
-        templatefallbackfile='subtemplates/indicators_minimal.j2',
-    )
-    assert isinstance(val, str)
-    assert 'if self.dp' in val
-
-
 @pytest.mark.parametrize('conn_url,expected', [
     ("postgresql+psycopg2://scott123:scott123@host:1245/dbname",
      "postgresql+psycopg2://scott123:*****@host:1245/dbname"),
@@ -219,3 +182,18 @@ def test_deep_merge_dicts():
 
     res2['first']['rows']['test'] = 'asdf'
     assert deep_merge_dicts(a, deepcopy(b), allow_null_overrides=False) == res2
+
+
+def test_dataframe_json(ohlcv_history):
+    from pandas.testing import assert_frame_equal
+    json = dataframe_to_json(ohlcv_history)
+    dataframe = json_to_dataframe(json)
+
+    assert list(ohlcv_history.columns) == list(dataframe.columns)
+    assert len(ohlcv_history) == len(dataframe)
+
+    assert_frame_equal(ohlcv_history, dataframe)
+    ohlcv_history.at[1, 'date'] = pd.NaT
+    json = dataframe_to_json(ohlcv_history)
+
+    dataframe = json_to_dataframe(json)

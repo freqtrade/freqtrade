@@ -45,16 +45,17 @@ pytest tests/test_<file_name>.py::test_<method_name>
 
 ### 2. Test if your code is PEP8 compliant
 
-#### Run Flake8
+#### Run Ruff
 
 ```bash
-flake8 freqtrade tests scripts
+ruff .
 ```
 
-We receive a lot of code that fails the `flake8` checks.
+We receive a lot of code that fails the `ruff` checks.
 To help with that, we encourage you to install the git pre-commit 
-hook that will warn you when you try to commit code that fails these checks. 
-Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using-hooks.html).
+hook that will warn you when you try to commit code that fails these checks.
+
+you can manually run pre-commit with `pre-commit run -a`.
 
 ##### Additional styles applied
 
@@ -124,7 +125,7 @@ Exceptions:
 
 Contributors may be given commit privileges. Preference will be given to those with:
 
-1. Past contributions to Freqtrade and other related open-source projects. Contributions to Freqtrade include both code (both accepted and pending) and friendly participation in the issue tracker and Pull request reviews. Quantity and quality are considered.
+1. Past contributions to Freqtrade and other related open-source projects. Contributions to Freqtrade include both code (both accepted and pending) and friendly participation in the issue tracker and Pull request reviews. Both quantity and quality are considered.
 1. A coding style that the other core committers find simple, minimal, and clean.
 1. Access to resources for cross-platform development and testing.
 1. Time to devote to the project regularly.

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # QTPyLib: Quantitative Trading Python Library
 # https://github.com/ranaroussi/qtpylib
 #
@@ -19,7 +16,6 @@
 # limitations under the License.
 #
 
-import sys
 import warnings
 from datetime import datetime, timedelta
 
@@ -27,11 +23,6 @@ import numpy as np
 import pandas as pd
 from pandas.core.base import PandasObject
 
-
-# =============================================
-# check min, python version
-if sys.version_info < (3, 4):
-    raise SystemError("QTPyLib requires Python version >= 3.4")
 
 # =============================================
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
@@ -235,7 +226,7 @@ def crossed(series1, series2, direction=None):
             series1.shift(1) >= series2.shift(1)))
 
     if direction is None:
-        return above or below
+        return above | below
 
     return above if direction == "above" else below
 

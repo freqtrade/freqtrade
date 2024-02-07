@@ -24,7 +24,7 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
     The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
-    Python3.8 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
+    Python3.9 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
     Also, python headers (`python<yourversion>-dev` / `python<yourversion>-devel`) must be available for the installation to complete successfully.
 
 !!! Warning "Up-to-date clock"
@@ -42,11 +42,11 @@ These requirements apply to both [Script Installation](#script-installation) and
 
 ### Install guide
 
-* [Python >= 3.8.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [Python >= 3.9](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
-* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions [below](#install-ta-lib))
+* [TA-Lib](https://ta-lib.github.io/ta-lib-python/) (install instructions [below](#install-ta-lib))
 
 ### Install code
 
@@ -54,7 +54,7 @@ We've included/collected install instructions for Ubuntu, MacOS, and Windows. Th
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
-    Python3.8 or higher and the corresponding pip are assumed to be available.
+    Python3.9 or higher and the corresponding pip are assumed to be available.
 
 === "Debian/Ubuntu"
     #### Install necessary dependencies
@@ -143,11 +143,11 @@ If you are on Debian, Ubuntu or MacOS, freqtrade provides the script to install 
 
 ### Activate your virtual environment
 
-Each time you open a new terminal, you must run `source .env/bin/activate` to activate your virtual environment.
+Each time you open a new terminal, you must run `source .venv/bin/activate` to activate your virtual environment.
 
 ```bash
-# then activate your .env
-source ./.env/bin/activate
+# activate virtual environment
+source ./.venv/bin/activate
 ```
 
 ### Congratulations
@@ -169,10 +169,10 @@ You can as well update, configure and reset the codebase of your bot with `./scr
 ** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.8+ installed beforehand for this to work.
+You will need to have git and python3.9+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
-* Setup your virtualenv under `.env/`
+* Setup your virtualenv under `.venv/`
 
 This option is a combination of installation tasks and `--reset`
 
@@ -204,7 +204,7 @@ sudo ./build_helpers/install_ta-lib.sh
 
 ##### TA-Lib manual installation
 
-Official webpage: https://mrjbq7.github.io/ta-lib/install.html
+[Official installation guide](https://ta-lib.github.io/ta-lib-python/install.html)
 
 ```bash
 wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
@@ -225,17 +225,18 @@ rm -rf ./ta-lib*
 You will run freqtrade in separated `virtual environment`
 
 ```bash
-# create virtualenv in directory /freqtrade/.env
-python3 -m venv .env
+# create virtualenv in directory /freqtrade/.venv
+python3 -m venv .venv
 
 # run virtualenv
-source .env/bin/activate
+source .venv/bin/activate
 ```
 
 #### Install python dependencies
 
 ```bash
 python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 
@@ -284,10 +285,8 @@ cd freqtrade
 
 #### Freqtrade install: Conda Environment
 
-Prepare conda-freqtrade environment, using file `environment.yml`, which exist in main freqtrade directory
-
 ```bash
-conda env create -n freqtrade-conda -f environment.yml
+conda create --name freqtrade python=3.11
 ```
 
 !!! Note "Creating Conda Environment"
@@ -296,12 +295,9 @@ conda env create -n freqtrade-conda -f environment.yml
     ```bash
     # choose your own packages
     conda env create -n [name of the environment] [python version] [packages]
-
-    # point to file with packages
-    conda env create -n [name of the environment] -f [file]
     ```
 
-#### Enter/exit freqtrade-conda environment
+#### Enter/exit freqtrade environment
 
 To check available environments, type
 
@@ -313,7 +309,7 @@ Enter installed environment
 
 ```bash
 # enter conda environment
-conda activate freqtrade-conda
+conda activate freqtrade
 
 # exit conda environment - don't do it now
 conda deactivate
@@ -323,7 +319,18 @@ Install last python dependencies with pip
 
 ```bash
 python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
+```
+
+Patch conda libta-lib (Linux only)
+
+```bash
+# Ensure that the environment is active!
+conda activate freqtrade
+
+cd build_helpers
+bash install_ta-lib.sh ${CONDA_PREFIX} nosudo
 ```
 
 ### Congratulations
@@ -339,8 +346,8 @@ conda env list
 # activate base environment
 conda activate
 
-# activate freqtrade-conda environment
-conda activate freqtrade-conda
+# activate freqtrade environment
+conda activate freqtrade
 
 #deactivate any conda environments
 conda deactivate                              
@@ -376,7 +383,7 @@ You've made it this far, so you have successfully installed freqtrade.
 freqtrade create-userdir --userdir user_data
 
 # Step 2 - Create a new configuration file
-freqtrade new-config --config config.json
+freqtrade new-config --config user_data/config.json
 ```
 
 You are ready to run, read [Bot Configuration](configuration.md), remember to start with `dry_run: True` and verify that everything is working.
@@ -386,7 +393,7 @@ To learn how to setup your configuration, please refer to the [Bot Configuration
 ### Start the Bot
 
 ```bash
-freqtrade trade --config config.json --strategy SampleStrategy
+freqtrade trade --config user_data/config.json --strategy SampleStrategy
 ```
 
 !!! Warning
@@ -404,8 +411,8 @@ If you used (1)`Script` or (2)`Manual` installation, you need to run the bot in 
 # if:
 bash: freqtrade: command not found
 
-# then activate your .env
-source ./.env/bin/activate
+# then activate your virtual environment
+source ./.venv/bin/activate
 ```
 
 ### MacOS installation error

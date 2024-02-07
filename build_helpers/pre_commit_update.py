@@ -8,12 +8,17 @@ import yaml
 
 pre_commit_file = Path('.pre-commit-config.yaml')
 require_dev = Path('requirements-dev.txt')
+require = Path('requirements.txt')
 
 with require_dev.open('r') as rfile:
     requirements = rfile.readlines()
 
+with require.open('r') as rfile:
+    requirements.extend(rfile.readlines())
+
 # Extract types only
-type_reqs = [r.strip('\n') for r in requirements if r.startswith('types-')]
+type_reqs = [r.strip('\n') for r in requirements if r.startswith(
+    'types-') or r.startswith('SQLAlchemy')]
 
 with pre_commit_file.open('r') as file:
     f = yaml.load(file, Loader=yaml.FullLoader)

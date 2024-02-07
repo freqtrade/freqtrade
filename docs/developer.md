@@ -24,7 +24,7 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
 Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
-This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+This will install all required tools for development, including `pytest`, `ruff`, `mypy`, and `coveralls`.
 
 Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
 This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
@@ -49,6 +49,13 @@ For more information about the [Remote container extension](https://code.visuals
 New code should be covered by basic unittests. Depending on the complexity of the feature, Reviewers may request more in-depth unittests.
 If necessary, the Freqtrade team can assist and give guidance with writing good tests (however please don't expect anyone to write the tests for you).
 
+#### How to run tests
+
+Use `pytest` in root folder to run all available testcases and confirm your local environment is setup correctly
+
+!!! Note "feature branches"
+    Tests are expected to pass on the `develop` and `stable` branches. Other branches may be work in progress with tests not working yet.
+
 #### Checking log content in tests
 
 Freqtrade uses 2 main methods to check log content in tests, `log_has()` and `log_has_re()` (to check using regex, in case of dynamic log-messages).
@@ -70,7 +77,7 @@ def test_method_to_test(caplog):
 
 ### Debug configuration
 
-To debug freqtrade, we recommend VSCode with the following launch configuration (located in `.vscode/launch.json`).
+To debug freqtrade, we recommend VSCode (with the Python extension) with the following launch configuration (located in `.vscode/launch.json`).
 Details will obviously vary between setups - but this should work to get you started.
 
 ``` json
@@ -94,6 +101,19 @@ Command line arguments can be added in the `"args"` array.
 This method can also be used to debug a strategy, by setting the breakpoints within the strategy.
 
 A similar setup can also be taken for Pycharm - using `freqtrade` as module name, and setting the command line arguments as "parameters".
+
+??? Tip "Correct venv usage"
+    When using a virtual environment (which you should), make sure that your Editor is using the correct virtual environment to avoid problems or "unknown import" errors.
+
+    #### Vscode
+
+    You can select the correct environment in VSCode with the command "Python: Select Interpreter" - which will show you environments the extension detected.
+    If your environment has not been detected, you can also pick a path manually.
+
+    #### Pycharm
+
+    In pycharm, you can select the appropriate Environment in the "Run/Debug Configurations" window.
+    ![Pycharm debug configuration](assets/pycharm_debug.png)
 
 !!! Note "Startup directory"
     This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).
@@ -298,6 +318,7 @@ Additional tests / steps to complete:
 * Check if balance shows correctly (*)
 * Create market order (*)
 * Create limit order (*)
+* Cancel order (*)
 * Complete trade (enter + exit) (*)
   * Compare result calculation between exchange and bot
   * Ensure fees are applied correctly (check the database against the exchange)
@@ -320,18 +341,18 @@ To check how the new exchange behaves, you can use the following snippet:
 
 ``` python
 import ccxt
-from datetime import datetime
+from datetime import datetime, timezone
 from freqtrade.data.converter import ohlcv_to_dataframe
-ct = ccxt.binance()
+ct = ccxt.binance()  # Use the exchange you're testing
 timeframe = "1d"
-pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
+pair = "BTC/USDT"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
 df1 = ohlcv_to_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1.tail(1))
-print(datetime.utcnow())
+print(datetime.now(timezone.utc))
 ```
 
 ``` output
@@ -356,7 +377,7 @@ from pathlib import Path
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
     'secret': '<secret>'
-    'options': {'defaultType': 'future'}
+    'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()
 
@@ -398,6 +419,9 @@ This part of the documentation is aimed at maintainers, and shows how to create 
 
 ### Create release branch
 
+!!! Note
+    Make sure that the `stable` branch is up-to-date!
+
 First, pick a commit that's about one week old (to not include latest additions to releases).
 
 ``` bash
@@ -409,13 +433,11 @@ Determine if crucial bugfixes have been made between this commit and the current
 
 * Merge the release branch (stable) into this branch.
 * Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
-* Commit this part
-* push that branch to the remote and create a PR against the stable branch
+* Commit this part.
+* Push that branch to the remote and create a PR against the **stable branch**.
+* Update develop version to next version following the pattern `2019.8-dev`.
 
 ### Create changelog from git commits
-
-!!! Note
-    Make sure that the `stable` branch is up-to-date!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
@@ -433,6 +455,11 @@ To keep the release-log short, best wrap the full git changelog into a collapsib
 </details>
 ```
 
+### FreqUI release
+
+If FreqUI has been updated substantially, make sure to create a release before merging the release branch.
+Make sure that freqUI CI on the release is finished and passed before merging the release.
+
 ### Create github release / tag
 
 Once the PR against stable is merged (best right after merging):
@@ -440,7 +467,13 @@ Once the PR against stable is merged (best right after merging):
 * Use the button "Draft a new release" in the Github UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "stable" as reference (this step comes after the above PR is merged).
-* Use the above changelog as release comment (as codeblock)
+* Use the above changelog as release comment (as codeblock).
+* Use the below snippet for the new release
+
+??? Tip "Release template"
+    ````
+    --8<-- "includes/release_template.md"
+    ````
 
 ## Releases
 

@@ -31,9 +31,9 @@ optional arguments:
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  --data-format-ohlcv {json,jsongz,hdf5}
+  --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
+                        (default: `feather`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -107,7 +107,7 @@ Strategy arguments:
 
 ## Test your strategy with Backtesting
 
-Now you have good Buy and Sell strategies and some historic data, you want to test it against
+Now you have good Entry and exit strategies and some historic data, you want to test it against
 real data. This is what we call [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHLCV) data from `user_data/data/<exchange>` by default.
@@ -170,11 +170,11 @@ freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000
 
 Using a different on-disk historical candle (OHLCV) data source
 
-Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
+Assume you downloaded the history data from the Binance exchange and kept it in the `user_data/data/binance-20180101` directory. 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/bittrex-20180101 
+freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/binance-20180101 
 ```
 
 ---
@@ -215,7 +215,7 @@ Sometimes your account has certain fee rebates (fee reductions starting with a c
 To account for this in backtesting, you can use the `--fee` command line option to supply this value to backtesting.
 This fee must be a ratio, and will be applied twice (once for trade entry, and once for trade exit).
 
-For example, if the buying and selling commission fee is 0.1% (i.e., 0.001 written as ratio), then you would run backtesting as the following:
+For example, if the commission fee per order is 0.1% (i.e., 0.001 written as ratio), then you would run backtesting as the following:
 
 ```bash
 freqtrade backtesting --fee 0.001
@@ -252,41 +252,42 @@ The most important in the backtesting is to understand the result.
 A backtesting result will look like that:
 
 ```
-========================================================= BACKTESTING REPORT ==========================================================
-| Pair     |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration |  Wins Draws Loss   Win%  |
-|:---------|-------:|---------------:|---------------:|-----------------:|---------------:|:-------------|-------------------------:|
-| ADA/BTC  |     35 |          -0.11 |          -3.88 |      -0.00019428 |          -1.94 | 4:35:00      |    14     0    21   40.0 |
-| ARK/BTC  |     11 |          -0.41 |          -4.52 |      -0.00022647 |          -2.26 | 2:03:00      |     3     0     8   27.3 |
-| BTS/BTC  |     32 |           0.31 |           9.78 |       0.00048938 |           4.89 | 5:05:00      |    18     0    14   56.2 |
-| DASH/BTC |     13 |          -0.08 |          -1.07 |      -0.00005343 |          -0.53 | 4:39:00      |     6     0     7   46.2 |
-| ENG/BTC  |     18 |           1.36 |          24.54 |       0.00122807 |          12.27 | 2:50:00      |     8     0    10   44.4 |
-| EOS/BTC  |     36 |           0.08 |           3.06 |       0.00015304 |           1.53 | 3:34:00      |    16     0    20   44.4 |
-| ETC/BTC  |     26 |           0.37 |           9.51 |       0.00047576 |           4.75 | 6:14:00      |    11     0    15   42.3 |
-| ETH/BTC  |     33 |           0.30 |           9.96 |       0.00049856 |           4.98 | 7:31:00      |    16     0    17   48.5 |
-| IOTA/BTC |     32 |           0.03 |           1.09 |       0.00005444 |           0.54 | 3:12:00      |    14     0    18   43.8 |
-| LSK/BTC  |     15 |           1.75 |          26.26 |       0.00131413 |          13.13 | 2:58:00      |     6     0     9   40.0 |
-| LTC/BTC  |     32 |          -0.04 |          -1.38 |      -0.00006886 |          -0.69 | 4:49:00      |    11     0    21   34.4 |
-| NANO/BTC |     17 |           1.26 |          21.39 |       0.00107058 |          10.70 | 1:55:00      |    10     0     7   58.5 |
-| NEO/BTC  |     23 |           0.82 |          18.97 |       0.00094936 |           9.48 | 2:59:00      |    10     0    13   43.5 |
-| REQ/BTC  |      9 |           1.17 |          10.54 |       0.00052734 |           5.27 | 3:47:00      |     4     0     5   44.4 |
-| XLM/BTC  |     16 |           1.22 |          19.54 |       0.00097800 |           9.77 | 3:15:00      |     7     0     9   43.8 |
-| XMR/BTC  |     23 |          -0.18 |          -4.13 |      -0.00020696 |          -2.07 | 5:30:00      |    12     0    11   52.2 |
-| XRP/BTC  |     35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
-| ZEC/BTC  |     22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
-| TOTAL    |    429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
-========================================================= EXIT REASON STATS ==========================================================
-| Exit Reason        |   Sells |  Wins |  Draws |  Losses |
+========================================================= BACKTESTING REPORT =========================================================
+| Pair     | Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration |  Wins Draws Loss   Win%  |
+|:---------|--------:|---------------:|---------------:|-----------------:|---------------:|:-------------|-------------------------:|
+| ADA/BTC  |      35 |          -0.11 |          -3.88 |      -0.00019428 |          -1.94 | 4:35:00      |    14     0    21   40.0 |
+| ARK/BTC  |      11 |          -0.41 |          -4.52 |      -0.00022647 |          -2.26 | 2:03:00      |     3     0     8   27.3 |
+| BTS/BTC  |      32 |           0.31 |           9.78 |       0.00048938 |           4.89 | 5:05:00      |    18     0    14   56.2 |
+| DASH/BTC |      13 |          -0.08 |          -1.07 |      -0.00005343 |          -0.53 | 4:39:00      |     6     0     7   46.2 |
+| ENG/BTC  |      18 |           1.36 |          24.54 |       0.00122807 |          12.27 | 2:50:00      |     8     0    10   44.4 |
+| EOS/BTC  |      36 |           0.08 |           3.06 |       0.00015304 |           1.53 | 3:34:00      |    16     0    20   44.4 |
+| ETC/BTC  |      26 |           0.37 |           9.51 |       0.00047576 |           4.75 | 6:14:00      |    11     0    15   42.3 |
+| ETH/BTC  |      33 |           0.30 |           9.96 |       0.00049856 |           4.98 | 7:31:00      |    16     0    17   48.5 |
+| IOTA/BTC |      32 |           0.03 |           1.09 |       0.00005444 |           0.54 | 3:12:00      |    14     0    18   43.8 |
+| LSK/BTC  |      15 |           1.75 |          26.26 |       0.00131413 |          13.13 | 2:58:00      |     6     0     9   40.0 |
+| LTC/BTC  |      32 |          -0.04 |          -1.38 |      -0.00006886 |          -0.69 | 4:49:00      |    11     0    21   34.4 |
+| NANO/BTC |      17 |           1.26 |          21.39 |       0.00107058 |          10.70 | 1:55:00      |    10     0     7   58.5 |
+| NEO/BTC  |      23 |           0.82 |          18.97 |       0.00094936 |           9.48 | 2:59:00      |    10     0    13   43.5 |
+| REQ/BTC  |       9 |           1.17 |          10.54 |       0.00052734 |           5.27 | 3:47:00      |     4     0     5   44.4 |
+| XLM/BTC  |      16 |           1.22 |          19.54 |       0.00097800 |           9.77 | 3:15:00      |     7     0     9   43.8 |
+| XMR/BTC  |      23 |          -0.18 |          -4.13 |      -0.00020696 |          -2.07 | 5:30:00      |    12     0    11   52.2 |
+| XRP/BTC  |      35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
+| ZEC/BTC  |      22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
+| TOTAL    |     429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
+====================================================== LEFT OPEN TRADES REPORT ======================================================
+| Pair     |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
+|:---------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
+| ADA/BTC  |        1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
+| LTC/BTC  |        1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
+| TOTAL    |        2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
+==================== EXIT REASON STATS ====================
+| Exit Reason        |   Exits |  Wins |  Draws |  Losses |
 |:-------------------|--------:|------:|-------:|--------:|
 | trailing_stop_loss |     205 |   150 |      0 |      55 |
 | stop_loss          |     166 |     0 |      0 |     166 |
 | exit_signal        |      56 |    36 |      0 |      20 |
 | force_exit         |       2 |     0 |      0 |       2 |
-====================================================== LEFT OPEN TRADES REPORT ======================================================
-| Pair     |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
-|:---------|-------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
-| ADA/BTC  |      1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
-| LTC/BTC  |      1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
-| TOTAL    |      2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
+
 ================== SUMMARY METRICS ==================
 | Metric                      | Value               |
 |-----------------------------+---------------------|
@@ -300,7 +301,11 @@ A backtesting result will look like that:
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Sortino                     | 1.88                |
+| Sharpe                      | 2.97                |
+| Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
+| Expectancy (Ratio)          | -0.15 (-0.05)       |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -319,6 +324,7 @@ A backtesting result will look like that:
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -356,7 +362,7 @@ The column `Avg Profit %` shows the average profit for all trades made while the
 The column `Tot Profit %` shows instead the total profit % in relation to the starting balance.
 In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the `Tot Profit %` will be `(0.00762792 / 0.01) * 100 ~= 76.2%`.
 
-Your strategy performance is influenced by your buy strategy, your exit strategy, and also by the `minimal_roi` and `stop_loss` you have set.
+Your strategy performance is influenced by your entry strategy, your exit strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
 For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bot to make more profit than 1% (because it will exit every time a trade reaches 1%).
 
@@ -400,7 +406,11 @@ It contains some useful key metrics about performance of your strategy on backte
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Sortino                     | 1.88                |
+| Sharpe                      | 2.97                |
+| Calmar                      | 6.29                |
 | Profit factor               | 1.11                |
+| Expectancy (Ratio)          | -0.15 (-0.05)       |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -419,6 +429,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Days win/draw/lose          | 12 / 82 / 25        |
 | Avg. Duration Winners       | 4:23:00             |
 | Avg. Duration Loser         | 6:55:00             |
+| Max Consecutive Wins / Loss | 3 / 4               |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
 | Canceled Trade Entries      | 34                  |
@@ -447,6 +458,9 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `CAGR %`: Compound annual growth rate.
+- `Sortino`: Annualized Sortino ratio.
+- `Sharpe`: Annualized Sharpe ratio.
+- `Calmar`: Annualized Calmar ratio.
 - `Profit factor`: profit / loss.
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
@@ -455,6 +469,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Max Consecutive Wins / Loss`: Maximum consecutive wins/losses in a row.
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Canceled Trade Entries`: Number of trades that have been canceled by user request via `adjust_entry_price`.
@@ -515,20 +530,21 @@ You can then load the trades to perform further analysis as shown in the [data a
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Exchange [trading limits](#trading-limits-in-backtesting) are respected
-- Buys happen at open-price
+- Entries happen at open-price
 - All orders are filled at the requested price (no slippage, no unfilled orders)
 - Exit-signal exits happen at open-price of the consecutive candle
 - Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
   - exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
   - exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit
-  - Forceexits caused by `<N>=-1` ROI entries use low as exit value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
+  - ROI entries which came into effect on the triggering candle (e.g. `120: 0.02` for 1h candles, from `60: 0.05`) will use the candle's open as exit rate
+  - Force-exits caused by `<N>=-1` ROI entries use low as exit value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss exits happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
 - Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` exit reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
 - Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - Trailing Stoploss is only adjusted if it's below the candle's low (otherwise it would be triggered)
-  - On trade entry candles that trigger trailing stoploss, the "minimum offset" (`stop_positive_offset`) is assumed (instead of high) - and the stop is calculated from this point
+  - On trade entry candles that trigger trailing stoploss, the "minimum offset" (`stop_positive_offset`) is assumed (instead of high) - and the stop is calculated from this point. This rule is NOT applicable to custom-stoploss scenarios, since there's no information about the stoploss logic available.
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so exits with large high-low difference are backtested correctly)
   - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
@@ -546,8 +562,8 @@ In addition to the above assumptions, strategy authors should carefully read the
 
 ### Trading limits in backtesting
 
-Exchanges have certain trading limits, like minimum base currency, or minimum stake (quote) currency.
-These limits are usually listed in the exchange documentation as "trading rules" or similar.
+Exchanges have certain trading limits, like minimum (and maximum) base currency, or minimum/maximum stake (quote) currency.
+These limits are usually listed in the exchange documentation as "trading rules" or similar and can be quite different between different pairs.
 
 Backtesting (as well as live and dry-run) does honor these limits, and will ensure that a stoploss can be placed below this value - so the value will be slightly higher than what the exchange specifies.
 Freqtrade has however no information about historic limits.
@@ -560,6 +576,14 @@ BTC minimum tradable amount is 0.001.
 BTC trades at 22.000\$ today (0.001 BTC is related to this) - but the backtesting period includes prices as high as 50.000\$.
 Today's minimum would be `0.001 * 22_000` - or 22\$.  
 However the limit could also be 50$ - based on `0.001 * 50_000` in some historic setting.
+
+#### Trading precision limits
+
+Most exchanges pose precision limits on both price and amounts, so you cannot buy 1.0020401 of a pair, or at a price of 1.24567123123.  
+Instead, these prices and amounts will be rounded or truncated (based on the exchange definition) to the defined trading precision.
+The above values may for example be rounded to an amount of 1.002, and a price of 1.24567.
+
+These precision values are based on current exchange limits (as described in the [above section](#trading-limits-in-backtesting)), as historic precision limits are not available.
 
 ## Improved backtest accuracy
 
@@ -575,7 +599,8 @@ To utilize this, you can append `--timeframe-detail 5m` to your regular backtest
 freqtrade backtesting --strategy AwesomeStrategy --timeframe 1h --timeframe-detail 5m
 ```
 
-This will load 1h data as well as 5m data for the timeframe. The strategy will be analyzed with the 1h timeframe - and for every "open trade candle" (candles where a trade is open) the 5m data will be used to simulate intra-candle movements.
+This will load 1h data as well as 5m data for the timeframe. The strategy will be analyzed with the 1h timeframe, and Entry orders will only be placed at the main timeframe, however Order fills and exit signals will be evaluated at the 5m candle, simulating intra-candle movements.
+
 All callback functions (`custom_exit()`, `custom_stoploss()`, ... ) will be running for each 5m candle once the trade is opened (so 12 times in the above example of 1h timeframe, and 5m detailed timeframe).
 
 `--timeframe-detail` must be smaller than the original timeframe, otherwise backtesting will fail to start.
@@ -593,22 +618,22 @@ To compare multiple strategies, a list of Strategies can be provided to backtest
 This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
-All listed Strategies need to be in the same directory.
+All listed Strategies need to be in the same directory, unless also `--recursive-strategy-search` is specified, where sub-directories within the strategy directory are also considered.
 
 ``` bash
 freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
-This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
+This will save the results to `user_data/backtest_results/backtest-result-<datetime>.json`, including results for both `Strategy001` and `Strategy002`.
 There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
 Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.
 
 ```
-=========================================================== STRATEGY SUMMARY =========================================================================
-| Strategy    |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
-|:------------|-------:|---------------:|---------------:|-----------------:|---------------:|:---------------|------:|-------:|-------:|-----------:|
-| Strategy1   |    429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
-| Strategy2   |   1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
+=========================================================== STRATEGY SUMMARY ===========================================================================
+| Strategy    |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
+|:------------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|------:|-------:|-------:|-----------:|
+| Strategy1   |      429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
+| Strategy2   |     1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
 ```
 
 ## Next step

@@ -1,3 +1,56 @@
+[build-system]
+requires = ["setuptools >= 64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "freqtrade"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+authors = [
+  {name = "Freqtrade Team"},
+  {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
+]
+
+description = "Freqtrade - Crypto Trading Bot"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "GPLv3"}
+# license = "GPLv3"
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/freqtrade/freqtrade"
+Documentation = "https://freqtrade.io"
+"Bug Tracker" = "https://github.com/freqtrade/freqtrade/issues"
+
+
+[project.scripts]
+freqtrade = "freqtrade.main:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freqtrade*"]
+exclude = ["tests", "tests.*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "freqtrade.__version__"}
+
 [tool.black]
 line-length = 100
 exclude = '''
@@ -27,21 +80,27 @@ skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+addopts = "--dist loadscope"
 
 [tool.mypy]
 ignore_missing_imports = true
+namespace_packages = false
 warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$'
+]
+plugins = [
+  "sqlalchemy.ext.mypy.plugin"
 ]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
 
-[build-system]
-requires = ["setuptools >= 46.4.0", "wheel"]
-build-backend = "setuptools.build_meta"
+[[tool.mypy.overrides]]
+# Telegram does not use implicit_optional = false in the current version.
+module = "telegram.*"
+implicit_optional = true
 
 [tool.pyright]
 include = ["freqtrade"]
@@ -51,5 +110,54 @@ exclude = [
 ]
 ignore = ["freqtrade/vendor/**"]
 
-# Align pyright to mypy config
-strictParameterNoneValue = false
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env", ".venv"]
+target-version = "py38"
+
+[tool.ruff.lint]
+# Exclude UP036 as it's causing the "exit if < 3.9" to fail.
+extend-select = [
+  "C90",    # mccabe
+  # "N",    # pep8-naming
+  "F",      # pyflakes
+  "E",      # pycodestyle
+  "W",      # pycodestyle
+  "UP",     # pyupgrade
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  "YTT",    # flake8-2020
+  # "S",    # flake8-bandit
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  "PTH",    # flake8-use-pathlib
+]
+
+extend-ignore = [
+  "E241",  # Multiple spaces after comma
+  "E272",  # Multiple spaces before keyword
+  "E221",  # Multiple spaces before operator
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]
+
+[tool.flake8]
+# Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
+# minus E226
+ignore = ["E121","E123","E126","E24","E704","W503","W504"]
+max-line-length = 100
+max-complexity = 12
+exclude = [
+    ".git",
+    "__pycache__",
+    ".eggs",
+    "user_data",
+    ".venv",
+    ".env",
+]

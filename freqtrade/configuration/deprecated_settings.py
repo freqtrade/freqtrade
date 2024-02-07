@@ -3,15 +3,16 @@ Functions to handle deprecated settings
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
 
 
-def check_conflicting_settings(config: Dict[str, Any],
+def check_conflicting_settings(config: Config,
                                section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str) -> None:
     section_new_config = config.get(section_new, {}) if section_new else config
@@ -28,7 +29,7 @@ def check_conflicting_settings(config: Dict[str, Any],
         )
 
 
-def process_removed_setting(config: Dict[str, Any],
+def process_removed_setting(config: Config,
                             section1: str, name1: str,
                             section2: Optional[str], name2: str) -> None:
     """
@@ -47,7 +48,7 @@ def process_removed_setting(config: Dict[str, Any],
         )
 
 
-def process_deprecated_setting(config: Dict[str, Any],
+def process_deprecated_setting(config: Config,
                                section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str
                                ) -> None:
@@ -69,7 +70,7 @@ def process_deprecated_setting(config: Dict[str, Any],
         del section_old_config[name_old]
 
 
-def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
+def process_temporary_deprecated_settings(config: Config) -> None:
 
     # Kept for future deprecated / moved settings
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',

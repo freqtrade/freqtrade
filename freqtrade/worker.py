@@ -9,10 +9,12 @@ from typing import Any, Callable, Dict, Optional
 
 import sdnotify
 
-from freqtrade import __version__, constants
+from freqtrade import __version__
 from freqtrade.configuration import Configuration
-from freqtrade.enums import State
+from freqtrade.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT, Config
+from freqtrade.enums import RPCMessageType, State
 from freqtrade.exceptions import OperationalException, TemporaryError
+from freqtrade.exchange import timeframe_to_next_date
 from freqtrade.freqtradebot import FreqtradeBot
 
 
@@ -24,7 +26,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Dict[str, Any] = None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Optional[Config] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
@@ -34,7 +36,6 @@ class Worker:
         self._config = config
         self._init(False)
 
-        self.last_throttle_start_time: float = 0
         self._heartbeat_msg: float = 0
 
         # Tell systemd that we completed initialization phase
@@ -53,7 +54,7 @@ class Worker:
 
         internals_config = self._config.get('internals', {})
         self._throttle_secs = internals_config.get('process_throttle_secs',
-                                                   constants.PROCESS_THROTTLE_SECS)
+                                                   PROCESS_THROTTLE_SECS)
         self._heartbeat_interval = internals_config.get('heartbeat_interval', 60)
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
@@ -111,7 +112,10 @@ class Worker:
             # Ping systemd watchdog before throttling
             self._notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
-            self._throttle(func=self._process_running, throttle_secs=self._throttle_secs)
+            # Use an offset of 1s to ensure a new candle has been issued
+            self._throttle(func=self._process_running, throttle_secs=self._throttle_secs,
+                           timeframe=self._config['timeframe'] if self._config else None,
+                           timeframe_offset=1)
 
         if self._heartbeat_interval:
             now = time.time()
@@ -126,23 +130,47 @@ class Worker:
 
         return state
 
-    def _throttle(self, func: Callable[..., Any], throttle_secs: float, *args, **kwargs) -> Any:
+    def _throttle(self, func: Callable[..., Any], throttle_secs: float,
+                  timeframe: Optional[str] = None, timeframe_offset: float = 1.0,
+                  *args, **kwargs) -> Any:
         """
         Throttles the given callable that it
         takes at least `min_secs` to finish execution.
         :param func: Any callable
         :param throttle_secs: throttling interation execution time limit in seconds
+        :param timeframe: ensure iteration is executed at the beginning of the next candle.
+        :param timeframe_offset: offset in seconds to apply to the next candle time.
         :return: Any (result of execution of func)
         """
-        self.last_throttle_start_time = time.time()
+        last_throttle_start_time = time.time()
         logger.debug("========================================")
         result = func(*args, **kwargs)
-        time_passed = time.time() - self.last_throttle_start_time
-        sleep_duration = max(throttle_secs - time_passed, 0.0)
+        time_passed = time.time() - last_throttle_start_time
+        sleep_duration = throttle_secs - time_passed
+        if timeframe:
+            next_tf = timeframe_to_next_date(timeframe)
+            # Maximum throttling should be until new candle arrives
+            # Offset is added to ensure a new candle has been issued.
+            next_tft = next_tf.timestamp() - time.time()
+            next_tf_with_offset = next_tft + timeframe_offset
+            if next_tft < sleep_duration and sleep_duration < next_tf_with_offset:
+                # Avoid hitting a new loop between the new candle and the candle with offset
+                sleep_duration = next_tf_with_offset
+            sleep_duration = min(sleep_duration, next_tf_with_offset)
+        sleep_duration = max(sleep_duration, 0.0)
+        # next_iter = datetime.now(timezone.utc) + timedelta(seconds=sleep_duration)
+
         logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
-                     f"last iteration took {time_passed:.2f} s.")
-        time.sleep(sleep_duration)
+                     f"last iteration took {time_passed:.2f} s."
+                     #  f"next: {next_iter}"
+                     )
+        self._sleep(sleep_duration)
         return result
+
+    @staticmethod
+    def _sleep(sleep_duration: float) -> None:
+        """Local sleep method - to improve testability"""
+        time.sleep(sleep_duration)
 
     def _process_stopped(self) -> None:
         self.freqtrade.process_stopped()
@@ -151,13 +179,16 @@ class Worker:
         try:
             self.freqtrade.process()
         except TemporaryError as error:
-            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
-            time.sleep(constants.RETRY_TIMEOUT)
+            logger.warning(f"Error: {error}, retrying in {RETRY_TIMEOUT} seconds...")
+            time.sleep(RETRY_TIMEOUT)
         except OperationalException:
             tb = traceback.format_exc()
             hint = 'Issue `/start` if you think it is safe to restart.'
 
-            self.freqtrade.notify_status(f'OperationalException:\n```\n{tb}```{hint}')
+            self.freqtrade.notify_status(
+                f'*OperationalException:*\n```\n{tb}```\n {hint}',
+                msg_type=RPCMessageType.EXCEPTION
+            )
 
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED

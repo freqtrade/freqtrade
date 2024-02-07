@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from freqtrade.configuration.config_setup import setup_utils_configuration
-from freqtrade.enums.runmode import RunMode
+from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def start_convert_db(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     init_db(config['db_url'])
-    session_target = Trade._session
+    session_target = Trade.session
     init_db(config['db_url_from'])
     logger.info("Starting db migration.")
 
@@ -36,16 +36,16 @@ def start_convert_db(args: Dict[str, Any]) -> None:
 
     session_target.commit()
 
-    for pairlock in PairLock.query:
+    for pairlock in PairLock.get_all_locks():
         pairlock_count += 1
         make_transient(pairlock)
         session_target.add(pairlock)
     session_target.commit()
 
     # Update sequences
-    max_trade_id = session_target.query(func.max(Trade.id)).scalar()
-    max_order_id = session_target.query(func.max(Order.id)).scalar()
-    max_pairlock_id = session_target.query(func.max(PairLock.id)).scalar()
+    max_trade_id = session_target.scalar(select(func.max(Trade.id)))
+    max_order_id = session_target.scalar(select(func.max(Order.id)))
+    max_pairlock_id = session_target.scalar(select(func.max(PairLock.id)))
 
     set_sequence_ids(session_target.get_bind(),
                      trade_id=max_trade_id,

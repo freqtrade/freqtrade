@@ -34,6 +34,11 @@ class HyperoptableStrategy(StrategyTestV3):
     protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
+    # Invalid plot config ...
+    plot_config = {
+        "main_plot": {},
+    }
+
     @property
     def protections(self):
         prot = []
@@ -45,6 +50,7 @@ class HyperoptableStrategy(StrategyTestV3):
         return prot
 
     bot_loop_started = False
+    bot_started = False
 
     def bot_loop_start(self):
         self.bot_loop_started = True
@@ -53,6 +59,7 @@ class HyperoptableStrategy(StrategyTestV3):
         """
         Parameters can also be defined here ...
         """
+        self.bot_started = True
         self.buy_rsi = IntParameter([0, 50], default=30, space='buy')
 
     def informative_pairs(self):

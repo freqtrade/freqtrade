@@ -9,9 +9,6 @@ This same command can also be used to update freqUI, should there be a new relea
 
 Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the UI will be available under the configured port below (usually `http://127.0.0.1:8080`).
 
-!!! info "Alpha release"
-    FreqUI is still considered an alpha release - if you encounter bugs or inconsistencies please open a [FreqUI issue](https://github.com/freqtrade/frequi/issues/new/choose).
-
 !!! Note "developers"
     Developers should not use this method, but instead use the method described in the [freqUI repository](https://github.com/freqtrade/frequi) to get the source-code of freqUI.
 
@@ -31,7 +28,8 @@ Sample configuration:
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
         "username": "Freqtrader",
-        "password": "SuperSecret1!"
+        "password": "SuperSecret1!",
+        "ws_token": "sercet_Ws_t0ken"
     },
 ```
 
@@ -66,7 +64,7 @@ secrets.token_hex()
 
 !!! Danger "Password selection"
     Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
-    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!). 
+    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!).
 
 ### Configuration with docker
 
@@ -92,7 +90,6 @@ Make sure that the following 2 lines are available in your docker-compose file:
 
 !!! Danger "Security warning"
     By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
-
 
 ## Rest API
 
@@ -137,11 +134,16 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `reload_config` | Reloads the configuration file.
 | `trades` | List last trades. Limited to 500 trades per call.
 | `trade/<tradeid>` | Get specific trade.
-| `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `trades/<tradeid>` | DELETE - Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `trades/<tradeid>/open-order` | DELETE - Cancel open order for this trade.
+| `trades/<tradeid>/reload` | GET - Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation.
 | `logs` | Shows last log messages.
 | `status` | Lists all open trades.
 | `count` | Displays number of trades used and available.
+| `entries [pair]` | Shows profit statistics for each enter tags for given pair (or all pairs if pair isn't given). Pair is optional.
+| `exits [pair]` | Shows profit statistics for each exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
+| `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
@@ -152,6 +154,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `weekly <n>` | Shows profit or loss per week, over the last n days (n defaults to 4).
+| `monthly <n>` | Shows profit or loss per month, over the last n days (n defaults to 3).
 | `stats` | Display a summary of profit / loss reasons as well as average holding times.
 | `whitelist` | Show the current whitelist.
 | `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
@@ -163,6 +167,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `strategy <strategy>` | Get specific Strategy content. **Alpha**
 | `available_pairs` | List available backtest data. **Alpha**
 | `version` | Show version.
+| `sysinfo` | Show information about the system load.
+| `health` | Show bot health (last bot loop).
 
 !!! Warning "Alpha status"
     Endpoints labeled with *Alpha status* above may change at any time without notice.
@@ -189,6 +195,11 @@ blacklist
 	Show the current blacklist.
 
         :param add: List of coins to add (example: "BNB/BTC")
+
+cancel_open_order
+	Cancel open order for trade.
+
+        :param trade_id: Cancels open orders for this trade.
 
 count
 	Return the amount of open trades.
@@ -227,6 +238,11 @@ forceexit
 	Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
+        :param ordertype: Order type to use (must be market or limit)
+        :param amount: Amount to sell. Full sell if not given
+
+health
+	Provides a quick health check of the running bot.
 
 locks
 	Return current locks
@@ -267,7 +283,6 @@ reload_config
 	Reload configuration.
 
 show_config
-	
         Returns part of the configuration, relevant for trading operations.
 
 start
@@ -312,12 +327,119 @@ version
 
 whitelist
 	Show the current whitelist.
+
+
 ```
+
+### Message WebSocket
+
+The API Server includes a websocket endpoint for subscribing to RPC messages from the freqtrade Bot.
+This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
+
+This is also used to setup [Producer/Consumer mode](producer-consumer.md) in Freqtrade.
+
+Assuming your rest API is set to `127.0.0.1` on port `8080`, the endpoint is available at `http://localhost:8080/api/v1/message/ws`.
+
+To access the websocket endpoint, the `ws_token` is required as a query parameter in the endpoint URL.
+
+To generate a safe `ws_token` you can run the following code:
+
+``` python
+>>> import secrets
+>>> secrets.token_urlsafe(25)
+'hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q'
+```
+
+You would then add that token under `ws_token` in your `api_server` config. Like so:
+
+``` json
+"api_server": {
+    "enabled": true,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": [],
+    "username": "Freqtrader",
+    "password": "SuperSecret1!",
+    "ws_token": "hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q" // <-----
+},
+```
+
+You can now connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q`.
+
+!!! Danger "Reuse of example tokens"
+    Please do not use the above example token. To make sure you are secure, generate a completely new token.
+
+#### Using the WebSocket
+
+Once connected to the WebSocket, the bot will broadcast RPC messages to anyone who is subscribed to them. To subscribe to a list of messages, you must send a JSON request through the WebSocket like the one below. The `data` key must be a list of message type strings.
+
+``` json
+{
+  "type": "subscribe",
+  "data": ["whitelist", "analyzed_df"] // A list of string message types
+}
+```
+
+For a list of message types, please refer to the RPCMessageType enum in `freqtrade/enums/rpcmessagetype.py`
+
+Now anytime those types of RPC messages are sent in the bot, you will receive them through the WebSocket as long as the connection is active. They typically take the same form as the request:
+
+``` json
+{
+  "type": "analyzed_df",
+  "data": {
+      "key": ["NEO/BTC", "5m", "spot"],
+      "df": {}, // The dataframe
+      "la": "2022-09-08 22:14:41.457786+00:00"
+  }
+}
+```
+
+#### Reverse Proxy setup
+
+When using [Nginx](https://nginx.org/en/docs/), the following configuration is required for WebSockets to work (Note this configuration is incomplete, it's missing some information and can not be used as is):
+
+Please make sure to replace `<freqtrade_listen_ip>` (and the subsequent port) with the IP and Port matching your configuration/setup.
+
+```
+http {
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+
+    #...
+
+    server {
+        #...
+
+        location / {
+            proxy_http_version 1.1;
+            proxy_pass http://<freqtrade_listen_ip>:8080;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+        }
+    }
+}
+```
+
+To properly configure your reverse proxy (securely), please consult it's documentation for proxying websockets.
+
+- **Traefik**: Traefik supports websockets out of the box, see the [documentation](https://doc.traefik.io/traefik/)
+- **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
+
+!!! Tip "SSL certificates"
+    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any fo the above reverse proxies.
+    While this will protect your data in transit, we do not recommend to run the freqtrade API outside of your private network (VPN, SSH tunnel).
 
 ### OpenAPI interface
 
 To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.
-This will enable the Swagger UI at the `/docs` endpoint. By default, that's running at http://localhost:8080/docs/ - but it'll depend on your settings.
+This will enable the Swagger UI at the `/docs` endpoint. By default, that's running at http://localhost:8080/docs - but it'll depend on your settings.
 
 ### Advanced API usage using JWT tokens
 

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _format_exception_message(space: str, ignore_missing_space: bool) -> None:
     msg = (f"The '{space}' space is included into the hyperoptimization "
-           f"but no parameter for this space was not found in your Strategy. "
+           f"but no parameter for this space was found in your Strategy. "
            )
     if ignore_missing_space:
         logger.warning(msg + "This space will be ignored.")
@@ -90,6 +90,9 @@ class HyperOptAuto(IHyperOpt):
 
     def trailing_space(self) -> List['Dimension']:
         return self._get_func('trailing_space')()
+
+    def max_open_trades_space(self) -> List['Dimension']:
+        return self._get_func('max_open_trades_space')()
 
     def generate_estimator(self, dimensions: List['Dimension'], **kwargs) -> EstimatorType:
         return self._get_func('generate_estimator')(dimensions=dimensions, **kwargs)

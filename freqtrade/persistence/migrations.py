@@ -1,7 +1,7 @@
 import logging
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy import inspect, select, text, tuple_, update
+from sqlalchemy import inspect, select, text, update
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.trade_model import Order, Trade
@@ -31,9 +31,9 @@ def get_backup_name(tabs: List[str], backup_prefix: str):
     return table_back_name
 
 
-def get_last_sequence_ids(engine, trade_back_name, order_back_name):
-    order_id: int = None
-    trade_id: int = None
+def get_last_sequence_ids(engine, trade_back_name: str, order_back_name: str):
+    order_id: Optional[int] = None
+    trade_id: Optional[int] = None
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:
@@ -88,8 +88,9 @@ def migrate_trades_and_orders_table(
     stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
     initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
     initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
-    stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
-    stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
+    is_stop_loss_trailing = get_column_def(
+        cols, 'is_stop_loss_trailing',
+        f'coalesce({stop_loss_pct}, 0.0) <> coalesce({initial_stop_loss_pct}, 0.0)')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
     min_rate = get_column_def(cols, 'min_rate', 'null')
     exit_reason = get_column_def(cols, 'sell_reason', get_column_def(cols, 'exit_reason', 'null'))
@@ -109,11 +110,11 @@ def migrate_trades_and_orders_table(
     else:
         is_short = get_column_def(cols, 'is_short', '0')
 
-    # Margin Properties
+    # Futures Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
-
-    # Futures properties
     funding_fees = get_column_def(cols, 'funding_fees', '0.0')
+    funding_fee_running = get_column_def(cols, 'funding_fee_running', 'null')
+    max_stake_amount = get_column_def(cols, 'max_stake_amount', 'stake_amount')
 
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
@@ -129,6 +130,11 @@ def migrate_trades_and_orders_table(
     exit_order_status = get_column_def(cols, 'exit_order_status',
                                        get_column_def(cols, 'sell_order_status', 'null'))
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
+
+    amount_precision = get_column_def(cols, 'amount_precision', 'null')
+    price_precision = get_column_def(cols, 'price_precision', 'null')
+    precision_mode = get_column_def(cols, 'precision_mode', 'null')
+    contract_size = get_column_def(cols, 'contract_size', 'null')
 
     # Schema migration necessary
     with engine.begin() as connection:
@@ -150,13 +156,15 @@ def migrate_trades_and_orders_table(
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_close_currency, open_rate,
             open_rate_requested, close_rate, close_rate_requested, close_profit,
-            stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
+            stake_amount, amount, amount_requested, open_date, close_date,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
-            stoploss_order_id, stoploss_last_update,
+            is_stop_loss_trailing,
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
-            interest_rate, funding_fees, realized_profit
+            interest_rate, funding_fees, funding_fee_running, realized_profit,
+            amount_precision, price_precision, precision_mode, contract_size,
+            max_stake_amount
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -165,11 +173,11 @@ def migrate_trades_and_orders_table(
             {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
             open_rate, {open_rate_requested} open_rate_requested, close_rate,
             {close_rate_requested} close_rate_requested, close_profit,
-            stake_amount, amount, {amount_requested}, open_date, close_date, open_order_id,
+            stake_amount, amount, {amount_requested}, open_date, close_date,
             {stop_loss} stop_loss, {stop_loss_pct} stop_loss_pct,
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
-            {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
+            {is_stop_loss_trailing} is_stop_loss_trailing,
             {max_rate} max_rate, {min_rate} min_rate,
             case when {exit_reason} = 'sell_signal' then 'exit_signal'
                  when {exit_reason} = 'custom_sell' then 'custom_exit'
@@ -182,7 +190,11 @@ def migrate_trades_and_orders_table(
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fees} funding_fees, {realized_profit} realized_profit
+            {funding_fees} funding_fees, {funding_fee_running} funding_fee_running,
+            {realized_profit} realized_profit,
+            {amount_precision} amount_precision, {price_precision} price_precision,
+            {precision_mode} precision_mode, {contract_size} contract_size,
+            {max_stake_amount} max_stake_amount
             from {trade_back_name}
             """))
 
@@ -204,17 +216,26 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
     ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
     average = get_column_def(cols_order, 'average', 'null')
     stop_price = get_column_def(cols_order, 'stop_price', 'null')
+    funding_fee = get_column_def(cols_order, 'funding_fee', '0.0')
+    ft_amount = get_column_def(cols_order, 'ft_amount', 'coalesce(amount, 0.0)')
+    ft_price = get_column_def(cols_order, 'ft_price', 'coalesce(price, 0.0)')
+    ft_cancel_reason = get_column_def(cols_order, 'ft_cancel_reason', 'null')
+    ft_order_tag = get_column_def(cols_order, 'ft_order_tag', 'null')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base)
+            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee,
+            ft_amount, ft_price, ft_cancel_reason, ft_order_tag
+            )
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
             cost, {stop_price} stop_price, order_date, order_filled_date,
-            order_update_date, {ft_fee_base} ft_fee_base
+            order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee,
+            {ft_amount} ft_amount, {ft_price} ft_price, {ft_cancel_reason} ft_cancel_reason,
+            {ft_order_tag} ft_order_tag
             from {table_back_name}
             """))
 
@@ -253,25 +274,30 @@ def set_sqlite_to_wal(engine):
 
 def fix_old_dry_orders(engine):
     with engine.begin() as connection:
+
+        # Update current dry-run Orders where
+        # - stoploss order is Open (will be replaced eventually)
+        # 2nd query:
+        # - current Order is open
+        # - current Trade is closed
+        # - current Order trade_id not equal to current Trade.id
+        # - current Order not stoploss
+
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
-            tuple_(Order.ft_trade_id, Order.order_id).not_in(
-                select(
-                    Trade.id, Trade.stoploss_order_id
-                ).where(Trade.stoploss_order_id.is_not(None))
-                  ),
             Order.ft_order_side == 'stoploss',
             Order.order_id.like('dry%'),
 
         ).values(ft_is_open=False)
         connection.execute(stmt)
 
+        # Close dry-run orders for closed trades.
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
-            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+            Order.ft_trade_id.not_in(
                 select(
-                    Trade.id, Trade.open_order_id
-                ).where(Trade.open_order_id.is_not(None))
+                    Trade.id
+                ).where(Trade.is_open.is_(True))
                   ),
             Order.ft_order_side != 'stoploss',
             Order.order_id.like('dry%')
@@ -299,8 +325,11 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Check if migration necessary
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
-    # or not has_column(cols_orders, 'stop_price')):
-    if not has_column(cols_trades, 'realized_profit'):
+    # or not has_column(cols_orders, 'funding_fee')):
+    migrating = False
+    # if not has_column(cols_trades, 'funding_fee_running'):
+    if not has_column(cols_orders, 'ft_order_tag'):
+        migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
@@ -308,6 +337,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             order_table_bak_name, cols_orders)
 
     if not has_column(cols_pairlocks, 'side'):
+        migrating = True
         logger.info(f"Running database migration for pairlocks - "
                     f"backup: {pairlock_table_bak_name}")
 
@@ -322,3 +352,6 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     set_sqlite_to_wal(engine)
     fix_old_dry_orders(engine)
+
+    if migrating:
+        logger.info("Database migration finished.")

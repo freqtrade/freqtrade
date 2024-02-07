@@ -4,17 +4,19 @@ Volatility pairlist filter
 import logging
 import sys
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-import arrow
 import numpy as np
 from cachetools import TTLCache
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.util import dt_floor_day, dt_now, dt_ts
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ class VolatilityFilter(IPairList):
     """
 
     def __init__(self, exchange, pairlistmanager,
-                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
@@ -62,20 +64,45 @@ class VolatilityFilter(IPairList):
                 f"{self._min_volatility}-{self._max_volatility} "
                 f" the last {self._days} {plural(self._days, 'day')}.")
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    @staticmethod
+    def description() -> str:
+        return "Filter pairs by their recent volatility."
+
+    @staticmethod
+    def available_parameters() -> Dict[str, PairlistParameter]:
+        return {
+            "lookback_days": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at.",
+            },
+            "min_volatility": {
+                "type": "number",
+                "default": 0,
+                "description": "Minimum Volatility",
+                "help": "Minimum volatility a pair must have to be considered.",
+            },
+            "max_volatility": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum Volatility",
+                "help": "Maximum volatility a pair must have to be considered.",
+            },
+            **IPairList.refresh_period_parameter()
+        }
+
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Validate trading range
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
             (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
-        since_ms = (arrow.utcnow()
-                         .floor('day')
-                         .shift(days=-self._days - 1)
-                         .int_timestamp) * 1000
+        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days))
         # Get all candles
         candles = {}
         if needed_pairs:
@@ -104,7 +131,7 @@ class VolatilityFilter(IPairList):
 
         result = False
         if daily_candles is not None and not daily_candles.empty:
-            returns = (np.log(daily_candles.close / daily_candles.close.shift(-1)))
+            returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
             returns.fillna(0, inplace=True)
 
             volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)

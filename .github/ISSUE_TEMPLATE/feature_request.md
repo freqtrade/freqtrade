@@ -18,7 +18,7 @@ Have you search for this feature before requesting it? It's highly likely that a
   * Operating system: ____
   * Python Version: _____ (`python -V`)
   * CCXT version: _____ (`pip freeze | grep ccxt`)
-  * Freqtrade Version: ____ (`freqtrade -V` or `docker-compose run --rm freqtrade -V` for Freqtrade running in docker)
+  * Freqtrade Version: ____ (`freqtrade -V` or `docker compose run --rm freqtrade -V` for Freqtrade running in docker)
 
 
 ## Describe the enhancement

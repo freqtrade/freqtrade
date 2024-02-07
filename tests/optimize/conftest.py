@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.enums import ExitType, RunMode
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.optimize.hyperopt import Hyperopt
 from tests.conftest import patch_exchange
 
@@ -28,6 +29,13 @@ def hyperopt_conf(default_conf):
     return hyperconf
 
 
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
+
+
 @pytest.fixture(scope='function')
 def hyperopt(hyperopt_conf, mocker):
 
@@ -40,8 +48,8 @@ def hyperopt_results():
     return pd.DataFrame(
         {
             'pair': ['ETH/USDT', 'ETH/USDT', 'ETH/USDT', 'ETH/USDT'],
-            'profit_ratio': [-0.1, 0.2, -0.1, 0.3],
-            'profit_abs': [-0.2, 0.4, -0.2, 0.6],
+            'profit_ratio': [-0.1, 0.2, -0.12, 0.3],
+            'profit_abs': [-0.2, 0.4, -0.21, 0.6],
             'trade_duration': [10, 30, 10, 10],
             'amount': [0.1, 0.1, 0.1, 0.1],
             'exit_reason': [ExitType.STOP_LOSS, ExitType.ROI, ExitType.STOP_LOSS, ExitType.ROI],

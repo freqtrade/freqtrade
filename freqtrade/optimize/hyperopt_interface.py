@@ -10,6 +10,7 @@ from typing import Dict, List, Union
 from sklearn.base import RegressorMixin
 from skopt.space import Categorical, Dimension, Integer
 
+from freqtrade.constants import Config
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 from freqtrade.optimize.space import SKDecimal
@@ -32,7 +33,7 @@ class IHyperOpt(ABC):
     timeframe: str
     strategy: IStrategy
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
 
         # Assign timeframe to be used in hyperopt
@@ -188,6 +189,16 @@ class IHyperOpt(ABC):
             SKDecimal(0.001, 0.1, decimals=3, name='trailing_stop_positive_offset_p1'),
 
             Categorical([True, False], name='trailing_only_offset_is_reached'),
+        ]
+
+    def max_open_trades_space(self) -> List[Dimension]:
+        """
+        Create a max open trades space.
+
+        You may override it in your custom Hyperopt class.
+        """
+        return [
+            Integer(-1, 10, name='max_open_trades'),
         ]
 
     # This is needed for proper unpickling the class attribute timeframe

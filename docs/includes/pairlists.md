@@ -6,7 +6,7 @@ In your configuration, you can use Static Pairlist (defined by the [`StaticPairL
 
 Additionally, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter), [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
-If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You can define either `StaticPairList`, `VolumePairList`, `ProducerPairList`, `RemotePairList` or `MarketCapPairList` as the starting Pairlist Handler.
 
 Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
 
@@ -22,7 +22,11 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`ProducerPairList`](#producerpairlist)
+* [`RemotePairList`](#remotepairlist)
+* [`MarketCapPairList`](#marketcappairlist)
 * [`AgeFilter`](#agefilter)
+* [`FullTradesFilter`](#fulltradesfilter)
 * [`OffsetFilter`](#offsetfilter)
 * [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
@@ -84,7 +88,7 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
 
-### VolumePairList Advanced mode
+##### VolumePairList Advanced mode
 
 `VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
 
@@ -109,8 +113,8 @@ For convenience `lookback_days` can be specified, which will imply that 1d candl
 !!! Warning "Performance implications when using lookback range"
     If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `VolumeFilter` to narrow the pairlist down for further range volume calculation.
 
-??? Tip "Unsupported exchanges (Bittrex, Gemini)"
-    On some exchanges (like Bittrex and Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
+??? Tip "Unsupported exchanges"
+    On some exchanges (like Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
     To roughly simulate 24h volume, you can use the following configuration.
     Please note that These pairlists will only refresh once per day.
 
@@ -146,6 +150,140 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 !!! Note
     `VolumePairList` does not support backtesting mode.
 
+#### ProducerPairList
+
+With `ProducerPairList`, you can reuse the pairlist from a [Producer](producer-consumer.md) without explicitly defining the pairlist on each consumer.
+
+[Consumer mode](producer-consumer.md) is required for this pairlist to work.
+
+The pairlist will perform a check on active pairs against the current exchange configuration to avoid attempting to trade on invalid markets.
+
+You can limit the length of the pairlist with the optional parameter `number_assets`. Using `"number_assets"=0` or omitting this key will result in the reuse of all producer pairs valid for the current setup.
+
+```json
+"pairlists": [
+    {
+        "method": "ProducerPairList",
+        "number_assets": 5,
+        "producer_name": "default",
+    }
+],
+```
+
+
+!!! Tip "Combining pairlists"
+    This pairlist can be combined with all other pairlists and filters for further pairlist reduction, and can also act as an "additional" pairlist, on top of already defined pairs.
+    `ProducerPairList` can also be used multiple times in sequence, combining the pairs from multiple producers.
+    Obviously in complex such configurations, the Producer may not provide data for all pairs, so the strategy must be fit for this.
+
+#### RemotePairList
+
+It allows the user to fetch a pairlist from a remote server or a locally stored json file within the freqtrade directory, enabling dynamic updates and customization of the trading pairlist.
+
+The RemotePairList is defined in the pairlists section of the configuration settings. It uses the following configuration options:
+
+```json
+"pairlists": [
+    {
+        "method": "RemotePairList",
+        "mode": "whitelist",
+        "processing_mode": "filter",
+        "pairlist_url": "https://example.com/pairlist",
+        "number_assets": 10,
+        "refresh_period": 1800,
+        "keep_pairlist_on_failure": true,
+        "read_timeout": 60,
+        "bearer_token": "my-bearer-token",
+        "save_to_file": "user_data/filename.json" 
+    }
+]
+```
+
+The optional `mode` option specifies if the pairlist should be used as a `blacklist` or as a `whitelist`. The default value is "whitelist".
+
+The optional `processing_mode` option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append".
+
+In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.
+
+In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.
+
+The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
+
+The `save_to_file` option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.
+
+??? Example "Multi bot with shared pairlist example"
+    
+    `save_to_file` can be used to save the pairlist to a file with Bot1:
+
+    ```json
+    "pairlists": [
+        {
+            "method": "RemotePairList",
+            "mode": "whitelist",
+            "pairlist_url": "https://example.com/pairlist",
+            "number_assets": 10,
+            "refresh_period": 1800,
+            "keep_pairlist_on_failure": true,
+            "read_timeout": 60,
+            "save_to_file": "user_data/filename.json" 
+        }
+    ]
+    ```
+
+    This saved pairlist file can be loaded by Bot2, or any additional bot with this configuration:
+
+    ```json
+    "pairlists": [
+        {
+            "method": "RemotePairList",
+            "mode": "whitelist",
+            "pairlist_url": "file:///user_data/filename.json",
+            "number_assets": 10,
+            "refresh_period": 10,
+            "keep_pairlist_on_failure": true,
+        }
+    ]
+    ```    
+
+The user is responsible for providing a server or local file that returns a JSON object with the following structure:
+
+```json
+{
+    "pairs": ["XRP/USDT", "ETH/USDT", "LTC/USDT"],
+    "refresh_period": 1800
+}
+```
+
+The `pairs` property should contain a list of strings with the trading pairs to be used by the bot. The `refresh_period` property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed.
+
+The optional `keep_pairlist_on_failure` specifies whether the previous received pairlist should be used if the remote server is not reachable or returns an error. The default value is true.
+
+The optional `read_timeout` specifies the maximum amount of time (in seconds) to wait for a response from the remote source, The default value is 60.
+
+The optional `bearer_token` will be included in the requests Authorization Header.
+
+!!! Note
+    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false a empty pairlist is returned.
+
+#### MarketCapPairList
+
+`MarketCapPairList` employs sorting/filtering of pairs by their marketcap rank based of CoinGecko. It will only recognize coins up to the coin placed at rank 250. The returned pairlist will be sorted based of their marketcap ranks.
+
+```json
+"pairlists": [
+    {
+        "method": "MarketCapPairList",
+        "number_assets": 20,
+        "max_rank": 50,
+        "refresh_period": 86400
+    }
+]
+```
+
+`number_assets` defines the maximum number of pairs returned by the pairlist. `max_rank` will determine the maximum rank used in creating/filtering the pairlist. It's expected that some coins within the top `max_rank` marketcap will not be included in the resulting pairlist since not all pairs will have active trading pairs in your preferred market/stake/exchange combination.
+
+`refresh_period` setting defines the period (in seconds) at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (`refresh_period`) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
+
 #### AgeFilter
 
 Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`) or more than `max_days_listed` days (defaults `None` mean infinity).
@@ -155,6 +293,17 @@ in the first few days while the pair goes through its price-discovery period. Bo
 be caught out buying before the pair has finished dropping in price.
 
 This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days and listed before `max_days_listed`.
+
+#### FullTradesFilter
+
+Shrink whitelist to consist only in-trade pairs when the trade slots are full (when `max_open_trades` isn't being set to `-1` in the config).
+
+When the trade slots are full, there is no need to calculate indicators of the rest of the pairs (except informative pairs) since no new trade can be opened. By shrinking the whitelist to just the in-trade pairs, you can improve calculation speeds and reduce CPU usage. When a trade slot is free (either a trade is closed or `max_open_trades` value in config is increased), then the whitelist will return to normal state.
+
+When multiple pairlist filters are being used, it's recommended to put this filter at second position directly below the primary pairlist, so when the trade slots are full, the bot doesn't have to download data for the rest of the filters.
+
+!!! Warning "Backtesting"
+    `FullTradesFilter` does not support backtesting mode.
 
 #### OffsetFilter
 
@@ -241,7 +390,7 @@ This option is disabled by default, and will only apply if set to > 0.
 The `max_value` setting removes pairs where the minimum value change is above a specified value.
 This is useful when an exchange has unbalanced limits. For example, if step-size = 1 (so you can only buy 1, or 2, or 3, but not 1.1 Coins) - and the price is pretty high (like 20\$) as the coin has risen sharply since the last limit adaption.
 As a result of the above, you can only buy for 20\$, or 40\$ - but not for 25\$.
-On exchanges that deduct fees from the receiving currency (e.g. FTX) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.
+On exchanges that deduct fees from the receiving currency (e.g. binance) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to > 0.
@@ -258,6 +407,18 @@ Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 -
 #### ShuffleFilter
 
 Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
+
+By default, ShuffleFilter will shuffle pairs once per candle.
+To shuffle on every iteration, set `"shuffle_frequency"` to `"iteration"` instead of  the default of `"candle"`.
+
+``` json
+    {
+        "method": "ShuffleFilter", 
+        "shuffle_frequency": "candle",
+        "seed": 42
+    }
+
+```
 
 !!! Tip
     You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the `seed` only for backtesting modes - if a `seed` value is set.
@@ -284,7 +445,7 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
         "max_rate_of_change": 0.99,
-        "refresh_period": 1440
+        "refresh_period": 86400
     }
 ]
 ```
@@ -339,7 +500,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "method": "RangeStabilityFilter",
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
-        "refresh_period": 1440
+        "refresh_period": 86400
     },
     {
         "method": "VolatilityFilter",

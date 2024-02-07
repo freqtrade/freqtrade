@@ -1,6 +1,7 @@
 ![freqtrade](assets/freqtrade_poweredby.svg)
 
 [![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.04864/status.svg)](https://doi.org/10.21105/joss.04864)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
 
@@ -32,17 +33,16 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 - Run: Test your strategy with simulated money (Dry-Run mode) or deploy it with real money (Live-Trade mode).
 - Run using Edge (optional module): The concept is to find the best historical [trade expectancy](edge.md#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade. The sizing of the trade is based on a risk of a percentage of your capital.
 - Control/Monitor: Use Telegram or a WebUI (start/stop the bot, show profit/loss, daily summary, current open trades results, etc.).
-- Analyse: Further analysis can be performed on either Backtesting data or Freqtrade trading history (SQL database), including automated standard plots, and methods to load the data into [interactive environments](data-analysis.md).
+- Analyze: Further analysis can be performed on either Backtesting data or Freqtrade trading history (SQL database), including automated standard plots, and methods to load the data into [interactive environments](data-analysis.md).
 
 ## Supported exchange marketplaces
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
 - [X] [Binance](https://www.binance.com/)
-- [X] [Bittrex](https://bittrex.com/)
-- [X] [FTX](https://ftx.com/#a=2258149)
+- [X] [Bitmart](https://bitmart.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [Huobi](http://huobi.com/)
+- [X] [HTX](https://www.htx.com/) (Former Huobi)
 - [X] [Kraken](https://kraken.com/)
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
@@ -51,7 +51,8 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [OKX](https://okx.com/).
+- [X] [OKX](https://okx.com/)
+- [X] [Bybit](https://bybit.com/)
 
 Please make sure to read the [exchange specific notes](exchanges.md), as well as the [trading with leverage](leverage.md) documentation before diving in.
 
@@ -61,6 +62,10 @@ Exchanges confirmed working by the community:
 
 - [X] [Bitvavo](https://bitvavo.com/)
 - [X] [Kucoin](https://www.kucoin.com/)
+
+## Community showcase
+
+--8<-- "includes/showcase.md"
 
 ## Requirements
 
@@ -78,7 +83,7 @@ To run this bot we recommend you a linux cloud instance with a minimum of:
 
 Alternatively
 
-- Python 3.8+
+- Python 3.9+
 - pip (pip3)
 - git
 - TA-Lib

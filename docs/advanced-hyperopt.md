@@ -17,6 +17,7 @@ from typing import Any, Dict
 
 from pandas import DataFrame
 
+from freqtrade.constants import Config
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 TARGET_TRADES = 600
@@ -31,7 +32,7 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
                                min_date: datetime, max_date: datetime,
-                               config: Dict, processed: Dict[str, DataFrame],
+                               config: Config, processed: Dict[str, DataFrame],
                                backtest_stats: Dict[str, Any],
                                *args, **kwargs) -> float:
         """
@@ -74,9 +75,11 @@ This function needs to return a floating point number (`float`). Smaller numbers
 
 ## Overriding pre-defined spaces
 
-To override a pre-defined space (`roi_space`, `generate_roi_table`, `stoploss_space`, `trailing_space`), define a nested class called Hyperopt and define the required spaces as follows:
+To override a pre-defined space (`roi_space`, `generate_roi_table`, `stoploss_space`, `trailing_space`, `max_open_trades_space`), define a nested class called Hyperopt and define the required spaces as follows:
 
 ```python
+from freqtrade.optimize.space import Categorical, Dimension, Integer, SKDecimal
+
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
         # Define a custom stoploss space.
@@ -93,6 +96,39 @@ class MyAwesomeStrategy(IStrategy):
                 SKDecimal(0.01, 0.07, decimals=3, name='roi_p2'),
                 SKDecimal(0.01, 0.20, decimals=3, name='roi_p3'),
             ]
+
+        def generate_roi_table(params: Dict) -> Dict[int, float]:
+
+            roi_table = {}
+            roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
+            roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
+            roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
+            roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
+
+            return roi_table
+
+        def trailing_space() -> List[Dimension]:
+            # All parameters here are mandatory, you can only modify their type or the range.
+            return [
+                # Fixed to true, if optimizing trailing_stop we assume to use trailing stop at all times.
+                Categorical([True], name='trailing_stop'),
+
+                SKDecimal(0.01, 0.35, decimals=3, name='trailing_stop_positive'),
+                # 'trailing_stop_positive_offset' should be greater than 'trailing_stop_positive',
+                # so this intermediate parameter is used as the value of the difference between
+                # them. The value of the 'trailing_stop_positive_offset' is constructed in the
+                # generate_trailing_params() method.
+                # This is similar to the hyperspace dimensions used for constructing the ROI tables.
+                SKDecimal(0.001, 0.1, decimals=3, name='trailing_stop_positive_offset_p1'),
+
+                Categorical([True, False], name='trailing_only_offset_is_reached'),
+        ]
+
+        # Define a custom max_open_trades space
+        def max_open_trades_space(self) -> List[Dimension]:
+            return [
+                Integer(-1, 10, name='max_open_trades'),
+            ]
 ```
 
 !!! Note
@@ -100,7 +136,7 @@ class MyAwesomeStrategy(IStrategy):
 
 ### Dynamic parameters
 
-Parameters can also be defined dynamically, but must be available to the instance once the * [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
+Parameters can also be defined dynamically, but must be available to the instance once the [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
 
 ``` python
 

@@ -149,7 +149,7 @@ The below example assumes a timeframe of 1 hour:
 * Locks each pair after selling for an additional 5 candles (`CooldownPeriod`), giving other pairs a chance to get filled.
 * Stops trading for 4 hours (`4 * 1h candles`) if the last 2 days (`48 * 1h candles`) had 20 trades, which caused a max-drawdown of more than 20%. (`MaxDrawdown`).
 * Stops trading if more than 4 stoploss occur for all pairs within a 1 day (`24 * 1h candles`) limit (`StoplossGuard`).
-* Locks all pairs that had 4 Trades within the last 6 hours (`6 * 1h candles`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
+* Locks all pairs that had 2 Trades within the last 6 hours (`6 * 1h candles`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
 * Locks all pairs for 2 candles that had a profit of below 0.01 (<1%) within the last 24h (`24 * 1h candles`), a minimum of 4 trades.
 
 ``` python

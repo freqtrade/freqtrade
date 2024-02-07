@@ -4,10 +4,11 @@ This module defines a base class for auto-hyperoptable strategies.
 """
 import logging
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Tuple, Type, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import deep_merge_dicts, json_load
+from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.strategy.parameters import BaseParameter
 
@@ -21,7 +22,7 @@ class HyperStrategyMixin:
      strategy logic.
     """
 
-    def __init__(self, config: Dict[str, Any], *args, **kwargs):
+    def __init__(self, config: Config, *args, **kwargs):
         """
         Initialize hyperoptable strategy mixin.
         """
@@ -35,7 +36,8 @@ class HyperStrategyMixin:
         self._ft_params_from_file = params
         # Init/loading of parameters is done as part of ft_bot_start().
 
-    def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
+    def enumerate_parameters(
+            self, category: Optional[str] = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
         Find all optimizable parameters and return (name, attr) iterator.
         :param category:
@@ -79,6 +81,8 @@ class HyperStrategyMixin:
 
             self.stoploss = params.get('stoploss', {}).get(
                 'stoploss', getattr(self, 'stoploss', -0.1))
+            self.max_open_trades = params.get('max_open_trades', {}).get(
+                'max_open_trades', getattr(self, 'max_open_trades', -1))
             trailing = params.get('trailing', {})
             self.trailing_stop = trailing.get(
                 'trailing_stop', getattr(self, 'trailing_stop', False))
@@ -120,8 +124,7 @@ class HyperStrategyMixin:
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
-                with filename.open('r') as f:
-                    params = json_load(f)
+                params = HyperoptTools.load_params(filename)
                 if params.get('strategy_name') != self.__class__.__name__:
                     raise OperationalException('Invalid parameter file provided.')
                 return params
@@ -159,7 +162,7 @@ class HyperStrategyMixin:
             else:
                 logger.info(f'Strategy Parameter(default): {attr_name} = {attr.value}')
 
-    def get_no_optimize_params(self):
+    def get_no_optimize_params(self) -> Dict[str, Dict]:
         """
         Returns list of Parameters that are not part of the current optimize job
         """
@@ -169,7 +172,7 @@ class HyperStrategyMixin:
             'protection': {},
         }
         for name, p in self.enumerate_parameters():
-            if not p.optimize or not p.in_space:
+            if p.category and (not p.optimize or not p.in_space):
                 params[p.category][name] = p.value
         return params
 

@@ -19,9 +19,9 @@ def create_results() -> List[Dict]:
     return [{'loss': 1, 'result': 'foo', 'params': {}, 'is_best': True}]
 
 
-def test_save_results_saves_epochs(hyperopt, tmpdir, caplog) -> None:
+def test_save_results_saves_epochs(hyperopt, tmp_path, caplog) -> None:
 
-    hyperopt.results_file = Path(tmpdir / 'ut_results.fthypt')
+    hyperopt.results_file = tmp_path / 'ut_results.fthypt'
 
     hyperopt_epochs = HyperoptTools.load_filtered_results(hyperopt.results_file, {})
     assert log_has_re("Hyperopt file .* not found.", caplog)
@@ -66,52 +66,58 @@ def test_load_previous_results2(mocker, testdatadir, caplog) -> None:
 @pytest.mark.parametrize("spaces, expected_results", [
     (['buy'],
      {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['sell'],
      {'buy': False, 'sell': True, 'roi': False, 'stoploss': False, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['roi'],
      {'buy': False, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['stoploss'],
      {'buy': False, 'sell': False, 'roi': False, 'stoploss': True, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['trailing'],
      {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': True,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['buy', 'sell', 'roi', 'stoploss'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['buy', 'sell', 'roi', 'stoploss', 'trailing'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['buy', 'roi'],
      {'buy': True, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['all'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
-      'protection': True}),
+      'protection': True, 'trades': True}),
     (['default'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['default', 'trailing'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['all', 'buy'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
-      'protection': True}),
+      'protection': True, 'trades': True}),
     (['default', 'buy'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
-      'protection': False}),
+      'protection': False, 'trades': False}),
     (['all'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
-      'protection': True}),
+      'protection': True, 'trades': True}),
     (['protection'],
      {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
-      'protection': True}),
+      'protection': True, 'trades': False}),
+    (['trades'],
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
+      'protection': False, 'trades': True}),
+    (['default', 'trades'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
+      'protection': False, 'trades': True}),
 ])
 def test_has_space(hyperopt_conf, spaces, expected_results):
-    for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing', 'protection']:
+    for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing', 'protection', 'trades']:
         hyperopt_conf.update({'spaces': spaces})
         assert HyperoptTools.has_space(hyperopt_conf, s) == expected_results[s]
 
@@ -176,9 +182,9 @@ def test_get_strategy_filename(default_conf):
     assert x is None
 
 
-def test_export_params(tmpdir):
+def test_export_params(tmp_path):
 
-    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
+    filename = tmp_path / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -193,6 +199,9 @@ def test_export_params(tmpdir):
                 "346": 0.08499,
                 "507": 0.049,
                 "1595": 0
+            },
+            "max_open_trades": {
+                "max_open_trades": 5
             }
         },
         "params_not_optimized": {
@@ -219,13 +228,14 @@ def test_export_params(tmpdir):
     assert "roi" in content["params"]
     assert "stoploss" in content["params"]
     assert "trailing" in content["params"]
+    assert "max_open_trades" in content["params"]
 
 
-def test_try_export_params(default_conf, tmpdir, caplog, mocker):
+def test_try_export_params(default_conf, tmp_path, caplog, mocker):
     default_conf['disableparamexport'] = False
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
-    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
+    filename = tmp_path / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -297,6 +307,9 @@ def test_params_print(capsys):
             "trailing_stop_positive_offset": 0.1,
             "trailing_only_offset_is_reached": True
         },
+        "max_open_trades": {
+            "max_open_trades": 5
+        }
 
     }
     HyperoptTools._params_pretty_print(params, 'buy', 'No header', non_optimized)
@@ -326,6 +339,13 @@ def test_params_print(capsys):
     assert re.search('trailing_stop_positive = 0.05  # value loaded.*\n', captured.out)
     assert re.search('trailing_stop_positive_offset = 0.1  # value loaded.*\n', captured.out)
     assert re.search('trailing_only_offset_is_reached = True  # value loaded.*\n', captured.out)
+
+    HyperoptTools._params_pretty_print(
+                params, 'max_open_trades', "Max Open Trades:", non_optimized)
+    captured = capsys.readouterr()
+
+    assert re.search("# Max Open Trades:", captured.out)
+    assert re.search('max_open_trades = 5  # value loaded.*\n', captured.out)
 
 
 def test_hyperopt_serializer():

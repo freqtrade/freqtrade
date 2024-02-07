@@ -22,15 +22,15 @@ def mock_order_1(is_short: bool):
     return {
         'id': f'1234_{direc(is_short)}',
         'symbol': 'ETH/BTC',
-        'status': 'closed',
+        'status': 'open',
         'side': entry_side(is_short),
         'type': 'limit',
         'price': 0.123,
         'average': 0.123,
         'amount': 123.0,
-        'filled': 123.0,
+        'filled': 50.0,
         'cost': 15.129,
-        'remaining': 0.0,
+        'remaining': 123.0 - 50.0,
     }
 
 
@@ -46,7 +46,6 @@ def mock_trade_1(fee, is_short: bool):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=17),
         open_rate=0.123,
         exchange='binance',
-        open_order_id=f'dry_run_buy_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
         is_short=is_short
@@ -103,7 +102,6 @@ def mock_trade_2(fee, is_short: bool):
         close_profit_abs=-0.005584127 if is_short else 0.000584127,
         exchange='binance',
         is_open=False,
-        open_order_id=f'dry_run_sell_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
         enter_tag='TEST1',
@@ -211,7 +209,6 @@ def mock_trade_4(fee, is_short: bool):
         is_open=True,
         open_rate=0.123,
         exchange='binance',
-        open_order_id=f'prod_buy_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
         is_short=is_short,
@@ -269,7 +266,6 @@ def mock_trade_5(fee, is_short: bool):
         exchange='binance',
         strategy='SampleStrategy',
         enter_tag='TEST1',
-        stoploss_order_id=f'prod_stoploss_{direc(is_short)}_3455',
         timeframe=5,
         is_short=is_short,
         stop_loss_pct=0.10,
@@ -328,7 +324,6 @@ def mock_trade_6(fee, is_short: bool):
         exchange='binance',
         strategy='SampleStrategy',
         enter_tag='TEST2',
-        open_order_id=f"prod_sell_{direc(is_short)}_6",
         timeframe=5,
         is_short=is_short
     )
@@ -412,7 +407,6 @@ def short_trade(fee):
         # close_profit_abs=-0.6925113200000013,
         exchange='binance',
         is_open=True,
-        open_order_id='dry_run_exit_short_12345',
         strategy='DefaultStrategy',
         timeframe=5,
         exit_reason='sell_signal',
@@ -503,7 +497,6 @@ def leverage_trade(fee):
         close_profit_abs=2.5983135000000175,
         exchange='kraken',
         is_open=False,
-        open_order_id='dry_run_leverage_buy_12368',
         strategy='DefaultStrategy',
         timeframe=5,
         exit_reason='sell_signal',

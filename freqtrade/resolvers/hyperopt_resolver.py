@@ -5,9 +5,8 @@ This module load custom hyperopt
 """
 import logging
 from pathlib import Path
-from typing import Dict
 
-from freqtrade.constants import HYPEROPT_LOSS_BUILTIN, USERPATH_HYPEROPTS
+from freqtrade.constants import HYPEROPT_LOSS_BUILTIN, USERPATH_HYPEROPTS, Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
@@ -26,7 +25,7 @@ class HyperOptLossResolver(IResolver):
     initial_search_path = Path(__file__).parent.parent.joinpath('optimize/hyperopt_loss').resolve()
 
     @staticmethod
-    def load_hyperoptloss(config: Dict) -> IHyperOptLoss:
+    def load_hyperoptloss(config: Config) -> IHyperOptLoss:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary

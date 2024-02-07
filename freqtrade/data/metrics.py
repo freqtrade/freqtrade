@@ -1,4 +1,6 @@
 import logging
+import math
+from datetime import datetime
 from typing import Dict, Tuple
 
 import numpy as np
@@ -59,10 +61,10 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_minutes = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
+    _trades_sum = trades.resample(timeframe_freq, on='close_date'
                                   )[['profit_abs']].sum()
     df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
     # Set first value to 0
@@ -190,3 +192,122 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     :return: CAGR
     """
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+
+
+def calculate_expectancy(trades: pd.DataFrame) -> Tuple[float, float]:
+    """
+    Calculate expectancy
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
+    :return: expectancy, expectancy_ratio
+    """
+
+    expectancy = 0
+    expectancy_ratio = 100
+
+    if len(trades) > 0:
+        winning_trades = trades.loc[trades['profit_abs'] > 0]
+        losing_trades = trades.loc[trades['profit_abs'] < 0]
+        profit_sum = winning_trades['profit_abs'].sum()
+        loss_sum = abs(losing_trades['profit_abs'].sum())
+        nb_win_trades = len(winning_trades)
+        nb_loss_trades = len(losing_trades)
+
+        average_win = (profit_sum / nb_win_trades) if nb_win_trades > 0 else 0
+        average_loss = (loss_sum / nb_loss_trades) if nb_loss_trades > 0 else 0
+        winrate = (nb_win_trades / len(trades))
+        loserate = (nb_loss_trades / len(trades))
+
+        expectancy = (winrate * average_win) - (loserate * average_loss)
+        if (average_loss > 0):
+            risk_reward_ratio = average_win / average_loss
+            expectancy_ratio = ((1 + risk_reward_ratio) * winrate) - 1
+
+    return expectancy, expectancy_ratio
+
+
+def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                      starting_balance: float) -> float:
+    """
+    Calculate sortino
+    :param trades: DataFrame containing trades (requires columns profit_abs)
+    :return: sortino
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'] / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    expected_returns_mean = total_profit.sum() / days_period
+
+    down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
+
+    if down_stdev != 0 and not np.isnan(down_stdev):
+        sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
+    else:
+        # Define high (negative) sortino ratio to be clear that this is NOT optimal.
+        sortino_ratio = -100
+
+    # print(expected_returns_mean, down_stdev, sortino_ratio)
+    return sortino_ratio
+
+
+def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                     starting_balance: float) -> float:
+    """
+    Calculate sharpe
+    :param trades: DataFrame containing trades (requires column profit_abs)
+    :return: sharpe
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'] / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    expected_returns_mean = total_profit.sum() / days_period
+    up_stdev = np.std(total_profit)
+
+    if up_stdev != 0:
+        sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
+    else:
+        # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
+        sharp_ratio = -100
+
+    # print(expected_returns_mean, up_stdev, sharp_ratio)
+    return sharp_ratio
+
+
+def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
+                     starting_balance: float) -> float:
+    """
+    Calculate calmar
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
+    :return: calmar
+    """
+    if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
+        return 0
+
+    total_profit = trades['profit_abs'].sum() / starting_balance
+    days_period = max(1, (max_date - min_date).days)
+
+    # adding slippage of 0.1% per trade
+    # total_profit = total_profit - 0.0005
+    expected_returns_mean = total_profit / days_period * 100
+
+    # calculate max drawdown
+    try:
+        _, _, _, _, _, max_drawdown = calculate_max_drawdown(
+            trades, value_col="profit_abs", starting_balance=starting_balance
+        )
+    except ValueError:
+        max_drawdown = 0
+
+    if max_drawdown != 0:
+        calmar_ratio = expected_returns_mean / max_drawdown * math.sqrt(365)
+    else:
+        # Define high (negative) calmar ratio to be clear that this is NOT optimal.
+        calmar_ratio = -100
+
+    # print(expected_returns_mean, max_drawdown, calmar_ratio)
+    return calmar_ratio

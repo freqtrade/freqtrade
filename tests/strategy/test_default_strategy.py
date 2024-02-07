@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from pandas import DataFrame
@@ -21,17 +21,17 @@ def test_strategy_test_v3_structure():
     (True, 'short'),
     (False, 'long'),
 ])
-def test_strategy_test_v3(result, fee, is_short, side):
+def test_strategy_test_v3(dataframe_1m, fee, is_short, side):
     strategy = StrategyTestV3({})
 
     metadata = {'pair': 'ETH/BTC'}
-    assert type(strategy.minimal_roi) is dict
-    assert type(strategy.stoploss) is float
-    assert type(strategy.timeframe) is str
-    indicators = strategy.populate_indicators(result, metadata)
-    assert type(indicators) is DataFrame
-    assert type(strategy.populate_buy_trend(indicators, metadata)) is DataFrame
-    assert type(strategy.populate_sell_trend(indicators, metadata)) is DataFrame
+    assert isinstance(strategy.minimal_roi, dict)
+    assert isinstance(strategy.stoploss, float)
+    assert isinstance(strategy.timeframe, str)
+    indicators = strategy.populate_indicators(dataframe_1m, metadata)
+    assert isinstance(indicators, DataFrame)
+    assert isinstance(strategy.populate_buy_trend(indicators, metadata), DataFrame)
+    assert isinstance(strategy.populate_sell_trend(indicators, metadata), DataFrame)
 
     trade = Trade(
         open_rate=19_000,
@@ -43,13 +43,14 @@ def test_strategy_test_v3(result, fee, is_short, side):
 
     assert strategy.confirm_trade_entry(pair='ETH/BTC', order_type='limit', amount=0.1,
                                         rate=20000, time_in_force='gtc',
-                                        current_time=datetime.utcnow(),
+                                        current_time=datetime.now(timezone.utc),
                                         side=side, entry_tag=None) is True
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
                                        rate=20000, time_in_force='gtc', exit_reason='roi',
                                        sell_reason='roi',
-                                       current_time=datetime.utcnow(),
+                                       current_time=datetime.now(timezone.utc),
                                        side=side) is True
 
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
-                                    current_rate=20_000, current_profit=0.05) == strategy.stoploss
+                                    current_rate=20_000, current_profit=0.05, after_fill=False
+                                    ) == strategy.stoploss

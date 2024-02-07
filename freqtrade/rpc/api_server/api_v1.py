@@ -1,22 +1,22 @@
 import logging
 from copy import deepcopy
-from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
-from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceEnterPayload,
-                                                  ForceEnterResponse, ForceExitPayload, Health,
-                                                  Locks, Logs, OpenTradeSchema, PairHistory,
+                                                  BlacklistResponse, Count, DailyWeeklyMonthly,
+                                                  DeleteLockRequest, DeleteTrade, Entry,
+                                                  ExchangeListResponse, Exit, ForceEnterPayload,
+                                                  ForceEnterResponse, ForceExitPayload,
+                                                  FreqAIModelListResponse, Health, Locks, Logs,
+                                                  MixTag, OpenTradeSchema, PairHistory,
                                                   PerformanceEntry, Ping, PlotConfig, Profit,
                                                   ResultMsg, ShowConfig, Stats, StatusMsg,
                                                   StrategyListResponse, StrategyResponse, SysInfo,
@@ -38,7 +38,22 @@ logger = logging.getLogger(__name__)
 # 2.15: Add backtest history endpoints
 # 2.16: Additional daily metrics
 # 2.17: Forceentry - leverage, partial force_exit
-API_VERSION = 2.17
+# 2.20: Add websocket endpoints
+# 2.21: Add new_candle messagetype
+# 2.22: Add FreqAI to backtesting
+# 2.23: Allow plot config request in webserver mode
+# 2.24: Add cancel_open_order endpoint
+# 2.25: Add several profit values to /status endpoint
+# 2.26: increase /balance output
+# 2.27: Add /trades/<id>/reload endpoint
+# 2.28: Switch reload endpoint to Post
+# 2.29: Add /exchanges endpoint
+# 2.30: new /pairlists endpoint
+# 2.31: new /backtest/history/ delete endpoint
+# 2.32: new /backtest/history/ patch endpoint
+# 2.33: Additional weekly/monthly metrics
+# 2.34: new entries/exits/mix_tags endpoints
+API_VERSION = 2.34
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -69,6 +84,21 @@ def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
 
 
+@router.get('/entries', response_model=List[Entry], tags=['info'])
+def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_enter_tag_performance(pair)
+
+
+@router.get('/exits', response_model=List[Exit], tags=['info'])
+def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_exit_reason_performance(pair)
+
+
+@router.get('/mix_tags', response_model=List[MixTag], tags=['info'])
+def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_mix_tag_performance(pair)
+
+
 @router.get('/performance', response_model=List[PerformanceEntry], tags=['info'])
 def performance(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_performance()
@@ -86,10 +116,22 @@ def stats(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stats()
 
 
-@router.get('/daily', response_model=Daily, tags=['info'])
+@router.get('/daily', response_model=DailyWeeklyMonthly, tags=['info'])
 def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
                                     config.get('fiat_display_currency', ''))
+
+
+@router.get('/weekly', response_model=DailyWeeklyMonthly, tags=['info'])
+def weekly(timescale: int = 4, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', ''), 'weeks')
+
+
+@router.get('/monthly', response_model=DailyWeeklyMonthly, tags=['info'])
+def monthly(timescale: int = 3, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', ''), 'months')
 
 
 @router.get('/status', response_model=List[OpenTradeSchema], tags=['info'])
@@ -118,6 +160,18 @@ def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
 def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete(tradeid)
+
+
+@router.delete('/trades/{tradeid}/open-order', response_model=OpenTradeSchema,  tags=['trading'])
+def trade_cancel_open_order(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_cancel_open_order(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
+
+
+@router.post('/trades/{tradeid}/reload', response_model=OpenTradeSchema,  tags=['trading'])
+def trade_reload(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    rpc._rpc_reload_trade_from_exchange(tradeid)
+    return rpc._rpc_trade_status([tradeid])[0]
 
 
 # TODO: Missing response model
@@ -150,9 +204,9 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
                                  leverage=payload.leverage)
 
     if trade:
-        return ForceEnterResponse.parse_obj(trade.to_json())
+        return ForceEnterResponse.model_validate(trade.to_json())
     else:
-        return ForceEnterResponse.parse_obj(
+        return ForceEnterResponse.model_validate(
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
@@ -216,9 +270,10 @@ def stop(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stop()
 
 
+@router.post('/stopentry', response_model=StatusMsg, tags=['botcontrol'])
 @router.post('/stopbuy', response_model=StatusMsg, tags=['botcontrol'])
 def stop_buy(rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_stopbuy()
+    return rpc._rpc_stopentry()
 
 
 @router.post('/reload_config', response_model=StatusMsg, tags=['botcontrol'])
@@ -234,28 +289,45 @@ def pair_candles(
 
 @router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
 def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
+                 freqaimodel: Optional[str] = None,
                  config=Depends(get_config), exchange=Depends(get_exchange)):
     # The initial call to this endpoint can be slow, as it may need to initialize
     # the exchange class.
     config = deepcopy(config)
     config.update({
         'strategy': strategy,
+        'timerange': timerange,
+        'freqaimodel': freqaimodel if freqaimodel else config.get('freqaimodel'),
     })
-    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange, exchange)
+    try:
+        return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
-def plot_config(rpc: RPC = Depends(get_rpc)):
-    return PlotConfig.parse_obj(rpc._rpc_plot_config())
+def plot_config(strategy: Optional[str] = None, config=Depends(get_config),
+                rpc: Optional[RPC] = Depends(get_rpc_optional)):
+    if not strategy:
+        if not rpc:
+            raise RPCException("Strategy is mandatory in webserver mode.")
+        return PlotConfig.model_validate(rpc._rpc_plot_config())
+    else:
+        config1 = deepcopy(config)
+        config1.update({
+            'strategy': strategy
+        })
+    try:
+        return PlotConfig.model_validate(RPC._rpc_plot_config_with_strategy(config1))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
 def list_strategies(config=Depends(get_config)):
-    directory = Path(config.get(
-        'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
     strategies = StrategyResolver.search_all_objects(
-        directory, False, config.get('recursive_strategy_search', False))
+        config, False, config.get('recursive_strategy_search', False))
     strategies = sorted(strategies, key=lambda x: x['name'])
 
     return {'strategies': [x['name'] for x in strategies]}
@@ -263,6 +335,8 @@ def list_strategies(config=Depends(get_config)):
 
 @router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
 def get_strategy(strategy: str, config=Depends(get_config)):
+    if ":" in strategy:
+        raise HTTPException(status_code=500, detail="base64 encoded strategies are not allowed.")
 
     config_ = deepcopy(config)
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -271,11 +345,32 @@ def get_strategy(strategy: str, config=Depends(get_config)):
                                                        extra_dir=config_.get('strategy_path'))
     except OperationalException:
         raise HTTPException(status_code=404, detail='Strategy not found')
-
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
     return {
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
+        'timeframe': getattr(strategy_obj, 'timeframe', None),
     }
+
+
+@router.get('/exchanges', response_model=ExchangeListResponse, tags=[])
+def list_exchanges(config=Depends(get_config)):
+    from freqtrade.exchange import list_available_exchanges
+    exchanges = list_available_exchanges(config)
+    return {
+        'exchanges': exchanges,
+    }
+
+
+@router.get('/freqaimodels', response_model=FreqAIModelListResponse, tags=['freqai'])
+def list_freqaimodels(config=Depends(get_config)):
+    from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+    models = FreqaiModelResolver.search_all_objects(
+        config, False)
+    models = sorted(models, key=lambda x: x['name'])
+
+    return {'freqaimodels': [x['name'] for x in models]}
 
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
@@ -315,4 +410,4 @@ def sysinfo():
 
 @router.get('/health', response_model=Health, tags=['info'])
 def health(rpc: RPC = Depends(get_rpc)):
-    return rpc._health()
+    return rpc.health()

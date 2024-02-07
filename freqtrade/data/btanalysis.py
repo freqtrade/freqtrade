@@ -5,28 +5,29 @@ import logging
 from copy import copy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
 
-from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import json_load
+from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
+from freqtrade.types import BacktestHistoryEntryType, BacktestResultType
 
 
 logger = logging.getLogger(__name__)
 
 # Newest format
-BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
-                   'open_rate', 'close_rate',
+BT_DATA_COLUMNS = ['pair', 'stake_amount', 'max_stake_amount', 'amount',
+                   'open_date', 'close_date', 'open_rate', 'close_rate',
                    'fee_open', 'fee_close', 'trade_duration',
                    'profit_ratio', 'profit_abs', 'exit_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
                    'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'enter_tag',
-                   'is_short', 'open_timestamp', 'close_timestamp', 'orders'
+                   'leverage', 'is_short', 'open_timestamp', 'close_timestamp', 'orders'
                    ]
 
 
@@ -90,7 +91,8 @@ def get_latest_hyperopt_filename(directory: Union[Path, str]) -> str:
         return 'hyperopt_results.pickle'
 
 
-def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str = None) -> Path:
+def get_latest_hyperopt_file(
+        directory: Union[Path, str], predef_filename: Optional[str] = None) -> Path:
     """
     Get latest hyperopt export based on '.last_result.json'.
     :param directory: Directory to search for last result
@@ -127,7 +129,7 @@ def load_backtest_metadata(filename: Union[Path, str]) -> Dict[str, Any]:
         raise OperationalException('Unexpected error while loading backtest metadata.') from e
 
 
-def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
+def load_backtest_stats(filename: Union[Path, str]) -> BacktestResultType:
     """
     Load backtest statistics file.
     :param filename: pathlib.Path object, or string pointing to the file.
@@ -146,21 +148,21 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     # Legacy list format does not contain metadata.
     if isinstance(data, dict):
         data['metadata'] = load_backtest_metadata(filename)
-
     return data
 
 
 def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
     """
-    Load one strategy from multi-strategy result
-    and merge it with results
+    Load one strategy from multi-strategy result and merge it with results
     :param strategy_name: Name of the strategy contained in the result
     :param filename: Backtest-result-filename to load
     :param results: dict to merge the result to.
     """
     bt_data = load_backtest_stats(filename)
-    for k in ('metadata', 'strategy'):
+    k: Literal['metadata', 'strategy']
+    for k in ('metadata', 'strategy'):  # type: ignore
         results[k][strategy_name] = bt_data[k][strategy_name]
+    results['metadata'][strategy_name]['filename'] = filename.stem
     comparison = bt_data['strategy_comparison']
     for i in range(len(comparison)):
         if comparison[i]['key'] == strategy_name:
@@ -169,31 +171,75 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
 
 
 def _get_backtest_files(dirname: Path) -> List[Path]:
+    # Weird glob expression here avoids including .meta.json files.
     return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
-def get_backtest_resultlist(dirname: Path):
+def _extract_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    metadata = load_backtest_metadata(filename)
+    return [
+        {
+            'filename': filename.stem,
+            'strategy': s,
+            'run_id': v['run_id'],
+            'notes': v.get('notes', ''),
+            # Backtest "run" time
+            'backtest_start_time': v['backtest_start_time'],
+            # Backtest timerange
+            'backtest_start_ts': v.get('backtest_start_ts', None),
+            'backtest_end_ts': v.get('backtest_end_ts', None),
+            'timeframe': v.get('timeframe', None),
+            'timeframe_detail': v.get('timeframe_detail', None),
+        } for s, v in metadata.items()
+    ]
+
+
+def get_backtest_result(filename: Path) -> List[BacktestHistoryEntryType]:
+    """
+    Get backtest result read from metadata file
+    """
+    return _extract_backtest_result(filename)
+
+
+def get_backtest_resultlist(dirname: Path) -> List[BacktestHistoryEntryType]:
     """
     Get list of backtest results read from metadata files
     """
-    results = []
-    for filename in _get_backtest_files(dirname):
-        metadata = load_backtest_metadata(filename)
-        if not metadata:
-            continue
-        for s, v in metadata.items():
-            results.append({
-                'filename': filename.name,
-                'strategy': s,
-                'run_id': v['run_id'],
-                'backtest_start_time': v['backtest_start_time'],
+    return [
+        result
+        for filename in _get_backtest_files(dirname)
+        for result in _extract_backtest_result(filename)
+    ]
 
-            })
-    return results
+
+def delete_backtest_result(file_abs: Path):
+    """
+    Delete backtest result file and corresponding metadata file.
+    """
+    # *.meta.json
+    logger.info(f"Deleting backtest result file: {file_abs.name}")
+    file_abs_meta = file_abs.with_suffix('.meta.json')
+    file_abs.unlink()
+    file_abs_meta.unlink()
+
+
+def update_backtest_metadata(filename: Path, strategy: str, content: Dict[str, Any]):
+    """
+    Updates backtest metadata file with new content.
+    :raises: ValueError if metadata file does not exist, or strategy is not in this file.
+    """
+    metadata = load_backtest_metadata(filename)
+    if not metadata:
+        raise ValueError("File does not exist.")
+    if strategy not in metadata:
+        raise ValueError("Strategy not in metadata.")
+    metadata[strategy].update(content)
+    # Write data again.
+    file_dump_json(get_backtest_metadata_filename(filename), metadata)
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
-                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
+                                 min_backtest_date: Optional[datetime] = None) -> Dict[str, Any]:
     """
     Find existing backtest stats that match specified run IDs and load them.
     :param dirname: pathlib.Path object, or string pointing to the file.
@@ -210,7 +256,6 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
         'strategy_comparison': [],
     }
 
-    # Weird glob expression here avoids including .meta.json files.
     for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:
@@ -241,6 +286,27 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
     return results
 
 
+def _load_backtest_data_df_compatibility(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compatibility support for older backtest data.
+    """
+    df['open_date'] = pd.to_datetime(df['open_date'], utc=True)
+    df['close_date'] = pd.to_datetime(df['close_date'], utc=True)
+    # Compatibility support for pre short Columns
+    if 'is_short' not in df.columns:
+        df['is_short'] = False
+    if 'leverage' not in df.columns:
+        df['leverage'] = 1.0
+    if 'enter_tag' not in df.columns:
+        df['enter_tag'] = df['buy_tag']
+        df = df.drop(['buy_tag'], axis=1)
+    if 'max_stake_amount' not in df.columns:
+        df['max_stake_amount'] = df['stake_amount']
+    if 'orders' not in df.columns:
+        df['orders'] = None
+    return df
+
+
 def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = None) -> pd.DataFrame:
     """
     Load backtest data file.
@@ -264,27 +330,15 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                  "Please specify a strategy.")
 
         if strategy not in data['strategy']:
-            raise ValueError(f"Strategy {strategy} not available in the backtest result.")
+            raise ValueError(
+                f"Strategy {strategy} not available in the backtest result. "
+                f"Available strategies are '{','.join(data['strategy'].keys())}'"
+                )
 
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
         if not df.empty:
-            df['open_date'] = pd.to_datetime(df['open_date'],
-                                             utc=True,
-                                             infer_datetime_format=True
-                                             )
-            df['close_date'] = pd.to_datetime(df['close_date'],
-                                              utc=True,
-                                              infer_datetime_format=True
-                                              )
-            # Compatibility support for pre short Columns
-            if 'is_short' not in df.columns:
-                df['is_short'] = 0
-            if 'enter_tag' not in df.columns:
-                df['enter_tag'] = df['buy_tag']
-                df = df.drop(['buy_tag'], axis=1)
-            if 'orders' not in df.columns:
-                df.loc[:, 'orders'] = None
+            df = _load_backtest_data_df_compatibility(df)
 
     else:
         # old format - only with lists.
@@ -303,10 +357,10 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     :param timeframe: Timeframe used for backtest
     :return: dataframe with open-counts per time-period in timeframe
     """
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_min = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
-                                     freq=f"{timeframe_min}min"))
+                                     freq=timeframe_freq))
              for row in results[['open_date', 'close_date']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -314,13 +368,13 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
-    df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
+    df_final = df2.resample(timeframe_freq)[['pair']].count()
     df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
     return df_final
 
 
 def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
-                          max_open_trades: int) -> pd.DataFrame:
+                          max_open_trades: IntOrInf) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
     and then counting overlaps
@@ -333,7 +387,7 @@ def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
     return df_final[df_final['open_trades'] > max_open_trades]
 
 
-def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
+def trade_list_to_dataframe(trades: Union[List[Trade], List[LocalTrade]]) -> pd.DataFrame:
     """
     Convert list of Trade objects to pandas Dataframe
     :param trades: List of trade objects
@@ -341,9 +395,9 @@ def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
     """
     df = pd.DataFrame.from_records([t.to_json(True) for t in trades], columns=BT_DATA_COLUMNS)
     if len(df) > 0:
-        df.loc[:, 'close_date'] = pd.to_datetime(df['close_date'], utc=True)
-        df.loc[:, 'open_date'] = pd.to_datetime(df['open_date'], utc=True)
-        df.loc[:, 'close_rate'] = df['close_rate'].astype('float64')
+        df['close_date'] = pd.to_datetime(df['close_date'], utc=True)
+        df['open_date'] = pd.to_datetime(df['open_date'], utc=True)
+        df['close_rate'] = df['close_rate'].astype('float64')
     return df
 
 
@@ -360,7 +414,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
     filters = []
     if strategy:
         filters.append(Trade.strategy == strategy)
-    trades = trade_list_to_dataframe(Trade.get_trades(filters).all())
+    trades = trade_list_to_dataframe(list(Trade.get_trades(filters).all()))
 
     return trades
 

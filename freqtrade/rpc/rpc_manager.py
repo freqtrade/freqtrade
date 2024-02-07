@@ -3,10 +3,12 @@ This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
 from collections import deque
-from typing import Any, Dict, List
+from typing import List
 
-from freqtrade.enums import RPCMessageType
+from freqtrade.constants import Config
+from freqtrade.enums import NO_ECHO_MESSAGES, RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ class RPCManager:
             mod.cleanup()
             del mod
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """
         Send given message to all registered rpc modules.
         A message consists of one or more key value pairs of strings.
@@ -66,17 +68,16 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        logger.info('Sending rpc message: %s', msg)
-        if 'pair' in msg:
-            msg.update({
-                'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])
-                })
+        if msg.get('type') not in NO_ECHO_MESSAGES:
+            logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:
             logger.debug('Forwarding message to rpc.%s', mod.name)
             try:
                 mod.send_msg(msg)
             except NotImplementedError:
                 logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
+            except Exception:
+                logger.exception('Exception occurred within RPC module %s', mod.name)
 
     def process_msg_queue(self, queue: deque) -> None:
         """
@@ -84,12 +85,15 @@ class RPCManager:
         """
         while queue:
             msg = queue.popleft()
-            self.send_msg({
-                'type': RPCMessageType.STRATEGY_MSG,
-                'msg': msg,
-            })
+            logger.info('Sending rpc strategy_msg: %s', msg)
+            for mod in self.registered_modules:
+                if mod._config.get(mod.name, {}).get('allow_custom_messages', False):
+                    mod.send_msg({
+                        'type': RPCMessageType.STRATEGY_MSG,
+                        'msg': msg,
+                    })
 
-    def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
+    def startup_messages(self, config: Config, pairlist, protections) -> None:
         if config['dry_run']:
             self.send_msg({
                 'type': RPCMessageType.WARNING,

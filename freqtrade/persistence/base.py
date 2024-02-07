@@ -1,7 +1,9 @@
 
-from typing import Any
-
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase, Session, scoped_session
 
 
-_DECL_BASE: Any = declarative_base()
+SessionType = scoped_session[Session]
+
+
+class ModelBase(DeclarativeBase):
+    pass

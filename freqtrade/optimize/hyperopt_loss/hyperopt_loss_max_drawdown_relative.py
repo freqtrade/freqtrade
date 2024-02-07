@@ -4,10 +4,9 @@ MaxDrawDownRelativeHyperOptLoss
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
-from typing import Dict
-
 from pandas import DataFrame
 
+from freqtrade.constants import Config
 from freqtrade.data.metrics import calculate_underwater
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
@@ -22,7 +21,7 @@ class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
     """
 
     @staticmethod
-    def hyperopt_loss_function(results: DataFrame, config: Dict,
+    def hyperopt_loss_function(results: DataFrame, config: Config,
                                *args, **kwargs) -> float:
 
         """

@@ -1,7 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
-import logging
-import sys
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -11,19 +9,18 @@ import pytest
 from jsonschema import ValidationError
 
 from freqtrade.commands import Arguments
-from freqtrade.configuration import Configuration, check_exchange, validate_config_consistency
+from freqtrade.configuration import Configuration, validate_config_consistency
 from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
+from freqtrade.configuration.environment_vars import _flat_vars_to_nested_dict
 from freqtrade.configuration.load_config import (load_config_file, load_file, load_from_files,
                                                  log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.loggers import FTBufferingHandler, _set_loggers, setup_logging, setup_logging_pre
 from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
                             patched_configuration_load_config_file)
 
@@ -58,7 +55,8 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
-    file_mock = mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(
+    default_conf['datadir'] = str(default_conf['datadir'])
+    file_mock = mocker.patch('freqtrade.configuration.load_config.Path.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
@@ -69,9 +67,11 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
-    mocker.patch('freqtrade.configuration.load_config.open', mocker.mock_open(read_data=filedata))
+    mocker.patch('freqtrade.configuration.load_config.Path.open',
+                 mocker.mock_open(read_data=filedata))
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
     with pytest.raises(OperationalException, match=r".*Please verify the following segment.*"):
@@ -80,6 +80,7 @@ def test_load_config_file_error(default_conf, mocker, caplog) -> None:
 
 def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     del default_conf['user_data_dir']
+    default_conf['datadir'] = str(default_conf['datadir'])
     filedata = json.dumps(default_conf).replace(
         '"stake_amount": 0.001,', '"stake_amount": .001,')
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
@@ -103,8 +104,8 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert x == ''
 
 
-def test_load_file_error(tmpdir):
-    testpath = Path(tmpdir) / 'config.json'
+def test_load_file_error(tmp_path):
+    testpath = tmp_path / 'config.json'
     with pytest.raises(OperationalException, match=r"File .* not found!"):
         load_file(testpath)
 
@@ -238,6 +239,7 @@ def test_print_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     # Delete non-json elements from default_conf
     del conf1['user_data_dir']
+    conf1['datadir'] = str(conf1['datadir'])
     config_files = [conf1]
 
     configsmock = MagicMock(side_effect=config_files)
@@ -268,7 +270,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
 
 def test_load_config_file_exception(mocker) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.open',
+        'freqtrade.configuration.configuration.Path.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
 
@@ -584,72 +586,11 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert config['runmode'] == RunMode.HYPEROPT
 
 
-def test_check_exchange(default_conf, caplog) -> None:
-    # Test an officially supported by Freqtrade team exchange
-    default_conf['runmode'] = RunMode.DRY_RUN
-    default_conf.get('exchange').update({'name': 'BITTREX'})
-    assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
-                      caplog)
-    caplog.clear()
-
-    # Test an officially supported by Freqtrade team exchange
-    default_conf.get('exchange').update({'name': 'binance'})
-    assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
-                      caplog)
-    caplog.clear()
-
-    # Test an available exchange, supported by ccxt
-    default_conf.get('exchange').update({'name': 'huobipro'})
-    assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
-                      r"but not officially supported "
-                      r"by the Freqtrade development team\. .*", caplog)
-    caplog.clear()
-
-    # Test a 'bad' exchange, which known to have serious problems
-    default_conf.get('exchange').update({'name': 'bitmex'})
-    with pytest.raises(OperationalException,
-                       match=r"Exchange .* will not work with Freqtrade\..*"):
-        check_exchange(default_conf)
-    caplog.clear()
-
-    # Test a 'bad' exchange with check_for_bad=False
-    default_conf.get('exchange').update({'name': 'bitmex'})
-    assert check_exchange(default_conf, False)
-    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
-                      r"but not officially supported "
-                      r"by the Freqtrade development team\. .*", caplog)
-    caplog.clear()
-
-    # Test an invalid exchange
-    default_conf.get('exchange').update({'name': 'unknown_exchange'})
-    with pytest.raises(
-        OperationalException,
-        match=r'Exchange "unknown_exchange" is not known to the ccxt library '
-              r'and therefore not available for the bot.*'
-    ):
-        check_exchange(default_conf)
-
-    # Test no exchange...
-    default_conf.get('exchange').update({'name': ''})
-    default_conf['runmode'] = RunMode.PLOT
-    assert check_exchange(default_conf)
-
-    # Test no exchange...
-    default_conf.get('exchange').update({'name': ''})
-    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
-    with pytest.raises(OperationalException,
-                       match=r'This command requires a configured exchange.*'):
-        check_exchange(default_conf)
-
-
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
     # Prevent setting loggers
-    mocker.patch('freqtrade.loggers._set_loggers', MagicMock)
+    mocker.patch('freqtrade.loggers.set_loggers', MagicMock)
     arglist = ['trade', '-vvv']
     args = Arguments(arglist).get_parsed_arg()
 
@@ -660,129 +601,9 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     assert log_has('Verbosity set to 3', caplog)
 
 
-def test_set_loggers() -> None:
-    # Reset Logging to Debug, otherwise this fails randomly as it's set globally
-    logging.getLogger('requests').setLevel(logging.DEBUG)
-    logging.getLogger("urllib3").setLevel(logging.DEBUG)
-    logging.getLogger('ccxt.base.exchange').setLevel(logging.DEBUG)
-    logging.getLogger('telegram').setLevel(logging.DEBUG)
-
-    previous_value1 = logging.getLogger('requests').level
-    previous_value2 = logging.getLogger('ccxt.base.exchange').level
-    previous_value3 = logging.getLogger('telegram').level
-
-    _set_loggers()
-
-    value1 = logging.getLogger('requests').level
-    assert previous_value1 is not value1
-    assert value1 is logging.INFO
-
-    value2 = logging.getLogger('ccxt.base.exchange').level
-    assert previous_value2 is not value2
-    assert value2 is logging.INFO
-
-    value3 = logging.getLogger('telegram').level
-    assert previous_value3 is not value3
-    assert value3 is logging.INFO
-
-    _set_loggers(verbosity=2)
-
-    assert logging.getLogger('requests').level is logging.DEBUG
-    assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
-    assert logging.getLogger('telegram').level is logging.INFO
-    assert logging.getLogger('werkzeug').level is logging.INFO
-
-    _set_loggers(verbosity=3, api_verbosity='error')
-
-    assert logging.getLogger('requests').level is logging.DEBUG
-    assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
-    assert logging.getLogger('telegram').level is logging.INFO
-    assert logging.getLogger('werkzeug').level is logging.ERROR
-
-
-@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_set_loggers_syslog():
-    logger = logging.getLogger()
-    orig_handlers = logger.handlers
-    logger.handlers = []
-
-    config = {'verbosity': 2,
-              'logfile': 'syslog:/dev/log',
-              }
-
-    setup_logging_pre()
-    setup_logging(config)
-    assert len(logger.handlers) == 3
-    assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
-    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
-    # setting up logging again should NOT cause the loggers to be added a second time.
-    setup_logging(config)
-    assert len(logger.handlers) == 3
-    # reset handlers to not break pytest
-    logger.handlers = orig_handlers
-
-
-@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_set_loggers_Filehandler(tmpdir):
-    logger = logging.getLogger()
-    orig_handlers = logger.handlers
-    logger.handlers = []
-    logfile = Path(tmpdir) / 'ft_logfile.log'
-    config = {'verbosity': 2,
-              'logfile': str(logfile),
-              }
-
-    setup_logging_pre()
-    setup_logging(config)
-    assert len(logger.handlers) == 3
-    assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
-    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
-    # setting up logging again should NOT cause the loggers to be added a second time.
-    setup_logging(config)
-    assert len(logger.handlers) == 3
-    # reset handlers to not break pytest
-    if logfile.exists:
-        logfile.unlink()
-    logger.handlers = orig_handlers
-
-
-@pytest.mark.skip(reason="systemd is not installed on every system, so we're not testing this.")
-def test_set_loggers_journald(mocker):
-    logger = logging.getLogger()
-    orig_handlers = logger.handlers
-    logger.handlers = []
-
-    config = {'verbosity': 2,
-              'logfile': 'journald',
-              }
-
-    setup_logging(config)
-    assert len(logger.handlers) == 2
-    assert [x for x in logger.handlers if type(x).__name__ == "JournaldLogHandler"]
-    assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
-    # reset handlers to not break pytest
-    logger.handlers = orig_handlers
-
-
-def test_set_loggers_journald_importerror(mocker, import_fails):
-    logger = logging.getLogger()
-    orig_handlers = logger.handlers
-    logger.handlers = []
-
-    config = {'verbosity': 2,
-              'logfile': 'journald',
-              }
-    with pytest.raises(OperationalException,
-                       match=r'You need the systemd python package.*'):
-        setup_logging(config)
-    logger.handlers = orig_handlers
-
-
-def test_set_logfile(default_conf, mocker, tmpdir):
+def test_set_logfile(default_conf, mocker, tmp_path):
     patched_configuration_load_config_file(mocker, default_conf)
-    f = Path(tmpdir / "test_file.log")
+    f = tmp_path / "test_file.log"
     assert not f.is_file()
     arglist = [
         'trade', '--logfile', str(f),
@@ -973,17 +794,17 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
         'buy': 'gtc',
-        'sell': 'gtc',
+        'sell': 'GTC',
     }
     validate_config_consistency(conf)
     assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for time_in_force is.*", caplog)
     assert conf['order_time_in_force']['entry'] == 'gtc'
-    assert conf['order_time_in_force']['exit'] == 'gtc'
+    assert conf['order_time_in_force']['exit'] == 'GTC'
 
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'buy': 'GTC',
+        'sell': 'GTC',
     }
     conf['trading_mode'] = 'futures'
     with pytest.raises(OperationalException,
@@ -1089,6 +910,88 @@ def test__validate_pricing_rules(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
+def test__validate_freqai_include_timeframes(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf.update({
+            "freqai": {
+                "enabled": True,
+                "feature_parameters": {
+                    "include_timeframes": ["1m", "5m"],
+                    "include_corr_pairlist": [],
+                },
+                "data_split_parameters": {},
+                "model_training_parameters": {}
+            }
+    })
+    with pytest.raises(OperationalException, match=r"Main timeframe of .*"):
+        validate_config_consistency(conf)
+    # Validation pass
+    conf.update({'timeframe': '1m'})
+    validate_config_consistency(conf)
+
+    # Ensure base timeframe is in include_timeframes
+    conf['freqai']['feature_parameters']['include_timeframes'] = ["5m", "15m"]
+    validate_config_consistency(conf)
+    assert conf['freqai']['feature_parameters']['include_timeframes'] == ["1m", "5m", "15m"]
+
+    conf.update({'analyze_per_epoch': True})
+    with pytest.raises(OperationalException,
+                       match=r"Using analyze-per-epoch .* not supported with a FreqAI strategy."):
+        validate_config_consistency(conf)
+
+
+def test__validate_consumers(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf.update({
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": []
+                }
+            })
+    with pytest.raises(OperationalException,
+                       match="You must specify at least 1 Producer to connect to."):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf.update({
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [
+                {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8081,
+                    "ws_token": "secret_ws_t0ken."
+                }, {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8080,
+                    "ws_token": "secret_ws_t0ken."
+                }
+            ]}
+        })
+    with pytest.raises(OperationalException,
+                       match="Producer names must be unique. Duplicate: default"):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf.update({
+        "process_only_new_candles": True,
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [
+                {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8081,
+                    "ws_token": "secret_ws_t0ken."
+                }
+            ]}
+        })
+    validate_config_consistency(conf)
+    assert log_has_re("To receive best performance with external data.*", caplog)
+
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments
@@ -1135,8 +1038,7 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
         validate_config_schema(all_conf)
 
 
-@pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
-                                  ("exchange", "key", ""),
+@pytest.mark.parametrize("keys", [("exchange", "key", ""),
                                   ("exchange", "secret", ""),
                                   ("exchange", "password", ""),
                                   ])
@@ -1243,7 +1145,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
         configuration.get_config()
 
 
-def test_pairlist_resolving_fallback(mocker):
+def test_pairlist_resolving_fallback(mocker, tmp_path):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
     mocker.patch("freqtrade.configuration.configuration.load_file",
@@ -1262,7 +1164,7 @@ def test_pairlist_resolving_fallback(mocker):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == Path.cwd() / "user_data/data/binance"
+    assert config['datadir'] == tmp_path / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [
@@ -1517,8 +1419,90 @@ def test_flat_vars_to_nested_dict(caplog):
             'chat_id': '2151'
         }
     }
-    res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
+    res = _flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
     assert res == expected
 
     assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
     assert not log_has("Loading variable 'NOT_RELEVANT'", caplog)
+
+
+def test_setup_hyperopt_freqai(mocker, default_conf, caplog) -> None:
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
+    )
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
+    arglist = [
+        'hyperopt',
+        '--config', 'config.json',
+        '--strategy', CURRENT_TEST_STRATEGY,
+        '--timerange', '20220801-20220805',
+        "--freqaimodel",
+        "LightGBMRegressorMultiTarget",
+        "--analyze-per-epoch"
+    ]
+
+    args = Arguments(arglist).get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    config['freqai'] = {
+        "enabled": True
+    }
+    with pytest.raises(
+        OperationalException, match=r".*analyze-per-epoch parameter is not supported.*"
+    ):
+        validate_config_consistency(config)
+
+
+def test_setup_freqai_backtesting(mocker, default_conf, caplog) -> None:
+    patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_datadir',
+        lambda c, x: x
+    )
+    mocker.patch(
+        'freqtrade.configuration.configuration.create_userdata_dir',
+        lambda x, *args, **kwargs: Path(x)
+    )
+    arglist = [
+        'backtesting',
+        '--config', 'config.json',
+        '--strategy', CURRENT_TEST_STRATEGY,
+        '--timerange', '20220801-20220805',
+        "--freqaimodel",
+        "LightGBMRegressorMultiTarget",
+        "--freqai-backtest-live-models"
+    ]
+
+    args = Arguments(arglist).get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    config['runmode'] = RunMode.BACKTEST
+
+    with pytest.raises(
+        OperationalException, match=r".*--freqai-backtest-live-models parameter is only.*"
+    ):
+        validate_config_consistency(config)
+
+    conf = deepcopy(config)
+    conf['freqai'] = {
+        "enabled": True
+    }
+    with pytest.raises(
+        OperationalException, match=r".* timerange parameter is not supported with .*"
+    ):
+        validate_config_consistency(conf)
+
+    conf['timerange'] = None
+    conf['freqai_backtest_live_models'] = False
+
+    with pytest.raises(
+        OperationalException, match=r".* pass --timerange if you intend to use FreqAI .*"
+    ):
+        validate_config_consistency(conf)

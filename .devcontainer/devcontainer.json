@@ -11,29 +11,32 @@
     "mounts": [
         "source=freqtrade-bashhistory,target=/home/ftuser/commandhistory,type=volume"
     ],
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/freqtrade,type=bind,consistency=cached",
     // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "ftuser",
 
+    "onCreateCommand": "pip install --user -e .",
     "postCreateCommand": "freqtrade create-userdir --userdir user_data/",
 
-    "workspaceFolder": "/freqtrade/",
-
-    "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash",
-        "editor.insertSpaces": true,
-        "files.trimTrailingWhitespace": true,
-        "[markdown]": {
-            "files.trimTrailingWhitespace": false,
+    "workspaceFolder": "/workspaces/freqtrade",
+    "customizations": {
+        "settings": {
+            "terminal.integrated.shell.linux": "/bin/bash",
+            "editor.insertSpaces": true,
+            "files.trimTrailingWhitespace": true,
+            "[markdown]": {
+                "files.trimTrailingWhitespace": false,
+            },
+            "python.pythonPath": "/usr/local/bin/python",
         },
-        "python.pythonPath": "/usr/local/bin/python",
-    },
 
-    // Add the IDs of extensions you want installed when the container is created.
-    "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "davidanson.vscode-markdownlint",
-        "ms-azuretools.vscode-docker",
-        "vscode-icons-team.vscode-icons",
-    ],
+        // Add the IDs of extensions you want installed when the container is created.
+        "extensions": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "davidanson.vscode-markdownlint",
+            "ms-azuretools.vscode-docker",
+            "vscode-icons-team.vscode-icons",
+        ],
+    }
 }

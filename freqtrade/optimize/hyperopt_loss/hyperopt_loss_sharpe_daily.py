@@ -44,7 +44,7 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
 
         sum_daily = (
             results.resample(resample_freq, on='close_date').agg(
-                {"profit_ratio_after_slippage": sum}).reindex(t_index).fillna(0)
+                {"profit_ratio_after_slippage": 'sum'}).reindex(t_index).fillna(0)
         )
 
         total_profit = sum_daily["profit_ratio_after_slippage"] - risk_free_rate

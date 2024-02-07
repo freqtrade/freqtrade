@@ -13,7 +13,7 @@
     Please only use advanced trading modes when you know how freqtrade (and your strategy) works.
     Also, never risk more than what you can afford to lose.
 
-Please read the [strategy migration guide](strategy_migration.md#strategy-migration-between-v2-and-v3) to migrate your strategy from a freqtrade v2 strategy, to v3 strategy that can short and trade futures.
+If you already have an existing strategy, please read the [strategy migration guide](strategy_migration.md#strategy-migration-between-v2-and-v3) to migrate your strategy from a freqtrade v2 strategy, to strategy of version 3 which can short and trade futures.
 
 ## Shorting
 
@@ -62,6 +62,11 @@ You will also have to pick a "margin mode" (explanation below) - with freqtrade 
 "margin_mode": "isolated"
 ```
 
+##### Pair namings
+
+Freqtrade follows the [ccxt naming conventions for futures](https://docs.ccxt.com/#/README?id=perpetual-swap-perpetual-future).
+A futures pair will therefore have the naming of `base/quote:settle` (e.g. `ETH/USDT:USDT`).
+
 ### Margin mode
 
 On top of `trading_mode` - you will also have to configure your `margin_mode`.
@@ -84,6 +89,8 @@ One account is used to share collateral between markets (trading pairs). Margin 
 ``` json
 "margin_mode": "cross"
 ```
+
+Please read the [exchange specific notes](exchanges.md) for exchanges that support this mode and how they differ.
 
 ## Set leverage to use
 

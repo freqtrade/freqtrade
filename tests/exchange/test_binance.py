@@ -5,10 +5,23 @@ from unittest.mock import MagicMock, PropertyMock
 import ccxt
 import pytest
 
-from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+@pytest.mark.parametrize('side,type,time_in_force,expected', [
+    ('buy', 'limit', 'gtc', {'timeInForce': 'GTC'}),
+    ('buy', 'limit', 'IOC', {'timeInForce': 'IOC'}),
+    ('buy', 'market', 'IOC', {}),
+    ('buy', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'limit', 'PO', {'timeInForce': 'PO'}),
+    ('sell', 'market', 'PO', {}),
+    ])
+def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    assert exchange._get_params(side, type, 1, False, time_in_force) == expected
 
 
 @pytest.mark.parametrize('trademode', [TradingMode.FUTURES, TradingMode.SPOT])
@@ -20,9 +33,9 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     (0.99, 220 * 1.01, "buy"),
     (0.98, 220 * 1.02, "buy"),
 ])
-def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
+def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_id = f'test_prod_buy_{randint(0, 10 ** 6)}'
     order_type = 'stop_loss_limit' if trademode == TradingMode.SPOT else 'stop'
 
     api_mock.create_order = MagicMock(return_value={
@@ -34,24 +47,27 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     default_conf['dry_run'] = False
     default_conf['margin_mode'] = MarginMode.ISOLATED
     default_conf['trading_mode'] = trademode
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+    with pytest.raises(InvalidOrderException):
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
             side=side,
-            order_types={'stoploss_on_exchange_limit_ratio': 1.05},
+            order_types={'stoploss': 'limit', 'stoploss_on_exchange_limit_ratio': 1.05},
             leverage=1.0
         )
 
     api_mock.create_order.reset_mock()
-    order_types = {} if limitratio is None else {'stoploss_on_exchange_limit_ratio': limitratio}
-    order = exchange.stoploss(
+    order_types = {'stoploss': 'limit', 'stoploss_price_type': 'mark'}
+    if limitratio is not None:
+        order_types.update({'stoploss_on_exchange_limit_ratio': limitratio})
+
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -72,14 +88,14 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
     if trademode == TradingMode.SPOT:
         params_dict = {'stopPrice': 220}
     else:
-        params_dict = {'stopPrice': 220, 'reduceOnly': True}
+        params_dict = {'stopPrice': 220, 'reduceOnly': True, 'workingType': 'MARK_PRICE'}
     assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -91,7 +107,7 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(
+        exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=220,
@@ -101,22 +117,22 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side
         )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "binance",
-                           "stoploss", "create_order", retries=1,
+                           "create_stoploss", "create_order", retries=1,
                            pair='ETH/BTC', amount=1, stop_price=220, order_types={},
                            side=side, leverage=1.0)
 
 
-def test_stoploss_order_dry_run_binance(default_conf, mocker):
+def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     api_mock = MagicMock()
     order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
-    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
-    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.amount_to_precision', lambda s, x, y: y)
+    mocker.patch(f'{EXMS}.price_to_precision', lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
-    with pytest.raises(OperationalException):
-        order = exchange.stoploss(
+    with pytest.raises(InvalidOrderException):
+        order = exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
             stop_price=190,
@@ -127,7 +143,7 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(
+    order = exchange.create_stoploss(
         pair='ETH/BTC',
         amount=1,
         stop_price=220,
@@ -159,9 +175,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
-    # Test with invalid order case
-    order['type'] = 'stop_loss'
-    assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
 def test_fill_leverage_tiers_binance(default_conf, mocker):
@@ -376,96 +389,96 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
     assert exchange._leverage_tiers == {
         'ADA/BUSD': [
             {
-                "min": 0,
-                "max": 100000,
-                "mmr": 0.025,
-                "lev": 20,
+                "minNotional": 0,
+                "maxNotional": 100000,
+                "maintenanceMarginRate": 0.025,
+                "maxLeverage": 20,
                 "maintAmt": 0.0
             },
             {
-                "min": 100000,
-                "max": 500000,
-                "mmr": 0.05,
-                "lev": 10,
+                "minNotional": 100000,
+                "maxNotional": 500000,
+                "maintenanceMarginRate": 0.05,
+                "maxLeverage": 10,
                 "maintAmt": 2500.0
             },
             {
-                "min": 500000,
-                "max": 1000000,
-                "mmr": 0.1,
-                "lev": 5,
+                "minNotional": 500000,
+                "maxNotional": 1000000,
+                "maintenanceMarginRate": 0.1,
+                "maxLeverage": 5,
                 "maintAmt": 27500.0
             },
             {
-                "min": 1000000,
-                "max": 2000000,
-                "mmr": 0.15,
-                "lev": 3,
+                "minNotional": 1000000,
+                "maxNotional": 2000000,
+                "maintenanceMarginRate": 0.15,
+                "maxLeverage": 3,
                 "maintAmt": 77500.0
             },
             {
-                "min": 2000000,
-                "max": 5000000,
-                "mmr": 0.25,
-                "lev": 2,
+                "minNotional": 2000000,
+                "maxNotional": 5000000,
+                "maintenanceMarginRate": 0.25,
+                "maxLeverage": 2,
                 "maintAmt": 277500.0
             },
             {
-                "min": 5000000,
-                "max": 30000000,
-                "mmr": 0.5,
-                "lev": 1,
+                "minNotional": 5000000,
+                "maxNotional": 30000000,
+                "maintenanceMarginRate": 0.5,
+                "maxLeverage": 1,
                 "maintAmt": 1527500.0
             }
         ],
         "ZEC/USDT": [
             {
-                'min': 0,
-                'max': 50000,
-                'mmr': 0.01,
-                'lev': 50,
+                'minNotional': 0,
+                'maxNotional': 50000,
+                'maintenanceMarginRate': 0.01,
+                'maxLeverage': 50,
                 'maintAmt': 0.0
             },
             {
-                'min': 50000,
-                'max': 150000,
-                'mmr': 0.025,
-                'lev': 20,
+                'minNotional': 50000,
+                'maxNotional': 150000,
+                'maintenanceMarginRate': 0.025,
+                'maxLeverage': 20,
                 'maintAmt': 750.0
             },
             {
-                'min': 150000,
-                'max': 250000,
-                'mmr': 0.05,
-                'lev': 10,
+                'minNotional': 150000,
+                'maxNotional': 250000,
+                'maintenanceMarginRate': 0.05,
+                'maxLeverage': 10,
                 'maintAmt': 4500.0
             },
             {
-                'min': 250000,
-                'max': 500000,
-                'mmr': 0.1,
-                'lev': 5,
+                'minNotional': 250000,
+                'maxNotional': 500000,
+                'maintenanceMarginRate': 0.1,
+                'maxLeverage': 5,
                 'maintAmt': 17000.0
             },
             {
-                'min': 500000,
-                'max': 1000000,
-                'mmr': 0.125,
-                'lev': 4,
+                'minNotional': 500000,
+                'maxNotional': 1000000,
+                'maintenanceMarginRate': 0.125,
+                'maxLeverage': 4,
                 'maintAmt': 29500.0
             },
             {
-                'min': 1000000,
-                'max': 2000000,
-                'mmr': 0.25,
-                'lev': 2,
+                'minNotional': 1000000,
+                'maxNotional': 2000000,
+                'maintenanceMarginRate': 0.25,
+                'maxLeverage': 2,
                 'maintAmt': 154500.0
             },
             {
-                'min': 2000000,
-                'max': 30000000,
-                'mmr': 0.5,
-                'lev': 1,
+                'minNotional': 2000000,
+                'maxNotional': 30000000,
+                'maintenanceMarginRate': 0.5,
+                'maxLeverage': 1,
                 'maintAmt': 654500.0
             },
         ]
@@ -495,7 +508,26 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     for key, value in leverage_tiers.items():
         v = exchange._leverage_tiers[key]
         assert isinstance(v, list)
-        assert len(v) == len(value)
+        # Assert if conftest leverage tiers have less or equal tiers than the exchange
+        assert len(v) >= len(value)
+
+
+def test_additional_exchange_init_binance(default_conf, mocker):
+    api_mock = MagicMock()
+    api_mock.fapiPrivateGetPositionSideDual = MagicMock(return_value={"dualSidePosition": True})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": True})
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    with pytest.raises(OperationalException,
+                       match=r"Hedge Mode is not supported.*\nMulti-Asset Mode is not supported.*"):
+        get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+    api_mock.fapiPrivateGetPositionSideDual = MagicMock(return_value={"dualSidePosition": False})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": False})
+    exchange = get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+    assert exchange
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'binance',
+                           "additional_exchange_init", "fapiPrivateGetPositionSideDual")
 
 
 def test__set_leverage_binance(mocker, default_conf):
@@ -504,8 +536,15 @@ def test__set_leverage_binance(mocker, default_conf):
     api_mock.set_leverage = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
     default_conf['dry_run'] = False
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._set_leverage(3.0, trading_mode=TradingMode.MARGIN)
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange._set_leverage(3.2, 'BTC/USDT:USDT')
+    assert api_mock.set_leverage.call_count == 1
+    # Leverage is rounded to 3.
+    assert api_mock.set_leverage.call_args_list[0][1]['leverage'] == 3
+    assert api_mock.set_leverage.call_args_list[0][1]['symbol'] == 'BTC/USDT:USDT'
 
     ccxt_exceptionhandlers(
         mocker,
@@ -516,12 +555,11 @@ def test__set_leverage_binance(mocker, default_conf):
         "set_leverage",
         pair="XRP/USDT",
         leverage=5.0,
-        trading_mode=TradingMode.FUTURES
     )
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('candle_type', ['mark', ''])
+@pytest.mark.parametrize('candle_type', [CandleType.MARK, ''])
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [
         [
@@ -539,7 +577,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
-    respair, restf, restype, res = await exchange._async_get_historic_ohlcv(
+    respair, restf, restype, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=False, candle_type=candle_type)
     assert respair == pair
     assert restf == '5m'
@@ -548,7 +586,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert exchange._api_async.fetch_ohlcv.call_count > 400
     # assert res == ohlcv
     exchange._api_async.fetch_ohlcv.reset_mock()
-    _, _, _, res = await exchange._async_get_historic_ohlcv(
+    _, _, _, res, _ = await exchange._async_get_historic_ohlcv(
         pair, "5m", 1500000000000, is_new_pair=True, candle_type=candle_type)
 
     # Called twice - one "init" call - and one to get the actual data.
@@ -557,25 +595,13 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
-@pytest.mark.parametrize("trading_mode,margin_mode,config", [
-    ("spot", "", {}),
-    ("margin", "cross", {"options": {"defaultType": "margin"}}),
-    ("futures", "isolated", {"options": {"defaultType": "future"}}),
-])
-def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = margin_mode
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange._ccxt_config == config
-
-
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
-    ("BNB/BUSD", 0.0, 0.025, 0),
-    ("BNB/USDT", 100.0, 0.0065, 0),
-    ("BTC/USDT", 170.30, 0.004, 0),
-    ("BNB/BUSD", 999999.9, 0.1, 27500.0),
-    ("BNB/USDT", 5000000.0, 0.15, 233035.0),
-    ("BTC/USDT", 600000000, 0.5, 1.997038E8),
+    ("XRP/USDT:USDT", 0.0, 0.025, 0),
+    ("BNB/USDT:USDT", 100.0, 0.0065, 0),
+    ("BTC/USDT:USDT", 170.30, 0.004, 0),
+    ("XRP/USDT:USDT", 999999.9, 0.1, 27500.0),
+    ("BNB/USDT:USDT", 5000000.0, 0.15, 233035.0),
+    ("BTC/USDT:USDT", 600000000, 0.5, 1.997038E8),
 ])
 def test_get_maintenance_ratio_and_amt_binance(
     default_conf,
@@ -586,7 +612,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     mm_ratio,
     amt,
 ):
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)

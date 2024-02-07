@@ -9,6 +9,8 @@ from typing import Any, Dict
 
 from pandas import DataFrame
 
+from freqtrade.constants import Config
+
 
 class IHyperOptLoss(ABC):
     """
@@ -21,7 +23,7 @@ class IHyperOptLoss(ABC):
     @abstractmethod
     def hyperopt_loss_function(*, results: DataFrame, trade_count: int,
                                min_date: datetime, max_date: datetime,
-                               config: Dict, processed: Dict[str, DataFrame],
+                               config: Config, processed: Dict[str, DataFrame],
                                backtest_stats: Dict[str, Any],
                                **kwargs) -> float:
         """

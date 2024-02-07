@@ -4,10 +4,10 @@
 This module contains the edge backtesting interface
 """
 import logging
-from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
+from freqtrade.constants import Config
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.optimize.optimize_reports import generate_edge_table
@@ -26,13 +26,13 @@ class EdgeCli:
     edge.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
 
         # Ensure using dry-run
         self.config['dry_run'] = True
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+        self.exchange = ExchangeResolver.load_exchange(self.config)
         self.strategy = StrategyResolver.load_strategy(self.config)
         self.strategy.dp = DataProvider(config, self.exchange)
 

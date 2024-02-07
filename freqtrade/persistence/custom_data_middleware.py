@@ -9,7 +9,7 @@ from freqtrade.persistence.custom_data import CustomData
 logger = logging.getLogger(__name__)
 
 
-class CustomDataWrapper():
+class CustomDataWrapper:
     """
     CustomData middleware class
     Abstracts the database layer away so it becomes optional - which will be necessary to support

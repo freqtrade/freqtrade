@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Dict
 
+from freqtrade.constants import Config
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import IResolver
 
@@ -22,7 +23,8 @@ class ProtectionResolver(IResolver):
     initial_search_path = Path(__file__).parent.parent.joinpath('plugins/protections').resolve()
 
     @staticmethod
-    def load_protection(protection_name: str, config: Dict, protection_config: Dict) -> IProtection:
+    def load_protection(protection_name: str, config: Config,
+                        protection_config: Dict) -> IProtection:
         """
         Load the protection with protection_name
         :param protection_name: Classname of the pairlist

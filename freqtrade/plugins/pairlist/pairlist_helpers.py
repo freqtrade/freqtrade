@@ -1,6 +1,8 @@
 import re
 from typing import List
 
+from freqtrade.constants import Config
+
 
 def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
                     keep_invalid: bool = False) -> List[str]:
@@ -10,7 +12,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
     :param wildcardpl: List of Pairlists, which may contain regex
     :param available_pairs: List of all available pairs (`exchange.get_markets().keys()`)
     :param keep_invalid: If sets to True, drops invalid pairs silently while expanding regexes
-    :return expanded pairlist, with Regexes from wildcardpl applied to match all available pairs.
+    :return: expanded pairlist, with Regexes from wildcardpl applied to match all available pairs.
     :raises: ValueError if a wildcard is invalid (like '*/BTC' - which should be `.*/BTC`)
     """
     result = []
@@ -27,9 +29,8 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
 
-        for element in result:
-            if not re.fullmatch(r'^[A-Za-z0-9/-]+$', element):
-                result.remove(element)
+        result = [element for element in result if re.fullmatch(r'^[A-Za-z0-9:/-]+$', element)]
+
     else:
         for pair_wc in wildcardpl:
             try:
@@ -40,3 +41,13 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
     return result
+
+
+def dynamic_expand_pairlist(config: Config, markets: List[str]) -> List[str]:
+    expanded_pairs = expand_pairlist(config['pairs'], markets)
+    if config.get('freqai', {}).get('enabled', False):
+        corr_pairlist = config['freqai']['feature_parameters']['include_corr_pairlist']
+        expanded_pairs += [pair for pair in corr_pairlist
+                           if pair not in config['pairs']]
+
+    return expanded_pairs

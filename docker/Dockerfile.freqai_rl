@@ -1,0 +1,8 @@
+ARG sourceimage=freqtradeorg/freqtrade
+ARG sourcetag=develop_freqai
+FROM ${sourceimage}:${sourcetag}
+
+# Install dependencies
+COPY requirements-freqai.txt requirements-freqai-rl.txt /freqtrade/
+
+RUN pip install -r requirements-freqai-rl.txt --user --no-cache-dir

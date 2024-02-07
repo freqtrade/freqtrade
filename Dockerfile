@@ -1,4 +1,4 @@
-FROM python:3.10.6-slim-bullseye as base
+FROM python:3.11.7-slim-bookworm as base
 
 # Setup env
 ENV LANG C.UTF-8
@@ -11,7 +11,7 @@ ENV FT_APP_ENV="docker"
 # Prepare environment
 RUN mkdir /freqtrade \
   && apt-get update \
-  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-serial-dev  \
+  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-serial-dev libgomp1 \
   && apt-get clean \
   && useradd -u 1000 -G sudo -U -m -s /bin/bash ftuser \
   && chown ftuser:ftuser /freqtrade \
@@ -25,7 +25,7 @@ FROM base as python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
-  && pip install --upgrade pip
+  && pip install --upgrade pip wheel
 
 # Install TA-lib
 COPY build_helpers/* /tmp/

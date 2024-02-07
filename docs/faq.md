@@ -2,9 +2,9 @@
 
 ## Supported Markets
 
-Freqtrade supports spot trading only.
+Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
 
-### Can I open short positions?
+### Can my bot open short positions?
 
 Freqtrade can open short positions in futures markets.
 This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
@@ -12,15 +12,22 @@ Please make sure to read the [relevant documentation page](leverage.md) first.
 
 In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 
-### Can I trade options or futures?
+### Can my bot trade options or futures?
 
-Futures trading is supported for selected exchanges.
+Futures trading is supported for selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
 
 ## Beginner Tips & Tricks
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
 
-## Freqtrade common issues
+## Freqtrade common questions
+
+### Can freqtrade open multiple positions on the same pair in parallel?
+
+No. Freqtrade will only open one position per pair at a time.
+You can however use the [`adjust_trade_position()` callback](strategy-callbacks.md#adjust-trade-position) to adjust an open position.
+
+Backtesting provides an option for this in `--eps` - however this is only there to highlight "hidden" signals, and will not work in live.
 
 ### The bot does not start
 
@@ -29,8 +36,8 @@ Running the bot with `freqtrade trade --config config.json` shows the output `fr
 This could be caused by the following reasons:
 
 * The virtual environment is not active.
-  * Run `source .env/bin/activate` to activate the virtual environment.
-* The installation did not work correctly.
+  * Run `source .venv/bin/activate` to activate the virtual environment.
+* The installation did not complete successfully.
   * Please check the [Installation documentation](installation.md).
 
 ### I have waited 5 minutes, why hasn't the bot made any trades yet?
@@ -67,9 +74,17 @@ This is not a bot-problem, but will also happen while manual trading.
 While freqtrade can handle this (it'll sell 99 COIN), fees are often below the minimum tradable lot-size (you can only trade full COIN, not 0.9 COIN).
 Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next time freqtrade buys COIN, it'll eat into the remaining small balance, this time selling everything it bought, and therefore slowly declining the dust balance (although it most likely will never reach exactly 0).
 
-Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.  
+Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.
 On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
 Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
+
+### I deposited more funds to the exchange, but my bot doesn't recognize this
+
+Freqtrade will update the exchange balance when necessary (Before placing an order).
+RPC calls (Telegram's `/balance`, API calls to `/balance`) can trigger an update at max. once per hour.
+
+If `adjust_trade_position` is enabled (and the bot has open trades eligible for position adjustments) - then the wallets will be refreshed once per hour.
+To force an immediate update, you can use `/reload_config` - which will restart the bot.
 
 ### I want to use incomplete candles
 
@@ -77,9 +92,9 @@ Freqtrade will not provide incomplete candles to strategies. Using incomplete ca
 
 You can use "current" market data by using the [dataprovider](strategy-customization.md#orderbookpair-maximum)'s orderbook or ticker methods - which however cannot be used during backtesting.
 
-### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
+### Is there a setting to only Exit the trades being held and not perform any new Entries?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
+You can use the `/stopentry` command in Telegram to prevent future trade entry, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 
@@ -95,6 +110,12 @@ If this happens for all pairs in the pairlist, this might indicate a recent exch
 
 Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
 
+### I'm getting "Price jump between 2 candles detected"
+
+This message is a warning that the candles had a price jump of > 30%.
+This might be a sign that the pair stopped trading, and some token exchange took place (e.g. COCOS in 2021 - where price jumped from 0.0000154 to 0.01621).
+This message is often accompanied by ["Missing data fillup"](#im-getting-missing-data-fillup-messages-in-the-log) - as trading on such pairs is often stopped for some time.
+
 ### I'm getting "Outdated history for pair xxx" in the log
 
 The bot is trying to tell you that it got an outdated last candle (not the last complete candle).
@@ -107,15 +128,9 @@ This warning can point to one of the below problems:
 * Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
 * API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
 
-### I'm getting the "RESTRICTED_MARKET" message in the log
-
-Currently known to happen for US Bittrex users.  
-
-Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
-
 ### I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy
 
-As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex and Gate.io).
+As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Gate.io).
 
 To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
@@ -128,6 +143,13 @@ To fix this, redefine order types in the strategy to use "limit" instead of "mar
 ```
 
 The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.
+
+### I'm trying to start the bot live, but get an API permission error
+
+Errors like `Invalid API-key, IP, or permissions for action` mean exactly what they actually say.
+Your API key is either invalid (copy/paste error? check for leading/trailing spaces in the config), expired, or the IP you're running the bot from is not enabled in the Exchange's API console.
+Usually, the permission "Spot Trading" (or the equivalent in the exchange you use) will be necessary.
+Futures will usually have to be enabled specifically.
 
 ### How do I search the bot logs for something?
 
@@ -177,8 +199,8 @@ The GPU improvements would only apply to pandas-native calculations - or ones wr
 For hyperopt, freqtrade is using scikit-optimize, which is built on top of scikit-learn.
 Their statement about GPU support is [pretty clear](https://scikit-learn.org/stable/faq.html#will-you-add-gpu-support).
 
-GPU's also are only good at crunching numbers (floating point operations). 
-For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting). 
+GPU's also are only good at crunching numbers (floating point operations).
+For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting).
 As such, GPU's are not too well suited for most parts of hyperopt.
 
 The benefit of using GPU would therefore be pretty slim - and will not justify the complexity introduced by trying to add GPU support.
@@ -219,9 +241,9 @@ already 8\*10^9\*10 evaluations. A roughly total of 80 billion evaluations.
 Did you run 100 000 evaluations? Congrats, you've done roughly 1 / 100 000 th
 of the search space, assuming that the bot never tests the same parameters more than once.
 
-* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 100000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
+* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 100000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades.
 
-Example: 4% profit 650 times vs 0,3% profit a trade 10000 times in a year. If we assume you set the --timerange to 365 days. 
+Example: 4% profit 650 times vs 0,3% profit a trade 10000 times in a year. If we assume you set the --timerange to 365 days.
 
 Example:
 `freqtrade --config config.json --strategy SampleStrategy --hyperopt SampleHyperopt -e 1000 --timerange 20190601-20200601`
@@ -235,8 +257,26 @@ The Edge module is mostly a result of brainstorming of [@mishaker](https://githu
 You can find further info on expectancy, win rate, risk management and position size in the following sources:
 
 - https://www.tradeciety.com/ultimate-math-guide-for-traders/
-- http://www.vantharp.com/tharp-concepts/expectancy.asp
 - https://samuraitradingacademy.com/trading-expectancy/
 - https://www.learningmarkets.com/determining-expectancy-in-your-trading/
-- http://www.lonestocktrader.com/make-money-trading-positive-expectancy/
+- https://www.lonestocktrader.com/make-money-trading-positive-expectancy/
 - https://www.babypips.com/trading/trade-expectancy-matter
+
+## Official channels
+
+Freqtrade is using exclusively the following official channels:
+
+* [Freqtrade discord server](https://discord.gg/p7nuUNVfP7)
+* [Freqtrade documentation (https://freqtrade.io)](https://freqtrade.io)
+* [Freqtrade github organization](https://github.com/freqtrade)
+
+Nobody affiliated with the freqtrade project will ask you about your exchange keys or anything else exposing your funds to exploitation.
+Should you be asked to expose your exchange keys or send funds to some random wallet, then please don't follow these instructions.
+
+Failing to follow these guidelines will not be responsibility of freqtrade.
+
+## "Freqtrade token"
+
+Freqtrade does not have a Crypto token offering.
+
+Token offerings you find on the internet referring Freqtrade, FreqAI or freqUI must be considered to be a scam, trying to exploit freqtrade's popularity for their own, nefarious gains.

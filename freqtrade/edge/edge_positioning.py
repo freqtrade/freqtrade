@@ -3,21 +3,22 @@
 import logging
 from collections import defaultdict
 from copy import deepcopy
+from datetime import timedelta
 from typing import Any, Dict, List, NamedTuple
 
-import arrow
 import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.exchange import timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.strategy.interface import IStrategy
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -42,10 +43,9 @@ class Edge:
     Author: https://github.com/mishaker
     """
 
-    config: Dict = {}
     _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
-    def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
+    def __init__(self, config: Config, exchange, strategy) -> None:
 
         self.config = config
         self.exchange = exchange
@@ -80,8 +80,8 @@ class Edge:
             self._stoploss_range_step
         )
 
-        self._timerange: TimeRange = TimeRange.parse_timerange("%s-" % arrow.now().shift(
-            days=-1 * self._since_number_of_days).format('YYYYMMDD'))
+        self._timerange: TimeRange = TimeRange.parse_timerange(
+            f"{(dt_now() - timedelta(days=self._since_number_of_days)).strftime('%Y%m%d')}-")
         if config.get('fee'):
             self.fee = config['fee']
         else:
@@ -98,7 +98,7 @@ class Edge:
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (
-                self._last_updated + heartbeat > arrow.utcnow().int_timestamp):
+                self._last_updated + heartbeat > int(dt_now().timestamp())):
             return False
 
         data: Dict[str, Any] = {}
@@ -115,7 +115,7 @@ class Edge:
                 exchange=self.exchange,
                 timeframe=self.strategy.timeframe,
                 timerange=timerange_startup,
-                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                data_format=self.config['dataformat_ohlcv'],
                 candle_type=self.config.get('candle_type_def', CandleType.SPOT),
             )
             # Download informative pairs too
@@ -132,7 +132,7 @@ class Edge:
                     exchange=self.exchange,
                     timeframe=timeframe,
                     timerange=timerange_startup,
-                    data_format=self.config.get('dataformat_ohlcv', 'json'),
+                    data_format=self.config['dataformat_ohlcv'],
                     candle_type=self.config.get('candle_type_def', CandleType.SPOT),
                 )
 
@@ -142,7 +142,7 @@ class Edge:
             timeframe=self.strategy.timeframe,
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
-            data_format=self.config.get('dataformat_ohlcv', 'json'),
+            data_format=self.config['dataformat_ohlcv'],
             candle_type=self.config.get('candle_type_def', CandleType.SPOT),
         )
 
@@ -172,13 +172,7 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            df_analyzed = self.strategy.advise_exit(
-                dataframe=self.strategy.advise_entry(
-                    dataframe=pair_data,
-                    metadata={'pair': pair}
-                ),
-                metadata={'pair': pair}
-            )[headers].copy()
+            df_analyzed = self.strategy.ft_advise_signals(pair_data, {'pair': pair})[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(df_analyzed, pair, self._stoploss_range)
 
@@ -190,13 +184,13 @@ class Edge:
         # Fill missing, calculable columns, profit, duration , abs etc.
         trades_df = self._fill_calculable_fields(DataFrame(trades))
         self._cached_pairs = self._process_expectancy(trades_df)
-        self._last_updated = arrow.utcnow().int_timestamp
+        self._last_updated = int(dt_now().timestamp())
 
         return True
 
     def stake_amount(self, pair: str, free_capital: float,
                      total_capital: float, capital_in_trade: float) -> float:
-        stoploss = self.stoploss(pair)
+        stoploss = self.get_stoploss(pair)
         available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
@@ -215,7 +209,7 @@ class Edge:
             )
         return round(position_size, 15)
 
-    def stoploss(self, pair: str) -> float:
+    def get_stoploss(self, pair: str) -> float:
         if pair in self._cached_pairs:
             return self._cached_pairs[pair].stoploss
         else:
@@ -393,7 +387,7 @@ class Edge:
         # Returning a list of pairs in order of "expectancy"
         return final
 
-    def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
+    def _find_trades_for_stoploss_range(self, df, pair: str, stoploss_range) -> list:
         buy_column = df['enter_long'].values
         sell_column = df['exit_long'].values
         date_column = df['date'].values
@@ -408,7 +402,7 @@ class Edge:
         return result
 
     def _detect_next_stop_or_sell_point(self, buy_column, sell_column, date_column,
-                                        ohlc_columns, stoploss, pair):
+                                        ohlc_columns, stoploss, pair: str):
         """
         Iterate through ohlc_columns in order to find the next trade
         Next trade opens from the first buy signal noticed to

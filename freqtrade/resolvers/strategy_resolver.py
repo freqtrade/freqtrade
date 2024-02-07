@@ -9,10 +9,10 @@ from base64 import urlsafe_b64decode
 from inspect import getfullargspec
 from os import walk
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
-from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
+from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES, Config
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
@@ -30,9 +30,10 @@ class StrategyResolver(IResolver):
     object_type_str = "Strategy"
     user_subdir = USERPATH_STRATEGIES
     initial_search_path = None
+    extra_path = "strategy_path"
 
     @staticmethod
-    def load_strategy(config: Dict[str, Any] = None) -> IStrategy:
+    def load_strategy(config: Optional[Config] = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
@@ -75,6 +76,7 @@ class StrategyResolver(IResolver):
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
                       ("max_entry_position_adjustment",      -1),
+                      ("max_open_trades",                    -1)
                       ]
         for attribute, default in attributes:
             StrategyResolver._override_attribute_helper(strategy, config,
@@ -91,8 +93,7 @@ class StrategyResolver(IResolver):
         return strategy
 
     @staticmethod
-    def _override_attribute_helper(strategy, config: Dict[str, Any],
-                                   attribute: str, default: Any):
+    def _override_attribute_helper(strategy, config: Config, attribute: str, default: Any):
         """
         Override attributes in the strategy.
         Prevalence:
@@ -110,7 +111,11 @@ class StrategyResolver(IResolver):
             val = getattr(strategy, attribute)
             # None's cannot exist in the config, so do not copy them
             if val is not None:
-                config[attribute] = val
+                # max_open_trades set to -1 in the strategy will be copied as infinity in the config
+                if attribute == 'max_open_trades' and val == -1:
+                    config[attribute] = float('inf')
+                else:
+                    config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
         elif default is not None:
             setattr(strategy, attribute, default)
@@ -128,6 +133,8 @@ class StrategyResolver(IResolver):
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):
             strategy.stoploss = float(strategy.stoploss)
+        if hasattr(strategy, 'max_open_trades') and strategy.max_open_trades < 0:
+            strategy.max_open_trades = float('inf')
         return strategy
 
     @staticmethod
@@ -211,11 +218,17 @@ class StrategyResolver(IResolver):
                     "Please update your strategy to implement "
                     "`populate_indicators`, `populate_entry_trend` and `populate_exit_trend` "
                     "with the metadata argument. ")
+
+        has_after_fill = ('after_fill' in getfullargspec(strategy.custom_stoploss).args
+                          and check_override(strategy, IStrategy, 'custom_stoploss'))
+        if has_after_fill:
+            strategy._ft_stop_uses_after_fill = True
+
         return strategy
 
     @staticmethod
     def _load_strategy(strategy_name: str,
-                       config: dict, extra_dir: Optional[str] = None) -> IStrategy:
+                       config: Config, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import

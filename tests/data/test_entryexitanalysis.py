@@ -18,8 +18,9 @@ def entryexitanalysis_cleanup() -> None:
     Backtesting.cleanup()
 
 
-def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmpdir, capsys):
+def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, user_dir, capsys):
     caplog.set_level(logging.INFO)
+    (user_dir / 'backtest_results').mkdir(parents=True, exist_ok=True)
 
     default_conf.update({
         "use_exit_signal": True,
@@ -80,7 +81,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        '--user-data-dir', str(tmpdir),
+        '--user-data-dir', str(user_dir),
         '--timeframe', '5m',
         '--timerange', '1515560100-1517287800',
         '--export', 'signals',
@@ -98,7 +99,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         'backtesting-analysis',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
-        '--user-data-dir', str(tmpdir),
+        '--user-data-dir', str(user_dir),
     ]
 
     # test group 0 and indicator list
@@ -124,8 +125,8 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '0' in captured.out
     assert '0.01616' in captured.out
     assert '34.049' in captured.out
-    assert '0.104104' in captured.out
-    assert '47.0996' in captured.out
+    assert '0.104411' in captured.out
+    assert '52.8292' in captured.out
 
     # test group 1
     args = get_args(base_args + ['--analysis-groups', "1"])
@@ -189,3 +190,28 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '0.5' in captured.out
     assert '1' in captured.out
     assert '2.5' in captured.out
+
+    # test group 5
+    args = get_args(base_args + ['--analysis-groups', "5"])
+    start_analysis_entries_exits(args)
+    captured = capsys.readouterr()
+    assert 'exit_signal' in captured.out
+    assert 'roi' in captured.out
+    assert 'stop_loss' in captured.out
+    assert 'trailing_stop_loss' in captured.out
+
+    # test date filtering
+    args = get_args(base_args +
+                    ['--analysis-groups', "0", "1", "2",
+                     '--timerange', "20180129-20180130"]
+                    )
+    start_analysis_entries_exits(args)
+    captured = capsys.readouterr()
+    assert 'enter_tag_long_a' in captured.out
+    assert 'enter_tag_long_b' not in captured.out
+
+    # Due to the backtest mock, there's no rejected signals generated.
+    args = get_args(base_args + ['--rejected-signals'])
+    start_analysis_entries_exits(args)
+    captured = capsys.readouterr()
+    assert 'no rejected signals' in captured.out

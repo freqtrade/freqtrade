@@ -40,8 +40,8 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
 
         if (not Path(signals_file).exists()):
             raise OperationalException(
-                (f"Cannot find latest backtest signals file: {signals_file}."
-                  "Run backtesting with `--export signals`.")
+                f"Cannot find latest backtest signals file: {signals_file}."
+                "Run backtesting with `--export signals`."
             )
 
     return config
@@ -60,10 +60,4 @@ def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
 
     logger.info('Starting freqtrade in analysis mode')
 
-    process_entry_exit_reasons(config['exportfilename'],
-                               config['exchange']['pair_whitelist'],
-                               config['analysis_groups'],
-                               config['enter_reason_list'],
-                               config['exit_reason_list'],
-                               config['indicator_list']
-                               )
+    process_entry_exit_reasons(config)
