@@ -50,24 +50,9 @@ def public_trades_list_simple_bidask():
     return read_csv('tests/testdata/public_trades_list_simple_bidask.csv').copy()
 
 
-def conjuresetup():
-    public_trades_list = public_trades_list()
-    print(public_trades_list.columns.tolist())
-    public_trades_list_simple = public_trades_list_simple()
-    print(public_trades_list_simple.columns.tolist())
-    print(public_trades_list_simple.loc[:, [
-        'timestamp', 'id', 'price', 'side', 'amount']])
-    public_trades_list_simple_results = public_trades_list_simple_results()
-    print(public_trades_list_simple_results.columns.tolist())
-    public_trades_list_simple_bidask = public_trades_list_simple_bidask()
-    print(public_trades_list_simple_bidask.columns.tolist())
-    print(public_trades_list_simple_bidask)
-    print(public_trades_list_simple_results)
-# conjuresetup()  # never called except in REPL
-# /conjuresetup
-
-
-def test_public_trades_columns_before_change(populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades):
+def test_public_trades_columns_before_change(
+        populate_dataframe_with_trades_dataframe,
+        populate_dataframe_with_trades_trades):
     assert populate_dataframe_with_trades_dataframe.columns.tolist() == [
         'date', 'open', 'high', 'low', 'close', 'volume']
     assert populate_dataframe_with_trades_trades.columns.tolist() == [
@@ -84,7 +69,12 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
         dataframe['date'], unit='ms')
     dataframe = dataframe.copy().tail().reset_index(drop=True)
     config = {'timeframe': '5m',
-              'orderflow': {'scale': 0.005, 'imbalance_volume': 0, 'imbalance_ratio': 300, 'stacked_imbalance_range': 3}}
+              'orderflow': {
+                  'scale': 0.005,
+                  'imbalance_volume': 0,
+                  'imbalance_ratio': 300,
+                  'stacked_imbalance_range': 3
+                  }}
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
     results = df.iloc[0]
@@ -143,13 +133,22 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
     config = {
         'timeframe': '5m',
-        'orderflow': {'scale': 0.5, 'imbalance_volume': 0, 'imbalance_ratio': 300, 'stacked_imbalance_range': 3}
-    }
+        'orderflow': {
+            'scale': 0.5,
+            'imbalance_volume': 0,
+            'imbalance_ratio': 300,
+            'stacked_imbalance_range': 3
+            }
+        }
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
     result = df.iloc[0]
-    assert result.index.values.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume', 'trades', 'orderflow',
-                                            'bid', 'ask', 'delta', 'min_delta', 'max_delta', 'total_trades', 'stacked_imbalances_bid', 'stacked_imbalances_ask']
+    assert result.index.values.tolist() == ['date', 'open', 'high', 'low',
+                                            'close', 'volume', 'trades', 'orderflow',
+                                            'bid', 'ask', 'delta', 'min_delta',
+                                            'max_delta', 'total_trades',
+                                            'stacked_imbalances_bid',
+                                            'stacked_imbalances_ask']
 
     assert -50.519000000000005 == result['delta']
     assert 219.961 == result['bid']
@@ -254,8 +253,12 @@ def do_plot(pair, data, trades, plot_config=None):
 
 # need to be at last to see if some test changed the testdata
 # always need to use .copy() to avoid changing the testdata
-def test_public_trades_testdata_sanity(candles, public_trades_list, public_trades_list_simple,
-                                       populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades):
+def test_public_trades_testdata_sanity(
+        candles,
+        public_trades_list,
+        public_trades_list_simple,
+        populate_dataframe_with_trades_dataframe,
+        populate_dataframe_with_trades_trades):
     assert 10999 == len(candles)
     assert 1000 == len(public_trades_list)
     assert 999 == len(populate_dataframe_with_trades_dataframe)

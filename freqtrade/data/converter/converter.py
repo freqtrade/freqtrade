@@ -144,17 +144,17 @@ def populate_dataframe_with_trades(config: Config,
                 # calculate imbalances for each candle's orderflow
                 df.loc[is_between, 'imbalances'] = df.loc[is_between, 'orderflow'].apply(
                     lambda x: trades_orderflow_to_imbalances(x,
-                                                             imbalance_ratio=config_orderflow['imbalance_ratio'],
-                                                             imbalance_volume=config_orderflow['imbalance_volume']))
+                                                             imbalance_ratio=config_orderflow['imbalance_ratio'],  # noqa: E501
+                                                             imbalance_volume=config_orderflow['imbalance_volume']))  # noqa: E501
 
                 df.loc[is_between, 'stacked_imbalances_bid'] = df.loc[is_between,
                                                                       'imbalances'].apply(
                                                                           lambda x: stacked_imbalance_bid(x,  # noqa: E501
-                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
+                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))  # noqa: E501
                 df.loc[is_between, 'stacked_imbalances_ask'] = df.loc[is_between,
                                                                       'imbalances'].apply(
                                                                           lambda x: stacked_imbalance_ask(x,  # noqa: E501
-                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))
+                                                                                                          stacked_imbalance_range=config_orderflow['stacked_imbalance_range']))  # noqa: E501
 
                 buy = df.loc[is_between, 'bid'].apply(lambda _: np.where(
                     trades_grouped_df['side'].str.contains('buy'), 0, trades_grouped_df['amount']))
