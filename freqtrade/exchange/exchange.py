@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor
 from threading import Lock
-from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
 import ccxt.async_support as ccxt_async
