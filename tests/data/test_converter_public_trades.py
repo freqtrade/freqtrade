@@ -165,8 +165,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
 
 def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_simple, candles):
-    df = public_trades_to_dataframe(
-        public_trades_list_simple, '1m', 'doesntmatter', fill_missing=False, drop_incomplete=False)
+    df = public_trades_to_dataframe(public_trades_list_simple,  'doesntmatter')
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         df, scale=BIN_SIZE_SCALE)
     candles['vp'] = np.nan
@@ -178,9 +177,7 @@ def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_
 
 def test_public_trades_binned_big_sample_list(public_trades_list):
     BIN_SIZE_SCALE = 0.05
-    trades = public_trades_to_dataframe(
-        public_trades_list, '1m', 'doesntmatter',
-        fill_missing=False, drop_incomplete=False)
+    trades = public_trades_to_dataframe(public_trades_list,  'doesntmatter')
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         trades, scale=BIN_SIZE_SCALE)
     assert df.columns.tolist() == ['bid', 'ask', 'delta',
@@ -207,9 +204,7 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
     assert 57.551 == df['delta'].iat[-1]  # delta
 
     BIN_SIZE_SCALE = 1
-    trades = public_trades_to_dataframe(
-        public_trades_list, '1m', 'doesntmatter',
-        fill_missing=False, drop_incomplete=False)
+    trades = public_trades_to_dataframe(public_trades_list, 'doesntmatter')
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         trades, scale=BIN_SIZE_SCALE)
     assert 2 == len(df)
