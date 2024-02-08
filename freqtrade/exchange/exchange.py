@@ -2666,7 +2666,7 @@ class Exchange:
                     pair, params={self._trades_pagination_arg: from_id})
                 if t:
                     trades.extend(t[x])
-                    if from_id == from_id_next or t[-1][0] > until:
+                    if from_id == from_id_next or (until and t[-1][0] > until):
                         logger.debug(f"Stopping because from_id did not change. "
                                      f"Reached {t[-1][0]} > {until}")
                         # Reached the end of the defined-download period - add last trade as well.
