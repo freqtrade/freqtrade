@@ -2114,8 +2114,7 @@ class Exchange:
     def _process_trades_df(self, pair: str, timeframe: str, c_type: CandleType, ticks: List[List],
                            cache: bool, drop_incomplete: bool, first_required_candle_date: Optional[int]) -> DataFrame:
         # keeping parsed dataframe in cache
-        trades_df = public_trades_to_dataframe(ticks, timeframe, pair=pair, fill_missing=False,
-                                               drop_incomplete=drop_incomplete)
+        trades_df = public_trades_to_dataframe(ticks, pair=pair)
         # keeping last candle time as last refreshed time of the pair
         if ticks and cache:
             idx = -2 if drop_incomplete and len(ticks) > 1 else -1
@@ -2188,7 +2187,7 @@ class Exchange:
 
     def refresh_latest_trades(self,
                               pair_list: ListPairsWithTimeframes,
-                              data_handler: Callable, # using IDataHandler ends with circular import,
+                              data_handler: Any,  # using IDataHandler ends with circular import
                               *,
                               cache: bool = True,
                               ) -> Dict[PairWithTimeframe, DataFrame]:
@@ -2207,7 +2206,7 @@ class Exchange:
         since_ms = None
         results_df = {}
         for pair, timeframe, candle_type in set(pair_list):
-            new_ticks = []
+            new_ticks: List = []
             all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
             first_candle_ms = self.needed_candle_ms(timeframe, candle_type)
             # refresh, if
@@ -2273,7 +2272,7 @@ class Exchange:
                     data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
 
                 else:
-                    raise "no new ticks"
+                    raise OperationalException("no new ticks")
 
         return results_df
 
@@ -2442,7 +2441,7 @@ class Exchange:
             return trades[-1].get('timestamp')
 
     async def _async_get_trade_history_id(self, pair: str,
-                                          until: int,
+                                          until: Optional[int],
                                           since: Optional[int] = None,
                                           from_id: Optional[str] = None,
                                           stop_on_from_id: Optional[bool] = True) -> Tuple[str, List[List]]:
@@ -2464,7 +2463,7 @@ class Exchange:
         x = slice(None, -1) if has_overlap else slice(None)
 
         if not until and not stop_on_from_id:
-            raise "stop_on_from_id must be set if until is not set"
+            raise OperationalException("stop_on_from_id must be set if until is not set")
         if not from_id or not self._valid_trade_pagination_id(pair, from_id):
             # Fetch first elements using timebased method to get an ID to paginate on
             # Depending on the Exchange, this can introduce a drift at the start of the interval
@@ -2602,9 +2601,9 @@ class Exchange:
                                  new_pairs_days: int = 30,
                                  since: Optional[int] = None,
                                  until: Optional[int] = None,
-                                 from_id: Optional[int] = None,
+                                 from_id: Optional[str] = None,
                                  stop_on_from_id: Optional[bool] = False
-                                 ) -> bool:
+                                 ) -> Tuple[str, List]:
 
         """
         Download trade history from the exchange.
