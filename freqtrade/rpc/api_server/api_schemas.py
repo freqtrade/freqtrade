@@ -397,7 +397,7 @@ class ForceEnterPayload(BaseModel):
 
 
 class ForceExitPayload(BaseModel):
-    tradeid: str
+    tradeid: Union[str, int]
     ordertype: Optional[OrderTypeValues] = None
     amount: Optional[float] = None
 
