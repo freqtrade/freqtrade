@@ -2923,9 +2923,6 @@ def test_execute_trade_exit_custom_exit_price(
     } == last_msg
 
 
-
-
-
 @pytest.mark.parametrize(
     "is_short,amount,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
         (False, 30, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
