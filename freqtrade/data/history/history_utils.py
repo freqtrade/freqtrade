@@ -107,11 +107,9 @@ def load_data(datadir: Path,
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
-                logger.warn(
-                    f"{pair} using user specified [{user_futures_funding_rate}]")
+                logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
             elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
-                result[pair] = DataFrame(
-                    columns=["date", "open", "close", "high", "low", "volume"])
+                result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
@@ -219,8 +217,7 @@ def _download_pair_history(pair: str, *,
     try:
         if erase:
             if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                logger.info(
-                    f'Deleting existing data for pair {pair}, {timeframe}, {candle_type}.')
+                logger.info(f'Deleting existing data for pair {pair}, {timeframe}, {candle_type}.')
 
         data, since_ms, until_ms = _load_cached_data_for_updating(
             pair, timeframe, timerange,
@@ -269,8 +266,7 @@ def _download_pair_history(pair: str, *,
                      f"{data.iloc[-1]['date']:{DATETIME_PRINT_FORMAT}}"
                      if not data.empty else 'None')
 
-        data_handler.ohlcv_store(
-            pair, timeframe, data=data, candle_type=candle_type)
+        data_handler.ohlcv_store(pair, timeframe, data=data, candle_type=candle_type)
         return True
 
     except Exception:
@@ -303,8 +299,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            logger.debug(
-                f'Downloading pair {pair}, {candle_type}, interval {timeframe}.')
+            logger.debug(f'Downloading pair {pair}, {candle_type}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
@@ -318,15 +313,12 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             tf_mark = exchange.get_option('mark_ohlcv_timeframe')
             tf_funding_rate = exchange.get_option('funding_fee_timeframe')
 
-            fr_candle_type = CandleType.from_string(
-                exchange.get_option('mark_ohlcv_price'))
+            fr_candle_type = CandleType.from_string(exchange.get_option('mark_ohlcv_price'))
             # All exchanges need FundingRate for futures trading.
             # The timeframe is aligned to the mark-price timeframe.
-            combs = ((CandleType.FUNDING_RATE, tf_funding_rate),
-                     (fr_candle_type, tf_mark))
+            combs = ((CandleType.FUNDING_RATE, tf_funding_rate), (fr_candle_type, tf_mark))
             for candle_type_f, tf in combs:
-                logger.debug(
-                    f'Downloading pair {pair}, {candle_type_f}, interval {tf}.')
+                logger.debug(f'Downloading pair {pair}, {candle_type_f}, interval {tf}.')
                 _download_pair_history(pair=pair, process=process,
                                        datadir=datadir, exchange=exchange,
                                        timerange=timerange, data_handler=data_handler,
@@ -452,8 +444,7 @@ def get_timerange(data: Dict[str, DataFrame]) -> Tuple[datetime, datetime]:
     :return: tuple containing min_date, max_date
     """
     timeranges = [
-        (frame['date'].min().to_pydatetime(),
-         frame['date'].max().to_pydatetime())
+        (frame['date'].min().to_pydatetime(), frame['date'].max().to_pydatetime())
         for frame in data.values()
     ]
     return (min(timeranges, key=operator.itemgetter(0))[0],
@@ -472,8 +463,7 @@ def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
     :param timeframe_min: Timeframe in minutes
     """
     # total difference in minutes / timeframe-minutes
-    expected_frames = int(
-        (max_date - min_date).total_seconds() // 60 // timeframe_min)
+    expected_frames = int((max_date - min_date).total_seconds() // 60 // timeframe_min)
     found_missing = False
     dflen = len(data)
     if dflen < expected_frames:
@@ -487,8 +477,7 @@ def download_data_main(config: Config) -> None:
 
     timerange = TimeRange()
     if 'days' in config:
-        time_since = (datetime.now() -
-                      timedelta(days=config['days'])).strftime("%Y%m%d")
+        time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
         timerange = TimeRange.parse_timerange(f'{time_since}-')
 
     if 'timerange' in config:
@@ -505,7 +494,7 @@ def download_data_main(config: Config) -> None:
     available_pairs = [
         p for p in exchange.get_markets(
             tradable_only=True, active_only=not config.get('include_inactive')
-        ).keys()
+            ).keys()
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
@@ -538,8 +527,7 @@ def download_data_main(config: Config) -> None:
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
                 pairs=expanded_pairs, timeframes=config['timeframes'],
-                datadir=config['datadir'], timerange=timerange, erase=bool(
-                    config.get('erase')),
+                datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format_ohlcv=config['dataformat_ohlcv'],
                 data_format_trades=config['dataformat_trades'],
             )
@@ -549,7 +537,7 @@ def download_data_main(config: Config) -> None:
                     f"Historic klines not available for {exchange.name}. "
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
-                )
+                    )
             migrate_data(config, exchange)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],

@@ -46,27 +46,23 @@ class DataProvider:
         self._exchange = exchange
         self._pairlists = pairlists
         self.__rpc = rpc
-        self.__cached_pairs: Dict[PairWithTimeframe,
-                                  Tuple[DataFrame, datetime]] = {}
+        self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__slice_date: Optional[datetime] = None
 
-        self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {
-        }
+        self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
         self.__producer_pairs_df: Dict[str,
                                        Dict[PairWithTimeframe, Tuple[DataFrame, datetime]]] = {}
         self.__producer_pairs: Dict[str, List[str]] = {}
         self._msg_queue: deque = deque()
 
-        self._default_candle_type = self._config.get(
-            'candle_type_def', CandleType.SPOT)
+        self._default_candle_type = self._config.get('candle_type_def', CandleType.SPOT)
         self._default_timeframe = self._config.get('timeframe', '1h')
 
         self.__msg_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._default_timeframe))
 
-        self.producers = self._config.get(
-            'external_message_consumer', {}).get('producers', [])
+        self.producers = self._config.get('external_message_consumer', {}).get('producers', [])
         self.external_data_enabled = len(self.producers) > 0
 
     def _set_dataframe_max_index(self, limit_index: int):
@@ -137,19 +133,19 @@ class DataProvider:
         """
         if self.__rpc:
             msg: RPCAnalyzedDFMsg = {
-                'type': RPCMessageType.ANALYZED_DF,
-                'data': {
-                    'key': pair_key,
-                    'df': dataframe.tail(1),
-                    'la': datetime.now(timezone.utc)
+                    'type': RPCMessageType.ANALYZED_DF,
+                    'data': {
+                        'key': pair_key,
+                        'df': dataframe.tail(1),
+                        'la': datetime.now(timezone.utc)
+                    }
                 }
-            }
             self.__rpc.send_msg(msg)
             if new_candle:
                 self.__rpc.send_msg({
-                    'type': RPCMessageType.NEW_CANDLE,
-                    'data': pair_key,
-                })
+                        'type': RPCMessageType.NEW_CANDLE,
+                        'data': pair_key,
+                    })
 
     def _replace_external_df(
         self,
@@ -172,13 +168,10 @@ class DataProvider:
         if producer_name not in self.__producer_pairs_df:
             self.__producer_pairs_df[producer_name] = {}
 
-        _last_analyzed = datetime.now(
-            timezone.utc) if not last_analyzed else last_analyzed
+        _last_analyzed = datetime.now(timezone.utc) if not last_analyzed else last_analyzed
 
-        self.__producer_pairs_df[producer_name][pair_key] = (
-            dataframe, _last_analyzed)
-        logger.debug(
-            f"External DataFrame for {pair_key} from {producer_name} added.")
+        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
+        logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
     def _add_external_df(
         self,
@@ -229,8 +222,7 @@ class DataProvider:
         # CHECK FOR MISSING CANDLES
         # Convert the timeframe to a timedelta for pandas
         timeframe_delta: Timedelta = to_timedelta(timeframe)
-        # We want the last date from our copy
-        local_last: Timestamp = existing_df.iloc[-1]['date']
+        local_last: Timestamp = existing_df.iloc[-1]['date']  # We want the last date from our copy
         # We want the first date from the incoming
         incoming_first: Timestamp = dataframe.iloc[0]['date']
 
@@ -253,13 +245,13 @@ class DataProvider:
 
         # Everything is good, we appended
         self._replace_external_df(
-            pair,
-            appended_df,
-            last_analyzed=last_analyzed,
-            timeframe=timeframe,
-            candle_type=candle_type,
-            producer_name=producer_name
-        )
+                    pair,
+                    appended_df,
+                    last_analyzed=last_analyzed,
+                    timeframe=timeframe,
+                    candle_type=candle_type,
+                    producer_name=producer_name
+                    )
         return (True, 0)
 
     def get_producer_df(
@@ -347,13 +339,10 @@ class DataProvider:
             startup_candles = self._config.get('startup_candle_count', 0)
             indicator_periods = freqai_config['feature_parameters']['indicator_periods_candles']
             # make sure the startupcandles is at least the set maximum indicator periods
-            self._config['startup_candle_count'] = max(
-                startup_candles, max(indicator_periods))
+            self._config['startup_candle_count'] = max(startup_candles, max(indicator_periods))
             tf_seconds = timeframe_to_seconds(timeframe)
-            train_candles = freqai_config['train_period_days'] * \
-                86400 / tf_seconds
-            total_candles = int(
-                self._config['startup_candle_count'] + train_candles)
+            train_candles = freqai_config['train_period_days'] * 86400 / tf_seconds
+            total_candles = int(self._config['startup_candle_count'] + train_candles)
             logger.info(
                 f'Increasing startup_candle_count for freqai on {timeframe} to {total_candles}')
         return total_candles
@@ -376,22 +365,18 @@ class DataProvider:
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             # Get live OHLCV data.
-            data = self.ohlcv(pair=pair, timeframe=timeframe,
-                              candle_type=candle_type)
+            data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
         else:
             # Get historical OHLCV data (cached on disk).
             timeframe = timeframe or self._config['timeframe']
-            data = self.historic_ohlcv(
-                pair=pair, timeframe=timeframe, candle_type=candle_type)
+            data = self.historic_ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
             # Cut date to timeframe-specific date.
             # This is necessary to prevent lookahead bias in callbacks through informative pairs.
             if self.__slice_date:
-                cutoff_date = timeframe_to_prev_date(
-                    timeframe, self.__slice_date)
+                cutoff_date = timeframe_to_prev_date(timeframe, self.__slice_date)
                 data = data.loc[data['date'] < cutoff_date]
         if len(data) == 0:
-            logger.warning(
-                f"No data found for ({pair}, {timeframe}, {candle_type}).")
+            logger.warning(f"No data found for ({pair}, {timeframe}, {candle_type}).")
         return data
 
     def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
@@ -404,8 +389,7 @@ class DataProvider:
             combination.
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
-        pair_key = (pair, timeframe, self._config.get(
-            'candle_type_def', CandleType.SPOT))
+        pair_key = (pair, timeframe, self._config.get('candle_type_def', CandleType.SPOT))
         if pair_key in self.__cached_pairs:
             if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
                 df, date = self.__cached_pairs[pair_key]
@@ -413,8 +397,7 @@ class DataProvider:
                 df, date = self.__cached_pairs[pair_key]
                 if self.__slice_index is not None:
                     max_index = self.__slice_index
-                    df = df.iloc[max(
-                        0, max_index - MAX_DATAFRAME_CANDLES):max_index]
+                    df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
             return df, date
         else:
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
@@ -439,8 +422,7 @@ class DataProvider:
         if self._pairlists:
             return self._pairlists.whitelist.copy()
         else:
-            raise OperationalException(
-                "Dataprovider was not initialized with a pairlist provider.")
+            raise OperationalException("Dataprovider was not initialized with a pairlist provider.")
 
     def clear_cache(self):
         """
