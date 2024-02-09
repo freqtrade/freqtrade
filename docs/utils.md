@@ -54,7 +54,7 @@ optional arguments:
 ### Create config examples
 
 ```
-$ freqtrade new-config --config config_binance.json
+$ freqtrade new-config --config user_data/config_binance.json
 
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC

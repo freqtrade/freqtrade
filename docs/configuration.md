@@ -14,7 +14,7 @@ You can specify a different configuration file used by the bot with the `-c/--co
 If you used the [Quick start](docker_quickstart.md#docker-quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
-If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
+If the default configuration file is not created we recommend to use `freqtrade new-config --config user_data/config.json` to generate a basic configuration file.
 
 The Freqtrade configuration file is to be written in JSON format.
 
