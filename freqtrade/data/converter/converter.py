@@ -112,8 +112,7 @@ def populate_dataframe_with_trades(config: Config,
         trades.reset_index(inplace=True, drop=True)
 
         # group trades by candle start
-        trades_grouped_by_candle_start = trades.groupby(
-            'candle_start', group_keys=False)
+        trades_grouped_by_candle_start = trades.groupby('candle_start', group_keys=False)
         # repair 'date' datetime type (otherwise crashes on each compare)
         if "date" in dataframe.columns:
             dataframe['date'] = pd.to_datetime(dataframe['date'])
@@ -122,10 +121,8 @@ def populate_dataframe_with_trades(config: Config,
             trades_grouped_df = trades[candle_start == trades['candle_start']]
             is_between = (candle_start == df['candle_start'])
             if np.any(is_between == True):  # noqa: E712
-                (timeframe_frequency, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(
-                    timeframe)
-                candle_next = candle_start + \
-                    pd.Timedelta(minutes=timeframe_minutes)
+                (_, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(timeframe)
+                candle_next = candle_start + pd.Timedelta(minutes=timeframe_minutes)
                 # skip if there are no trades at next candle
                 # because that this candle isn't finished yet
                 if candle_next not in trades_grouped_by_candle_start.groups:
@@ -188,13 +185,10 @@ def populate_dataframe_with_trades(config: Config,
                 # copy to avoid memory leaks
                 dataframe.loc[is_between] = df.loc[is_between].copy()
             else:
-                logger.debug(
-                    f"Found NO candles for trades starting with {candle_start}")
-        logger.debug(
-            f"trades.groups_keys in {time.time() - start_time} seconds")
+                logger.debug(f"Found NO candles for trades starting with {candle_start}")
+        logger.debug(f"trades.groups_keys in {time.time() - start_time} seconds")
 
-        logger.debug(
-            f"trades.singleton_iterate in {time.time() - start_time} seconds")
+        logger.debug(f"trades.singleton_iterate in {time.time() - start_time} seconds")
 
     except Exception as e:
         logger.exception("Error populating dataframe with trades:", e)
@@ -214,18 +208,15 @@ def public_trades_to_dataframe(trades: List, pair: str) -> DataFrame:
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
     :return: DataFrame
     """
-    logger.debug(
-        f"Converting candle (TRADES) data to dataframe for pair {pair}.")
+    logger.debug(f"Converting candle (TRADES) data to dataframe for pair {pair}.")
     cols = DEFAULT_TRADES_COLUMNS
     df = DataFrame(trades, columns=cols)
-    df['date'] = pd.to_datetime(
-        df['timestamp'], unit='ms', utc=True)
+    df['date'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
     # and fail with exception...
-    df = df.astype(dtype={'amount': 'float', 'cost': 'float',
-                          'price': 'float'})
+    df = df.astype(dtype={'amount': 'float', 'cost': 'float', 'price': 'float'})
     return df
 
 
@@ -237,18 +228,13 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: f
     """
     df = pd.DataFrame([], columns=DEFAULT_ORDERFLOW_COLUMNS)
     # create bid, ask where side is sell or buy
-    df['bid_amount'] = np.where(
-        trades['side'].str.contains('buy'), 0, trades['amount'])
-    df['ask_amount'] = np.where(
-        trades['side'].str.contains('sell'), 0, trades['amount'])
-    df['bid'] = np.where(
-        trades['side'].str.contains('buy'), 0, 1)
-    df['ask'] = np.where(
-        trades['side'].str.contains('sell'), 0, 1)
+    df['bid_amount'] = np.where(trades['side'].str.contains('buy'), 0, trades['amount'])
+    df['ask_amount'] = np.where(trades['side'].str.contains('sell'), 0, trades['amount'])
+    df['bid'] = np.where(trades['side'].str.contains('buy'), 0, 1)
+    df['ask'] = np.where(trades['side'].str.contains('sell'), 0, 1)
 
     # round the prices to the nearest multiple of the scale
-    df['price'] = ((trades['price'] / scale).round()
-                   * scale).astype('float64').values
+    df['price'] = ((trades['price'] / scale).round() * scale).astype('float64').values
     if df.empty:
         df['total'] = np.nan
         df['delta'] = np.nan
@@ -274,16 +260,14 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     ask = df.ask.shift(-1)
     bid_imbalance = (bid / ask) > (imbalance_ratio / 100)
     # overwrite bid_imbalance with False if volume is not big enough
-    bid_imbalance_filtered = np.where(
-        df.total_volume < imbalance_volume, False, bid_imbalance)
+    bid_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, bid_imbalance)
     ask_imbalance = (ask / bid) > (imbalance_ratio / 100)
     # overwrite ask_imbalance with False if volume is not big enough
-    ask_imbalance_filtered = np.where(
-        df.total_volume < imbalance_volume, False, ask_imbalance)
-    dataframe = DataFrame(
-        {"bid_imbalance": bid_imbalance_filtered,
-         "ask_imbalance": ask_imbalance_filtered},
-        index=df.index,
+    ask_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, ask_imbalance)
+    dataframe = DataFrame({
+        "bid_imbalance": bid_imbalance_filtered,
+        "ask_imbalance": ask_imbalance_filtered
+        }, index=df.index,
     )
 
     return dataframe
@@ -299,11 +283,13 @@ def stacked_imbalance(df: DataFrame,
     """
     imbalance = df[f'{label}_imbalance']
     int_series = pd.Series(np.where(imbalance, 1, 0))
-    stacked = int_series * \
-        (int_series.groupby((int_series != int_series.shift()).cumsum()).cumcount() + 1)
+    stacked = (
+        int_series * (
+            int_series.groupby((int_series != int_series.shift()).cumsum()).cumcount() + 1
+            )
+    )
 
-    max_stacked_imbalance_idx = stacked.index[stacked >=
-                                              stacked_imbalance_range]
+    max_stacked_imbalance_idx = stacked.index[stacked >= stacked_imbalance_range]
     stacked_imbalance_price = np.nan
     if not max_stacked_imbalance_idx.empty:
         idx = max_stacked_imbalance_idx[0] if not should_reverse else np.flipud(
