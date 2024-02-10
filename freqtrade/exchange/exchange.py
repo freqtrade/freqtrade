@@ -2407,9 +2407,7 @@ class Exchange:
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = await self._api_async.fetch_trades(pair,
-                                                            params=params,
-                                                            limit=candle_limit)
+                trades = await self._api_async.fetch_trades(pair, params=params, limit=candle_limit)
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",

@@ -142,20 +142,20 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
         }
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
-    result = df.iloc[0]
-    assert result.index.values.tolist() == ['date', 'open', 'high', 'low',
-                                            'close', 'volume', 'trades', 'orderflow',
-                                            'bid', 'ask', 'delta', 'min_delta',
-                                            'max_delta', 'total_trades',
-                                            'stacked_imbalances_bid',
-                                            'stacked_imbalances_ask']
+    row = df.iloc[0]
+    assert list(df.columns) == ['date', 'open', 'high', 'low',
+                                'close', 'volume', 'trades', 'orderflow',
+                                'bid', 'ask', 'delta', 'min_delta',
+                                'max_delta', 'total_trades',
+                                'stacked_imbalances_bid',
+                                'stacked_imbalances_ask']
 
-    assert -50.519000000000005 == result['delta']
-    assert 219.961 == result['bid']
-    assert 169.442 == result['ask']
+    assert -50.519 == pytest.approx(row['delta'])
+    assert 219.961 == row['bid']
+    assert 169.442 == row['ask']
 
-    assert 151 == len(result.trades)
-    t = result['trades'].iloc[0]
+    assert 151 == len(row.trades)
+    t = row['trades'].iloc[0]
     assert trades['id'][0] == t["id"]
     assert int(trades['timestamp'][0]) == int(t['timestamp'])
     assert 'sell' == t['side']
@@ -195,7 +195,7 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
     assert 197.512 == df['bid_amount'].iat[0]  # bid
     assert 88.98 == df['ask_amount'].iat[0]  # ask
     assert 26 == df['ask'].iat[0]  # ask
-    assert -108.53200000000001 == df['delta'].iat[0]  # delta
+    assert -108.532 == pytest.approx(df['delta'].iat[0])  # delta
     assert 3 == df['bid'].iat[-1]  # bid
     assert 50.659 == df['bid_amount'].iat[-1]  # bid
     assert 108.21 == df['ask_amount'].iat[-1]  # ask
@@ -219,7 +219,7 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
     # bid assert 763.7 == df['ask'].iat[0]  # ask
     assert 710.98 == df['bid_amount'].iat[0]
     assert 111 == df['bid'].iat[0]
-    assert 52.71999999999997 == df['delta'].iat[0]  # delta
+    assert 52.7199999 == pytest.approx(df['delta'].iat[0])  # delta
     # assert 50.659 == df['bid'].iat[-1]  # bid
     # assert 108.21 == df['ask'].iat[-1]  # ask
     # assert 57.551 == df['delta'].iat[-1]  # delta
