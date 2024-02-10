@@ -229,7 +229,7 @@ def public_trades_to_dataframe(trades: List,
     return df
 
 
-def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: int):
+def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: float):
     """
     :param trades: dataframe
     :param scale: scale aka bin size e.g. 0.5
