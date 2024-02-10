@@ -46,6 +46,7 @@ async def test_exchangews_ohlcv(mocker):
     config = MagicMock()
     ccxt_object = MagicMock()
     ccxt_object.watch_ohlcv = AsyncMock()
+    ccxt_object.close = AsyncMock()
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
 
     exchange_ws = ExchangeWS(config, ccxt_object)

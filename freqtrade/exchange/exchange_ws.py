@@ -55,8 +55,12 @@ class ExchangeWS:
         logger.debug("Stopped")
 
     async def _cleanup_async(self) -> None:
-        await self.ccxt_object.close()
-        self.__cleanup_called = True
+        try:
+            await self.ccxt_object.close()
+        except Exception:
+            logger.exception("Exception in _cleanup_async")
+        finally:
+            self.__cleanup_called = True
 
     def cleanup_expired(self) -> None:
         """
