@@ -8,6 +8,7 @@ from freqtrade.data.converter.trade_converter import (trades_convert_types,
                                                       trades_df_remove_duplicates)
 from freqtrade.data.history.idatahandler import get_datahandler
 from freqtrade.exceptions import OperationalException
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 
 
@@ -38,10 +39,11 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     }
     logger.info(f"Found csv files for {', '.join(data_symbols)}.")
 
-    if pairs := config.get('pairs'):
+    if pairs_raw := config.get('pairs'):
+        pairs = expand_pairlist(pairs_raw, [m[0] for m in markets])
         markets = [m for m in markets if m[0] in pairs]
         if not markets:
-            logger.info(f"No data found for pairs {', '.join(pairs)}.")
+            logger.info(f"No data found for pairs {', '.join(pairs_raw)}.")
             return
     logger.info(f"Converting pairs: {', '.join(m[0] for m in markets)}.")
 
