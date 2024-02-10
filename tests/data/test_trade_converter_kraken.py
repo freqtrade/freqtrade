@@ -34,6 +34,7 @@ def test_import_kraken_trades_from_csv(testdatadir, tmp_path, caplog, default_co
 
     import_kraken_trades_from_csv(default_conf_usdt, 'feather')
     assert log_has("Found csv files for BCHEUR.", caplog)
+    assert log_has("Converting pairs: BCH/EUR.", caplog)
     assert log_has_re(r"BCH/EUR: 340 trades.* 2023-01-01.* 2023-01-02.*", caplog)
 
     assert dstfile.is_file()
@@ -48,3 +49,10 @@ def test_import_kraken_trades_from_csv(testdatadir, tmp_path, caplog, default_co
                                                             tzinfo=timezone.utc)
     # ID is not filled
     assert len(trades.loc[trades['id'] != '']) == 0
+
+    caplog.clear()
+    default_conf_usdt['pairs'] = ['XRP/EUR']
+    # Filtered to non-existing pair
+    import_kraken_trades_from_csv(default_conf_usdt, 'feather')
+    assert log_has("Found csv files for BCHEUR.", caplog)
+    assert log_has("No data found for pairs XRP/EUR.", caplog)
