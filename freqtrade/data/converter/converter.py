@@ -200,9 +200,7 @@ def populate_dataframe_with_trades(config: Config,
     return dataframe
 
 
-def public_trades_to_dataframe(trades: List,
-                               pair: str,
-                               ) -> DataFrame:
+def public_trades_to_dataframe(trades: List, pair: str) -> DataFrame:
     """
     Converts a list with candle (TRADES) data (in format returned by ccxt.fetch_trades)
     to a Dataframe
