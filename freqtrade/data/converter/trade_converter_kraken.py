@@ -38,6 +38,13 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     }
     logger.info(f"Found csv files for {', '.join(data_symbols)}.")
 
+    if pairs := config.get('pairs'):
+        markets = [m for m in markets if m[0] in pairs]
+        if not markets:
+            logger.info(f"No data found for pairs {', '.join(pairs)}.")
+            return
+    logger.info(f"Converting pairs: {', '.join(m[0] for m in markets)}.")
+
     for pair, name in markets:
         dfs = []
         # Load and combine all csv files for this pair
