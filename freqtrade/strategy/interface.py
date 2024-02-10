@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from pandas import DataFrame
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
-from freqtrade.data import converter
+from freqtrade.data.converter import populate_dataframe_with_trades
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
@@ -1410,15 +1410,14 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self, dataframe, metadata, inf_data, populate_fn)
 
         # TODO: extract this into a separate method e.g. if_enabled_populate_trades()
-        use_public_trades = self.config.get(
-            'exchange', {}).get('use_public_trades', False)
+        use_public_trades = self.config.get('exchange', {}).get('use_public_trades', False)
         if use_public_trades:
             trades = self.dp.trades(pair=metadata['pair'], copy=False)
 
             config = self.config
             config['timeframe'] = self.timeframe
             # TODO: slice trades to size of dataframe for faster backtesting
-            dataframe = converter.populate_dataframe_with_trades(
+            dataframe = populate_dataframe_with_trades(
                 config,
                 dataframe,
                 trades,

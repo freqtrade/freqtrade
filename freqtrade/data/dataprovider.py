@@ -15,8 +15,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
                                  PairWithTimeframe)
 from freqtrade.data.converter import public_trades_to_dataframe
-from freqtrade.data.history import load_pair_history
-from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.data.history import get_datahandler, load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
@@ -450,14 +449,12 @@ class DataProvider:
         # refresh latest trades data
         self.refresh_latest_trades(pairlist)
 
-    def refresh_latest_trades(self,
-                              pairlist: ListPairsWithTimeframes) -> None:
+    def refresh_latest_trades(self, pairlist: ListPairsWithTimeframes) -> None:
         """
         Refresh latest trades data (if enabled in config)
         """
 
-        use_public_trades = self._config.get(
-            'exchange', {}).get('use_public_trades', False)
+        use_public_trades = self._config.get('exchange', {}).get('use_public_trades', False)
         if use_public_trades:
             datahandler = get_datahandler(
                 self._config['datadir'], data_format=self._config['dataformat_trades'])
@@ -533,8 +530,7 @@ class DataProvider:
             data_handler = get_datahandler(
                 self._config['datadir'], data_format=self._config['dataformat_trades'])
             ticks = data_handler.trades_load(pair)
-            trades_df = public_trades_to_dataframe(
-                ticks.values.tolist(), pair=pair)
+            trades_df = public_trades_to_dataframe(ticks.values.tolist(), pair=pair)
             return trades_df
 
         else:
