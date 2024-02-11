@@ -333,9 +333,7 @@ def _download_trades_history(exchange: Exchange,
                              pair: str, *,
                              new_pairs_days: int = 30,
                              timerange: Optional[TimeRange] = None,
-                             data_handler: IDataHandler,
-                             since: Optional[int] = None,
-                             until: Optional[int] = None
+                             data_handler: IDataHandler
                              ) -> bool:
     """
     Download trade history from the exchange.
