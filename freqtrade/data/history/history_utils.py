@@ -366,9 +366,8 @@ def _download_trades_history(exchange: Exchange,
             # Reset since to the last available point
             # - 5 seconds (to ensure we're getting all trades)
             since = trades.iloc[-1]['timestamp'] - (5 * 1000)
-            if since:
-                logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
-                            f"since: {format_ms_time(since)}.")
+            logger.info(f"Using last trade date -5s - Downloading trades for {pair} "
+                        f"since: {format_ms_time(since)}.")
 
         if not since:
             since = dt_ts(dt_now() - timedelta(days=new_pairs_days))
