@@ -228,31 +228,6 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
 # bidask
 
 
-def do_plot(pair, data, trades, plot_config=None):
-    import plotly.offline as pyo
-
-    from freqtrade.plot.plotting import generate_candlestick_graph
-
-    # Filter trades to one pair
-    trades_red = trades  # .loc[trades['pair'] == pair].copy()
-    # Limit graph period to your BT timerange
-    data_red = data  # data['2021-04-01':'2021-04-20']
-
-    # plotconf = strategy.plot_config
-    plotconf = plot_config
-
-    # Generate candlestick graph
-    graph = generate_candlestick_graph(pair=pair,
-                                       data=data_red,
-                                       trades=trades_red,
-                                       plot_config=plotconf
-                                       )
-    pyo.plot(graph, output_type="file", show_link=False,
-             filename="tests/data/test_converter_public_trades.html")
-
-
-# need to be at last to see if some test changed the testdata
-# always need to use .copy() to avoid changing the testdata
 def test_public_trades_testdata_sanity(
         candles,
         public_trades_list,
