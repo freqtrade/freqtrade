@@ -14,7 +14,6 @@ from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
                                  PairWithTimeframe)
-from freqtrade.data.converter import public_trades_to_dataframe
 from freqtrade.data.history import get_datahandler, load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
