@@ -14,6 +14,7 @@ from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
 import ccxt.async_support as ccxt_async
+import pandas as pd
 from cachetools import TTLCache
 from ccxt import TICK_SIZE
 from dateutil import parser
@@ -25,7 +26,8 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_
                                  PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.data.converter.converter import (_calculate_ohlcv_candle_start_and_end,
-                                                clean_duplicate_trades, public_trades_to_dataframe)
+                                                public_trades_to_dataframe)
+from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
@@ -2115,13 +2117,10 @@ class Exchange:
             if (pair, timeframe, c_type) in self._trades:
                 old = self._trades[(pair, timeframe, c_type)]
                 # Reassign so we return the updated, combined df
-                trades_df = clean_duplicate_trades(concat(
-                    [old, trades_df], axis=0),
-                    timeframe,
-                    pair,
-                    fill_missing=False,
-                    drop_incomplete=False)
-                # warn_of_tick_duplicates(trades_df, pair)
+                combined_df = concat([old, trades_df], axis=0)
+                logger.debug(f"Clean duplicated ticks from Trades data {pair}")
+                trades_df = pd.DataFrame(trades_df_remove_duplicates(combined_df),
+                                         columns=combined_df.columns)
                 # Age out old candles
                 if first_required_candle_date:
                     # slice of older dates

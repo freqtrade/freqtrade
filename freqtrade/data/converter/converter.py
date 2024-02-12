@@ -11,7 +11,6 @@ from pandas import DataFrame, to_datetime
 
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_ORDERFLOW_COLUMNS,
                                  DEFAULT_TRADES_COLUMNS, Config)
-from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates
 from freqtrade.enums import CandleType, TradingMode
 
 
@@ -351,43 +350,6 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
         return ohlcv_fill_up_missing_data(data, timeframe, pair)
     else:
         return data
-
-
-def warn_of_tick_duplicates(data: DataFrame, pair: str) -> None:
-    no_dupes_colunms = ['id', 'timestamp', 'datetime']
-    for col in no_dupes_colunms:
-        if col in data.columns and data[col].duplicated().any():
-            sum = data[col].duplicated().sum()
-            message = f'{sum} duplicated ticks for {pair} in {col} detected.'
-            if col == 'id':
-                logger.warning(message)
-            else:
-                logger.debug(message)
-
-
-def clean_duplicate_trades(trades: DataFrame, timeframe: str, pair: str, *,
-
-                           fill_missing: bool, drop_incomplete: bool) -> DataFrame:
-    """
-    Cleanse a TRADES dataframe by
-      * Grouping it by date (removes duplicate tics)
-      * dropping last candles if requested
-      * Filling up missing data (if requested)
-    :param data: DataFrame containing candle (TRADES) data.
-    :param timeframe: timeframe (e.g. 5m). Used to fill up eventual missing data
-    :param pair: Pair this data is for (used to warn if fillup was necessary)
-    :param fill_missing: fill up missing candles with 0 candles
-                         (see trades_fill_up_missing_data for details)
-    :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
-    :return: DataFrame
-    """
-    # group by index and aggregate results to eliminate duplicate ticks
-    # check if data has duplicate ticks
-    logger.debug(f"Clean duplicated ticks from Trades data {pair}")
-    df = pd.DataFrame(trades_df_remove_duplicates(
-        trades), columns=trades.columns)
-
-    return df
 
 
 def drop_incomplete_and_fill_missing_trades(data: DataFrame, timeframe: str, pair: str, *,

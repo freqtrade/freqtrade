@@ -1,6 +1,6 @@
-from freqtrade.data.converter.converter import (clean_duplicate_trades, clean_ohlcv_dataframe,
-                                                convert_ohlcv_format, ohlcv_fill_up_missing_data,
-                                                ohlcv_to_dataframe, order_book_to_dataframe,
+from freqtrade.data.converter.converter import (clean_ohlcv_dataframe, convert_ohlcv_format,
+                                                ohlcv_fill_up_missing_data, ohlcv_to_dataframe,
+                                                order_book_to_dataframe,
                                                 populate_dataframe_with_trades,
                                                 public_trades_to_dataframe,
                                                 reduce_dataframe_footprint, trim_dataframe,
@@ -13,7 +13,6 @@ from freqtrade.data.converter.trade_converter import (convert_trades_format,
 
 
 __all__ = [
-    'clean_duplicate_trades',
     'clean_ohlcv_dataframe',
     'convert_ohlcv_format',
     'ohlcv_fill_up_missing_data',
