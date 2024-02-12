@@ -1882,12 +1882,6 @@ class Trade(ModelBase, LocalTrade):
 
         return best_pair
 
-    def set_custom_data(self, key: str, value: Any) -> None:
-        super().set_custom_data(key=key, value=value)
-
-    def get_custom_data(self, key: Optional[str]) -> List[CustomData]:
-        return super().get_custom_data(key=key)
-
     @staticmethod
     def get_trading_volume(start_date: datetime = datetime.fromtimestamp(0)) -> float:
         """
