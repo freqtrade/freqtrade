@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Optional, Self, Sequence
+from typing import ClassVar, Optional, Sequence
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship

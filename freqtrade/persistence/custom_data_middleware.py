@@ -3,8 +3,6 @@ import logging
 from datetime import datetime
 from typing import Any, List, Optional
 
-from sqlalchemy import select
-
 from freqtrade.persistence.custom_data import CustomData
 
 
