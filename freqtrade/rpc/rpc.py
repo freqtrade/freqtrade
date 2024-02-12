@@ -1005,7 +1005,13 @@ class RPC:
         if trade is None:
             return []
         # Query custom_data
-        custom_data = trade.get_custom_data(key=key)
+        custom_data = []
+        if key:
+            data = trade.get_custom_data(key=key)
+            if data:
+                custom_data = [data]
+        else:
+            custom_data = trade.get_all_custom_data()
         return [
             {
                 'id': data_entry.id,
