@@ -2242,10 +2242,10 @@ class Exchange:
                     # since_ms = 1698060269000
                     # from_id = None
                     # TODO: /DEBUG
-                    [ticks_pair, new_ticks] = self._download_trades_history(pair,
-                                                                            since=since_ms if since_ms else first_candle_ms, # noqa
-                                                                            until=until,
-                                                                            from_id=from_id)
+                    [ticks_pair, new_ticks] = self.get_historic_trades(pair,
+                                                                       since=since_ms if since_ms else first_candle_ms, # noqa
+                                                                       until=until,
+                                                                       from_id=from_id)
 
                 except Exception as e:
                     logger.error(f"Refreshing TRADES data for {pair} failed")
@@ -2589,31 +2589,6 @@ class Exchange:
                     # Not all platforms implement signals (e.g. windows)
                     pass
             return self.loop.run_until_complete(task)
-
-    def _download_trades_history(self,
-                                 pair: str,
-                                 *,
-                                 new_pairs_days: int = 30,
-                                 since: Optional[int] = None,
-                                 until: Optional[int] = None,
-                                 from_id: Optional[str] = None,
-                                 stop_on_from_id: Optional[bool] = False
-                                 ) -> Tuple[str, List]:
-
-        """
-        Download trade history from the exchange.
-        Appends to previously downloaded trades data.
-        :param until: is in msecs
-        :param since: is in msecs
-        :return Boolean of success
-        """
-
-        new_trades = self.get_historic_trades(pair=pair,
-                                              since=since,
-                                              until=until,
-                                              from_id=from_id,
-                                              stop_on_from_id=stop_on_from_id)
-        return new_trades
 
     @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
