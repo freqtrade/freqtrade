@@ -59,4 +59,4 @@ class CustomData(ModelBase):
         if key is not None:
             filters.append(CustomData.cd_key.ilike(key))
 
-        return CustomData.session.scalars(select(CustomData)).all()
+        return CustomData.session.scalars(select(CustomData).filter(*filters)).all()

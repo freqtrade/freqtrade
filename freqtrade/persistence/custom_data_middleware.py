@@ -1,9 +1,9 @@
 import json
 import logging
-from datetime import datetime
 from typing import Any, List, Optional
 
 from freqtrade.persistence.custom_data import CustomData
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class CustomDataWrapper:
 
     @staticmethod
     def get_custom_data(key: Optional[str] = None,
-                        trade_id: Optional[int] = None) -> List[CustomData]:
+                        trade_id: Optional[int] = None) -> CustomData:
         if trade_id is None:
             trade_id = 0
 
@@ -73,15 +73,15 @@ class CustomDataWrapper:
         custom_data = CustomDataWrapper.get_custom_data(key=key, trade_id=trade_id)
         if custom_data:
             data_entry = custom_data[0]
-            data_entry.cd_value = value
-            data_entry.updated_at = datetime.utcnow()
+            data_entry.cd_value = value_db
+            data_entry.updated_at = dt_now()
         else:
             data_entry = CustomData(
-                            ft_trade_id=trade_id,
-                            cd_key=key,
-                            cd_type=value_type,
-                            cd_value=value,
-                            created_at=datetime.utcnow()
+                ft_trade_id=trade_id,
+                cd_key=key,
+                cd_type=value_type,
+                cd_value=value_db,
+                created_at=dt_now()
             )
 
         if CustomDataWrapper.use_db and value_db is not None:
@@ -97,8 +97,8 @@ class CustomDataWrapper:
 
             if cd_index >= 0:
                 data_entry.cd_type = value_type
-                data_entry.cd_value = value
-                data_entry.updated_at = datetime.utcnow()
+                data_entry.cd_value = value_db
+                data_entry.updated_at = dt_now()
 
                 CustomDataWrapper.custom_data[cd_index] = data_entry
             else:
