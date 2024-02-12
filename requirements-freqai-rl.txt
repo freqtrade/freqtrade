@@ -8,4 +8,4 @@ gymnasium==0.29.1; python_version < '3.12'
 stable_baselines3==2.2.1; python_version < '3.12'
 sb3_contrib>=2.0.0a9; python_version < '3.12'
 # Progress bar for stable-baselines3 and sb3-contrib
-tqdm==4.66.1
+tqdm==4.66.2
