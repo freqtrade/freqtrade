@@ -12,6 +12,7 @@ def disable_database_use(timeframe: str) -> None:
     PairLocks.use_db = False
     PairLocks.timeframe = timeframe
     Trade.use_db = False
+    CustomDataWrapper.use_db = False
 
 
 def enable_database_use() -> None:
