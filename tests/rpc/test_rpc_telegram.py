@@ -2557,22 +2557,22 @@ async def test_telegram__send_msg(default_conf, mocker, caplog) -> None:
 
     # Test update
     query = MagicMock()
+    query.edit_message_text = AsyncMock()
     await telegram._send_msg('test', callback_path="DeadBeef", query=query, reload_able=True)
-    edit_message_text = telegram._app.bot.edit_message_text
-    assert edit_message_text.call_count == 1
-    assert "Updated: " in edit_message_text.call_args_list[0][1]['text']
+    assert query.edit_message_text.call_count == 1
+    assert "Updated: " in query.edit_message_text.call_args_list[0][1]['text']
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=BadRequest("not modified"))
+    query.edit_message_text = AsyncMock(side_effect=BadRequest("not modified"))
     await telegram._send_msg('test', callback_path="DeadBeef", query=query)
-    assert telegram._app.bot.edit_message_text.call_count == 1
+    assert query.edit_message_text.call_count == 1
     assert not log_has_re(r"TelegramError: .*", caplog)
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=BadRequest(""))
+    query.edit_message_text = AsyncMock(side_effect=BadRequest(""))
     await telegram._send_msg('test2', callback_path="DeadBeef", query=query)
-    assert telegram._app.bot.edit_message_text.call_count == 1
+    assert query.edit_message_text.call_count == 1
     assert log_has_re(r"TelegramError: .*", caplog)
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=TelegramError("DeadBEEF"))
+    query.edit_message_text = AsyncMock(side_effect=TelegramError("DeadBEEF"))
     await telegram._send_msg('test3', callback_path="DeadBeef", query=query)
 
     assert log_has_re(r"TelegramError: DeadBEEF! Giving up.*", caplog)
