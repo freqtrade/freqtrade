@@ -1213,7 +1213,17 @@ class LocalTrade:
         """
         CustomDataWrapper.set_custom_data(key=key, value=value, trade_id=self.id)
 
-    def get_custom_data(self, key: str) -> Optional[_CustomData]:
+    def get_custom_data(self, key: str, default: Any = None) -> Any:
+        """
+        Get custom data for this trade
+        :param key: key of the custom data
+        """
+        data = CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
+        if data:
+            return data[0]
+        return default
+
+    def get_custom_data_entry(self, key: str) -> Optional[_CustomData]:
         """
         Get custom data for this trade
         :param key: key of the custom data

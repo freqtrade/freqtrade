@@ -65,7 +65,7 @@ class AwesomeStrategy(IStrategy):
         for trade in Trade.get_open_order_trades():
             fills = trade.select_filled_orders(trade.entry_side)
             if trade.pair == 'ETH/USDT':
-                trade_entry_type = trade.get_custom_data(key='entry_type').kv_value
+                trade_entry_type = trade.get_custom_data(key='entry_type')
                 if trade_entry_type is None:
                     trade_entry_type = 'breakout' if 'entry_1' in trade.enter_tag else 'dip'
                 elif fills > 1:
@@ -87,7 +87,7 @@ class AwesomeStrategy(IStrategy):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
             current_candle = dataframe.iloc[-1].squeeze()
             # store information about entry adjustment
-            existing_count = trade.get_custom_data(key='num_entry_adjustments').kv_value
+            existing_count = trade.get_custom_data('num_entry_adjustments', default=0)
             if not existing_count:
                 existing_count = 1
             else:
@@ -102,8 +102,8 @@ class AwesomeStrategy(IStrategy):
 
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):
 
-        entry_adjustment_count = trade.get_custom_data(key='num_entry_adjustments').kv_value
-        trade_entry_type = trade.get_custom_data(key='entry_type').kv_value
+        entry_adjustment_count = trade.get_custom_data(key='num_entry_adjustments')
+        trade_entry_type = trade.get_custom_data(key='entry_type')
         if entry_adjustment_count is None:
             if current_profit > 0.01 and (current_time - timedelta(minutes=100) > trade.open_date_utc):
                 return True, 'exit_1'
@@ -122,6 +122,15 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning "Non-serializable data"
     If supplied data cannot be serialized a warning is logged and the entry for the specified `key` will contain `None` as data.
+
+??? Note "All attributes"
+    custom-data has the following accessors through the Trade object (assumed as `trade` below):
+
+    * `trade.get_custom_data(key='something', default=0)` - Returns the actual value given in the type provided.
+    * `trade.get_custom_data_entry(key='something')` - Returns the entry - including metadata. The value is accessible via `.value` property.
+    * `trade.set_custom_data(key='something', value={'some': 'value'})` - set or update the corresponding key for this trade. Value must be serializable - and we recommend to keep the stored data relatively small.
+
+    "value" can be any type (both in setting and receiving) - but must be json serializable.
 
 ## Dataframe access
 
