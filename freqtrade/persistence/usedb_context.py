@@ -1,5 +1,5 @@
 
-from freqtrade.persistence.custom_data_middleware import CustomDataWrapper
+from freqtrade.persistence.custom_data import CustomDataWrapper
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.persistence.trade_model import Trade
 

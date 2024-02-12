@@ -23,8 +23,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precisi
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.persistence.custom_data import CustomData
-from freqtrade.persistence.custom_data_middleware import CustomDataWrapper
+from freqtrade.persistence.custom_data import CustomData, CustomDataWrapper
 from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
 
 
@@ -345,7 +344,7 @@ class LocalTrade:
     id: int = 0
 
     orders: List[Order] = []
-    custom_data: List[CustomData] = []
+    custom_data: List[_CustomData] = []
 
     exchange: str = ''
     pair: str = ''
@@ -1209,7 +1208,7 @@ class LocalTrade:
     def set_custom_data(self, key: str, value: Any) -> None:
         CustomDataWrapper.set_custom_data(key=key, value=value, trade_id=self.id)
 
-    def get_custom_data(self, key: Optional[str]) -> List[CustomData]:
+    def get_custom_data(self, key: Optional[str]) -> List[_CustomData]:
         return CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
 
     @property
@@ -1467,7 +1466,7 @@ class Trade(ModelBase, LocalTrade):
     orders: Mapped[List[Order]] = relationship(
         "Order", order_by="Order.id", cascade="all, delete-orphan", lazy="selectin",
         innerjoin=True)  # type: ignore
-    custom_data: Mapped[List[CustomData]] = relationship(
+    custom_data: Mapped[List[_CustomData]] = relationship(
         "CustomData", order_by="CustomData.id", cascade="all, delete-orphan",
         lazy="raise")  # type: ignore
 
@@ -1574,9 +1573,9 @@ class Trade(ModelBase, LocalTrade):
             Order.session.delete(order)
 
         for entry in self.custom_data:
-            CustomData.session.delete(entry)
+            _CustomData.session.delete(entry)
 
-        CustomData.session.commit()
+        _CustomData.session.commit()
         Trade.session.delete(self)
         Trade.commit()
 
