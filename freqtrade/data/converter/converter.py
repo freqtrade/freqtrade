@@ -195,30 +195,6 @@ def populate_dataframe_with_trades(config: Config,
     return dataframe
 
 
-def public_trades_to_dataframe(trades: List, pair: str) -> DataFrame:
-    """
-    Converts a list with candle (TRADES) data (in format returned by ccxt.fetch_trades)
-    to a Dataframe
-    :param trades: list with candle (TRADES) data, as returned by exchange.async_get_candle_history
-    :param timeframe: timeframe (e.g. 5m). Used to fill up eventual missing data
-    :param pair: Pair this data is for (used to warn if fillup was necessary)
-    :param fill_missing: fill up missing candles with 0 candles
-                         (see trades_fill_up_missing_data for details)
-    :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
-    :return: DataFrame
-    """
-    logger.debug(f"Converting candle (TRADES) data to dataframe for pair {pair}.")
-    cols = DEFAULT_TRADES_COLUMNS
-    df = DataFrame(trades, columns=cols)
-    df['date'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
-
-    # Some exchanges return int values for Volume and even for OHLC.
-    # Convert them since TA-LIB indicators used in the strategy assume floats
-    # and fail with exception...
-    df = df.astype(dtype={'amount': 'float', 'cost': 'float', 'price': 'float'})
-    return df
-
-
 def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: float):
     """
     :param trades: dataframe

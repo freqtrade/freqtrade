@@ -3,8 +3,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from freqtrade.data.converter import populate_dataframe_with_trades, public_trades_to_dataframe
-from freqtrade.data.converter.converter import trades_to_volumeprofile_with_total_delta_bid_ask
+from freqtrade.constants import DEFAULT_TRADES_COLUMNS
+from freqtrade.data.converter import populate_dataframe_with_trades
+from freqtrade.data.converter.orderflow import trades_to_volumeprofile_with_total_delta_bid_ask
+from freqtrade.data.converter.trade_converter import trades_list_to_df
 
 
 BIN_SIZE_SCALE = 0.5
@@ -74,7 +76,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
                   'imbalance_volume': 0,
                   'imbalance_ratio': 300,
                   'stacked_imbalance_range': 3
-                  }}
+              }}
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
     results = df.iloc[0]
@@ -138,8 +140,8 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
             'imbalance_volume': 0,
             'imbalance_ratio': 300,
             'stacked_imbalance_range': 3
-            }
         }
+    }
     df = populate_dataframe_with_trades(config,
                                         dataframe, trades, pair='unitttest')
     row = df.iloc[0]
@@ -164,7 +166,8 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
 
 def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_simple, candles):
-    df = public_trades_to_dataframe(public_trades_list_simple,  'doesntmatter')
+    df = trades_list_to_df(
+        public_trades_list_simple[DEFAULT_TRADES_COLUMNS].values.tolist())
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         df, scale=BIN_SIZE_SCALE)
     candles['vp'] = np.nan
@@ -176,7 +179,8 @@ def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_
 
 def test_public_trades_binned_big_sample_list(public_trades_list):
     BIN_SIZE_SCALE = 0.05
-    trades = public_trades_to_dataframe(public_trades_list,  'doesntmatter')
+    trades = trades_list_to_df(
+        public_trades_list[DEFAULT_TRADES_COLUMNS].values.tolist())
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         trades, scale=BIN_SIZE_SCALE)
     assert df.columns.tolist() == ['bid', 'ask', 'delta',
@@ -203,7 +207,7 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
     assert 57.551 == df['delta'].iat[-1]  # delta
 
     BIN_SIZE_SCALE = 1
-    trades = public_trades_to_dataframe(public_trades_list, 'doesntmatter')
+    trades = trades_list_to_df(public_trades_list[DEFAULT_TRADES_COLUMNS].values.tolist())
     df = trades_to_volumeprofile_with_total_delta_bid_ask(
         trades, scale=BIN_SIZE_SCALE)
     assert 2 == len(df)
