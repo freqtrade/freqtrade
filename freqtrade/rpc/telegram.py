@@ -1777,13 +1777,9 @@ class Telegram(RPCHandler):
         msg += f"\nUpdated: {datetime.now().ctime()}"
         if not query.message:
             return
-        chat_id = query.message.chat_id
-        message_id = query.message.message_id
 
         try:
-            await self._app.bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=message_id,
+            await query.edit_message_text(
                 text=msg,
                 parse_mode=parse_mode,
                 reply_markup=reply_markup
