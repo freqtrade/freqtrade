@@ -77,6 +77,7 @@ class Exchange:
         "tickers_have_quoteVolume": True,
         "tickers_have_bid_ask": True,  # bid / ask empty for fetch_tickers
         "tickers_have_price": True,
+        "trade_candle_limit": 1000,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -170,7 +171,7 @@ class Exchange:
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
-        self._max_trades_candle_limit = self._config.get('exchange', {}).get('trades_candle_limit', 1000)  # noqa: E501
+        self._max_trades_candle_limit = self._ft_has['trade_candle_limit']
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
@@ -350,21 +351,6 @@ class Exchange:
         """
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
             timeframe, self._ft_has.get('ohlcv_candle_limit')))
-
-    def trades_candle_limit(
-            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
-        """
-        Exchange trades candle limit
-        Uses trades_candle_limit_per_timeframe if the exchange has different limits
-        per timeframe (e.g. bittrex), otherwise falls back to trades_candle_limit
-        :param timeframe: Timeframe to check
-        :param candle_type: Candle-type
-        :param since_ms: Starting timestamp
-        :return: Candle limit as integer
-        """
-        # TODO: check if there are trades candle limits
-        return int(self._ft_has.get('trade_candle_limit_per_timeframe', {}).get(
-            timeframe, self._ft_has.get('trade_candle_limit', self._max_trades_candle_limit)))
 
     def get_markets(self, base_currencies: List[str] = [], quote_currencies: List[str] = [],
                     spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
@@ -2401,9 +2387,7 @@ class Exchange:
         returns: List of dicts containing trades, the next iteration value (new "since" or trade_id)
         """
         try:
-            candle_limit = self.trades_candle_limit("1m",
-                                                    candle_type=CandleType.FUTURES,
-                                                    since_ms=since)
+            candle_limit = self._max_trades_candle_limit
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
