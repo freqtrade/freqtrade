@@ -2257,7 +2257,6 @@ class Exchange:
                                                         candle_type,
                                                         all_stored_ticks_list,
                                                         cache,
-                                                        drop_incomplete=False,
                                                         first_required_candle_date=first_candle_ms)
                     results_df[(pair, timeframe, candle_type)] = trades_df
                     data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
