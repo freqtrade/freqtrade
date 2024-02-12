@@ -24,6 +24,7 @@ class _CustomData(ModelBase):
       - One metadata entry can only be associated with one Trade
     """
     __tablename__ = 'trade_custom_data'
+    __allow_unmapped__ = True
     session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
