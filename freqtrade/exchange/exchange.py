@@ -2104,13 +2104,12 @@ class Exchange:
                            c_type: CandleType,
                            ticks: List[List],
                            cache: bool,
-                           drop_incomplete: bool,
                            first_required_candle_date: Optional[int]) -> DataFrame:
         # keeping parsed dataframe in cache
         trades_df = public_trades_to_dataframe(ticks, pair=pair)
         # keeping last candle time as last refreshed time of the pair
         if ticks and cache:
-            idx = -2 if drop_incomplete and len(ticks) > 1 else -1
+            idx = -1
             # NOTE: // is floor: divides and rounds to nearest int
             self._trades_last_refresh_time[(pair, timeframe, c_type)] = trades_df['timestamp'].iat[idx] // 1000 # noqa
         if cache:
