@@ -13,38 +13,46 @@ The call sequence of the methods described here is covered under [bot execution 
 
 ## Storing information (Non-Persistent)
 
-Storing information can be accomplished by creating a new dictionary within the strategy class.
+!!! Warning "Deprecated"
+    This method of storing information is deprecated, and we do advise against using non-persistent storage.  
+    Please use the below [Persistent Storing Information Section](#storing-information-persistent) instead.
 
-The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
+    It's content has therefore be collapsed.
 
-```python
-class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    custom_info = {}
+??? Abstract "Storing information"
+    Storing information can be accomplished by creating a new dictionary within the strategy class.
 
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Check if the entry already exists
-        if not metadata["pair"] in self.custom_info:
-            # Create empty entry for this pair
-            self.custom_info[metadata["pair"]] = {}
+    The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
 
-        if "crosstime" in self.custom_info[metadata["pair"]]:
-            self.custom_info[metadata["pair"]]["crosstime"] += 1
-        else:
-            self.custom_info[metadata["pair"]]["crosstime"] = 1
-```
+    ```python
+    class AwesomeStrategy(IStrategy):
+        # Create custom dictionary
+        custom_info = {}
 
-!!! Warning
-    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Check if the entry already exists
+            if not metadata["pair"] in self.custom_info:
+                # Create empty entry for this pair
+                self.custom_info[metadata["pair"]] = {}
 
-!!! Note
-    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+            if "crosstime" in self.custom_info[metadata["pair"]]:
+                self.custom_info[metadata["pair"]]["crosstime"] += 1
+            else:
+                self.custom_info[metadata["pair"]]["crosstime"] = 1
+    ```
+
+    !!! Warning
+        The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+    !!! Note
+        If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ## Storing information (Persistent)
 
 Storing information can also be performed in a persistent manner. Freqtrade allows storing/retrieving user custom information associated with a specific trade.
-Using a trade object handle information can be stored using `trade_obj.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade_obj.get_custom_data(key='my_key')`.
-Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object handle.
+
+Using a trade object, information can be stored using `trade_obj.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade_obj.get_custom_data(key='my_key')`. Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object.
+
 For the data to be able to be stored within the database it must be serialized. This is done by converting it to a JSON formatted string.
 
 ```python
@@ -69,7 +77,13 @@ class AwesomeStrategy(IStrategy):
                            current_time: datetime, proposed_rate: float, current_order_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
-        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc and order.filled == 0.0:
+        if (
+            pair == 'BTC/USDT' 
+            and entry_tag == 'long_sma200' 
+            and side == 'long' 
+            and (current_time - timedelta(minutes=10)) > trade.open_date_utc 
+            and order.filled == 0.0
+        ):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
             current_candle = dataframe.iloc[-1].squeeze()
             # store information about entry adjustment
@@ -104,8 +118,9 @@ class AwesomeStrategy(IStrategy):
 
 !!! Note
     It is recommended that simple data types are used `[bool, int, float, str]` to ensure no issues when serializing the data that needs to be stored.
+    Storing big junks of data may lead to unintended side-effects, like a database becoming big pretty fast (and as a consequence, also slow).
 
-!!! Warning
+!!! Warning "Non-serializable data"
     If supplied data cannot be serialized a warning is logged and the entry for the specified `key` will contain `None` as data.
 
 ## Dataframe access
