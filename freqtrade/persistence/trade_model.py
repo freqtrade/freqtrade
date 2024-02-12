@@ -23,7 +23,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precisi
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
-from freqtrade.persistence.custom_data import CustomData, CustomDataWrapper
+from freqtrade.persistence.custom_data import CustomDataWrapper, _CustomData
 from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
 
 
@@ -1206,10 +1206,28 @@ class LocalTrade:
                 ]
 
     def set_custom_data(self, key: str, value: Any) -> None:
+        """
+        Set custom data for this trade
+        :param key: key of the custom data
+        :param value: value of the custom data (must be JSON serializable)
+        """
         CustomDataWrapper.set_custom_data(key=key, value=value, trade_id=self.id)
 
-    def get_custom_data(self, key: Optional[str]) -> List[_CustomData]:
-        return CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
+    def get_custom_data(self, key: str) -> Optional[_CustomData]:
+        """
+        Get custom data for this trade
+        :param key: key of the custom data
+        """
+        data = CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
+        if data:
+            return data[0]
+        return None
+
+    def get_all_custom_data(self) -> List[_CustomData]:
+        """
+        Get all custom data for this trade
+        """
+        return CustomDataWrapper.get_custom_data(trade_id=self.id)
 
     @property
     def nr_of_successful_entries(self) -> int:
