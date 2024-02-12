@@ -2471,8 +2471,6 @@ class Exchange:
         # Skip last trade by default since its the key for the next call
         x = slice(None, -1) if has_overlap else slice(None)
 
-        if not until and not stop_on_from_id:
-            raise OperationalException("stop_on_from_id must be set if until is not set")
         if not from_id or not self._valid_trade_pagination_id(pair, from_id):
             # Fetch first elements using timebased method to get an ID to paginate on
             # Depending on the Exchange, this can introduce a drift at the start of the interval
