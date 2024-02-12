@@ -2592,7 +2592,11 @@ class Exchange:
 
         with self._loop_lock:
             task = asyncio.ensure_future(self._async_get_trade_history(
-                pair=pair, since=since, until=until, from_id=from_id))
+                pair=pair,
+                since=since,
+                until=until,
+                from_id=from_id,
+                stop_on_from_id=stop_on_from_id))
 
             for sig in [signal.SIGINT, signal.SIGTERM]:
                 try:
