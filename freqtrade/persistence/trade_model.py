@@ -1600,8 +1600,7 @@ class Trade(ModelBase, LocalTrade):
         for order in self.orders:
             Order.session.delete(order)
 
-        for entry in self.custom_data:
-            _CustomData.session.delete(entry)
+        CustomDataWrapper.delete_custom_data(trade_id=self.id)
 
         _CustomData.session.commit()
         Trade.session.delete(self)

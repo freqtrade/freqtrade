@@ -97,6 +97,10 @@ class CustomDataWrapper:
             CustomDataWrapper.custom_data = []
 
     @staticmethod
+    def delete_custom_data(trade_id: int) -> None:
+        _CustomData.session.query(_CustomData).filter(_CustomData.ft_trade_id == trade_id).delete()
+
+    @staticmethod
     def get_custom_data(key: Optional[str] = None,
                         trade_id: Optional[int] = None) -> List[_CustomData]:
         if trade_id is None:
