@@ -529,8 +529,7 @@ class DataProvider:
                 candle_type) if candle_type != '' else self._config['candle_type_def']
             data_handler = get_datahandler(
                 self._config['datadir'], data_format=self._config['dataformat_trades'])
-            ticks = data_handler.trades_load(pair)
-            trades_df = public_trades_to_dataframe(ticks.values.tolist(), pair=pair)
+            trades_df = data_handler.trades_load(pair)
             return trades_df
 
         else:
