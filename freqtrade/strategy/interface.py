@@ -1394,22 +1394,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
-    def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Populate indicators that will be used in the Buy, Sell, short, exit_short strategy
-        This method should not be overridden.
-        :param dataframe: Dataframe with data from the exchange
-        :param metadata: Additional information, like the currently traded pair
-        :return: a Dataframe with all mandatory indicators for the strategies
-        """
-        logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
-
-        # call populate_indicators_Nm() which were tagged with @informative decorator.
-        for inf_data, populate_fn in self._ft_informative:
-            dataframe = _create_and_merge_informative_pair(
-                self, dataframe, metadata, inf_data, populate_fn)
-
-        # TODO: extract this into a separate method e.g. if_enabled_populate_trades()
+    def _if_enabled_populate_trades(self, dataframe: DataFrame, metadata: dict):
         use_public_trades = self.config.get('exchange', {}).get('use_public_trades', False)
         if use_public_trades:
             trades = self.dp.trades(pair=metadata['pair'], copy=False)
@@ -1425,6 +1410,22 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             logger.debug("Populated dataframe with trades.")
 
+    def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Populate indicators that will be used in the Buy, Sell, short, exit_short strategy
+        This method should not be overridden.
+        :param dataframe: Dataframe with data from the exchange
+        :param metadata: Additional information, like the currently traded pair
+        :return: a Dataframe with all mandatory indicators for the strategies
+        """
+        logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
+
+        # call populate_indicators_Nm() which were tagged with @informative decorator.
+        for inf_data, populate_fn in self._ft_informative:
+            dataframe = _create_and_merge_informative_pair(
+                self, dataframe, metadata, inf_data, populate_fn)
+
+        self._if_enabled_populate_trades(dataframe, metadata)
         return self.populate_indicators(dataframe, metadata)
 
     def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
