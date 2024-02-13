@@ -48,6 +48,7 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
     logger.info(f"Converting pairs: {', '.join(m[0] for m in markets)}.")
 
     for pair, name in markets:
+        logger.debug(f"Converting pair {pair}, files */{name}.csv")
         dfs = []
         # Load and combine all csv files for this pair
         for f in tradesdir.rglob(f"{name}.csv"):
