@@ -5,15 +5,15 @@ This page explains some advanced tasks and configuration options that can be per
 
 ## Quickstart
 
-- enable using public trades in `config.json`
+enable using public trades in `config.json`
 ```
 "exchange": {
    ...
    "use_public_trades": true,
 }
 ```
-- set orderflow processing configuration in `config.json`:
- ```
+set orderflow processing configuration in `config.json`:
+```
 "orderflow": {
     "scale": 0.5, 
     "stacked_imbalance_range": 3, # needs at least this amount of imblance next to each other
