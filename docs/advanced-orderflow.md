@@ -76,6 +76,3 @@ orderflow_df['delta'] # ask amount - bid amount
 orderflow_df['total_volume'] # ask amount + bid amount
 orderflow_df['total_trades'] # ask + bid trades 
 ```
-
-
-
