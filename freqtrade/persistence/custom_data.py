@@ -110,8 +110,6 @@ class CustomDataWrapper:
 
     @staticmethod
     def get_custom_data(*, trade_id: int, key: Optional[str] = None) -> List[_CustomData]:
-        if trade_id is None:
-            trade_id = 0
 
         if CustomDataWrapper.use_db:
             filters = [
@@ -170,17 +168,6 @@ class CustomDataWrapper:
             _CustomData.session.add(data_entry)
             _CustomData.session.commit()
         else:
-            cd_index = -1
-            for index, data_entry in enumerate(CustomDataWrapper.custom_data):
-                if data_entry.ft_trade_id == trade_id and data_entry.cd_key == key:
-                    cd_index = index
-                    break
-
-            if cd_index >= 0:
-                data_entry.cd_type = value_type
-                data_entry.cd_value = value_db
-                data_entry.updated_at = dt_now()
-
-                CustomDataWrapper.custom_data[cd_index] = data_entry
-            else:
+            if not custom_data:
                 CustomDataWrapper.custom_data.append(data_entry)
+            # Existing data will have updated interactively.
