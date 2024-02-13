@@ -37,16 +37,16 @@ freqtrade download-data -p BTC/USDT:USDT --timerange 20230101-  --trading-mode f
 Several new columns are available when activated.
 ``` python
 
-    dataframe['trades']
-    dataframe['orderflow']
-    dataframe['bid']
-    dataframe['ask']
-    dataframe['delta']
-    dataframe['min_delta']
-    dataframe['max_delta']
-    dataframe['total_trades']
-    dataframe['stacked_imbalances_bid']
-    dataframe['stacked_imbalances_ask']
+    dataframe['trades'] # every single trade
+    dataframe['orderflow'] # footprint chart: see below
+    dataframe['bid'] # bid sum
+    dataframe['ask'] # ask sum
+    dataframe['delta'] # ask - bid
+    dataframe['min_delta'] # minimum delta reached within candle
+    dataframe['max_delta'] # maximum delta reached within candle
+    dataframe['total_trades'] # amount of trades
+    dataframe['stacked_imbalances_bid'] # price level stacked imbalance bid occurred
+    dataframe['stacked_imbalances_ask'] # price level stacked imbalance ask occurred
 ```
 
 These can be accessed like this:
@@ -60,3 +60,22 @@ def cumulative_delta(delta: Series):
     return cumdelta
 
 ```
+### dataframe['orderflow']
+
+This includes a dataframe that represents a Footprint chart of the Bid vs Ask type. Footprint charts are a type of candlestick chart that provides additional information, such as trade volume and order flow, in addition to price.
+The scale of the price is set by `orderflow.scale` (see above) and thus binned per price level.
+
+Following columns are available:
+```python
+
+orderflow_df['bid_amount'] # how much bids were traded
+orderflow_df['ask_amount'] # how much asks were traded
+orderflow_df['bid'] # how many bids trades
+orderflow_df['ask'] # how many asks trades
+orderflow_df['delta'] # ask amount - bid amount
+orderflow_df['total_volume'] # ask amount + bid amount
+orderflow_df['total_trades'] # ask + bid trades 
+```
+
+
+
