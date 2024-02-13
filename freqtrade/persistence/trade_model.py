@@ -1211,16 +1211,16 @@ class LocalTrade:
         :param key: key of the custom data
         :param value: value of the custom data (must be JSON serializable)
         """
-        CustomDataWrapper.set_custom_data(key=key, value=value, trade_id=self.id)
+        CustomDataWrapper.set_custom_data(trade_id=self.id, key=key, value=value)
 
     def get_custom_data(self, key: str, default: Any = None) -> Any:
         """
         Get custom data for this trade
         :param key: key of the custom data
         """
-        data = CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
+        data = CustomDataWrapper.get_custom_data(trade_id=self.id, key=key)
         if data:
-            return data[0]
+            return data[0].value
         return default
 
     def get_custom_data_entry(self, key: str) -> Optional[_CustomData]:
@@ -1228,7 +1228,7 @@ class LocalTrade:
         Get custom data for this trade
         :param key: key of the custom data
         """
-        data = CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
+        data = CustomDataWrapper.get_custom_data(trade_id=self.id, key=key)
         if data:
             return data[0]
         return None

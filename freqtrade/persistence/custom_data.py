@@ -32,7 +32,7 @@ class _CustomData(ModelBase):
     __table_args__ = (UniqueConstraint('ft_trade_id', 'cd_key', name="_trade_id_cd_key"),)
 
     id = mapped_column(Integer, primary_key=True)
-    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True, default=0)
+    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True)
 
     trade = relationship("Trade", back_populates="custom_data")
 
@@ -84,7 +84,15 @@ class CustomDataWrapper:
 
     @staticmethod
     def _convert_custom_data(data: _CustomData) -> _CustomData:
-        if data.cd_type not in CustomDataWrapper.unserialized_types:
+        if data.cd_type in CustomDataWrapper.unserialized_types:
+            data.value = data.cd_value
+            if data.cd_type == 'bool':
+                data.value = data.cd_value.lower() == 'true'
+            elif data.cd_type == 'int':
+                data.value = int(data.cd_value)
+            elif data.cd_type == 'float':
+                data.value = float(data.cd_value)
+        else:
             data.value = json.loads(data.cd_value)
         return data
 
@@ -101,15 +109,18 @@ class CustomDataWrapper:
         _CustomData.session.query(_CustomData).filter(_CustomData.ft_trade_id == trade_id).delete()
 
     @staticmethod
-    def get_custom_data(key: Optional[str] = None,
-                        trade_id: Optional[int] = None) -> List[_CustomData]:
+    def get_custom_data(*, trade_id: int, key: Optional[str] = None) -> List[_CustomData]:
         if trade_id is None:
             trade_id = 0
 
         if CustomDataWrapper.use_db:
-            filtered_custom_data = _CustomData.session.scalars(select(_CustomData).filter(
+            filters = [
                 _CustomData.ft_trade_id == trade_id,
-                _CustomData.cd_key.ilike(key))).all()
+            ]
+            if key is not None:
+                filters.append(_CustomData.cd_key.ilike(key))
+            filtered_custom_data = _CustomData.session.scalars(select(_CustomData).filter(
+                *filters)).all()
 
         else:
             filtered_custom_data = [
@@ -124,7 +135,7 @@ class CustomDataWrapper:
         return [CustomDataWrapper._convert_custom_data(d) for d in filtered_custom_data]
 
     @staticmethod
-    def set_custom_data(key: str, value: Any, trade_id: Optional[int] = None) -> None:
+    def set_custom_data(trade_id: int, key: str, value: Any) -> None:
 
         value_type = type(value).__name__
 
@@ -140,7 +151,7 @@ class CustomDataWrapper:
         if trade_id is None:
             trade_id = 0
 
-        custom_data = CustomDataWrapper.get_custom_data(key=key, trade_id=trade_id)
+        custom_data = CustomDataWrapper.get_custom_data(trade_id=trade_id, key=key)
         if custom_data:
             data_entry = custom_data[0]
             data_entry.cd_value = value_db
