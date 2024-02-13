@@ -24,9 +24,10 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_
                                  NON_OPEN_EXCHANGE_STATES, BidAsk, BuySell, Config, EntryExit,
                                  ExchangeConfig, ListPairsWithTimeframes, MakerTaker, OBLiteral,
                                  PairWithTimeframe)
-from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
+from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe
 from freqtrade.data.converter.orderflow import _calculate_ohlcv_candle_start_and_end
-from freqtrade.data.converter.trade_converter import trades_df_remove_duplicates, trades_list_to_df
+from freqtrade.data.converter.trade_converter import (trades_df_remove_duplicates,
+                                                      trades_dict_to_list, trades_list_to_df)
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
