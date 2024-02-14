@@ -123,8 +123,7 @@ class RangeStabilityFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
-        cached_res = self._pair_cache.get(pair, None)
-        if cached_res is not None:
+        if (cached_res := self._pair_cache.get(pair, None)) is not None:
             return cached_res
 
         result = True
