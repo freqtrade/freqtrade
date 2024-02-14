@@ -53,7 +53,8 @@ def import_kraken_trades_from_csv(config: Config, convert_to: str):
         # Load and combine all csv files for this pair
         for f in tradesdir.rglob(f"{name}.csv"):
             df = pd.read_csv(f, names=KRAKEN_CSV_TRADE_COLUMNS)
-            dfs.append(df)
+            if not df.empty:
+                dfs.append(df)
 
         # Load existing trades data
         if not dfs:
