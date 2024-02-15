@@ -713,7 +713,7 @@ def test_VolumePairList_range(
         ohclv_mock.reset_mock()
         freqtrade.pairlists.refresh_pairlist()
         # in "filter" mode, caching is disabled.
-        assert ohclv_mock.call_count == (0 if len(pairlists) == 1 else 1)
+        assert ohclv_mock.call_count == 0
         whitelist = freqtrade.pairlists.whitelist
         assert whitelist == volumefilter_result
 
