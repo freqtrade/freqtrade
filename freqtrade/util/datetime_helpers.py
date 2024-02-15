@@ -37,6 +37,7 @@ def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
         return int(dt.timestamp() * 1000)
     return default
 
+
 def dt_ts_none(dt: Optional[datetime]) -> Optional[int]:
     """
     Return dt in ms as a timestamp in UTC.
