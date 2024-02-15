@@ -1242,7 +1242,7 @@ class Exchange:
                 f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to {side} amount {amount} at rate {limit_rate} with '
                 f'stop-price {stop_price_norm}. Message: {e}') from e
-        except (ccxt.InvalidOrder, ccxt.BadRequest) as e:
+        except (ccxt.InvalidOrder, ccxt.BadRequest, ccxt.OperationRejected) as e:
             # Errors:
             # `Order would trigger immediately.`
             raise InvalidOrderException(
@@ -2685,7 +2685,7 @@ class Exchange:
             self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.BadRequest, ccxt.InsufficientFunds) as e:
+        except (ccxt.BadRequest, ccxt.OperationRejected, ccxt.InsufficientFunds) as e:
             if not accept_fail:
                 raise TemporaryError(
                     f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
@@ -2727,7 +2727,7 @@ class Exchange:
             self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except ccxt.BadRequest as e:
+        except (ccxt.BadRequest, ccxt.OperationRejected) as e:
             if not accept_fail:
                 raise TemporaryError(
                     f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
