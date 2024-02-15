@@ -466,7 +466,7 @@ class LocalTrade:
         orders = self.select_filled_orders(self.entry_side)
         if (
             orders
-            and len((filled_date := [o.order_filled_utc for o in orders if o.order_filled_utc]))
+            and len(filled_date := [o.order_filled_utc for o in orders if o.order_filled_utc])
         ):
             return min(filled_date)
         return None
