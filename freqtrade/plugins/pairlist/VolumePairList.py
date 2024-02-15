@@ -14,7 +14,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
-from freqtrade.util import dt_now, format_ms_time
+from freqtrade.util import PeriodicCache, dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ class VolumePairList(IPairList):
         # get timeframe in minutes and seconds
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
         _tf_in_sec = self._tf_in_min * 60
+        self._candle_cache = PeriodicCache(maxsize=1000, ttl=_tf_in_sec)
 
         # wether to use range lookback or not
         self._use_range = (self._tf_in_min > 0) & (self._lookback_period > 0)
@@ -230,11 +231,18 @@ class VolumePairList(IPairList):
             ]
 
             # Get all candles
-            candles = {}
-            if needed_pairs:
+            candles = {
+                c: self._candle_cache.get(c, None) for c in needed_pairs
+                if c in self._candle_cache
+            }
+            pairs_to_download = [p for p in needed_pairs if p not in candles]
+            if pairs_to_download:
                 candles = self._exchange.refresh_latest_ohlcv(
-                    needed_pairs, since_ms=since_ms, cache=False
+                    pairs_to_download, since_ms=since_ms, cache=False
                 )
+                for c, val in candles.items():
+                    self._candle_cache[c] = val
+
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p['symbol']].get('contractSize', 1.0) or 1.0
                 pair_candles = candles[
