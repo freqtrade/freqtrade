@@ -288,6 +288,8 @@ class TradeSchema(BaseModel):
 
     open_date: str
     open_timestamp: int
+    open_fill_date: Optional[str]
+    open_fill_timestamp: Optional[int]
     open_rate: float
     open_rate_requested: Optional[float] = None
     open_trade_value: float

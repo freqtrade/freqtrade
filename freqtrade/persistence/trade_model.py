@@ -461,6 +461,17 @@ class LocalTrade:
         return max([self.open_date_utc, dt_last_filled])
 
     @property
+    def date_entry_fill_utc(self) -> Optional[datetime]:
+        """ Date of the first filled order"""
+        orders = self.select_filled_orders(self.entry_side)
+        if (
+            orders
+            and len((filled_date := [o.order_filled_utc for o in orders if o.order_filled_utc]))
+        ):
+            return min(filled_date)
+        return None
+
+    @property
     def open_date_utc(self):
         return self.open_date.replace(tzinfo=timezone.utc)
 
@@ -625,6 +636,9 @@ class LocalTrade:
 
             'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': dt_ts_none(self.open_date_utc),
+            'open_fill_date': (self.date_entry_fill_utc.strftime(DATETIME_PRINT_FORMAT)
+                               if self.date_entry_fill_utc else None),
+            'open_fill_timestamp': dt_ts_none(self.date_entry_fill_utc),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
