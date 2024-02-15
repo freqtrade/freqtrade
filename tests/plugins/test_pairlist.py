@@ -621,6 +621,12 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 6, "refresh_period": 86400}],
      "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'HOT/BTC', 'NEO/BTC']),
+    # VolumePairlist in range mode as filter.
+    # TKN/BTC is removed because it doesn't have enough candles
+    ([{"method": "VolumePairList", "number_assets": 5},
+      {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 2, "refresh_period": 86400}],
+     "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
     #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
@@ -693,7 +699,7 @@ def test_VolumePairList_range(
         # to enforce fallback to ticker data
         if 'lookback_timeframe' in pairlists[0]:
             if pairlists[0]['lookback_timeframe'] != '1d':
-                ohlcv_data = []
+                ohlcv_data = {}
 
         ohclv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
 
@@ -706,7 +712,8 @@ def test_VolumePairList_range(
         # Test caching
         ohclv_mock.reset_mock()
         freqtrade.pairlists.refresh_pairlist()
-        assert ohclv_mock.call_count == 0
+        # in "filter" mode, caching is disabled.
+        assert ohclv_mock.call_count == (0 if len(pairlists) == 1 else 1)
         whitelist = freqtrade.pairlists.whitelist
         assert whitelist == volumefilter_result
 
