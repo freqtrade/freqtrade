@@ -191,6 +191,9 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     :param final_balance: Final balance to calculate CAGR against
     :return: CAGR
     """
+    if final_balance < 0:
+        # With leveraged trades, final_balance can become negative.
+        return 0
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 
