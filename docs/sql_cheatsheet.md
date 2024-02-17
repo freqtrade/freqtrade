@@ -109,7 +109,7 @@ Freqtrade does not depend or install any additional database driver. Please refe
 The following systems have been tested and are known to work with freqtrade:
 
 * sqlite (default)
-* PostgreSQL)
+* PostgreSQL
 * MariaDB
 
 !!! Warning
