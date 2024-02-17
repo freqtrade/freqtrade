@@ -6,6 +6,7 @@ import asyncio
 import inspect
 import logging
 import signal
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor
@@ -48,6 +49,7 @@ from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize, dt_ts
+from freqtrade.util.periodic_cache import PeriodicCache
 
 
 logger = logging.getLogger(__name__)
@@ -138,6 +140,7 @@ class Exchange:
 
         # Holds candles
         self._klines: Dict[PairWithTimeframe, DataFrame] = {}
+        self._expiring_candle_cache: Dict[str, PeriodicCache] = {}
 
         # Holds public_trades
         self._trades: Dict[PairWithTimeframe, DataFrame] = {}
@@ -2266,6 +2269,39 @@ class Exchange:
                     raise OperationalException("no new ticks")
 
         return results_df
+
+    def refresh_ohlcv_with_cache(
+        self,
+        pairs: List[PairWithTimeframe],
+        since_ms: int
+    ) -> Dict[PairWithTimeframe, DataFrame]:
+        """
+        Refresh ohlcv data for all pairs in needed_pairs if necessary.
+        Caches data with expiring per timeframe.
+        Should only be used for pairlists which need "on time" expirarion, and no longer cache.
+        """
+
+        timeframes = [p[1] for p in pairs]
+        for timeframe in timeframes:
+            if timeframe not in self._expiring_candle_cache:
+                timeframe_in_sec = timeframe_to_seconds(timeframe)
+                # Initialise cache
+                self._expiring_candle_cache[timeframe] = PeriodicCache(ttl=timeframe_in_sec,
+                                                                       maxsize=1000)
+
+        # Get candles from cache
+        candles = {
+            c: self._expiring_candle_cache[c[1]].get(c, None) for c in pairs
+            if c in self._expiring_candle_cache[c[1]]
+        }
+        pairs_to_download = [p for p in pairs if p not in candles]
+        if pairs_to_download:
+            candles = self.refresh_latest_ohlcv(
+                pairs_to_download, since_ms=since_ms, cache=False
+            )
+            for c, val in candles.items():
+                self._expiring_candle_cache[c[1]][c] = val
+        return candles
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         # Timeframe in seconds
