@@ -1384,12 +1384,12 @@ class Telegram(RPCHandler):
                 f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_enter_tag_performance",
                              query=update.callback_query)
 
@@ -1410,18 +1410,18 @@ class Telegram(RPCHandler):
         output = "*Exit Reason Performance:*\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i + 1}\.\t `{html.escape(trade['exit_reason'])}\t"
+                f"{i + 1}.\t `{trade['exit_reason']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_exit_reason_performance",
                              query=update.callback_query)
 
@@ -1442,18 +1442,18 @@ class Telegram(RPCHandler):
         output = "*Mix Tag Performance:*\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i + 1}\.\t `{trade['mix_tag']}\t"
+                f"{i + 1}.\t `{trade['mix_tag']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
                 f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN_V2,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_mix_tag_performance",
                              query=update.callback_query)
 
