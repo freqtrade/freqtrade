@@ -5,7 +5,7 @@ from freqtrade.util import PeriodicCache
 
 def test_ttl_cache():
 
-    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+    with time_machine.travel("2021-09-01 05:00:00 +00:00", tick=False) as t:
 
         cache = PeriodicCache(5, ttl=60)
         cache1h = PeriodicCache(5, ttl=3600)
