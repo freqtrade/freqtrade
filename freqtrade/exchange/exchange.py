@@ -6,7 +6,6 @@ import asyncio
 import inspect
 import logging
 import signal
-from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor
