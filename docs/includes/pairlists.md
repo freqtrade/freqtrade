@@ -68,7 +68,7 @@ When used in the leading position of the chain of Pairlist Handlers, the `pair_w
 
 The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 The pairlist cache (`refresh_period`) on `VolumePairList` is only applicable to generating pairlists.
-Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.
+Filtering instances (not the first position in the list) will not apply any cache (beyond caching candles for the duration of the candle in advanced mode) and will always use up-to-date data.
 
 `VolumePairList` is per default based on the ticker data from exchange, as reported by the ccxt library:
 
