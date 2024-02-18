@@ -1364,7 +1364,7 @@ class Telegram(RPCHandler):
     @authorized_only
     async def _enter_tag_performance(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /buys PAIR .
+        Handler for /entries PAIR .
         Shows a performance statistic from finished trades
         :param bot: telegram bot
         :param update: message update
@@ -1396,7 +1396,7 @@ class Telegram(RPCHandler):
     @authorized_only
     async def _exit_reason_performance(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /sells.
+        Handler for /exits.
         Shows a performance statistic from finished trades
         :param bot: telegram bot
         :param update: message update
@@ -1676,8 +1676,8 @@ class Telegram(RPCHandler):
             "         *table :* `will display trades in a table`\n"
             "                `pending buy orders are marked with an asterisk (*)`\n"
             "                `pending sell orders are marked with a double asterisk (**)`\n"
-            "*/buys <pair|none>:* `Shows the enter_tag performance`\n"
-            "*/sells <pair|none>:* `Shows the exit reason performance`\n"
+            "*/entries <pair|none>:* `Shows the enter_tag performance`\n"
+            "*/exits <pair|none>:* `Shows the exit reason performance`\n"
             "*/mix_tags <pair|none>:* `Shows combined entry tag + exit reason performance`\n"
             "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
             "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
