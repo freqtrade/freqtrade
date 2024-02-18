@@ -3,18 +3,33 @@ from unittest.mock import MagicMock
 
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.tradingmode import TradingMode
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
-def test_additional_exchange_init_bybit(default_conf, mocker):
+def test_additional_exchange_init_bybit(default_conf, mocker, caplog):
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     api_mock = MagicMock()
     api_mock.set_position_mode = MagicMock(return_value={"dualSidePosition": False})
-    get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    api_mock.is_unified_enabled = MagicMock(return_value=[False, False])
+
+    exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
     assert api_mock.set_position_mode.call_count == 1
+    assert api_mock.is_unified_enabled.call_count == 1
+    assert exchange.unified_account is False
+
+    assert log_has("Bybit: Standard account.", caplog)
+
+    api_mock.set_position_mode.reset_mock()
+    api_mock.is_unified_enabled = MagicMock(return_value=[False, True])
+    exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    assert api_mock.set_position_mode.call_count == 1
+    assert api_mock.is_unified_enabled.call_count == 1
+    assert exchange.unified_account is True
+
+    assert log_has("Bybit: Unified account.", caplog)
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'bybit',
                            "additional_exchange_init", "set_position_mode")
 
