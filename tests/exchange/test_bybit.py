@@ -131,6 +131,7 @@ def test_bybit_fetch_order_canceled_empty(default_conf_usdt, mocker):
         'amount': 20.0,
     })
 
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, id='bybit')
 
     res = exchange.fetch_order('123', 'BTC/USDT')

@@ -3237,6 +3237,7 @@ def test_is_cancel_order_result_suitable(mocker, default_conf, exchange_name, or
 def test_cancel_order_with_result(default_conf, mocker, exchange_name, corder,
                                   call_corder, call_forder):
     default_conf['dry_run'] = False
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value=corder)
     api_mock.fetch_order = MagicMock(return_value={})
@@ -3250,6 +3251,7 @@ def test_cancel_order_with_result(default_conf, mocker, exchange_name, corder,
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = False
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
     api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
@@ -3347,6 +3349,7 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
     order.myid = 123
     order.symbol = 'TKN/BTC'
 
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
     assert exchange.fetch_order('X', 'TKN/BTC').myid == 123
@@ -3412,8 +3415,10 @@ def test_fetch_order_emulated(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = False
     mocker.patch(f'{EXMS}.exchange_has', return_value=False)
     api_mock = MagicMock()
-    api_mock.fetch_open_order = MagicMock(return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
-    api_mock.fetch_closed_order = MagicMock(return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
+    api_mock.fetch_open_order = MagicMock(
+        return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
+    api_mock.fetch_closed_order = MagicMock(
+        return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.fetch_order(
         'X', 'TKN/BTC') == {'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'}
@@ -3428,7 +3433,8 @@ def test_fetch_order_emulated(default_conf, mocker, exchange_name, caplog):
 
     # open_order doesn't find order
     api_mock.fetch_open_order = MagicMock(side_effect=ccxt.OrderNotFound("Order not found"))
-    api_mock.fetch_closed_order = MagicMock(return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
+    api_mock.fetch_closed_order = MagicMock(
+        return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.fetch_order(
         'X', 'TKN/BTC') == {'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'}
@@ -3461,6 +3467,7 @@ def test_fetch_order_emulated(default_conf, mocker, exchange_name, caplog):
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
