@@ -60,16 +60,17 @@ SUPPORTED_EXCHANGES = [
     'okx',
 ]
 
-EXCHANGE_HAS_REQUIRED = [
+# either the main, or replacement methods (array) is required
+EXCHANGE_HAS_REQUIRED = {
     # Required / private
-    'fetchOrder',
-    'cancelOrder',
-    'createOrder',
-    'fetchBalance',
+    'fetchOrder': ['fetchOpenOrder', 'fetchClosedOrder'],
+    'cancelOrder': [],
+    'createOrder': [],
+    'fetchBalance': [],
 
     # Public endpoints
-    'fetchOHLCV',
-]
+    'fetchOHLCV': [],
+}
 
 EXCHANGE_HAS_OPTIONAL = [
     # Private
