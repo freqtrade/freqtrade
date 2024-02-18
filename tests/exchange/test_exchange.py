@@ -2303,6 +2303,66 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, 'open']
 
 
+def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
+    start = datetime(2021, 8, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
+    ohlcv = generate_test_data_raw('1h', 100, start.strftime('%Y-%m-%d'))
+    time_machine.move_to(start, tick=False)
+    pairs = [
+        ('ETH/BTC', '1d', CandleType.SPOT),
+        ('TKN/BTC', '1d', CandleType.SPOT),
+        ('LTC/BTC', '1d', CandleType.SPOT),
+        ('LTC/BTC', '5m', CandleType.SPOT),
+        ('LTC/BTC', '1h', CandleType.SPOT),
+    ]
+
+    ohlcv_data = {
+        p: ohlcv for p in pairs
+    }
+    ohlcv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    assert len(exchange._expiring_candle_cache) == 0
+
+    res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
+    assert ohlcv_mock.call_count == 1
+    assert ohlcv_mock.call_args_list[0][0][0] == pairs
+    assert len(ohlcv_mock.call_args_list[0][0][0]) == 5
+
+    assert len(res) == 5
+    # length of 3 - as we have 3 different timeframes
+    assert len(exchange._expiring_candle_cache) == 3
+
+    ohlcv_mock.reset_mock()
+    res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
+    assert ohlcv_mock.call_count == 0
+
+    # Expire 5m cache
+    time_machine.move_to(start + timedelta(minutes=6), tick=False)
+
+    ohlcv_mock.reset_mock()
+    res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
+    assert ohlcv_mock.call_count == 1
+    assert len(ohlcv_mock.call_args_list[0][0][0]) == 1
+
+    # Expire 5m and 1h cache
+    time_machine.move_to(start + timedelta(hours=2), tick=False)
+
+    ohlcv_mock.reset_mock()
+    res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
+    assert ohlcv_mock.call_count == 1
+    assert len(ohlcv_mock.call_args_list[0][0][0]) == 2
+
+    # Expire all caches
+    time_machine.move_to(start + timedelta(days=1, hours=2), tick=False)
+
+    ohlcv_mock.reset_mock()
+    res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
+    assert ohlcv_mock.call_count == 1
+    assert len(ohlcv_mock.call_args_list[0][0][0]) == 5
+    assert ohlcv_mock.call_args_list[0][0][0] == pairs
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_name):
     ohlcv = [
