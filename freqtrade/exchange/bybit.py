@@ -92,6 +92,8 @@ class Bybit(Exchange):
                 if is_unified and len(is_unified) > 1 and is_unified[1]:
                     self.unified_account = True
                     logger.info("Bybit: Unified account.")
+                    raise OperationalException("Bybit: Unified account is not supported. "
+                                               "Please use a standard (sub)account.")
                 else:
                     self.unified_account = False
                     logger.info("Bybit: Standard account.")
