@@ -180,7 +180,9 @@ def test_api_auth():
 
 def test_api_ws_auth(botclient):
     ftbot, client = botclient
-    def url(token): return f"/api/v1/message/ws?token={token}"
+
+    def url(token):
+        return f"/api/v1/message/ws?token={token}"
 
     bad_token = "bad-ws_token"
     with pytest.raises(WebSocketDisconnect):
