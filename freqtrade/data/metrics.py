@@ -143,8 +143,10 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
         starting_balance=starting_balance
     )
 
-    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative \
-        else max_drawdown_df['drawdown'].idxmin()
+    idxmin = (
+        max_drawdown_df['drawdown_relative'].idxmax()
+        if relative else max_drawdown_df['drawdown'].idxmin()
+    )
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
