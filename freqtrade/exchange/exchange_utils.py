@@ -49,7 +49,11 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     reason = ''
     if not ex_mod or not ex_mod.has:
         return False, ''
-    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
+    missing = [
+        k for k, v in EXCHANGE_HAS_REQUIRED.items()
+        if ex_mod.has.get(k) is not True
+        and not (all(ex_mod.has.get(x) for x in v))
+    ]
     if missing:
         result = False
         reason += f"missing: {', '.join(missing)}"
