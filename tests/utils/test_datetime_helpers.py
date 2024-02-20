@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_ts_def, dt_utc,
-                            format_date, format_ms_time, shorten_date)
+from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_ts_def,
+                            dt_ts_none, dt_utc, format_date, format_ms_time, shorten_date)
 
 
 def test_dt_now():
@@ -27,6 +27,13 @@ def test_dt_ts_def():
     assert dt_ts_def(None, 123) == 123
     assert dt_ts_def(datetime(2023, 5, 5, tzinfo=timezone.utc)) == 1683244800000
     assert dt_ts_def(datetime(2023, 5, 5, tzinfo=timezone.utc), 123) == 1683244800000
+
+
+def test_dt_ts_none():
+    assert dt_ts_none(None) is None
+    assert dt_ts_none(None) is None
+    assert dt_ts_none(datetime(2023, 5, 5, tzinfo=timezone.utc)) == 1683244800000
+    assert dt_ts_none(datetime(2023, 5, 5, tzinfo=timezone.utc)) == 1683244800000
 
 
 def test_dt_utc():

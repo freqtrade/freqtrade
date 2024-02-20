@@ -1507,7 +1507,7 @@ async def test_telegram_entry_tag_performance_handle(
     await telegram._enter_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Entry Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>TEST1\t3.987 USDT (5.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '`TEST1\t3.987 USDT (5.00%) (1)`' in msg_mock.call_args_list[0][0][0]
 
     context.args = ['XRP/USDT']
     await telegram._enter_tag_performance(update=update, context=context)
@@ -1538,7 +1538,7 @@ async def test_telegram_exit_reason_performance_handle(
     await telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>roi\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '`roi\t2.842 USDT (10.00%) (1)`' in msg_mock.call_args_list[0][0][0]
     context.args = ['XRP/USDT']
 
     await telegram._exit_reason_performance(update=update, context=context)
@@ -1570,7 +1570,7 @@ async def test_telegram_mix_tag_performance_handle(default_conf_usdt, update, ti
     await telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Mix Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert ('<code>TEST3 roi\t2.842 USDT (10.00%) (1)</code>'
+    assert ('`TEST3 roi\t2.842 USDT (10.00%) (1)`'
             in msg_mock.call_args_list[0][0][0])
 
     context.args = ['XRP/USDT']

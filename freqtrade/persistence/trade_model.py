@@ -24,7 +24,7 @@ from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
 from freqtrade.persistence.custom_data import CustomDataWrapper, _CustomData
-from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts
+from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts, dt_ts_none
 
 
 logger = logging.getLogger(__name__)
@@ -225,8 +225,7 @@ class Order(ModelBase):
             'amount': self.safe_amount,
             'safe_price': self.safe_price,
             'ft_order_side': self.ft_order_side,
-            'order_filled_timestamp': int(self.order_filled_date.replace(
-                tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
+            'order_filled_timestamp': dt_ts_none(self.order_filled_utc),
             'ft_is_entry': self.ft_order_side == entry_side,
             'ft_order_tag': self.ft_order_tag,
         }
@@ -464,6 +463,17 @@ class LocalTrade:
         return max([self.open_date_utc, dt_last_filled])
 
     @property
+    def date_entry_fill_utc(self) -> Optional[datetime]:
+        """ Date of the first filled order"""
+        orders = self.select_filled_orders(self.entry_side)
+        if (
+            orders
+            and len(filled_date := [o.order_filled_utc for o in orders if o.order_filled_utc])
+        ):
+            return min(filled_date)
+        return None
+
+    @property
     def open_date_utc(self):
         return self.open_date.replace(tzinfo=timezone.utc)
 
@@ -627,15 +637,17 @@ class LocalTrade:
             'fee_close_currency': self.fee_close_currency,
 
             'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
-            'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'open_timestamp': dt_ts_none(self.open_date_utc),
+            'open_fill_date': (self.date_entry_fill_utc.strftime(DATETIME_PRINT_FORMAT)
+                               if self.date_entry_fill_utc else None),
+            'open_fill_timestamp': dt_ts_none(self.date_entry_fill_utc),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
 
             'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
-            'close_timestamp': int(self.close_date.replace(
-                tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
+            'close_timestamp': dt_ts_none(self.close_date_utc),
             'realized_profit': self.realized_profit or 0.0,
             # Close-profit corresponds to relative realized_profit ratio
             'realized_profit_ratio': self.close_profit or None,
@@ -661,8 +673,7 @@ class LocalTrade:
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
             'stoploss_last_update': (self.stoploss_last_update_utc.strftime(DATETIME_PRINT_FORMAT)
                                      if self.stoploss_last_update_utc else None),
-            'stoploss_last_update_timestamp': int(self.stoploss_last_update_utc.timestamp() * 1000
-                                                  ) if self.stoploss_last_update_utc else None,
+            'stoploss_last_update_timestamp': dt_ts_none(self.stoploss_last_update_utc),
             'initial_stop_loss_abs': self.initial_stop_loss,
             'initial_stop_loss_ratio': (self.initial_stop_loss_pct
                                         if self.initial_stop_loss_pct else None),

@@ -621,13 +621,20 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 6, "refresh_period": 86400}],
      "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'HOT/BTC', 'NEO/BTC']),
+    # VolumePairlist in range mode as filter.
+    # TKN/BTC is removed because it doesn't have enough candles
+    ([{"method": "VolumePairList", "number_assets": 5},
+      {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 2, "refresh_period": 86400}],
+     "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
     #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
     #  "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
 ])
-def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
-                              pairlists, base_currency, exchange, volumefilter_result) -> None:
+def test_VolumePairList_range(
+        mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
+        pairlists, base_currency, exchange, volumefilter_result, time_machine) -> None:
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
     whitelist_conf['exchange']['name'] = exchange
@@ -686,22 +693,35 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
             get_tickers=tickers,
             markets=PropertyMock(return_value=shitcoinmarkets)
         )
-
+        start_dt = dt_now()
+        time_machine.move_to(start_dt)
         # remove ohlcv when looback_timeframe != 1d
         # to enforce fallback to ticker data
         if 'lookback_timeframe' in pairlists[0]:
             if pairlists[0]['lookback_timeframe'] != '1d':
-                ohlcv_data = []
+                ohlcv_data = {}
 
-        mocker.patch.multiple(
-            EXMS,
-            refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
-        )
+        ohclv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
 
         freqtrade.pairlists.refresh_pairlist()
         whitelist = freqtrade.pairlists.whitelist
+        assert ohclv_mock.call_count == 1
 
         assert isinstance(whitelist, list)
+        assert whitelist == volumefilter_result
+        # Test caching
+        ohclv_mock.reset_mock()
+        freqtrade.pairlists.refresh_pairlist()
+        # in "filter" mode, caching is disabled.
+        assert ohclv_mock.call_count == 0
+        whitelist = freqtrade.pairlists.whitelist
+        assert whitelist == volumefilter_result
+
+        time_machine.move_to(start_dt + timedelta(days=2))
+        ohclv_mock.reset_mock()
+        freqtrade.pairlists.refresh_pairlist()
+        assert ohclv_mock.call_count == 1
+        whitelist = freqtrade.pairlists.whitelist
         assert whitelist == volumefilter_result
 
 

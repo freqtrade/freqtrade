@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, cast, overload
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast, overload
 
 from freqtrade.constants import ExchangeConfig
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
@@ -60,16 +60,17 @@ SUPPORTED_EXCHANGES = [
     'okx',
 ]
 
-EXCHANGE_HAS_REQUIRED = [
+# either the main, or replacement methods (array) is required
+EXCHANGE_HAS_REQUIRED: Dict[str, List[str]] = {
     # Required / private
-    'fetchOrder',
-    'cancelOrder',
-    'createOrder',
-    'fetchBalance',
+    'fetchOrder': ['fetchOpenOrder', 'fetchClosedOrder'],
+    'cancelOrder': [],
+    'createOrder': [],
+    'fetchBalance': [],
 
     # Public endpoints
-    'fetchOHLCV',
-]
+    'fetchOHLCV': [],
+}
 
 EXCHANGE_HAS_OPTIONAL = [
     # Private
@@ -86,6 +87,7 @@ EXCHANGE_HAS_OPTIONAL = [
     # 'fetchPositions',  # Futures trading
     # 'fetchLeverageTiers',  # Futures initialization
     # 'fetchMarketLeverageTiers',  # Futures initialization
+    # 'fetchOpenOrder', 'fetchClosedOrder',  # replacement for fetchOrder
     # 'fetchOpenOrders', 'fetchClosedOrders',  # 'fetchOrders',  # Refinding balance...
 ]
 
