@@ -156,3 +156,4 @@ def test_trade_custom_data_strategy_backtest_compat(mocker, default_conf_usdt, f
     assert results['exit_reason'][1] == 'exit_signal'
 
     assert ff_spy.call_count == 7
+    enable_database_use()
