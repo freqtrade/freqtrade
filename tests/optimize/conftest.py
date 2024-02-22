@@ -30,7 +30,7 @@ def hyperopt_conf(default_conf):
 
 
 @pytest.fixture(autouse=True)
-def backtesting_cleanup() -> None:
+def backtesting_cleanup():
     yield None
 
     Backtesting.cleanup()
