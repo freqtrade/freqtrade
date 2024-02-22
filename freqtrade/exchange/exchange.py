@@ -139,7 +139,7 @@ class Exchange:
 
         # Holds candles
         self._klines: Dict[PairWithTimeframe, DataFrame] = {}
-        self._expiring_candle_cache: Dict[str, PeriodicCache] = {}
+        self._expiring_candle_cache: Dict[Tuple[str, int], PeriodicCache] = {}
 
         # Holds public_trades
         self._trades: Dict[PairWithTimeframe, DataFrame] = {}
