@@ -223,7 +223,7 @@ def test_trade_serialize_load_back(fee):
         'realized_profit_ratio', 'close_profit_pct',
         'trade_duration_s', 'trade_duration',
         'profit_ratio', 'profit_pct', 'profit_abs', 'stop_loss_abs',
-        'initial_stop_loss_abs',
+        'initial_stop_loss_abs', 'open_fill_date', 'open_fill_timestamp',
         'orders',
     ]
     failed = []

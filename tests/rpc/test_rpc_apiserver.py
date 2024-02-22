@@ -180,7 +180,9 @@ def test_api_auth():
 
 def test_api_ws_auth(botclient):
     ftbot, client = botclient
-    def url(token): return f"/api/v1/message/ws?token={token}"
+
+    def url(token):
+        return f"/api/v1/message/ws?token={token}"
 
     bad_token = "bad-ws_token"
     with pytest.raises(WebSocketDisconnect):
@@ -1165,6 +1167,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'current_rate': current_rate,
         'open_date': ANY,
         'open_timestamp': ANY,
+        'open_fill_date': ANY,
+        'open_fill_timestamp': ANY,
         'open_rate': 0.123,
         'pair': 'ETH/BTC',
         'base_currency': 'ETH',
@@ -1368,6 +1372,8 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'close_rate': 0.265441,
         'open_date': ANY,
         'open_timestamp': ANY,
+        'open_fill_date': ANY,
+        'open_fill_timestamp': ANY,
         'open_rate': 0.245441,
         'pair': 'ETH/BTC',
         'base_currency': 'ETH',

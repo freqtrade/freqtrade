@@ -25,6 +25,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
+        'open_fill_date': ANY,
+        'open_fill_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
         'fee_open_cost': ANY,

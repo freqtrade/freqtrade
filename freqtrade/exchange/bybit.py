@@ -25,6 +25,7 @@ class Bybit(Exchange):
     officially supported by the Freqtrade development team. So some features
     may still not work as expected.
     """
+    unified_account = False
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
@@ -82,9 +83,20 @@ class Bybit(Exchange):
         Must be overridden in child methods if required.
         """
         try:
-            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
-                position_mode = self._api.set_position_mode(False)
-                self._log_exchange_response('set_position_mode', position_mode)
+            if not self._config['dry_run']:
+                if self.trading_mode == TradingMode.FUTURES:
+                    position_mode = self._api.set_position_mode(False)
+                    self._log_exchange_response('set_position_mode', position_mode)
+                is_unified = self._api.is_unified_enabled()
+                # Returns a tuple of bools, first for margin, second for Account
+                if is_unified and len(is_unified) > 1 and is_unified[1]:
+                    self.unified_account = True
+                    logger.info("Bybit: Unified account.")
+                    raise OperationalException("Bybit: Unified account is not supported. "
+                                               "Please use a standard (sub)account.")
+                else:
+                    self.unified_account = False
+                    logger.info("Bybit: Standard account.")
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
