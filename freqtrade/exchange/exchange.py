@@ -2312,7 +2312,7 @@ class Exchange:
         Should only be used for pairlists which need "on time" expirarion, and no longer cache.
         """
 
-        timeframes = [p[1] for p in pairs]
+        timeframes = {p[1] for p in pairs}
         for timeframe in timeframes:
             if timeframe not in self._expiring_candle_cache:
                 timeframe_in_sec = timeframe_to_seconds(timeframe)
