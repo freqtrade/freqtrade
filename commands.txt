@@ -1,0 +1,13 @@
+freqtrade download-data --config user_data/config.json --days 100 -t 1m 
+
+freqtrade backtesting --config user_data/config.json --strategy EHMAStrategy --timeframe=1m --timerange=20231105-
+freqtrade trade --config user_data/config.json --strategy EHMAStrategy
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy -i 3m -e 10 --timerange=20240101-
+
+
+
+
+
+freqtrade trade --config user_data/config.json --strategy SampleStrategy
+freqtrade backtesting --config user_data/config.json --strategy SampleStrategy --timeframe=3m --timerange=20231102-
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -i 3m -e 4 --timerange=20231102-
