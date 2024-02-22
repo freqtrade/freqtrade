@@ -82,7 +82,6 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
-        self.pairlists = PairListManager(self.exchange, self.config)
         self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
         self.last_process: Optional[datetime] = None
 
