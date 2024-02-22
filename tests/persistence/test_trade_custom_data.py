@@ -48,7 +48,8 @@ def test_trade_custom_data(fee, use_db):
 
     assert trade1.get_custom_data('test_dict') == {'test': 'dict'}
     assert isinstance(trade1.get_custom_data('test_dict'), dict)
-    enable_database_use()
+    if not use_db:
+        enable_database_use()
 
 
 def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
@@ -156,4 +157,4 @@ def test_trade_custom_data_strategy_backtest_compat(mocker, default_conf_usdt, f
     assert results['exit_reason'][1] == 'exit_signal'
 
     assert ff_spy.call_count == 7
-    enable_database_use()
+    Backtesting.cleanup()
