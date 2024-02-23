@@ -33,7 +33,7 @@ from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
-from freqtrade.util import dt_humanize, fmt_coin, round_value
+from freqtrade.util import dt_humanize, fmt_coin, format_date, round_value
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
@@ -1797,8 +1797,8 @@ class Telegram(RPCHandler):
                         f"*Trade ID:* `{result['ft_trade_id']}`",
                         f"*Type:* `{result['cd_type']}`",
                         f"*Value:* `{result['cd_value']}`",
-                        f"*Create Date:* `{result['created_at']}`",
-                        f"*Update Date:* `{result['updated_at']}`"
+                        f"*Create Date:* `{format_date(result['created_at'])}`",
+                        f"*Update Date:* `{format_date(result['updated_at'])}`"
                     ]
                     # Filter empty lines using list-comprehension
                     messages.append("\n".join([line for line in lines if line]))
