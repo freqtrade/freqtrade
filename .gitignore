@@ -115,3 +115,6 @@ target/
 !config_examples/config_kraken.example.json
 !config_examples/config_freqai.example.json
 .config.json.swp
+
+
+user_data_default
