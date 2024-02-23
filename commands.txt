@@ -10,4 +10,7 @@ freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy -i
 
 freqtrade trade --config user_data/config.json --strategy SampleStrategy
 freqtrade backtesting --config user_data/config.json --strategy SampleStrategy --timeframe=3m --timerange=20231102-
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -i 3m -e 4 --timerange=20231102-
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -i 3m -e 100 --timerange=20231102-
+
+
+git clone --recurse-submodules <url-of-outer-repo>
