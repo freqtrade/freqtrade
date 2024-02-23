@@ -59,6 +59,5 @@ websockets==12.0
 janus==1.0.0
 
 ast-comments==1.2.1
-...
 packaging==23.2
 ta
