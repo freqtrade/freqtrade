@@ -775,18 +775,29 @@ def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
 
 
 @pytest.mark.parametrize('sort_direction', ['asc', 'desc'])
-def test_VolatilityFilter_sort(mocker, whitelist_conf, time_machine, sort_direction) -> None:
-    volatility_filter = {"method": "VolatilityFilter", "sort_direction": sort_direction}
-    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+def test_VolatilityFilter_sort(
+        mocker, whitelist_conf, tickers, time_machine, sort_direction) -> None:
+    whitelist_conf['pairlists'] = [
+        {'method': 'VolumePairList', 'number_assets': 10},
+        {"method": "VolatilityFilter", "sort_direction": sort_direction}]
 
     df1 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=42)
-    df2 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=1)
+    df2 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=2)
+    df3 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=3)
+    df4 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=4)
+    df5 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=5)
+    df6 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=6)
+
     assert not df1.equals(df2)
     time_machine.move_to('2022-01-15 00:00:00+00:00')
 
     ohlcv_data = {
         ('ETH/BTC', '1d', CandleType.SPOT): df1,
         ('TKN/BTC', '1d', CandleType.SPOT): df2,
+        ('LTC/BTC', '1d', CandleType.SPOT): df3,
+        ('XRP/BTC', '1d', CandleType.SPOT): df4,
+        ('HOT/BTC', '1d', CandleType.SPOT): df5,
+        ('BLK/BTC', '1d', CandleType.SPOT): df6,
 
     }
     ohlcv_mock = MagicMock(return_value=ohlcv_data)
@@ -794,22 +805,25 @@ def test_VolatilityFilter_sort(mocker, whitelist_conf, time_machine, sort_direct
         EXMS,
         exchange_has=MagicMock(return_value=True),
         refresh_latest_ohlcv=ohlcv_mock,
+        get_tickers=tickers
+
     )
 
     exchange = get_patched_exchange(mocker, whitelist_conf)
     exchange.ohlcv_candle_limit = MagicMock(return_value=1000)
     plm = PairListManager(exchange, whitelist_conf, MagicMock())
 
-    assert exchange.ohlcv_candle_limit.call_count == 1
+    assert exchange.ohlcv_candle_limit.call_count == 2
     plm.refresh_pairlist()
     assert ohlcv_mock.call_count == 1
-    assert exchange.ohlcv_candle_limit.call_count == 1
+    assert exchange.ohlcv_candle_limit.call_count == 2
     assert plm.whitelist == (
-        ['ETH/BTC', 'TKN/BTC'] if sort_direction == 'asc' else ['TKN/BTC', 'ETH/BTC']
+        ['XRP/BTC', 'ETH/BTC', 'LTC/BTC', 'TKN/BTC'] if sort_direction == 'asc'
+        else ['TKN/BTC', 'LTC/BTC', 'ETH/BTC', 'XRP/BTC']
     )
 
     plm.refresh_pairlist()
-    assert exchange.ohlcv_candle_limit.call_count == 1
+    assert exchange.ohlcv_candle_limit.call_count == 2
     assert ohlcv_mock.call_count == 1
 
 
