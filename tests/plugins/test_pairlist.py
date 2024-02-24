@@ -789,10 +789,11 @@ def test_VolatilityFilter_sort(mocker, whitelist_conf, time_machine, sort_direct
         ('TKN/BTC', '1d', CandleType.SPOT): df2,
 
     }
+    ohlcv_mock = MagicMock(return_value=ohlcv_data)
     mocker.patch.multiple(
         EXMS,
         exchange_has=MagicMock(return_value=True),
-        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
+        refresh_latest_ohlcv=ohlcv_mock,
     )
 
     exchange = get_patched_exchange(mocker, whitelist_conf)
@@ -801,10 +802,15 @@ def test_VolatilityFilter_sort(mocker, whitelist_conf, time_machine, sort_direct
 
     assert exchange.ohlcv_candle_limit.call_count == 1
     plm.refresh_pairlist()
+    assert ohlcv_mock.call_count == 1
     assert exchange.ohlcv_candle_limit.call_count == 1
     assert plm.whitelist == (
         ['ETH/BTC', 'TKN/BTC'] if sort_direction == 'asc' else ['TKN/BTC', 'ETH/BTC']
     )
+
+    plm.refresh_pairlist()
+    assert exchange.ohlcv_candle_limit.call_count == 1
+    assert ohlcv_mock.call_count == 1
 
 
 def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
