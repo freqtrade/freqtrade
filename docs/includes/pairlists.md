@@ -450,6 +450,8 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
 ]
 ```
 
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting for this pairlist.
+
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
     Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.
