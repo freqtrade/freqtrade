@@ -748,6 +748,32 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
+def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": -1}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    exchange_mock = MagicMock()
+    exchange_mock.ohlcv_candle_limit = MagicMock(return_value=1000)
+
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires lookback_days to be >= 1*"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": 2000}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires lookback_days to not exceed exchange max"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "sort_direction": "Random"}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires sort_direction to be either "
+                             r"None .*'asc'.*'desc'"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+
 def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
     whitelist_conf['pairlists'] = [
         {"method": "StaticPairList"},
