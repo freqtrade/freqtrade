@@ -95,7 +95,7 @@ class VolatilityFilter(IPairList):
             "sort_direction": {
                 "type": "option",
                 "default": None,
-                "options": [None, "asc", "desc"],
+                "options": ["", "asc", "desc"],
                 "description": "Sort pairlist",
                 "help": "Sort Pairlist ascending or descending by volatility.",
             },
@@ -125,11 +125,11 @@ class VolatilityFilter(IPairList):
             if volatility_avg is not None:
                 if self._validate_pair_loc(p, volatility_avg):
                     resulting_pairlist.append(p)
+                    volatilitys[p] = (
+                        volatility_avg if volatility_avg and not np.isnan(volatility_avg) else 0
+                    )
             else:
                 self.log_once(f"Removed {p} from whitelist, no candles found.", logger.info)
-
-            if self._sort_direction:
-                volatilitys[p] = volatility_avg if not np.isnan(volatility_avg) else 0
 
         if self._sort_direction:
             resulting_pairlist = sorted(resulting_pairlist,
@@ -137,7 +137,7 @@ class VolatilityFilter(IPairList):
                                         reverse=self._sort_direction == 'desc')
         return resulting_pairlist
 
-    def _calculate_volatility(self, pair: str,  daily_candles: DataFrame) -> float:
+    def _calculate_volatility(self, pair: str,  daily_candles: DataFrame) -> Optional[float]:
         # Check symbol in cache
         if (volatility_avg := self._pair_cache.get(pair, None)) is not None:
             return volatility_avg

@@ -93,7 +93,7 @@ class RangeStabilityFilter(IPairList):
             "sort_direction": {
                 "type": "option",
                 "default": None,
-                "options": [None, "asc", "desc"],
+                "options": ["", "asc", "desc"],
                 "description": "Sort pairlist",
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },
@@ -134,7 +134,7 @@ class RangeStabilityFilter(IPairList):
                                         reverse=self._sort_direction == 'desc')
         return resulting_pairlist
 
-    def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> float:
+    def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> Optional[float]:
         # Check symbol in cache
         if (pct_change := self._pair_cache.get(pair, None)) is not None:
             return pct_change
