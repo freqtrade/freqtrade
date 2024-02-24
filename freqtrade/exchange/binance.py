@@ -177,7 +177,7 @@ class Binance(Exchange):
         # maintenance_amt: (CUM) Maintenance Amount of position
         mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
-        if (maintenance_amt is None):
+        if maintenance_amt is None:
             raise OperationalException(
                 "Parameter maintenance_amt is required by Binance.liquidation_price"
                 f"for {self.trading_mode.value}"
