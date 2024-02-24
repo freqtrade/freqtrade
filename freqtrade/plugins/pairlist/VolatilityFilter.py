@@ -47,6 +47,9 @@ class VolatilityFilter(IPairList):
         if self._days > candle_limit:
             raise OperationalException("VolatilityFilter requires lookback_days to not "
                                        f"exceed exchange max request size ({candle_limit})")
+        if self._sort_direction not in [None, 'asc', 'desc']:
+            raise OperationalException("VolatilityFilter requires sort_direction to be "
+                                       "either None (undefined), 'asc' or 'desc'")
 
     @property
     def needstickers(self) -> bool:
