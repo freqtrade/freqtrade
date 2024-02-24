@@ -98,7 +98,7 @@ class VolatilityFilter(IPairList):
                 "default": None,
                 "options": [None, "asc", "desc"],
                 "description": "Sort pairlist",
-                "help": "Sort Pairlist",
+                "help": "Sort Pairlist ascending or descending by volatility.",
             },
             **IPairList.refresh_period_parameter()
         }
