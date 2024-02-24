@@ -119,16 +119,14 @@ class VolatilityFilter(IPairList):
         resulting_pairlist: List[str] = []
         volatilitys: Dict[str, float] = {}
         for p in pairlist:
-            daily_candles = candles[(p, '1d', self._def_candletype)] if (
-                p, '1d', self._def_candletype) in candles else None
+            daily_candles = candles.get((p, '1d', self._def_candletype), None)
 
-            if daily_candles is not None and not daily_candles.empty:
-                volatility_avg = self._calculate_volatility(deepcopy(daily_candles))
+            volatility_avg = self._calculate_volatility(p, daily_candles)
 
-                if self._validate_pair_loc(p, volatility_avg):
-                    resulting_pairlist.append(p)
-                if self._sort_direction:
-                    volatilitys[p] = volatility_avg if not np.isnan(volatility_avg) else 0
+            if volatility_avg is not None and self._validate_pair_loc(p, volatility_avg):
+                resulting_pairlist.append(p)
+            if self._sort_direction:
+                volatilitys[p] = volatility_avg if not np.isnan(volatility_avg) else 0
 
         if self._sort_direction:
             resulting_pairlist = sorted(resulting_pairlist,
@@ -136,13 +134,22 @@ class VolatilityFilter(IPairList):
                                         reverse=self._sort_direction == 'desc')
         return resulting_pairlist
 
-    def _calculate_volatility(self, daily_candles: DataFrame) -> float:
-        returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
-        returns.fillna(0, inplace=True)
+    def _calculate_volatility(self, pair: str,  daily_candles: DataFrame) -> float:
+        # Check symbol in cache
+        if (volatility_avg := self._pair_cache.get(pair, None)) is not None:
+            return volatility_avg
 
-        volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
-        volatility_avg = volatility_series.mean()
-        return volatility_avg
+        if daily_candles is not None and not daily_candles.empty:
+            returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
+            returns.fillna(0, inplace=True)
+
+            volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
+            volatility_avg = volatility_series.mean()
+            self._pair_cache[pair] = volatility_avg
+
+            return volatility_avg
+        else:
+            return None
 
     def _validate_pair_loc(self, pair: str, volatility_avg: float) -> bool:
         """
@@ -151,11 +158,6 @@ class VolatilityFilter(IPairList):
         :param volatility_avg: Average volatility
         :return: True if the pair can stay, false if it should be removed
         """
-        # Check symbol in cache
-        if (cached_res := self._pair_cache.get(pair, None)) is not None:
-            return cached_res
-
-        result = False
 
         if self._min_volatility <= volatility_avg <= self._max_volatility:
             result = True
@@ -167,6 +169,4 @@ class VolatilityFilter(IPairList):
                           f"{self._min_volatility}-{self._max_volatility}.",
                           logger.info)
             result = False
-        self._pair_cache[pair] = result
-
         return result

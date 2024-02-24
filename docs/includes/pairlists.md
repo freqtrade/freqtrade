@@ -478,7 +478,6 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
 ```
 
 Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting mode for this pairlist.
-When sorting, caching will be applied at the candle level - ignoring `refresh_period` (the candle's won't change anyway).
 
 ### Full example of Pairlist Handlers
 
