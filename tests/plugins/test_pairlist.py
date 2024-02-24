@@ -1160,6 +1160,13 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
                        match='RangeStabilityFilter requires lookback_days to be >= 1'):
         get_patched_freqtradebot(mocker, default_conf)
 
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'RangeStabilityFilter', 'sort_direction': 'something'}]
+
+    with pytest.raises(OperationalException,
+                       match='RangeStabilityFilter requires sort_direction to be either None.*'):
+        get_patched_freqtradebot(mocker, default_conf)
+
 
 @pytest.mark.parametrize('min_rate_of_change,max_rate_of_change,expected_length', [
     (0.01, 0.99, 5),
