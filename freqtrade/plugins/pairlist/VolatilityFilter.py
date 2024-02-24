@@ -37,6 +37,7 @@ class VolatilityFilter(IPairList):
         self._max_volatility = pairlistconfig.get('max_volatility', sys.maxsize)
         self._refresh_period = pairlistconfig.get('refresh_period', 1440)
         self._def_candletype = self._config['candle_type_def']
+        self._sort_direction: Optional[str] = pairlistconfig.get('sort_direction', None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
@@ -89,6 +90,13 @@ class VolatilityFilter(IPairList):
                 "description": "Maximum Volatility",
                 "help": "Maximum volatility a pair must have to be considered.",
             },
+            "sort_direction": {
+                "type": "option",
+                "default": None,
+                "options": [None, "asc", "desc"],
+                "description": "Sort pairlist",
+                "help": "Sort Pairlist",
+            },
             **IPairList.refresh_period_parameter()
         }
 
@@ -106,14 +114,34 @@ class VolatilityFilter(IPairList):
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
         resulting_pairlist: List[str] = []
+        volatilitys: Dict[str, float] = {}
         for p in pairlist:
             daily_candles = candles[(p, '1d', self._def_candletype)] if (
                 p, '1d', self._def_candletype) in candles else None
-            if self._validate_pair_loc(p, daily_candles):
-                resulting_pairlist.append(p)
+
+            if daily_candles is not None and not daily_candles.empty:
+                volatility_avg = self._calculate_volatility(deepcopy(daily_candles))
+
+                if self._validate_pair_loc(p, volatility_avg):
+                    resulting_pairlist.append(p)
+                if self._sort_direction:
+                    volatilitys[p] = volatility_avg if not np.isnan(volatility_avg) else 0
+
+        if self._sort_direction:
+            resulting_pairlist = sorted(resulting_pairlist,
+                                        key=lambda p: volatilitys[p],
+                                        reverse=self._sort_direction == 'desc')
         return resulting_pairlist
 
-    def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
+    def _calculate_volatility(self, daily_candles: DataFrame) -> float:
+        returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
+        returns.fillna(0, inplace=True)
+
+        volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
+        volatility_avg = volatility_series.mean()
+        return volatility_avg
+
+    def _validate_pair_loc(self, pair: str, volatility_avg: float) -> bool:
         """
         Validate trading range
         :param pair: Pair that's currently validated
@@ -125,23 +153,17 @@ class VolatilityFilter(IPairList):
             return cached_res
 
         result = False
-        if daily_candles is not None and not daily_candles.empty:
-            returns = (np.log(daily_candles["close"].shift(1) / daily_candles["close"]))
-            returns.fillna(0, inplace=True)
 
-            volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
-            volatility_avg = volatility_series.mean()
-
-            if self._min_volatility <= volatility_avg <= self._max_volatility:
-                result = True
-            else:
-                self.log_once(f"Removed {pair} from whitelist, because volatility "
-                              f"over {self._days} {plural(self._days, 'day')} "
-                              f"is: {volatility_avg:.3f} "
-                              f"which is not in the configured range of "
-                              f"{self._min_volatility}-{self._max_volatility}.",
-                              logger.info)
-                result = False
-            self._pair_cache[pair] = result
+        if self._min_volatility <= volatility_avg <= self._max_volatility:
+            result = True
+        else:
+            self.log_once(f"Removed {pair} from whitelist, because volatility "
+                          f"over {self._days} {plural(self._days, 'day')} "
+                          f"is: {volatility_avg:.3f} "
+                          f"which is not in the configured range of "
+                          f"{self._min_volatility}-{self._max_volatility}.",
+                          logger.info)
+            result = False
+        self._pair_cache[pair] = result
 
         return result
