@@ -986,7 +986,7 @@ class FreqtradeBot(LoggingMixin):
 
         return enter_limit_requested, stake_amount, leverage
 
-    def _notify_enter(self, trade: Trade, order: Order, order_type: str,
+    def _notify_enter(self, trade: Trade, order: Order, order_type: Optional[str],
                       fill: bool = False, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a entry order occurred.
@@ -1010,7 +1010,7 @@ class FreqtradeBot(LoggingMixin):
             'direction': 'Short' if trade.is_short else 'Long',
             'limit': open_rate,  # Deprecated (?)
             'open_rate': open_rate,
-            'order_type': order_type,
+            'order_type': order_type or 'unknown',
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'base_currency': self.exchange.get_pair_base_currency(trade.pair),
@@ -1775,7 +1775,7 @@ class FreqtradeBot(LoggingMixin):
 
         return True
 
-    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
+    def _notify_exit(self, trade: Trade, order_type: Optional[str], fill: bool = False,
                      sub_trade: bool = False, order: Optional[Order] = None) -> None:
         """
         Sends rpc notification when a sell occurred.
@@ -1807,7 +1807,7 @@ class FreqtradeBot(LoggingMixin):
             'gain': gain,
             'limit': order_rate,  # Deprecated
             'order_rate': order_rate,
-            'order_type': order_type,
+            'order_type': order_type or 'unknown',
             'amount': amount,
             'open_rate': trade.open_rate,
             'close_rate': order_rate,

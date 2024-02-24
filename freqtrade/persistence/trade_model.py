@@ -73,8 +73,7 @@ class Order(ModelBase):
     order_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     status: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     symbol: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
-    # TODO: type: order_type type is Optional[str]
-    order_type: Mapped[str] = mapped_column(String(50), nullable=True)
+    order_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     side: Mapped[str] = mapped_column(String(25), nullable=True)
     price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
     average: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)
@@ -815,6 +814,7 @@ class LocalTrade:
             order.funding_fee = self.funding_fee_running
             # Reset running funding fees
             self.funding_fee_running = 0.0
+        order_type = order.order_type.upper() if order.order_type else None
 
         if order.ft_order_side == self.entry_side:
             # Update open rate and actual amount
@@ -822,20 +822,20 @@ class LocalTrade:
             self.amount = order.safe_amount_after_fee
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
-                logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
+                logger.info(f'{order_type}_{payment} has been fulfilled for {self}.')
 
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
-                logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
+                logger.info(f'{order_type}_{payment} has been fulfilled for {self}.')
 
         elif order.ft_order_side == 'stoploss' and order.status not in ('open', ):
             self.close_rate_requested = self.stop_loss
             self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open and order.safe_filled > 0:
-                logger.info(f'{order.order_type.upper()} is hit for {self}.')
+                logger.info(f'{order_type} is hit for {self}.')
         else:
             raise ValueError(f'Unknown order type: {order.order_type}')
 
