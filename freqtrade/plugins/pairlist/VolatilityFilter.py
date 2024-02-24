@@ -148,7 +148,7 @@ class VolatilityFilter(IPairList):
         """
         Validate trading range
         :param pair: Pair that's currently validated
-        :param daily_candles: Downloaded daily candles
+        :param volatility_avg: Average volatility
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
