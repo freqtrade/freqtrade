@@ -3,7 +3,7 @@ Rate of change pairlist filter
 """
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache
 from pandas import DataFrame
@@ -31,6 +31,7 @@ class RangeStabilityFilter(IPairList):
         self._max_rate_of_change = pairlistconfig.get('max_rate_of_change')
         self._refresh_period = pairlistconfig.get('refresh_period', 86400)
         self._def_candletype = self._config['candle_type_def']
+        self._sort_direction: Optional[str] = pairlistconfig.get('sort_direction', None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
@@ -40,7 +41,9 @@ class RangeStabilityFilter(IPairList):
         if self._days > candle_limit:
             raise OperationalException("RangeStabilityFilter requires lookback_days to not "
                                        f"exceed exchange max request size ({candle_limit})")
-
+        if self._sort_direction not in [None, 'asc', 'desc']:
+            raise OperationalException("RangeStabilityFilter requires sort_direction to be "
+                                       "either None (undefined), 'asc' or 'desc'")
     @property
     def needstickers(self) -> bool:
         """
@@ -86,6 +89,13 @@ class RangeStabilityFilter(IPairList):
                 "description": "Maximum Rate of Change",
                 "help": "Maximum rate of change to filter pairs.",
             },
+            "sort_direction": {
+                "type": "option",
+                "default": None,
+                "options": [None, "asc", "desc"],
+                "description": "Sort pairlist",
+                "help": "Sort Pairlist ascending or descending by rate of change.",
+            },
             **IPairList.refresh_period_parameter()
         }
 
@@ -103,6 +113,7 @@ class RangeStabilityFilter(IPairList):
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
         resulting_pairlist: List[str] = []
+        pct_changes: Dict[str, float] = {}
 
         for p in pairlist:
             daily_candles = candles.get((p, '1d', self._def_candletype), None)
@@ -112,9 +123,14 @@ class RangeStabilityFilter(IPairList):
             if pct_change is not None:
                 if self._validate_pair_loc(p, pct_change):
                     resulting_pairlist.append(p)
+                    pct_changes[p] = pct_change
             else:
                 self.log_once(f"Removed {p} from whitelist, no candles found.", logger.info)
 
+        if self._sort_direction:
+            resulting_pairlist = sorted(resulting_pairlist,
+                                        key=lambda p: pct_changes[p],
+                                        reverse=self._sort_direction == 'desc')
         return resulting_pairlist
 
     def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> float:
