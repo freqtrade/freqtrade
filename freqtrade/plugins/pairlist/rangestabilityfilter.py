@@ -44,6 +44,7 @@ class RangeStabilityFilter(IPairList):
         if self._sort_direction not in [None, 'asc', 'desc']:
             raise OperationalException("RangeStabilityFilter requires sort_direction to be "
                                        "either None (undefined), 'asc' or 'desc'")
+
     @property
     def needstickers(self) -> bool:
         """

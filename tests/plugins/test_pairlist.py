@@ -774,12 +774,34 @@ def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 
 
-@pytest.mark.parametrize('sort_direction', ['asc', 'desc'])
-def test_VolatilityFilter_sort(
-        mocker, whitelist_conf, tickers, time_machine, sort_direction) -> None:
+@pytest.mark.parametrize('pairlist,expected_pairlist', [
+    ({"method": "VolatilityFilter", "sort_direction": "asc"},
+     ['XRP/BTC', 'ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc"},
+     ['TKN/BTC', 'LTC/BTC', 'ETH/BTC', 'XRP/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc", 'min_volatility': 0.4},
+     ['TKN/BTC', 'LTC/BTC', 'ETH/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "asc", 'min_volatility': 0.4},
+     ['ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc", 'max_volatility': 0.5},
+     ['LTC/BTC', 'ETH/BTC', 'XRP/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "asc", 'max_volatility': 0.5},
+     ['XRP/BTC', 'ETH/BTC', 'LTC/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "asc"},
+     ['ETH/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "desc"},
+     ['TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'ETH/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "asc", 'min_rate_of_change': 0.4},
+     ['XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "desc", 'min_rate_of_change': 0.4},
+     ['TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+])
+def test_VolatilityFilter_RangeStabilityFilter_sort(
+        mocker, whitelist_conf, tickers, time_machine, pairlist, expected_pairlist) -> None:
     whitelist_conf['pairlists'] = [
         {'method': 'VolumePairList', 'number_assets': 10},
-        {"method": "VolatilityFilter", "sort_direction": sort_direction}]
+        pairlist
+    ]
 
     df1 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=42)
     df2 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=2)
@@ -817,10 +839,7 @@ def test_VolatilityFilter_sort(
     plm.refresh_pairlist()
     assert ohlcv_mock.call_count == 1
     assert exchange.ohlcv_candle_limit.call_count == 2
-    assert plm.whitelist == (
-        ['XRP/BTC', 'ETH/BTC', 'LTC/BTC', 'TKN/BTC'] if sort_direction == 'asc'
-        else ['TKN/BTC', 'LTC/BTC', 'ETH/BTC', 'XRP/BTC']
-    )
+    assert plm.whitelist == expected_pairlist
 
     plm.refresh_pairlist()
     assert exchange.ohlcv_candle_limit.call_count == 2

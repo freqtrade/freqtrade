@@ -3,7 +3,6 @@ Volatility pairlist filter
 """
 import logging
 import sys
-from copy import deepcopy
 from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
