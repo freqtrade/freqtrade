@@ -105,13 +105,13 @@ class VolatilityFilter(IPairList):
         since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days))
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
-        if self._enabled:
-            for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1d', self._def_candletype)] if (
-                    p, '1d', self._def_candletype) in candles else None
-                if not self._validate_pair_loc(p, daily_candles):
-                    pairlist.remove(p)
-        return pairlist
+        resulting_pairlist: List[str] = []
+        for p in pairlist:
+            daily_candles = candles[(p, '1d', self._def_candletype)] if (
+                p, '1d', self._def_candletype) in candles else None
+            if self._validate_pair_loc(p, daily_candles):
+                resulting_pairlist.append(p)
+        return resulting_pairlist
 
     def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
         """
