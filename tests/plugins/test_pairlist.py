@@ -19,7 +19,7 @@ from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist,
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from freqtrade.util.datetime_helpers import dt_now
-from tests.conftest import (EXMS, create_mock_trades_usdt, get_patched_exchange,
+from tests.conftest import (EXMS, create_mock_trades_usdt, generate_test_data, get_patched_exchange,
                             get_patched_freqtradebot, log_has, log_has_re, num_log_has)
 
 
@@ -772,6 +772,39 @@ def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
                        match=r"VolatilityFilter requires sort_direction to be either "
                              r"None .*'asc'.*'desc'"):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+
+@pytest.mark.parametrize('sort_direction', ['asc', 'desc'])
+def test_VolatilityFilter_sort(mocker, whitelist_conf, time_machine, sort_direction) -> None:
+    volatility_filter = {"method": "VolatilityFilter", "sort_direction": sort_direction}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+
+    df1 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=42)
+    df2 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=1)
+    assert not df1.equals(df2)
+    time_machine.move_to('2022-01-15 00:00:00+00:00')
+
+    ohlcv_data = {
+        ('ETH/BTC', '1d', CandleType.SPOT): df1,
+        ('TKN/BTC', '1d', CandleType.SPOT): df2,
+
+    }
+    mocker.patch.multiple(
+        EXMS,
+        exchange_has=MagicMock(return_value=True),
+        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
+    )
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    exchange.ohlcv_candle_limit = MagicMock(return_value=1000)
+    plm = PairListManager(exchange, whitelist_conf, MagicMock())
+
+    assert exchange.ohlcv_candle_limit.call_count == 1
+    plm.refresh_pairlist()
+    assert exchange.ohlcv_candle_limit.call_count == 1
+    assert plm.whitelist == (
+        ['ETH/BTC', 'TKN/BTC'] if sort_direction == 'asc' else ['TKN/BTC', 'ETH/BTC']
+    )
 
 
 def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
