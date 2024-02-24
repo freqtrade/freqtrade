@@ -123,8 +123,12 @@ class VolatilityFilter(IPairList):
 
             volatility_avg = self._calculate_volatility(p, daily_candles)
 
-            if volatility_avg is not None and self._validate_pair_loc(p, volatility_avg):
-                resulting_pairlist.append(p)
+            if volatility_avg is not None:
+                if self._validate_pair_loc(p, volatility_avg):
+                    resulting_pairlist.append(p)
+            else:
+                self.log_once(f"Removed {p} from whitelist, no candles found.", logger.info)
+
             if self._sort_direction:
                 volatilitys[p] = volatility_avg if not np.isnan(volatility_avg) else 0
 

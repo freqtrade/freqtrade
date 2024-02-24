@@ -109,8 +109,9 @@ class RangeStabilityFilter(IPairList):
 
             pct_change = self._calculate_rate_of_change(p, daily_candles)
 
-            if pct_change is not None and self._validate_pair_loc(p, pct_change):
-                resulting_pairlist.append(p)
+            if pct_change is not None:
+                if self._validate_pair_loc(p, pct_change):
+                    resulting_pairlist.append(p)
             else:
                 self.log_once(f"Removed {p} from whitelist, no candles found.", logger.info)
 
