@@ -460,7 +460,7 @@ Volatility is the degree of historical variation of a pairs over time, it is mea
 
 This filter removes pairs if the average volatility over a `lookback_days` days is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. 
+This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.
 
 In the below example:
 If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.
@@ -476,6 +476,9 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
     }
 ]
 ```
+
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting mode for this pairlist.
+When sorting, caching will be applied at the candle level - ignoring `refresh_period` (the candle's won't change anyway).
 
 ### Full example of Pairlist Handlers
 
