@@ -128,8 +128,9 @@ class FreqtradeBot(LoggingMixin):
                 self.update_funding_fees()
                 self.wallets.update()
 
-            # TODO: This would be more efficient if scheduled in utc time, and performed at each
-            # TODO: funding interval, specified by funding_fee_times on the exchange classes
+            # This would be more efficient if scheduled in utc time, and performed at each
+            # funding interval, specified by funding_fee_times on the exchange classes
+            # However, this reduces the precision - and might therefore lead to problems.
             for time_slot in range(0, 24):
                 for minutes in [1, 31]:
                     t = str(time(time_slot, minutes, 2))
