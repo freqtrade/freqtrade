@@ -17,39 +17,39 @@ def read_csv(filename, converter_columns: list = ['side', 'type']):
                        parse_dates=True, converters={col: str.strip for col in converter_columns})
 
 
-@pytest.fixture(scope="module")
-def populate_dataframe_with_trades_dataframe():
-    return pd.read_feather('tests/testdata/populate_dataframe_with_trades_DF.feather')
+@pytest.fixture
+def populate_dataframe_with_trades_dataframe(testdatadir):
+    return pd.read_feather(testdatadir / 'populate_dataframe_with_trades_DF.feather')
 
 
-@pytest.fixture(scope="module")
-def populate_dataframe_with_trades_trades():
-    return pd.read_feather('tests/testdata/populate_dataframe_with_trades_TRADES.feather')
+@pytest.fixture
+def populate_dataframe_with_trades_trades(testdatadir):
+    return pd.read_feather(testdatadir / 'populate_dataframe_with_trades_TRADES.feather')
 
 
-@pytest.fixture(scope="module")
-def candles():
-    return pd.read_json('tests/testdata/candles.json').copy()
+@pytest.fixture
+def candles(testdatadir):
+    return pd.read_json(testdatadir / 'candles.json').copy()
 
 
-@pytest.fixture(scope="module")
-def public_trades_list():
-    return read_csv('tests/testdata/public_trades_list.csv').copy()
+@pytest.fixture
+def public_trades_list(testdatadir):
+    return read_csv(testdatadir / 'public_trades_list.csv').copy()
 
 
-@pytest.fixture(scope="module")
-def public_trades_list_simple():
-    return read_csv('tests/testdata/public_trades_list_simple_example.csv').copy()
+@pytest.fixture
+def public_trades_list_simple(testdatadir):
+    return read_csv(testdatadir / 'public_trades_list_simple_example.csv').copy()
 
 
-@pytest.fixture(scope="module")
-def public_trades_list_simple_results():
-    return read_csv('tests/testdata/public_trades_list_simple_results.csv').copy()
+@pytest.fixture
+def public_trades_list_simple_results(testdatadir):
+    return read_csv(testdatadir / 'public_trades_list_simple_results.csv').copy()
 
 
-@pytest.fixture(scope="module")
-def public_trades_list_simple_bidask():
-    return read_csv('tests/testdata/public_trades_list_simple_bidask.csv').copy()
+@pytest.fixture
+def public_trades_list_simple_bidask(testdatadir):
+    return read_csv(testdatadir / 'public_trades_list_simple_bidask.csv').copy()
 
 
 def test_public_trades_columns_before_change(
