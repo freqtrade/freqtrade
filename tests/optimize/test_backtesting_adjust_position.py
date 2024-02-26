@@ -76,7 +76,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'leverage': [1.0, 1.0],
          'is_short': [False, False],
          'open_timestamp': [1517251200000, 1517283000000],
-         'close_timestamp': [1517265300000, 1517285400000],
+         'close_timestamp': [1517265200000, 1517285400000],
          })
     pd.testing.assert_frame_equal(results.drop(columns=['orders']), expected)
     data_pair = processed[pair]
