@@ -1405,8 +1405,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = populate_dataframe_with_trades(
                 config,
                 dataframe,
-                trades,
-                pair=metadata['pair'])
+                trades)
 
             logger.debug("Populated dataframe with trades.")
 

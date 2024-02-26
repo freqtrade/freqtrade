@@ -58,9 +58,7 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
 
 def populate_dataframe_with_trades(config: Config,
                                    dataframe: DataFrame,
-                                   trades: DataFrame,
-                                   *,
-                                   pair: str) -> DataFrame:
+                                   trades: DataFrame) -> DataFrame:
     """
     Populates a dataframe with trades
     :param dataframe: Dataframe to populate

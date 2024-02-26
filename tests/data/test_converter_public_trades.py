@@ -78,8 +78,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
                   'stacked_imbalance_range': 3
               }}
     # Apply the function to populate the data frame with order flow data
-    df = populate_dataframe_with_trades(config,
-                                        dataframe, trades, pair='unitttest')
+    df = populate_dataframe_with_trades(config, dataframe, trades)
     # Extract results from the first row of the DataFrame
     results = df.iloc[0]
     t = results['trades']
@@ -183,7 +182,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     }
 
     # Populate the DataFrame with trades and order flow data
-    df = populate_dataframe_with_trades(config, dataframe, trades, pair='unitttest')
+    df = populate_dataframe_with_trades(config, dataframe, trades)
 
     # --- DataFrame and Trade Data Validation ---
 
