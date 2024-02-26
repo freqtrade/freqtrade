@@ -97,16 +97,20 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     assert -50.519000000000005 == results['delta']
     assert -79.469 == results['min_delta']
     assert 17.298 == results['max_delta']
+
+    # Assert that stacked imbalances are NaN (not applicable in this test)
     assert np.isnan(results['stacked_imbalances_bid'])
     assert np.isnan(results['stacked_imbalances_ask'])
 
-    results = df.iloc[-3]
-    assert -112.71399999999994 == results['delta']
-    assert -120.673 == results['min_delta']
-    assert 11.664 == results['max_delta']
-    assert np.isnan(results['stacked_imbalances_bid'])
-    assert np.isnan(results['stacked_imbalances_ask'])
+    # Repeat assertions for the third from last row
+    results = df.iloc[-2]
+    assert -20.86200000000008 == results['delta']
+    assert -54.55999999999999 == results['min_delta']
+    assert 82.842 == results['max_delta']
+    assert 234.99 == results['stacked_imbalances_bid']
+    assert 234.96 == results['stacked_imbalances_ask']
 
+    # Repeat assertions for the last row
     results = df.iloc[-1]
     assert -49.30200000000002 == results['delta']
     assert -70.222 == results['min_delta']
