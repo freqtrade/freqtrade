@@ -19,37 +19,27 @@ def read_csv(filename, converter_columns: list = ['side', 'type']):
 
 @pytest.fixture
 def populate_dataframe_with_trades_dataframe(testdatadir):
-    return pd.read_feather(testdatadir / 'populate_dataframe_with_trades_DF.feather')
+    return pd.read_feather(testdatadir / 'orderflow/populate_dataframe_with_trades_DF.feather')
 
 
 @pytest.fixture
 def populate_dataframe_with_trades_trades(testdatadir):
-    return pd.read_feather(testdatadir / 'populate_dataframe_with_trades_TRADES.feather')
+    return pd.read_feather(testdatadir / 'orderflow/populate_dataframe_with_trades_TRADES.feather')
 
 
 @pytest.fixture
 def candles(testdatadir):
-    return pd.read_json(testdatadir / 'candles.json').copy()
+    return pd.read_json(testdatadir / 'orderflow/candles.json').copy()
 
 
 @pytest.fixture
 def public_trades_list(testdatadir):
-    return read_csv(testdatadir / 'public_trades_list.csv').copy()
+    return read_csv(testdatadir / 'orderflow/public_trades_list.csv').copy()
 
 
 @pytest.fixture
 def public_trades_list_simple(testdatadir):
-    return read_csv(testdatadir / 'public_trades_list_simple_example.csv').copy()
-
-
-@pytest.fixture
-def public_trades_list_simple_results(testdatadir):
-    return read_csv(testdatadir / 'public_trades_list_simple_results.csv').copy()
-
-
-@pytest.fixture
-def public_trades_list_simple_bidask(testdatadir):
-    return read_csv(testdatadir / 'public_trades_list_simple_bidask.csv').copy()
+    return read_csv(testdatadir / 'orderflow/public_trades_list_simple_example.csv').copy()
 
 
 def test_public_trades_columns_before_change(
@@ -65,6 +55,12 @@ def test_public_trades_columns_before_change(
 def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
         populate_dataframe_with_trades_dataframe,
         populate_dataframe_with_trades_trades):
+    """
+    Tests the `populate_dataframe_with_trades` function's order flow calculation.
+
+    This test checks the generated data frame and order flow for specific properties
+    based on the provided configuration and sample data.
+    """
     dataframe = populate_dataframe_with_trades_dataframe.copy()
     trades = populate_dataframe_with_trades_trades.copy()
     dataframe['date'] = pd.to_datetime(
