@@ -201,7 +201,7 @@ class Backtesting:
 
         self.prepare_backtest(False)
 
-        self.wallets = Wallets(self.config, self.exchange, log=False)
+        self.wallets = Wallets(self.config, self.exchange, is_backtest=True)
 
         self.progress = BTProgress()
         self.abort = False

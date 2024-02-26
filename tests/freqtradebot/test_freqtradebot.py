@@ -4680,9 +4680,14 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     ('futures', 17, "2021-08-31 23:59:59", "2021-09-01 08:01:07"),
     ('futures', 17, "2021-08-31 23:59:58", "2021-09-01 08:01:07"),
 ])
+@pytest.mark.parametrize('tzoffset', [
+    '+00:00',
+    '+01:00',
+    '-02:00',
+])
 def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls, time_machine,
-                                      t1, t2):
-    time_machine.move_to(f"{t1} +00:00", tick=False)
+                                      t1, t2, tzoffset):
+    time_machine.move_to(f"{t1} {tzoffset}", tick=False)
 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -4691,7 +4696,7 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
     default_conf['margin_mode'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    time_machine.move_to(f"{t2} +00:00", tick=False)
+    time_machine.move_to(f"{t2} {tzoffset}", tick=False)
     # Check schedule jobs in debugging with freqtrade._schedule.jobs
     freqtrade._schedule.run_pending()
 
