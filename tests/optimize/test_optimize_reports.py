@@ -498,7 +498,7 @@ def test__get_resample_from_period():
 
     assert _get_resample_from_period('day') == '1d'
     assert _get_resample_from_period('week') == '1W-MON'
-    assert _get_resample_from_period('month') == '1M'
+    assert _get_resample_from_period('month') == '1ME'
     with pytest.raises(ValueError, match=r"Period noooo is not supported."):
         _get_resample_from_period('noooo')
 
