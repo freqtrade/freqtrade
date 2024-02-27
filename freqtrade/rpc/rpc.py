@@ -1155,7 +1155,7 @@ class RPC:
         }
         if has_content:
 
-            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
             for sig_type in signals.keys():
                 if sig_type in dataframe.columns:
