@@ -35,7 +35,7 @@ class HDF5DataHandler(IDataHandler):
         self.create_dir_if_needed(filename)
 
         _data.loc[:, self._columns].to_hdf(
-            filename, key, mode='a', complevel=9, complib='blosc',
+            filename, key=key, mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['date']
         )
 
@@ -110,7 +110,7 @@ class HDF5DataHandler(IDataHandler):
         key = self._pair_trades_key(pair)
 
         data.to_hdf(
-            self._pair_trades_filename(self._datadir, pair), key,
+            self._pair_trades_filename(self._datadir, pair), key=key,
             mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['timestamp']
         )

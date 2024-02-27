@@ -177,7 +177,7 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05', ran
 def generate_test_data_raw(timeframe: str, size: int, start: str = '2020-07-05', random_seed=42):
     """ Generates data in the ohlcv format used by ccxt """
     df = generate_test_data(timeframe, size, start, random_seed)
-    df['date'] = df.loc[:, 'date'].view(np.int64) // 1000 // 1000
+    df['date'] = df.loc[:, 'date'].astype(np.int64) // 1000 // 1000
     return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
 
 

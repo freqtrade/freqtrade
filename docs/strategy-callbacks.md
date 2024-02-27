@@ -791,7 +791,7 @@ Returning a value more than the above (so remaining stake_amount would become ne
     If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
     Using 'unlimited' stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
 
-!!! Warning
+!!! Warning "Stoploss calculation"
     Stoploss is still calculated from the initial opening price, not averaged price.
     Regular stoploss rules still apply (cannot move down).
 
@@ -800,6 +800,11 @@ Returning a value more than the above (so remaining stake_amount would become ne
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
     This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.
+
+!!! Warning "Performance with many position adjustments"
+    Position adjustments can be a good approach to increase a strategy's output - but it can also have drawbacks if using this feature extensively.  
+    Each of the orders will be attached to the trade object for the duration of the trade - hence increasing memory usage.
+    Trades with long duration and 10s or even 100ds of position adjustments are therefore not recommended, and should be closed at regular intervals to not affect performance.
 
 ``` python
 from freqtrade.persistence import Trade
