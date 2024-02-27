@@ -110,6 +110,7 @@ setup(
         'cryptography',
         'sdnotify',
         'python-dateutil',
+        'pytz',
         'packaging',
     ],
     extras_require={
