@@ -1,16 +1,14 @@
-freqtrade download-data --config user_data/config.json --days 100 -t 3m 
-
-freqtrade backtesting --config user_data/config.json --strategy EHMAStrategy --timeframe=3m --timerange=20231105-
-freqtrade trade --config user_data/config.json --strategy EHMAStrategy
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy -i 3m -e 10 --timerange=20240101-
+freqtrade trade --strategy SampleStrategy
+freqtrade backtesting --strategy SampleStrategy --timerange=20240101-
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -e 100 --timerange=20240101-
 
 
 
+freqtrade download-data --timerange=20240101-
+
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 2 --timerange=20240101-
+freqtrade backtesting --strategy EHMAStrategy --timerange=20240101-
+freqtrade trade --strategy EHMAStrategy
 
 
-freqtrade trade --config user_data/config.json --strategy SampleStrategy
-freqtrade backtesting --config user_data/config.json --strategy SampleStrategy --timeframe=3m --timerange=20231102-
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -i 3m -e 100 --timerange=20231102-
-
-
-git clone --recurse-submodules <url-of-outer-repo>
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 2 --timerange=20240101-
