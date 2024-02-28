@@ -1,14 +1,10 @@
 freqtrade trade --strategy SampleStrategy
 freqtrade backtesting --strategy SampleStrategy --timerange=20240101-
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy SampleStrategy -e 100 --timerange=20240101-
+freqtrade hyperopt --hyperopt-loss OnlyProfitHyperOptLoss --strategy SampleStrategy -e 100 --timerange=20240101-
 
 
 
-freqtrade download-data --timerange=20240101-
-
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 2 --timerange=20240101-
-freqtrade backtesting --strategy EHMAStrategy --timerange=20240101-
+freqtrade download-data --timerange=20230101- -t 5m
+freqtrade hyperopt --hyperopt-loss OnlyProfitHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 2 --timerange=20230101-
+freqtrade backtesting --strategy EHMAStrategy --timerange=20230101-
 freqtrade trade --strategy EHMAStrategy
-
-
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 2 --timerange=20240101-
