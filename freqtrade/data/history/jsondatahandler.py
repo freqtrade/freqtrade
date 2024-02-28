@@ -37,7 +37,7 @@ class JsonDataHandler(IDataHandler):
         self.create_dir_if_needed(filename)
         _data = data.copy()
         # Convert date to int
-        _data['date'] = _data['date'].view(np.int64) // 1000 // 1000
+        _data['date'] = _data['date'].astype(np.int64) // 1000 // 1000
 
         # Reset index, select only appropriate columns and save as json
         _data.reset_index(drop=True).loc[:, self._columns].to_json(
