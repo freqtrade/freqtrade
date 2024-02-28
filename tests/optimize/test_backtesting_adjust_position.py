@@ -57,28 +57,30 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
                                      ),
          'close_date': pd.to_datetime([dt_utc(2018, 1, 29, 22, 00, 0),
                                        dt_utc(2018, 1, 30, 4, 10, 0)], utc=True),
-         'open_rate': [0.10401764894444211, 0.10302485],
-         'close_rate': [0.10453904066847439, 0.103541],
+         'open_rate': [0.10401764891917063, 0.10302485],
+         'close_rate': [0.10453904064307624, 0.10354126528822055],
          'fee_open': [0.0025, 0.0025],
          'fee_close': [0.0025, 0.0025],
          'trade_duration': [200, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
          'exit_reason': [ExitType.ROI.value, ExitType.ROI.value],
-         'initial_stop_loss_abs': [0.0940005, 0.09272236],
+         'initial_stop_loss_abs': [0.0940005, 0.092722365],
          'initial_stop_loss_ratio': [-0.1, -0.1],
-         'stop_loss_abs': [0.0940005, 0.09272236],
+         'stop_loss_abs': [0.0940005, 0.092722365],
          'stop_loss_ratio': [-0.1, -0.1],
          'min_rate': [0.10370188, 0.10300000000000001],
-         'max_rate': [0.10481985, 0.1038888],
+         'max_rate': [0.10481985, 0.10388887000000001],
          'is_open': [False, False],
          'enter_tag': ['', ''],
          'leverage': [1.0, 1.0],
          'is_short': [False, False],
          'open_timestamp': [1517251200000, 1517283000000],
-         'close_timestamp': [1517265300000, 1517285400000],
+         'close_timestamp': [1517263200000, 1517285400000],
          })
-    pd.testing.assert_frame_equal(results.drop(columns=['orders']), expected)
+    results_no = results.drop(columns=['orders'])
+    pd.testing.assert_frame_equal(results_no, expected, check_exact=True)
+
     data_pair = processed[pair]
     assert len(results.iloc[0]['orders']) == 6
     assert len(results.iloc[1]['orders']) == 2
