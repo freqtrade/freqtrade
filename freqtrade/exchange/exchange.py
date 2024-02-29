@@ -2887,7 +2887,7 @@ class Exchange:
             else:
                 # Fill up missing funding_rate candles with fallback value
                 combined = mark_rates.merge(
-                    funding_rates, on='date', how="outer", suffixes=["_mark", "_fund"]
+                    funding_rates, on='date', how="left", suffixes=["_mark", "_fund"]
                     )
                 combined['open_fund'] = combined['open_fund'].fillna(futures_funding_rate)
                 return combined

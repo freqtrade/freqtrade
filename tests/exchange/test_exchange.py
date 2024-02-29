@@ -4314,8 +4314,8 @@ def test_combine_funding_and_mark(
         assert len(df) == 1
 
     # Empty funding rates
-    funding_rates = DataFrame([], columns=['date', 'open'])
-    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+    funding_rates2 = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates2, mark_rates, futures_funding_rate)
     if futures_funding_rate is not None:
         assert len(df) == 3
         assert df.iloc[0]['open_fund'] == futures_funding_rate
@@ -4323,6 +4323,12 @@ def test_combine_funding_and_mark(
         assert df.iloc[2]['open_fund'] == futures_funding_rate
     else:
         assert len(df) == 0
+
+    # Empty mark candles
+    mark_candles = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_candles, futures_funding_rate)
+
+    assert len(df) == 0
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
