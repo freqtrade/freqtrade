@@ -25,6 +25,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
+        'open_fill_date': ANY,
+        'open_fill_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
         'fee_open_cost': ANY,
@@ -63,7 +65,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stop_loss_abs': 9.89e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
-        'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
         'initial_stop_loss_abs': 9.89e-06,
@@ -99,7 +100,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
             'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
             'remaining': ANY, 'status': ANY, 'ft_is_entry': True, 'ft_fee_base': None,
-            'funding_fee': ANY,
+            'funding_fee': ANY, 'ft_order_tag': None,
         }],
     }
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
@@ -355,7 +356,6 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
         rpc._rpc_delete('200')
 
     trades = Trade.session.scalars(select(Trade)).all()
-    trades[2].stoploss_order_id = '102'
     trades[2].orders.append(
         Order(
             ft_order_side='stoploss',

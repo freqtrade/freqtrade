@@ -30,12 +30,13 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.REPO_SCOPED_TOKEN }}
           add-paths: .pre-commit-config.yaml
           labels: |
             Tech maintenance
+            Dependencies
           branch: update/pre-commit-hooks
           title: Update pre-commit hooks
           commit-message: "chore: update pre-commit hooks"

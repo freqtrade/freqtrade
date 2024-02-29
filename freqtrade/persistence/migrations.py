@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import inspect, select, text, tuple_, update
+from sqlalchemy import inspect, select, text, update
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.trade_model import Order, Trade
@@ -91,8 +91,6 @@ def migrate_trades_and_orders_table(
     is_stop_loss_trailing = get_column_def(
         cols, 'is_stop_loss_trailing',
         f'coalesce({stop_loss_pct}, 0.0) <> coalesce({initial_stop_loss_pct}, 0.0)')
-    stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
-    stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
     min_rate = get_column_def(cols, 'min_rate', 'null')
     exit_reason = get_column_def(cols, 'sell_reason', get_column_def(cols, 'exit_reason', 'null'))
@@ -160,7 +158,7 @@ def migrate_trades_and_orders_table(
             open_rate_requested, close_rate, close_rate_requested, close_profit,
             stake_amount, amount, amount_requested, open_date, close_date,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
-            is_stop_loss_trailing, stoploss_order_id, stoploss_last_update,
+            is_stop_loss_trailing,
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
@@ -180,7 +178,6 @@ def migrate_trades_and_orders_table(
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {is_stop_loss_trailing} is_stop_loss_trailing,
-            {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate,
             case when {exit_reason} = 'sell_signal' then 'exit_signal'
                  when {exit_reason} = 'custom_sell' then 'custom_exit'
@@ -223,6 +220,7 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
     ft_amount = get_column_def(cols_order, 'ft_amount', 'coalesce(amount, 0.0)')
     ft_price = get_column_def(cols_order, 'ft_price', 'coalesce(price, 0.0)')
     ft_cancel_reason = get_column_def(cols_order, 'ft_cancel_reason', 'null')
+    ft_order_tag = get_column_def(cols_order, 'ft_order_tag', 'null')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
@@ -230,13 +228,14 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
             stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee,
-            ft_amount, ft_price, ft_cancel_reason
+            ft_amount, ft_price, ft_cancel_reason, ft_order_tag
             )
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
             cost, {stop_price} stop_price, order_date, order_filled_date,
             order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee,
-            {ft_amount} ft_amount, {ft_price} ft_price, {ft_cancel_reason} ft_cancel_reason
+            {ft_amount} ft_amount, {ft_price} ft_price, {ft_cancel_reason} ft_cancel_reason,
+            {ft_order_tag} ft_order_tag
             from {table_back_name}
             """))
 
@@ -277,6 +276,8 @@ def fix_old_dry_orders(engine):
     with engine.begin() as connection:
 
         # Update current dry-run Orders where
+        # - stoploss order is Open (will be replaced eventually)
+        # 2nd query:
         # - current Order is open
         # - current Trade is closed
         # - current Order trade_id not equal to current Trade.id
@@ -284,11 +285,6 @@ def fix_old_dry_orders(engine):
 
         stmt = update(Order).where(
             Order.ft_is_open.is_(True),
-            tuple_(Order.ft_trade_id, Order.order_id).not_in(
-                select(
-                    Trade.id, Trade.stoploss_order_id
-                ).where(Trade.stoploss_order_id.is_not(None))
-                  ),
             Order.ft_order_side == 'stoploss',
             Order.order_id.like('dry%'),
 
@@ -331,8 +327,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    # if not has_column(cols_orders, 'ft_cancel_reason'):
-    if not has_column(cols_trades, 'funding_fee_running'):
+    # if not has_column(cols_trades, 'funding_fee_running'):
+    if not has_column(cols_orders, 'ft_order_tag'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")

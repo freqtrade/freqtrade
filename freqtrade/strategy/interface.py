@@ -511,7 +511,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                               min_stake: Optional[float], max_stake: float,
                               current_entry_rate: float, current_exit_rate: float,
                               current_entry_profit: float, current_exit_profit: float,
-                              **kwargs) -> Optional[float]:
+                              **kwargs
+                              ) -> Union[Optional[float], Tuple[Optional[float], Optional[str]]]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -537,6 +538,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return float: Stake amount to adjust your trade,
                        Positive values to increase position, Negative values to decrease position.
                        Return None for no action.
+                       Optionally, return a tuple with a 2nd element with an order reason
         """
         return None
 
@@ -724,6 +726,36 @@ class IStrategy(ABC, HyperStrategyMixin):
 ###
 
     _ft_stop_uses_after_fill = False
+
+    def _adjust_trade_position_internal(
+            self, trade: Trade, current_time: datetime,
+            current_rate: float, current_profit: float,
+            min_stake: Optional[float], max_stake: float,
+            current_entry_rate: float, current_exit_rate: float,
+            current_entry_profit: float, current_exit_profit: float,
+            **kwargs
+    ) -> Tuple[Optional[float], str]:
+        """
+        wrapper around adjust_trade_position to handle the return value
+        """
+        resp = strategy_safe_wrapper(self.adjust_trade_position,
+                                     default_retval=(None, ''), supress_error=True)(
+            trade=trade, current_time=current_time,
+            current_rate=current_rate, current_profit=current_profit,
+            min_stake=min_stake, max_stake=max_stake,
+            current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate,
+            current_entry_profit=current_entry_profit, current_exit_profit=current_exit_profit,
+            **kwargs
+        )
+        order_tag = ''
+        if isinstance(resp, tuple):
+            if len(resp) >= 1:
+                stake_amount = resp[0]
+            if len(resp) > 1:
+                order_tag = resp[1] or ''
+        else:
+            stake_amount = resp
+        return stake_amount, order_tag
 
     def __informative_pairs_freqai(self) -> ListPairsWithTimeframes:
         """

@@ -103,11 +103,7 @@ class VolatilityFilter(IPairList):
             (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
         since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days))
-        # Get all candles
-        candles = {}
-        if needed_pairs:
-            candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms,
-                                                          cache=False)
+        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
         if self._enabled:
             for p in deepcopy(pairlist):
@@ -125,8 +121,7 @@ class VolatilityFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
-        cached_res = self._pair_cache.get(pair, None)
-        if cached_res is not None:
+        if (cached_res := self._pair_cache.get(pair, None)) is not None:
             return cached_res
 
         result = False

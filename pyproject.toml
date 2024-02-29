@@ -115,6 +115,8 @@ ignore = ["freqtrade/vendor/**"]
 line-length = 100
 extend-exclude = [".env", ".venv"]
 target-version = "py38"
+
+[tool.ruff.lint]
 # Exclude UP036 as it's causing the "exit if < 3.9" to fail.
 extend-select = [
   "C90",    # mccabe
@@ -132,16 +134,17 @@ extend-select = [
   # "TCH",  # flake8-type-checking
   "PTH",    # flake8-use-pathlib
 ]
+
 extend-ignore = [
   "E241",  # Multiple spaces after comma
   "E272",  # Multiple spaces before keyword
   "E221",  # Multiple spaces before operator
 ]
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 12
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S"]
 
 [tool.flake8]

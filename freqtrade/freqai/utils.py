@@ -118,10 +118,12 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         mdl = models[label]
         if "catboost.core" in str(mdl.__class__):
             feature_importance = mdl.get_feature_importance()
-        elif "lightgbm.sklearn" or "xgb" in str(mdl.__class__):
+        elif "lightgbm.sklearn" in str(mdl.__class__):
+            feature_importance = mdl.feature_importances_
+        elif "xgb" in str(mdl.__class__):
             feature_importance = mdl.feature_importances_
         else:
-            logger.info('Model type not support for generating feature importances.')
+            logger.info('Model type does not support generating feature importances.')
             return
 
         # Data preparation

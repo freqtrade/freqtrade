@@ -596,10 +596,10 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
 
 
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
-    ("BNB/BUSD:BUSD", 0.0, 0.025, 0),
+    ("XRP/USDT:USDT", 0.0, 0.025, 0),
     ("BNB/USDT:USDT", 100.0, 0.0065, 0),
     ("BTC/USDT:USDT", 170.30, 0.004, 0),
-    ("BNB/BUSD:BUSD", 999999.9, 0.1, 27500.0),
+    ("XRP/USDT:USDT", 999999.9, 0.1, 27500.0),
     ("BNB/USDT:USDT", 5000000.0, 0.15, 233035.0),
     ("BTC/USDT:USDT", 600000000, 0.5, 1.997038E8),
 ])

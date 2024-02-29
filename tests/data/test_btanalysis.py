@@ -455,6 +455,13 @@ def test_calculate_max_drawdown2():
     with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
         calculate_max_drawdown(df, date_col='open_date', value_col='profit')
 
+    df1 = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])
+    df1.loc[:, 'profit'] = df1['profit'] * -1
+    # No winning trade ...
+    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
+        df1, date_col='open_date', value_col='profit')
+    assert drawdown == 0.043965
+
 
 @pytest.mark.parametrize('profits,relative,highd,lowd,result,result_rel', [
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 3, 4, 1000.0, 0.090909),

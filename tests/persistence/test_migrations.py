@@ -74,7 +74,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
     assert Path(filename).is_file()
 
 
-def test_migrate_new(mocker, default_conf, fee, caplog):
+def test_migrate(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -277,8 +277,6 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id == 'dry_stop_order_id222'
-    assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
@@ -294,9 +292,10 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert orders[0].order_id == 'dry_buy_order'
     assert orders[0].ft_order_side == 'buy'
 
+    # All dry-run stoploss orders will be closed
     assert orders[-1].order_id == 'dry_stop_order_id222'
     assert orders[-1].ft_order_side == 'stoploss'
-    assert orders[-1].ft_is_open is True
+    assert orders[-1].ft_is_open is False
 
     assert orders[1].order_id == 'dry_buy_order22'
     assert orders[1].ft_order_side == 'buy'

@@ -900,7 +900,7 @@ TESTS = [
 
 
 @pytest.mark.parametrize("data", TESTS)
-def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) -> None:
+def test_backtest_results(default_conf, mocker, caplog, data: BTContainer) -> None:
     """
     run functional tests
     """

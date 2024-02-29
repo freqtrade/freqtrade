@@ -143,8 +143,10 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
         starting_balance=starting_balance
     )
 
-    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative \
-        else max_drawdown_df['drawdown'].idxmin()
+    idxmin = (
+        max_drawdown_df['drawdown_relative'].idxmax()
+        if relative else max_drawdown_df['drawdown'].idxmin()
+    )
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
@@ -191,6 +193,9 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     :param final_balance: Final balance to calculate CAGR against
     :return: CAGR
     """
+    if final_balance < 0:
+        # With leveraged trades, final_balance can become negative.
+        return 0
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 

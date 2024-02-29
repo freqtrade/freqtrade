@@ -49,7 +49,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
     stoploss_order_closed['filled'] = stoploss_order_closed['amount']
 
     # Sell first trade based on stoploss, keep 2nd and 3rd trade open
-    stop_orders = [stoploss_order_closed, stoploss_order_open, stoploss_order_open]
+    stop_orders = [stoploss_order_closed, stoploss_order_open.copy(), stoploss_order_open.copy()]
     stoploss_order_mock = MagicMock(
         side_effect=stop_orders)
     # Sell 3rd trade (not called for the first trade)
@@ -100,9 +100,10 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
         stop_order = stop_orders[idx]
         stop_order['id'] = f"stop{idx}"
         oobj = Order.parse_from_ccxt_object(stop_order, trade.pair, 'stoploss')
+        oobj.ft_is_open = True
 
         trade.orders.append(oobj)
-        trade.stoploss_order_id = f"stop{idx}"
+        assert len(trade.open_sl_orders) == 1
 
     n = freqtrade.exit_positions(trades)
     assert n == 2
@@ -113,6 +114,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
 
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1
+    assert stoploss_order_mock.call_count == 3
     # Wallets must be updated between stoploss cancellation and selling, and will be updated again
     # during update_trade_state
     assert wallets_mock.call_count == 4
@@ -536,7 +538,7 @@ def test_dca_order_adjust_entry_replace_fails(
     # Create DCA order for 2nd trade (so we have 2 open orders on 2 trades)
     # this 2nd order won't fill.
 
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=20)
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(20, 'PeNF'))
 
     freqtrade.process()
 
@@ -627,12 +629,13 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
     assert log_has_re(
         r"Remaining amount of \d\.\d+.* would be smaller than the minimum of 10.", caplog)
 
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-20)
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-20, 'PES'))
 
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
     assert trade.orders[-1].ft_order_side == 'sell'
+    assert trade.orders[-1].ft_order_tag == 'PES'
     assert pytest.approx(trade.stake_amount) == 40.198
     assert pytest.approx(trade.amount) == 20.099 * leverage
     assert trade.open_rate == 2.0

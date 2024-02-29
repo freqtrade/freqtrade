@@ -10,8 +10,17 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+    time: "03:00"
+    timezone: "Etc/UTC"
   open-pull-requests-limit: 15
   target-branch: develop
+  groups:
+    types:
+      patterns:
+        - "types-*"
+    pytest:
+      patterns:
+        - "pytest*"
 
 - package-ecosystem: "github-actions"
   directory: "/"

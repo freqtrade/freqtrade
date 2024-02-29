@@ -215,7 +215,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_force_exit(payload.tradeid, ordertype, amount=payload.amount)
+    return rpc._rpc_force_exit(str(payload.tradeid), ordertype, amount=payload.amount)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

@@ -353,7 +353,7 @@ class Telegram(RPCHandler):
         message += f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
         message += f"*Direction:* `{msg['direction']}"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
-            message += f" ({msg['leverage']:.1g}x)"
+            message += f" ({msg['leverage']:.3g}x)"
         message += "`\n"
         message += f"*Open Rate:* `{fmt_coin(msg['open_rate'], msg['quote_currency'])}`\n"
         if msg['type'] == RPCMessageType.ENTRY and msg['current_rate']:
@@ -371,7 +371,7 @@ class Telegram(RPCHandler):
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         duration_min = duration.total_seconds() / 60
 
-        leverage_text = (f" ({msg['leverage']:.1g}x)"
+        leverage_text = (f" ({msg['leverage']:.3g}x)"
                          if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                          else "")
 
@@ -1364,7 +1364,7 @@ class Telegram(RPCHandler):
     @authorized_only
     async def _enter_tag_performance(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /buys PAIR .
+        Handler for /entries PAIR .
         Shows a performance statistic from finished trades
         :param bot: telegram bot
         :param update: message update
@@ -1375,28 +1375,28 @@ class Telegram(RPCHandler):
             pair = context.args[0]
 
         trades = self._rpc._rpc_enter_tag_performance(pair)
-        output = "<b>Entry Tag Performance:</b>\n"
+        output = "*Entry Tag Performance:*\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i + 1}.\t <code>{trade['enter_tag']}\t"
+                f"{i + 1}.\t `{trade['enter_tag']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
-                f"({trade['count']})</code>\n")
+                f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.HTML)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.HTML,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_enter_tag_performance",
                              query=update.callback_query)
 
     @authorized_only
     async def _exit_reason_performance(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /sells.
+        Handler for /exits.
         Shows a performance statistic from finished trades
         :param bot: telegram bot
         :param update: message update
@@ -1407,21 +1407,21 @@ class Telegram(RPCHandler):
             pair = context.args[0]
 
         trades = self._rpc._rpc_exit_reason_performance(pair)
-        output = "<b>Exit Reason Performance:</b>\n"
+        output = "*Exit Reason Performance:*\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i + 1}.\t <code>{trade['exit_reason']}\t"
+                f"{i + 1}.\t `{trade['exit_reason']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
-                f"({trade['count']})</code>\n")
+                f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.HTML)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.HTML,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_exit_reason_performance",
                              query=update.callback_query)
 
@@ -1439,21 +1439,21 @@ class Telegram(RPCHandler):
             pair = context.args[0]
 
         trades = self._rpc._rpc_mix_tag_performance(pair)
-        output = "<b>Mix Tag Performance:</b>\n"
+        output = "*Mix Tag Performance:*\n"
         for i, trade in enumerate(trades):
             stat_line = (
-                f"{i + 1}.\t <code>{trade['mix_tag']}\t"
+                f"{i + 1}.\t `{trade['mix_tag']}\t"
                 f"{fmt_coin(trade['profit_abs'], self._config['stake_currency'])} "
                 f"({trade['profit_ratio']:.2%}) "
-                f"({trade['count']})</code>\n")
+                f"({trade['count']})`\n")
 
             if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
-                await self._send_msg(output, parse_mode=ParseMode.HTML)
+                await self._send_msg(output, parse_mode=ParseMode.MARKDOWN)
                 output = stat_line
             else:
                 output += stat_line
 
-        await self._send_msg(output, parse_mode=ParseMode.HTML,
+        await self._send_msg(output, parse_mode=ParseMode.MARKDOWN,
                              reload_able=True, callback_path="update_mix_tag_performance",
                              query=update.callback_query)
 
@@ -1676,8 +1676,8 @@ class Telegram(RPCHandler):
             "         *table :* `will display trades in a table`\n"
             "                `pending buy orders are marked with an asterisk (*)`\n"
             "                `pending sell orders are marked with a double asterisk (**)`\n"
-            "*/buys <pair|none>:* `Shows the enter_tag performance`\n"
-            "*/sells <pair|none>:* `Shows the exit reason performance`\n"
+            "*/entries <pair|none>:* `Shows the enter_tag performance`\n"
+            "*/exits <pair|none>:* `Shows the exit reason performance`\n"
             "*/mix_tags <pair|none>:* `Shows combined entry tag + exit reason performance`\n"
             "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
             "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
@@ -1777,13 +1777,9 @@ class Telegram(RPCHandler):
         msg += f"\nUpdated: {datetime.now().ctime()}"
         if not query.message:
             return
-        chat_id = query.message.chat_id
-        message_id = query.message.message_id
 
         try:
-            await self._app.bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=message_id,
+            await query.edit_message_text(
                 text=msg,
                 parse_mode=parse_mode,
                 reply_markup=reply_markup

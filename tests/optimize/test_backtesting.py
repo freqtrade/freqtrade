@@ -742,14 +742,18 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'orders': [
             [
                 {'amount': 0.00957442, 'safe_price': 0.104445, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.00957442, 'safe_price': 0.10496853383458644, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ], [
                 {'amount': 0.0097064, 'safe_price': 0.10302485, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.0097064, 'safe_price': 0.10354126528822055, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ]
          ]
          })
