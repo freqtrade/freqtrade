@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import ccxt
 import pytest
+from numpy import NaN
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
@@ -4203,6 +4204,7 @@ def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value,
         (10, 0.0001, 2.0, 1.0, 0.002, 0.002),
         (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
         (10, 0.0002, 2.5, None, 0.005, None),
+        (10, 0.0002, NaN, None, 0.0, None),
     ])
 def test_calculate_funding_fees(
     default_conf,
@@ -4312,8 +4314,8 @@ def test_combine_funding_and_mark(
         assert len(df) == 1
 
     # Empty funding rates
-    funding_rates = DataFrame([], columns=['date', 'open'])
-    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+    funding_rates2 = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates2, mark_rates, futures_funding_rate)
     if futures_funding_rate is not None:
         assert len(df) == 3
         assert df.iloc[0]['open_fund'] == futures_funding_rate
@@ -4321,6 +4323,12 @@ def test_combine_funding_and_mark(
         assert df.iloc[2]['open_fund'] == futures_funding_rate
     else:
         assert len(df) == 0
+
+    # Empty mark candles
+    mark_candles = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_candles, futures_funding_rate)
+
+    assert len(df) == 0
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
