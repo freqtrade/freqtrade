@@ -8,7 +8,7 @@ import logging
 import signal
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from math import floor
+from math import floor, isnan
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
@@ -2916,7 +2916,8 @@ class Exchange:
         if not df.empty:
             df1 = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df1['open_fund'] * df1['open_mark'] * amount)
-
+        if isnan(fees):
+            fees = 0.0
         # Negate fees for longs as funding_fees expects it this way based on live endpoints.
         return fees if is_short else -fees
 

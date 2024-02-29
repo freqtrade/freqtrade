@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import ccxt
 import pytest
+from numpy import NaN
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
@@ -4203,6 +4204,7 @@ def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value,
         (10, 0.0001, 2.0, 1.0, 0.002, 0.002),
         (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
         (10, 0.0002, 2.5, None, 0.005, None),
+        (10, 0.0002, NaN, None, 0.0, None),
     ])
 def test_calculate_funding_fees(
     default_conf,
