@@ -529,6 +529,7 @@ def download_data_main(config: Config) -> None:
                 datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format_ohlcv=config['dataformat_ohlcv'],
                 data_format_trades=config['dataformat_trades'],
+                candle_type=config.get('candle_type_def', CandleType.SPOT),
             )
         else:
             if not exchange.get_option('ohlcv_has_history', True):

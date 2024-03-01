@@ -8,7 +8,7 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Confi
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
                                       convert_trades_to_ohlcv)
 from freqtrade.data.history import download_data_main
-from freqtrade.enums import RunMode, TradingMode
+from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.resolvers import ExchangeResolver
@@ -69,6 +69,7 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
         datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
         data_format_ohlcv=config['dataformat_ohlcv'],
         data_format_trades=config['dataformat_trades'],
+        candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
 

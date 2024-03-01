@@ -88,10 +88,10 @@ def convert_trades_to_ohlcv(
     timeframes: List[str],
     datadir: Path,
     timerange: TimeRange,
-    erase: bool = False,
-    data_format_ohlcv: str = 'feather',
-    data_format_trades: str = 'feather',
-    candle_type: CandleType = CandleType.SPOT
+    erase: bool,
+    data_format_ohlcv: str,
+    data_format_trades: str,
+    candle_type: CandleType,
 ) -> None:
     """
     Convert stored trades data to ohlcv data
