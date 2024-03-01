@@ -1,6 +1,5 @@
 """
 Functions to convert orderflow data from public_trades
-
 """
 import logging
 import time
@@ -10,7 +9,6 @@ import pandas as pd
 from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, Config
-from freqtrade.exchange.exchange_utils import timeframe_to_resample_freq
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +40,7 @@ def _convert_timeframe_to_pandas_frequency(timeframe: str):
 
 
 def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
+    from freqtrade.exchange.exchange_utils import timeframe_to_resample_freq
     _, timeframe_minutes = _convert_timeframe_to_pandas_frequency(
         timeframe)
 
@@ -51,8 +50,7 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
         df['datetime'] = pd.to_datetime(df['date'], unit='ms')
         df['candle_start'] = df['datetime'].dt.floor(timeframe_frequency)
         # used in _now_is_time_to_refresh_trades
-        df['candle_end'] = df['candle_start'] + \
-            pd.Timedelta(minutes=timeframe_minutes)
+        df['candle_end'] = df['candle_start'] + pd.Timedelta(minutes=timeframe_minutes)
         df.drop(columns=['datetime'], inplace=True)
 
 
