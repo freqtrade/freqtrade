@@ -820,11 +820,6 @@ def test_download_data_trades(mocker):
         "--trading-mode", "futures",
         "--dl-trades"
     ]
-    with pytest.raises(OperationalException,
-                       match="Trade download not supported for futures."):
-        pargs = get_args(args)
-        pargs['config'] = None
-        start_download_data(pargs)
 
 
 def test_download_data_data_invalid(mocker):

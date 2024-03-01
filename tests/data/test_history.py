@@ -170,6 +170,7 @@ def test_json_pair_data_filename(pair, timeframe, expected_result, candle_type):
 
 @pytest.mark.parametrize("pair,expected_result", [
     ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-trades.json'),
+    ("ETH/USDT:USDT", 'freqtrade/hello/world/futures/ETH_USDT_USDT-trades.json'),
     ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-trades.json'),
     ("ETHH20", 'freqtrade/hello/world/ETHH20-trades.json'),
     (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-trades.json'),
