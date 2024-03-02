@@ -69,7 +69,8 @@ ARGS_CONVERT_DATA_TRADES = ["pairs", "format_from_trades", "format_to", "erase",
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase", "exchange"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "trading_mode", "candle_types"]
 
-ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]
+ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades",
+                       "trading_mode"]
 
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs", "trading_mode", "show_timerange"]
 
