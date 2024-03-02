@@ -837,10 +837,11 @@ def test_download_data_data_invalid(mocker):
         start_download_data(pargs)
 
 
-def test_start_convert_trades(mocker, caplog):
+def test_start_convert_trades(mocker):
     convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
+    mocker.patch(f'{EXMS}.get_markets')
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
     args = [
         "trades-to-ohlcv",
