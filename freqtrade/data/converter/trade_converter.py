@@ -114,7 +114,7 @@ def convert_trades_to_ohlcv(
                 # Store ohlcv
                 data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv, candle_type=candle_type)
             except ValueError:
-                logger.exception(f'Could not convert {pair} to OHLCV.')
+                logger.warning(f'Could not convert {pair} to OHLCV.')
 
 
 def convert_trades_format(config: Config, convert_from: str, convert_to: str, erase: bool):
