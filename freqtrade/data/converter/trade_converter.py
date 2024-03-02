@@ -11,7 +11,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
                                  Config, TradeList)
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 
 
@@ -104,9 +104,9 @@ def convert_trades_to_ohlcv(
 
     logger.info(f"About to convert pairs: '{', '.join(pairs)}', "
                 f"intervals: '{', '.join(timeframes)}' to {datadir}")
-
+    trading_mode = TradingMode.FUTURES if candle_type != CandleType.SPOT else TradingMode.SPOT
     for pair in pairs:
-        trades = data_handler_trades.trades_load(pair)
+        trades = data_handler_trades.trades_load(pair, trading_mode)
         for timeframe in timeframes:
             if erase:
                 if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
@@ -144,11 +144,12 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
     if 'pairs' not in config:
         config['pairs'] = src.trades_get_pairs(config['datadir'])
     logger.info(f"Converting trades for {config['pairs']}")
-
+    trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
     for pair in config['pairs']:
-        data = src.trades_load(pair=pair)
+        data = src.trades_load(pair, trading_mode)
         logger.info(f"Converting {len(data)} trades for {pair}")
-        trg.trades_store(pair, data)
+        trg.trades_store(pair, data, trading_mode)
+
         if erase and convert_from != convert_to:
             logger.info(f"Deleting source Trade data for {pair}.")
-            src.trades_purge(pair=pair)
+            src.trades_purge(pair, trading_mode)
