@@ -11,42 +11,6 @@ The call sequence of the methods described here is covered under [bot execution 
 !!! Tip
     Start off with a strategy template containing all available callback methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
-## Storing information (Non-Persistent)
-
-!!! Warning "Deprecated"
-    This method of storing information is deprecated and we do advise against using non-persistent storage.  
-    Please use the below [Persistent Storing Information Section](#storing-information-persistent) instead.
-
-    It's content has therefore been collapsed.
-
-??? Abstract "Storing information"
-    Storing information can be accomplished by creating a new dictionary within the strategy class.
-
-    The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
-
-    ```python
-    class AwesomeStrategy(IStrategy):
-        # Create custom dictionary
-        custom_info = {}
-
-        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            # Check if the entry already exists
-            if not metadata["pair"] in self.custom_info:
-                # Create empty entry for this pair
-                self.custom_info[metadata["pair"]] = {}
-
-            if "crosstime" in self.custom_info[metadata["pair"]]:
-                self.custom_info[metadata["pair"]]["crosstime"] += 1
-            else:
-                self.custom_info[metadata["pair"]]["crosstime"] = 1
-    ```
-
-    !!! Warning
-        The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
-
-    !!! Note
-        If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
-
 ## Storing information (Persistent)
 
 Freqtrade allows storing/retrieving user custom information associated with a specific trade in the database.
@@ -134,6 +98,42 @@ The above is a simple example - there are simpler ways to retrieve trade data li
     * `trade.set_custom_data(key='something', value={'some': 'value'})` - set or update the corresponding key for this trade. Value must be serializable - and we recommend to keep the stored data relatively small.
 
     "value" can be any type (both in setting and receiving) - but must be json serializable.
+
+## Storing information (Non-Persistent)
+
+!!! Warning "Deprecated"
+    This method of storing information is deprecated and we do advise against using non-persistent storage.  
+    Please use [Persistent Storage](#storing-information-persistent) instead.
+
+    It's content has therefore been collapsed.
+
+??? Abstract "Storing information"
+    Storing information can be accomplished by creating a new dictionary within the strategy class.
+
+    The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
+
+    ```python
+    class AwesomeStrategy(IStrategy):
+        # Create custom dictionary
+        custom_info = {}
+
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Check if the entry already exists
+            if not metadata["pair"] in self.custom_info:
+                # Create empty entry for this pair
+                self.custom_info[metadata["pair"]] = {}
+
+            if "crosstime" in self.custom_info[metadata["pair"]]:
+                self.custom_info[metadata["pair"]]["crosstime"] += 1
+            else:
+                self.custom_info[metadata["pair"]]["crosstime"] = 1
+    ```
+
+    !!! Warning
+        The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+    !!! Note
+        If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ## Dataframe access
 
