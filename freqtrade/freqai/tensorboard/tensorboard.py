@@ -46,8 +46,7 @@ class TensorBoardCallback(BaseTensorBoardCallback):
         for data, metric in evals_log.items():
             for metric_name, log in metric.items():
                 score = log[-1][0] if isinstance(log[-1], tuple) else log[-1]
-                key = self._get_key(data, metric_name)
-                self.writer.add_scalar(f"{key}_loss", score, epoch)
+                self.writer.add_scalar(f"{data}-{metric_name}", score, epoch)
 
         return False
 
