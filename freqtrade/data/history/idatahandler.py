@@ -277,9 +277,8 @@ class IDataHandler(ABC):
     @classmethod
     def _pair_trades_filename(cls, datadir: Path, pair: str, trading_mode: TradingMode) -> Path:
         pair_s = misc.pair_to_filename(pair)
-        if ':' in pair:
+        if trading_mode == TradingMode.FUTURES:
             # Futures pair ...
-            # TODO: this should not rely on ";" in the pairname.
             datadir = datadir.joinpath('futures')
 
         filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
