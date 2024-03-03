@@ -1668,6 +1668,8 @@ class Telegram(RPCHandler):
             "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
             "that represents the current market direction. If no direction is provided `"
             "`the currently set market direction will be output.` \n"
+            "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
+            "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`"
 
             "_Statistics_\n"
             "------------\n"
@@ -1691,8 +1693,6 @@ class Telegram(RPCHandler):
             "Avg. holding durations for buys and sells.`\n"
             "*/help:* `This help message`\n"
             "*/version:* `Show version`\n"
-            "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
-            "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`"
             )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
