@@ -5,7 +5,7 @@ from pandas import DataFrame, read_feather, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 
 from .idatahandler import IDataHandler
 
@@ -82,14 +82,15 @@ class FeatherDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_store(self, pair: str, data: DataFrame) -> None:
+    def _trades_store(self, pair: str, data: DataFrame, trading_mode: TradingMode) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
         :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
+        :param trading_mode: Trading mode to use (used to determine the filename)
         """
-        filename = self._pair_trades_filename(self._datadir, pair)
+        filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
         self.create_dir_if_needed(filename)
         data.reset_index(drop=True).to_feather(filename, compression_level=9, compression='lz4')
 
@@ -102,15 +103,18 @@ class FeatherDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
+    def _trades_load(
+            self, pair: str, trading_mode: TradingMode, timerange: Optional[TimeRange] = None
+    ) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         # TODO: respect timerange ...
         :param pair: Load trades for this pair
+        :param trading_mode: Trading mode to use (used to determine the filename)
         :param timerange: Timerange to load trades for - currently not implemented
         :return: Dataframe containing trades
         """
-        filename = self._pair_trades_filename(self._datadir, pair)
+        filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
         if not filename.exists():
             return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 

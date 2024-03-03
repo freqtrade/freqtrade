@@ -172,12 +172,13 @@ class IDataHandler(ABC):
         return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     @abstractmethod
-    def _trades_store(self, pair: str, data: DataFrame) -> None:
+    def _trades_store(self, pair: str, data: DataFrame, trading_mode: TradingMode) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
         :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
+        :param trading_mode: Trading mode to use (used to determine the filename)
         """
 
     @abstractmethod
@@ -190,45 +191,55 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
+    def _trades_load(
+        self, pair: str, trading_mode: TradingMode, timerange: Optional[TimeRange] = None
+    ) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         :param pair: Load trades for this pair
+        :param trading_mode: Trading mode to use (used to determine the filename)
         :param timerange: Timerange to load trades for - currently not implemented
         :return: Dataframe containing trades
         """
 
-    def trades_store(self, pair: str, data: DataFrame) -> None:
+    def trades_store(self, pair: str, data: DataFrame, trading_mode: TradingMode) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
         :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
+        :param trading_mode: Trading mode to use (used to determine the filename)
         """
         # Filter on expected columns (will remove the actual date column).
-        self._trades_store(pair, data[DEFAULT_TRADES_COLUMNS])
+        self._trades_store(pair, data[DEFAULT_TRADES_COLUMNS], trading_mode)
 
-    def trades_purge(self, pair: str) -> bool:
+    def trades_purge(self, pair: str, trading_mode: TradingMode) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
+        :param trading_mode: Trading mode to use (used to determine the filename)
         :return: True when deleted, false if file did not exist.
         """
-        filename = self._pair_trades_filename(self._datadir, pair)
+        filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
         if filename.exists():
             filename.unlink()
             return True
         return False
 
-    def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> DataFrame:
+    def trades_load(
+            self, pair: str, trading_mode: TradingMode, timerange: Optional[TimeRange] = None
+    ) -> DataFrame:
         """
         Load a pair from file, either .json.gz or .json
         Removes duplicates in the process.
         :param pair: Load trades for this pair
+        :param trading_mode: Trading mode to use (used to determine the filename)
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        trades = trades_df_remove_duplicates(self._trades_load(pair, timerange=timerange))
+        trades = trades_df_remove_duplicates(
+            self._trades_load(pair, trading_mode, timerange=timerange)
+        )
 
         trades = trades_convert_types(trades)
         return trades
@@ -264,8 +275,12 @@ class IDataHandler(ABC):
         return filename
 
     @classmethod
-    def _pair_trades_filename(cls, datadir: Path, pair: str) -> Path:
+    def _pair_trades_filename(cls, datadir: Path, pair: str, trading_mode: TradingMode) -> Path:
         pair_s = misc.pair_to_filename(pair)
+        if trading_mode == TradingMode.FUTURES:
+            # Futures pair ...
+            datadir = datadir.joinpath('futures')
+
         filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
         return filename
 
