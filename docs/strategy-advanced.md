@@ -14,10 +14,10 @@ The call sequence of the methods described here is covered under [bot execution 
 ## Storing information (Non-Persistent)
 
 !!! Warning "Deprecated"
-    This method of storing information is deprecated, and we do advise against using non-persistent storage.  
+    This method of storing information is deprecated and we do advise against using non-persistent storage.  
     Please use the below [Persistent Storing Information Section](#storing-information-persistent) instead.
 
-    It's content has therefore be collapsed.
+    It's content has therefore been collapsed.
 
 ??? Abstract "Storing information"
     Storing information can be accomplished by creating a new dictionary within the strategy class.
@@ -49,11 +49,12 @@ The call sequence of the methods described here is covered under [bot execution 
 
 ## Storing information (Persistent)
 
-Storing information can also be performed in a persistent manner. Freqtrade allows storing/retrieving user custom information associated with a specific trade.
+Freqtrade allows storing/retrieving user custom information associated with a specific trade in the database.
 
-Using a trade object, information can be stored using `trade_obj.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade_obj.get_custom_data(key='my_key')`. Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object.
+Using a trade object, information can be stored using `trade.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade.get_custom_data(key='my_key')`. Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object.
 
-For the data to be able to be stored within the database it must be serialized. This is done by converting it to a JSON formatted string.
+For the data to be able to be stored within the database, freqtrade must serialized the data. This is done by converting the data to a JSON formatted string.
+Freqtrade will attempt to reverse this action on retrieval, so from a strategy perspective, this should not be relevant.
 
 ```python
 from freqtrade.persistence import Trade
@@ -116,9 +117,11 @@ class AwesomeStrategy(IStrategy):
         return False, None
 ```
 
+The above is a simple example - there are simpler ways to retrieve trade data like entry-adjustments.
+
 !!! Note
     It is recommended that simple data types are used `[bool, int, float, str]` to ensure no issues when serializing the data that needs to be stored.
-    Storing big junks of data may lead to unintended side-effects, like a database becoming big pretty fast (and as a consequence, also slow).
+    Storing big junks of data may lead to unintended side-effects, like a database becoming big (and as a consequence, also slow).
 
 !!! Warning "Non-serializable data"
     If supplied data cannot be serialized a warning is logged and the entry for the specified `key` will contain `None` as data.
