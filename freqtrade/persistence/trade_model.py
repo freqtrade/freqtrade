@@ -343,7 +343,6 @@ class LocalTrade:
     id: int = 0
 
     orders: List[Order] = []
-    custom_data: List[_CustomData] = []
 
     exchange: str = ''
     pair: str = ''
@@ -1507,7 +1506,7 @@ class Trade(ModelBase, LocalTrade):
         innerjoin=True)  # type: ignore
     custom_data: Mapped[List[_CustomData]] = relationship(
         "_CustomData", cascade="all, delete-orphan",
-        lazy="raise")  # type: ignore
+        lazy="raise")
 
     exchange: Mapped[str] = mapped_column(String(25), nullable=False)  # type: ignore
     pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)  # type: ignore
@@ -1613,7 +1612,6 @@ class Trade(ModelBase, LocalTrade):
 
         CustomDataWrapper.delete_custom_data(trade_id=self.id)
 
-        _CustomData.session.commit()
         Trade.session.delete(self)
         Trade.commit()
 
