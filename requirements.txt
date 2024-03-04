@@ -37,7 +37,7 @@ sdnotify==0.3.2
 
 # API Server
 fastapi==0.110.0
-pydantic==2.6.2
+pydantic==2.6.3
 uvicorn==0.27.1
 pyjwt==2.8.0
 aiofiles==23.2.1
