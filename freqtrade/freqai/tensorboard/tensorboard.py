@@ -43,13 +43,11 @@ class TensorBoardCallback(BaseTensorBoardCallback):
         if not evals_log:
             return False
 
-        for data, metric in evals_log.items():
-            for metric_name, log in metric.items():
+        evals = ["validation", "train"]
+        for metric, eval in zip(evals_log.items(), evals):
+            for metric_name, log in metric[1].items():
                 score = log[-1][0] if isinstance(log[-1], tuple) else log[-1]
-                if data == "train":
-                    self.writer.add_scalar("train_loss", score, epoch)
-                else:
-                    self.writer.add_scalar("valid_loss", score, epoch)
+                self.writer.add_scalar(f"{eval}-{metric_name}", score, epoch)
 
         return False
 
