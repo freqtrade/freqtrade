@@ -15,7 +15,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
                                  PairWithTimeframe)
 from freqtrade.data.history import get_datahandler, load_pair_history
-from freqtrade.enums import CandleType, RPCMessageType, RunMode
+from freqtrade.enums import CandleType, RPCMessageType, RunMode, TradingMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.exchange.types import OrderBook
@@ -528,7 +528,7 @@ class DataProvider:
                 candle_type) if candle_type != '' else self._config['candle_type_def']
             data_handler = get_datahandler(
                 self._config['datadir'], data_format=self._config['dataformat_trades'])
-            trades_df = data_handler.trades_load(pair)
+            trades_df = data_handler.trades_load(pair, TradingMode.FUTURES)
             return trades_df
 
         else:

@@ -2,7 +2,6 @@
 Rate of change pairlist filter
 """
 import logging
-from copy import deepcopy
 from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
@@ -32,6 +31,7 @@ class RangeStabilityFilter(IPairList):
         self._max_rate_of_change = pairlistconfig.get('max_rate_of_change')
         self._refresh_period = pairlistconfig.get('refresh_period', 86400)
         self._def_candletype = self._config['candle_type_def']
+        self._sort_direction: Optional[str] = pairlistconfig.get('sort_direction', None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
@@ -41,6 +41,9 @@ class RangeStabilityFilter(IPairList):
         if self._days > candle_limit:
             raise OperationalException("RangeStabilityFilter requires lookback_days to not "
                                        f"exceed exchange max request size ({candle_limit})")
+        if self._sort_direction not in [None, 'asc', 'desc']:
+            raise OperationalException("RangeStabilityFilter requires sort_direction to be "
+                                       "either None (undefined), 'asc' or 'desc'")
 
     @property
     def needstickers(self) -> bool:
@@ -87,6 +90,13 @@ class RangeStabilityFilter(IPairList):
                 "description": "Maximum Rate of Change",
                 "help": "Maximum rate of change to filter pairs.",
             },
+            "sort_direction": {
+                "type": "option",
+                "default": None,
+                "options": ["", "asc", "desc"],
+                "description": "Sort pairlist",
+                "help": "Sort Pairlist ascending or descending by rate of change.",
+            },
             **IPairList.refresh_period_parameter()
         }
 
@@ -103,45 +113,62 @@ class RangeStabilityFilter(IPairList):
         since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days + 1))
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
-        if self._enabled:
-            for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1d', self._def_candletype)] if (
-                    p, '1d', self._def_candletype) in candles else None
-                if not self._validate_pair_loc(p, daily_candles):
-                    pairlist.remove(p)
-        return pairlist
+        resulting_pairlist: List[str] = []
+        pct_changes: Dict[str, float] = {}
 
-    def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
-        """
-        Validate trading range
-        :param pair: Pair that's currently validated
-        :param daily_candles: Downloaded daily candles
-        :return: True if the pair can stay, false if it should be removed
-        """
+        for p in pairlist:
+            daily_candles = candles.get((p, '1d', self._def_candletype), None)
+
+            pct_change = self._calculate_rate_of_change(p, daily_candles)
+
+            if pct_change is not None:
+                if self._validate_pair_loc(p, pct_change):
+                    resulting_pairlist.append(p)
+                    pct_changes[p] = pct_change
+            else:
+                self.log_once(f"Removed {p} from whitelist, no candles found.", logger.info)
+
+        if self._sort_direction:
+            resulting_pairlist = sorted(resulting_pairlist,
+                                        key=lambda p: pct_changes[p],
+                                        reverse=self._sort_direction == 'desc')
+        return resulting_pairlist
+
+    def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> Optional[float]:
         # Check symbol in cache
-        if (cached_res := self._pair_cache.get(pair, None)) is not None:
-            return cached_res
-
-        result = True
+        if (pct_change := self._pair_cache.get(pair, None)) is not None:
+            return pct_change
         if daily_candles is not None and not daily_candles.empty:
+
             highest_high = daily_candles['high'].max()
             lowest_low = daily_candles['low'].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
-            if pct_change < self._min_rate_of_change:
-                self.log_once(f"Removed {pair} from whitelist, because rate of change "
-                              f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
-                              f"which is below the threshold of {self._min_rate_of_change}.",
-                              logger.info)
-                result = False
-            if self._max_rate_of_change:
-                if pct_change > self._max_rate_of_change:
-                    self.log_once(
-                        f"Removed {pair} from whitelist, because rate of change "
-                        f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
-                        f"which is above the threshold of {self._max_rate_of_change}.",
-                        logger.info)
-                    result = False
-            self._pair_cache[pair] = result
+            self._pair_cache[pair] = pct_change
+            return pct_change
         else:
-            self.log_once(f"Removed {pair} from whitelist, no candles found.", logger.info)
+            return None
+
+    def _validate_pair_loc(self, pair: str, pct_change: float) -> bool:
+        """
+        Validate trading range
+        :param pair: Pair that's currently validated
+        :param pct_change: Rate of change
+        :return: True if the pair can stay, false if it should be removed
+        """
+
+        result = True
+        if pct_change < self._min_rate_of_change:
+            self.log_once(f"Removed {pair} from whitelist, because rate of change "
+                          f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                          f"which is below the threshold of {self._min_rate_of_change}.",
+                          logger.info)
+            result = False
+        if self._max_rate_of_change:
+            if pct_change > self._max_rate_of_change:
+                self.log_once(
+                    f"Removed {pair} from whitelist, because rate of change "
+                    f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                    f"which is above the threshold of {self._max_rate_of_change}.",
+                    logger.info)
+                result = False
         return result

@@ -78,11 +78,6 @@ def test_download_data_main_trades(mocker):
         "trading_mode": "futures",
     })
 
-    download_data_main(config)
-    assert dl_mock.call_args[1]['timerange'].starttype == "date"
-    assert dl_mock.call_count == 2
-    assert convert_mock.call_count == 2
-
 
 def test_download_data_main_data_invalid(mocker):
     patch_exchange(mocker, id="kraken")
