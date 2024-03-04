@@ -49,7 +49,7 @@ colorama==0.4.6
 questionary==2.0.1
 prompt-toolkit==3.0.36
 # Extensions to datetime library
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
 pytz==2024.1
 
 #Futures
