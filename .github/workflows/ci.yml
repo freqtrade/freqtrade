@@ -482,12 +482,12 @@ jobs:
         path: dist
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.11
+      uses: pypa/gh-action-pypi-publish@v1.8.12
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.11
+      uses: pypa/gh-action-pypi-publish@v1.8.12
 
 
   deploy-docker:
