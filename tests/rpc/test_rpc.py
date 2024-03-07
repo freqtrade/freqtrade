@@ -223,8 +223,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '0.00' == result[0][3]
-    assert isnan(fiat_profit_sum)
+    assert '0.00 (0.00)' == result[0][3]
+    assert '0.00' == f'{fiat_profit_sum:.2f}'
 
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
     freqtradebot.process()
@@ -234,8 +234,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '-0.41%' == result[0][3]
-    assert isnan(fiat_profit_sum)
+    assert '-0.41% (-0.00)' == result[0][3]
+    assert '-0.00' == f'{fiat_profit_sum:.2f}'
 
     # Test with fiat convert
     rpc._fiat_converter = CryptoToFiatConverter()
