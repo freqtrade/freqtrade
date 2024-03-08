@@ -291,6 +291,10 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
+                else:
+                    profit_str += f" ({trade_profit:.2f})"
+                    fiat_profit_sum = trade_profit if isnan(fiat_profit_sum) \
+                        else fiat_profit_sum + trade_profit
 
                 active_attempt_side_symbols = [
                     '*' if (oo and oo.ft_order_side == trade.entry_side) else '**'
@@ -317,6 +321,8 @@ class RPC:
             profitcol = "Profit"
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
+            else:
+                profitcol += " (" + stake_currency + ")"
 
             columns = [
                 'ID L/S' if nonspot else 'ID',
