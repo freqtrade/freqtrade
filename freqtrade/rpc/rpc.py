@@ -927,6 +927,7 @@ class RPC:
                                              is_short=is_short,
                                              enter_tag=enter_tag,
                                              leverage_=leverage,
+                                             mode='pos_adjust' if trade else 'initial'
                                              ):
                 Trade.commit()
                 trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()

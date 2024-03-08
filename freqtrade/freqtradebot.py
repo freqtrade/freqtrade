@@ -962,7 +962,7 @@ class FreqtradeBot(LoggingMixin):
         # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair, enter_limit_requested,
-            self.strategy.stoploss if not mode != 'pos_adjust' else 0.0,
+            self.strategy.stoploss if not mode == 'pos_adjust' else 0.0,
             leverage)
         max_stake_amount = self.exchange.get_max_pair_stake_amount(
             pair, enter_limit_requested, leverage)
