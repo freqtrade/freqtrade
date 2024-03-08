@@ -999,6 +999,32 @@ class RPC:
                 'cancel_order_count': c_count,
             }
 
+    def _rpc_list_custom_data(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
+        # Query for trade
+        trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+        if trade is None:
+            return []
+        # Query custom_data
+        custom_data = []
+        if key:
+            data = trade.get_custom_data(key=key)
+            if data:
+                custom_data = [data]
+        else:
+            custom_data = trade.get_all_custom_data()
+        return [
+            {
+                'id': data_entry.id,
+                'ft_trade_id': data_entry.ft_trade_id,
+                'cd_key': data_entry.cd_key,
+                'cd_type': data_entry.cd_type,
+                'cd_value': data_entry.cd_value,
+                'created_at': data_entry.created_at,
+                'updated_at': data_entry.updated_at
+            }
+            for data_entry in custom_data
+        ]
+
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
         Handler for performance.

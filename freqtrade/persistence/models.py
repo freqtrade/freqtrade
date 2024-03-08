@@ -13,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.base import ModelBase
+from freqtrade.persistence.custom_data import _CustomData
 from freqtrade.persistence.key_value_store import _KeyValueStoreModel
 from freqtrade.persistence.migrations import check_migrate
 from freqtrade.persistence.pairlock import PairLock
@@ -78,6 +79,8 @@ def init_db(db_url: str) -> None:
     Order.session = Trade.session
     PairLock.session = Trade.session
     _KeyValueStoreModel.session = Trade.session
+    _CustomData.session = scoped_session(sessionmaker(bind=engine, autoflush=True),
+                                         scopefunc=get_request_or_thread_id)
 
     previous_tables = inspect(engine).get_table_names()
     ModelBase.metadata.create_all(engine)
