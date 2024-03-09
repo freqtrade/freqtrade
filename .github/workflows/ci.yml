@@ -126,6 +126,9 @@ jobs:
       matrix:
         os: [ "macos-latest", "macos-13", "macos-14" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          - os: "macos-14"
+            python-version: "3.9"
 
     steps:
     - uses: actions/checkout@v4
