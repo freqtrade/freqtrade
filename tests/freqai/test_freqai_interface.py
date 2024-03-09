@@ -1,5 +1,4 @@
 import logging
-import platform
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -15,13 +14,8 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import (get_patched_freqai_strategy, is_mac, is_py12, make_rl_config,
-                                   mock_pytorch_mlp_model_training_parameters)
-
-
-def is_arm() -> bool:
-    machine = platform.machine()
-    return "arm" in machine or "aarch64" in machine
+from tests.freqai.conftest import (get_patched_freqai_strategy, is_arm, is_mac, is_py12,
+                                   make_rl_config, mock_pytorch_mlp_model_training_parameters)
 
 
 def can_run_model(model: str) -> None:

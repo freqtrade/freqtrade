@@ -25,10 +25,15 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+def is_arm() -> bool:
+    machine = platform.machine()
+    return "arm" in machine or "aarch64" in machine
+
+
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
 
-    if is_mac():
+    if is_mac() and not is_arm():
         # Mock torch import completely
         import sys
         import types
