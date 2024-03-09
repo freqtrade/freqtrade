@@ -1705,8 +1705,8 @@ class Telegram(RPCHandler):
         """
         health = self._rpc.health()
         message = f"Last process: `{health['last_process_loc']}`\n"
-        message += f"Initial bot Start: `{health['bot_start_loc']}`\n"
-        message += f"Current bot Start: `{health['bot_startup_loc']}`"
+        message += f"Initial bot start: `{health['bot_start_loc']}`\n"
+        message += f"Last bot restart: `{health['bot_startup_loc']}`"
         await self._send_msg(message)
 
     @authorized_only
