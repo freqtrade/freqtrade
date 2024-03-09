@@ -1366,7 +1366,7 @@ class RPC:
 
     def health(self) -> Dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
-        res = {
+        res: Dict[str, Union[None, str, int]] = {
             "last_process": None,
             "last_process_loc": None,
             "last_process_ts": None,
