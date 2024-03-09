@@ -1366,18 +1366,39 @@ class RPC:
 
     def health(self) -> Dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
-        if last_p is None:
-            return {
-                "last_process": None,
-                "last_process_loc": None,
-                "last_process_ts": None,
-            }
-
-        return {
-            "last_process": str(last_p),
-            "last_process_loc": format_date(last_p.astimezone(tzlocal())),
-            "last_process_ts": int(last_p.timestamp()),
+        res = {
+            "last_process": None,
+            "last_process_loc": None,
+            "last_process_ts": None,
+            "bot_start": None,
+            "bot_start_loc": None,
+            "bot_start_ts": None,
+            "bot_startup": None,
+            "bot_startup_loc": None,
+            "bot_startup_ts": None,
         }
+
+        if last_p is not None:
+            res.update({
+                "last_process": str(last_p),
+                "last_process_loc": format_date(last_p.astimezone(tzlocal())),
+                "last_process_ts": int(last_p.timestamp()),
+            })
+
+        if (bot_start := KeyValueStore.get_datetime_value(KeyStoreKeys.BOT_START_TIME)):
+            res.update({
+                "bot_start": str(bot_start),
+                "bot_start_loc": format_date(bot_start.astimezone(tzlocal())),
+                "bot_start_ts": int(bot_start.timestamp()),
+            })
+        if (bot_startup := KeyValueStore.get_datetime_value(KeyStoreKeys.STARTUP_TIME)):
+            res.update({
+                "bot_startup": str(bot_startup),
+                "bot_startup_loc": format_date(bot_startup.astimezone(tzlocal())),
+                "bot_startup_ts": int(bot_startup.timestamp()),
+            })
+
+        return res
 
     def _update_market_direction(self, direction: MarketDirection) -> None:
         self._freqtrade.strategy.market_direction = direction

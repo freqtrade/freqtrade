@@ -10,6 +10,7 @@ from freqtrade.edge import PairInfo
 from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
+from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -1298,6 +1299,7 @@ def test_rpc_health(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    set_startup_time()
     rpc = RPC(freqtradebot)
     result = rpc.health()
     assert result['last_process'] is None
