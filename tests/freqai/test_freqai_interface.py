@@ -27,6 +27,9 @@ def is_arm() -> bool:
 def can_run_model(model: str) -> None:
     is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
 
+    if is_py12() and is_pytorch_model:
+        pytest.skip("Model not supported on python 3.12 yet.")
+
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM.")
 
