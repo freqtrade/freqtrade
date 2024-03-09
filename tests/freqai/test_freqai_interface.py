@@ -237,7 +237,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
     can_run_model(model)
     test_tb = True
-    if is_mac():
+    if is_mac() and not is_arm():
         test_tb = False
 
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
