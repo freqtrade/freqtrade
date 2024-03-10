@@ -33,7 +33,7 @@ def is_arm() -> bool:
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
 
-    if is_mac() and not is_arm():
+    if is_mac():
         # Mock torch import completely
         import sys
         import types
