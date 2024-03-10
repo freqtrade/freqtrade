@@ -41,7 +41,7 @@ def patch_torch_initlogs(mocker) -> None:
         module_name = 'torch'
         mocked_module = types.ModuleType(module_name)
         sys.modules[module_name] = mocked_module
-    else:
+    elif not is_py12():
         mocker.patch("torch._logging._init_logs")
 
 
