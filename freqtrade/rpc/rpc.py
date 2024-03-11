@@ -291,6 +291,10 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
+                else:
+                    profit_str += f" ({trade_profit:.2f})"
+                    fiat_profit_sum = trade_profit if isnan(fiat_profit_sum) \
+                        else fiat_profit_sum + trade_profit
 
                 active_attempt_side_symbols = [
                     '*' if (oo and oo.ft_order_side == trade.entry_side) else '**'
@@ -317,6 +321,8 @@ class RPC:
             profitcol = "Profit"
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
+            else:
+                profitcol += " (" + stake_currency + ")"
 
             columns = [
                 'ID L/S' if nonspot else 'ID',
@@ -927,6 +933,7 @@ class RPC:
                                              is_short=is_short,
                                              enter_tag=enter_tag,
                                              leverage_=leverage,
+                                             mode='pos_adjust' if trade else 'initial'
                                              ):
                 Trade.commit()
                 trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
@@ -979,15 +986,16 @@ class RPC:
                 except (ExchangeError):
                     pass
 
-            # cancel stoploss on exchange ...
+            # cancel stoploss on exchange orders ...
             if (self._freqtrade.strategy.order_types.get('stoploss_on_exchange')
-                    and trade.stoploss_order_id):
-                try:
-                    self._freqtrade.exchange.cancel_stoploss_order(trade.stoploss_order_id,
-                                                                   trade.pair)
-                    c_count += 1
-                except (ExchangeError):
-                    pass
+                    and trade.has_open_sl_orders):
+
+                for oslo in trade.open_sl_orders:
+                    try:
+                        self._freqtrade.exchange.cancel_stoploss_order(oslo.order_id, trade.pair)
+                        c_count += 1
+                    except (ExchangeError):
+                        pass
 
             trade.delete()
             self._freqtrade.wallets.update()
@@ -997,6 +1005,32 @@ class RPC:
                 'result_msg': f'Deleted trade {trade_id}. Closed {c_count} open orders.',
                 'cancel_order_count': c_count,
             }
+
+    def _rpc_list_custom_data(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
+        # Query for trade
+        trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+        if trade is None:
+            return []
+        # Query custom_data
+        custom_data = []
+        if key:
+            data = trade.get_custom_data(key=key)
+            if data:
+                custom_data = [data]
+        else:
+            custom_data = trade.get_all_custom_data()
+        return [
+            {
+                'id': data_entry.id,
+                'ft_trade_id': data_entry.ft_trade_id,
+                'cd_key': data_entry.cd_key,
+                'cd_type': data_entry.cd_type,
+                'cd_value': data_entry.cd_value,
+                'created_at': data_entry.created_at,
+                'updated_at': data_entry.updated_at
+            }
+            for data_entry in custom_data
+        ]
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
@@ -1154,7 +1188,7 @@ class RPC:
         }
         if has_content:
 
-            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
             for sig_type in signals.keys():
                 if sig_type in dataframe.columns:
@@ -1332,18 +1366,39 @@ class RPC:
 
     def health(self) -> Dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
-        if last_p is None:
-            return {
-                "last_process": None,
-                "last_process_loc": None,
-                "last_process_ts": None,
-            }
-
-        return {
-            "last_process": str(last_p),
-            "last_process_loc": format_date(last_p.astimezone(tzlocal())),
-            "last_process_ts": int(last_p.timestamp()),
+        res: Dict[str, Union[None, str, int]] = {
+            "last_process": None,
+            "last_process_loc": None,
+            "last_process_ts": None,
+            "bot_start": None,
+            "bot_start_loc": None,
+            "bot_start_ts": None,
+            "bot_startup": None,
+            "bot_startup_loc": None,
+            "bot_startup_ts": None,
         }
+
+        if last_p is not None:
+            res.update({
+                "last_process": str(last_p),
+                "last_process_loc": format_date(last_p.astimezone(tzlocal())),
+                "last_process_ts": int(last_p.timestamp()),
+            })
+
+        if (bot_start := KeyValueStore.get_datetime_value(KeyStoreKeys.BOT_START_TIME)):
+            res.update({
+                "bot_start": str(bot_start),
+                "bot_start_loc": format_date(bot_start.astimezone(tzlocal())),
+                "bot_start_ts": int(bot_start.timestamp()),
+            })
+        if (bot_startup := KeyValueStore.get_datetime_value(KeyStoreKeys.STARTUP_TIME)):
+            res.update({
+                "bot_startup": str(bot_startup),
+                "bot_startup_loc": format_date(bot_startup.astimezone(tzlocal())),
+                "bot_startup_ts": int(bot_startup.timestamp()),
+            })
+
+        return res
 
     def _update_market_direction(self, direction: MarketDirection) -> None:
         self._freqtrade.strategy.market_direction = direction

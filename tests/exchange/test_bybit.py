@@ -1,20 +1,40 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.tradingmode import TradingMode
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange
+from freqtrade.exceptions import OperationalException
+from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
-def test_additional_exchange_init_bybit(default_conf, mocker):
+def test_additional_exchange_init_bybit(default_conf, mocker, caplog):
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     api_mock = MagicMock()
     api_mock.set_position_mode = MagicMock(return_value={"dualSidePosition": False})
-    get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    api_mock.is_unified_enabled = MagicMock(return_value=[False, False])
+
+    exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
     assert api_mock.set_position_mode.call_count == 1
+    assert api_mock.is_unified_enabled.call_count == 1
+    assert exchange.unified_account is False
+
+    assert log_has("Bybit: Standard account.", caplog)
+
+    api_mock.set_position_mode.reset_mock()
+    api_mock.is_unified_enabled = MagicMock(return_value=[False, True])
+    with pytest.raises(OperationalException, match=r"Bybit: Unified account is not supported.*"):
+        get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    assert log_has("Bybit: Unified account.", caplog)
+    # exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    # assert api_mock.set_position_mode.call_count == 1
+    # assert api_mock.is_unified_enabled.call_count == 1
+    # assert exchange.unified_account is True
+
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'bybit',
                            "additional_exchange_init", "set_position_mode")
 
@@ -111,6 +131,7 @@ def test_bybit_fetch_order_canceled_empty(default_conf_usdt, mocker):
         'amount': 20.0,
     })
 
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, id='bybit')
 
     res = exchange.fetch_order('123', 'BTC/USDT')

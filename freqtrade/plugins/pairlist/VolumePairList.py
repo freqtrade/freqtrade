@@ -229,12 +229,8 @@ class VolumePairList(IPairList):
                 if p not in self._pair_cache
             ]
 
-            # Get all candles
-            candles = {}
-            if needed_pairs:
-                candles = self._exchange.refresh_latest_ohlcv(
-                    needed_pairs, since_ms=since_ms, cache=False
-                )
+            candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
+
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p['symbol']].get('contractSize', 1.0) or 1.0
                 pair_candles = candles[

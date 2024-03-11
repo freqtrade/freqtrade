@@ -19,7 +19,7 @@ from pathlib import Path
 project_root = "somedir/freqtrade"
 i=0
 try:
-    os.chdirdir(project_root)
+    os.chdir(project_root)
     assert Path('LICENSE').is_file()
 except:
     while i<4 and (not Path('LICENSE').is_file()):

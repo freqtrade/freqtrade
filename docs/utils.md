@@ -54,7 +54,7 @@ optional arguments:
 ### Create config examples
 
 ```
-$ freqtrade new-config --config config_binance.json
+$ freqtrade new-config --config user_data/config_binance.json
 
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC
@@ -219,206 +219,48 @@ optional arguments:
   -a, --all         Print all exchanges known to the ccxt library.
 ```
 
-* Example: see exchanges available for the bot:
+Example: see exchanges available for the bot:
+
 ```
 $ freqtrade list-exchanges
 Exchanges available for Freqtrade:
-Exchange name    Valid    reason
----------------  -------  --------------------------------------------
-aax              True
-ascendex         True     missing opt: fetchMyTrades
-bequant          True
-bibox            True
-bigone           True
-binance          True
-binanceus        True
-bitbank          True     missing opt: fetchTickers
-bitcoincom       True
-bitfinex         True
-bitforex         True     missing opt: fetchMyTrades, fetchTickers
-bitget           True
-bithumb          True     missing opt: fetchMyTrades
-bitkk            True     missing opt: fetchMyTrades
-bitmart          True
-bitmax           True     missing opt: fetchMyTrades
-bitpanda         True
-bitvavo          True
-bitz             True     missing opt: fetchMyTrades
-btcalpha         True     missing opt: fetchTicker, fetchTickers
-btcmarkets       True     missing opt: fetchTickers
-buda             True     missing opt: fetchMyTrades, fetchTickers
-bw               True     missing opt: fetchMyTrades, fetchL2OrderBook
-bybit            True
-bytetrade        True
-cdax             True
-cex              True     missing opt: fetchMyTrades
-coinbaseprime    True     missing opt: fetchTickers
-coinbasepro      True     missing opt: fetchTickers
-coinex           True
-crex24           True
-deribit          True
-digifinex        True
-equos            True     missing opt: fetchTicker, fetchTickers
-eterbase         True
-fcoin            True     missing opt: fetchMyTrades, fetchTickers
-fcoinjp          True     missing opt: fetchMyTrades, fetchTickers
-gateio           True
-gemini           True
-gopax            True
-hbtc             True
-hitbtc           True
-huobijp          True
-huobipro         True
-idex             True
-kraken           True
-kucoin           True
-lbank            True     missing opt: fetchMyTrades
-mercado          True     missing opt: fetchTickers
-ndax             True     missing opt: fetchTickers
-novadax          True
-okcoin           True
-okex             True
-probit           True
-qtrade           True
-stex             True
-timex            True
-upbit            True     missing opt: fetchMyTrades
-vcc              True
-zb               True     missing opt: fetchMyTrades
-
+Exchange name       Supported    Markets                 Reason
+------------------  -----------  ----------------------  ------------------------------------------------------------------------
+binance             Official     spot, isolated futures
+bitmart             Official     spot
+bybit                            spot, isolated futures
+gate                Official     spot, isolated futures
+htx                 Official     spot
+huobi                            spot
+kraken              Official     spot
+okx                 Official     spot, isolated futures
 ```
+
+!!! info ""
+    Output reduced for clarity - supported and available exchanges may change over time.
 
 !!! Note "missing opt exchanges"
     Values with "missing opt:" might need special configuration (e.g. using orderbook if `fetchTickers` is missing) - but should in theory work (although we cannot guarantee they will).
 
-* Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade):
+Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade)
+
 ```
 $ freqtrade list-exchanges -a
 All exchanges supported by the ccxt library:
-Exchange name       Valid    reason
-------------------  -------  ---------------------------------------------------------------------------------------
-aax                 True
-aofex               False    missing: fetchOrder
-ascendex            True     missing opt: fetchMyTrades
-bequant             True
-bibox               True
-bigone              True
-binance             True
-binanceus           True
-bit2c               False    missing: fetchOrder, fetchOHLCV
-bitbank             True     missing opt: fetchTickers
-bitbay              False    missing: fetchOrder
-bitcoincom          True
-bitfinex            True
-bitfinex2           False    missing: fetchOrder
-bitflyer            False    missing: fetchOrder, fetchOHLCV
-bitforex            True     missing opt: fetchMyTrades, fetchTickers
-bitget              True
-bithumb             True     missing opt: fetchMyTrades
-bitkk               True     missing opt: fetchMyTrades
-bitmart             True
-bitmax              True     missing opt: fetchMyTrades
-bitmex              False    Various reasons.
-bitpanda            True
-bitso               False    missing: fetchOHLCV
-bitstamp            True     missing opt: fetchTickers
-bitstamp1           False    missing: fetchOrder, fetchOHLCV
-bitvavo             True
-bitz                True     missing opt: fetchMyTrades
-bl3p                False    missing: fetchOrder, fetchOHLCV
-bleutrade           False    missing: fetchOrder
-braziliex           False    missing: fetchOHLCV
-btcalpha            True     missing opt: fetchTicker, fetchTickers
-btcbox              False    missing: fetchOHLCV
-btcmarkets          True     missing opt: fetchTickers
-btctradeua          False    missing: fetchOrder, fetchOHLCV
-btcturk             False    missing: fetchOrder
-buda                True     missing opt: fetchMyTrades, fetchTickers
-bw                  True     missing opt: fetchMyTrades, fetchL2OrderBook
-bybit               True
-bytetrade           True
-cdax                True
-cex                 True     missing opt: fetchMyTrades
-chilebit            False    missing: fetchOrder, fetchOHLCV
-coinbase            False    missing: fetchOrder, cancelOrder, createOrder, fetchOHLCV
-coinbaseprime       True     missing opt: fetchTickers
-coinbasepro         True     missing opt: fetchTickers
-coincheck           False    missing: fetchOrder, fetchOHLCV
-coinegg             False    missing: fetchOHLCV
-coinex              True
-coinfalcon          False    missing: fetchOHLCV
-coinfloor           False    missing: fetchOrder, fetchOHLCV
-coingi              False    missing: fetchOrder, fetchOHLCV
-coinmarketcap       False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance, fetchOHLCV
-coinmate            False    missing: fetchOHLCV
-coinone             False    missing: fetchOHLCV
-coinspot            False    missing: fetchOrder, cancelOrder, fetchOHLCV
-crex24              True
-currencycom         False    missing: fetchOrder
-delta               False    missing: fetchOrder
-deribit             True
-digifinex           True
-equos               True     missing opt: fetchTicker, fetchTickers
-eterbase            True
-exmo                False    missing: fetchOrder
-exx                 False    missing: fetchOHLCV
-fcoin               True     missing opt: fetchMyTrades, fetchTickers
-fcoinjp             True     missing opt: fetchMyTrades, fetchTickers
-flowbtc             False    missing: fetchOrder, fetchOHLCV
-foxbit              False    missing: fetchOrder, fetchOHLCV
-gateio              True
-gemini              True
-gopax               True
-hbtc                True
-hitbtc              True
-hollaex             False    missing: fetchOrder
-huobijp             True
-huobipro            True
-idex                True
-independentreserve  False    missing: fetchOHLCV
-indodax             False    missing: fetchOHLCV
-itbit               False    missing: fetchOHLCV
-kraken              True
-kucoin              True
-kuna                False    missing: fetchOHLCV
-lakebtc             False    missing: fetchOrder, fetchOHLCV
-latoken             False    missing: fetchOrder, fetchOHLCV
-lbank               True     missing opt: fetchMyTrades
-liquid              False    missing: fetchOHLCV
-luno                False    missing: fetchOHLCV
-lykke               False    missing: fetchOHLCV
-mercado             True     missing opt: fetchTickers
-mixcoins            False    missing: fetchOrder, fetchOHLCV
-ndax                True     missing opt: fetchTickers
-novadax             True
-oceanex             False    missing: fetchOHLCV
-okcoin              True
-okex                True
-paymium             False    missing: fetchOrder, fetchOHLCV
-phemex              False    Does not provide history.
-poloniex            False    missing: fetchOrder
-probit              True
-qtrade              True
-rightbtc            False    missing: fetchOrder
-ripio               False    missing: fetchOHLCV
-southxchange        False    missing: fetchOrder, fetchOHLCV
-stex                True
-surbitcoin          False    missing: fetchOrder, fetchOHLCV
-therock             False    missing: fetchOHLCV
-tidebit             False    missing: fetchOrder
-tidex               False    missing: fetchOHLCV
-timex               True
-upbit               True     missing opt: fetchMyTrades
-vbtc                False    missing: fetchOrder, fetchOHLCV
-vcc                 True
-wavesexchange       False    missing: fetchOrder
-whitebit            False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance
-xbtce               False    missing: fetchOrder, fetchOHLCV
-xena                False    missing: fetchOrder
-yobit               False    missing: fetchOHLCV
-zaif                False    missing: fetchOrder, fetchOHLCV
-zb                  True     missing opt: fetchMyTrades
+Exchange name       Valid    Supported    Markets                 Reason
+------------------  -------  -----------  ----------------------  ---------------------------------------------------------------------------------
+binance             True     Official     spot, isolated futures
+bitflyer            False                 spot                    missing: fetchOrder. missing opt: fetchTickers.
+bitmart             True     Official     spot
+bybit               True                  spot, isolated futures
+gate                True     Official     spot, isolated futures
+htx                 True     Official     spot
+kraken              True     Official     spot
+okx                 True     Official     spot, isolated futures
 ```
+
+!!! info ""
+    Reduced output - supported and available exchanges may change over time.
 
 ## List Timeframes
 
@@ -990,11 +832,7 @@ options:
   -h, --help            show this help message and exit
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest. Please note that timeframe needs to be set
-                        either in config or via command line. When using this
-                        together with `--export trades`, the strategy-name is
-                        injected into the filename (so `backtest-data.json`
-                        becomes `backtest-data-SampleStrategy.json`
+                        be converted.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

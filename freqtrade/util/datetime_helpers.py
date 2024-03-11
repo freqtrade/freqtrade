@@ -31,11 +31,21 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
 def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
     """
     Return dt in ms as a timestamp in UTC.
-    If dt is None, return the current datetime in UTC.
+    If dt is None, return the given default.
     """
     if dt:
         return int(dt.timestamp() * 1000)
     return default
+
+
+def dt_ts_none(dt: Optional[datetime]) -> Optional[int]:
+    """
+    Return dt in ms as a timestamp in UTC.
+    If dt is None, return the given default.
+    """
+    if dt:
+        return int(dt.timestamp() * 1000)
+    return None
 
 
 def dt_floor_day(dt: datetime) -> datetime:

@@ -150,7 +150,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], "
                    "['bl_delete', 'blacklist_delete'], "
                    "['logs'], ['edge'], ['health'], ['help'], ['version'], ['marketdir'], "
-                   "['order']]")
+                   "['order'], ['list_custom_data']]")
 
     assert log_has(message_str, caplog)
 
@@ -1507,7 +1507,7 @@ async def test_telegram_entry_tag_performance_handle(
     await telegram._enter_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Entry Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>TEST1\t3.987 USDT (5.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '`TEST1\t3.987 USDT (5.00%) (1)`' in msg_mock.call_args_list[0][0][0]
 
     context.args = ['XRP/USDT']
     await telegram._enter_tag_performance(update=update, context=context)
@@ -1538,7 +1538,7 @@ async def test_telegram_exit_reason_performance_handle(
     await telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>roi\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '`roi\t2.842 USDT (10.00%) (1)`' in msg_mock.call_args_list[0][0][0]
     context.args = ['XRP/USDT']
 
     await telegram._exit_reason_performance(update=update, context=context)
@@ -1570,7 +1570,7 @@ async def test_telegram_mix_tag_performance_handle(default_conf_usdt, update, ti
     await telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Mix Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert ('<code>TEST3 roi\t2.842 USDT (10.00%) (1)</code>'
+    assert ('`TEST3 roi\t2.842 USDT (10.00%) (1)`'
             in msg_mock.call_args_list[0][0][0])
 
     context.args = ['XRP/USDT']
@@ -2017,7 +2017,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg(msg)
-    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.3g}x)' if leverage and leverage != 1.0 else ''
 
     assert msg_mock.call_args[0][0] == (
         f'\N{LARGE BLUE CIRCLE} *Binance (dry):* New Trade (#1)\n'
@@ -2126,7 +2126,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'amount': 1333.3333333333335,
         'open_date': dt_now() - timedelta(hours=1)
     })
-    leverage_text = f' ({leverage:.1g}x)' if leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.3g}x)' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{CHECK MARK} *Binance (dry):* New Trade filled (#1)\n'
         f'*Pair:* `ETH/BTC`\n'
@@ -2365,7 +2365,7 @@ def test_send_msg_exit_fill_notification(default_conf, mocker, direction,
             'close_date': dt_now(),
         })
 
-        leverage_text = f' ({leverage:.1g}x)`\n' if leverage and leverage != 1.0 else '`\n'
+        leverage_text = f' ({leverage:.3g}x)`\n' if leverage and leverage != 1.0 else '`\n'
         assert msg_mock.call_args[0][0] == (
             '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
             '*Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
@@ -2458,7 +2458,7 @@ def test_send_msg_buy_notification_no_fiat(
         'open_date': dt_now() - timedelta(hours=1)
     })
 
-    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.3g}x)' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{LARGE BLUE CIRCLE} *Binance:* New Trade (#1)\n'
         '*Pair:* `ETH/BTC`\n'
@@ -2510,7 +2510,7 @@ def test_send_msg_exit_notification_no_fiat(
         'close_date': dt_now(),
     })
 
-    leverage_text = f' ({leverage:.1g}x)' if leverage and leverage != 1.0 else ''
+    leverage_text = f' ({leverage:.3g}x)' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n'
@@ -2557,22 +2557,22 @@ async def test_telegram__send_msg(default_conf, mocker, caplog) -> None:
 
     # Test update
     query = MagicMock()
+    query.edit_message_text = AsyncMock()
     await telegram._send_msg('test', callback_path="DeadBeef", query=query, reload_able=True)
-    edit_message_text = telegram._app.bot.edit_message_text
-    assert edit_message_text.call_count == 1
-    assert "Updated: " in edit_message_text.call_args_list[0][1]['text']
+    assert query.edit_message_text.call_count == 1
+    assert "Updated: " in query.edit_message_text.call_args_list[0][1]['text']
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=BadRequest("not modified"))
+    query.edit_message_text = AsyncMock(side_effect=BadRequest("not modified"))
     await telegram._send_msg('test', callback_path="DeadBeef", query=query)
-    assert telegram._app.bot.edit_message_text.call_count == 1
+    assert query.edit_message_text.call_count == 1
     assert not log_has_re(r"TelegramError: .*", caplog)
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=BadRequest(""))
+    query.edit_message_text = AsyncMock(side_effect=BadRequest(""))
     await telegram._send_msg('test2', callback_path="DeadBeef", query=query)
-    assert telegram._app.bot.edit_message_text.call_count == 1
+    assert query.edit_message_text.call_count == 1
     assert log_has_re(r"TelegramError: .*", caplog)
 
-    telegram._app.bot.edit_message_text = AsyncMock(side_effect=TelegramError("DeadBEEF"))
+    query.edit_message_text = AsyncMock(side_effect=TelegramError("DeadBEEF"))
     await telegram._send_msg('test3', callback_path="DeadBeef", query=query)
 
     assert log_has_re(r"TelegramError: DeadBEEF! Giving up.*", caplog)
@@ -2657,3 +2657,49 @@ async def test_change_market_direction(default_conf, mocker, update) -> None:
     context.args = ["invalid"]
     await telegram._changemarketdir(update, context)
     assert telegram._rpc._freqtrade.strategy.market_direction == MarketDirection.LONG
+
+
+async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee, mocker) -> None:
+
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    telegram, _freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
+
+    # Create some test data
+    create_mock_trades_usdt(fee)
+    # No trade id
+    context = MagicMock()
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert 'Trade-id not set.' in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+
+    #
+    context.args = ['1']
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert (
+        "Didn't find any custom-data entries for Trade ID: `1`" in msg_mock.call_args_list[0][0][0]
+    )
+    msg_mock.reset_mock()
+
+    # Add some custom data
+    trade1 = Trade.get_trades_proxy()[0]
+    trade1.set_custom_data('test_int', 1)
+    trade1.set_custom_data('test_dict', {'test': 'dict'})
+    Trade.commit()
+    context.args = [f"{trade1.id}"]
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 3
+    assert "Found custom-data entries: " in msg_mock.call_args_list[0][0][0]
+    assert (
+        "*Key:* `test_int`\n*ID:* `1`\n*Trade ID:* `1`\n*Type:* `int`\n"
+        "*Value:* `1`\n*Create Date:*") in msg_mock.call_args_list[1][0][0]
+    assert (
+        '*Key:* `test_dict`\n*ID:* `2`\n*Trade ID:* `1`\n*Type:* `dict`\n'
+        '*Value:* `{"test": "dict"}`\n*Create Date:* `') in msg_mock.call_args_list[2][0][0]
+
+    msg_mock.reset_mock()

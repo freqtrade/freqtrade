@@ -78,10 +78,6 @@ def test_download_data_main_trades(mocker):
         "trading_mode": "futures",
     })
 
-    with pytest.raises(OperationalException,
-                       match="Trade download not supported for futures."):
-        download_data_main(config)
-
 
 def test_download_data_main_data_invalid(mocker):
     patch_exchange(mocker, id="kraken")

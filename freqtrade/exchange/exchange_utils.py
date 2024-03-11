@@ -40,21 +40,34 @@ def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[st
 
 
 def validate_exchange(exchange: str) -> Tuple[bool, str]:
+    """
+    returns: can_use, reason
+        with Reason including both missing and missing_opt
+    """
     ex_mod = getattr(ccxt, exchange.lower())()
+    result = True
+    reason = ''
     if not ex_mod or not ex_mod.has:
         return False, ''
-    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
+    missing = [
+        k for k, v in EXCHANGE_HAS_REQUIRED.items()
+        if ex_mod.has.get(k) is not True
+        and not (all(ex_mod.has.get(x) for x in v))
+    ]
     if missing:
-        return False, f"missing: {', '.join(missing)}"
+        result = False
+        reason += f"missing: {', '.join(missing)}"
 
     missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
 
     if exchange.lower() in BAD_EXCHANGES:
-        return False, BAD_EXCHANGES.get(exchange.lower(), '')
-    if missing_opt:
-        return True, f"missing opt: {', '.join(missing_opt)}"
+        result = False
+        reason = BAD_EXCHANGES.get(exchange.lower(), '')
 
-    return True, ''
+    if missing_opt:
+        reason += f"{'. ' if reason else ''}missing opt: {', '.join(missing_opt)}. "
+
+    return result, reason
 
 
 def _build_exchange_list_entry(

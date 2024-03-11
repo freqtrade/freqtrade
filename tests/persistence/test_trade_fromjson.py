@@ -54,7 +54,6 @@ def test_trade_fromjson():
         "stop_loss_abs": 0.1981,
         "stop_loss_ratio": -0.216,
         "stop_loss_pct": -21.6,
-        "stoploss_order_id": null,
         "stoploss_last_update": "2022-10-18 09:13:42",
         "stoploss_last_update_timestamp": 1666077222000,
         "initial_stop_loss_abs": 0.1981,
@@ -224,7 +223,7 @@ def test_trade_serialize_load_back(fee):
         'realized_profit_ratio', 'close_profit_pct',
         'trade_duration_s', 'trade_duration',
         'profit_ratio', 'profit_pct', 'profit_abs', 'stop_loss_abs',
-        'initial_stop_loss_abs',
+        'initial_stop_loss_abs', 'open_fill_date', 'open_fill_timestamp',
         'orders',
     ]
     failed = []

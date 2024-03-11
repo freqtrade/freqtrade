@@ -6,7 +6,7 @@ import pandas as pd
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 
 from .idatahandler import IDataHandler
 
@@ -35,7 +35,7 @@ class HDF5DataHandler(IDataHandler):
         self.create_dir_if_needed(filename)
 
         _data.loc[:, self._columns].to_hdf(
-            filename, key, mode='a', complevel=9, complib='blosc',
+            filename, key=key, mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['date']
         )
 
@@ -100,17 +100,18 @@ class HDF5DataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_store(self, pair: str, data: pd.DataFrame) -> None:
+    def _trades_store(self, pair: str, data: pd.DataFrame, trading_mode: TradingMode) -> None:
         """
         Store trades data (list of Dicts) to file
         :param pair: Pair - used for filename
         :param data: Dataframe containing trades
                      column sequence as in DEFAULT_TRADES_COLUMNS
+        :param trading_mode: Trading mode to use (used to determine the filename)
         """
         key = self._pair_trades_key(pair)
 
         data.to_hdf(
-            self._pair_trades_filename(self._datadir, pair), key,
+            self._pair_trades_filename(self._datadir, pair, trading_mode), key=key,
             mode='a', complevel=9, complib='blosc',
             format='table', data_columns=['timestamp']
         )
@@ -124,15 +125,18 @@ class HDF5DataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> pd.DataFrame:
+    def _trades_load(
+        self, pair: str, trading_mode: TradingMode, timerange: Optional[TimeRange] = None
+    ) -> pd.DataFrame:
         """
         Load a pair from h5 file.
         :param pair: Load trades for this pair
+        :param trading_mode: Trading mode to use (used to determine the filename)
         :param timerange: Timerange to load trades for - currently not implemented
         :return: Dataframe containing trades
         """
         key = self._pair_trades_key(pair)
-        filename = self._pair_trades_filename(self._datadir, pair)
+        filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
 
         if not filename.exists():
             return pd.DataFrame(columns=DEFAULT_TRADES_COLUMNS)

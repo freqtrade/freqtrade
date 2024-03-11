@@ -1022,22 +1022,22 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
 
 @pytest.mark.parametrize('function,raises', [
-    ('populate_entry_trend', True),
+    ('populate_entry_trend', False),
     ('advise_entry', False),
-    ('populate_exit_trend', True),
+    ('populate_exit_trend', False),
     ('advise_exit', False),
 ])
-def test_pandas_warning_direct(ohlcv_history, function, raises):
+def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
 
     df = _STRATEGY.populate_indicators(ohlcv_history, {'pair': 'ETH/BTC'})
     if raises:
-        with pytest.warns(FutureWarning):
-            # Test for Future warning
-            # FutureWarning: Setting an item of incompatible dtype is
-            # deprecated and will raise in a future error of pandas
-            # https://github.com/pandas-dev/pandas/issues/56503
-            getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+        assert len(recwarn) == 1
+        # https://github.com/pandas-dev/pandas/issues/56503
+        # Fixed in 2.2.x
+        getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
     else:
+        assert len(recwarn) == 0
+
         getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
 
 

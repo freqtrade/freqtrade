@@ -8,9 +8,10 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Confi
 from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_format,
                                       convert_trades_to_ohlcv)
 from freqtrade.data.history import download_data_main
-from freqtrade.enums import RunMode, TradingMode
+from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.util.migrations import migrate_data
 
@@ -62,13 +63,21 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
 
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)
+    available_pairs = [
+        p for p in exchange.get_markets(
+            tradable_only=True, active_only=not config.get('include_inactive')
+            ).keys()
+    ]
+
+    expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
 
     # Convert downloaded trade data to different timeframes
     convert_trades_to_ohlcv(
-        pairs=config.get('pairs', []), timeframes=config['timeframes'],
+        pairs=expanded_pairs, timeframes=config['timeframes'],
         datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
         data_format_ohlcv=config['dataformat_ohlcv'],
         data_format_trades=config['dataformat_trades'],
+        candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
 

@@ -68,7 +68,7 @@ When used in the leading position of the chain of Pairlist Handlers, the `pair_w
 
 The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 The pairlist cache (`refresh_period`) on `VolumePairList` is only applicable to generating pairlists.
-Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.
+Filtering instances (not the first position in the list) will not apply any cache (beyond caching candles for the duration of the candle in advanced mode) and will always use up-to-date data.
 
 `VolumePairList` is per default based on the ticker data from exchange, as reported by the ccxt library:
 
@@ -201,7 +201,7 @@ The RemotePairList is defined in the pairlists section of the configuration sett
 
 The optional `mode` option specifies if the pairlist should be used as a `blacklist` or as a `whitelist`. The default value is "whitelist".
 
-The optional `processing_mode` option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append".
+The optional `processing_mode` option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append". The default value is "filter".
 
 In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.
 
@@ -450,6 +450,8 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
 ]
 ```
 
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting for this pairlist.
+
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
     Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.
@@ -460,7 +462,7 @@ Volatility is the degree of historical variation of a pairs over time, it is mea
 
 This filter removes pairs if the average volatility over a `lookback_days` days is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. 
+This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.
 
 In the below example:
 If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.
@@ -476,6 +478,8 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
     }
 ]
 ```
+
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting mode for this pairlist.
 
 ### Full example of Pairlist Handlers
 

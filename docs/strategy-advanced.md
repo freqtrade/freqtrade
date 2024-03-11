@@ -11,34 +11,129 @@ The call sequence of the methods described here is covered under [bot execution 
 !!! Tip
     Start off with a strategy template containing all available callback methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
-## Storing information
+## Storing information (Persistent)
 
-Storing information can be accomplished by creating a new dictionary within the strategy class.
+Freqtrade allows storing/retrieving user custom information associated with a specific trade in the database.
 
-The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
+Using a trade object, information can be stored using `trade.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade.get_custom_data(key='my_key')`. Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object.
+
+For the data to be able to be stored within the database, freqtrade must serialized the data. This is done by converting the data to a JSON formatted string.
+Freqtrade will attempt to reverse this action on retrieval, so from a strategy perspective, this should not be relevant.
 
 ```python
+from freqtrade.persistence import Trade
+from datetime import timedelta
+
 class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    custom_info = {}
 
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Check if the entry already exists
-        if not metadata["pair"] in self.custom_info:
-            # Create empty entry for this pair
-            self.custom_info[metadata["pair"]] = {}
+    def bot_loop_start(self, **kwargs) -> None:
+        for trade in Trade.get_open_order_trades():
+            fills = trade.select_filled_orders(trade.entry_side)
+            if trade.pair == 'ETH/USDT':
+                trade_entry_type = trade.get_custom_data(key='entry_type')
+                if trade_entry_type is None:
+                    trade_entry_type = 'breakout' if 'entry_1' in trade.enter_tag else 'dip'
+                elif fills > 1:
+                    trade_entry_type = 'buy_up'
+                trade.set_custom_data(key='entry_type', value=trade_entry_type)
+        return super().bot_loop_start(**kwargs)
 
-        if "crosstime" in self.custom_info[metadata["pair"]]:
-            self.custom_info[metadata["pair"]]["crosstime"] += 1
-        else:
-            self.custom_info[metadata["pair"]]["crosstime"] = 1
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float, current_order_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+        # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+        if (
+            pair == 'BTC/USDT' 
+            and entry_tag == 'long_sma200' 
+            and side == 'long' 
+            and (current_time - timedelta(minutes=10)) > trade.open_date_utc 
+            and order.filled == 0.0
+        ):
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+            current_candle = dataframe.iloc[-1].squeeze()
+            # store information about entry adjustment
+            existing_count = trade.get_custom_data('num_entry_adjustments', default=0)
+            if not existing_count:
+                existing_count = 1
+            else:
+                existing_count += 1
+            trade.set_custom_data(key='num_entry_adjustments', value=existing_count)
+
+            # adjust order price
+            return current_candle['sma_200']
+
+        # default: maintain existing order
+        return current_order_rate
+
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):
+
+        entry_adjustment_count = trade.get_custom_data(key='num_entry_adjustments')
+        trade_entry_type = trade.get_custom_data(key='entry_type')
+        if entry_adjustment_count is None:
+            if current_profit > 0.01 and (current_time - timedelta(minutes=100) > trade.open_date_utc):
+                return True, 'exit_1'
+        else
+            if entry_adjustment_count > 0 and if current_profit > 0.05:
+                return True, 'exit_2'
+            if trade_entry_type == 'breakout' and current_profit > 0.1:
+                return True, 'exit_3
+
+        return False, None
 ```
 
-!!! Warning
-    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+The above is a simple example - there are simpler ways to retrieve trade data like entry-adjustments.
 
 !!! Note
-    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+    It is recommended that simple data types are used `[bool, int, float, str]` to ensure no issues when serializing the data that needs to be stored.
+    Storing big junks of data may lead to unintended side-effects, like a database becoming big (and as a consequence, also slow).
+
+!!! Warning "Non-serializable data"
+    If supplied data cannot be serialized a warning is logged and the entry for the specified `key` will contain `None` as data.
+
+??? Note "All attributes"
+    custom-data has the following accessors through the Trade object (assumed as `trade` below):
+
+    * `trade.get_custom_data(key='something', default=0)` - Returns the actual value given in the type provided.
+    * `trade.get_custom_data_entry(key='something')` - Returns the entry - including metadata. The value is accessible via `.value` property.
+    * `trade.set_custom_data(key='something', value={'some': 'value'})` - set or update the corresponding key for this trade. Value must be serializable - and we recommend to keep the stored data relatively small.
+
+    "value" can be any type (both in setting and receiving) - but must be json serializable.
+
+## Storing information (Non-Persistent)
+
+!!! Warning "Deprecated"
+    This method of storing information is deprecated and we do advise against using non-persistent storage.  
+    Please use [Persistent Storage](#storing-information-persistent) instead.
+
+    It's content has therefore been collapsed.
+
+??? Abstract "Storing information"
+    Storing information can be accomplished by creating a new dictionary within the strategy class.
+
+    The name of the variable can be chosen at will, but should be prefixed with `custom_` to avoid naming collisions with predefined strategy variables.
+
+    ```python
+    class AwesomeStrategy(IStrategy):
+        # Create custom dictionary
+        custom_info = {}
+
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Check if the entry already exists
+            if not metadata["pair"] in self.custom_info:
+                # Create empty entry for this pair
+                self.custom_info[metadata["pair"]] = {}
+
+            if "crosstime" in self.custom_info[metadata["pair"]]:
+                self.custom_info[metadata["pair"]]["crosstime"] += 1
+            else:
+                self.custom_info[metadata["pair"]]["crosstime"] = 1
+    ```
+
+    !!! Warning
+        The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+    !!! Note
+        If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ## Dataframe access
 
