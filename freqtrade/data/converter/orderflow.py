@@ -164,6 +164,7 @@ def populate_dataframe_with_trades(config: Config,
 
     except Exception as e:
         logger.exception("Error populating dataframe with trades:", e)
+        raise e
 
     return dataframe
 
