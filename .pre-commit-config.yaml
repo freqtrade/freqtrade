@@ -19,7 +19,7 @@ repos:
           - types-requests==2.31.0.20240311
           - types-tabulate==0.9.0.20240106
           - types-python-dateutil==2.8.19.20240311
-          - SQLAlchemy==2.0.27
+          - SQLAlchemy==2.0.28
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort
