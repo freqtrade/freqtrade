@@ -73,12 +73,10 @@ def populate_dataframe_with_trades(config: Config,
     try:
         start_time = time.time()
         # calculate ohlcv candle start and end
-        # TODO: check if call is necessary for df.
         _calculate_ohlcv_candle_start_and_end(df, timeframe)
         _calculate_ohlcv_candle_start_and_end(trades, timeframe)
 
         # slice of trades that are before current ohlcv candles to make groupby faster
-        # TODO: maybe use df.date instead of df.candle_start at comparision below
         trades = trades.loc[trades.candle_start >= df.candle_start[0]]
         trades.reset_index(inplace=True, drop=True)
 
@@ -124,7 +122,6 @@ def populate_dataframe_with_trades(config: Config,
                     is_between, 'imbalances'].apply(
                         lambda x: stacked_imbalance_ask(x, stacked_imbalance_range=_stacked_imb))
 
-                # TODO: maybe use simple np.where instead
                 buy = df.loc[is_between, 'bid'].apply(lambda _: np.where(
                     trades_grouped_df['side'].str.contains('buy'), 0, trades_grouped_df['amount']))
                 sell = df.loc[is_between, 'ask'].apply(lambda _: np.where(
