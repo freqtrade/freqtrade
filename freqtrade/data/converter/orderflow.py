@@ -50,7 +50,8 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
         df['datetime'] = pd.to_datetime(df['date'], unit='ms')
         df['candle_start'] = df['datetime'].dt.floor(timeframe_frequency)
         # used in _now_is_time_to_refresh_trades
-        df['candle_end'] = df['candle_start'] + pd.Timedelta(minutes=timeframe_minutes)
+        df['candle_end'] = df['candle_start'] + \
+            pd.Timedelta(minutes=timeframe_minutes)
         df.drop(columns=['datetime'], inplace=True)
 
 
