@@ -10,6 +10,7 @@ from freqtrade.edge import PairInfo
 from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
+from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -223,8 +224,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '0.00' == result[0][3]
-    assert isnan(fiat_profit_sum)
+    assert '0.00 (0.00)' == result[0][3]
+    assert '0.00' == f'{fiat_profit_sum:.2f}'
 
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=True)
     freqtradebot.process()
@@ -234,8 +235,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
-    assert '-0.41%' == result[0][3]
-    assert isnan(fiat_profit_sum)
+    assert '-0.41% (-0.00)' == result[0][3]
+    assert '-0.00' == f'{fiat_profit_sum:.2f}'
 
     # Test with fiat convert
     rpc._fiat_converter = CryptoToFiatConverter()
@@ -1298,6 +1299,7 @@ def test_rpc_health(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    set_startup_time()
     rpc = RPC(freqtradebot)
     result = rpc.health()
     assert result['last_process'] is None
