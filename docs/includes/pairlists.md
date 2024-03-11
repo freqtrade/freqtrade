@@ -369,6 +369,8 @@ As this Filter uses past performance of the bot, it'll have some startup-period 
 
 Filters low-value coins which would not allow setting stoplosses.
 
+Namely, pairs are blacklisted if the stop price would be the same as 99% of the stop price due to precision rounding on the exchange.
+
 !!! Warning "Backtesting"
     `PrecisionFilter` does not support backtesting mode using multiple strategies.
 
