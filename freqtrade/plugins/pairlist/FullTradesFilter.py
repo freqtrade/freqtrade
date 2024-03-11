@@ -48,13 +48,8 @@ class FullTradesFilter(IPairList):
         :return: new allowlist
         """
         # Get the number of open trades and max open trades config
-        try:
-            num_open = Trade.get_open_trade_count()
-            max_trades = self._config['max_open_trades']
-        except AttributeError:
-            # Performancefilter does not work in backtesting.
-            self.log_once("FullTradesFilter is not available in this mode.", logger.warning)
-            return pairlist
+        num_open = Trade.get_open_trade_count()
+        max_trades = self._config['max_open_trades']
 
         if (num_open >= max_trades) and (max_trades > 0):
             return []
