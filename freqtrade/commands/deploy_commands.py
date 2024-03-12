@@ -119,7 +119,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from zipfile import ZipFile
 
     logger.info(f"Downloading {dl_url}")
-    resp = requests.get(dl_url).content
+    resp = requests.get(dl_url, timeout=60).content
     dest_folder.mkdir(parents=True, exist_ok=True)
     with ZipFile(BytesIO(resp)) as zf:
         for fn in zf.filelist:
@@ -137,7 +137,7 @@ def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     base_url = 'https://api.github.com/repos/freqtrade/frequi/'
     # Get base UI Repo path
 
-    resp = requests.get(f"{base_url}releases")
+    resp = requests.get(f"{base_url}releases", timeout=60)
     resp.raise_for_status()
     r = resp.json()
 
@@ -158,7 +158,7 @@ def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     # URL not found - try assets url
     if not dl_url:
         assets = r[0]['assets_url']
-        resp = requests.get(assets)
+        resp = requests.get(assets, timeout=60)
         r = resp.json()
         dl_url = r[0]['browser_download_url']
 
