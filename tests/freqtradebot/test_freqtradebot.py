@@ -5460,7 +5460,7 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
 
     caplog.clear()
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-10, 'partial_exit_c'))
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-0.001, 'partial_exit_c'))
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"LIMIT_SELL has been fulfilled.*", caplog)
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
