@@ -667,7 +667,7 @@ class FreqtradeBot(LoggingMixin):
             # We should decrease our position
             amount = self.exchange.amount_to_contract_precision(
                 trade.pair,
-                abs(float(FtPrecise(stake_amount * trade.leverage) / FtPrecise(current_exit_rate))))
+                abs(float(stake_amount * trade.amount / trade.stake_amount)))
 
             if amount == 0.0:
                 logger.info("Amount to exit is 0.0 due to exchange limits - not exiting.")
