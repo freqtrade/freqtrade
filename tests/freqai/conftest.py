@@ -33,7 +33,7 @@ def is_arm() -> bool:
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
 
-    if is_mac() and not is_arm():
+    if is_mac():
         # Mock torch import completely
         import sys
         import types
@@ -41,7 +41,7 @@ def patch_torch_initlogs(mocker) -> None:
         module_name = 'torch'
         mocked_module = types.ModuleType(module_name)
         sys.modules[module_name] = mocked_module
-    elif not is_py12():
+    else:
         mocker.patch("torch._logging._init_logs")
 
 
