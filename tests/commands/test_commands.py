@@ -39,6 +39,10 @@ def test_setup_utils_configuration():
     assert "exchange" in config
     assert config['dry_run'] is True
 
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER, set_dry=False)
+    assert "exchange" in config
+    assert config['dry_run'] is False
+
 
 def test_start_trading_fail(mocker, caplog):
 
