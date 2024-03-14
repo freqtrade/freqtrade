@@ -39,6 +39,10 @@ def test_setup_utils_configuration():
     assert "exchange" in config
     assert config['dry_run'] is True
 
+    args = [
+        'list-exchanges', '--config', 'tests/testdata/testconfigs/testconfig.json',
+    ]
+
     config = setup_utils_configuration(get_args(args), RunMode.OTHER, set_dry=False)
     assert "exchange" in config
     assert config['dry_run'] is False

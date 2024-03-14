@@ -1,6 +1,6 @@
 {
     "stake_currency": "",
-    "dry_run": true,
+    "dry_run": false,
     "exchange": {
         "name": "",
         "key": "",
