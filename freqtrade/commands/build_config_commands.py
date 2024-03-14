@@ -5,9 +5,11 @@ from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
+from freqtrade.configuration.config_setup import setup_utils_configuration
 from freqtrade.configuration.detect_environment import running_in_docker
 from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
 from freqtrade.util import render_template
@@ -264,3 +266,13 @@ def start_new_config(args: Dict[str, Any]) -> None:
                 "Please delete it or use a different configuration file name.")
     selections = ask_user_config()
     deploy_new_config(config_path, selections)
+
+
+def start_show_config(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE, set_dry=False)
+
+    # TODO: Sanitize from sensitive info before printing
+
+    from rich import print
+    print(config)
