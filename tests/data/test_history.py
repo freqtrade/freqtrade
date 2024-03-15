@@ -91,7 +91,7 @@ def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
 
 def test_load_data_startup_candles(mocker, testdatadir) -> None:
     ltfmock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load',
         MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
@@ -326,7 +326,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler.ohlcv_store',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler.ohlcv_store',
         return_value=None)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
