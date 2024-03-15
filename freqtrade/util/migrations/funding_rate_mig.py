@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from freqtrade.constants import Config
-from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.data.history import get_datahandler
 from freqtrade.enums import TradingMode
 from freqtrade.exchange import Exchange
 

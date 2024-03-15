@@ -15,13 +15,13 @@ from pandas.testing import assert_frame_equal
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.history import get_datahandler
 from freqtrade.data.history.history_utils import (_download_pair_history, _download_trades_history,
                                                   _load_cached_data_for_updating, get_timerange,
                                                   load_data, load_pair_history,
                                                   refresh_backtest_ohlcv_data,
                                                   refresh_backtest_trades_data, refresh_data,
                                                   validate_backtest_data)
-from freqtrade.data.history.idatahandler import get_datahandler
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_minutes
