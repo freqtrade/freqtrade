@@ -46,7 +46,7 @@ def load_file(path: Path) -> Dict[str, Any]:
         with path.open('r') as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
     except FileNotFoundError:
-        raise OperationalException(f'File "{path}" not found!')
+        raise OperationalException(f'File "{path}" not found!') from None
     return config
 
 
@@ -63,7 +63,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
     except FileNotFoundError:
         raise OperationalException(
             f'Config file "{path}" not found!'
-            ' Please create a config file or check whether it exists.')
+            ' Please create a config file or check whether it exists.') from None
     except rapidjson.JSONDecodeError as e:
         err_range = log_config_error_range(path, str(e))
         raise OperationalException(
