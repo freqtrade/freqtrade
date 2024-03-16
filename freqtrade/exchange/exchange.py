@@ -14,7 +14,6 @@ from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
 import ccxt.async_support as ccxt_async
-import pandas as pd
 from cachetools import TTLCache
 from ccxt import TICK_SIZE
 from dateutil import parser
@@ -2156,8 +2155,8 @@ class Exchange:
                 # Reassign so we return the updated, combined df
                 combined_df = concat([old, trades_df], axis=0)
                 logger.debug(f"Clean duplicated ticks from Trades data {pair}")
-                trades_df = pd.DataFrame(trades_df_remove_duplicates(combined_df),
-                                         columns=combined_df.columns)
+                trades_df = DataFrame(trades_df_remove_duplicates(combined_df),
+                                      columns=combined_df.columns)
                 # Age out old candles
                 if first_required_candle_date:
                     # slice of older dates

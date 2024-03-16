@@ -6,7 +6,6 @@ import time
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, Config
 
@@ -14,7 +13,7 @@ from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, Config
 logger = logging.getLogger(__name__)
 
 
-def _init_dataframe_with_trades_columns(dataframe: DataFrame):
+def _init_dataframe_with_trades_columns(dataframe: pd.DataFrame):
     """
     Populates a dataframe with trades columns
     :param dataframe: Dataframe to populate
@@ -39,7 +38,7 @@ def _convert_timeframe_to_pandas_frequency(timeframe: str):
     return (timeframe_frequency, timeframe_minutes)
 
 
-def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
+def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
     from freqtrade.exchange.exchange_utils import timeframe_to_resample_freq
     _, timeframe_minutes = _convert_timeframe_to_pandas_frequency(
         timeframe)
@@ -55,8 +54,8 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
 
 
 def populate_dataframe_with_trades(config: Config,
-                                   dataframe: DataFrame,
-                                   trades: DataFrame) -> DataFrame:
+                                   dataframe: pd.DataFrame,
+                                   trades: pd.DataFrame) -> pd.DataFrame:
     """
     Populates a dataframe with trades
     :param dataframe: Dataframe to populate
@@ -167,7 +166,7 @@ def populate_dataframe_with_trades(config: Config,
     return dataframe
 
 
-def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: float):
+def trades_to_volumeprofile_with_total_delta_bid_ask(trades: pd.DataFrame, scale: float):
     """
     :param trades: dataframe
     :param scale: scale aka bin size e.g. 0.5
@@ -199,7 +198,7 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(trades: DataFrame, scale: f
     return df
 
 
-def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalance_volume: int):
+def trades_orderflow_to_imbalances(df: pd.DataFrame, imbalance_ratio: int, imbalance_volume: int):
     """
     :param df: dataframes with bid and ask
     :param imbalance_ratio: imbalance_ratio e.g. 300
@@ -216,7 +215,7 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     # overwrite ask_imbalance with False if volume is not big enough
     ask_imbalance_filtered = np.where(
         df.total_volume < imbalance_volume, False, ask_imbalance)
-    dataframe = DataFrame({
+    dataframe = pd.DataFrame({
         "bid_imbalance": bid_imbalance_filtered,
         "ask_imbalance": ask_imbalance_filtered
     }, index=df.index,
@@ -225,7 +224,7 @@ def trades_orderflow_to_imbalances(df: DataFrame, imbalance_ratio: int, imbalanc
     return dataframe
 
 
-def stacked_imbalance(df: DataFrame,
+def stacked_imbalance(df: pd.DataFrame,
                       label: str,
                       stacked_imbalance_range: int,
                       should_reverse: bool):
@@ -252,15 +251,15 @@ def stacked_imbalance(df: DataFrame,
     return stacked_imbalance_price
 
 
-def stacked_imbalance_bid(df: DataFrame, stacked_imbalance_range: int):
+def stacked_imbalance_bid(df: pd.DataFrame, stacked_imbalance_range: int):
     return stacked_imbalance(df, 'bid', stacked_imbalance_range, should_reverse=False)
 
 
-def stacked_imbalance_ask(df: DataFrame, stacked_imbalance_range: int):
+def stacked_imbalance_ask(df: pd.DataFrame, stacked_imbalance_range: int):
     return stacked_imbalance(df, 'ask', stacked_imbalance_range, should_reverse=True)
 
 
-def orderflow_to_volume_profile(df: DataFrame):
+def orderflow_to_volume_profile(df: pd.DataFrame):
     """
     :param orderflow: dataframe
     :return: volume profile dataframe
