@@ -50,8 +50,7 @@ def _calculate_ohlcv_candle_start_and_end(df: DataFrame, timeframe: str):
         df['datetime'] = pd.to_datetime(df['date'], unit='ms')
         df['candle_start'] = df['datetime'].dt.floor(timeframe_frequency)
         # used in _now_is_time_to_refresh_trades
-        df['candle_end'] = df['candle_start'] + \
-            pd.Timedelta(minutes=timeframe_minutes)
+        df['candle_end'] = df['candle_start'] + pd.Timedelta(minutes=timeframe_minutes)
         df.drop(columns=['datetime'], inplace=True)
 
 
@@ -90,8 +89,7 @@ def populate_dataframe_with_trades(config: Config,
             is_between = (candle_start == df['candle_start'])
             if np.any(is_between == True):  # noqa: E712
                 (_, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(timeframe)
-                candle_next = candle_start + \
-                    pd.Timedelta(minutes=timeframe_minutes)
+                candle_next = candle_start + pd.Timedelta(minutes=timeframe_minutes)
                 # skip if there are no trades at next candle
                 # because that this candle isn't finished yet
                 if candle_next not in trades_grouped_by_candle_start.groups:
