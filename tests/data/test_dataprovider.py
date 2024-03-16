@@ -64,9 +64,12 @@ def test_historic_ohlcv(mocker, default_conf, ohlcv_history):
 def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     hdf5loadmock = MagicMock(return_value=ohlcv_history)
     featherloadmock = MagicMock(return_value=ohlcv_history)
-    mocker.patch("freqtrade.data.history.hdf5datahandler.HDF5DataHandler._ohlcv_load", hdf5loadmock)
-    mocker.patch("freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load",
-                 featherloadmock)
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.hdf5datahandler.HDF5DataHandler._ohlcv_load",
+        hdf5loadmock)
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load",
+        featherloadmock)
 
     default_conf["runmode"] = RunMode.BACKTEST
     exchange = get_patched_exchange(mocker, default_conf)

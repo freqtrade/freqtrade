@@ -6,7 +6,7 @@ import pandas as pd
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_TRADES_COLUMNS, Config
 from freqtrade.data.converter.trade_converter import (trades_convert_types,
                                                       trades_df_remove_duplicates)
-from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.data.history import get_datahandler
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist

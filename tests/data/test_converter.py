@@ -15,7 +15,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
-from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.data.history.datahandlers import IDataHandler
 from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re

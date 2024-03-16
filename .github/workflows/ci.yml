@@ -420,7 +420,7 @@ jobs:
     ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
-    if: (github.event_name != 'schedule')
+    if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
     permissions:
       repository-projects: read
     steps:

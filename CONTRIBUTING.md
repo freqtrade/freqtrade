@@ -48,7 +48,7 @@ pytest tests/test_<file_name>.py::test_<method_name>
 #### Run Ruff
 
 ```bash
-ruff .
+ruff check .
 ```
 
 We receive a lot of code that fails the `ruff` checks.

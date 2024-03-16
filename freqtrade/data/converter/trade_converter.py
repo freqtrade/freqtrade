@@ -96,7 +96,7 @@ def convert_trades_to_ohlcv(
     """
     Convert stored trades data to ohlcv data
     """
-    from freqtrade.data.history.idatahandler import get_datahandler
+    from freqtrade.data.history import get_datahandler
     data_handler_trades = get_datahandler(datadir, data_format=data_format_trades)
     data_handler_ohlcv = get_datahandler(datadir, data_format=data_format_ohlcv)
 
@@ -135,7 +135,7 @@ def convert_trades_format(config: Config, convert_from: str, convert_to: str, er
         import_kraken_trades_from_csv(config, convert_to)
         return
 
-    from freqtrade.data.history.idatahandler import get_datahandler
+    from freqtrade.data.history import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
 

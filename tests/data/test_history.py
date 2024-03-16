@@ -15,14 +15,14 @@ from pandas.testing import assert_frame_equal
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.history import get_datahandler
+from freqtrade.data.history.datahandlers.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.data.history.history_utils import (_download_pair_history, _download_trades_history,
                                                   _load_cached_data_for_updating, get_timerange,
                                                   load_data, load_pair_history,
                                                   refresh_backtest_ohlcv_data,
                                                   refresh_backtest_trades_data, refresh_data,
                                                   validate_backtest_data)
-from freqtrade.data.history.idatahandler import get_datahandler
-from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
@@ -91,7 +91,7 @@ def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
 
 def test_load_data_startup_candles(mocker, testdatadir) -> None:
     ltfmock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load',
         MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
@@ -326,7 +326,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler.ohlcv_store',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler.ohlcv_store',
         return_value=None)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)

@@ -14,20 +14,17 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import (get_patched_freqai_strategy, is_arm, is_mac, is_py12,
-                                   make_rl_config, mock_pytorch_mlp_model_training_parameters)
+from tests.freqai.conftest import (get_patched_freqai_strategy, is_arm, is_mac, make_rl_config,
+                                   mock_pytorch_mlp_model_training_parameters)
 
 
 def can_run_model(model: str) -> None:
     is_pytorch_model = 'Reinforcement' in model or 'PyTorch' in model
 
-    if is_py12() and is_pytorch_model:
-        pytest.skip("Model not supported on python 3.12 yet.")
-
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM.")
 
-    if is_pytorch_model and is_mac() and not is_arm():
+    if is_pytorch_model and is_mac():
         pytest.skip("Reinforcement learning / PyTorch module not available on intel based Mac OS.")
 
 
@@ -521,8 +518,6 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-    if is_py12():
-        pytest.skip("Reinforcement learning currently not available on python 3.12.")
 
     freqai_conf.update({"freqaimodel": "ReinforcementLearner"})
     freqai_conf.update({"timerange": "20180110-20180130"})

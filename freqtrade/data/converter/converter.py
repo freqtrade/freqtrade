@@ -200,7 +200,7 @@ def convert_ohlcv_format(
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
     """
-    from freqtrade.data.history.idatahandler import get_datahandler
+    from freqtrade.data.history import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
     timeframes = config.get('timeframes', [config.get('timeframe')])

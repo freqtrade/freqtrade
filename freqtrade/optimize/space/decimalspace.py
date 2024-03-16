@@ -20,8 +20,10 @@ class SKDecimal(Integer):
         super().__init__(_low, _high, prior, base, transform, name, dtype)
 
     def __repr__(self):
-        return "Decimal(low={}, high={}, decimals={}, prior='{}', transform='{}')".format(
-            self.low_orig, self.high_orig, self.decimals, self.prior, self.transform_)
+        return (
+            f"Decimal(low={self.low_orig}, high={self.high_orig}, decimals={self.decimals}, "
+            f"prior='{self.prior}', transform='{self.transform_}')"
+        )
 
     def __contains__(self, point):
         if isinstance(point, list):
