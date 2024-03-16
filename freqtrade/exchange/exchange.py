@@ -80,7 +80,7 @@ class Exchange:
         "tickers_have_quoteVolume": True,
         "tickers_have_bid_ask": True,  # bid / ask empty for fetch_tickers
         "tickers_have_price": True,
-        "trade_candle_limit": 1000,
+        "trades_limit": 1000,  # Limit for 1 call to fetch_trades
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -175,7 +175,7 @@ class Exchange:
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
-        self._max_trades_candle_limit = self._ft_has['trade_candle_limit']
+        self._max_trades_limit = self._ft_has['trades_limit']
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
@@ -2455,18 +2455,18 @@ class Exchange:
         returns: List of dicts containing trades, the next iteration value (new "since" or trade_id)
         """
         try:
-            candle_limit = self._max_trades_candle_limit
+            trades_limit = self._max_trades_limit
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = await self._api_async.fetch_trades(pair, params=params, limit=candle_limit)
+                trades = await self._api_async.fetch_trades(pair, params=params, limit=trades_limit)
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair, since,
                     '(' + dt_from_ts(since).isoformat() + ') ' if since is not None else ''
                 )
-                trades = await self._api_async.fetch_trades(pair, since=since, limit=candle_limit)
+                trades = await self._api_async.fetch_trades(pair, since=since, limit=trades_limit)
             trades = self._trades_contracts_to_amount(trades)
             pagination_value = self._get_trade_pagination_next_value(trades)
             return trades_dict_to_list(trades), pagination_value
