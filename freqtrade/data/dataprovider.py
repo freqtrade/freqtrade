@@ -455,10 +455,8 @@ class DataProvider:
 
         use_public_trades = self._config.get('exchange', {}).get('use_public_trades', False)
         if use_public_trades:
-            datahandler = get_datahandler(
-                self._config['datadir'], data_format=self._config['dataformat_trades'])
             if self._exchange:
-                self._exchange.refresh_latest_trades(pairlist, datahandler)
+                self._exchange.refresh_latest_trades(pairlist)
 
     @property
     def available_pairs(self) -> ListPairsWithTimeframes:

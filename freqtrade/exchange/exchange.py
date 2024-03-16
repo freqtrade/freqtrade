@@ -2345,7 +2345,6 @@ class Exchange:
 
     def refresh_latest_trades(self,
                               pair_list: ListPairsWithTimeframes,
-                              data_handler: Any,  # using IDataHandler ends with circular import
                               *,
                               cache: bool = True,
                               ) -> Dict[PairWithTimeframe, DataFrame]:
@@ -2354,12 +2353,13 @@ class Exchange:
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
         Only used in the dataprovider.refresh() method.
         :param pair_list: List of 3 element tuples containing (pair, timeframe, candle_type)
-        :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _trades. Usefull for one-off downloads like for pairlists
-        :param drop_incomplete: Control candle dropping.
-            Specifying None defaults to _ohlcv_partial_candle
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
+        from freqtrade.data.history import get_datahandler
+        data_handler = get_datahandler(
+            self._config['datadir'], data_format=self._config['dataformat_trades']
+        )
         logger.debug("Refreshing TRADES data for %d pairs", len(pair_list))
         since_ms = None
         results_df = {}
@@ -2387,7 +2387,8 @@ class Exchange:
 
                     else:
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
-                        all_stored_ticks_df = data_handler.trades_load(f"{pair}-cached")
+                        all_stored_ticks_df = data_handler.trades_load(
+                            f"{pair}-cached", self.trading_mode)
 
                         if not all_stored_ticks_df.empty:
                             if all_stored_ticks_df.iloc[0]['timestamp'] <= first_candle_ms:
@@ -2424,7 +2425,8 @@ class Exchange:
                                                         cache,
                                                         first_required_candle_date=first_candle_ms)
                     results_df[(pair, timeframe, candle_type)] = trades_df
-                    data_handler.trades_store(f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS])
+                    data_handler.trades_store(
+                        f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode)
 
                 else:
                     raise OperationalException("no new ticks")
