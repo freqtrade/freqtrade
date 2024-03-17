@@ -34,7 +34,6 @@ def fmt_coin(
     :param keep_trailing_zeros: Keep trailing zeros "222.200" vs. "222.2"
     :return: Formatted / rounded value (with or without coin name)
     """
-    val = f"{value:.{decimals_per_coin(coin)}f}"
     val = round_value(value, decimals_per_coin(coin), keep_trailing_zeros)
     if show_coin_name:
         val = f"{val} {coin}"
