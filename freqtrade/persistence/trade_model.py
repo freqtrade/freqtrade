@@ -23,6 +23,7 @@ from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precisi
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType
+from freqtrade.persistence.custom_data import CustomDataWrapper, _CustomData
 from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts, dt_ts_none
 
 
@@ -1214,6 +1215,40 @@ class LocalTrade:
                 or (o.ft_is_open is True and o.status is not None)
                 ]
 
+    def set_custom_data(self, key: str, value: Any) -> None:
+        """
+        Set custom data for this trade
+        :param key: key of the custom data
+        :param value: value of the custom data (must be JSON serializable)
+        """
+        CustomDataWrapper.set_custom_data(trade_id=self.id, key=key, value=value)
+
+    def get_custom_data(self, key: str, default: Any = None) -> Any:
+        """
+        Get custom data for this trade
+        :param key: key of the custom data
+        """
+        data = CustomDataWrapper.get_custom_data(trade_id=self.id, key=key)
+        if data:
+            return data[0].value
+        return default
+
+    def get_custom_data_entry(self, key: str) -> Optional[_CustomData]:
+        """
+        Get custom data for this trade
+        :param key: key of the custom data
+        """
+        data = CustomDataWrapper.get_custom_data(trade_id=self.id, key=key)
+        if data:
+            return data[0]
+        return None
+
+    def get_all_custom_data(self) -> List[_CustomData]:
+        """
+        Get all custom data for this trade
+        """
+        return CustomDataWrapper.get_custom_data(trade_id=self.id)
+
     @property
     def nr_of_successful_entries(self) -> int:
         """
@@ -1469,6 +1504,9 @@ class Trade(ModelBase, LocalTrade):
     orders: Mapped[List[Order]] = relationship(
         "Order", order_by="Order.id", cascade="all, delete-orphan", lazy="selectin",
         innerjoin=True)  # type: ignore
+    custom_data: Mapped[List[_CustomData]] = relationship(
+        "_CustomData", cascade="all, delete-orphan",
+        lazy="raise")
 
     exchange: Mapped[str] = mapped_column(String(25), nullable=False)  # type: ignore
     pair: Mapped[str] = mapped_column(String(25), nullable=False, index=True)  # type: ignore
@@ -1571,6 +1609,8 @@ class Trade(ModelBase, LocalTrade):
 
         for order in self.orders:
             Order.session.delete(order)
+
+        CustomDataWrapper.delete_custom_data(trade_id=self.id)
 
         Trade.session.delete(self)
         Trade.commit()

@@ -15,15 +15,15 @@ from pandas.testing import assert_frame_equal
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import ohlcv_to_dataframe
+from freqtrade.data.history import get_datahandler
+from freqtrade.data.history.datahandlers.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.data.history.history_utils import (_download_pair_history, _download_trades_history,
                                                   _load_cached_data_for_updating, get_timerange,
                                                   load_data, load_pair_history,
                                                   refresh_backtest_ohlcv_data,
                                                   refresh_backtest_trades_data, refresh_data,
                                                   validate_backtest_data)
-from freqtrade.data.history.idatahandler import get_datahandler
-from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
@@ -91,7 +91,7 @@ def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
 
 def test_load_data_startup_candles(mocker, testdatadir) -> None:
     ltfmock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load',
         MagicMock(return_value=DataFrame()))
     timerange = TimeRange('date', None, 1510639620, 0)
     load_pair_history(pair='UNITTEST/BTC', timeframe='1m',
@@ -168,20 +168,21 @@ def test_json_pair_data_filename(pair, timeframe, expected_result, candle_type):
     assert fn == Path(expected_result + '.gz')
 
 
-@pytest.mark.parametrize("pair,expected_result", [
-    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-trades.json'),
-    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-trades.json'),
-    ("ETHH20", 'freqtrade/hello/world/ETHH20-trades.json'),
-    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-trades.json'),
-    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-trades.json'),
-    ("ACC_OLD_BTC", 'freqtrade/hello/world/ACC_OLD_BTC-trades.json'),
+@pytest.mark.parametrize("pair,trading_mode,expected_result", [
+    ("ETH/BTC", '', 'freqtrade/hello/world/ETH_BTC-trades.json'),
+    ("ETH/USDT:USDT", 'futures', 'freqtrade/hello/world/futures/ETH_USDT_USDT-trades.json'),
+    ("Fabric Token/ETH", '', 'freqtrade/hello/world/Fabric_Token_ETH-trades.json'),
+    ("ETHH20", '', 'freqtrade/hello/world/ETHH20-trades.json'),
+    (".XBTBON2H", '', 'freqtrade/hello/world/_XBTBON2H-trades.json'),
+    ("ETHUSD.d", '', 'freqtrade/hello/world/ETHUSD_d-trades.json'),
+    ("ACC_OLD_BTC", '', 'freqtrade/hello/world/ACC_OLD_BTC-trades.json'),
 ])
-def test_json_pair_trades_filename(pair, expected_result):
-    fn = JsonDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair)
+def test_json_pair_trades_filename(pair, trading_mode, expected_result):
+    fn = JsonDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair, trading_mode)
     assert isinstance(fn, Path)
     assert fn == Path(expected_result)
 
-    fn = JsonGzDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair)
+    fn = JsonGzDataHandler._pair_trades_filename(Path('freqtrade/hello/world'), pair, trading_mode)
     assert isinstance(fn, Path)
     assert fn == Path(expected_result + '.gz')
 
@@ -325,7 +326,7 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199]
     ]
     json_dump_mock = mocker.patch(
-        'freqtrade.data.history.featherdatahandler.FeatherDataHandler.ohlcv_store',
+        'freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler.ohlcv_store',
         return_value=None)
     mocker.patch(f'{EXMS}.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -559,7 +560,8 @@ def test_refresh_backtest_trades_data(mocker, default_conf, markets, caplog, tes
     unavailable_pairs = refresh_backtest_trades_data(exchange=ex,
                                                      pairs=["ETH/BTC", "XRP/BTC", "XRP/ETH"],
                                                      datadir=testdatadir,
-                                                     timerange=timerange, erase=True
+                                                     timerange=timerange, erase=True,
+                                                     trading_mode=TradingMode.SPOT,
                                                      )
 
     assert dl_mock.call_count == 2
@@ -584,7 +586,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     assert not file1.is_file()
 
     assert _download_trades_history(data_handler=data_handler, exchange=exchange,
-                                    pair='ETH/BTC')
+                                    pair='ETH/BTC', trading_mode=TradingMode.SPOT)
     assert log_has("Current Amount of trades: 0", caplog)
     assert log_has("New Amount of trades: 6", caplog)
     assert ght_mock.call_count == 1
@@ -597,8 +599,9 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     since_time = int(trades_history[-3][0] // 1000)
     since_time2 = int(trades_history[-1][0] // 1000)
     timerange = TimeRange('date', None, since_time, 0)
-    assert _download_trades_history(data_handler=data_handler, exchange=exchange,
-                                    pair='ETH/BTC', timerange=timerange)
+    assert _download_trades_history(
+        data_handler=data_handler, exchange=exchange, pair='ETH/BTC',
+        timerange=timerange, trading_mode=TradingMode.SPOT)
 
     assert ght_mock.call_count == 1
     # Check this in seconds - since we had to convert to seconds above too.
@@ -611,7 +614,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     caplog.clear()
 
     assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
-                                        pair='ETH/BTC')
+                                        pair='ETH/BTC', trading_mode=TradingMode.SPOT)
     assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
 
     file2 = tmp_path / 'XRP_ETH-trades.json.gz'
@@ -623,8 +626,9 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     since_time = int(trades_history[0][0] // 1000) - 500
     timerange = TimeRange('date', None, since_time, 0)
 
-    assert _download_trades_history(data_handler=data_handler, exchange=exchange,
-                                    pair='XRP/ETH', timerange=timerange)
+    assert _download_trades_history(
+        data_handler=data_handler, exchange=exchange, pair='XRP/ETH',
+        timerange=timerange, trading_mode=TradingMode.SPOT)
 
     assert ght_mock.call_count == 1
 

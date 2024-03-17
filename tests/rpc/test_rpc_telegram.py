@@ -150,7 +150,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], "
                    "['bl_delete', 'blacklist_delete'], "
                    "['logs'], ['edge'], ['health'], ['help'], ['version'], ['marketdir'], "
-                   "['order']]")
+                   "['order'], ['list_custom_data']]")
 
     assert log_has(message_str, caplog)
 
@@ -2657,3 +2657,49 @@ async def test_change_market_direction(default_conf, mocker, update) -> None:
     context.args = ["invalid"]
     await telegram._changemarketdir(update, context)
     assert telegram._rpc._freqtrade.strategy.market_direction == MarketDirection.LONG
+
+
+async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee, mocker) -> None:
+
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    telegram, _freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
+
+    # Create some test data
+    create_mock_trades_usdt(fee)
+    # No trade id
+    context = MagicMock()
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert 'Trade-id not set.' in msg_mock.call_args_list[0][0][0]
+    msg_mock.reset_mock()
+
+    #
+    context.args = ['1']
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert (
+        "Didn't find any custom-data entries for Trade ID: `1`" in msg_mock.call_args_list[0][0][0]
+    )
+    msg_mock.reset_mock()
+
+    # Add some custom data
+    trade1 = Trade.get_trades_proxy()[0]
+    trade1.set_custom_data('test_int', 1)
+    trade1.set_custom_data('test_dict', {'test': 'dict'})
+    Trade.commit()
+    context.args = [f"{trade1.id}"]
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 3
+    assert "Found custom-data entries: " in msg_mock.call_args_list[0][0][0]
+    assert (
+        "*Key:* `test_int`\n*ID:* `1`\n*Trade ID:* `1`\n*Type:* `int`\n"
+        "*Value:* `1`\n*Create Date:*") in msg_mock.call_args_list[1][0][0]
+    assert (
+        '*Key:* `test_dict`\n*ID:* `2`\n*Trade ID:* `1`\n*Type:* `dict`\n'
+        '*Value:* `{"test": "dict"}`\n*Create Date:* `') in msg_mock.call_args_list[2][0][0]
+
+    msg_mock.reset_mock()

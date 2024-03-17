@@ -1,4 +1,5 @@
 
+from freqtrade.persistence.custom_data import CustomDataWrapper
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.persistence.trade_model import Trade
 
@@ -11,6 +12,7 @@ def disable_database_use(timeframe: str) -> None:
     PairLocks.use_db = False
     PairLocks.timeframe = timeframe
     Trade.use_db = False
+    CustomDataWrapper.use_db = False
 
 
 def enable_database_use() -> None:
@@ -20,6 +22,7 @@ def enable_database_use() -> None:
     PairLocks.use_db = True
     PairLocks.timeframe = ''
     Trade.use_db = True
+    CustomDataWrapper.use_db = True
 
 
 class FtNoDBContext:

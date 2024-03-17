@@ -326,6 +326,8 @@ You'd set `available_capital=5000` - granting each bot an initial capital of 500
 The bot will then split this starting balance equally into `max_open_trades` buckets.
 Profitable trades will result in increased stake-sizes for this bot - without affecting the stake-sizes of the other bot.
 
+Adjusting `available_capital` requires reloading the configuration to take effect. Adjusting the `available_capital` adds the difference between the previous `available_capital` and the new `available_capital`. Decreasing the available capital when trades are open doesn't exit the trades. The difference is returned to the wallet when the trades conclude. The outcome of this differs depending on the price movement between the adjustment and exiting the trades.
+
 !!! Warning "Incompatible with `tradable_balance_ratio`"
     Setting this option will replace any configuration of `tradable_balance_ratio`.
 
@@ -503,13 +505,13 @@ Configuration:
     Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Note "Stoploss on exchange"
-    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
+    `order_types.stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
     refer to [the stoploss documentation](stoploss.md).
 
-    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
+    If `order_types.stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
-!!! Warning "Warning: stoploss_on_exchange failures"
+!!! Warning "Warning: order_types.stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will exit the trade using a market order. The order-type for the emergency-exit can be changed by setting the `emergency_exit` value in the `order_types` dictionary - however, this is not advised.
 
 ### Understand order_time_in_force

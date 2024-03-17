@@ -559,3 +559,7 @@ class SysInfo(BaseModel):
 class Health(BaseModel):
     last_process: Optional[datetime] = None
     last_process_ts: Optional[int] = None
+    bot_start: Optional[datetime] = None
+    bot_start_ts: Optional[int] = None
+    bot_startup: Optional[datetime] = None
+    bot_startup_ts: Optional[int] = None

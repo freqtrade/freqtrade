@@ -33,10 +33,11 @@ from freqtrade.exchange.exchange_utils import (ROUND, ROUND_DOWN, ROUND_UP, Ccxt
                                                amount_to_contract_precision, amount_to_contracts,
                                                amount_to_precision, contracts_to_amount,
                                                date_minus_candles, is_exchange_known_ccxt,
-                                               market_is_active, price_to_precision,
-                                               timeframe_to_minutes, timeframe_to_msecs,
-                                               timeframe_to_next_date, timeframe_to_prev_date,
-                                               timeframe_to_seconds)
+                                               market_is_active, price_to_precision)
+from freqtrade.exchange.exchange_utils_timeframe import (timeframe_to_minutes, timeframe_to_msecs,
+                                                         timeframe_to_next_date,
+                                                         timeframe_to_prev_date,
+                                                         timeframe_to_seconds)
 from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
@@ -659,7 +660,7 @@ class Exchange:
 
         candle_limit = self.ohlcv_candle_limit(
             timeframe, self._config['candle_type_def'],
-            int(date_minus_candles(timeframe, startup_candles).timestamp() * 1000)
+            dt_ts(date_minus_candles(timeframe, startup_candles))
             if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
@@ -2043,7 +2044,7 @@ class Exchange:
                 timeframe, candle_type, since_ms)
             move_to = one_call * self.required_candle_call_count
             now = timeframe_to_next_date(timeframe)
-            since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+            since_ms = dt_ts(now - timedelta(seconds=move_to // 1000))
 
         if since_ms:
             return self._async_get_historic_ohlcv(
@@ -2503,7 +2504,7 @@ class Exchange:
             )
 
         if type(since) is datetime:
-            since = int(since.timestamp()) * 1000   # * 1000 for ms
+            since = dt_ts(since)
 
         try:
             funding_history = self._api.fetch_funding_history(
@@ -2833,7 +2834,7 @@ class Exchange:
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
-        since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
+        since_ms = dt_ts(timeframe_to_prev_date(timeframe, open_date))
 
         mark_comb: PairWithTimeframe = (pair, timeframe, mark_price_type)
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)

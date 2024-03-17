@@ -161,7 +161,7 @@ function install_macos() {
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
 
-    brew install gettext
+    brew install gettext libomp
 
     #Gets number after decimal in python version
     version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')

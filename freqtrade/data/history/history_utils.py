@@ -12,8 +12,8 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMN
 from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
                                       ohlcv_to_dataframe, trades_df_remove_duplicates,
                                       trades_list_to_df)
-from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
-from freqtrade.enums import CandleType
+from freqtrade.data.history.datahandlers import IDataHandler, get_datahandler
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
@@ -333,7 +333,8 @@ def _download_trades_history(exchange: Exchange,
                              pair: str, *,
                              new_pairs_days: int = 30,
                              timerange: Optional[TimeRange] = None,
-                             data_handler: IDataHandler
+                             data_handler: IDataHandler,
+                             trading_mode: TradingMode,
                              ) -> bool:
     """
     Download trade history from the exchange.
@@ -349,7 +350,7 @@ def _download_trades_history(exchange: Exchange,
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
 
-        trades = data_handler.trades_load(pair)
+        trades = data_handler.trades_load(pair, trading_mode)
 
         # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
@@ -388,7 +389,7 @@ def _download_trades_history(exchange: Exchange,
         trades = concat([trades, new_trades_df], axis=0)
         # Remove duplicates to make sure we're not storing data we don't need
         trades = trades_df_remove_duplicates(trades)
-        data_handler.trades_store(pair, data=trades)
+        data_handler.trades_store(pair, trades, trading_mode)
 
         logger.debug("New Start: %s", 'None' if trades.empty else
                      f"{trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}")
@@ -405,8 +406,10 @@ def _download_trades_history(exchange: Exchange,
 
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
-                                 timerange: TimeRange, new_pairs_days: int = 30,
-                                 erase: bool = False, data_format: str = 'feather') -> List[str]:
+                                 timerange: TimeRange, trading_mode: TradingMode,
+                                 new_pairs_days: int = 30,
+                                 erase: bool = False, data_format: str = 'feather',
+                                 ) -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -421,7 +424,7 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
             continue
 
         if erase:
-            if data_handler.trades_purge(pair):
+            if data_handler.trades_purge(pair, trading_mode):
                 logger.info(f'Deleting existing data for pair {pair}.')
 
         logger.info(f'Downloading trades for pair {pair}.')
@@ -429,7 +432,8 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
                                  pair=pair,
                                  new_pairs_days=new_pairs_days,
                                  timerange=timerange,
-                                 data_handler=data_handler)
+                                 data_handler=data_handler,
+                                 trading_mode=trading_mode)
     return pairs_not_available
 
 
@@ -516,12 +520,12 @@ def download_data_main(config: Config) -> None:
     # Start downloading
     try:
         if config.get('download_trades'):
-            if config.get('trading_mode') == 'futures':
-                raise OperationalException("Trade download not supported for futures.")
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=expanded_pairs, datadir=config['datadir'],
                 timerange=timerange, new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_trades'])
+                erase=bool(config.get('erase')), data_format=config['dataformat_trades'],
+                trading_mode=config.get('trading_mode', TradingMode.SPOT),
+                )
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
@@ -529,6 +533,7 @@ def download_data_main(config: Config) -> None:
                 datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format_ohlcv=config['dataformat_ohlcv'],
                 data_format_trades=config['dataformat_trades'],
+                candle_type=config.get('candle_type_def', CandleType.SPOT),
             )
         else:
             if not exchange.get_option('ohlcv_has_history', True):
