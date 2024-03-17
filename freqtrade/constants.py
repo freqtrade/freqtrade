@@ -471,6 +471,15 @@ CONF_SCHEMA = {
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
+        'orderflow': {
+            'type': 'object',
+            'properties': {
+                'scale': {'type': 'number', 'minimum': 0.0},
+                'stacked_imbalance_range': {'type': 'number'},
+                'imbalance_volume': {'type': 'number'},
+                'imbalance_ratio': {'type': 'number'},
+            }
+        },
     },
     'definitions': {
         'exchange': {
