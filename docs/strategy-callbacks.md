@@ -783,7 +783,7 @@ Additional entries are ignored once you have reached the maximum amount of extra
 ### Decrease position
 
 The strategy is expected to return a negative stake_amount (in stake currency) for a partial exit.
-Returning the full owned stake at that point (based on the current price) (`-(trade.amount / trade.leverage) * current_exit_rate`) results in a full exit.  
+Returning the full owned stake at that point (`-trade.stake_amount`) results in a full exit.  
 Returning a value more than the above (so remaining stake_amount would become negative) will result in the bot ignoring the signal.
 
 !!! Note "About stake size"
