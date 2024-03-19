@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
+from freqtrade.configuration import sanitize_config
 from freqtrade.configuration.config_setup import setup_utils_configuration
 from freqtrade.configuration.detect_environment import running_in_docker
 from freqtrade.configuration.directory_operations import chown_user_directory
@@ -276,5 +277,7 @@ def start_show_config(args: Dict[str, Any]) -> None:
 
     print("Your combined configuration is:")
 
+    config_sanitized = sanitize_config(config['original_config'])
+
     from rich import print_json
-    print_json(data=config['original_config'])
+    print_json(data=config_sanitized)
