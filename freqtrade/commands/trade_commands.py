@@ -23,11 +23,6 @@ def start_trading(args: Dict[str, Any]) -> int:
         signal.signal(signal.SIGTERM, term_handler)
         worker = Worker(args)
         worker.run()
-    except Exception as e:
-        logger.error(str(e))
-        logger.exception("Fatal exception!")
-    except (KeyboardInterrupt):
-        logger.info('SIGINT received, aborting ...')
     finally:
         if worker:
             logger.info("worker found ... calling exit")
