@@ -19,6 +19,7 @@ Currently available callbacks:
 * [`adjust_trade_position()`](#adjust-trade-position)
 * [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
+* [`order_filled()`](#oder-filled-callback)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
@@ -1022,3 +1023,30 @@ class AwesomeStrategy(IStrategy):
 
 All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
 Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.
+
+## Order filled Callback
+
+The `order_filled()` callback may be used by strategy developer to perform specific actions based on current trade state after an order is filled.
+
+Assuming that your strategy need to store the high value of the candle at trade entry, this is possible with this callback as the following exemple show.
+
+``` python
+class AwesomeStrategy(IStrategy):
+    def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs) -> None:
+        """
+        Called just ofter order filling
+        :param pair: Pair for trade that's just exited.
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        # Obtain pair dataframe (just to show how to access it)
+        dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+        
+        if (trade.nr_of_successful_entries == 1) and (order.ft_order_side == trade.entry_side):
+            trade.set_custom_data(key='entry_candle_high', value=last_candle['high'])
+
+        return None
+
+```
