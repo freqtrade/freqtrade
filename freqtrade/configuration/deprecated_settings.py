@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 from freqtrade.constants import Config
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def process_removed_setting(config: Config,
     section1_config = config.get(section1, {})
     if name1 in section1_config:
         section_2 = f"{section2}.{name2}" if section2 else f"{name2}"
-        raise OperationalException(
+        raise ConfigurationError(
             f"Setting `{section1}.{name1}` has been moved to `{section_2}. "
             f"Please delete it from your configuration and use the `{section_2}` "
             "setting instead."
@@ -122,7 +122,7 @@ def process_temporary_deprecated_settings(config: Config) -> None:
                             None, 'ignore_roi_if_entry_signal')
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
-        raise OperationalException(
+        raise ConfigurationError(
             "DEPRECATED: "
             "Using 'edge.capital_available_percentage' has been deprecated in favor of "
             "'tradable_balance_ratio'. Please migrate your configuration to "
@@ -131,7 +131,7 @@ def process_temporary_deprecated_settings(config: Config) -> None:
         )
     if 'ticker_interval' in config:
 
-        raise OperationalException(
+        raise ConfigurationError(
             "DEPRECATED: 'ticker_interval' detected. "
             "Please use 'timeframe' instead of 'ticker_interval."
         )
