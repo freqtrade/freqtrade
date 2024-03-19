@@ -274,5 +274,7 @@ def start_show_config(args: Dict[str, Any]) -> None:
 
     # TODO: Sanitize from sensitive info before printing
 
-    from rich import print
-    print(config)
+    print("Your combined configuration is:")
+
+    from rich import print_json
+    print_json(data=config['original_config'])
