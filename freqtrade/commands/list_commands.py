@@ -10,7 +10,7 @@ from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.exchange import list_available_exchanges, market_is_active
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -246,7 +246,7 @@ def start_show_trades(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if 'db_url' not in config:
-        raise OperationalException("--db-url is required for this command.")
+        raise ConfigurationError("--db-url is required for this command.")
 
     logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
     init_db(config['db_url'])

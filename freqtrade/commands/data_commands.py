@@ -9,7 +9,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       convert_trades_to_ohlcv)
 from freqtrade.data.history import download_data_main
 from freqtrade.enums import CandleType, RunMode, TradingMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 def _check_data_config_download_sanity(config: Config) -> None:
     if 'days' in config and 'timerange' in config:
-        raise OperationalException("--days and --timerange are mutually exclusive. "
-                                   "You can only specify one or the other.")
+        raise ConfigurationError("--days and --timerange are mutually exclusive. "
+                                 "You can only specify one or the other.")
 
     if 'pairs' not in config:
-        raise OperationalException(
+        raise ConfigurationError(
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
