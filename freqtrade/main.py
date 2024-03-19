@@ -16,7 +16,7 @@ if sys.version_info < (3, 9):  # pragma: no cover
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments
-from freqtrade.exceptions import FreqtradeException, OperationalException
+from freqtrade.exceptions import ConfigurationError, FreqtradeException, OperationalException
 from freqtrade.loggers import setup_logging_pre
 
 
@@ -56,6 +56,8 @@ def main(sysargv: Optional[List[str]] = None) -> None:
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
+    except ConfigurationError as e:
+        logger.error(f"Configuration error: {e}")
     except FreqtradeException as e:
         logger.error(str(e))
         return_code = 2
