@@ -1066,6 +1066,9 @@ def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     assert not exchange.exchange_has("deadbeef")
 
+    exchange._ft_has['exchange_has_overrides'] = {'deadbeef': True}
+    assert exchange.exchange_has("deadbeef")
+
 
 @pytest.mark.parametrize("side,leverage", [
     ("buy", 1),

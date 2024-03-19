@@ -88,6 +88,8 @@ class Exchange:
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
         "marketOrderRequiresPrice": False,
+        "exchange_has_overrides": {},  # Dictionary overriding ccxt's "has".
+        # Expected to be in the format {"fetchOHLCV": True} or {"fetchOHLCV": False}
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -717,6 +719,8 @@ class Exchange:
         :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
         :return: bool
         """
+        if endpoint in self._ft_has.get('exchange_has_overrides', {}):
+            return self._ft_has['exchange_has_overrides'][endpoint]
         return endpoint in self._api.has and self._api.has[endpoint]
 
     def get_precision_amount(self, pair: str) -> Optional[float]:
