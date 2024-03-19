@@ -9,7 +9,7 @@ from jsonschema.exceptions import ValidationError, best_match
 from freqtrade import constants
 from freqtrade.configuration.deprecated_settings import process_deprecated_setting
 from freqtrade.enums import RunMode, TradingMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = Fal
     Should be ran after loading both configuration and strategy,
     since strategies can set certain configuration settings too.
     :param conf: Config in JSON format
-    :return: Returns None if everything is ok, otherwise throw an OperationalException
+    :return: Returns None if everything is ok, otherwise throw an ConfigurationError
     """
 
     # validating trailing stoploss
@@ -98,12 +98,12 @@ def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = Fal
 def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
     """
     If edge is disabled, either max_open_trades or stake_amount need to be set.
-    :raise: OperationalException if config validation failed
+    :raise: ConfigurationError if config validation failed
     """
     if (not conf.get('edge', {}).get('enabled')
         and conf.get('max_open_trades') == float('inf')
             and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
-        raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
+        raise ConfigurationError("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
 def _validate_price_config(conf: Dict[str, Any]) -> None:
@@ -113,18 +113,18 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     # TODO: The below could be an enforced setting when using market orders
     if (conf.get('order_types', {}).get('entry') == 'market'
             and conf.get('entry_pricing', {}).get('price_side') not in ('ask', 'other')):
-        raise OperationalException(
+        raise ConfigurationError(
             'Market entry orders require entry_pricing.price_side = "other".')
 
     if (conf.get('order_types', {}).get('exit') == 'market'
             and conf.get('exit_pricing', {}).get('price_side') not in ('bid', 'other')):
-        raise OperationalException('Market exit orders require exit_pricing.price_side = "other".')
+        raise ConfigurationError('Market exit orders require exit_pricing.price_side = "other".')
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
 
     if conf.get('stoploss') == 0.0:
-        raise OperationalException(
+        raise ConfigurationError(
             'The config stoploss needs to be different from 0 to avoid problems with sell orders.'
         )
     # Skip if trailing stoploss is not activated
@@ -137,17 +137,17 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
 
     if tsl_only_offset:
         if tsl_positive == 0.0:
-            raise OperationalException(
+            raise ConfigurationError(
                 'The config trailing_only_offset_is_reached needs '
                 'trailing_stop_positive_offset to be more than 0 in your config.')
     if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
-        raise OperationalException(
+        raise ConfigurationError(
             'The config trailing_stop_positive_offset needs '
             'to be greater than trailing_stop_positive in your config.')
 
     # Fetch again without default
     if 'trailing_stop_positive' in conf and float(conf['trailing_stop_positive']) == 0.0:
-        raise OperationalException(
+        raise ConfigurationError(
             'The config trailing_stop_positive needs to be different from 0 '
             'to avoid problems with sell orders.'
         )
@@ -162,7 +162,7 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
         return
 
     if not conf.get('use_exit_signal', True):
-        raise OperationalException(
+        raise ConfigurationError(
             "Edge requires `use_exit_signal` to be True, otherwise no sells will happen."
         )
 
@@ -178,7 +178,7 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
     for pl in conf.get('pairlists', [{'method': 'StaticPairList'}]):
         if (isinstance(pl, dict) and pl.get('method') == 'StaticPairList'
                 and not conf.get('exchange', {}).get('pair_whitelist')):
-            raise OperationalException("StaticPairList requires pair_whitelist to be set.")
+            raise ConfigurationError("StaticPairList requires pair_whitelist to be set.")
 
 
 def _validate_protections(conf: Dict[str, Any]) -> None:
@@ -188,13 +188,13 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
 
     for prot in conf.get('protections', []):
         if ('stop_duration' in prot and 'stop_duration_candles' in prot):
-            raise OperationalException(
+            raise ConfigurationError(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"
             )
 
         if ('lookback_period' in prot and 'lookback_period_candles' in prot):
-            raise OperationalException(
+            raise ConfigurationError(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"
             )
@@ -206,7 +206,7 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
     ob_max = ask_strategy.get('order_book_max')
     if ob_min is not None and ob_max is not None and ask_strategy.get('use_order_book'):
         if ob_min != ob_max:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Using order_book_max != order_book_min in exit_pricing is no longer supported."
                 "Please pick one value and use `order_book_top` in the future."
             )
@@ -234,7 +234,7 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
     time_in_force = conf.get('order_time_in_force', {})
     if 'buy' in time_in_force or 'sell' in time_in_force:
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Please migrate your time_in_force settings to use 'entry' and 'exit'.")
         else:
             logger.warning(
@@ -255,7 +255,7 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
                        'forcesell', 'emergencyexit', 'forceexit', 'forceentry']
     if any(x in order_types for x in old_order_types):
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Please migrate your order_types settings to use the new wording.")
         else:
             logger.warning(
@@ -280,7 +280,7 @@ def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
     unfilledtimeout = conf.get('unfilledtimeout', {})
     if any(x in unfilledtimeout for x in ['buy', 'sell']):
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Please migrate your unfilledtimeout settings to use the new wording.")
         else:
 
@@ -300,7 +300,7 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
 
     if conf.get('ask_strategy') or conf.get('bid_strategy'):
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Please migrate your pricing settings to use the new wording.")
         else:
 
@@ -331,7 +331,7 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
     freqai_enabled = conf.get('freqai', {}).get('enabled', False)
     analyze_per_epoch = conf.get('analyze_per_epoch', False)
     if analyze_per_epoch and freqai_enabled:
-        raise OperationalException(
+        raise ConfigurationError(
             'Using analyze-per-epoch parameter is not supported with a FreqAI strategy.')
 
 
@@ -350,7 +350,7 @@ def _validate_freqai_include_timeframes(conf: Dict[str, Any], preliminary: bool)
             if tf_s < main_tf_s:
                 offending_lines.append(tf)
         if offending_lines:
-            raise OperationalException(
+            raise ConfigurationError(
                 f"Main timeframe of {main_tf} must be smaller or equal to FreqAI "
                 f"`include_timeframes`.Offending include-timeframes: {', '.join(offending_lines)}")
 
@@ -368,17 +368,17 @@ def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
         timerange = conf.get('timerange')
         freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
         if freqai_backtest_live_models and freqai_enabled and timerange:
-            raise OperationalException(
+            raise ConfigurationError(
                 'Using timerange parameter is not supported with '
                 '--freqai-backtest-live-models parameter.')
 
         if freqai_backtest_live_models and not freqai_enabled:
-            raise OperationalException(
+            raise ConfigurationError(
                 'Using --freqai-backtest-live-models parameter is only '
                 'supported with a FreqAI strategy.')
 
         if freqai_enabled and not freqai_backtest_live_models and not timerange:
-            raise OperationalException(
+            raise ConfigurationError(
                 'Please pass --timerange if you intend to use FreqAI for backtesting.')
 
 
@@ -386,12 +386,12 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
     emc_conf = conf.get('external_message_consumer', {})
     if emc_conf.get('enabled', False):
         if len(emc_conf.get('producers', [])) < 1:
-            raise OperationalException("You must specify at least 1 Producer to connect to.")
+            raise ConfigurationError("You must specify at least 1 Producer to connect to.")
 
         producer_names = [p['name'] for p in emc_conf.get('producers', [])]
         duplicates = [item for item, count in Counter(producer_names).items() if count > 1]
         if duplicates:
-            raise OperationalException(
+            raise ConfigurationError(
                 f"Producer names must be unique. Duplicate: {', '.join(duplicates)}")
         if conf.get('process_only_new_candles', True):
             # Warning here or require it?
