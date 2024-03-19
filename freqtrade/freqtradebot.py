@@ -478,7 +478,8 @@ class FreqtradeBot(LoggingMixin):
                 trade.close_date = trade.date_last_filled_utc
                 strategy_safe_wrapper(
                     self.strategy.order_filled, default_retval=None)(
-                    pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc))
+                    pair=trade.pair, trade=trade, order=order_obj,
+                    current_time=datetime.now(timezone.utc))
                 self.order_close_notify(trade, order_obj,
                                         order_obj.ft_order_side == 'stoploss',
                                         send_msg=prev_trade_state != trade.is_open)
@@ -1950,7 +1951,7 @@ class FreqtradeBot(LoggingMixin):
         if order.status in constants.NON_OPEN_EXCHANGE_STATES:
             strategy_safe_wrapper(
                 self.strategy.order_filled, default_retval=None)(
-                pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc))
+                pair=trade.pair, trade=trade, order=order, current_time=datetime.now(timezone.utc))
             # If a entry order was closed, force update on stoploss on exchange
             if order.ft_order_side == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)

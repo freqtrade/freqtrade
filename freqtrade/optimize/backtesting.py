@@ -605,7 +605,7 @@ class Backtesting:
             self._run_funding_fees(trade, current_date, force=True)
             strategy_safe_wrapper(
                 self.strategy.order_filled, default_retval=None)(
-                pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc))
+                pair=trade.pair, trade=trade, order=order, current_time=datetime.now(timezone.utc))
 
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open

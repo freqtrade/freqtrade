@@ -372,11 +372,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return True
 
-    def order_filled(self, pair: str, trade: Trade, current_time: datetime, **kwargs) -> None:
+    def order_filled(self, pair: str, trade: Trade, order: Order,
+                     current_time: datetime, **kwargs) -> None:
         """
         Called just ofter order filling
         :param pair: Pair for trade that's just exited.
         :param trade: trade object.
+        :param order: Order object.
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
