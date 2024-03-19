@@ -607,7 +607,7 @@ class Backtesting:
                 self.strategy.order_filled,
                 default_retval=None)(
                 pair=trade.pair, trade=trade,  # type: ignore[arg-type]
-                order=order, current_time=datetime.now(timezone.utc))
+                order=order, current_time=current_date)
 
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open
