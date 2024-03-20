@@ -276,8 +276,10 @@ def start_show_config(args: Dict[str, Any]) -> None:
     # TODO: Sanitize from sensitive info before printing
 
     print("Your combined configuration is:")
-
-    config_sanitized = sanitize_config(config['original_config'])
+    config_sanitized = sanitize_config(
+        config['original_config'],
+        show_sensitive=args.get('show_sensitive', False)
+    )
 
     from rich import print_json
     print_json(data=config_sanitized)

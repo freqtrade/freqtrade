@@ -3,12 +3,15 @@
 from freqtrade.constants import Config
 
 
-def sanitize_config(config: Config) -> Config:
+def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
     """
     Remove sensitive information from the config.
     :param config: Configuration
+    :param show_sensitive: Show sensitive information
     :return: Configuration
     """
+    if show_sensitive:
+        return config
     keys_to_remove = [
         "exchange.key",
         "exchange.secret",

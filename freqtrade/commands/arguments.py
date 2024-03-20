@@ -62,7 +62,7 @@ ARGS_TEST_PAIRLIST = ["user_data_dir", "verbosity", "config", "quote_currencies"
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
 ARGS_BUILD_CONFIG = ["config"]
-ARGS_SHOW_CONFIG = ["user_data_dir", "config"]
+ARGS_SHOW_CONFIG = ["user_data_dir", "config", "show_sensitive"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
