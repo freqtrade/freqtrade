@@ -1,4 +1,4 @@
-
+from copy import deepcopy
 
 from freqtrade.constants import Config
 
@@ -22,7 +22,7 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
         "discord.webhook_url",
         "api_server.password",
     ]
-
+    config = deepcopy(config)
     for key in keys_to_remove:
         if '.' in key:
             nested_keys = key.split('.')

@@ -1510,7 +1510,10 @@ def test_setup_freqai_backtesting(mocker, default_conf) -> None:
 
 
 def test_sanitize_config(default_conf_usdt):
+    assert default_conf_usdt['exchange']['key'] != 'REDACTED'
     res = sanitize_config(default_conf_usdt)
+    # Didn't modify original dict
+    assert default_conf_usdt['exchange']['key'] != 'REDACTED'
 
     assert res['exchange']['key'] == 'REDACTED'
     assert res['exchange']['secret'] == 'REDACTED'
