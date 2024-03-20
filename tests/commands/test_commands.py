@@ -1581,7 +1581,7 @@ def test_start_strategy_updater(mocker, tmp_path):
     assert sc_mock.call_count == 2
 
 
-def test_start_show_config(capsys):
+def test_start_show_config(capsys, caplog):
     args = [
         "show-config",
         "--config",
@@ -1608,3 +1608,4 @@ def test_start_show_config(capsys):
     assert "Your combined configuration is:" in captured.out
     assert '"max_open_trades":' in captured.out
     assert '"secret": "REDACTED"' not in captured.out
+    assert log_has_re(r'Sensitive information will be shown in the upcomming output.*', caplog)
