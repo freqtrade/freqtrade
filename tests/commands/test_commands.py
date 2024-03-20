@@ -1594,3 +1594,17 @@ def test_start_show_config(capsys):
     assert "Your combined configuration is:" in captured.out
     assert '"max_open_trades":' in captured.out
     assert '"secret": "REDACTED"' in captured.out
+
+    args = [
+        "show-config",
+        "--config",
+        "tests/testdata/testconfigs/main_test_config.json",
+        "--show-sensitive"
+    ]
+    pargs = get_args(args)
+    start_show_config(pargs)
+
+    captured = capsys.readouterr()
+    assert "Your combined configuration is:" in captured.out
+    assert '"max_open_trades":' in captured.out
+    assert '"secret": "REDACTED"' not in captured.out
