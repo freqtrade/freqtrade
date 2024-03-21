@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -106,7 +106,7 @@ def get_latest_hyperopt_file(
         directory = Path(directory)
     if predef_filename:
         if Path(predef_filename).is_absolute():
-            raise OperationalException(
+            raise ConfigurationError(
                 "--hyperopt-filename expects only the filename, not an absolute path.")
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)

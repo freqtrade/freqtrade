@@ -129,6 +129,8 @@ Below is an outline of exception inheritance hierarchy:
 + FreqtradeException
 |
 +---+ OperationalException
+|   |
+|   +---+ ConfigurationError
 |
 +---+ DependencyException
 |   |

@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 import rapidjson
 
 from freqtrade.constants import MINIMAL_CONFIG, Config
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.misc import deep_merge_dicts
 
 
@@ -66,7 +66,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
             ' Please create a config file or check whether it exists.') from None
     except rapidjson.JSONDecodeError as e:
         err_range = log_config_error_range(path, str(e))
-        raise OperationalException(
+        raise ConfigurationError(
             f'{e}\n'
             f'Please verify the following segment of your configuration:\n{err_range}'
             if err_range else 'Please verify your configuration file for syntax errors.'
@@ -83,7 +83,7 @@ def load_from_files(
     """
     config: Config = {}
     if level > 5:
-        raise OperationalException("Config loop detected.")
+        raise ConfigurationError("Config loop detected.")
 
     if not files:
         return deepcopy(MINIMAL_CONFIG)

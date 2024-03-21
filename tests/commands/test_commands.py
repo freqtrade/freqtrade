@@ -51,15 +51,16 @@ def test_start_trading_fail(mocker, caplog):
         'trade',
         '-c', 'tests/testdata/testconfigs/main_test_config.json'
     ]
-    start_trading(get_args(args))
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
     assert exitmock.call_count == 1
 
     exitmock.reset_mock()
     caplog.clear()
     mocker.patch("freqtrade.worker.Worker.__init__", MagicMock(side_effect=OperationalException))
-    start_trading(get_args(args))
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
     assert exitmock.call_count == 0
-    assert log_has('Fatal exception!', caplog)
 
 
 def test_start_webserver(mocker, caplog):

@@ -7,8 +7,6 @@ import logging
 import sys
 from typing import Any, List, Optional
 
-from freqtrade.util.gc_setup import gc_set_threshold
-
 
 # check min. python version
 if sys.version_info < (3, 9):  # pragma: no cover
@@ -16,8 +14,10 @@ if sys.version_info < (3, 9):  # pragma: no cover
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments
-from freqtrade.exceptions import FreqtradeException, OperationalException
+from freqtrade.constants import DOCS_LINK
+from freqtrade.exceptions import ConfigurationError, FreqtradeException, OperationalException
 from freqtrade.loggers import setup_logging_pre
+from freqtrade.util.gc_setup import gc_set_threshold
 
 
 logger = logging.getLogger('freqtrade')
@@ -56,6 +56,9 @@ def main(sysargv: Optional[List[str]] = None) -> None:
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
+    except ConfigurationError as e:
+        logger.error(f"Configuration error: {e}\n"
+                     f"Please make sure to review the documentation at {DOCS_LINK}.")
     except FreqtradeException as e:
         logger.error(str(e))
         return_code = 2
