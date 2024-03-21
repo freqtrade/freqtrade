@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import ConfigurationError
+from freqtrade.exceptions import ConfigurationError, OperationalException
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
             raise ConfigurationError('exportfilename not in config.')
 
         if (not Path(signals_file).exists()):
-            raise ConfigurationError(
+            raise OperationalException(
                 f"Cannot find latest backtest signals file: {signals_file}."
                 "Run backtesting with `--export signals`."
             )
