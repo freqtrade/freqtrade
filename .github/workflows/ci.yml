@@ -11,7 +11,7 @@ on:
     types: [published]
   pull_request:
   schedule:
-    - cron:  '0 5 * * 4'
+    - cron:  '0 3 * * 4'
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
