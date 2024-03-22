@@ -66,6 +66,53 @@ $ freqtrade new-config --config user_data/config_binance.json
 ? Do you want to enable Telegram?  No
 ```
 
+## Show config
+
+Show configuration file (with sensitive values redacted by default).
+Especially useful with [split configuration files](configuration.md#multiple-configuration-files) or [environment variables](configuration.md#environment-variables), where this command will show the merged configuration.
+
+![Show config output](assets/show-config-output.png)
+
+```
+usage: freqtrade show-config [-h] [--userdir PATH] [-c PATH]
+                             [--show-sensitive]
+
+options:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  --show-sensitive      Show secrets in the output.
+```
+
+``` output
+Your combined configuration is:
+{
+  "exit_pricing": {
+    "price_side": "other",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "stake_currency": "USDT",
+  "exchange": {
+    "name": "binance",
+    "key": "REDACTED",
+    "secret": "REDACTED",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+  }
+  // ...
+}
+```
+
+!!! Warning "Sharing information provided by this command"
+    We try to remove all known sensitive information from the default output (without `--show-sensitive`). 
+    Yet, please do double-check for sensitive values in your output to make sure you're not accidentally exposing some private info.
+
 ## Create new strategy
 
 Creates a new strategy from a template similar to SampleStrategy.

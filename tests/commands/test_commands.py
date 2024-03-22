@@ -12,9 +12,9 @@ from freqtrade.commands import (start_backtesting_show, start_convert_data, star
                                 start_create_userdir, start_download_data, start_hyperopt_list,
                                 start_hyperopt_show, start_install_ui, start_list_data,
                                 start_list_exchanges, start_list_markets, start_list_strategies,
-                                start_list_timeframes, start_new_strategy, start_show_trades,
-                                start_strategy_update, start_test_pairlist, start_trading,
-                                start_webserver)
+                                start_list_timeframes, start_new_strategy, start_show_config,
+                                start_show_trades, start_strategy_update, start_test_pairlist,
+                                start_trading, start_webserver)
 from freqtrade.commands.db_commands import start_convert_db
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
@@ -38,6 +38,14 @@ def test_setup_utils_configuration():
     config = setup_utils_configuration(get_args(args), RunMode.OTHER)
     assert "exchange" in config
     assert config['dry_run'] is True
+
+    args = [
+        'list-exchanges', '--config', 'tests/testdata/testconfigs/testconfig.json',
+    ]
+
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER, set_dry=False)
+    assert "exchange" in config
+    assert config['dry_run'] is False
 
 
 def test_start_trading_fail(mocker, caplog):
@@ -1572,3 +1580,33 @@ def test_start_strategy_updater(mocker, tmp_path):
     start_strategy_update(pargs)
     # Number of strategies in the test directory
     assert sc_mock.call_count == 2
+
+
+def test_start_show_config(capsys, caplog):
+    args = [
+        "show-config",
+        "--config",
+        "tests/testdata/testconfigs/main_test_config.json",
+    ]
+    pargs = get_args(args)
+    start_show_config(pargs)
+
+    captured = capsys.readouterr()
+    assert "Your combined configuration is:" in captured.out
+    assert '"max_open_trades":' in captured.out
+    assert '"secret": "REDACTED"' in captured.out
+
+    args = [
+        "show-config",
+        "--config",
+        "tests/testdata/testconfigs/main_test_config.json",
+        "--show-sensitive"
+    ]
+    pargs = get_args(args)
+    start_show_config(pargs)
+
+    captured = capsys.readouterr()
+    assert "Your combined configuration is:" in captured.out
+    assert '"max_open_trades":' in captured.out
+    assert '"secret": "REDACTED"' not in captured.out
+    assert log_has_re(r'Sensitive information will be shown in the upcomming output.*', caplog)

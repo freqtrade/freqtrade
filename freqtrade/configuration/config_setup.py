@@ -10,7 +10,8 @@ from .configuration import Configuration
 logger = logging.getLogger(__name__)
 
 
-def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
+def setup_utils_configuration(
+        args: Dict[str, Any], method: RunMode, *, set_dry: bool = True) -> Dict[str, Any]:
     """
     Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
@@ -21,7 +22,8 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     config = configuration.get_config()
 
     # Ensure these modes are using Dry-run
-    config['dry_run'] = True
+    if set_dry:
+        config['dry_run'] = True
     validate_config_consistency(config, preliminary=True)
 
     return config
