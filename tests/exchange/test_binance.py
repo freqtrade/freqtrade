@@ -621,7 +621,7 @@ def test_get_maintenance_ratio_and_amt_binance(
 
 def test_get_spot_delist_schedule(mocker, default_conf) -> None:
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
-    exchange._api.sapi_get_spot_delist_schedule = get_mock_coro([{'delistTime': '1712113200000', 'symbols': ['DREPBTC', 'DREPUSDT', 'MOBBTC', 'MOBUSDT', 'PNTUSDT']}])
+    exchange._api.sapi_get_spot_delist_schedule =  MagicMock(return_value=[{'delistTime': '1712113200000', 'symbols': ['DREPBTC', 'DREPUSDT', 'MOBBTC', 'MOBUSDT', 'PNTUSDT']}])
 
 
-    assert exchange.get_spot_delist_schedule(True) == ['DREP/BTC', 'DREP/USDT', 'MOB/BTC', 'MOB/USDT', 'PNT/USDT']
+    assert exchange.get_spot_pair_delist_time('DREP/USDT', False) == 1712113200000
