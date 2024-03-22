@@ -18,10 +18,11 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     ('buy', 'limit', 'PO', {'timeInForce': 'PO'}),
     ('sell', 'limit', 'PO', {'timeInForce': 'PO'}),
     ('sell', 'market', 'PO', {}),
-    ])
+])
 def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
-    assert exchange._get_params(side, type, 1, False, time_in_force) == expected
+    assert exchange._get_params(
+        side, type, 1, False, time_in_force) == expected
 
 
 @pytest.mark.parametrize('trademode', [TradingMode.FUTURES, TradingMode.SPOT])
@@ -58,7 +59,8 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
             amount=1,
             stop_price=190,
             side=side,
-            order_types={'stoploss': 'limit', 'stoploss_on_exchange_limit_ratio': 1.05},
+            order_types={'stoploss': 'limit',
+                         'stoploss_on_exchange_limit_ratio': 1.05},
             leverage=1.0
         )
 
@@ -88,13 +90,16 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
     if trademode == TradingMode.SPOT:
         params_dict = {'stopPrice': 220}
     else:
-        params_dict = {'stopPrice': 220, 'reduceOnly': True, 'workingType': 'MARK_PRICE'}
+        params_dict = {'stopPrice': 220,
+                       'reduceOnly': True, 'workingType': 'MARK_PRICE'}
     assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling
     with pytest.raises(DependencyException):
-        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
+        api_mock.create_order = MagicMock(
+            side_effect=ccxt.InsufficientFunds("0 balance"))
+        exchange = get_patched_exchange(
+            mocker, default_conf, api_mock, 'binance')
         exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
@@ -106,7 +111,8 @@ def test_create_stoploss_order_binance(default_conf, mocker, limitratio, expecte
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
+        exchange = get_patched_exchange(
+            mocker, default_conf, api_mock, 'binance')
         exchange.create_stoploss(
             pair='ETH/BTC',
             amount=1,
@@ -383,7 +389,8 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_tiers()
 
     assert exchange._leverage_tiers == {
@@ -486,7 +493,8 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
 
     api_mock = MagicMock()
     api_mock.load_leverage_tiers = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
+    type(api_mock).has = PropertyMock(
+        return_value={'fetchLeverageTiers': True})
 
     ccxt_exceptionhandlers(
         mocker,
@@ -502,7 +510,8 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     api_mock = MagicMock()
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_tiers()
     assert len(exchange._leverage_tiers.keys()) > 100
     for key, value in leverage_tiers.items():
@@ -514,17 +523,23 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
 
 def test_additional_exchange_init_binance(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.fapiPrivateGetPositionSideDual = MagicMock(return_value={"dualSidePosition": True})
-    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": True})
+    api_mock.fapiPrivateGetPositionSideDual = MagicMock(
+        return_value={"dualSidePosition": True})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(
+        return_value={"multiAssetsMargin": True})
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     with pytest.raises(OperationalException,
                        match=r"Hedge Mode is not supported.*\nMulti-Asset Mode is not supported.*"):
-        get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
-    api_mock.fapiPrivateGetPositionSideDual = MagicMock(return_value={"dualSidePosition": False})
-    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": False})
-    exchange = get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+        get_patched_exchange(mocker, default_conf,
+                             id="binance", api_mock=api_mock)
+    api_mock.fapiPrivateGetPositionSideDual = MagicMock(
+        return_value={"dualSidePosition": False})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(
+        return_value={"multiAssetsMargin": False})
+    exchange = get_patched_exchange(
+        mocker, default_conf, id="binance", api_mock=api_mock)
     assert exchange
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'binance',
                            "additional_exchange_init", "fapiPrivateGetPositionSideDual")
@@ -539,7 +554,8 @@ def test__set_leverage_binance(mocker, default_conf):
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, id="binance")
     exchange._set_leverage(3.2, 'BTC/USDT:USDT')
     assert api_mock.set_leverage.call_count == 1
     # Leverage is rounded to 3.
@@ -592,7 +608,8 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     # Called twice - one "init" call - and one to get the actual data.
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert res == ohlcv
-    assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
+    assert log_has_re(
+        r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
 @pytest.mark.parametrize('pair,nominal_value,mm_ratio,amt', [
@@ -615,13 +632,15 @@ def test_get_maintenance_ratio_and_amt_binance(
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_tiers = leverage_tiers
-    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
+    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(
+        pair, nominal_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)
 
 
 def test_get_spot_delist_schedule(mocker, default_conf) -> None:
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
-    exchange._api.sapi_get_spot_delist_schedule =  MagicMock(return_value=[{'delistTime': '1712113200000', 'symbols': ['DREPBTC', 'DREPUSDT', 'MOBBTC', 'MOBUSDT', 'PNTUSDT']}])
+    exchange._api.sapi_get_spot_delist_schedule = MagicMock(return_value=[
+                                                            {'delistTime': '1712113200000', 'symbols': ['DREPBTC', 'DREPUSDT', 'MOBBTC', 'MOBUSDT', 'PNTUSDT']}])
 
-
-    assert exchange.get_spot_pair_delist_time('DREP/USDT', False) == 1712113200000
+    assert exchange.get_spot_pair_delist_time(
+        'DREP/USDT', False) == 1712113200000
