@@ -617,3 +617,11 @@ def test_get_maintenance_ratio_and_amt_binance(
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)
+
+
+def test_get_spot_delist_schedule(mocker, default_conf) -> None:
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    exchange._api.sapi_get_spot_delist_schedule = get_mock_coro([{'delistTime': '1712113200000', 'symbols': ['DREPBTC', 'DREPUSDT', 'MOBBTC', 'MOBUSDT', 'PNTUSDT']}])
+
+
+    assert exchange.get_spot_delist_schedule(True) == ['DREP/BTC', 'DREP/USDT', 'MOB/BTC', 'MOB/USDT', 'PNT/USDT']

@@ -217,3 +217,44 @@ class Binance(Exchange):
                     raise OperationalException(e) from e
         else:
             return {}
+
+    def get_spot_delist_schedule(self, refresh: bool) -> list:
+        """
+        Calculates bid/ask target
+        bid rate - between current ask price and last price
+        ask rate - either using ticker bid or first bid based on orderbook
+        or remain static in any other case since it's not updating.
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
+        :param side: "buy" or "sell"
+        :return: float: Price
+        :raises PricingError if orderbook price could not be determined.
+        """
+        if not refresh:
+            with self._cache_lock:
+                rate = cache_rate.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.debug(f"Using cached {side} rate for {pair}.")
+                return rate
+
+
+        if conf_strategy.get('use_order_book', False):
+
+            order_book_top = conf_strategy.get('order_book_top', 1)
+            if order_book is None:
+                order_book = self.fetch_l2_order_book(pair, order_book_top)
+            rate = self._get_rate_from_ob(pair, side, order_book, name, price_side,
+                                          order_book_top)
+        else:
+            logger.debug(f"Using Last {price_side.capitalize()} / Last Price")
+            if ticker is None:
+                ticker = self.fetch_ticker(pair)
+            rate = self._get_rate_from_ticker(side, ticker, conf_strategy, price_side)
+
+        if rate is None:
+            raise PricingError(f"{name}-Rate for {pair} was empty.")
+        with self._cache_lock:
+            cache_rate[pair] = rate
+
+        return delistings
