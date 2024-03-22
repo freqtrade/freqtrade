@@ -54,8 +54,7 @@ class Binance(Exchange):
 
     def __init__(self, *args, **kwargs) -> None:
         super(__class__, self).__init__(*args, **kwargs)
-        self._spot_delist_schedule_cache: TTLCache = TTLCache(
-            maxsize=100, ttl=300)
+        self._spot_delist_schedule_cache: TTLCache = TTLCache(maxsize=100, ttl=300)
         self._spot_delist_schedule_cache_lock = Lock()
 
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
@@ -64,8 +63,7 @@ class Binance(Exchange):
             # Binance's future result has no bid/ask values.
             # Therefore we must fetch that from fetch_bids_asks and combine the two results.
             bidsasks = self.fetch_bids_asks(symbols, cached)
-            tickers = deep_merge_dicts(
-                bidsasks, tickers, allow_null_overrides=False)
+            tickers = deep_merge_dicts(bidsasks, tickers, allow_null_overrides=False)
         return tickers
 
     @retrier
@@ -78,11 +76,9 @@ class Binance(Exchange):
         try:
             if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
                 position_side = self._api.fapiPrivateGetPositionSideDual()
-                self._log_exchange_response(
-                    'position_side_setting', position_side)
+                self._log_exchange_response('position_side_setting', position_side)
                 assets_margin = self._api.fapiPrivateGetMultiAssetsMargin()
-                self._log_exchange_response(
-                    'multi_asset_margin', assets_margin)
+                self._log_exchange_response('multi_asset_margin', assets_margin)
                 msg = ""
                 if position_side.get('dualSidePosition') is True:
                     msg += (
@@ -98,7 +94,7 @@ class Binance(Exchange):
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
-            ) from e
+                ) from e
 
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
@@ -186,8 +182,7 @@ class Binance(Exchange):
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         # maintenance_amt: (CUM) Maintenance Amount of position
-        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(
-            pair, stake_amount)
+        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
         if (maintenance_amt is None):
             raise OperationalException(
