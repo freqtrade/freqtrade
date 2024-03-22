@@ -1233,6 +1233,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
         order_id=order_id,
 
     ))
+    freqtrade.strategy.order_filled = MagicMock(return_value=None)
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
     caplog.clear()
@@ -1243,6 +1244,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     caplog.clear()
     assert not trade.has_open_orders
     assert trade.amount == order['amount']
+    assert freqtrade.strategy.order_filled.call_count == 1
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=0.01)
     assert trade.amount == 30.0
@@ -1260,11 +1262,13 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     limit_buy_order_usdt_new['filled'] = 0.0
     limit_buy_order_usdt_new['status'] = 'canceled'
 
+    freqtrade.strategy.order_filled = MagicMock(return_value=None)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
     mocker.patch(f'{EXMS}.fetch_order', return_value=limit_buy_order_usdt_new)
     res = freqtrade.update_trade_state(trade, order_id)
     # Cancelled empty
     assert res is True
+    assert freqtrade.strategy.order_filled.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
