@@ -53,7 +53,7 @@ class Binance(Exchange):
     ]
 
     def __init__(self, *args, **kwargs) -> None:
-        super(__class__, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._spot_delist_schedule_cache: TTLCache = TTLCache(maxsize=100, ttl=300)
         self._spot_delist_schedule_cache_lock = Lock()
 
@@ -246,7 +246,7 @@ class Binance(Exchange):
             delist_schedule = self._api.sapi_get_spot_delist_schedule()
 
             if delist_schedule is None:
-                return
+                return None
 
             with lock:
                 for schedule in delist_schedule:
