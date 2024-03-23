@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import ccxt
-from cachetools import TTLCache
+from cachetools import TTLCache, cached
 from threading import Lock
 
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
@@ -225,37 +225,16 @@ class Binance(Exchange):
         else:
             return {}
 
-    def get_spot_pair_delist_time(self, pair, refresh: bool) -> int | None:
-        """
-        Get the delisting time for a pair if it will be delisted
-        :param pair: Pair to get the delisting time for
-        :param refresh: true if you need fresh data
-        :return: int: delisting time None if not delisting
-        """
 
-        cache = self._spot_delist_schedule_cache
-        lock = self._spot_delist_schedule_cache_lock
 
-        if not refresh:
-            with lock:
-                delist_time = cache.get(f"{pair}")
-                if delist_time:
-                    return delist_time
-
+    @retrier
+    @cached(cache=TTLCache(maxsize=100, ttl=10), lock=Lock())
+    def get_deslist_schedule(self):
         try:
+
             delist_schedule = self._api.sapi_get_spot_delist_schedule()
 
-            if delist_schedule is None:
-                return None
-
-            with lock:
-                for schedule in delist_schedule:
-                    for pair in schedule['symbols']:
-                        cache[f"{pair}"] = int(schedule['delistTime'])
-
-            with lock:
-                return cache.get(f"{pair}")
-
+            return delist_schedule
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -263,3 +242,40 @@ class Binance(Exchange):
                 f'Could not get delist schedule {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def get_spot_pair_delist_time(self, pair, refresh: bool = True) -> int | None:
+        """
+        Get the delisting time for a pair if it will be delisted
+        :param pair: Pair to get the delisting time for
+        :param refresh: true if you need fresh data
+        :return: int: delisting time None if not delisting
+        """
+
+        if not pair:
+            return
+
+        cache = self._spot_delist_schedule_cache
+        lock = self._spot_delist_schedule_cache_lock
+
+        schedule_pair = pair.replace('/', '')
+
+        if not refresh:
+            with lock:
+                delist_time = cache[f"{schedule_pair}"]
+
+                if delist_time:
+                    return delist_time
+
+        delist_schedule = self.get_deslist_schedule()
+
+        if delist_schedule is None:
+            return None
+
+        with lock:
+            for schedule in delist_schedule:
+                for symbol in schedule['symbols']:
+                    cache[f"{symbol}"] = int(schedule['delistTime'])
+
+
+        with lock:
+            return cache.get(f"{schedule_pair}")

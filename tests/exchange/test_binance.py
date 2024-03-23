@@ -628,4 +628,5 @@ def test_get_spot_delist_schedule(mocker, default_conf) -> None:
 
     exchange._api.sapi_get_spot_delist_schedule =  MagicMock(return_value=return_value)
 
-    assert exchange.get_spot_pair_delist_time('DREP/USDT', False) == 1712113200000
+    assert exchange.get_spot_pair_delist_time('DREP/USDT') == 1712113200000
+    assert exchange.get_spot_pair_delist_time('BTC/USDT') is None
