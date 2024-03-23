@@ -187,7 +187,7 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_conf, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
-        if exchange_config.get('sandboxMode'):
+        if exchange_conf.get('sandboxMode'):
             self._api.set_sandbox_mode(True)
             self._api_async.set_sandbox_mode(True)
             logger.info('Using ccxt with sandbox mode for paper trading')
