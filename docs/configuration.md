@@ -52,6 +52,10 @@ FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
 !!! Tip "Validate combined result"
     You can use the [show-config subcommand](utils.md#show-config) to see the final, combined configuration.
 
+??? Warning "Loading sequence"
+    Environment variables are loaded after the initial configuration. As such, you cannot provide the path to the configuration through environment variables. Please use `--config path/to/config.json` for that.
+    This also applies to user_dir to some degree. while the user directory can be set through environment variables - the configuration will **not** be loaded from that location.
+
 ### Multiple configuration files
 
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
