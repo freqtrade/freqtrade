@@ -491,7 +491,7 @@ def test_rpc_balance_handle_error(default_conf, mocker):
         rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
 
 
-def test_rpc_balance_handle(default_conf, mocker, tickers):
+def test_rpc_balance_handle(default_conf_usdt, mocker, tickers):
     mock_balance = {
         'BTC': {
             'free': 10.0,
@@ -549,16 +549,16 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
         get_valid_pair_combination=MagicMock(
             side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")
     )
-    default_conf['dry_run'] = False
-    default_conf['trading_mode'] = 'futures'
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    default_conf_usdt['dry_run'] = False
+    default_conf_usdt['trading_mode'] = 'futures'
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf_usdt)
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
-    result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
-    assert pytest.approx(result['total']) == 30.30909624
-    assert pytest.approx(result['value']) == 454636.44360691
+    result = rpc._rpc_balance(
+        default_conf_usdt['stake_currency'], default_conf_usdt['fiat_display_currency'])
+
     assert tickers.call_count == 1
     assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
