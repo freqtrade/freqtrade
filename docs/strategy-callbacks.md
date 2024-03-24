@@ -1028,7 +1028,7 @@ Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% 
 
 The `order_filled()` callback may be used by strategy developer to perform specific actions based on current trade state after an order is filled.
 
-Assuming that your strategy need to store the high value of the candle at trade entry, this is possible with this callback as the following exemple show.
+Assuming that your strategy need to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
 
 ``` python
 class AwesomeStrategy(IStrategy):

@@ -43,7 +43,7 @@ By default, the bot loop runs every few seconds (`internals.process_throttle_sec
 
 * Fetch open trades from persistence.
   * Update trades open order state from exchange
-  * Call `order_filled()` stategy callback for filled orders.
+  * Call `order_filled()` strategy callback for filled orders.
 * Calculate current list of tradable pairs.
 * Download OHLCV data for the pairlist including all [informative pairs](strategy-customization.md#get-data-for-non-tradeable-pairs)  
   This step is only executed once per Candle to avoid unnecessary network traffic.
@@ -88,10 +88,10 @@ This loop will be repeated again and again until the bot is stopped.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
-  * Call `order_filled()` stategy callback for filled entry orders.
+  * Call `order_filled()` strategy callback for filled entry orders.
   * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
   * For exits based on exit-signal, custom-exit and partial exits: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
-  * Call `order_filled()` stategy callback for filled exit orders.
+  * Call `order_filled()` strategy callback for filled exit orders.
 * Generate backtest report output
 
 !!! Note
