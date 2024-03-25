@@ -476,10 +476,6 @@ class FreqtradeBot(LoggingMixin):
             if not trade.is_open:
                 # Trade was just closed
                 trade.close_date = trade.date_last_filled_utc
-                strategy_safe_wrapper(
-                    self.strategy.order_filled, default_retval=None)(
-                    pair=trade.pair, trade=trade, order=order_obj,
-                    current_time=datetime.now(timezone.utc))
                 self.order_close_notify(trade, order_obj,
                                         order_obj.ft_order_side == 'stoploss',
                                         send_msg=prev_trade_state != trade.is_open)
