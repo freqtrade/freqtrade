@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from pandas import DataFrame
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
+from freqtrade.data.converter import populate_dataframe_with_trades
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
                              SignalDirection, SignalTagType, SignalType, TradingMode)
@@ -883,6 +884,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_indicators(dataframe, metadata)
         dataframe = self.advise_entry(dataframe, metadata)
         dataframe = self.advise_exit(dataframe, metadata)
+        logger.debug("TA Analysis Ended")
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -1392,6 +1394,21 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
+    def _if_enabled_populate_trades(self, dataframe: DataFrame, metadata: dict):
+        use_public_trades = self.config.get('exchange', {}).get('use_public_trades', False)
+        if use_public_trades:
+            trades = self.dp.trades(pair=metadata['pair'], copy=False)
+
+            config = self.config
+            config['timeframe'] = self.timeframe
+            # TODO: slice trades to size of dataframe for faster backtesting
+            dataframe = populate_dataframe_with_trades(
+                config,
+                dataframe,
+                trades)
+
+            logger.debug("Populated dataframe with trades.")
+
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy, Sell, short, exit_short strategy
@@ -1407,6 +1424,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = _create_and_merge_informative_pair(
                 self, dataframe, metadata, inf_data, populate_fn)
 
+        self._if_enabled_populate_trades(dataframe, metadata)
         return self.populate_indicators(dataframe, metadata)
 
     def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

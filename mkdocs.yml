@@ -46,6 +46,7 @@ nav:
         - Recursive analysis: recursive-analysis.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
+        - Advanced Orderflow: advanced-orderflow.md
         - Producer/Consumer mode: producer-consumer.md
         - Edge Positioning: edge.md
     - FAQ: faq.md

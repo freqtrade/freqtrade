@@ -400,7 +400,7 @@ def _download_trades_history(exchange: Exchange,
 
     except Exception:
         logger.exception(
-            f'Failed to download historic trades for pair: "{pair}". '
+            f'Failed to download and store historic trades for pair: "{pair}". '
         )
         return False
 

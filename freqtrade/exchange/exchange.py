@@ -19,10 +19,14 @@ from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, concat
 
-from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
-                                 BuySell, Config, EntryExit, ExchangeConfig,
-                                 ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
-from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
+from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_COLUMNS,
+                                 NON_OPEN_EXCHANGE_STATES, BidAsk, BuySell, Config, EntryExit,
+                                 ExchangeConfig, ListPairsWithTimeframes, MakerTaker, OBLiteral,
+                                 PairWithTimeframe)
+from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe
+from freqtrade.data.converter.orderflow import _calculate_ohlcv_candle_start_and_end
+from freqtrade.data.converter.trade_converter import (trades_df_remove_duplicates,
+                                                      trades_dict_to_list, trades_list_to_df)
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import (ConfigurationError, DDosProtection, ExchangeError,
                                   InsufficientFundsError, InvalidOrderException,
@@ -77,6 +81,7 @@ class Exchange:
         "tickers_have_quoteVolume": True,
         "tickers_have_bid_ask": True,  # bid / ask empty for fetch_tickers
         "tickers_have_price": True,
+        "trades_limit": 1000,  # Limit for 1 call to fetch_trades
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -121,6 +126,7 @@ class Exchange:
 
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: Dict[PairWithTimeframe, int] = {}
+        self._trades_last_refresh_time: Dict[PairWithTimeframe, int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
 
@@ -137,6 +143,9 @@ class Exchange:
         # Holds candles
         self._klines: Dict[PairWithTimeframe, DataFrame] = {}
         self._expiring_candle_cache: Dict[Tuple[str, int], PeriodicCache] = {}
+
+        # Holds public_trades
+        self._trades: Dict[PairWithTimeframe, DataFrame] = {}
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
@@ -168,6 +177,8 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
+
+        self._max_trades_limit = self._ft_has['trades_limit']
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
@@ -422,6 +433,15 @@ class Exchange:
     def klines(self, pair_interval: PairWithTimeframe, copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
+        else:
+            return DataFrame()
+
+    def trades(self, pair_interval: PairWithTimeframe, copy: bool = True) -> DataFrame:
+        if pair_interval in self._trades:
+            if copy:
+                return self._trades[pair_interval].copy()
+            else:
+                return self._trades[pair_interval]
         else:
             return DataFrame()
 
@@ -2288,6 +2308,148 @@ class Exchange:
         data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
         return data
 
+    # fetch Trade data stuff
+
+    def needed_candle_ms(self, timeframe: str, candle_type: CandleType):
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
+            timeframe, candle_type)
+        move_to = one_call * self.required_candle_call_count
+        now = timeframe_to_next_date(timeframe)
+        return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+
+    def _process_trades_df(self,
+                           pair: str,
+                           timeframe: str,
+                           c_type: CandleType,
+                           ticks: List[List],
+                           cache: bool,
+                           first_required_candle_date: Optional[int]) -> DataFrame:
+        # keeping parsed dataframe in cache
+        trades_df = trades_list_to_df(ticks, True)
+        # keeping last candle time as last refreshed time of the pair
+        if ticks and cache:
+            idx = -1
+            # NOTE: // is floor: divides and rounds to nearest int
+            self._trades_last_refresh_time[(pair, timeframe, c_type)] = trades_df['timestamp'].iat[idx] // 1000 # noqa
+        if cache:
+            if (pair, timeframe, c_type) in self._trades:
+                old = self._trades[(pair, timeframe, c_type)]
+                # Reassign so we return the updated, combined df
+                combined_df = concat([old, trades_df], axis=0)
+                logger.debug(f"Clean duplicated ticks from Trades data {pair}")
+                trades_df = DataFrame(trades_df_remove_duplicates(combined_df),
+                                      columns=combined_df.columns)
+                # Age out old candles
+                if first_required_candle_date:
+                    # slice of older dates
+                    trades_df = trades_df[
+                        first_required_candle_date < trades_df['timestamp']]
+                    trades_df = trades_df.reset_index(drop=True)
+            self._trades[(pair, timeframe, c_type)] = trades_df
+        return trades_df
+
+    def refresh_latest_trades(self,
+                              pair_list: ListPairsWithTimeframes,
+                              *,
+                              cache: bool = True,
+                              ) -> Dict[PairWithTimeframe, DataFrame]:
+        """
+        Refresh in-memory TRADES asynchronously and set `_trades` with the result
+        Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
+        Only used in the dataprovider.refresh() method.
+        :param pair_list: List of 3 element tuples containing (pair, timeframe, candle_type)
+        :param cache: Assign result to _trades. Usefull for one-off downloads like for pairlists
+        :return: Dict of [{(pair, timeframe): Dataframe}]
+        """
+        from freqtrade.data.history import get_datahandler
+        data_handler = get_datahandler(
+            self._config['datadir'], data_format=self._config['dataformat_trades']
+        )
+        logger.debug("Refreshing TRADES data for %d pairs", len(pair_list))
+        since_ms = None
+        results_df = {}
+        for pair, timeframe, candle_type in set(pair_list):
+            new_ticks: List = []
+            all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
+            first_candle_ms = self.needed_candle_ms(timeframe, candle_type)
+            # refresh, if
+            # a. not in _trades
+            # b. no cache used
+            # c. need new data
+            is_in_cache = (pair, timeframe, candle_type) in self._trades
+            if (not is_in_cache
+                    or not cache
+                    or self._now_is_time_to_refresh_trades(pair, timeframe, candle_type)):
+                logger.debug(f"Refreshing TRADES data for {pair}")
+                # fetch trades since latest _trades and
+                # store together with existing trades
+                try:
+                    until = None
+                    from_id = None
+                    if is_in_cache:
+                        from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
+                        until = dt_ts()  # now
+
+                    else:
+                        until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
+                        all_stored_ticks_df = data_handler.trades_load(
+                            f"{pair}-cached", self.trading_mode)
+
+                        if not all_stored_ticks_df.empty:
+                            if all_stored_ticks_df.iloc[0]['timestamp'] <= first_candle_ms:
+                                last_cached_ms = all_stored_ticks_df.iloc[-1]['timestamp']
+                                # only use cached if it's closer than first_candle_ms
+                                since_ms = last_cached_ms if last_cached_ms > first_candle_ms else first_candle_ms  # noqa
+                            # doesn't go far enough
+                            else:
+                                all_stored_ticks_df = DataFrame(
+                                    columns=DEFAULT_TRADES_COLUMNS + ['date'])
+
+                    # from_id overrules with exchange set to id paginate
+                    # TODO: DEBUG:
+                    # since_ms = 1698060269000
+                    # from_id = None
+                    # TODO: /DEBUG
+                    [ticks_pair, new_ticks] = self.get_historic_trades(pair,
+                                                                       since=since_ms if since_ms else first_candle_ms, # noqa
+                                                                       until=until,
+                                                                       from_id=from_id)
+
+                except Exception as e:
+                    logger.error(f"Refreshing TRADES data for {pair} failed")
+                    logger.error(e)
+                    raise e
+
+                if new_ticks:
+                    all_stored_ticks_list = all_stored_ticks_df[DEFAULT_TRADES_COLUMNS].values.tolist()  # noqa: E501
+                    all_stored_ticks_list.extend(new_ticks)
+                    trades_df = self._process_trades_df(pair,
+                                                        timeframe,
+                                                        candle_type,
+                                                        all_stored_ticks_list,
+                                                        cache,
+                                                        first_required_candle_date=first_candle_ms)
+                    results_df[(pair, timeframe, candle_type)] = trades_df
+                    data_handler.trades_store(
+                        f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode)
+
+                else:
+                    raise OperationalException("no new ticks")
+
+        return results_df
+
+    def _now_is_time_to_refresh_trades(self,
+                                       pair: str,
+                                       timeframe: str,
+                                       candle_type: CandleType) -> bool:
+        # Timeframe in seconds
+        df = self.klines((pair, timeframe, candle_type), True)
+        _calculate_ohlcv_candle_start_and_end(df, timeframe)
+        timeframe_to_seconds(timeframe)
+        plr = round(df.iloc[-1]["candle_end"].timestamp())
+        now = int(timeframe_to_prev_date(timeframe).timestamp())
+        return plr < now
+
     # Fetch historic trades
 
     @retrier_async
@@ -2302,17 +2464,18 @@ class Exchange:
         returns: List of dicts containing trades, the next iteration value (new "since" or trade_id)
         """
         try:
+            trades_limit = self._max_trades_limit
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = await self._api_async.fetch_trades(pair, params=params, limit=1000)
+                trades = await self._api_async.fetch_trades(pair, params=params, limit=trades_limit)
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair, since,
                     '(' + dt_from_ts(since).isoformat() + ') ' if since is not None else ''
                 )
-                trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
+                trades = await self._api_async.fetch_trades(pair, since=since, limit=trades_limit)
             trades = self._trades_contracts_to_amount(trades)
             pagination_value = self._get_trade_pagination_next_value(trades)
             return trades_dict_to_list(trades), pagination_value
@@ -2348,9 +2511,10 @@ class Exchange:
             return trades[-1].get('timestamp')
 
     async def _async_get_trade_history_id(self, pair: str,
-                                          until: int,
+                                          until: Optional[int],
                                           since: Optional[int] = None,
-                                          from_id: Optional[str] = None) -> Tuple[str, List[List]]:
+                                          from_id: Optional[str] = None,
+                                          stop_on_from_id: Optional[bool] = True) -> Tuple[str, List[List]]:  # noqa
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -2382,7 +2546,7 @@ class Exchange:
                     pair, params={self._trades_pagination_arg: from_id})
                 if t:
                     trades.extend(t[x])
-                    if from_id == from_id_next or t[-1][0] > until:
+                    if from_id == from_id_next or (until and t[-1][0] > until):
                         logger.debug(f"Stopping because from_id did not change. "
                                      f"Reached {t[-1][0]} > {until}")
                         # Reached the end of the defined-download period - add last trade as well.
@@ -2442,7 +2606,9 @@ class Exchange:
     async def _async_get_trade_history(self, pair: str,
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
-                                       from_id: Optional[str] = None) -> Tuple[str, List[List]]:
+                                       from_id: Optional[str] = None,
+                                       stop_on_from_id: Optional[bool] = True,
+                                       ) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
@@ -2450,16 +2616,17 @@ class Exchange:
         logger.debug(f"_async_get_trade_history(), pair: {pair}, "
                      f"since: {since}, until: {until}, from_id: {from_id}")
 
-        if until is None:
-            until = ccxt.Exchange.milliseconds()
+        if self._trades_pagination == 'time':
+            if until is None:
+                until = ccxt.Exchange.milliseconds()
             logger.debug(f"Exchange milliseconds: {until}")
 
-        if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
                 pair=pair, since=since, until=until)
         elif self._trades_pagination == 'id':
             return await self._async_get_trade_history_id(
-                pair=pair, since=since, until=until, from_id=from_id
+                pair=pair, since=since, until=until, from_id=from_id,
+                stop_on_from_id=stop_on_from_id
             )
         else:
             raise OperationalException(f"Exchange {self.name} does use neither time, "
@@ -2468,7 +2635,9 @@ class Exchange:
     def get_historic_trades(self, pair: str,
                             since: Optional[int] = None,
                             until: Optional[int] = None,
-                            from_id: Optional[str] = None) -> Tuple[str, List]:
+                            from_id: Optional[str] = None,
+                            stop_on_from_id: Optional[bool] = True
+                            ) -> Tuple[str, List]:
         """
         Get trade history data using asyncio.
         Handles all async work and returns the list of candles.
@@ -2484,7 +2653,11 @@ class Exchange:
 
         with self._loop_lock:
             task = asyncio.ensure_future(self._async_get_trade_history(
-                pair=pair, since=since, until=until, from_id=from_id))
+                pair=pair,
+                since=since,
+                until=until,
+                from_id=from_id,
+                stop_on_from_id=stop_on_from_id))
 
             for sig in [signal.SIGINT, signal.SIGTERM]:
                 try:
