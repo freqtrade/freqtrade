@@ -1944,6 +1944,9 @@ class FreqtradeBot(LoggingMixin):
 
     def _update_trade_after_fill(self, trade: Trade, order: Order) -> Trade:
         if order.status in constants.NON_OPEN_EXCHANGE_STATES:
+            strategy_safe_wrapper(
+                self.strategy.order_filled, default_retval=None)(
+                pair=trade.pair, trade=trade, order=order, current_time=datetime.now(timezone.utc))
             # If a entry order was closed, force update on stoploss on exchange
             if order.ft_order_side == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)

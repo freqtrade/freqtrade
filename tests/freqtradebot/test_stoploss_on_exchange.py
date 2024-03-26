@@ -146,10 +146,12 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'amount': enter_order['amount'],
     })
     mocker.patch(f'{EXMS}.fetch_stoploss_order', stoploss_order_hit)
+    freqtrade.strategy.order_filled = MagicMock(return_value=None)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
     assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
     assert len(trade.open_sl_orders) == 0
     assert trade.is_open is False
+    assert freqtrade.strategy.order_filled.call_count == 1
     caplog.clear()
 
     mocker.patch(f'{EXMS}.create_stoploss', side_effect=ExchangeError())

@@ -698,6 +698,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.advise_all_indicators(data)
+    backtesting.strategy.order_filled = MagicMock()
     min_date, max_date = get_timerange(processed)
 
     result = backtesting.backtest(
@@ -760,6 +761,8 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     pd.testing.assert_frame_equal(results, expected)
     assert 'orders' in results.columns
     data_pair = processed[pair]
+    # Called once per order
+    assert backtesting.strategy.order_filled.call_count == 4
     for _, t in results.iterrows():
         assert len(t['orders']) == 2
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
