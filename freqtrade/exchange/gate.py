@@ -115,6 +115,7 @@ class Gate(Exchange):
                 order1['id'] = order_id
                 order1['type'] = 'stoploss'
                 order1['stopPrice'] = order.get('stopPrice')
+                order1['status_stop'] = 'triggered'
 
                 return order1
         return order
