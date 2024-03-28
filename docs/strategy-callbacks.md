@@ -1027,7 +1027,7 @@ Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% 
 ## Order filled Callback
 
 The `order_filled()` callback may be used to perform specific actions based on the current trade state after an order is filled.
-It will be called independently of the order type (entry, exit, stoploss or position adjustment).
+It will be called independent of the order type (entry, exit, stoploss or position adjustment).
 
 Assuming that your strategy needs to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
 
