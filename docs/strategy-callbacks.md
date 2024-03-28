@@ -19,7 +19,7 @@ Currently available callbacks:
 * [`adjust_trade_position()`](#adjust-trade-position)
 * [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
-* [`order_filled()`](#oder-filled-callback)
+* [`order_filled()`](#order-filled-callback)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
@@ -1026,17 +1026,20 @@ Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% 
 
 ## Order filled Callback
 
-The `order_filled()` callback may be used by strategy developer to perform specific actions based on current trade state after an order is filled.
+The `order_filled()` callback may be used to perform specific actions based on the current trade state after an order is filled.
+It will be called independently of the order type (entry, exit, stoploss or position adjustment).
 
-Assuming that your strategy need to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
+Assuming that your strategy needs to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
 
 ``` python
 class AwesomeStrategy(IStrategy):
     def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs) -> None:
         """
-        Called just ofter order filling
-        :param pair: Pair for trade that's just exited.
+        Called right after an order fills. 
+        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        :param pair: Pair for trade
         :param trade: trade object.
+        :param order: Order object.
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """

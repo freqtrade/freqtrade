@@ -375,8 +375,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def order_filled(self, pair: str, trade: Trade, order: Order,
                      current_time: datetime, **kwargs) -> None:
         """
-        Called just ofter order filling
-        :param pair: Pair for trade that's just exited.
+        Called right after an order fills.
+        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        :param pair: Pair for trade
         :param trade: trade object.
         :param order: Order object.
         :param current_time: datetime object, containing the current datetime
