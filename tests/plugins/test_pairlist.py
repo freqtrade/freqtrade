@@ -406,6 +406,14 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5,
        "sort_key": "quoteVolume", "min_value": 1250}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # HOT, XRP and FUEL whitelisted because they are below 1300 quoteVolume.
+    ([{"method": "VolumePairList", "number_assets": 5,
+       "sort_key": "quoteVolume", "max_value": 1300}],
+     "BTC", ['XRP/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    # HOT, XRP whitelisted because they are between 100 and 1300 quoteVolume.
+    ([{"method": "VolumePairList", "number_assets": 5,
+       "sort_key": "quoteVolume", "min_value": 100, "max_value": 1300}],
+     "BTC", ['XRP/BTC', 'HOT/BTC']),
     # StaticPairlist only
     ([{"method": "StaticPairList"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
