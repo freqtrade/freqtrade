@@ -2508,8 +2508,7 @@ class Exchange:
     async def _async_get_trade_history_id(self, pair: str,
                                           until: Optional[int],
                                           since: Optional[int] = None,
-                                          from_id: Optional[str] = None,
-                                          stop_on_from_id: Optional[bool] = True) -> Tuple[str, List[List]]:  # noqa
+                                          from_id: Optional[str] = None) -> Tuple[str, List[List]]:  # noqa
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -2602,7 +2601,6 @@ class Exchange:
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
                                        from_id: Optional[str] = None,
-                                       stop_on_from_id: Optional[bool] = True,
                                        ) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
@@ -2621,7 +2619,6 @@ class Exchange:
         elif self._trades_pagination == 'id':
             return await self._async_get_trade_history_id(
                 pair=pair, since=since, until=until, from_id=from_id,
-                stop_on_from_id=stop_on_from_id
             )
         else:
             raise OperationalException(f"Exchange {self.name} does use neither time, "
@@ -2631,7 +2628,6 @@ class Exchange:
                             since: Optional[int] = None,
                             until: Optional[int] = None,
                             from_id: Optional[str] = None,
-                            stop_on_from_id: Optional[bool] = True
                             ) -> Tuple[str, List]:
         """
         Get trade history data using asyncio.
@@ -2651,8 +2647,7 @@ class Exchange:
                 pair=pair,
                 since=since,
                 until=until,
-                from_id=from_id,
-                stop_on_from_id=stop_on_from_id))
+                from_id=from_id))
 
             for sig in [signal.SIGINT, signal.SIGTERM]:
                 try:
