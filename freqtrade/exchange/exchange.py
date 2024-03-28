@@ -2609,11 +2609,10 @@ class Exchange:
         logger.debug(f"_async_get_trade_history(), pair: {pair}, "
                      f"since: {since}, until: {until}, from_id: {from_id}")
 
-        if self._trades_pagination == 'time':
-            if until is None:
-                until = ccxt.Exchange.milliseconds()
+        if until is None:
+            until = ccxt.Exchange.milliseconds()
             logger.debug(f"Exchange milliseconds: {until}")
-
+        if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
                 pair=pair, since=since, until=until)
         elif self._trades_pagination == 'id':
