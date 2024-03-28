@@ -139,6 +139,12 @@ class VolumePairList(IPairList):
                 "description": "Minimum value",
                 "help": "Minimum value to use for filtering the pairlist.",
             },
+            "max_value":{
+                "type": "number",
+                "default": None,
+                "description": "Maximum value",
+                "help": "Maximum value to use for filtering the pairlist.",
+            },
             **IPairList.refresh_period_parameter(),
             "lookback_days": {
                 "type": "number",
