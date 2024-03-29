@@ -415,5 +415,3 @@ class FtRestClient:
         :return: json object
         """
         return self._get("health")
-
-
