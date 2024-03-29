@@ -1,10 +1,7 @@
 from freqtrade_client.ft_rest_client import FtRestClient
 
 
-__all__ = ['FtRestClient']
-
-
-__version__ = '2024.3-dev'
+__version__ = '2024.3-dev1'
 
 if 'dev' in __version__:
     from pathlib import Path
@@ -25,3 +22,5 @@ if 'dev' in __version__:
                 __version__ = f"docker-{__version__}-{versionfile.read_text()[:8]}"
         except Exception:
             pass
+
+__all__ = ['FtRestClient']
