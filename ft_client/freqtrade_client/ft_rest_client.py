@@ -21,7 +21,7 @@ logger = logging.getLogger("ft_rest_client")
 
 class FtRestClient:
 
-    def __init__(self, serverurl, username=None, password=None,
+    def __init__(self, serverurl, username=None, password=None, *,
                  pool_connections=10, pool_maxsize=10):
 
         self._serverurl = serverurl
