@@ -62,6 +62,10 @@ jobs:
         pip install -r requirements-dev.txt
         pip install -e .
 
+    - name: Check for version alignment
+      run: |
+        build_helpers/freqtrade_client_version_align.py
+
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
@@ -107,10 +111,6 @@ jobs:
     - name: Run Ruff
       run: |
         ruff check --output-format=github .
-
-    - name: Check for version alignment
-      run: |
-        build_helpers/freqtrade_client_version_align.py
 
     - name: Mypy
       run: |
