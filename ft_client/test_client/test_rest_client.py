@@ -1,3 +1,4 @@
+import re
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,9 +7,9 @@ from freqtrade_client.ft_client import add_arguments, main_exec
 from requests.exceptions import ConnectionError
 
 
-def log_has(line, logs):
-    """Check if line is found on some caplog's message."""
-    return any(line == message for message in logs.messages)
+def log_has_re(line, logs):
+    """Check if line matches some caplog's message."""
+    return any(re.match(line, message) for message in logs.messages)
 
 
 def get_rest_client():
@@ -46,7 +47,7 @@ def test_FtRestClient_call_invalid(caplog):
     client._session.request = MagicMock(side_effect=ConnectionError())
     client._call('GET', '/dummytest')
 
-    assert log_has('Connection error', caplog)
+    assert log_has_re('Connection error', caplog)
 
 
 @pytest.mark.parametrize('method,args', [
@@ -139,8 +140,8 @@ def test_ft_client(mocker, capsys, caplog):
         args = add_arguments(['--config', 'tests/testdata/testconfigs/nonexisting.json'])
         main_exec(args)
 
-    assert log_has('Could not load config file tests/testdata/testconfigs/nonexisting.json.',
-                   caplog)
+    assert log_has_re(r'Could not load config file .*nonexisting\.json\.',
+                      caplog)
 
     args = add_arguments([
         '--config',
@@ -148,4 +149,4 @@ def test_ft_client(mocker, capsys, caplog):
         'whatever'
     ])
     main_exec(args)
-    assert log_has('Command whatever not defined', caplog)
+    assert log_has_re('Command whatever not defined', caplog)
