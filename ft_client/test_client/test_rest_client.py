@@ -136,10 +136,11 @@ def test_ft_client(mocker, capsys, caplog):
     assert mock.call_count == 1
 
     with pytest.raises(SystemExit):
-        args = add_arguments(['--config', '/dev/null'])
+        args = add_arguments(['--config', 'tests/testdata/testconfigs/nonexisting.json'])
         main_exec(args)
 
-    assert log_has('Could not load config file /dev/null.', caplog)
+    assert log_has('Could not load config file tests/testdata/testconfigs/nonexisting.json.',
+                   caplog)
 
     args = add_arguments([
         '--config',
