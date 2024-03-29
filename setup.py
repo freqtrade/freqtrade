@@ -112,6 +112,7 @@ setup(
         'python-dateutil',
         'pytz',
         'packaging',
+        'freqtrade-client',
     ],
     extras_require={
         'dev': all_extra,
