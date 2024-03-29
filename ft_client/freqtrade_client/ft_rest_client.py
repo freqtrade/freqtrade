@@ -21,10 +21,19 @@ logger = logging.getLogger("ft_rest_client")
 
 class FtRestClient:
 
-    def __init__(self, serverurl, username=None, password=None):
+    def __init__(self, serverurl, username=None, password=None,
+                 pool_connections=10, pool_maxsize=10):
 
         self._serverurl = serverurl
         self._session = requests.Session()
+
+        # allow configuration of pool
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize
+        )
+        self._session.mount('http://', adapter)
+
         self._session.auth = (username, password)
 
     def _call(self, method, apipath, params: Optional[dict] = None, data=None, files=None):
