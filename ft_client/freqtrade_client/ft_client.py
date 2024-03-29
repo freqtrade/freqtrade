@@ -19,7 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger("ft_rest_client")
 
 
-def add_arguments():
+def add_arguments(args: Any = None):
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.",
@@ -47,8 +47,8 @@ def add_arguments():
                         default=[]
                         )
 
-    args = parser.parse_args()
-    return vars(args)
+    pargs = parser.parse_args(args)
+    return vars(pargs)
 
 
 def load_config(configfile):

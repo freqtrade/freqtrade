@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from freqtrade_client import FtRestClient
+from freqtrade_client.ft_client import add_arguments, main_exec
 
 
 def get_rest_client():
@@ -92,3 +93,16 @@ def test_FtRestClient_call_explicit_methods(method, args):
     exec = getattr(client, method)
     exec(*args)
     assert mock.call_count == 1
+
+
+def test_ft_client(capsys):
+    with pytest.raises(SystemExit):
+        args = add_arguments(['-V'])
+
+    args = add_arguments(['--show'])
+    assert isinstance(args, dict)
+    assert args['show'] is True
+    with pytest.raises(SystemExit):
+        main_exec(args)
+    captured = capsys.readouterr()
+    assert 'Possible commands' in captured.out
