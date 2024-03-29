@@ -69,7 +69,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov-config=.coveragerc
+        pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
