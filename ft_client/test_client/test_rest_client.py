@@ -4,8 +4,6 @@ import pytest
 from freqtrade_client import FtRestClient
 from freqtrade_client.ft_client import add_arguments, main_exec
 
-from freqtrade.vendor.qtpylib.indicators import returns
-
 
 def get_rest_client():
     client = FtRestClient('http://localhost:8080', 'freqtrader', 'password')
