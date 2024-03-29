@@ -3,6 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 from freqtrade_client import FtRestClient
 from freqtrade_client.ft_client import add_arguments, main_exec
+from requests.exceptions import ConnectionError
+
+
+def log_has(line, logs):
+    """Check if line is found on some caplog's message."""
+    return any(line == message for message in logs.messages)
 
 
 def get_rest_client():
@@ -30,6 +36,17 @@ def test_FtRestClient_call(method):
 
     getattr(client, f"_{method.lower()}")('/dummytest')
     assert mock.call_count == 2
+
+
+def test_FtRestClient_call_invalid(caplog):
+    client, _ = get_rest_client()
+    with pytest.raises(ValueError):
+        client._call('PUTTY', '/dummytest')
+
+    client._session.request = MagicMock(side_effect=ConnectionError())
+    client._call('GET', '/dummytest')
+
+    assert log_has('Connection error', caplog)
 
 
 @pytest.mark.parametrize('method,args', [
@@ -67,6 +84,7 @@ def test_FtRestClient_call(method):
     ('delete_trade', [1]),
     ('cancel_open_order', [1]),
     ('whitelist', []),
+    ('blacklist', []),
     ('blacklist', ['XRP/USDT']),
     ('blacklist', ['XRP/USDT', 'BTC/USDT']),
     ('forcebuy', ['XRP/USDT']),
@@ -95,7 +113,7 @@ def test_FtRestClient_call_explicit_methods(method, args):
     assert mock.call_count == 1
 
 
-def test_ft_client(mocker, capsys):
+def test_ft_client(mocker, capsys, caplog):
     with pytest.raises(SystemExit):
         args = add_arguments(['-V'])
 
@@ -116,3 +134,17 @@ def test_ft_client(mocker, capsys):
     main_exec(args)
     captured = capsys.readouterr()
     assert mock.call_count == 1
+
+    with pytest.raises(SystemExit):
+        args = add_arguments(['--config', '/dev/null'])
+        main_exec(args)
+
+    assert log_has('Could not load config file /dev/null.', caplog)
+
+    args = add_arguments([
+        '--config',
+        'tests/testdata/testconfigs/main_test_config.json',
+        'whatever'
+    ])
+    main_exec(args)
+    assert log_has('Command whatever not defined', caplog)
