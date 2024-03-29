@@ -467,6 +467,19 @@ jobs:
           dist
         retention-days: 10
 
+    - name: Build Client distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel ft_client
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v4
+      with:
+        name: freqtrade-client-build
+        path: |
+          ft_client/dist
+        retention-days: 10
+
   deploy-pypi:
     name: "Deploy to PyPI"
     needs: [ build ]
@@ -484,8 +497,10 @@ jobs:
     - name: Download artifact  📦
       uses: actions/download-artifact@v4
       with:
-        name: freqtrade-build
+        name: freqtrade*-build
         path: dist
+        merge-multiple: true
+
 
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@v1.8.14
