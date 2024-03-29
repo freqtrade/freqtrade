@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
 """
-Simple command line client into RPC commands
-Can be used as an alternate to Telegram
+A Rest Client for Freqtrade bot
 
 Should not import anything from freqtrade,
-so it can be used as a standalone script.
+so it can be used as a standalone script, and can be installed independently.
 """
 
 import json
