@@ -108,6 +108,10 @@ jobs:
       run: |
         ruff check --output-format=github .
 
+    - name: Check for version alignment
+      run: |
+        build_helpers/freqtrade_client_version_align.py
+
     - name: Mypy
       run: |
         mypy freqtrade scripts tests
