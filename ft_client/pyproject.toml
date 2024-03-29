@@ -3,7 +3,7 @@ requires = ["setuptools >= 64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "freqtrade_client"
+name = "freqtrade-client"
 dynamic = ["version"]
 
 authors = [
@@ -12,7 +12,7 @@ authors = [
 ]
 
 description = "Freqtrade - Client scripts"
-# readme = "README.md"
+readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "GPLv3"}
 # license = "GPLv3"
