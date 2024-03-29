@@ -4,6 +4,8 @@ import pytest
 from freqtrade_client import FtRestClient
 from freqtrade_client.ft_client import add_arguments, main_exec
 
+from freqtrade.vendor.qtpylib.indicators import returns
+
 
 def get_rest_client():
     client = FtRestClient('http://localhost:8080', 'freqtrader', 'password')
@@ -95,7 +97,7 @@ def test_FtRestClient_call_explicit_methods(method, args):
     assert mock.call_count == 1
 
 
-def test_ft_client(capsys):
+def test_ft_client(mocker, capsys):
     with pytest.raises(SystemExit):
         args = add_arguments(['-V'])
 
@@ -106,3 +108,13 @@ def test_ft_client(capsys):
         main_exec(args)
     captured = capsys.readouterr()
     assert 'Possible commands' in captured.out
+
+    mock = mocker.patch('freqtrade_client.ft_client.FtRestClient._call')
+    args = add_arguments([
+        '--config',
+        'tests/testdata/testconfigs/main_test_config.json',
+        'ping'
+    ])
+    main_exec(args)
+    captured = capsys.readouterr()
+    assert mock.call_count == 1
