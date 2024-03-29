@@ -42,7 +42,7 @@ Documentation = "https://freqtrade.io"
 
 
 [project.scripts]
-ft_rest = "freqtrade_client.ft_client:main"
+freqtrade-client = "freqtrade_client.ft_client:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
