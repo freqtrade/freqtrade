@@ -1171,14 +1171,15 @@ def test_rpc_force_entry_wrong_mode(mocker, default_conf) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_rpc_delete_lock(mocker, default_conf):
+def test_rpc_add_and_delete_lock(mocker, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
 
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=4), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=5), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=10), '', '*')
+
     locks = rpc._rpc_locks()
     assert locks['lock_count'] == 3
     locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])
