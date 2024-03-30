@@ -11,7 +11,6 @@ from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.key_value_store import set_startup_time
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
