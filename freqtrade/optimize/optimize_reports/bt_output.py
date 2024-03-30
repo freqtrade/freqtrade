@@ -254,9 +254,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
-                          f"{strat_results['best_pair']['profit_sum']:.2%}"),
+                          f"{strat_results['best_pair']['profit_total']:.2%}"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} "
-                           f"{strat_results['worst_pair']['profit_sum']:.2%}"),
+                           f"{strat_results['worst_pair']['profit_total']:.2%}"),
             ('Best trade', f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
             ('Worst trade', f"{worst_trade['pair']} "
                             f"{worst_trade['profit_ratio']:.2%}"),
