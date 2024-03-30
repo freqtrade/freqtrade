@@ -349,8 +349,6 @@ def generate_strategy_stats(pairlist: List[str],
                                              results=results, skip_nan=False)
     exit_reason_stats = generate_tag_metrics('exit_reason', starting_balance=start_balance,
                                              results=results, skip_nan=False)
-    # exit_reason_stats = generate_exit_reason_stats(max_open_trades=max_open_trades,
-    #                                                results=results)
     left_open_results = generate_pair_metrics(
         pairlist, stake_currency=stake_currency, starting_balance=start_balance,
         results=results.loc[results['exit_reason'] == 'force_exit'], skip_nan=True)

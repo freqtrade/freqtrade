@@ -78,7 +78,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     output = [
         [
             t['key'] if t.get('key') is not None and len(
-                t['key']) > 0 else t.get(fallback, "OTHER"),
+                str(t['key'])) > 0 else t.get(fallback, "OTHER"),
             t['trades'],
             t['profit_mean_pct'],
             t['profit_total_abs'],
