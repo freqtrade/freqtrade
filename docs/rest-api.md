@@ -125,6 +125,24 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 freqtrade-client --config rest_config.json <command> [optional parameters]
 ```
 
+??? Note "Programmatic use"
+    The `freqtrade-client` package (installable independent of freqtrade) can be used in your own scripts to interact with the freqtrade API.
+    to do so, please use the following:
+
+    ``` python
+    from freqtrade_client import FtRestClient
+    
+
+    client = FtRestClient(server_url, username, password)
+
+    # Get the status of the bot
+    ping = client.ping()
+    print(ping)
+    # ... 
+    ```
+
+    For a full list of available commands, please refer to the list below.
+
 ### Available endpoints
 
 |  Command | Description |
