@@ -148,6 +148,25 @@ class FtRestClient:
         """
         return self._delete(f"locks/{lock_id}")
 
+    def lock_add(self, pair: str, until: str, side: str = '*', reason: str = ''):
+        """Lock pair
+
+        :param pair: Pair to lock
+        :param until: Lock until this date (format "2024-03-30 16:00:00Z")
+        :param side: Side to lock (long, short, *)
+        :param reason: Reason for the lock
+        :return: json object
+        """
+        data = [
+            {
+                "pair": pair,
+                "until": until,
+                "side": side,
+                "reason": reason
+            }
+        ]
+        return self._post("locks", data=data)
+
     def daily(self, days=None):
         """Return the profits for each day, and amount of trades.
 
