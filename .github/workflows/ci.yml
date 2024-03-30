@@ -60,11 +60,16 @@ jobs:
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
+
+    - name: Check for version alignment
+      run: |
+        python build_helpers/freqtrade_client_version_align.py
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
@@ -188,6 +193,7 @@ jobs:
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
 
     - name: Tests
@@ -398,13 +404,14 @@ jobs:
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
 
     - name: Tests incl. ccxt compatibility tests
       env:
         CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
-        pytest --random-order --longrun --durations 20 -n auto --dist loadscope
+        pytest --random-order --longrun --durations 20 -n auto
 
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
@@ -467,6 +474,19 @@ jobs:
           dist
         retention-days: 10
 
+    - name: Build Client distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel ft_client
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v4
+      with:
+        name: freqtrade-client-build
+        path: |
+          ft_client/dist
+        retention-days: 10
+
   deploy-pypi:
     name: "Deploy to PyPI"
     needs: [ build ]
@@ -484,8 +504,10 @@ jobs:
     - name: Download artifact  📦
       uses: actions/download-artifact@v4
       with:
-        name: freqtrade-build
+        name: freqtrade*-build
         path: dist
+        merge-multiple: true
+
 
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@v1.8.14
