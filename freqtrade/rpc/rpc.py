@@ -1104,7 +1104,8 @@ class RPC:
 
         return self._rpc_locks()
 
-    def _rpc_add_lock(self, pair: str, until: datetime, reason: str, side: str) -> Dict[str, Any]:
+    def _rpc_add_lock(
+            self, pair: str, until: datetime, reason: Optional[str], side: str) -> PairLock:
         lock = PairLocks.lock_pair(
             pair=pair,
             until=until,
