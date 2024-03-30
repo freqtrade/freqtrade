@@ -59,13 +59,13 @@ def test_text_table_bt_results():
     )
 
     result_str = (
-        '|    Pair |   Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   '
+        '|    Pair |   Entries |   Avg Profit % |   Tot Profit BTC |   '
         'Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |\n'
-        '|---------+-----------+----------------+----------------+------------------+'
+        '|---------+-----------+----------------+------------------+'
         '----------------+----------------+-------------------------|\n'
-        '| ETH/BTC |         3 |           8.33 |          25.00 |       0.50000000 |          '
+        '| ETH/BTC |         3 |           8.33 |       0.50000000 |          '
         '12.50 |        0:20:00 |     2     0     1  66.7 |\n'
-        '|   TOTAL |         3 |           8.33 |          25.00 |       0.50000000 |          '
+        '|   TOTAL |         3 |           8.33 |       0.50000000 |          '
         '12.50 |        0:20:00 |     2     0     1  66.7 |'
     )
 
@@ -392,13 +392,13 @@ def test_text_table_exit_reason():
     )
 
     result_str = (
-        '|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
+        '|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |'
         '   Tot Profit BTC |   Tot Profit % |\n'
-        '|---------------+---------+--------------------------+----------------+----------------+'
+        '|---------------+---------+--------------------------+----------------+'
         '------------------+----------------|\n'
-        '|           roi |       2 |      2     0     0   100 |             15 |             30 |'
+        '|           roi |       2 |      2     0     0   100 |             15 |'
         '              0.6 |             15 |\n'
-        '|     stop_loss |       1 |      0     0     1     0 |            -10 |            -10 |'
+        '|     stop_loss |       1 |      0     0     1     0 |            -10 |'
         '             -0.2 |             -5 |'
     )
 
@@ -450,13 +450,13 @@ def test_text_table_strategy(testdatadir):
     bt_res_data_comparison = bt_res_data.pop('strategy_comparison')
 
     result_str = (
-        '|       Strategy |   Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '|       Strategy |   Entries |   Avg Profit % |   Tot Profit BTC |'
         '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
-        '|----------------+-----------+----------------+----------------+------------------+'
+        '|----------------+-----------+----------------+------------------+'
         '----------------+----------------+-------------------------+-----------------------|\n'
-        '| StrategyTestV2 |       179 |           0.08 |          14.39 |       0.02608550 |'
+        '| StrategyTestV2 |       179 |           0.08 |       0.02608550 |'
         '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n'
-        '|   TestStrategy |       179 |           0.08 |          14.39 |       0.02608550 |'
+        '|   TestStrategy |       179 |           0.08 |       0.02608550 |'
         '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |'
     )
 

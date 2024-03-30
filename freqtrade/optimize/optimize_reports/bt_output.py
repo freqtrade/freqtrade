@@ -104,7 +104,6 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
                 t['key']) > 0 else "OTHER",
             t['trades'],
             t['profit_mean_pct'],
-            t['profit_sum_pct'],
             t['profit_total_abs'],
             t['profit_total_pct'],
             t['duration_avg'],
