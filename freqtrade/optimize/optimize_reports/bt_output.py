@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from tabulate import tabulate
 
@@ -67,7 +67,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-    fallback: Optional[str] = None
+    fallback: str = ''
     if (tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
