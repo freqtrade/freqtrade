@@ -129,6 +129,8 @@ Below is an outline of exception inheritance hierarchy:
 + FreqtradeException
 |
 +---+ OperationalException
+|   |
+|   +---+ ConfigurationError
 |
 +---+ DependencyException
 |   |
@@ -376,7 +378,7 @@ from pathlib import Path
 
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
-    'secret': '<secret>'
+    'secret': '<secret>',
     'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()

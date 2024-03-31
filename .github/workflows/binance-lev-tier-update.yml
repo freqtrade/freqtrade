@@ -1,0 +1,47 @@
+name: Binance Leverage tiers update
+
+on:
+  schedule:
+    - cron: "0 3 * * 4"
+  # on demand
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    environment:
+      name: develop
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install ccxt
+      run: pip install ccxt
+
+    - name: Run leverage tier update
+      env:
+        CI_WEB_PROXY: ${{ secrets.CI_WEB_PROXY }}
+        FREQTRADE__EXCHANGE__KEY: ${{ secrets.BINANCE_EXCHANGE_KEY }}
+        FREQTRADE__EXCHANGE__SECRET: ${{ secrets.BINANCE_EXCHANGE_SECRET }}
+      run: python build_helpers/binance_update_lev_tiers.py
+
+
+    - uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.REPO_SCOPED_TOKEN }}
+        add-paths: freqtrade/exchange/binance_leverage_tiers.json
+        labels: |
+          Tech maintenance
+          Dependencies
+        branch: update/binance-leverage-tiers
+        title: Update Binance Leverage Tiers
+        commit-message: "chore: update pre-commit hooks"
+        committer: Freqtrade Bot <noreply@github.com>
+        body: Update binance leverage tiers.
+        delete-branch: true

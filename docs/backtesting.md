@@ -252,34 +252,34 @@ The most important in the backtesting is to understand the result.
 A backtesting result will look like that:
 
 ```
-========================================================= BACKTESTING REPORT =========================================================
-| Pair     | Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration |  Wins Draws Loss   Win%  |
-|:---------|--------:|---------------:|---------------:|-----------------:|---------------:|:-------------|-------------------------:|
-| ADA/BTC  |      35 |          -0.11 |          -3.88 |      -0.00019428 |          -1.94 | 4:35:00      |    14     0    21   40.0 |
-| ARK/BTC  |      11 |          -0.41 |          -4.52 |      -0.00022647 |          -2.26 | 2:03:00      |     3     0     8   27.3 |
-| BTS/BTC  |      32 |           0.31 |           9.78 |       0.00048938 |           4.89 | 5:05:00      |    18     0    14   56.2 |
-| DASH/BTC |      13 |          -0.08 |          -1.07 |      -0.00005343 |          -0.53 | 4:39:00      |     6     0     7   46.2 |
-| ENG/BTC  |      18 |           1.36 |          24.54 |       0.00122807 |          12.27 | 2:50:00      |     8     0    10   44.4 |
-| EOS/BTC  |      36 |           0.08 |           3.06 |       0.00015304 |           1.53 | 3:34:00      |    16     0    20   44.4 |
-| ETC/BTC  |      26 |           0.37 |           9.51 |       0.00047576 |           4.75 | 6:14:00      |    11     0    15   42.3 |
-| ETH/BTC  |      33 |           0.30 |           9.96 |       0.00049856 |           4.98 | 7:31:00      |    16     0    17   48.5 |
-| IOTA/BTC |      32 |           0.03 |           1.09 |       0.00005444 |           0.54 | 3:12:00      |    14     0    18   43.8 |
-| LSK/BTC  |      15 |           1.75 |          26.26 |       0.00131413 |          13.13 | 2:58:00      |     6     0     9   40.0 |
-| LTC/BTC  |      32 |          -0.04 |          -1.38 |      -0.00006886 |          -0.69 | 4:49:00      |    11     0    21   34.4 |
-| NANO/BTC |      17 |           1.26 |          21.39 |       0.00107058 |          10.70 | 1:55:00      |    10     0     7   58.5 |
-| NEO/BTC  |      23 |           0.82 |          18.97 |       0.00094936 |           9.48 | 2:59:00      |    10     0    13   43.5 |
-| REQ/BTC  |       9 |           1.17 |          10.54 |       0.00052734 |           5.27 | 3:47:00      |     4     0     5   44.4 |
-| XLM/BTC  |      16 |           1.22 |          19.54 |       0.00097800 |           9.77 | 3:15:00      |     7     0     9   43.8 |
-| XMR/BTC  |      23 |          -0.18 |          -4.13 |      -0.00020696 |          -2.07 | 5:30:00      |    12     0    11   52.2 |
-| XRP/BTC  |      35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
-| ZEC/BTC  |      22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
-| TOTAL    |     429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
-====================================================== LEFT OPEN TRADES REPORT ======================================================
-| Pair     |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
-|:---------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
-| ADA/BTC  |        1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
-| LTC/BTC  |        1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
-| TOTAL    |        2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
+================================================ BACKTESTING REPORT =================================================
+| Pair     | Entries |   Avg Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration |  Wins Draws Loss   Win%  |
+|:---------|--------:|---------------:|-----------------:|---------------:|:-------------|-------------------------:|
+| ADA/BTC  |      35 |          -0.11 |      -0.00019428 |          -1.94 | 4:35:00      |    14     0    21   40.0 |
+| ARK/BTC  |      11 |          -0.41 |      -0.00022647 |          -2.26 | 2:03:00      |     3     0     8   27.3 |
+| BTS/BTC  |      32 |           0.31 |       0.00048938 |           4.89 | 5:05:00      |    18     0    14   56.2 |
+| DASH/BTC |      13 |          -0.08 |      -0.00005343 |          -0.53 | 4:39:00      |     6     0     7   46.2 |
+| ENG/BTC  |      18 |           1.36 |       0.00122807 |          12.27 | 2:50:00      |     8     0    10   44.4 |
+| EOS/BTC  |      36 |           0.08 |       0.00015304 |           1.53 | 3:34:00      |    16     0    20   44.4 |
+| ETC/BTC  |      26 |           0.37 |       0.00047576 |           4.75 | 6:14:00      |    11     0    15   42.3 |
+| ETH/BTC  |      33 |           0.30 |       0.00049856 |           4.98 | 7:31:00      |    16     0    17   48.5 |
+| IOTA/BTC |      32 |           0.03 |       0.00005444 |           0.54 | 3:12:00      |    14     0    18   43.8 |
+| LSK/BTC  |      15 |           1.75 |       0.00131413 |          13.13 | 2:58:00      |     6     0     9   40.0 |
+| LTC/BTC  |      32 |          -0.04 |      -0.00006886 |          -0.69 | 4:49:00      |    11     0    21   34.4 |
+| NANO/BTC |      17 |           1.26 |       0.00107058 |          10.70 | 1:55:00      |    10     0     7   58.5 |
+| NEO/BTC  |      23 |           0.82 |       0.00094936 |           9.48 | 2:59:00      |    10     0    13   43.5 |
+| REQ/BTC  |       9 |           1.17 |       0.00052734 |           5.27 | 3:47:00      |     4     0     5   44.4 |
+| XLM/BTC  |      16 |           1.22 |       0.00097800 |           9.77 | 3:15:00      |     7     0     9   43.8 |
+| XMR/BTC  |      23 |          -0.18 |      -0.00020696 |          -2.07 | 5:30:00      |    12     0    11   52.2 |
+| XRP/BTC  |      35 |           0.66 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
+| ZEC/BTC  |      22 |          -0.46 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
+| TOTAL    |     429 |           0.36 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
+============================================= LEFT OPEN TRADES REPORT =============================================
+| Pair     |  Entries |   Avg Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
+|:---------|---------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
+| ADA/BTC  |        1 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
+| LTC/BTC  |        1 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
+| TOTAL    |        2 |           0.78 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
 ==================== EXIT REASON STATS ====================
 | Exit Reason        |   Exits |  Wins |  Draws |  Losses |
 |:-------------------|--------:|------:|-------:|--------:|
@@ -358,7 +358,7 @@ here:
 The bot has made `429` trades for an average duration of `4:12:00`, with a performance of `76.20%` (profit), that means it has
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
-The column `Avg Profit %` shows the average profit for all trades made while the column `Cum Profit %` sums up all the profits/losses.
+The column `Avg Profit %` shows the average profit for all trades made.
 The column `Tot Profit %` shows instead the total profit % in relation to the starting balance.
 In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the `Tot Profit %` will be `(0.00762792 / 0.01) * 100 ~= 76.2%`.
 
@@ -464,7 +464,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Profit factor`: profit / loss.
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
-- `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
+- `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Tot Profit %`.
 - `Best Trade` / `Worst Trade`: Biggest single winning trade and biggest single losing trade.
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
@@ -629,11 +629,11 @@ There will be an additional table comparing win/losses of the different strategi
 Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.
 
 ```
-=========================================================== STRATEGY SUMMARY ===========================================================================
-| Strategy    |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
-|:------------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|------:|-------:|-------:|-----------:|
-| Strategy1   |      429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
-| Strategy2   |     1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
+================================================== STRATEGY SUMMARY ===================================================================
+| Strategy    |  Entries |   Avg Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
+|:------------|---------:|---------------:|-----------------:|---------------:|:---------------|------:|-------:|-------:|-----------:|
+| Strategy1   |      429 |           0.36 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
+| Strategy2   |     1487 |          -0.13 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
 ```
 
 ## Next step

@@ -7,11 +7,12 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import ccxt
 import pytest
+from numpy import NaN
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
-                                  InsufficientFundsError, InvalidOrderException,
+from freqtrade.exceptions import (ConfigurationError, DDosProtection, DependencyException,
+                                  ExchangeError, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import (Binance, Bybit, Exchange, Kraken, market_is_active,
                                 timeframe_to_prev_date)
@@ -594,7 +595,7 @@ def test_validate_stakecurrency_error(default_conf, mocker, caplog):
     mocker.patch(f'{EXMS}.validate_pairs')
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}._load_async_markets')
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r'XRP is not available as stake on .*'
                        'Available currencies are: BTC, ETH, USDT'):
         Exchange(default_conf)
@@ -799,12 +800,12 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch(f'{EXMS}.validate_pairs')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.validate_pricing')
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
     default_conf["timeframe"] = "15s"
 
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r"Timeframes < 1m are currently not supported by Freqtrade."):
         Exchange(default_conf)
 
@@ -1064,6 +1065,9 @@ def test_exchange_has(default_conf, mocker):
     type(api_mock).has = PropertyMock(return_value={'deadbeef': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     assert not exchange.exchange_has("deadbeef")
+
+    exchange._ft_has['exchange_has_overrides'] = {'deadbeef': True}
+    assert exchange.exchange_has("deadbeef")
 
 
 @pytest.mark.parametrize("side,leverage", [
@@ -4203,6 +4207,7 @@ def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value,
         (10, 0.0001, 2.0, 1.0, 0.002, 0.002),
         (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
         (10, 0.0002, 2.5, None, 0.005, None),
+        (10, 0.0002, NaN, None, 0.0, None),
     ])
 def test_calculate_funding_fees(
     default_conf,
@@ -4312,8 +4317,8 @@ def test_combine_funding_and_mark(
         assert len(df) == 1
 
     # Empty funding rates
-    funding_rates = DataFrame([], columns=['date', 'open'])
-    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+    funding_rates2 = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates2, mark_rates, futures_funding_rate)
     if futures_funding_rate is not None:
         assert len(df) == 3
         assert df.iloc[0]['open_fund'] == futures_funding_rate
@@ -4321,6 +4326,12 @@ def test_combine_funding_and_mark(
         assert df.iloc[2]['open_fund'] == futures_funding_rate
     else:
         assert len(df) == 0
+
+    # Empty mark candles
+    mark_candles = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_candles, futures_funding_rate)
+
+    assert len(df) == 0
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [

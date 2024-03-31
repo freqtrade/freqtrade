@@ -16,7 +16,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
     Generate floatformat (goes in line with _generate_result_line())
     """
-    return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f',
+    return ['s', 'd', '.2f', f'.{decimals_per_coin(stake_currency)}f',
             '.2f', 'd', 's', 's']
 
 
@@ -25,7 +25,7 @@ def _get_line_header(first_column: str, stake_currency: str,
     """
     Generate header lines (goes in line with _generate_result_line())
     """
-    return [first_column, direction, 'Avg Profit %', 'Cum Profit %',
+    return [first_column, direction, 'Avg Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
             'Win  Draw  Loss  Win%']
 
@@ -51,7 +51,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     headers = _get_line_header('Pair', stake_currency)
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
-        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses'])
     ] for t in pair_results]
@@ -72,7 +72,6 @@ def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_curren
         'Exits',
         'Win  Draws  Loss  Win%',
         'Avg Profit %',
-        'Cum Profit %',
         f'Tot Profit {stake_currency}',
         'Tot Profit %',
     ]
@@ -80,7 +79,7 @@ def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_curren
     output = [[
         t.get('exit_reason', t.get('sell_reason')), t['trades'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
-        t['profit_mean_pct'], t['profit_sum_pct'],
+        t['profit_mean_pct'],
         fmt_coin(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
     ] for t in exit_reason_stats]
@@ -105,7 +104,6 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
                 t['key']) > 0 else "OTHER",
             t['trades'],
             t['profit_mean_pct'],
-            t['profit_sum_pct'],
             t['profit_total_abs'],
             t['profit_total_pct'],
             t['duration_avg'],
@@ -166,7 +164,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
                 for t, dd in zip(strategy_results, drawdown)]
 
     output = [[
-        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses']), drawdown]
         for t, drawdown in zip(strategy_results, drawdown)]
@@ -256,9 +254,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
-                          f"{strat_results['best_pair']['profit_sum']:.2%}"),
+                          f"{strat_results['best_pair']['profit_total']:.2%}"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} "
-                           f"{strat_results['worst_pair']['profit_sum']:.2%}"),
+                           f"{strat_results['worst_pair']['profit_total']:.2%}"),
             ('Best trade', f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
             ('Worst trade', f"{worst_trade['pair']} "
                             f"{worst_trade['profit_ratio']:.2%}"),

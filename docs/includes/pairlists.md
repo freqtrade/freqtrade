@@ -81,12 +81,14 @@ Filtering instances (not the first position in the list) will not apply any cach
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "min_value": 0,
+        "max_value": 8000000,
         "refresh_period": 1800
     }
 ],
 ```
 
 You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
+In addition to that, you can also define a maximum volume with `max_value` - which will filter out pairs with a volume higher than the specified value in the specified timerange.
 
 ##### VolumePairList Advanced mode
 
@@ -369,6 +371,11 @@ As this Filter uses past performance of the bot, it'll have some startup-period 
 
 Filters low-value coins which would not allow setting stoplosses.
 
+Namely, pairs are blacklisted if a variance of one percent or more in the stop price would be caused by precision rounding on the exchange, i.e. `rounded(stop_price) <= rounded(stop_price * 0.99)`. The idea is to avoid coins with a value VERY close to their lower trading boundary, not allowing setting of proper stoploss.
+
+!!! Tip "PerformanceFilter is pointless for futures trading"
+    The above does not apply to shorts. And for longs, in theory the trade will be liquidated first.
+
 !!! Warning "Backtesting"
     `PrecisionFilter` does not support backtesting mode using multiple strategies.
 
@@ -450,6 +457,8 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
 ]
 ```
 
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting for this pairlist.
+
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
     Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.
@@ -460,7 +469,7 @@ Volatility is the degree of historical variation of a pairs over time, it is mea
 
 This filter removes pairs if the average volatility over a `lookback_days` days is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. 
+This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.
 
 In the below example:
 If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.
@@ -476,6 +485,8 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
     }
 ]
 ```
+
+Adding `"sort_direction": "asc"` or `"sort_direction": "desc"` enables sorting mode for this pairlist.
 
 ### Full example of Pairlist Handlers
 

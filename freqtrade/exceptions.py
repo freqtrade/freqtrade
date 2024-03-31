@@ -12,6 +12,12 @@ class OperationalException(FreqtradeException):
     """
 
 
+class ConfigurationError(OperationalException):
+    """
+    Configuration error. Usually caused by invalid configuration.
+    """
+
+
 class DependencyException(FreqtradeException):
     """
     Indicates that an assumed dependency is not met.

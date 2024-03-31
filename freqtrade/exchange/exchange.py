@@ -8,7 +8,7 @@ import logging
 import signal
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from math import floor
+from math import floor, isnan
 from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
@@ -24,19 +24,21 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHAN
                                  ListPairsWithTimeframes, MakerTaker, OBLiteral, PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException, PricingError,
-                                  RetryableOrderError, TemporaryError)
+from freqtrade.exceptions import (ConfigurationError, DDosProtection, ExchangeError,
+                                  InsufficientFundsError, InvalidOrderException,
+                                  OperationalException, PricingError, RetryableOrderError,
+                                  TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, remove_exchange_credentials,
                                        retrier, retrier_async)
 from freqtrade.exchange.exchange_utils import (ROUND, ROUND_DOWN, ROUND_UP, CcxtModuleType,
                                                amount_to_contract_precision, amount_to_contracts,
                                                amount_to_precision, contracts_to_amount,
                                                date_minus_candles, is_exchange_known_ccxt,
-                                               market_is_active, price_to_precision,
-                                               timeframe_to_minutes, timeframe_to_msecs,
-                                               timeframe_to_next_date, timeframe_to_prev_date,
-                                               timeframe_to_seconds)
+                                               market_is_active, price_to_precision)
+from freqtrade.exchange.exchange_utils_timeframe import (timeframe_to_minutes, timeframe_to_msecs,
+                                                         timeframe_to_next_date,
+                                                         timeframe_to_prev_date,
+                                                         timeframe_to_seconds)
 from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
@@ -87,6 +89,8 @@ class Exchange:
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
         "marketOrderRequiresPrice": False,
+        "exchange_has_overrides": {},  # Dictionary overriding ccxt's "has".
+        # Expected to be in the format {"fetchOHLCV": True} or {"fetchOHLCV": False}
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -526,7 +530,7 @@ class Exchange:
             )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
-            raise OperationalException(
+            raise ConfigurationError(
                 f"{stake_currency} is not available as stake on {self.name}. "
                 f"Available currencies are: {', '.join(quote_currencies)}")
 
@@ -594,7 +598,7 @@ class Exchange:
                 f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
 
         if timeframe and (timeframe not in self.timeframes):
-            raise OperationalException(
+            raise ConfigurationError(
                 f"Invalid timeframe '{timeframe}'. This exchange supports: {self.timeframes}")
 
         if (
@@ -602,7 +606,7 @@ class Exchange:
             and self._config['runmode'] != RunMode.UTIL_EXCHANGE
             and timeframe_to_minutes(timeframe) < 1
         ):
-            raise OperationalException("Timeframes < 1m are currently not supported by Freqtrade.")
+            raise ConfigurationError("Timeframes < 1m are currently not supported by Freqtrade.")
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """
@@ -610,7 +614,7 @@ class Exchange:
         """
         if any(v == 'market' for k, v in order_types.items()):
             if not self.exchange_has('createMarketOrder'):
-                raise OperationalException(
+                raise ConfigurationError(
                     f'Exchange {self.name} does not support market orders.')
         self.validate_stop_ordertypes(order_types)
 
@@ -620,7 +624,7 @@ class Exchange:
         """
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
-            raise OperationalException(
+            raise ConfigurationError(
                 f'On exchange stoploss is not supported for {self.name}.'
             )
         if self.trading_mode == TradingMode.FUTURES:
@@ -630,17 +634,17 @@ class Exchange:
                 and 'stoploss_price_type' in order_types
                 and order_types['stoploss_price_type'] not in price_mapping
             ):
-                raise OperationalException(
+                raise ConfigurationError(
                     f'On exchange stoploss price type is not supported for {self.name}.'
                 )
 
     def validate_pricing(self, pricing: Dict) -> None:
         if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
-            raise OperationalException(f'Orderbook not available for {self.name}.')
+            raise ConfigurationError(f'Orderbook not available for {self.name}.')
         if (not pricing.get('use_order_book', False) and (
                 not self.exchange_has('fetchTicker')
                 or not self._ft_has['tickers_have_price'])):
-            raise OperationalException(f'Ticker pricing not available for {self.name}.')
+            raise ConfigurationError(f'Ticker pricing not available for {self.name}.')
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
         """
@@ -648,7 +652,7 @@ class Exchange:
         """
         if any(v.upper() not in self._ft_has["order_time_in_force"]
                for k, v in order_time_in_force.items()):
-            raise OperationalException(
+            raise ConfigurationError(
                 f'Time in force policies are not supported for {self.name} yet.')
 
     def validate_required_startup_candles(self, startup_candles: int, timeframe: str) -> int:
@@ -659,7 +663,7 @@ class Exchange:
 
         candle_limit = self.ohlcv_candle_limit(
             timeframe, self._config['candle_type_def'],
-            int(date_minus_candles(timeframe, startup_candles).timestamp() * 1000)
+            dt_ts(date_minus_candles(timeframe, startup_candles))
             if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
@@ -670,12 +674,12 @@ class Exchange:
 
             if required_candle_call_count > 5:
                 # Only allow 5 calls per pair to somewhat limit the impact
-                raise OperationalException(
+                raise ConfigurationError(
                     f"This strategy requires {startup_candles} candles to start, "
                     "which is more than 5x "
                     f"the amount of candles {self.name} provides for {timeframe}.")
         elif required_candle_call_count > 1:
-            raise OperationalException(
+            raise ConfigurationError(
                 f"This strategy requires {startup_candles} candles to start, which is more than "
                 f"the amount of candles {self.name} provides for {timeframe}.")
         if required_candle_call_count > 1:
@@ -716,6 +720,8 @@ class Exchange:
         :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
         :return: bool
         """
+        if endpoint in self._ft_has.get('exchange_has_overrides', {}):
+            return self._ft_has['exchange_has_overrides'][endpoint]
         return endpoint in self._api.has and self._api.has[endpoint]
 
     def get_precision_amount(self, pair: str) -> Optional[float]:
@@ -2043,7 +2049,7 @@ class Exchange:
                 timeframe, candle_type, since_ms)
             move_to = one_call * self.required_candle_call_count
             now = timeframe_to_next_date(timeframe)
-            since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+            since_ms = dt_ts(now - timedelta(seconds=move_to // 1000))
 
         if since_ms:
             return self._async_get_historic_ohlcv(
@@ -2503,7 +2509,7 @@ class Exchange:
             )
 
         if type(since) is datetime:
-            since = int(since.timestamp()) * 1000   # * 1000 for ms
+            since = dt_ts(since)
 
         try:
             funding_history = self._api.fetch_funding_history(
@@ -2833,7 +2839,7 @@ class Exchange:
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
-        since_ms = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
+        since_ms = dt_ts(timeframe_to_prev_date(timeframe, open_date))
 
         mark_comb: PairWithTimeframe = (pair, timeframe, mark_price_type)
         funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
@@ -2887,7 +2893,7 @@ class Exchange:
             else:
                 # Fill up missing funding_rate candles with fallback value
                 combined = mark_rates.merge(
-                    funding_rates, on='date', how="outer", suffixes=["_mark", "_fund"]
+                    funding_rates, on='date', how="left", suffixes=["_mark", "_fund"]
                     )
                 combined['open_fund'] = combined['open_fund'].fillna(futures_funding_rate)
                 return combined
@@ -2916,7 +2922,8 @@ class Exchange:
         if not df.empty:
             df1 = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df1['open_fund'] * df1['open_mark'] * amount)
-
+        if isnan(fees):
+            fees = 0.0
         # Negate fees for longs as funding_fees expects it this way based on live endpoints.
         return fees if is_short else -fees
 
@@ -3091,4 +3098,5 @@ class Exchange:
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
             # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
+            raise ExchangeError(f"Cannot get maintenance ratio using {self.name}")
             raise ExchangeError(f"Cannot get maintenance ratio using {self.name}")

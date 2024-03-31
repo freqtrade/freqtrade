@@ -15,7 +15,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
-from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.data.history.datahandlers import IDataHandler
 from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re
@@ -542,7 +542,9 @@ def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
 
     convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
-                            datadir=tmp_path, timerange=tr, erase=True)
+                            datadir=tmp_path, timerange=tr, erase=True,
+                            data_format_ohlcv='feather',
+                            candle_type=CandleType.SPOT)
 
     assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
     # Load new data
@@ -556,5 +558,7 @@ def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
-                            datadir=tmp_path, timerange=tr, erase=True)
+                            datadir=tmp_path, timerange=tr, erase=True,
+                            data_format_ohlcv='feather',
+                            candle_type=CandleType.SPOT)
     assert log_has(msg, caplog)

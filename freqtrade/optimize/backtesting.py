@@ -33,8 +33,8 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  show_backtest_results,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import (LocalTrade, Order, PairLocks, Trade, disable_database_use,
-                                   enable_database_use)
+from freqtrade.persistence import (CustomDataWrapper, LocalTrade, Order, PairLocks, Trade,
+                                   disable_database_use, enable_database_use)
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -337,6 +337,7 @@ class Backtesting:
         self.disable_database_use()
         PairLocks.reset_locks()
         Trade.reset_trades()
+        CustomDataWrapper.reset_custom_data()
         self.rejected_trades = 0
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0
@@ -602,6 +603,11 @@ class Backtesting:
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
             self._run_funding_fees(trade, current_date, force=True)
+            strategy_safe_wrapper(
+                self.strategy.order_filled,
+                default_retval=None)(
+                pair=trade.pair, trade=trade,  # type: ignore[arg-type]
+                order=order, current_time=current_date)
 
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open
@@ -881,6 +887,9 @@ class Backtesting:
             precision_amount = self.exchange.get_precision_amount(pair)
             amount = amount_to_contract_precision(amount_p, precision_amount, self.precision_mode,
                                                   contract_size)
+            if not amount:
+                # No amount left after truncating to precision.
+                return trade
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
 

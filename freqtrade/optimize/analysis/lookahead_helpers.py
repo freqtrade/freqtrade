@@ -107,9 +107,9 @@ class LookaheadAnalysisSubFunctions:
                 csv_df = add_or_update_row(csv_df, new_row_data)
 
         # Fill NaN values with a default value (e.g., 0)
-        csv_df['total_signals'] = csv_df['total_signals'].fillna(0)
-        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].fillna(0)
-        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].fillna(0)
+        csv_df['total_signals'] = csv_df['total_signals'].astype(int).fillna(0)
+        csv_df['biased_entry_signals'] = csv_df['biased_entry_signals'].astype(int).fillna(0)
+        csv_df['biased_exit_signals'] = csv_df['biased_exit_signals'].astype(int).fillna(0)
 
         # Convert columns to integers
         csv_df['total_signals'] = csv_df['total_signals'].astype(int)
@@ -121,14 +121,22 @@ class LookaheadAnalysisSubFunctions:
 
     @staticmethod
     def calculate_config_overrides(config: Config):
+        if config.get('enable_protections', False):
+            # if protections are used globally, they can produce false positives.
+            config['enable_protections'] = False
+            logger.info('Protections were enabled. '
+                        'Disabling protections now '
+                        'since they could otherwise produce false positives.')
         if config['targeted_trade_amount'] < config['minimum_trade_amount']:
             # this combo doesn't make any sense.
             raise OperationalException(
                 "Targeted trade amount can't be smaller than minimum trade amount."
             )
-        if len(config['pairs']) > config['max_open_trades']:
-            logger.info('Max_open_trades were less than amount of pairs. '
-                        'Set max_open_trades to amount of pairs just to avoid false positives.')
+        if len(config['pairs']) > config.get('max_open_trades', 0):
+            logger.info('Max_open_trades were less than amount of pairs '
+                        'or defined in the strategy. '
+                        'Set max_open_trades to amount of pairs '
+                        'just to avoid false positives.')
             config['max_open_trades'] = len(config['pairs'])
 
         min_dry_run_wallet = 1000000000
