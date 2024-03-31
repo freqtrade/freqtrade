@@ -504,7 +504,7 @@ jobs:
     - name: Download artifact  📦
       uses: actions/download-artifact@v4
       with:
-        name: freqtrade*-build
+        pattern: freqtrade*-build
         path: dist
         merge-multiple: true
 
