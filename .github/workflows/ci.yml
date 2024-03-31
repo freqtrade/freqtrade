@@ -19,7 +19,7 @@ concurrency:
 permissions:
   repository-projects: read
 jobs:
-  build_linux:
+  build-linux:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -368,7 +368,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
 
-  build_linux_online:
+  build-linux-online:
     # Run pytest with "live" checks
     runs-on: ubuntu-22.04
     steps:
@@ -417,13 +417,13 @@ jobs:
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [
-      build_linux,
+      build-linux,
       build-macos,
       build-windows,
       docs-check,
       mypy-version-check,
       pre-commit,
-      build_linux_online
+      build-linux-online
     ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
@@ -450,7 +450,7 @@ jobs:
 
   build:
     name: "Build"
-    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    needs: [ build-linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     steps:
@@ -519,7 +519,7 @@ jobs:
 
 
   deploy-docker:
-    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    needs: [ build-linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
