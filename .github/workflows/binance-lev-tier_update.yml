@@ -26,9 +26,9 @@ jobs:
 
     - name: Run leverage tier update
       env:
-        CI_WEB_PROXY: secrets.CI_WEB_PROXY
-        FREQTRADE__EXCHANGE__KEY: secrets.BINANCE_EXCHANGE_KEY
-        FREQTRADE__EXCHANGE__SECRET: secrets.BINANCE_EXCHANGE_SECRET
+        CI_WEB_PROXY: ${{ secrets.CI_WEB_PROXY }}
+        FREQTRADE__EXCHANGE__KEY: ${{ secrets.BINANCE_EXCHANGE_KEY }}
+        FREQTRADE__EXCHANGE__SECRET: ${{ secrets.BINANCE_EXCHANGE_SECRET }}
       run: python build_helpers/binance_update_lev_tiers.py
 
 
