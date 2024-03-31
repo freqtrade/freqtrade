@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 from pandas import DataFrame, Series, concat, to_datetime
 
-from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, IntOrInf
+from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT
 from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_csum,
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino)
@@ -71,7 +71,8 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         'key': first_column,
         'trades': len(result),
         'profit_mean': result['profit_ratio'].mean() if len(result) > 0 else 0.0,
-        'profit_mean_pct': result['profit_ratio'].mean() * 100.0 if len(result) > 0 else 0.0,
+        'profit_mean_pct': round(result['profit_ratio'].mean() * 100.0, 2
+                                 ) if len(result) > 0 else 0.0,
         'profit_sum': profit_sum,
         'profit_sum_pct': round(profit_sum * 100.0, 2),
         'profit_total_abs': result['profit_abs'].sum(),
@@ -152,42 +153,6 @@ def generate_tag_metrics(tag_type: str,
         return tabular_data
     else:
         return []
-
-
-def generate_exit_reason_stats(max_open_trades: IntOrInf, results: DataFrame) -> List[Dict]:
-    """
-    Generate small table outlining Backtest results
-    :param max_open_trades: Max_open_trades parameter
-    :param results: Dataframe containing the backtest result for one strategy
-    :return: List of Dicts containing the metrics per Sell reason
-    """
-    tabular_data = []
-
-    for reason, count in results['exit_reason'].value_counts().items():
-        result = results.loc[results['exit_reason'] == reason]
-
-        profit_mean = result['profit_ratio'].mean()
-        profit_sum = result['profit_ratio'].sum()
-        profit_total = profit_sum / max_open_trades
-
-        tabular_data.append(
-            {
-                'exit_reason': reason,
-                'trades': count,
-                'wins': len(result[result['profit_abs'] > 0]),
-                'draws': len(result[result['profit_abs'] == 0]),
-                'losses': len(result[result['profit_abs'] < 0]),
-                'winrate': len(result[result['profit_abs'] > 0]) / count if count else 0.0,
-                'profit_mean': profit_mean,
-                'profit_mean_pct': round(profit_mean * 100, 2),
-                'profit_sum': profit_sum,
-                'profit_sum_pct': round(profit_sum * 100, 2),
-                'profit_total_abs': result['profit_abs'].sum(),
-                'profit_total': profit_total,
-                'profit_total_pct': round(profit_total * 100, 2),
-            }
-        )
-    return tabular_data
 
 
 def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
@@ -383,9 +348,8 @@ def generate_strategy_stats(pairlist: List[str],
 
     enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
                                              results=results, skip_nan=False)
-
-    exit_reason_stats = generate_exit_reason_stats(max_open_trades=max_open_trades,
-                                                   results=results)
+    exit_reason_stats = generate_tag_metrics('exit_reason', starting_balance=start_balance,
+                                             results=results, skip_nan=False)
     left_open_results = generate_pair_metrics(
         pairlist, stake_currency=stake_currency, starting_balance=start_balance,
         results=results.loc[results['exit_reason'] == 'force_exit'], skip_nan=True)
