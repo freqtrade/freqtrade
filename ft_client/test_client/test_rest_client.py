@@ -61,6 +61,7 @@ def test_FtRestClient_call_invalid(caplog):
     ('exits', []),
     ('mix_tags', []),
     ('locks', []),
+    ('lock_add', ["XRP/USDT", '2024-01-01 20:00:00Z', '*', 'rand']),
     ('delete_lock', [2]),
     ('daily', []),
     ('daily', [15]),

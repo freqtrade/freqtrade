@@ -166,6 +166,7 @@ freqtrade-client --config rest_config.json <command> [optional parameters]
 | `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
+| `locks add <pair>, <until>, [side], [reason]` | Locks a pair until "until". (Until will be rounded up to the nearest timeframe).
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).

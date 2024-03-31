@@ -11,7 +11,6 @@ from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.key_value_store import set_startup_time
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
@@ -1171,14 +1170,15 @@ def test_rpc_force_entry_wrong_mode(mocker, default_conf) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_rpc_delete_lock(mocker, default_conf):
+def test_rpc_add_and_delete_lock(mocker, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
 
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=4), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=5), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=10), '', '*')
+
     locks = rpc._rpc_locks()
     assert locks['lock_count'] == 3
     locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])

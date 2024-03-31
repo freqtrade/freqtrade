@@ -88,7 +88,8 @@ ignore_missing_imports = true
 namespace_packages = false
 warn_unused_ignores = true
 exclude = [
-    '^build_helpers\.py$'
+    '^build_helpers\.py$',
+    '^ft_client/build/.*$',
 ]
 plugins = [
   "sqlalchemy.ext.mypy.plugin"

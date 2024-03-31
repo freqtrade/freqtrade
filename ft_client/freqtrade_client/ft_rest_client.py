@@ -7,7 +7,7 @@ so it can be used as a standalone script, and can be installed independently.
 
 import json
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import requests
@@ -15,6 +15,9 @@ from requests.exceptions import ConnectionError
 
 
 logger = logging.getLogger("ft_rest_client")
+
+ParamsT = Optional[Dict[str, Any]]
+PostDataT = Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
 class FtRestClient:
@@ -58,13 +61,13 @@ class FtRestClient:
         except ConnectionError:
             logger.warning("Connection error")
 
-    def _get(self, apipath, params: Optional[dict] = None):
+    def _get(self, apipath, params: ParamsT = None):
         return self._call("GET", apipath, params=params)
 
-    def _delete(self, apipath, params: Optional[dict] = None):
+    def _delete(self, apipath, params: ParamsT = None):
         return self._call("DELETE", apipath, params=params)
 
-    def _post(self, apipath, params: Optional[dict] = None, data: Optional[dict] = None):
+    def _post(self, apipath, params: ParamsT = None, data: PostDataT = None):
         return self._call("POST", apipath, params=params, data=data)
 
     def start(self):
@@ -147,6 +150,25 @@ class FtRestClient:
         :return: json object
         """
         return self._delete(f"locks/{lock_id}")
+
+    def lock_add(self, pair: str, until: str, side: str = '*', reason: str = ''):
+        """Lock pair
+
+        :param pair: Pair to lock
+        :param until: Lock until this date (format "2024-03-30 16:00:00Z")
+        :param side: Side to lock (long, short, *)
+        :param reason: Reason for the lock
+        :return: json object
+        """
+        data = [
+            {
+                "pair": pair,
+                "until": until,
+                "side": side,
+                "reason": reason
+            }
+        ]
+        return self._post("locks", data=data)
 
     def daily(self, days=None):
         """Return the profits for each day, and amount of trades.
