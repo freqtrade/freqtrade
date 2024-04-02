@@ -1174,7 +1174,7 @@ class Telegram(RPCHandler):
                 text='Cancel', callback_data='force_exit__cancel')])
             await self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
 
-    async def _force_exit_action(self, trade_id):
+    async def _force_exit_action(self, trade_id: str):
         if trade_id != 'cancel':
             try:
                 loop = asyncio.get_running_loop()
