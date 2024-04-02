@@ -109,3 +109,5 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tilde
   - mdx_truly_sane_lists
+static_templates:
+  - 404.html
