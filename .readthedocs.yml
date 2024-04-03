@@ -5,6 +5,9 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "3.11"
+  commands:
+    - pip install --no-cache-dir -r docs/requirements-docs.txt
+    - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml
 
 python:
   install:
