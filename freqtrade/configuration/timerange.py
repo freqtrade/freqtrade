@@ -9,7 +9,7 @@ from typing import Optional
 from typing_extensions import Self
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError
 
 
 logger = logging.getLogger(__name__)
@@ -156,7 +156,7 @@ class TimeRange:
                     else:
                         stop = int(stops)
                 if start > stop > 0:
-                    raise OperationalException(
+                    raise ConfigurationError(
                         f'Start date is after stop date for timerange "{text}"')
                 return cls(stype[0], stype[1], start, stop)
-        raise OperationalException(f'Incorrect syntax for timerange "{text}"')
+        raise ConfigurationError(f'Incorrect syntax for timerange "{text}"')

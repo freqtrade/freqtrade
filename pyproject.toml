@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: MacOS",
     "Operating System :: Unix",
     "Topic :: Office/Business :: Financial :: Investment",
@@ -45,7 +46,7 @@ zip-safe = false
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["freqtrade*"]
-exclude = ["tests", "tests.*"]
+exclude = ["tests", "tests.*", "user_data", "user_data*"]
 namespaces = true
 
 [tool.setuptools.dynamic]
@@ -87,7 +88,8 @@ ignore_missing_imports = true
 namespace_packages = false
 warn_unused_ignores = true
 exclude = [
-    '^build_helpers\.py$'
+    '^build_helpers\.py$',
+    '^ft_client/build/.*$',
 ]
 plugins = [
   "sqlalchemy.ext.mypy.plugin"

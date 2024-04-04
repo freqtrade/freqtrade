@@ -16,7 +16,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
     Generate floatformat (goes in line with _generate_result_line())
     """
-    return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f',
+    return ['s', 'd', '.2f', f'.{decimals_per_coin(stake_currency)}f',
             '.2f', 'd', 's', 's']
 
 
@@ -25,7 +25,7 @@ def _get_line_header(first_column: str, stake_currency: str,
     """
     Generate header lines (goes in line with _generate_result_line())
     """
-    return [first_column, direction, 'Avg Profit %', 'Cum Profit %',
+    return [first_column, direction, 'Avg Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
             'Win  Draw  Loss  Win%']
 
@@ -51,40 +51,13 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     headers = _get_line_header('Pair', stake_currency)
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
-        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses'])
     ] for t in pair_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
-
-
-def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
-    """
-    Generate small table outlining Backtest results
-    :param exit_reason_stats: Exit reason metrics
-    :param stake_currency: Stakecurrency used
-    :return: pretty printed table with tabulate as string
-    """
-    headers = [
-        'Exit Reason',
-        'Exits',
-        'Win  Draws  Loss  Win%',
-        'Avg Profit %',
-        'Cum Profit %',
-        f'Tot Profit {stake_currency}',
-        'Tot Profit %',
-    ]
-
-    output = [[
-        t.get('exit_reason', t.get('sell_reason')), t['trades'],
-        generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
-        t['profit_mean_pct'], t['profit_sum_pct'],
-        fmt_coin(t['profit_total_abs'], stake_currency, False),
-        t['profit_total_pct'],
-    ] for t in exit_reason_stats]
-    return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
 def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_currency: str) -> str:
@@ -94,21 +67,23 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
+    fallback: str = ''
     if (tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
-        headers = _get_line_header("TAG", stake_currency, 'Exits')
+        headers = _get_line_header("Exit Reason", stake_currency, 'Exits')
+        fallback = 'exit_reason'
+
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
-            t['key'] if t['key'] is not None and len(
-                t['key']) > 0 else "OTHER",
+            t['key'] if t.get('key') is not None and len(
+                str(t['key'])) > 0 else t.get(fallback, "OTHER"),
             t['trades'],
             t['profit_mean_pct'],
-            t['profit_sum_pct'],
             t['profit_total_abs'],
             t['profit_total_pct'],
-            t['duration_avg'],
+            t.get('duration_avg'),
             generate_wins_draws_losses(
                 t['wins'],
                 t['draws'],
@@ -166,7 +141,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
                 for t, dd in zip(strategy_results, drawdown)]
 
     output = [[
-        t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
+        t['key'], t['trades'], t['profit_mean_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'],
         generate_wins_draws_losses(t['wins'], t['draws'], t['losses']), drawdown]
         for t, drawdown in zip(strategy_results, drawdown)]
@@ -256,9 +231,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
-                          f"{strat_results['best_pair']['profit_sum']:.2%}"),
+                          f"{strat_results['best_pair']['profit_total']:.2%}"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} "
-                           f"{strat_results['worst_pair']['profit_sum']:.2%}"),
+                           f"{strat_results['worst_pair']['profit_total']:.2%}"),
             ('Best trade', f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
             ('Worst trade', f"{worst_trade['pair']} "
                             f"{worst_trade['profit_ratio']:.2%}"),
@@ -319,17 +294,16 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if (results.get('results_per_enter_tag') is not None):
-        table = text_table_tags("enter_tag", results['results_per_enter_tag'], stake_currency)
+    if (enter_tags := results.get('results_per_enter_tag')) is not None:
+        table = text_table_tags("enter_tag", enter_tags, stake_currency)
 
         if isinstance(table, str) and len(table) > 0:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    exit_reasons = results.get('exit_reason_summary')
-    if exit_reasons:
-        table = text_table_exit_reason(exit_reason_stats=exit_reasons,
-                                       stake_currency=stake_currency)
+    if (exit_reasons := results.get('exit_reason_summary')) is not None:
+        table = text_table_tags("exit_tag", exit_reasons, stake_currency)
+
         if isinstance(table, str) and len(table) > 0:
             print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
         print(table)

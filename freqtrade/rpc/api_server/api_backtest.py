@@ -14,7 +14,7 @@ from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_resu
                                        get_backtest_resultlist, load_and_merge_backtest_result,
                                        update_backtest_metadata)
 from freqtrade.enums import BacktestState
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import deep_merge_dicts, is_file_in_dir
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestMetadataUpdate,
@@ -98,10 +98,12 @@ def __run_backtest_bg(btconfig: Config):
 
         logger.info("Backtest finished.")
 
+    except ConfigurationError as e:
+        logger.error(f"Backtesting encountered a configuration Error: {e}")
+
     except (Exception, OperationalException, DependencyException) as e:
         logger.exception(f"Backtesting caused an error: {e}")
         ApiBG.bt['bt_error'] = str(e)
-        pass
     finally:
         ApiBG.bgtask_running = False
 

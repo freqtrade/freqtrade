@@ -1233,6 +1233,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
         order_id=order_id,
 
     ))
+    freqtrade.strategy.order_filled = MagicMock(return_value=None)
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
     caplog.clear()
@@ -1243,6 +1244,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     caplog.clear()
     assert not trade.has_open_orders
     assert trade.amount == order['amount']
+    assert freqtrade.strategy.order_filled.call_count == 1
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=0.01)
     assert trade.amount == 30.0
@@ -1260,11 +1262,13 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, ca
     limit_buy_order_usdt_new['filled'] = 0.0
     limit_buy_order_usdt_new['status'] = 'canceled'
 
+    freqtrade.strategy.order_filled = MagicMock(return_value=None)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
     mocker.patch(f'{EXMS}.fetch_order', return_value=limit_buy_order_usdt_new)
     res = freqtrade.update_trade_state(trade, order_id)
     # Cancelled empty
     assert res is True
+    assert freqtrade.strategy.order_filled.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -5460,9 +5464,10 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
 
     caplog.clear()
-    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-10, 'partial_exit_c'))
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-0.0005, 'partial_exit_c'))
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"LIMIT_SELL has been fulfilled.*", caplog)
     assert freqtrade.strategy.adjust_trade_position.call_count == 1
     trade = Trade.get_trades(trade_filter=[Trade.id == 5]).first()
     assert trade.orders[-1].ft_order_tag == 'partial_exit_c'
+    assert trade.is_open

@@ -372,6 +372,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return True
 
+    def order_filled(self, pair: str, trade: Trade, order: Order,
+                     current_time: datetime, **kwargs) -> None:
+        """
+        Called right after an order fills.
+        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        :param pair: Pair for trade
+        :param trade: trade object.
+        :param order: Order object.
+        :param current_time: datetime object, containing the current datetime
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, after_fill: bool, **kwargs) -> Optional[float]:
         """

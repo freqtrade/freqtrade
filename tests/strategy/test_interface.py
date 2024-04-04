@@ -795,9 +795,6 @@ def test_strategy_safe_wrapper_error(caplog, error):
     def failing_method():
         raise error('This is an error.')
 
-    def working_method(argumentpassedin):
-        return argumentpassedin
-
     with pytest.raises(StrategyError, match=r'This is an error.'):
         strategy_safe_wrapper(failing_method, message='DeadBeef')()
 

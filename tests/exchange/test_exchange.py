@@ -11,8 +11,8 @@ from numpy import NaN
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
-                                  InsufficientFundsError, InvalidOrderException,
+from freqtrade.exceptions import (ConfigurationError, DDosProtection, DependencyException,
+                                  ExchangeError, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import (Binance, Bybit, Exchange, Kraken, market_is_active,
                                 timeframe_to_prev_date)
@@ -595,7 +595,7 @@ def test_validate_stakecurrency_error(default_conf, mocker, caplog):
     mocker.patch(f'{EXMS}.validate_pairs')
     mocker.patch(f'{EXMS}.validate_timeframes')
     mocker.patch(f'{EXMS}._load_async_markets')
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r'XRP is not available as stake on .*'
                        'Available currencies are: BTC, ETH, USDT'):
         Exchange(default_conf)
@@ -800,12 +800,12 @@ def test_validate_timeframes_failed(default_conf, mocker):
     mocker.patch(f'{EXMS}.validate_pairs')
     mocker.patch(f'{EXMS}.validate_stakecurrency')
     mocker.patch(f'{EXMS}.validate_pricing')
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
     default_conf["timeframe"] = "15s"
 
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match=r"Timeframes < 1m are currently not supported by Freqtrade."):
         Exchange(default_conf)
 
@@ -1065,6 +1065,9 @@ def test_exchange_has(default_conf, mocker):
     type(api_mock).has = PropertyMock(return_value={'deadbeef': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     assert not exchange.exchange_has("deadbeef")
+
+    exchange._ft_has['exchange_has_overrides'] = {'deadbeef': True}
+    assert exchange.exchange_has("deadbeef")
 
 
 @pytest.mark.parametrize("side,leverage", [

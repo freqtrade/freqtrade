@@ -41,6 +41,7 @@ class VolumePairList(IPairList):
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key: Literal['quoteVolume'] = self._pairlistconfig.get('sort_key', 'quoteVolume')
         self._min_value = self._pairlistconfig.get('min_value', 0)
+        self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._lookback_days = self._pairlistconfig.get('lookback_days', 0)
@@ -138,6 +139,12 @@ class VolumePairList(IPairList):
                 "default": 0,
                 "description": "Minimum value",
                 "help": "Minimum value to use for filtering the pairlist.",
+            },
+            "max_value": {
+                "type": "number",
+                "default": None,
+                "description": "Maximum value",
+                "help": "Maximum value to use for filtering the pairlist.",
             },
             **IPairList.refresh_period_parameter(),
             "lookback_days": {
@@ -270,6 +277,9 @@ class VolumePairList(IPairList):
         if self._min_value > 0:
             filtered_tickers = [
                 v for v in filtered_tickers if v[self._sort_key] > self._min_value]
+        if self._max_value is not None:
+            filtered_tickers = [
+                v for v in filtered_tickers if v[self._sort_key] < self._max_value]
 
         sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[self._sort_key])
 
