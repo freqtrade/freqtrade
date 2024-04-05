@@ -332,7 +332,7 @@ class AwesomeStrategy(IStrategy):
                         **kwargs) -> Optional[float]:
 
         if current_profit < 0.04:
-            return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
+            return None # return None to keep using the initial stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
         desired_stoploss = current_profit / 2
