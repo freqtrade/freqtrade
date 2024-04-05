@@ -512,9 +512,9 @@ class DataProvider:
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
         """
-        if self._exchange is None:
-            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+            if self._exchange is None:
+                raise OperationalException(NO_EXCHANGE_EXCEPTION)
             _candle_type = CandleType.from_string(
                 candle_type) if candle_type != '' else self._config['candle_type_def']
             return self._exchange.trades(
