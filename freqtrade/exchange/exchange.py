@@ -2520,13 +2520,10 @@ class Exchange:
         else:
             return trades[-1].get('timestamp')
 
-    async def _async_get_trade_history_id(
-            self,
-            pair: str,
-            until: Optional[int],
-            since: Optional[int] = None,
-            from_id: Optional[str] = None
-    ) -> Tuple[str, List[List]]:
+    async def _async_get_trade_history_id(self, pair: str,
+                                          until: int,
+                                          since: Optional[int] = None,
+                                          from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -2558,7 +2555,7 @@ class Exchange:
                     pair, params={self._trades_pagination_arg: from_id})
                 if t:
                     trades.extend(t[x])
-                    if from_id == from_id_next or (until and t[-1][0] > until):
+                    if from_id == from_id_next or t[-1][0] > until:
                         logger.debug(f"Stopping because from_id did not change. "
                                      f"Reached {t[-1][0]} > {until}")
                         # Reached the end of the defined-download period - add last trade as well.
@@ -2618,8 +2615,7 @@ class Exchange:
     async def _async_get_trade_history(self, pair: str,
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
-                                       from_id: Optional[str] = None,
-                                       ) -> Tuple[str, List[List]]:
+                                       from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
@@ -2630,12 +2626,13 @@ class Exchange:
         if until is None:
             until = ccxt.Exchange.milliseconds()
             logger.debug(f"Exchange milliseconds: {until}")
+
         if self._trades_pagination == 'time':
             return await self._async_get_trade_history_time(
                 pair=pair, since=since, until=until)
         elif self._trades_pagination == 'id':
             return await self._async_get_trade_history_id(
-                pair=pair, since=since, until=until, from_id=from_id,
+                pair=pair, since=since, until=until, from_id=from_id
             )
         else:
             raise OperationalException(f"Exchange {self.name} does use neither time, "
@@ -2644,8 +2641,7 @@ class Exchange:
     def get_historic_trades(self, pair: str,
                             since: Optional[int] = None,
                             until: Optional[int] = None,
-                            from_id: Optional[str] = None,
-                            ) -> Tuple[str, List]:
+                            from_id: Optional[str] = None) -> Tuple[str, List]:
         """
         Get trade history data using asyncio.
         Handles all async work and returns the list of candles.
@@ -2661,10 +2657,7 @@ class Exchange:
 
         with self._loop_lock:
             task = asyncio.ensure_future(self._async_get_trade_history(
-                pair=pair,
-                since=since,
-                until=until,
-                from_id=from_id))
+                pair=pair, since=since, until=until, from_id=from_id))
 
             for sig in [signal.SIGINT, signal.SIGTERM]:
                 try:
