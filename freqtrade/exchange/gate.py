@@ -96,9 +96,7 @@ class Gate(Exchange):
         return trades
 
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
-        if self.trading_mode == TradingMode.FUTURES:
-            return safe_value_fallback2(order, order, 'id_stop', 'id')
-        return order['id']
+        return safe_value_fallback2(order, order, 'id_stop', 'id')
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         order = self.fetch_order(
@@ -106,17 +104,19 @@ class Gate(Exchange):
             pair=pair,
             params={'stop': True}
         )
-        if self.trading_mode == TradingMode.FUTURES:
-            if order['status'] == 'closed':
-                # Places a real order - which we need to fetch explicitly.
-                new_orderid = order.get('info', {}).get('trade_id')
-                if new_orderid:
-                    order1 = self.fetch_order(order_id=new_orderid, pair=pair, params=params)
-                    order1['id_stop'] = order1['id']
-                    order1['id'] = order_id
-                    order1['stopPrice'] = order.get('stopPrice')
+        if order.get('status', 'open') == 'closed':
+            # Places a real order - which we need to fetch explicitly.
+            val = 'trade_id' if self.trading_mode == TradingMode.FUTURES else 'fired_order_id'
 
-                    return order1
+            if new_orderid := order.get('info', {}).get(val):
+                order1 = self.fetch_order(order_id=new_orderid, pair=pair, params=params)
+                order1['id_stop'] = order1['id']
+                order1['id'] = order_id
+                order1['type'] = 'stoploss'
+                order1['stopPrice'] = order.get('stopPrice')
+                order1['status_stop'] = 'triggered'
+
+                return order1
         return order
 
     def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:

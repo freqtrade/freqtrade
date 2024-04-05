@@ -200,6 +200,12 @@ class Configuration:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results')
 
+        if self.args.get('show_sensitive'):
+            logger.warning(
+                "Sensitive information will be shown in the upcomming output. "
+                "Please make sure to never share this output without redacting "
+                "the information yourself.")
+
     def _process_optimize_options(self, config: Config) -> None:
 
         # This will override the strategy configuration

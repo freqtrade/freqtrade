@@ -23,12 +23,13 @@ from freqtrade.enums import CandleType, RunMode, State, TradingMode
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
+from freqtrade.util.datetime_helpers import format_date
 from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades, get_mock_coro,
                             get_patched_freqtradebot, log_has, log_has_re, patch_get_signal)
 
@@ -553,8 +554,19 @@ def test_api_locks(botclient):
     assert rc.json()['lock_count'] == 0
     assert rc.json()['lock_count'] == len(rc.json()['locks'])
 
-    PairLocks.lock_pair('ETH/BTC', datetime.now(timezone.utc) + timedelta(minutes=4), 'randreason')
-    PairLocks.lock_pair('XRP/BTC', datetime.now(timezone.utc) + timedelta(minutes=20), 'deadbeef')
+    rc = client_post(client, f"{BASE_URI}/locks", [
+        {
+            "pair": "ETH/BTC",
+            "until": f"{format_date(datetime.now(timezone.utc) + timedelta(minutes=4))}Z",
+            "reason": "randreason"
+        }, {
+            "pair": "XRP/BTC",
+            "until": f"{format_date(datetime.now(timezone.utc) + timedelta(minutes=20))}Z",
+            "reason": "deadbeef"
+        }
+    ])
+    assert_response(rc)
+    assert rc.json()['lock_count'] == 2
 
     rc = client_get(client, f"{BASE_URI}/locks")
     assert_response(rc)

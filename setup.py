@@ -80,7 +80,7 @@ setup(
         'urllib3',
         'jsonschema',
         'numpy',
-        'pandas',
+        'pandas>=2.2.0,<3.0',
         'TA-Lib',
         'pandas-ta',
         'technical',
@@ -112,6 +112,7 @@ setup(
         'python-dateutil',
         'pytz',
         'packaging',
+        'freqtrade-client',
     ],
     extras_require={
         'dev': all_extra,

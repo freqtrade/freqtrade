@@ -81,12 +81,14 @@ Filtering instances (not the first position in the list) will not apply any cach
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "min_value": 0,
+        "max_value": 8000000,
         "refresh_period": 1800
     }
 ],
 ```
 
 You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
+In addition to that, you can also define a maximum volume with `max_value` - which will filter out pairs with a volume higher than the specified value in the specified timerange.
 
 ##### VolumePairList Advanced mode
 

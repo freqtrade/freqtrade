@@ -262,6 +262,13 @@ EXCHANGES = {
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
     },
+    'bingx': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '1h',
+        'futures': False,
+    },
 }
 
 

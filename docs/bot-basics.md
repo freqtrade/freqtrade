@@ -33,7 +33,6 @@ For spot pairs, naming will be `base/quote` (e.g. `ETH/USDT`).
 
 For futures pairs, naming will be `base/quote:settle` (e.g. `ETH/USDT:USDT`).
 
-
 ## Bot execution logic
 
 Starting freqtrade in dry-run or live mode (using `freqtrade trade`) will start the bot and start the bot iteration loop.
@@ -50,10 +49,12 @@ By default, the bot loop runs every few seconds (`internals.process_throttle_sec
   * Call `populate_indicators()`
   * Call `populate_entry_trend()`
   * Call `populate_exit_trend()`
-* Check timeouts for open orders.
-  * Calls `check_entry_timeout()` strategy callback for open entry orders.
-  * Calls `check_exit_timeout()` strategy callback for open exit orders.
-  * Calls `adjust_entry_price()` strategy callback for open entry orders.
+* Update trades open order state from exchange.
+  * Call `order_filled()` strategy callback for filled orders.
+  * Check timeouts for open orders.
+    * Calls `check_entry_timeout()` strategy callback for open entry orders.
+    * Calls `check_exit_timeout()` strategy callback for open exit orders.
+    * Calls `adjust_entry_price()` strategy callback for open entry orders.
 * Verifies existing positions and eventually places exit orders.
   * Considers stoploss, ROI and exit-signal, `custom_exit()` and `custom_stoploss()`.
   * Determine exit-price based on `exit_pricing` configuration setting or by using the `custom_exit_price()` callback.
@@ -86,8 +87,10 @@ This loop will be repeated again and again until the bot is stopped.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
+  * Call `order_filled()` strategy callback for filled entry orders.
   * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
   * For exits based on exit-signal, custom-exit and partial exits: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
+  * Call `order_filled()` strategy callback for filled exit orders.
 * Generate backtest report output
 
 !!! Note

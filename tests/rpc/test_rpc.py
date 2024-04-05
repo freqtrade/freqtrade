@@ -11,7 +11,6 @@ from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.key_value_store import set_startup_time
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
@@ -491,12 +490,12 @@ def test_rpc_balance_handle_error(default_conf, mocker):
         rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
 
 
-def test_rpc_balance_handle(default_conf, mocker, tickers):
+def test_rpc_balance_handle(default_conf_usdt, mocker, tickers):
     mock_balance = {
         'BTC': {
-            'free': 10.0,
-            'total': 12.0,
-            'used': 2.0,
+            'free': 0.01,
+            'total': 0.012,
+            'used': 0.002,
         },
         'ETH': {
             'free': 1.0,
@@ -504,8 +503,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'used': 4.0,
         },
         'USDT': {
-            'free': 5.0,
-            'total': 10.0,
+            'free': 50.0,
+            'total': 100.0,
             'used': 5.0,
         }
     }
@@ -519,10 +518,10 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             "maintenanceMargin": 0.0,
             "maintenanceMarginPercentage": 0.005,
             "entryPrice": 0.0,
-            "notional": 100.0,
+            "notional": 10.0,
             "leverage": 5.0,
             "unrealizedPnl": 0.0,
-            "contracts": 100.0,
+            "contracts": 1.0,
             "contractSize": 1,
             "marginRatio": None,
             "liquidationPrice": 0.0,
@@ -536,9 +535,9 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
 
     mocker.patch.multiple(
         'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
-        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
+        get_price=MagicMock(return_value={'bitcoin': {'usd': 1.2}}),
     )
-    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=1.2)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,
@@ -549,86 +548,86 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
         get_valid_pair_combination=MagicMock(
             side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")
     )
-    default_conf['dry_run'] = False
-    default_conf['trading_mode'] = 'futures'
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    default_conf_usdt['dry_run'] = False
+    default_conf_usdt['trading_mode'] = 'futures'
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf_usdt)
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
-    result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
-    assert pytest.approx(result['total']) == 30.30909624
-    assert pytest.approx(result['value']) == 454636.44360691
+    result = rpc._rpc_balance(
+        default_conf_usdt['stake_currency'], default_conf_usdt['fiat_display_currency'])
+
+    assert pytest.approx(result['total']) == 2824.83464
+    assert pytest.approx(result['value']) == 2824.83464 * 1.2
     assert tickers.call_count == 1
     assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {
             'currency': 'BTC',
-            'free': 10.0,
-            'balance': 12.0,
-            'used': 2.0,
-            'bot_owned': 9.9,  # available stake - reducing by reserved amount
-            'est_stake': 10.0,  # In futures mode, "free" is used here.
-            'est_stake_bot': 9.9,
-            'stake': 'BTC',
-            'is_position': False,
-            'leverage': 1.0,
-            'position': 0.0,
+            'free': 0.01,
+            'balance': 0.012,
+            'used': 0.002,
+            'bot_owned': 0,
+            'est_stake': 103.78464,
+            'est_stake_bot': 0,
+            'stake': 'USDT',
             'side': 'long',
-            'is_bot_managed': True,
+            'leverage': 1,
+            'position': 0,
+            'is_bot_managed': False,
+            'is_position': False
         },
         {
+            'currency': 'ETH',
             'free': 1.0,
             'balance': 5.0,
-            'currency': 'ETH',
-            'bot_owned': 0,
-            'est_stake': 0.30794,
-            'est_stake_bot': 0,
             'used': 4.0,
-            'stake': 'BTC',
-            'is_position': False,
-            'leverage': 1.0,
-            'position': 0.0,
-            'side': 'long',
-            'is_bot_managed': False,
-        },
-        {
-            'free': 5.0,
-            'balance': 10.0,
-            'currency': 'USDT',
             'bot_owned': 0,
-            'est_stake': 0.0011562404610161968,
+            'est_stake': 2651.05,
             'est_stake_bot': 0,
-            'used': 5.0,
-            'stake': 'BTC',
-            'is_position': False,
-            'leverage': 1.0,
-            'position': 0.0,
+            'stake': 'USDT',
             'side': 'long',
+            'leverage': 1,
+            'position': 0,
             'is_bot_managed': False,
+            'is_position': False
         },
         {
-            'free': 0.0,
-            'balance': 0.0,
+            'currency': 'USDT',
+            'free': 50.0,
+            'balance': 100.0,
+            'used': 5.0,
+            'bot_owned': 49.5,
+            'est_stake': 50.0,
+            'est_stake_bot': 49.5,
+            'stake': 'USDT',
+            'side': 'long',
+            'leverage': 1,
+            'position': 0,
+            'is_bot_managed': True,
+            'is_position': False
+        },
+        {
             'currency': 'ETH/USDT:USDT',
+            'free': 0,
+            'balance': 0,
+            'used': 0,
+            'position': 10.0,
             'est_stake': 20,
             'est_stake_bot': 20,
-            'used': 0,
-            'stake': 'BTC',
-            'is_position': True,
+            'stake': 'USDT',
             'leverage': 5.0,
-            'position': 1000.0,
             'side': 'short',
             'is_bot_managed': True,
+            'is_position': True
         }
     ]
-    assert pytest.approx(result['total_bot']) == 29.9
-    assert pytest.approx(result['total']) == 30.309096
-    assert result['starting_capital'] == 10
-    # Very high starting capital ratio, because the futures position really has the wrong unit.
-    # TODO: improve this test (see comment above)
-    assert result['starting_capital_ratio'] == pytest.approx(1.98999999)
+    assert pytest.approx(result['total_bot']) == 69.5
+    assert pytest.approx(result['total']) == 2824.83464  # ETH stake is missing.
+    assert result['starting_capital'] == 50
+    assert result['starting_capital_ratio'] == pytest.approx(0.3899999)
 
 
 def test_rpc_start(mocker, default_conf) -> None:
@@ -1171,14 +1170,15 @@ def test_rpc_force_entry_wrong_mode(mocker, default_conf) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_rpc_delete_lock(mocker, default_conf):
+def test_rpc_add_and_delete_lock(mocker, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
 
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=4), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=5), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=10), '', '*')
+
     locks = rpc._rpc_locks()
     assert locks['lock_count'] == 3
     locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])

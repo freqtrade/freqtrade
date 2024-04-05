@@ -49,12 +49,22 @@ FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
 !!! Note
     Environment variables detected are logged at startup - so if you can't find why a value is not what you think it should be based on the configuration, make sure it's not loaded from an environment variable.
 
+!!! Tip "Validate combined result"
+    You can use the [show-config subcommand](utils.md#show-config) to see the final, combined configuration.
+
+??? Warning "Loading sequence"
+    Environment variables are loaded after the initial configuration. As such, you cannot provide the path to the configuration through environment variables. Please use `--config path/to/config.json` for that.
+    This also applies to user_dir to some degree. while the user directory can be set through environment variables - the configuration will **not** be loaded from that location.
+
 ### Multiple configuration files
 
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
 You can specify additional configuration files in `add_config_files`. Files specified in this parameter will be loaded and merged with the initial config file. The files are resolved relative to the initial configuration file.
 This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
+
+!!! Tip "Validate combined result"
+    You can use the [show-config subcommand](utils.md#show-config) to see the final, combined configuration.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
     You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.

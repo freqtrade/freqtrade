@@ -1,5 +1,5 @@
 site_name: Freqtrade
-site_url: https://www.freqtrade.io/
+site_url: https://www.freqtrade.io/en/latest/
 repo_url: https://github.com/freqtrade/freqtrade
 edit_uri: edit/develop/docs/
 use_directory_urls: True

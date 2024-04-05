@@ -62,6 +62,7 @@ ARGS_TEST_PAIRLIST = ["user_data_dir", "verbosity", "config", "quote_currencies"
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
 ARGS_BUILD_CONFIG = ["config"]
+ARGS_SHOW_CONFIG = ["user_data_dir", "config", "show_sensitive"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
@@ -209,9 +210,9 @@ class Arguments:
                                         start_list_strategies, start_list_timeframes,
                                         start_lookahead_analysis, start_new_config,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
-                                        start_recursive_analysis, start_show_trades,
-                                        start_strategy_update, start_test_pairlist, start_trading,
-                                        start_webserver)
+                                        start_recursive_analysis, start_show_config,
+                                        start_show_trades, start_strategy_update,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -243,6 +244,14 @@ class Arguments:
         )
         build_config_cmd.set_defaults(func=start_new_config)
         self._build_args(optionlist=ARGS_BUILD_CONFIG, parser=build_config_cmd)
+
+        # add show-config subcommand
+        show_config_cmd = subparsers.add_parser(
+            'show-config',
+            help="Show resolved config",
+        )
+        show_config_cmd.set_defaults(func=start_show_config)
+        self._build_args(optionlist=ARGS_SHOW_CONFIG, parser=show_config_cmd)
 
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser(

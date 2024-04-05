@@ -37,7 +37,6 @@ from freqtrade.rpc.rpc_types import (ProfitLossStr, RPCCancelMsg, RPCEntryMsg, R
                                      RPCExitMsg, RPCProtectionMsg)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.util import FtPrecise
 from freqtrade.util.migrations import migrate_binance_futures_names
 from freqtrade.wallets import Wallets
 
@@ -667,7 +666,7 @@ class FreqtradeBot(LoggingMixin):
             # We should decrease our position
             amount = self.exchange.amount_to_contract_precision(
                 trade.pair,
-                abs(float(FtPrecise(stake_amount * trade.leverage) / FtPrecise(current_exit_rate))))
+                abs(float(stake_amount * trade.amount / trade.stake_amount)))
 
             if amount == 0.0:
                 logger.info("Amount to exit is 0.0 due to exchange limits - not exiting.")
@@ -1945,6 +1944,9 @@ class FreqtradeBot(LoggingMixin):
 
     def _update_trade_after_fill(self, trade: Trade, order: Order) -> Trade:
         if order.status in constants.NON_OPEN_EXCHANGE_STATES:
+            strategy_safe_wrapper(
+                self.strategy.order_filled, default_retval=None)(
+                pair=trade.pair, trade=trade, order=order, current_time=datetime.now(timezone.utc))
             # If a entry order was closed, force update on stoploss on exchange
             if order.ft_order_side == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
