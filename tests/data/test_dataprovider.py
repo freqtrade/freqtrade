@@ -231,8 +231,8 @@ def test_emit_df(mocker, default_conf, ohlcv_history):
 
 
 def test_refresh(mocker, default_conf):
-    refresh_mock = MagicMock()
-    mocker.patch(f"{EXMS}.refresh_latest_ohlcv", refresh_mock)
+    refresh_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv")
+    mock_refresh_trades = mocker.patch(f"{EXMS}.refresh_latest_trades")
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     timeframe = default_conf["timeframe"]
@@ -242,7 +242,7 @@ def test_refresh(mocker, default_conf):
 
     dp = DataProvider(default_conf, exchange)
     dp.refresh(pairs)
-
+    assert mock_refresh_trades.call_count == 0
     assert refresh_mock.call_count == 1
     assert len(refresh_mock.call_args[0]) == 1
     assert len(refresh_mock.call_args[0][0]) == len(pairs)
@@ -250,10 +250,19 @@ def test_refresh(mocker, default_conf):
 
     refresh_mock.reset_mock()
     dp.refresh(pairs, pairs_non_trad)
+    assert mock_refresh_trades.call_count == 0
     assert refresh_mock.call_count == 1
     assert len(refresh_mock.call_args[0]) == 1
     assert len(refresh_mock.call_args[0][0]) == len(pairs) + len(pairs_non_trad)
     assert refresh_mock.call_args[0][0] == pairs + pairs_non_trad
+
+    # Test with public trades
+    refresh_mock.reset_mock()
+    refresh_mock.reset_mock()
+    default_conf['exchange']['use_public_trades'] = True
+    dp.refresh(pairs, pairs_non_trad)
+    assert mock_refresh_trades.call_count == 1
+    assert refresh_mock.call_count == 1
 
 
 def test_orderbook(mocker, default_conf, order_book_l2):
