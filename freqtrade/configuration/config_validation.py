@@ -403,7 +403,7 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
 def _validate_orderflow(conf: Dict[str, Any]) -> None:
     if conf.get('exchange', {}).get('use_public_trades'):
         if 'orderflow' not in conf:
-            raise OperationalException(
+            raise ConfigurationError(
                 "Orderflow is a required configuration key when using public trades."
             )
 

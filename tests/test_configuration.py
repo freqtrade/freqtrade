@@ -21,7 +21,7 @@ from freqtrade.configuration.load_config import (load_config_file, load_file, lo
                                                  log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
                             patched_configuration_load_config_file)
 
@@ -996,7 +996,7 @@ def test__validate_consumers(default_conf, caplog) -> None:
 def test__validate_orderflow(default_conf) -> None:
     conf = deepcopy(default_conf)
     conf['exchange']['use_public_trades'] = True
-    with pytest.raises(OperationalException,
+    with pytest.raises(ConfigurationError,
                        match="Orderflow is a required configuration key when using public trades."):
         validate_config_consistency(conf)
 
