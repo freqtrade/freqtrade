@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -324,11 +323,9 @@ def test_public_trades_testdata_sanity(
 
     assert 7 == len(public_trades_list_simple)
     assert 5 == public_trades_list_simple.loc[
-        public_trades_list_simple['side'].str.contains(
-            'sell'), 'id'].count()
+        public_trades_list_simple['side'].str.contains('sell'), 'id'].count()
     assert 2 == public_trades_list_simple.loc[
-        public_trades_list_simple['side'].str.contains(
-            'buy'), 'id'].count()
+        public_trades_list_simple['side'].str.contains('buy'), 'id'].count()
 
     assert public_trades_list.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price',
@@ -337,10 +334,8 @@ def test_public_trades_testdata_sanity(
     assert public_trades_list.columns.tolist() == [
         'timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost', 'date']
     assert public_trades_list_simple.columns.tolist() == [
-        'timestamp', 'id', 'type', 'side', 'price',
-        'amount', 'cost', 'date']
+        'timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost', 'date']
     assert populate_dataframe_with_trades_dataframe.columns.tolist() == [
         'date', 'open', 'high', 'low', 'close', 'volume']
     assert populate_dataframe_with_trades_trades.columns.tolist() == [
-        'timestamp', 'id', 'type', 'side', 'price',
-        'amount', 'cost', 'date']
+        'timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost', 'date']
