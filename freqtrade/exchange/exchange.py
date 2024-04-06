@@ -34,7 +34,15 @@ from freqtrade.constants import (
     PairWithTimeframe,
 )
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
+from freqtrade.enums import (
+    OPTIMIZE_MODES,
+    TRADE_MODES,
+    CandleType,
+    MarginMode,
+    PriceType,
+    RunMode,
+    TradingMode,
+)
 from freqtrade.exceptions import (
     ConfigurationError,
     DDosProtection,
@@ -231,9 +239,13 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-        self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         self._has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws.enabled"]
-        if exchange_conf.get("enable_ws", True) and self._has_watch_ohlcv:
+        if (
+            self._config["runmode"] in TRADE_MODES
+            and exchange_conf.get("enable_ws", True)
+            and self._has_watch_ohlcv
+        ):
+            self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
 
         logger.info(f'Using Exchange "{self.name}"')
@@ -2265,11 +2277,14 @@ class Exchange:
                 prev_candle_date = int(date_minus_candles(timeframe, 1).timestamp() * 1000)
                 candles = self._exchange_ws.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
                 half_candle = int(candle_date - (candle_date - prev_candle_date) * 0.5)
-                last_refresh_time = int(self._exchange_ws.klines_last_refresh.get(
-                    (pair, timeframe, candle_type), 0) * 1000)
+                last_refresh_time = int(
+                    self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
+                    * 1000
+                )
 
                 if (
-                    candles and candles[-1][0] >= prev_candle_date
+                    candles
+                    and candles[-1][0] >= prev_candle_date
                     and last_refresh_time >= half_candle
                 ):
                     # Usable result, candle contains the previous candle.
@@ -2279,7 +2294,8 @@ class Exchange:
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
                 logger.info(
                     f"Failed to reuse watch {pair}, {candle_date < last_refresh_time}, "
-                    f"{candle_date}, {last_refresh_time}")
+                    f"{candle_date}, {last_refresh_time}"
+                )
 
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < last_refresh:
