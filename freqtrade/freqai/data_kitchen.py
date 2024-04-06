@@ -24,6 +24,8 @@ from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 
+pd.set_option('future.no_silent_downcasting', True)
+
 SECONDS_IN_DAY = 86400
 SECONDS_IN_HOUR = 3600
 
@@ -221,7 +223,7 @@ class FreqaiDataKitchen:
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
         drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
-        drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
+        drop_index = drop_index.replace(True, 1).replace(False, 0).infer_objects(copy=False)
         if (training_filter):
 
             # we don't care about total row number (total no. datapoints) in training, we only care
@@ -229,7 +231,9 @@ class FreqaiDataKitchen:
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_df.filter(label_list, axis=1)
             drop_index_labels = pd.isnull(labels).any(axis=1)
-            drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
+            drop_index_labels = drop_index_labels.replace(
+                True, 1
+            ).replace(False, 0).infer_objects(copy=False)
             dates = unfiltered_df['date']
             filtered_df = filtered_df[
                 (drop_index == 0) & (drop_index_labels == 0)

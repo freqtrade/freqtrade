@@ -280,7 +280,7 @@ class FreqaiDataDrawer:
         # set new_pred values to nans (we want to signal to user that there was nothing
         # historically made during downtime. The newest pred will get appeneded later in
         # append_model_predictions)
-        new_pred.iloc[:, :] = np.nan
+        new_pred.iloc[:, :] = np.nan.astype(new_pred.dtypes)
         new_pred["date_pred"] = dataframe["date"]
         hist_preds = self.historic_predictions[pair].copy()
 
