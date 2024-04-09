@@ -306,20 +306,16 @@ class FreqaiDataDrawer:
                            "predictions. You likely left your FreqAI instance offline "
                            f"for more than {len(dataframe.index)} candles.")
 
-        if len(new_pred.index) == 0:
-            df_concat = hist_preds.tail(
-                len(dataframe.index)).reset_index(drop=True)
-        else:
-            # Pandas warns that its keeping dtypes of non NaN columns...
-            # yea we know and we already want that behavior. Ignoring.
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=FutureWarning)
-                # reindex new_pred columns to match the historic predictions dataframe
-                new_pred_reindexed = new_pred.reindex(columns=hist_preds.columns)
-                df_concat = pd.concat(
-                    [hist_preds, new_pred_reindexed],
-                    ignore_index=True
-                )
+        # Pandas warns that its keeping dtypes of non NaN columns...
+        # yea we know and we already want that behavior. Ignoring.
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=FutureWarning)
+            # reindex new_pred columns to match the historic predictions dataframe
+            new_pred_reindexed = new_pred.reindex(columns=hist_preds.columns)
+            df_concat = pd.concat(
+                [hist_preds, new_pred_reindexed],
+                ignore_index=True
+            )
 
         # any missing values will get zeroed out so users can see the exact
         # downtime in FreqUI
