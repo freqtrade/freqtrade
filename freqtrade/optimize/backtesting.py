@@ -1393,7 +1393,6 @@ class Backtesting:
     def start(self) -> None:
         """
         Run backtesting end-to-end
-        :return: None
         """
         data: Dict[str, Any] = {}
 
