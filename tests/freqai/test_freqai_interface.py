@@ -15,7 +15,8 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
 from tests.freqai.conftest import (get_patched_freqai_strategy, is_arm, is_mac, make_rl_config,
-                                   mock_pytorch_mlp_model_training_parameters)
+                                   mock_pytorch_mlp_model_training_parameters,
+                                   mock_tensorflow_model_training_parameters)
 
 
 def can_run_model(model: str) -> None:
@@ -40,11 +41,10 @@ def can_run_model(model: str) -> None:
     ('ReinforcementLearner_test_3ac', False, False, False, False, False, 0, 0),
     ('ReinforcementLearner_test_3ac', False, False, False, True, False, 0, 0),
     ('ReinforcementLearner_test_4ac', False, False, False, True, False, 0, 0),
-    ])
+])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
                                                dbscan, float32, can_short, shuffle,
                                                buffer, noise):
-
     can_run_model(model)
 
     test_tb = True
@@ -81,6 +81,10 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
         if 'Transformer' in model:
             # transformer model takes a window, unlike the MLP regressor
             freqai_conf.update({"conv_width": 10})
+    if 'Keras' in model:
+        model_save_ext = 'keras'
+        tf_lstm_mtp = mock_tensorflow_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(tf_lstm_mtp)
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -125,7 +129,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model, pca,
     ('CatboostRegressorMultiTarget', "freqai_test_multimodel_strat"),
     ('LightGBMClassifierMultiTarget', "freqai_test_multimodel_classifier_strat"),
     ('CatboostClassifierMultiTarget', "freqai_test_multimodel_classifier_strat")
-    ])
+])
 def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, strat):
     can_run_model(model)
 
@@ -161,6 +165,83 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
+@pytest.mark.parametrize(
+    "model, num_files, strat",
+    [
+        ("LightGBMRegressor", 2, "freqai_test_strat"),
+        ("XGBoostRegressor", 2, "freqai_test_strat"),
+        ("CatboostRegressor", 2, "freqai_test_strat"),
+        ("PyTorchMLPRegressor", 2, "freqai_test_strat"),
+        ("PyTorchTransformerRegressor", 2, "freqai_test_strat"),
+        ("TensorFlowLSTMRegressor", 2, "freqai_test_strat"),
+        ("ReinforcementLearner", 3, "freqai_rl_test_strat"),
+        ("XGBoostClassifier", 2, "freqai_test_classifier"),
+        ("LightGBMClassifier", 2, "freqai_test_classifier"),
+        ("CatboostClassifier", 2, "freqai_test_classifier"),
+        ("PyTorchMLPClassifier", 2, "freqai_test_classifier"),
+        ("TensorFlowClassifier", 2, "freqai_test_classifier"),
+    ],
+)
+def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
+    can_run_model(model)
+    test_tb = True
+    if is_mac() and not is_arm():
+        test_tb = False
+
+    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf['runmode'] = RunMode.BACKTEST
+
+    Trade.use_db = False
+
+    freqai_conf.update({"freqaimodel": model})
+    freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf.update({"strategy": strat})
+
+    if 'ReinforcementLearner' in model:
+        freqai_conf = make_rl_config(freqai_conf)
+
+    if 'test_4ac' in model:
+        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+
+    if 'PyTorch' in model:
+        pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
+        if 'Transformer' in model:
+            # transformer model takes a window, unlike the MLP regressor
+            freqai_conf.update({"conv_width": 10})
+    if 'Keras' in model:
+        tf_lstm_mtp = mock_tensorflow_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(tf_lstm_mtp)
+
+
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"indicator_periods_candles": [2]})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.activate_tensorboard = test_tb
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
+    _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
+    df = base_df[freqai_conf["timeframe"]]
+
+    metadata = {"pair": "LTC/BTC"}
+    freqai.dk.set_paths('LTC/BTC', None)
+    freqai.start_backtesting(df, metadata, freqai.dk, strategy)
+    model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
+
+    assert len(model_folders) == num_files
+    Trade.use_db = True
+    Backtesting.cleanup()
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
 @pytest.mark.parametrize('model', [
     'LightGBMClassifier',
     'CatboostClassifier',
@@ -168,7 +249,8 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model, s
     'XGBoostRFClassifier',
     'SKLearnRandomForestClassifier',
     'PyTorchMLPClassifier',
-    ])
+    'TensorFlowClassifier',
+])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     can_run_model(model)
 
@@ -200,10 +282,16 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
         freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
 
+    if 'TensorFlowClassifier':
+        tf_lstm_mtp = mock_tensorflow_model_training_parameters()
+        freqai_conf['freqai']['model_training_parameters'].update(tf_lstm_mtp)
+
     if freqai.dd.model_type == 'joblib':
         model_file_extension = ".joblib"
     elif freqai.dd.model_type == "pytorch":
         model_file_extension = ".zip"
+    elif freqai.dd.model_type == "keras":
+        model_file_extension = ".keras"
     else:
         raise Exception(f"Unsupported model type: {freqai.dd.model_type},"
                         f" can't assign model_file_extension")
@@ -213,77 +301,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").exists()
 
-    shutil.rmtree(Path(freqai.dk.full_path))
 
-
-@pytest.mark.parametrize(
-    "model, num_files, strat",
-    [
-        ("LightGBMRegressor", 2, "freqai_test_strat"),
-        ("XGBoostRegressor", 2, "freqai_test_strat"),
-        ("CatboostRegressor", 2, "freqai_test_strat"),
-        ("PyTorchMLPRegressor", 2, "freqai_test_strat"),
-        ("PyTorchTransformerRegressor", 2, "freqai_test_strat"),
-        ("ReinforcementLearner", 3, "freqai_rl_test_strat"),
-        ("XGBoostClassifier", 2, "freqai_test_classifier"),
-        ("LightGBMClassifier", 2, "freqai_test_classifier"),
-        ("CatboostClassifier", 2, "freqai_test_classifier"),
-        ("PyTorchMLPClassifier", 2, "freqai_test_classifier")
-    ],
-    )
-def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
-    can_run_model(model)
-    test_tb = True
-    if is_mac() and not is_arm():
-        test_tb = False
-
-    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
-    freqai_conf['runmode'] = RunMode.BACKTEST
-
-    Trade.use_db = False
-
-    freqai_conf.update({"freqaimodel": model})
-    freqai_conf.update({"timerange": "20180120-20180130"})
-    freqai_conf.update({"strategy": strat})
-
-    if 'ReinforcementLearner' in model:
-        freqai_conf = make_rl_config(freqai_conf)
-
-    if 'test_4ac' in model:
-        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
-
-    if 'PyTorch' in model:
-        pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
-        freqai_conf['freqai']['model_training_parameters'].update(pytorch_mlp_mtp)
-        if 'Transformer' in model:
-            # transformer model takes a window, unlike the MLP regressor
-            freqai_conf.update({"conv_width": 10})
-
-    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
-        {"indicator_periods_candles": [2]})
-
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = False
-    freqai.activate_tensorboard = test_tb
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
-    _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
-    df = base_df[freqai_conf["timeframe"]]
-
-    metadata = {"pair": "LTC/BTC"}
-    freqai.dk.set_paths('LTC/BTC', None)
-    freqai.start_backtesting(df, metadata, freqai.dk, strategy)
-    model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
-
-    assert len(model_folders) == num_files
-    Trade.use_db = True
-    Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
@@ -413,7 +431,6 @@ def test_backtesting_fit_live_predictions(mocker, freqai_conf, caplog):
 
 
 def test_plot_feature_importance(mocker, freqai_conf):
-
     from freqtrade.freqai.utils import plot_feature_importance
 
     freqai_conf.update({"timerange": "20180110-20180130"})
@@ -515,7 +532,6 @@ def test_download_all_data_for_training(mocker, freqai_conf, caplog, tmp_path):
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('dp_exists', [(False), (True)])
 def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
-
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 

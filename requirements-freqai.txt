@@ -10,3 +10,4 @@ lightgbm==4.3.0
 xgboost==2.0.3
 tensorboard==2.16.2
 datasieve==0.1.7
+tensorflow==2.16.1

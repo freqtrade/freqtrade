@@ -513,7 +513,7 @@ class FreqaiDataDrawer:
             with (save_path / f"{dk.model_filename}_model.joblib").open("wb") as fp:
                 cloudpickle.dump(model, fp)
         elif self.model_type == 'keras':
-            model.save(save_path / f"{dk.model_filename}_model.h5")
+            model.save(save_path / f"{dk.model_filename}_model.keras")
         elif self.model_type in ["stable_baselines3", "sb3_contrib", "pytorch"]:
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
@@ -610,6 +610,9 @@ class FreqaiDataDrawer:
             zip = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
             model = zip["pytrainer"]
             model = model.load_from_checkpoint(zip)
+        elif self.model_type == 'keras':
+            from tensorflow.keras.models import load_model
+            model = load_model(dk.data_path / f"{dk.model_filename}_model.keras")
 
         if not model:
             raise OperationalException(
