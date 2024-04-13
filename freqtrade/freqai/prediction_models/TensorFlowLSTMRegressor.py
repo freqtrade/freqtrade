@@ -17,7 +17,6 @@ from sklearn.preprocessing import RobustScaler
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +42,7 @@ class TensorFlowLSTMRegressor(BaseRegressionModel):
         if gpus:
             if system == "Windows":
                 logger.info(f"Windows is detected. Running on GPU. {gpus}")
-                # Adjust memory limit as needed for
+                # Adjust memory limit as needed for Windows systems
                 # tf.config.set_logical_device_configuration(
                 #     gpus[0],
                 #     [tf.config.LogicalDeviceConfiguration(memory_limit=7900)]
@@ -151,6 +150,14 @@ class TensorFlowLSTMRegressor(BaseRegressionModel):
 
     def predict(self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs) -> Tuple[
         DataFrame, npt.NDArray[np.int_]]:
+        """
+        Filter the prediction features data and predict with it.
+        :param unfiltered_df: Full dataframe for the current backtest period.
+        :return:
+        :pred_df: dataframe containing the predictions
+        :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
+        data (NaNs) or felt uncertain about data (PCA and DI index)
+        """
         dk.find_features(unfiltered_df)
         dk.data_dictionary["prediction_features"], _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
