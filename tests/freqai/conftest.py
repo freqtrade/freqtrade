@@ -133,6 +133,7 @@ def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
             }
         }
 
+
 def mock_tensorflow_model_training_parameters() -> Dict[str, Any]:
     return {
         "num_lstm_layers": 3,
@@ -141,6 +142,7 @@ def mock_tensorflow_model_training_parameters() -> Dict[str, Any]:
         "learning_rate": 0.001,
         "dropout_rate": 0.3
     }
+
 
 def get_patched_data_kitchen(mocker, freqaiconf):
     dk = FreqaiDataKitchen(freqaiconf)

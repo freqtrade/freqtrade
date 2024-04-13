@@ -17,6 +17,7 @@ from sklearn.preprocessing import RobustScaler
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -148,8 +149,8 @@ class TensorFlowLSTMRegressor(BaseRegressionModel):
 
         return model
 
-    def predict(self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs) -> Tuple[
-        DataFrame, npt.NDArray[np.int_]]:
+    def predict(self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs) \
+            -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_df: Full dataframe for the current backtest period.

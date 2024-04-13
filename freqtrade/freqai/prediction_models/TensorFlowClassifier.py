@@ -117,8 +117,8 @@ class TensorFlowClassifier(BaseClassifierModel):
 
         return model
 
-    def predict(self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs) -> Tuple[
-        DataFrame, npt.NDArray[np.int_]]:
+    def predict(self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs) \
+            -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Predict using the trained classifier model.
         :param unfiltered_df: Full dataframe for the current backtest period.
