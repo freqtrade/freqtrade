@@ -84,7 +84,7 @@ class Kraken(Exchange):
             return balances
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:

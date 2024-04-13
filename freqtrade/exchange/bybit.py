@@ -99,7 +99,7 @@ class Bybit(Exchange):
                     logger.info("Bybit: Standard account.")
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
                 ) from e

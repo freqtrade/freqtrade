@@ -87,7 +87,7 @@ class Okx(Exchange):
                     self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
                 ) from e
@@ -153,7 +153,7 @@ class Okx(Exchange):
 
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
                 already_set = self.__fetch_leverage_already_set(pair, leverage, side)
                 if not already_set:
                     raise TemporaryError(
