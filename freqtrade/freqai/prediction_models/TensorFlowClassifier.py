@@ -1,6 +1,6 @@
 import logging
 import platform
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -54,7 +54,8 @@ class TensorFlowClassifier(BaseClassifierModel):
         self.batch_size = config.get('batch_size', 64)
         self.learning_rate: float = config.get("learning_rate", 0.0001)
         self.dropout_rate = config.get("dropout_rate", 0.3)
-        self.label_encoder = None
+        self.label_encoder: Optional[LabelEncoder] = None
+
 
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
@@ -139,12 +140,22 @@ class TensorFlowClassifier(BaseClassifierModel):
             dk.data_dictionary["prediction_features"], outlier_check=True)
 
         predictions_prob = self.model.predict(dk.data_dictionary["prediction_features"])
+
+
+        if self.label_encoder is None:
+            raise ValueError("Label encoder is not initialized."
+                             " Make sure to call `fit` before `predict`.")
+
         predictions = self.label_encoder.inverse_transform(predictions_prob.argmax(axis=1))
         if self.CONV_WIDTH == 1:
             predictions = np.reshape(predictions, (-1, len(dk.label_list)))
             predictions_prob = np.reshape(predictions_prob, (-1, len(self.label_encoder.classes_)))
 
         pred_df = DataFrame(predictions, columns=dk.label_list)
+
+        if self.label_encoder is None:
+            raise ValueError("Label encoder is not initialized. "
+                             "Make sure to call `fit` before `predict`.")
         pred_df_prob = DataFrame(predictions_prob, columns=self.label_encoder.classes_)
         pred_df = pd.concat([pred_df, pred_df_prob], axis=1)
 
