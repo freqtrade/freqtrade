@@ -545,6 +545,25 @@ class LocalTrade:
         return len(open_orders_wo_sl) > 0
 
     @property
+    def has_open_position(self) -> bool:
+        """
+        True if there is an open position for this trade
+        """
+        entry_orders = [
+            o for o in self.orders
+            if o.ft_order_side == self.entry_side 
+        ]
+        entry_orders_filled_qty = sum(eo.filled for eo in entry_orders)
+
+        exit_orders = [
+            o for o in self.orders
+            if o.ft_order_side == self.exit_side 
+        ]
+        exit_orders_filled_qty = sum(eo.filled for eo in exit_orders)
+
+        return (entry_orders_filled_qty - exit_orders_filled_qty) > 0
+
+    @property
     def open_sl_orders(self) -> List[Order]:
         """
         All open stoploss orders for this trade
