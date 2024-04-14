@@ -1,6 +1,6 @@
 import logging
 import platform
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -55,7 +55,6 @@ class TensorFlowClassifier(BaseClassifierModel):
         self.learning_rate: float = config.get("learning_rate", 0.0001)
         self.dropout_rate = config.get("dropout_rate", 0.3)
         self.label_encoder: Optional[LabelEncoder] = None
-
 
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
@@ -140,7 +139,6 @@ class TensorFlowClassifier(BaseClassifierModel):
             dk.data_dictionary["prediction_features"], outlier_check=True)
 
         predictions_prob = self.model.predict(dk.data_dictionary["prediction_features"])
-
 
         if self.label_encoder is None:
             raise ValueError("Label encoder is not initialized."
