@@ -545,6 +545,17 @@ class LocalTrade:
         return len(open_orders_wo_sl) > 0
 
     @property
+    def has_open_entry_orders(self) -> bool:
+        """
+        True if there are open entry orders for this trade
+        """
+        open_entry_orders = [
+            o for o in self.orders
+            if o.ft_order_side == self.entry_side and o.ft_is_open
+        ]
+        return len(open_entry_orders) > 0
+
+    @property
     def has_open_position(self) -> bool:
         """
         True if there is an open position for this trade
