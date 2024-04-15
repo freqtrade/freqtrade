@@ -675,6 +675,8 @@ class IFreqaiModel(ABC):
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = dk.data['extra_returns_per_train'][return_str]
 
+        hist_preds_df['high_price'] = strat_df['high']
+        hist_preds_df['low_price'] = strat_df['low']
         hist_preds_df['close_price'] = strat_df['close']
         hist_preds_df['date_pred'] = strat_df['date']
 
