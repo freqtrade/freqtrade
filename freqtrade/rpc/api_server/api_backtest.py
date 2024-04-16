@@ -10,15 +10,16 @@ from fastapi.exceptions import HTTPException
 
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.constants import Config
-from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_result,
-                                       get_backtest_resultlist, load_and_merge_backtest_result,
-                                       update_backtest_metadata)
+from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_market_change,
+                                       get_backtest_result, get_backtest_resultlist,
+                                       load_and_merge_backtest_result, update_backtest_metadata)
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import deep_merge_dicts, is_file_in_dir
-from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestMetadataUpdate,
-                                                  BacktestRequest, BacktestResponse)
+from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestMarketChange,
+                                                  BacktestMetadataUpdate, BacktestRequest,
+                                                  BacktestResponse)
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
@@ -308,3 +309,20 @@ def api_update_backtest_history_entry(file: str, body: BacktestMetadataUpdate,
         raise HTTPException(status_code=400, detail=str(e))
 
     return get_backtest_result(file_abs)
+
+
+@router.get('/backtest/history/{file}/market_change', response_model=BacktestMarketChange,
+            tags=['webserver', 'backtest'])
+def api_get_backtest_market_change(file: str, config=Depends(get_config)):
+    bt_results_base: Path = config['user_data_dir'] / 'backtest_results'
+    file_abs = (bt_results_base / f"{file}_market_change").with_suffix('.feather')
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
+    df = get_backtest_market_change(file_abs)
+
+    return {
+        'columns': df.columns.tolist(),
+        'data': df.values.tolist(),
+        'length': len(df),
+    }
