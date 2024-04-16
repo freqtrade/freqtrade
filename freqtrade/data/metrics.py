@@ -47,7 +47,8 @@ def combine_dataframes_by_column(
 
 
 def combined_dataframes_with_rel_mean(
-        data: Dict[str, pd.DataFrame], column: str = "close") -> pd.DataFrame:
+        data: Dict[str, pd.DataFrame], fromdt: datetime, todt: datetime,
+        column: str = "close") -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
     :param data: Dict of Dataframes, dict key should be pair.
@@ -57,6 +58,8 @@ def combined_dataframes_with_rel_mean(
     :raise: ValueError if no data is provided.
     """
     df_comb = combine_dataframes_by_column(data, column)
+    # Trim dataframes to the given timeframe
+    df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
     df_comb['count'] = df_comb.count(axis=1)
     df_comb['mean'] = df_comb.mean(axis=1)
     df_comb['rel_mean'] = df_comb['mean'].pct_change().fillna(0)
