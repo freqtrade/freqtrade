@@ -1394,7 +1394,7 @@ class Backtesting:
         """
         Run backtesting end-to-end
         """
-        data: Dict[str, Any] = {}
+        data: Dict[str, DataFrame] = {}
 
         data, timerange = self.load_bt_data()
         self.load_bt_data_detail()
