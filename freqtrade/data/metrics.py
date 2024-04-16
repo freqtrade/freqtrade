@@ -62,7 +62,7 @@ def combined_dataframes_with_rel_mean(
     df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
     df_comb['count'] = df_comb.count(axis=1)
     df_comb['mean'] = df_comb.mean(axis=1)
-    df_comb['rel_mean'] = df_comb['mean'].pct_change().fillna(0)
+    df_comb['rel_mean'] = df_comb['mean'].pct_change().fillna(0).cumsum()
     return df_comb[['mean', 'rel_mean', 'count']]
 
 
