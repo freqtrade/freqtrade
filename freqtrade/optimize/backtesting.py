@@ -19,6 +19,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.data.metrics import combined_dataframes_with_rel_mean
 from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, RunMode,
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -33,6 +34,7 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  show_backtest_results,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats)
+from freqtrade.optimize.optimize_reports.bt_storage import store_backtest_market_change
 from freqtrade.persistence import (CustomDataWrapper, LocalTrade, Order, PairLocks, Trade,
                                    disable_database_use, enable_database_use)
 from freqtrade.plugins.pairlistmanager import PairListManager
@@ -1422,6 +1424,8 @@ class Backtesting:
             dt_appendix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             if self.config.get('export', 'none') in ('trades', 'signals'):
                 store_backtest_stats(self.config['exportfilename'], self.results, dt_appendix)
+                combined_res = combined_dataframes_with_rel_mean(data, min_date, max_date)
+                store_backtest_market_change(self.config['exportfilename'], combined_res, dt_appendix)
 
             if (self.config.get('export', 'none') == 'signals' and
                     self.dataprovider.runmode == RunMode.BACKTEST):

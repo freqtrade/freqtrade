@@ -2,6 +2,8 @@ import logging
 from pathlib import Path
 from typing import Dict
 
+from pandas import DataFrame
+
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import file_dump_joblib, file_dump_json
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
@@ -81,3 +83,20 @@ def store_backtest_analysis_results(
         dtappendix: str) -> None:
     _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
     _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
+
+
+def store_backtest_market_change(
+        recordfilename: Path, data: DataFrame, dtappendix: str) -> Path:
+    """
+    Stores backtest market change average
+    :param recordfilename: Path object, which can either be a filename or a directory.
+        Filenames will be appended with a timestamp right before the suffix
+        while for directories, <directory>/backtest-result-<datetime>_<name>.pkl will be used
+        as filename
+    :param candles: Dict containing the backtesting data for analysis
+    :param dtappendix: Datetime to use for the filename
+    """
+    filename = _generate_filename(recordfilename, f"{dtappendix}_market_change", '.feather')
+    data.reset_index().to_feather(filename, compression_level=9, compression='lz4')
+
+    return filename
