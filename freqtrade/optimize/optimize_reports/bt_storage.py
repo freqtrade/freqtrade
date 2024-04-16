@@ -57,8 +57,9 @@ def store_backtest_stats(
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
     if market_change_data is not None:
-        filename_market_change = _generate_filename(recordfilename, f"{dtappendix}_market_change", '.feather')
-        market_change_data.reset_index().to_feather(filename_market_change, compression_level=9, compression='lz4')
+        filename_mc = _generate_filename(recordfilename, f"{dtappendix}_market_change", '.feather')
+        market_change_data.reset_index().to_feather(
+            filename_mc, compression_level=9, compression='lz4')
 
     return filename
 
