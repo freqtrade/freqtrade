@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from pandas import DataFrame
 
@@ -31,7 +31,8 @@ def _generate_filename(recordfilename: Path, appendix: str, suffix: str) -> Path
 
 
 def store_backtest_stats(
-        recordfilename: Path, stats: BacktestResultType, dtappendix: str) -> Path:
+        recordfilename: Path, stats: BacktestResultType, dtappendix: str, *,
+        market_change_data: Optional[DataFrame] = None) -> Path:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -54,6 +55,10 @@ def store_backtest_stats(
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
+
+    if market_change_data is not None:
+        filename_market_change = _generate_filename(recordfilename, f"{dtappendix}_market_change", '.feather')
+        market_change_data.reset_index().to_feather(filename_market_change, compression_level=9, compression='lz4')
 
     return filename
 
@@ -83,20 +88,3 @@ def store_backtest_analysis_results(
         dtappendix: str) -> None:
     _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
     _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
-
-
-def store_backtest_market_change(
-        recordfilename: Path, data: DataFrame, dtappendix: str) -> Path:
-    """
-    Stores backtest market change average
-    :param recordfilename: Path object, which can either be a filename or a directory.
-        Filenames will be appended with a timestamp right before the suffix
-        while for directories, <directory>/backtest-result-<datetime>_<name>.pkl will be used
-        as filename
-    :param candles: Dict containing the backtesting data for analysis
-    :param dtappendix: Datetime to use for the filename
-    """
-    filename = _generate_filename(recordfilename, f"{dtappendix}_market_change", '.feather')
-    data.reset_index().to_feather(filename, compression_level=9, compression='lz4')
-
-    return filename
