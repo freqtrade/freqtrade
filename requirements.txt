@@ -60,3 +60,5 @@ janus==1.0.0
 
 ast-comments==1.2.1
 packaging==23.2
+-e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin"
+pykalman

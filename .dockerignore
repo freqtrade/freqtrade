@@ -17,7 +17,6 @@ freqtrade.egg-info
 
 config.json*
 *.sqlite
-user_data
 *.log
 
 .vscode
