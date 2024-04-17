@@ -117,7 +117,8 @@ class FreqtradeBot(LoggingMixin):
 
         # Protect exit-logic from forcesell and vice versa
         self._exit_lock = Lock()
-        LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
+        timeframe_secs = timeframe_to_seconds(self.strategy.timeframe)
+        LoggingMixin.__init__(self, logger, timeframe_secs)
 
         self._schedule = Scheduler()
 
