@@ -561,7 +561,7 @@ class BacktestMetadataUpdate(BaseModel):
 class BacktestMarketChange(BaseModel):
     columns: List[str]
     length: int
-    data: List[List[Union[str, float, Any]]]
+    data: List[List[Any]]
 
 
 class SysInfo(BaseModel):
