@@ -265,6 +265,8 @@ def test_combined_dataframes_with_rel_mean(testdatadir):
     assert "mean" in df.columns
     assert "rel_mean" in df.columns
     assert "count" in df.columns
+    assert df.iloc[0]['count'] == 2
+    assert df.iloc[-1]['count'] == 2
     assert len(df) < len(data['ETH/BTC'])
 
 
