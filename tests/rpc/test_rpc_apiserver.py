@@ -2249,6 +2249,42 @@ def test_api_patch_backtest_history_entry(botclient, tmp_path: Path):
     assert fileres[CURRENT_TEST_STRATEGY]['notes'] == 'FooBar'
 
 
+def test_api_patch_backtest_market_change(botclient, tmp_path: Path):
+    ftbot, client = botclient
+
+    # Create a temporary directory and file
+    bt_results_base = tmp_path / "backtest_results"
+    bt_results_base.mkdir()
+    file_path = bt_results_base / "test_22_market_change.feather"
+    df = pd.DataFrame({
+        'date': ['2018-01-01T00:00:00Z', '2018-01-01T00:05:00Z'],
+        'count': [2, 4],
+        'mean': [2555, 2556],
+        'rel_mean': [0, 0.022],
+    })
+    df['date'] = pd.to_datetime(df['date'])
+    df.to_feather(file_path, compression_level=9, compression='lz4')
+    # Nonexisting file
+    rc = client_get(client, f"{BASE_URI}/backtest/history/randomFile.json/market_change")
+    assert_response(rc, 503)
+
+    ftbot.config['user_data_dir'] = tmp_path
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history/randomFile.json/market_change")
+    assert_response(rc, 404)
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history/test_22/market_change")
+    assert_response(rc, 200)
+    result = rc.json()
+    assert result['length'] == 2
+    assert result['columns'] == ['date', 'count', 'mean', 'rel_mean', '__date_ts']
+    assert result['data'] == [
+        ['2018-01-01T00:00:00Z', 2, 2555, 0.0, 1514764800000],
+        ['2018-01-01T00:05:00Z', 4, 2556, 0.022, 1514765100000]
+    ]
+
+
 def test_health(botclient):
     _ftbot, client = botclient
 

@@ -16,7 +16,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino,
                                     calculate_underwater, combine_dataframes_with_mean,
-                                    create_cum_profit)
+                                    combined_dataframes_with_rel_mean, create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
@@ -251,10 +251,29 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "mean" in df.columns
 
 
+def test_combined_dataframes_with_rel_mean(testdatadir):
+    pairs = ["ETH/BTC", "ADA/BTC"]
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    df = combined_dataframes_with_rel_mean(
+        data,
+        datetime(2018, 1, 12, tzinfo=timezone.utc),
+        datetime(2018, 1, 28, tzinfo=timezone.utc)
+    )
+    assert isinstance(df, DataFrame)
+    assert "ETH/BTC" not in df.columns
+    assert "ADA/BTC" not in df.columns
+    assert "mean" in df.columns
+    assert "rel_mean" in df.columns
+    assert "count" in df.columns
+    assert df.iloc[0]['count'] == 2
+    assert df.iloc[-1]['count'] == 2
+    assert len(df) < len(data['ETH/BTC'])
+
+
 def test_combine_dataframes_with_mean_no_data(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
     data = load_data(datadir=testdatadir, pairs=pairs, timeframe='6m')
-    with pytest.raises(ValueError, match=r"No objects to concatenate"):
+    with pytest.raises(ValueError, match=r"No data provided\."):
         combine_dataframes_with_mean(data)
 
 

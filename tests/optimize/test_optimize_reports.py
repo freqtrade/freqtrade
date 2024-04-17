@@ -229,6 +229,28 @@ def test_store_backtest_stats(testdatadir, mocker):
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
 
 
+def test_store_backtest_stats_real(tmp_path):
+    data = {'metadata': {}, 'strategy': {}, 'strategy_comparison': []}
+    store_backtest_stats(tmp_path, data, '2022_01_01_15_05_13')
+
+    assert (tmp_path / 'backtest-result-2022_01_01_15_05_13.json').is_file()
+    assert (tmp_path / 'backtest-result-2022_01_01_15_05_13.meta.json').is_file()
+    assert not (tmp_path / 'backtest-result-2022_01_01_15_05_13_market_change.feather').is_file()
+    assert (tmp_path / LAST_BT_RESULT_FN).is_file()
+    fn = get_latest_backtest_filename(tmp_path)
+    assert fn == 'backtest-result-2022_01_01_15_05_13.json'
+
+    store_backtest_stats(tmp_path, data, '2024_01_01_15_05_25', market_change_data=pd.DataFrame())
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25.json').is_file()
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25.meta.json').is_file()
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25_market_change.feather').is_file()
+    assert (tmp_path / LAST_BT_RESULT_FN).is_file()
+
+    # Last file reference should be updated
+    fn = get_latest_backtest_filename(tmp_path)
+    assert fn == 'backtest-result-2024_01_01_15_05_25.json'
+
+
 def test_store_backtest_candles(testdatadir, mocker):
 
     dump_mock = mocker.patch(
