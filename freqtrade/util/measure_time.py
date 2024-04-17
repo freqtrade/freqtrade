@@ -13,7 +13,8 @@ class MeasureTime:
     Measure the time of a block of code and call a callback if the time limit is exceeded.
 
     """
-    def __init__(self, callback: Callable[[int, int], None], time_limit: int, ttl: int = 3600 * 4):
+    def __init__(
+            self, callback: Callable[[float, float], None], time_limit: float, ttl: int = 3600 * 4):
         """
         :param callback: The callback to call if the time limit is exceeded.
             This callback will be called once every "ttl" seconds,
@@ -21,10 +22,11 @@ class MeasureTime:
             "time limit" - representing the passed in time limit.
         :param time_limit: The time limit in seconds.
         :param ttl: The time to live of the cache in seconds.
+            defaults to 4 hours.
         """
         self._callback = callback
         self._time_limit = time_limit
-        self.__cache = TTLCache(maxsize=1, ttl=ttl)
+        self.__cache: TTLCache = TTLCache(maxsize=1, ttl=ttl)
 
     def __enter__(self):
         self._start = time.time()
