@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN, IntOrInf
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -106,7 +106,7 @@ def get_latest_hyperopt_file(
         directory = Path(directory)
     if predef_filename:
         if Path(predef_filename).is_absolute():
-            raise OperationalException(
+            raise ConfigurationError(
                 "--hyperopt-filename expects only the filename, not an absolute path.")
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
@@ -357,10 +357,10 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     :param timeframe: Timeframe used for backtest
     :return: dataframe with open-counts per time-period in timeframe
     """
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_min = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
-                                     freq=f"{timeframe_min}min"))
+                                     freq=timeframe_freq))
              for row in results[['open_date', 'close_date']].iterrows()]
     deltas = [len(x) for x in dates]
     dates = pd.Series(pd.concat(dates).values, name='date')
@@ -368,7 +368,7 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
-    df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
+    df_final = df2.resample(timeframe_freq)[['pair']].count()
     df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
     return df_final
 

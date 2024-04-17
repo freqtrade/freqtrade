@@ -698,6 +698,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.advise_all_indicators(data)
+    backtesting.strategy.order_filled = MagicMock()
     min_date, max_date = get_timerange(processed)
 
     result = backtesting.backtest(
@@ -742,20 +743,26 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'orders': [
             [
                 {'amount': 0.00957442, 'safe_price': 0.104445, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.00957442, 'safe_price': 0.10496853383458644, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ], [
                 {'amount': 0.0097064, 'safe_price': 0.10302485, 'ft_order_side': 'buy',
-                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True},
+                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True,
+                 'ft_order_tag': ''},
                 {'amount': 0.0097064, 'safe_price': 0.10354126528822055, 'ft_order_side': 'sell',
-                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False}
+                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False,
+                 'ft_order_tag': 'roi'}
             ]
          ]
          })
     pd.testing.assert_frame_equal(results, expected)
     assert 'orders' in results.columns
     data_pair = processed[pair]
+    # Called once per order
+    assert backtesting.strategy.order_filled.call_count == 4
     for _, t in results.iterrows():
         assert len(t['orders']) == 2
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
@@ -1466,7 +1473,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     text_table_mock = MagicMock()
-    sell_reason_mock = MagicMock()
+    tag_metrics_mock = MagicMock()
     strattable_mock = MagicMock()
     strat_summary = MagicMock()
 
@@ -1476,7 +1483,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                           )
     mocker.patch.multiple('freqtrade.optimize.optimize_reports.optimize_reports',
                           generate_pair_metrics=MagicMock(),
-                          generate_exit_reason_stats=sell_reason_mock,
+                          generate_tag_metrics=tag_metrics_mock,
                           generate_strategy_comparison=strat_summary,
                           generate_daily_stats=MagicMock(),
                           )
@@ -1501,7 +1508,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     assert backtestmock.call_count == 2
     assert text_table_mock.call_count == 4
     assert strattable_mock.call_count == 1
-    assert sell_reason_mock.call_count == 2
+    assert tag_metrics_mock.call_count == 4
     assert strat_summary.call_count == 1
 
     # check the logs, that will contain the backtest result

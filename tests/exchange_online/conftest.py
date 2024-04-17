@@ -262,6 +262,13 @@ EXCHANGES = {
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
     },
+    'bingx': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '1h',
+        'futures': False,
+    },
 }
 
 
@@ -324,7 +331,8 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
 
 
 @pytest.fixture(params=EXCHANGES, scope="class")
-def exchange(request, exchange_conf):
+def exchange(request, exchange_conf, class_mocker):
+    class_mocker.patch('freqtrade.exchange.bybit.Bybit.additional_exchange_init')
     yield from get_exchange(request.param, exchange_conf)
 
 

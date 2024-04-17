@@ -64,9 +64,12 @@ def test_historic_ohlcv(mocker, default_conf, ohlcv_history):
 def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     hdf5loadmock = MagicMock(return_value=ohlcv_history)
     featherloadmock = MagicMock(return_value=ohlcv_history)
-    mocker.patch("freqtrade.data.history.hdf5datahandler.HDF5DataHandler._ohlcv_load", hdf5loadmock)
-    mocker.patch("freqtrade.data.history.featherdatahandler.FeatherDataHandler._ohlcv_load",
-                 featherloadmock)
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.hdf5datahandler.HDF5DataHandler._ohlcv_load",
+        hdf5loadmock)
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load",
+        featherloadmock)
 
     default_conf["runmode"] = RunMode.BACKTEST
     exchange = get_patched_exchange(mocker, default_conf)
@@ -194,7 +197,7 @@ def test_get_producer_df(default_conf):
     assert la == empty_la
 
     # non existent timeframe, empty dataframe
-    datframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
+    _dataframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
     assert dataframe.empty
     assert la == empty_la
 

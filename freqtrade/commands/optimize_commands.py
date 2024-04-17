@@ -4,7 +4,7 @@ from typing import Any, Dict
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.util import fmt_coin
 
 
@@ -31,7 +31,7 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
                 and config['stake_amount'] > wallet_size):
             wallet = fmt_coin(wallet_size, config['stake_currency'])
             stake = fmt_coin(config['stake_amount'], config['stake_currency'])
-            raise OperationalException(
+            raise ConfigurationError(
                 f"Starting balance ({wallet}) is smaller than stake_amount {stake}. "
                 f"Wallet is calculated as `dry_run_wallet * tradable_balance_ratio`."
                 )

@@ -300,3 +300,17 @@ def leverage(self, pair: str, current_time: datetime, current_rate: float,
     :return: A leverage amount, which is between 1.0 and max_leverage.
     """
     return 1.0
+
+
+def order_filled(self, pair: str, trade: 'Trade', order: 'Order',
+                 current_time: datetime, **kwargs) -> None:
+    """
+    Called right after an order fills.
+    Will be called for all order types (entry, exit, stoploss, position adjustment).
+    :param pair: Pair for trade
+    :param trade: trade object.
+    :param order: Order object.
+    :param current_time: datetime object, containing the current datetime
+    :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+    """
+    pass

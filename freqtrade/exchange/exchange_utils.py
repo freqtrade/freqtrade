@@ -11,9 +11,9 @@ from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGIT
 
 from freqtrade.exchange.common import (BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        SUPPORTED_EXCHANGES)
+from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.types import ValidExchangesType
 from freqtrade.util import FtPrecise
-from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
 
 CcxtModuleType = Any
@@ -40,21 +40,34 @@ def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[st
 
 
 def validate_exchange(exchange: str) -> Tuple[bool, str]:
+    """
+    returns: can_use, reason
+        with Reason including both missing and missing_opt
+    """
     ex_mod = getattr(ccxt, exchange.lower())()
+    result = True
+    reason = ''
     if not ex_mod or not ex_mod.has:
         return False, ''
-    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
+    missing = [
+        k for k, v in EXCHANGE_HAS_REQUIRED.items()
+        if ex_mod.has.get(k) is not True
+        and not (all(ex_mod.has.get(x) for x in v))
+    ]
     if missing:
-        return False, f"missing: {', '.join(missing)}"
+        result = False
+        reason += f"missing: {', '.join(missing)}"
 
     missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
 
     if exchange.lower() in BAD_EXCHANGES:
-        return False, BAD_EXCHANGES.get(exchange.lower(), '')
-    if missing_opt:
-        return True, f"missing opt: {', '.join(missing_opt)}"
+        result = False
+        reason = BAD_EXCHANGES.get(exchange.lower(), '')
 
-    return True, ''
+    if missing_opt:
+        reason += f"{'. ' if reason else ''}missing opt: {', '.join(missing_opt)}. "
+
+    return result, reason
 
 
 def _build_exchange_list_entry(
@@ -93,57 +106,6 @@ def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
     ]
 
     return exchanges_valid
-
-
-def timeframe_to_seconds(timeframe: str) -> int:
-    """
-    Translates the timeframe interval value written in the human readable
-    form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
-    of seconds for one timeframe interval.
-    """
-    return ccxt.Exchange.parse_timeframe(timeframe)
-
-
-def timeframe_to_minutes(timeframe: str) -> int:
-    """
-    Same as timeframe_to_seconds, but returns minutes.
-    """
-    return ccxt.Exchange.parse_timeframe(timeframe) // 60
-
-
-def timeframe_to_msecs(timeframe: str) -> int:
-    """
-    Same as timeframe_to_seconds, but returns milliseconds.
-    """
-    return ccxt.Exchange.parse_timeframe(timeframe) * 1000
-
-
-def timeframe_to_prev_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
-    """
-    Use Timeframe and determine the candle start date for this date.
-    Does not round when given a candle start date.
-    :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to now(utc)
-    :returns: date of previous candle (with utc timezone)
-    """
-    if not date:
-        date = datetime.now(timezone.utc)
-
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
-    return dt_from_ts(new_timestamp)
-
-
-def timeframe_to_next_date(timeframe: str, date: Optional[datetime] = None) -> datetime:
-    """
-    Use Timeframe and determine next candle.
-    :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to now(utc)
-    :returns: date of next candle (with utc timezone)
-    """
-    if not date:
-        date = datetime.now(timezone.utc)
-    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
-    return dt_from_ts(new_timestamp)
 
 
 def date_minus_candles(

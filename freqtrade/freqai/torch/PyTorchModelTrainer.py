@@ -152,7 +152,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         """
         assert isinstance(self.n_steps, int), "Either `n_steps` or `n_epochs` should be set."
         n_batches = n_obs // self.batch_size
-        n_epochs = min(self.n_steps // n_batches, 1)
+        n_epochs = max(self.n_steps // n_batches, 1)
         if n_epochs <= 10:
             logger.warning(
                 f"Setting low n_epochs: {n_epochs}. "

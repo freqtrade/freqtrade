@@ -15,10 +15,10 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   DeleteLockRequest, DeleteTrade, Entry,
                                                   ExchangeListResponse, Exit, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
-                                                  FreqAIModelListResponse, Health, Locks, Logs,
-                                                  MixTag, OpenTradeSchema, PairHistory,
-                                                  PerformanceEntry, Ping, PlotConfig, Profit,
-                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  FreqAIModelListResponse, Health, Locks,
+                                                  LocksPayload, Logs, MixTag, OpenTradeSchema,
+                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
+                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
                                                   StrategyListResponse, StrategyResponse, SysInfo,
                                                   Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
@@ -215,7 +215,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_force_exit(payload.tradeid, ordertype, amount=payload.amount)
+    return rpc._rpc_force_exit(str(payload.tradeid), ordertype, amount=payload.amount)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
@@ -253,6 +253,13 @@ def delete_lock(lockid: int, rpc: RPC = Depends(get_rpc)):
 @router.post('/locks/delete', response_model=Locks, tags=['info', 'locks'])
 def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
+
+
+@router.post('/locks', response_model=Locks, tags=['info', 'locks'])
+def add_locks(payload: List[LocksPayload], rpc: RPC = Depends(get_rpc)):
+    for lock in payload:
+        rpc._rpc_add_lock(lock.pair, lock.until, lock.reason, lock.side)
+    return rpc._rpc_locks()
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])

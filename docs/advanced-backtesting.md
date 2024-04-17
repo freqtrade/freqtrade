@@ -109,12 +109,12 @@ automatically accessible by including them on the indicator-list, and these incl
 - **open_date     :** trade open datetime
 - **close_date    :** trade close datetime
 - **min_rate      :** minimum price seen throughout the position
-- **max_rate      :** maxiumum price seen throughout the position
+- **max_rate      :** maximum price seen throughout the position
 - **open          :** signal candle open price
 - **close         :** signal candle close price
 - **high          :** signal candle high price
 - **low           :** signal candle low price
-- **volume        :** signal candle volumne
+- **volume        :** signal candle volume
 - **profit_ratio  :** trade profit ratio
 - **profit_abs    :** absolute profit return of the trade 
 

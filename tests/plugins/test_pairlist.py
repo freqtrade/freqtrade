@@ -18,7 +18,8 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import (EXMS, create_mock_trades_usdt, get_patched_exchange,
+from freqtrade.util.datetime_helpers import dt_now
+from tests.conftest import (EXMS, create_mock_trades_usdt, generate_test_data, get_patched_exchange,
                             get_patched_freqtradebot, log_has, log_has_re, num_log_has)
 
 
@@ -405,6 +406,14 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5,
        "sort_key": "quoteVolume", "min_value": 1250}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC']),
+    # HOT, XRP and FUEL whitelisted because they are below 1300 quoteVolume.
+    ([{"method": "VolumePairList", "number_assets": 5,
+       "sort_key": "quoteVolume", "max_value": 1300}],
+     "BTC", ['XRP/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    # HOT, XRP whitelisted because they are between 100 and 1300 quoteVolume.
+    ([{"method": "VolumePairList", "number_assets": 5,
+       "sort_key": "quoteVolume", "min_value": 100, "max_value": 1300}],
+     "BTC", ['XRP/BTC', 'HOT/BTC']),
     # StaticPairlist only
     ([{"method": "StaticPairList"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
@@ -620,13 +629,20 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 6, "refresh_period": 86400}],
      "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'HOT/BTC', 'NEO/BTC']),
+    # VolumePairlist in range mode as filter.
+    # TKN/BTC is removed because it doesn't have enough candles
+    ([{"method": "VolumePairList", "number_assets": 5},
+      {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 2, "refresh_period": 86400}],
+     "BTC", "binance", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     # ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
     #    "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
     #  "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
 ])
-def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
-                              pairlists, base_currency, exchange, volumefilter_result) -> None:
+def test_VolumePairList_range(
+        mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
+        pairlists, base_currency, exchange, volumefilter_result, time_machine) -> None:
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
     whitelist_conf['exchange']['name'] = exchange
@@ -685,22 +701,35 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
             get_tickers=tickers,
             markets=PropertyMock(return_value=shitcoinmarkets)
         )
-
+        start_dt = dt_now()
+        time_machine.move_to(start_dt)
         # remove ohlcv when looback_timeframe != 1d
         # to enforce fallback to ticker data
         if 'lookback_timeframe' in pairlists[0]:
             if pairlists[0]['lookback_timeframe'] != '1d':
-                ohlcv_data = []
+                ohlcv_data = {}
 
-        mocker.patch.multiple(
-            EXMS,
-            refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
-        )
+        ohclv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
 
         freqtrade.pairlists.refresh_pairlist()
         whitelist = freqtrade.pairlists.whitelist
+        assert ohclv_mock.call_count == 1
 
         assert isinstance(whitelist, list)
+        assert whitelist == volumefilter_result
+        # Test caching
+        ohclv_mock.reset_mock()
+        freqtrade.pairlists.refresh_pairlist()
+        # in "filter" mode, caching is disabled.
+        assert ohclv_mock.call_count == 0
+        whitelist = freqtrade.pairlists.whitelist
+        assert whitelist == volumefilter_result
+
+        time_machine.move_to(start_dt + timedelta(days=2))
+        ohclv_mock.reset_mock()
+        freqtrade.pairlists.refresh_pairlist()
+        assert ohclv_mock.call_count == 1
+        whitelist = freqtrade.pairlists.whitelist
         assert whitelist == volumefilter_result
 
 
@@ -725,6 +754,104 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
+
+
+def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": -1}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+
+    mocker.patch(f'{EXMS}.exchange_has', MagicMock(return_value=True))
+    exchange_mock = MagicMock()
+    exchange_mock.ohlcv_candle_limit = MagicMock(return_value=1000)
+
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires lookback_days to be >= 1*"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": 2000}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires lookback_days to not exceed exchange max"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "sort_direction": "Random"}
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(OperationalException,
+                       match=r"VolatilityFilter requires sort_direction to be either "
+                             r"None .*'asc'.*'desc'"):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+
+@pytest.mark.parametrize('pairlist,expected_pairlist', [
+    ({"method": "VolatilityFilter", "sort_direction": "asc"},
+     ['XRP/BTC', 'ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc"},
+     ['TKN/BTC', 'LTC/BTC', 'ETH/BTC', 'XRP/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc", 'min_volatility': 0.4},
+     ['TKN/BTC', 'LTC/BTC', 'ETH/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "asc", 'min_volatility': 0.4},
+     ['ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "desc", 'max_volatility': 0.5},
+     ['LTC/BTC', 'ETH/BTC', 'XRP/BTC']),
+    ({"method": "VolatilityFilter", "sort_direction": "asc", 'max_volatility': 0.5},
+     ['XRP/BTC', 'ETH/BTC', 'LTC/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "asc"},
+     ['ETH/BTC', 'XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "desc"},
+     ['TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'ETH/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "asc", 'min_rate_of_change': 0.4},
+     ['XRP/BTC', 'LTC/BTC', 'TKN/BTC']),
+    ({"method": "RangeStabilityFilter", "sort_direction": "desc", 'min_rate_of_change': 0.4},
+     ['TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+])
+def test_VolatilityFilter_RangeStabilityFilter_sort(
+        mocker, whitelist_conf, tickers, time_machine, pairlist, expected_pairlist) -> None:
+    whitelist_conf['pairlists'] = [
+        {'method': 'VolumePairList', 'number_assets': 10},
+        pairlist
+    ]
+
+    df1 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=42)
+    df2 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=2)
+    df3 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=3)
+    df4 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=4)
+    df5 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=5)
+    df6 = generate_test_data('1d', 10, '2022-01-05 00:00:00+00:00', random_seed=6)
+
+    assert not df1.equals(df2)
+    time_machine.move_to('2022-01-15 00:00:00+00:00')
+
+    ohlcv_data = {
+        ('ETH/BTC', '1d', CandleType.SPOT): df1,
+        ('TKN/BTC', '1d', CandleType.SPOT): df2,
+        ('LTC/BTC', '1d', CandleType.SPOT): df3,
+        ('XRP/BTC', '1d', CandleType.SPOT): df4,
+        ('HOT/BTC', '1d', CandleType.SPOT): df5,
+        ('BLK/BTC', '1d', CandleType.SPOT): df6,
+
+    }
+    ohlcv_mock = MagicMock(return_value=ohlcv_data)
+    mocker.patch.multiple(
+        EXMS,
+        exchange_has=MagicMock(return_value=True),
+        refresh_latest_ohlcv=ohlcv_mock,
+        get_tickers=tickers
+
+    )
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    exchange.ohlcv_candle_limit = MagicMock(return_value=1000)
+    plm = PairListManager(exchange, whitelist_conf, MagicMock())
+
+    assert exchange.ohlcv_candle_limit.call_count == 2
+    plm.refresh_pairlist()
+    assert ohlcv_mock.call_count == 1
+    assert exchange.ohlcv_candle_limit.call_count == 2
+    assert plm.whitelist == expected_pairlist
+
+    plm.refresh_pairlist()
+    assert exchange.ohlcv_candle_limit.call_count == 2
+    assert ohlcv_mock.call_count == 1
 
 
 def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
@@ -1072,6 +1199,13 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
 
     with pytest.raises(OperationalException,
                        match='RangeStabilityFilter requires lookback_days to be >= 1'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'RangeStabilityFilter', 'sort_direction': 'something'}]
+
+    with pytest.raises(OperationalException,
+                       match='RangeStabilityFilter requires sort_direction to be either None.*'):
         get_patched_freqtradebot(mocker, default_conf)
 
 
@@ -1513,3 +1647,144 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
         pm.refresh_pairlist()
         assert pm.whitelist == []
         assert log_has_re(r'Whitelist with 0 pairs: \[]', caplog)
+
+
+@pytest.mark.parametrize('pairlists,trade_mode,result', [
+    ([
+        # Get 2 pairs
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "number_assets": 2}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT']),
+    ([
+        # Get 6 pairs
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "number_assets": 6}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'ADA/USDT']),
+    ([
+        # Get 3 pairs within top 6 ranks
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "max_rank": 6, "number_assets": 3}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
+
+    ([
+        # Get 4 pairs within top 8 ranks
+        {"method": "StaticPairList", "allow_inactive": True},
+        {"method": "MarketCapPairList", "max_rank": 8, "number_assets": 4}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
+    ([
+        # MarketCapPairList as generator
+        {"method": "MarketCapPairList", "number_assets": 5}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT', 'XRP/USDT']),
+    ([
+        # MarketCapPairList as generator - low max_rank
+        {"method": "MarketCapPairList", "max_rank": 2, "number_assets": 5}
+    ], 'spot', ['BTC/USDT', 'ETH/USDT']),
+    ([
+        # MarketCapPairList as generator - futures - low max_rank
+        {"method": "MarketCapPairList", "max_rank": 2, "number_assets": 5}
+    ], 'futures', ['ETH/USDT:USDT']),
+    ([
+        # MarketCapPairList as generator - futures - low number_assets
+        {"method": "MarketCapPairList", "number_assets": 2}
+    ], 'futures', ['ETH/USDT:USDT', 'ADA/USDT:USDT']),
+])
+def test_MarketCapPairList_filter(
+        mocker, default_conf_usdt, trade_mode, markets, pairlists, result
+):
+    test_value = [
+        {"symbol": "btc"},
+        {"symbol": "eth"},
+        {"symbol": "usdt"},
+        {"symbol": "bnb"},
+        {"symbol": "sol"},
+        {"symbol": "xrp"},
+        {"symbol": "usdc"},
+        {"symbol": "steth"},
+        {"symbol": "ada"},
+        {"symbol": "avax"},
+    ]
+
+    default_conf_usdt['trading_mode'] = trade_mode
+    if trade_mode == 'spot':
+        default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT', 'ADA/USDT'])
+    default_conf_usdt['pairlists'] = pairlists
+    mocker.patch.multiple(EXMS,
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          )
+
+    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+                 return_value=test_value)
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == result
+
+
+def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machine):
+    test_value = [
+        {"symbol": "btc"},
+        {"symbol": "eth"},
+        {"symbol": "usdt"},
+        {"symbol": "bnb"},
+        {"symbol": "sol"},
+        {"symbol": "xrp"},
+        {"symbol": "usdc"},
+        {"symbol": "steth"},
+        {"symbol": "ada"},
+        {"symbol": "avax"},
+    ]
+
+    default_conf_usdt['trading_mode'] = 'spot'
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['BTC/USDT', 'ETC/USDT', 'ADA/USDT'])
+    default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList", "number_assets": 2}]
+
+    markets_mock = MagicMock(return_value=markets)
+    mocker.patch.multiple(EXMS,
+                          get_markets=markets_mock,
+                          exchange_has=MagicMock(return_value=True),
+                          )
+
+    mocker.patch("freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+                 return_value=test_value)
+
+    start_dt = dt_now()
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    time_machine.move_to(start_dt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    markets_mock.reset_mock()
+    pm.refresh_pairlist()
+    assert markets_mock.call_count == 3
+    markets_mock.reset_mock()
+
+    time_machine.move_to(start_dt + timedelta(hours=20))
+    pm.refresh_pairlist()
+    # Cached pairlist ...
+    assert markets_mock.call_count == 1
+
+    markets_mock.reset_mock()
+    time_machine.move_to(start_dt + timedelta(days=2))
+    pm.refresh_pairlist()
+    # No longer cached pairlist ...
+    assert markets_mock.call_count == 3
+
+
+def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, markets, time_machine):
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList"}]
+    with pytest.raises(OperationalException, match=r"`number_assets` not specified.*"):
+        # No number_assets
+        PairListManager(exchange, default_conf_usdt)
+
+    default_conf_usdt['pairlists'] = [{
+        "method": "MarketCapPairList", 'number_assets': 20, 'max_rank': 260
+    }]
+    with pytest.raises(OperationalException,
+                       match="This filter only support marketcap rank up to 250."):
+        PairListManager(exchange, default_conf_usdt)

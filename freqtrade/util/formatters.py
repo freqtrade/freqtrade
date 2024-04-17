@@ -10,6 +10,15 @@ def decimals_per_coin(coin: str):
     return DECIMALS_PER_COIN.get(coin, DECIMAL_PER_COIN_FALLBACK)
 
 
+def strip_trailing_zeros(value: str) -> str:
+    """
+    Strip trailing zeros from a string
+    :param value: Value to be stripped
+    :return: Stripped value
+    """
+    return value.rstrip('0').rstrip('.')
+
+
 def round_value(value: float, decimals: int, keep_trailing_zeros=False) -> str:
     """
     Round value to given decimals
@@ -20,7 +29,7 @@ def round_value(value: float, decimals: int, keep_trailing_zeros=False) -> str:
     """
     val = f"{value:.{decimals}f}"
     if not keep_trailing_zeros:
-        val = val.rstrip('0').rstrip('.')
+        val = strip_trailing_zeros(val)
     return val
 
 
@@ -34,7 +43,6 @@ def fmt_coin(
     :param keep_trailing_zeros: Keep trailing zeros "222.200" vs. "222.2"
     :return: Formatted / rounded value (with or without coin name)
     """
-    val = f"{value:.{decimals_per_coin(coin)}f}"
     val = round_value(value, decimals_per_coin(coin), keep_trailing_zeros)
     if show_coin_name:
         val = f"{val} {coin}"

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, RootModel, SerializeAsAny
+from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny
 
 from freqtrade.constants import IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
@@ -261,6 +261,7 @@ class OrderSchema(BaseModel):
     order_timestamp: Optional[int] = None
     order_filled_timestamp: Optional[int] = None
     ft_fee_base: Optional[float] = None
+    ft_order_tag: Optional[str] = None
 
 
 class TradeSchema(BaseModel):
@@ -287,6 +288,8 @@ class TradeSchema(BaseModel):
 
     open_date: str
     open_timestamp: int
+    open_fill_date: Optional[str]
+    open_fill_timestamp: Optional[int]
     open_rate: float
     open_rate_requested: Optional[float] = None
     open_trade_value: float
@@ -314,7 +317,6 @@ class TradeSchema(BaseModel):
     stop_loss_abs: Optional[float] = None
     stop_loss_ratio: Optional[float] = None
     stop_loss_pct: Optional[float] = None
-    stoploss_order_id: Optional[str] = None
     stoploss_last_update: Optional[str] = None
     stoploss_last_update_timestamp: Optional[int] = None
     initial_stop_loss_abs: Optional[float] = None
@@ -376,6 +378,13 @@ class Locks(BaseModel):
     locks: List[LockModel]
 
 
+class LocksPayload(BaseModel):
+    pair: str
+    side: str = '*'  # Default to both sides
+    until: AwareDatetime
+    reason: Optional[str] = None
+
+
 class DeleteLockRequest(BaseModel):
     pair: Optional[str] = None
     lockid: Optional[int] = None
@@ -397,7 +406,7 @@ class ForceEnterPayload(BaseModel):
 
 
 class ForceExitPayload(BaseModel):
-    tradeid: str
+    tradeid: Union[str, int]
     ordertype: Optional[OrderTypeValues] = None
     amount: Optional[float] = None
 
@@ -557,3 +566,7 @@ class SysInfo(BaseModel):
 class Health(BaseModel):
     last_process: Optional[datetime] = None
     last_process_ts: Optional[int] = None
+    bot_start: Optional[datetime] = None
+    bot_start_ts: Optional[int] = None
+    bot_startup: Optional[datetime] = None
+    bot_startup_ts: Optional[int] = None

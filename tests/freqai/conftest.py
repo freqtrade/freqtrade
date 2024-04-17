@@ -25,6 +25,11 @@ def is_mac() -> bool:
     return "Darwin" in machine
 
 
+def is_arm() -> bool:
+    machine = platform.machine()
+    return "arm" in machine or "aarch64" in machine
+
+
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
 
@@ -36,7 +41,7 @@ def patch_torch_initlogs(mocker) -> None:
         module_name = 'torch'
         mocked_module = types.ModuleType(module_name)
         sys.modules[module_name] = mocked_module
-    elif not is_py12():
+    else:
         mocker.patch("torch._logging._init_logs")
 
 

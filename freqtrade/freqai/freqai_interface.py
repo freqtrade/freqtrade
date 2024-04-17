@@ -675,6 +675,8 @@ class IFreqaiModel(ABC):
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = dk.data['extra_returns_per_train'][return_str]
 
+        hist_preds_df['high_price'] = strat_df['high']
+        hist_preds_df['low_price'] = strat_df['low']
         hist_preds_df['close_price'] = strat_df['close']
         hist_preds_df['date_pred'] = strat_df['date']
 
@@ -825,7 +827,7 @@ class IFreqaiModel(ABC):
         """
         if self.config.get("freqai_backtest_live_models", False) and len_dataframe_backtest == 0:
             logger.info(f"No data found for pair {pair} from "
-                        f"from { tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
+                        f"from {tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
                         "Probably more than one training within the same candle period.")
             return False
         return True

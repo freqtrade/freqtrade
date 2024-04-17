@@ -12,9 +12,9 @@ from freqtrade.commands import (start_backtesting_show, start_convert_data, star
                                 start_create_userdir, start_download_data, start_hyperopt_list,
                                 start_hyperopt_show, start_install_ui, start_list_data,
                                 start_list_exchanges, start_list_markets, start_list_strategies,
-                                start_list_timeframes, start_new_strategy, start_show_trades,
-                                start_strategy_update, start_test_pairlist, start_trading,
-                                start_webserver)
+                                start_list_timeframes, start_new_strategy, start_show_config,
+                                start_show_trades, start_strategy_update, start_test_pairlist,
+                                start_trading, start_webserver)
 from freqtrade.commands.db_commands import start_convert_db
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
@@ -39,6 +39,14 @@ def test_setup_utils_configuration():
     assert "exchange" in config
     assert config['dry_run'] is True
 
+    args = [
+        'list-exchanges', '--config', 'tests/testdata/testconfigs/testconfig.json',
+    ]
+
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER, set_dry=False)
+    assert "exchange" in config
+    assert config['dry_run'] is False
+
 
 def test_start_trading_fail(mocker, caplog):
 
@@ -51,15 +59,16 @@ def test_start_trading_fail(mocker, caplog):
         'trade',
         '-c', 'tests/testdata/testconfigs/main_test_config.json'
     ]
-    start_trading(get_args(args))
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
     assert exitmock.call_count == 1
 
     exitmock.reset_mock()
     caplog.clear()
     mocker.patch("freqtrade.worker.Worker.__init__", MagicMock(side_effect=OperationalException))
-    start_trading(get_args(args))
+    with pytest.raises(OperationalException):
+        start_trading(get_args(args))
     assert exitmock.call_count == 0
-    assert log_has('Fatal exception!', caplog)
 
 
 def test_start_webserver(mocker, caplog):
@@ -772,7 +781,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
     assert dl_mock.call_count == 1
 
@@ -788,7 +797,7 @@ def test_download_data_all_pairs(mocker, markets):
     pargs = get_args(args)
     pargs['config'] = None
     start_download_data(pargs)
-    expected = set(['ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    expected = set(['BTC/USDT', 'ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
     assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
 
 
@@ -820,11 +829,6 @@ def test_download_data_trades(mocker):
         "--trading-mode", "futures",
         "--dl-trades"
     ]
-    with pytest.raises(OperationalException,
-                       match="Trade download not supported for futures."):
-        pargs = get_args(args)
-        pargs['config'] = None
-        start_download_data(pargs)
 
 
 def test_download_data_data_invalid(mocker):
@@ -842,10 +846,11 @@ def test_download_data_data_invalid(mocker):
         start_download_data(pargs)
 
 
-def test_start_convert_trades(mocker, caplog):
+def test_start_convert_trades(mocker):
     convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
     patch_exchange(mocker)
+    mocker.patch(f'{EXMS}.get_markets')
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={}))
     args = [
         "trades-to-ohlcv",
@@ -1445,12 +1450,13 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert ("\n|    Pair |   Timeframe |   Type |                From |                  To |\n"
-            in captured.out)
+    assert (
+        "\n|    Pair |   Timeframe |   Type "
+        "|                From |                  To |   Candles |\n") in captured.out
     assert "UNITTEST/BTC" not in captured.out
     assert (
-            "\n| XRP/ETH |          1m |   spot | 2019-10-11 00:00:00 | 2019-10-13 11:19:00 |\n"
-            in captured.out)
+        "\n| XRP/ETH |          1m |   spot | "
+        "2019-10-11 00:00:00 | 2019-10-13 11:19:00 |      2469 |\n") in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1508,7 +1514,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     pargs['config'] = None
     start_backtesting_show(pargs)
     assert sbr.call_count == 1
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
     assert "Pairs for Strategy" in out
 
 
@@ -1574,3 +1580,33 @@ def test_start_strategy_updater(mocker, tmp_path):
     start_strategy_update(pargs)
     # Number of strategies in the test directory
     assert sc_mock.call_count == 2
+
+
+def test_start_show_config(capsys, caplog):
+    args = [
+        "show-config",
+        "--config",
+        "tests/testdata/testconfigs/main_test_config.json",
+    ]
+    pargs = get_args(args)
+    start_show_config(pargs)
+
+    captured = capsys.readouterr()
+    assert "Your combined configuration is:" in captured.out
+    assert '"max_open_trades":' in captured.out
+    assert '"secret": "REDACTED"' in captured.out
+
+    args = [
+        "show-config",
+        "--config",
+        "tests/testdata/testconfigs/main_test_config.json",
+        "--show-sensitive"
+    ]
+    pargs = get_args(args)
+    start_show_config(pargs)
+
+    captured = capsys.readouterr()
+    assert "Your combined configuration is:" in captured.out
+    assert '"max_open_trades":' in captured.out
+    assert '"secret": "REDACTED"' not in captured.out
+    assert log_has_re(r'Sensitive information will be shown in the upcomming output.*', caplog)

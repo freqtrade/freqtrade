@@ -95,11 +95,13 @@ Make sure that the following 2 lines are available in your docker-compose file:
 
 ### Consuming the API
 
-You can consume the API by using the script `scripts/rest_client.py`.
-The client script only requires the `requests` module, so Freqtrade does not need to be installed on the system.
+You can consume the API by using `freqtrade-client` (also available as `scripts/rest_client.py`).
+This command can be installed independent of the bot by using `pip install freqtrade-client`.
+
+This module is designed to be lightweight, and only depends on the `requests` and `python-rapidjson` modules, skipping all heavy dependencies freqtrade otherwise needs.
 
 ``` bash
-python3 scripts/rest_client.py <command> [optional parameters]
+freqtrade-client <command> [optional parameters]
 ```
 
 By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be used, however you can specify a configuration file to override this behaviour.
@@ -120,8 +122,26 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 ```
 
 ``` bash
-python3 scripts/rest_client.py --config rest_config.json <command> [optional parameters]
+freqtrade-client --config rest_config.json <command> [optional parameters]
 ```
+
+??? Note "Programmatic use"
+    The `freqtrade-client` package (installable independent of freqtrade) can be used in your own scripts to interact with the freqtrade API.
+    to do so, please use the following:
+
+    ``` python
+    from freqtrade_client import FtRestClient
+    
+
+    client = FtRestClient(server_url, username, password)
+
+    # Get the status of the bot
+    ping = client.ping()
+    print(ping)
+    # ... 
+    ```
+
+    For a full list of available commands, please refer to the list below.
 
 ### Available endpoints
 
@@ -146,6 +166,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
+| `locks add <pair>, <until>, [side], [reason]` | Locks a pair until "until". (Until will be rounded up to the nearest timeframe).
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
@@ -176,7 +197,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 Possible commands can be listed from the rest-client script using the `help` command.
 
 ``` bash
-python3 scripts/rest_client.py help
+freqtrade-client help
 ```
 
 ``` output

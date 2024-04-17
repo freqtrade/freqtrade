@@ -11,6 +11,23 @@ from freqtrade.types import BacktestResultType
 logger = logging.getLogger(__name__)
 
 
+def generate_filename(recordfilename: Path, appendix: str, suffix: str) -> Path:
+    """
+    Generates a filename based on the provided parameters.
+    :param recordfilename: Path object, which can either be a filename or a directory.
+    :param appendix: use for the filename. e.g. backtest-result-<datetime>
+    :param suffix: Suffix to use for the file, e.g. .json, .pkl
+    :return: Generated filename as a Path object
+    """
+    if recordfilename.is_dir():
+        filename = (recordfilename / f'backtest-result-{appendix}').with_suffix(suffix)
+    else:
+        filename = Path.joinpath(
+            recordfilename.parent, f'{recordfilename.stem}-{appendix}'
+        ).with_suffix(suffix)
+    return filename
+
+
 def store_backtest_stats(
         recordfilename: Path, stats: BacktestResultType, dtappendix: str) -> Path:
     """
@@ -21,12 +38,7 @@ def store_backtest_stats(
     :param stats: Dataframe containing the backtesting statistics
     :param dtappendix: Datetime to use for the filename
     """
-    if recordfilename.is_dir():
-        filename = (recordfilename / f'backtest-result-{dtappendix}.json')
-    else:
-        filename = Path.joinpath(
-            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}'
-        ).with_suffix(recordfilename.suffix)
+    filename = generate_filename(recordfilename, dtappendix, '.json')
 
     # Store metadata separately.
     file_dump_json(get_backtest_metadata_filename(filename), stats['metadata'])
@@ -57,12 +69,7 @@ def _store_backtest_analysis_data(
     :param dtappendix: Datetime to use for the filename
     :param name: Name to use for the file, e.g. signals, rejected
     """
-    if recordfilename.is_dir():
-        filename = (recordfilename / f'backtest-result-{dtappendix}_{name}.pkl')
-    else:
-        filename = Path.joinpath(
-            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_{name}.pkl'
-        )
+    filename = generate_filename(recordfilename, f"{dtappendix}_{name}", '.pkl')
 
     file_dump_joblib(filename, data)
 

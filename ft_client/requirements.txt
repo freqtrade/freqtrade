@@ -1,0 +1,3 @@
+# Requirements for freqtrade client library
+requests==2.31.0
+python-rapidjson==1.16
