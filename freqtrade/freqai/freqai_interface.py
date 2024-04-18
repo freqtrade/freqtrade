@@ -116,7 +116,8 @@ class IFreqaiModel(ABC):
 
         record_params(config, self.full_path)
 
-        self.new_feature_selector = self.config.get('freqai', {}).get('warn_exceptions_on_backtest_only', False)
+        self.new_feature_selector = self.config.get('freqai', {}) \
+            .get('warn_exceptions_on_backtest_only', False)
 
     def __getstate__(self):
         """
@@ -351,15 +352,16 @@ class IFreqaiModel(ABC):
                         self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
                                                        self.activate_tensorboard)
                         self.model = self.train(dataframe_train, pair, dk)
-                        self.tb_logger.close()    
+                        self.tb_logger.close()
                     except Exception as msg:
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
                             f"Message: {msg}, skipping.", exc_info=True)
-                        
+
                         if self.new_feature_selector:
                             logger.warning(
-                                "Train failed. Try to train on next pair." if self.new_feature_selector else
+                                "Train failed. Try to train on next pair." \
+                                    if self.new_feature_selector else
                                 "Train failed. Raise error, fix data issue and try again."
                             )
                             self.tb_logger.close()
