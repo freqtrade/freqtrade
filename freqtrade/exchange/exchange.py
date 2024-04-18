@@ -2293,8 +2293,8 @@ class Exchange:
 
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
                 logger.info(
-                    f"Failed to reuse watch {pair}, {candle_date < last_refresh_time}, "
-                    f"{candle_date}, {last_refresh_time}"
+                    f"Failed to reuse watch {pair}, {timeframe}, {candle_date < last_refresh_time},"
+                    f" {candle_date}, {last_refresh_time}"
                 )
 
             # Check if 1 call can get us updated candles without hole in the data.
