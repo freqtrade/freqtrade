@@ -48,6 +48,7 @@
     ],
     "freqai": {
         "enabled": true,
+        "warn_exceptions_on_backtest_only": false,
         "purge_old_models": 2,
         "train_period_days": 15,
         "backtest_period_days": 7,
