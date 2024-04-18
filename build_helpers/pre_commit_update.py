@@ -1,4 +1,4 @@
-# File used in CI to ensure pre-commit dependencies are kept uptodate.
+# File used in CI to ensure pre-commit dependencies are kept up-to-date.
 
 import sys
 from pathlib import Path

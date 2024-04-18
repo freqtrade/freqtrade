@@ -74,7 +74,7 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.CrossEntropyLoss()
-        # check if continual_learning is activated, and retreive the model to continue training
+        # check if continual_learning is activated, and retrieve the model to continue training
         trainer = self.get_init_model(dk.pair)
         if trainer is None:
             trainer = PyTorchModelTrainer(

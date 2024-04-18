@@ -222,7 +222,7 @@ class IFreqaiModel(ABC):
             time.sleep(1)
             pair = self.train_queue[0]
 
-            # ensure pair is avaialble in dp
+            # ensure pair is available in dp
             if pair not in strategy.dp.current_whitelist():
                 self.train_queue.popleft()
                 logger.warning(f'{pair} not in current whitelist, removing from train queue.')

@@ -56,7 +56,7 @@ class Okx(Exchange):
         """
         Exchange ohlcv candle limit
         OKX has the following behaviour:
-        * 300 candles for uptodate data
+        * 300 candles for up-to-date data
         * 100 candles for historic data
         * 100 candles for additional candles (not futures or spot).
         :param timeframe: Timeframe to check

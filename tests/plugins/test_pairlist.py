@@ -605,7 +605,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_days": 1}],
      "BTC", "binance", "default_refresh_too_short"),  # OperationalException expected
-    # ambigous configuration with lookback days and period
+    # ambiguous configuration with lookback days and period
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_days": 1, "lookback_period": 1}],
      "BTC", "binance", "lookback_days_and_period"),  # OperationalException expected
@@ -617,7 +617,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1m", "lookback_period": 2000, "refresh_period": 3600}],
      "BTC", "binance", "lookback_exceeds_exchange_request_size"),  # OperationalException expected
-    # expecing pairs as given
+    # expecting pairs as given
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
      "BTC", "binance", ['LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC', 'HOT/BTC']),

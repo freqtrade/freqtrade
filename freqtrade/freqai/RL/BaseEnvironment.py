@@ -222,7 +222,7 @@ class BaseEnvironment(gym.Env):
     @abstractmethod
     def step(self, action: int):
         """
-        Step depeneds on action types, this must be inherited.
+        Step depends on action types, this must be inherited.
         """
         return
 
@@ -326,7 +326,7 @@ class BaseEnvironment(gym.Env):
 
     def _update_unrealized_total_profit(self):
         """
-        Update the unrealized total profit incase of episode end.
+        Update the unrealized total profit in case of episode end.
         """
         if self._position in (Positions.Long, Positions.Short):
             pnl = self.get_unrealized_profit()
@@ -357,7 +357,7 @@ class BaseEnvironment(gym.Env):
         """
         return self.actions
 
-    # Keeping around incase we want to start building more complex environment
+    # Keeping around in case we want to start building more complex environment
     # templates in the future.
     # def most_recent_return(self):
     #     """

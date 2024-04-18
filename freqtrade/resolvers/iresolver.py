@@ -163,7 +163,7 @@ class IResolver:
     def load_object(cls, object_name: str, config: Config, *, kwargs: dict,
                     extra_dir: Optional[str] = None) -> Any:
         """
-        Search and loads the specified object as configured in hte child class.
+        Search and loads the specified object as configured in the child class.
         :param object_name: name of the module to import
         :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist

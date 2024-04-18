@@ -1609,4 +1609,4 @@ def test_start_show_config(capsys, caplog):
     assert "Your combined configuration is:" in captured.out
     assert '"max_open_trades":' in captured.out
     assert '"secret": "REDACTED"' not in captured.out
-    assert log_has_re(r'Sensitive information will be shown in the upcomming output.*', caplog)
+    assert log_has_re(r'Sensitive information will be shown in the upcoming output.*', caplog)

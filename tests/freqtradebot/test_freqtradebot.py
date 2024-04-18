@@ -285,7 +285,7 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
             'last': enter_price * buy_price_mult,
     })
 
-    # stoploss shoud be hit
+    # stoploss should be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
     if not ignore_strat_sl:
         assert log_has_re('Exit for NEO/BTC detected. Reason: stop_loss.*', caplog)
@@ -1398,7 +1398,7 @@ def test_update_trade_state_sell(
     assert order.status == 'open'
     freqtrade.update_trade_state(trade, trade.open_orders_ids[-1], l_order)
     assert trade.amount == l_order['amount']
-    # Wallet needs to be updated after closing a limit-sell order to reenable buying
+    # Wallet needs to be updated after closing a limit-sell order to re-enable buying
     assert wallet_mock.call_count == 1
     assert not trade.is_open
     # Order is updated by update_trade_state
@@ -3240,7 +3240,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     )
     trade.close(ticker_usdt_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='*')
-    # Boths sides are locked
+    # Both sides are locked
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='long')
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='short')
 
@@ -4829,7 +4829,7 @@ def test_update_funding_fees(
     freqtrade.execute_entry('ETH/USDT', 123, is_short=is_short)
     freqtrade.execute_entry('LTC/USDT', 2.0, is_short=is_short)
     freqtrade.execute_entry('XRP/USDT', 123, is_short=is_short)
-    multipl = 1 if is_short else -1
+    multiple = 1 if is_short else -1
     trades = Trade.get_open_trades()
     assert len(trades) == 3
     for trade in trades:
@@ -4847,7 +4847,7 @@ def test_update_funding_fees(
             assert trade.funding_fees == pytest.approx(sum(
                 trade.amount *
                 mark_prices[trade.pair].iloc[1:2]['open'] *
-                funding_rates[trade.pair].iloc[1:2]['open'] * multipl
+                funding_rates[trade.pair].iloc[1:2]['open'] * multiple
             ))
 
     else:
@@ -4859,7 +4859,7 @@ def test_update_funding_fees(
             trade.amount *
             mark_prices[trade.pair].iloc[1:2]['open'] *
             funding_rates[trade.pair].iloc[1:2]['open'] *
-            multipl
+            multiple
         ))
 
 
