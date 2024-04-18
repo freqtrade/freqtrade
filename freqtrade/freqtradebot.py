@@ -145,7 +145,7 @@ class FreqtradeBot(LoggingMixin):
             logger.warning(
                 f"Strategy analysis took {duration:.2f}, which is 25% of the timeframe. "
                 "This can lead to delayed orders and missed signals."
-                "Consider either reducing the amount of work your strategy performs, "
+                "Consider either reducing the amount of work your strategy performs "
                 "or reduce the amount of pairs in the Pairlist."
             )
 
