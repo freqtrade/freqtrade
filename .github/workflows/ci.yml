@@ -414,7 +414,7 @@ jobs:
         pytest --random-order --longrun --durations 20 -n auto
 
 
-  # Notify only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successful
   notify-complete:
     needs: [
       build-linux,
