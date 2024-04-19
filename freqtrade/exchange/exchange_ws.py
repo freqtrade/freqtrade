@@ -107,7 +107,8 @@ class ExchangeWS:
                     f"watch done {pair}, {timeframe}, data {len(data)} "
                     f"in {time.time() - start:.2f}s")
         except ccxt.BaseError:
-            logger.exception("Exception in continuously_async_watch_ohlcv")
+            logger.exception(
+                f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
         finally:
             self._klines_watching.discard((pair, timeframe, candle_type))
 
