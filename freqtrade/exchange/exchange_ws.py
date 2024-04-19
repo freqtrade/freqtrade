@@ -67,6 +67,7 @@ class ExchangeWS:
         Remove pairs from watchlist if they've not been requested within
         the last timeframe (+ offset)
         """
+        changed = False
         for p in list(self._klines_watching):
             _, timeframe, _ = p
             timeframe_s = timeframe_to_seconds(timeframe)
@@ -74,6 +75,9 @@ class ExchangeWS:
             if last_refresh > 0 and time.time() - last_refresh > timeframe_s + 20:
                 logger.info(f"Removing {p} from watchlist")
                 self._klines_watching.discard(p)
+                changed = True
+        if changed:
+            logger.info(f"Removal done: new watch list: {self._klines_watching}")
 
     async def _schedule_while_true(self) -> None:
 
