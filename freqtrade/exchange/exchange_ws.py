@@ -96,7 +96,7 @@ class ExchangeWS:
     def _continuous_stopped(self, task: asyncio.Task, pair: str, timeframe: str):
         self._background_tasks.discard(task)
         result = task.result()
-        logger.info(f"Task finished {result}")
+        logger.info(f"{pair}, {timeframe} Task finished {result}")
         # self._pairs_scheduled.discard(pair, timeframe, candle_type)
 
     async def _continuously_async_watch_ohlcv(
