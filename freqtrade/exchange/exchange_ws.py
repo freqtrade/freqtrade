@@ -78,7 +78,7 @@ class ExchangeWS:
                 self._klines_watching.discard(p)
                 changed = True
         if changed:
-            logger.info(f"Removal done: new watch list: {self._klines_watching}")
+            logger.info(f"Removal done: new watch list ({len(self._klines_watching)})")
 
     async def _schedule_while_true(self) -> None:
 
