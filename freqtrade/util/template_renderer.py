@@ -3,7 +3,10 @@ Jinja2 rendering utils, used to generate new strategy and configurations.
 """
 
 
-def render_template(templatefile: str, arguments: dict = {}) -> str:
+from typing import Dict
+
+
+def render_template(templatefile: str, arguments: Dict) -> str:
 
     from jinja2 import Environment, PackageLoader, select_autoescape
 
