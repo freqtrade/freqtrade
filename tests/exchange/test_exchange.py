@@ -4346,7 +4346,7 @@ def test_combine_funding_and_mark(
     ('binance', 0, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.00091409999),
     ('binance', 0, 2, "2021-08-31 23:58:00", "2021-09-01 08:00:00",  30.0, -0.00091409999),
     ('binance', 0, 2, "2021-09-01 00:10:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
-    # TODO: Uncomment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange.
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
     # ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
     # ('kraken', "2021-09-01 01:00:14", "2021-09-01 08:00:00",  30.0, -0.0008289),
@@ -4358,7 +4358,7 @@ def test_combine_funding_and_mark(
     ('gate', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999),
     ('gate', 1, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', 0,  2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235),
-    # TODO: Uncomment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange.
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
 ])
 def test__fetch_and_calculate_funding_fees(

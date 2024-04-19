@@ -311,7 +311,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             if not prices_train_old.empty:
                 prices_train = prices_train_old
                 rename_dict = rename_dict_old
-            logger.warning('Reinforcement learning module didn't find the correct raw prices '
+            logger.warning('Reinforcement learning module didn\'t find the correct raw prices '
                            'assigned in feature_engineering_standard(). '
                            'Please assign them with:\n'
                            'dataframe["%-raw_close"] = dataframe["close"]\n'
