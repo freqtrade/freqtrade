@@ -129,7 +129,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
     assert strat_stats['backtest_start'] == min_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['backtest_end'] == max_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['total_trades'] == len(results['DefStrat']['results'])
-    # Above sample had no loosing trade
+    # Above sample had no losing trade
     assert strat_stats['max_drawdown_account'] == 0.0
 
     # Retry with losing trade

@@ -758,7 +758,7 @@ class Exchange:
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
-        Get's the "1 pip" value for this pair.
+        Gets the "1 pip" value for this pair.
         Used in PriceFilter to calculate the 1pip movements.
         """
         precision = self.markets[pair]['precision']['price']
@@ -2007,7 +2007,7 @@ class Exchange:
             range(since_ms, until_ms or dt_ts(), one_call)]
 
         data: List = []
-        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        # Chunk requests into batches of 100 to avoid overwhelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
 
             results = await asyncio.gather(*input_coro, return_exceptions=True)
@@ -2124,7 +2124,7 @@ class Exchange:
         Only used in the dataprovider.refresh() method.
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
-        :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
+        :param cache: Assign result to _klines. Useful for one-off downloads like for pairlists
         :param drop_incomplete: Control candle dropping.
             Specifying None defaults to _ohlcv_partial_candle
         :return: Dict of [{(pair, timeframe): Dataframe}]
@@ -2135,7 +2135,7 @@ class Exchange:
         input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
 
         results_df = {}
-        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        # Chunk requests into batches of 100 to avoid overwhelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
             async def gather_stuff():
                 return await asyncio.gather(*input_coro, return_exceptions=True)
@@ -2295,7 +2295,7 @@ class Exchange:
                                   since: Optional[int] = None,
                                   params: Optional[dict] = None) -> Tuple[List[List], Any]:
         """
-        Asyncronously gets trade history using fetch_trades.
+        Asynchronously gets trade history using fetch_trades.
         Handles exchange errors, does one call to the exchange.
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
@@ -2352,7 +2352,7 @@ class Exchange:
                                           since: Optional[int] = None,
                                           from_id: Optional[str] = None) -> Tuple[str, List[List]]:
         """
-        Asyncronously gets trade history using fetch_trades
+        Asynchronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds
@@ -2403,7 +2403,7 @@ class Exchange:
     async def _async_get_trade_history_time(self, pair: str, until: int,
                                             since: Optional[int] = None) -> Tuple[str, List[List]]:
         """
-        Asyncronously gets trade history using fetch_trades,
+        Asynchronously gets trade history using fetch_trades,
         when the exchange uses time-based iteration (check `self._trades_pagination`)
         :param pair: Pair to fetch trade data for
         :param since: Since as integer timestamp in milliseconds

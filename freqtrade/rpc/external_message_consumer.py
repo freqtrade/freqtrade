@@ -237,7 +237,7 @@ class ExternalMessageConsumer:
                 continue
 
             except Exception as e:
-                # An unforseen error has occurred, log and continue
+                # An unforeseen error has occurred, log and continue
                 logger.error("Unexpected error has occurred:")
                 logger.exception(e)
                 await asyncio.sleep(self.sleep_time)
@@ -387,7 +387,7 @@ class ExternalMessageConsumer:
             )
 
         if not did_append:
-            # We want an overlap in candles incase some data has changed
+            # We want an overlap in candles in case some data has changed
             n_missing += 1
             # Set to None for all candles if we missed a full df's worth of candles
             n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500

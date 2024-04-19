@@ -297,7 +297,7 @@ class Backtesting:
                 candle_type=CandleType.FUNDING_RATE
             )
 
-            # For simplicity, assign to CandleType.Mark (might contian index candles!)
+            # For simplicity, assign to CandleType.Mark (might contain index candles!)
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
@@ -1217,7 +1217,7 @@ class Backtesting:
         :return: DataFrame with trades (results of backtesting)
         """
         self.prepare_backtest(self.enable_protections)
-        # Ensure wallets are uptodate (important for --strategy-list)
+        # Ensure wallets are up-to-date (important for --strategy-list)
         self.wallets.update()
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)

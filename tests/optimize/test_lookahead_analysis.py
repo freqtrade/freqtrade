@@ -152,7 +152,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert data[0][2].__contains__('too few trades')
     assert len(data[0]) == 3
 
-    # now check for an error which occured after enough trades
+    # now check for an error which occurred after enough trades
     analysis.total_signals = 12
     analysis.false_entry_signals = 11
     analysis.false_exit_signals = 10

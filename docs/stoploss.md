@@ -240,7 +240,7 @@ When using leverage, the same principle is applied - with stoploss defining the 
 
 Therefore, a stoploss of 10% on a 10x trade would trigger on a 1% price move.
 If your stake amount (own capital) was 100$ - this trade would be 1000$ at 10x (after leverage).
-If price moves 1% - you've lost 10$ of your own capital - therfore stoploss will trigger in this case.
+If price moves 1% - you've lost 10$ of your own capital - therefore stoploss will trigger in this case.
 
 Make sure to be aware of this, and avoid using too tight stoploss (at 10x leverage, 10% risk may be too little to allow the trade to "breath" a little).
 

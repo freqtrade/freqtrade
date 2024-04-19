@@ -191,7 +191,7 @@ class ClientProtocol:
             self.logger.info("Empty DataFrame")
 
     async def _handle_default(self, name, type, data):
-        self.logger.info("Unkown message of type {type} received...")
+        self.logger.info("Unknown message of type {type} received...")
         self.logger.info(data)
 
 
@@ -277,7 +277,7 @@ async def create_client(
             continue
 
         except Exception as e:
-            # An unforseen error has occurred, log and try reconnecting again
+            # An unforeseen error has occurred, log and try reconnecting again
             logger.error("Unexpected error has occurred:")
             logger.exception(e)
 

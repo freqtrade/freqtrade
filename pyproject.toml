@@ -163,3 +163,7 @@ exclude = [
     ".venv",
     ".env",
 ]
+
+[tool.codespell]
+ignore-words-list = "coo,fo,strat,zar,selectin"
+skip="*.svg,./user_data,./freqtrade/rpc/api_server/ui/installed"

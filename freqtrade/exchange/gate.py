@@ -79,7 +79,7 @@ class Gate(Exchange):
             # As such, futures orders on gate will not contain a fee, which causes
             # a repeated "update fee" cycle and wrong calculations.
             # Therefore we patch the response with fees if it's not available.
-            # An alternative also contianing fees would be
+            # An alternative also containing fees would be
             # privateFuturesGetSettleAccountBook({"settle": "usdt"})
             pair_fees = self._trading_fees.get(pair, {})
             if pair_fees:

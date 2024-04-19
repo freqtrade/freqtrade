@@ -64,7 +64,7 @@ class FreqtradeBot(LoggingMixin):
         # Init objects
         self.config = config
         exchange_config: ExchangeConfig = deepcopy(config['exchange'])
-        # Remove credentials from original exchange config to avoid accidental credentail exposure
+        # Remove credentials from original exchange config to avoid accidental credential exposure
         remove_exchange_credentials(config['exchange'], True)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
@@ -176,7 +176,7 @@ class FreqtradeBot(LoggingMixin):
         try:
             Trade.commit()
         except Exception:
-            # Exeptions here will be happening if the db disappeared.
+            # Exceptions here will be happening if the db disappeared.
             # At which point we can no longer commit anyway.
             pass
 
@@ -227,7 +227,7 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
-            # Check for exchange cancelations, timeouts and user requested replace
+            # Check for exchange cancellations, timeouts and user requested replace
             self.manage_open_orders()
 
         # Protect from collisions with force_exit.
@@ -1291,12 +1291,12 @@ class FreqtradeBot(LoggingMixin):
 
     def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: List[Dict]):
         """
-        Perform required actions acording to existing stoploss orders of trade
+        Perform required actions according to existing stoploss orders of trade
         :param trade: Corresponding Trade
         :param stoploss_orders: Current on exchange stoploss orders
         :return: None
         """
-        # If all stoploss orderd are canceled for some reason we add it again
+        # If all stoploss ordered are canceled for some reason we add it again
         canceled_sl_orders = [o for o in stoploss_orders
                               if o['status'] in ('canceled', 'cancelled')]
         if (

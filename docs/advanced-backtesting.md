@@ -36,7 +36,7 @@ freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4 5
 ```
 
 This command will read from the last backtesting results. The `--analysis-groups` option is
-used to specify the various tabular outputs showing the profit fo each group or trade,
+used to specify the various tabular outputs showing the profit of each group or trade,
 ranging from the simplest (0) to the most detailed per pair, per buy and per sell tag (4):
 
 * 0: overall winrate and profit summary by enter_tag

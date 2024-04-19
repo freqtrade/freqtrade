@@ -87,9 +87,9 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
 
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
-        # Check open trade rate alignes to open rate
+        # Check open trade rate aligns to open rate
         assert ln is not None
-        # check close trade rate alignes to close rate or is between high and low
+        # check close trade rate aligns to close rate or is between high and low
         ln = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
                 round(ln.iloc[0]["low"], 6) < round(

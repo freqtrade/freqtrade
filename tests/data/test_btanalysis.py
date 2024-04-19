@@ -482,12 +482,12 @@ def test_calculate_max_drawdown2():
     assert drawdown == 0.043965
 
 
-@pytest.mark.parametrize('profits,relative,highd,lowd,result,result_rel', [
+@pytest.mark.parametrize('profits,relative,highd,lowdays,result,result_rel', [
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 3, 4, 1000.0, 0.090909),
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 0, 1, 500.0, 0.5),
 
 ])
-def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, result_rel):
+def test_calculate_max_drawdown_abs(profits, relative, highd, lowdays, result, result_rel):
     """
     Test case from issue https://github.com/freqtrade/freqtrade/issues/6655
     [1000, 500,  1000, 11000, 10000] # absolute results
@@ -507,7 +507,7 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
     assert isinstance(drawdown, float)
     assert isinstance(drawdown_rel, float)
     assert hdate == init_date + timedelta(days=highd)
-    assert ldate == init_date + timedelta(days=lowd)
+    assert ldate == init_date + timedelta(days=lowdays)
 
     # High must be before low
     assert hdate < ldate

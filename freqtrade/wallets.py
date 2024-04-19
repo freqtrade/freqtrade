@@ -306,7 +306,7 @@ class Wallets:
         :raise: DependencyException if the available stake amount is too low
         """
         stake_amount: float
-        # Ensure wallets are uptodate.
+        # Ensure wallets are up-to-date.
         if update:
             self.update()
         val_tied_up = Trade.total_open_trades_stakes()
