@@ -72,8 +72,10 @@ def botclient(default_conf, mocker):
         ApiServer.shutdown()
 
 
-def client_post(client: TestClient, url, data={}):
+def client_post(client: TestClient, url, data=None):
 
+    if data is None:
+        data = {}
     return client.post(url,
                        json=data,
                        headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
@@ -82,8 +84,10 @@ def client_post(client: TestClient, url, data={}):
                                 })
 
 
-def client_patch(client: TestClient, url, data={}):
+def client_patch(client: TestClient, url, data=None):
 
+    if data is None:
+        data = {}
     return client.patch(url,
                         json=data,
                         headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
