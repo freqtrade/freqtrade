@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import time
+from functools import partial
 from threading import Thread
 from typing import Dict, Set
 
@@ -88,9 +89,11 @@ class ExchangeWS:
                 task = asyncio.create_task(
                     self._continuously_async_watch_ohlcv(pair, timeframe, candle_type))
                 self._background_tasks.add(task)
-                task.add_done_callback(self._continuous_stopped)
+                task.add_done_callback(partial(
+                    self._continuous_stopped, pair=pair, timeframe=timeframe)
+                )
 
-    def _continuous_stopped(self, task: asyncio.Task):
+    def _continuous_stopped(self, task: asyncio.Task, pair: str, timeframe: str):
         self._background_tasks.discard(task)
         result = task.result()
         logger.info(f"Task finished {result}")
