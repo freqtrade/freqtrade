@@ -91,7 +91,7 @@ from freqtrade.misc import (
 )
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import dt_from_ts, dt_now
-from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts
+from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_date, format_ms_time
 from freqtrade.util.periodic_cache import PeriodicCache
 
 
@@ -2294,7 +2294,8 @@ class Exchange:
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
                 logger.info(
                     f"Failed to reuse watch {pair}, {timeframe}, {candle_date < last_refresh_time},"
-                    f" {candle_date}, {last_refresh_time}"
+                    f" {candle_date}, {last_refresh_time}, "
+                    f"{format_ms_time(candle_date)}, {format_ms_time(last_refresh_time)} "
                 )
 
             # Check if 1 call can get us updated candles without hole in the data.
