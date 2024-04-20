@@ -146,7 +146,7 @@ class ExchangeWS:
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
             f"{dt_from_ts(candles[-1][0] // 1000)}, "
-            f"lref={dt_from_ts(self.klines_last_refresh[(pair, timeframe, candle_type)])}, "
+            f"lref={dt_from_ts(refresh_date)}, "
             f"candle_date={dt_from_ts(candle_date)}, {drop_hint=}"
             )
         return pair, timeframe, candle_type, candles, drop_hint
