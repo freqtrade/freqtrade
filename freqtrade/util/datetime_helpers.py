@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 
 import arrow
 
@@ -96,7 +96,7 @@ def format_date(date: Optional[datetime]) -> str:
     return ''
 
 
-def format_ms_time(date: int) -> str:
+def format_ms_time(date: Union[int, float]) -> str:
     """
     convert MS date to readable format.
     : epoch-string in ms
