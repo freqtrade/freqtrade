@@ -67,7 +67,7 @@ def print_commands():
     # Print dynamic help for the different commands using the commands doc-strings
     client = FtRestClient(None)
     print("Possible commands:\n")
-    for x, y in inspect.getmembers(client):
+    for x, _ in inspect.getmembers(client):
         if not x.startswith('_'):
             doc = re.sub(':return:.*', '', getattr(client, x).__doc__, flags=re.MULTILINE).rstrip()
             print(f"{x}\n\t{doc}\n")

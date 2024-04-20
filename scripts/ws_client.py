@@ -201,7 +201,7 @@ async def create_client(
         token,
         scheme='ws',
         name='default',
-        protocol=ClientProtocol(),
+        protocol=None,
         sleep_time=10,
         ping_timeout=10,
         wait_timeout=30,
@@ -216,6 +216,8 @@ async def create_client(
     :param name: The name of the producer
     :param **kwargs: Any extra kwargs passed to websockets.connect
     """
+    if not protocol:
+        protocol = ClientProtocol()
 
     while 1:
         try:
