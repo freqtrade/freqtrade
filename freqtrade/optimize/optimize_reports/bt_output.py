@@ -278,7 +278,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
 
 
 def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency: str,
-                         backtest_breakdown=[]):
+                         backtest_breakdown: List[str]):
     """
     Print results for one strategy
     """

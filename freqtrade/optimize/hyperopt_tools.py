@@ -237,8 +237,10 @@ class HyperoptTools:
                 result_dict.update(all_space_params)
 
     @staticmethod
-    def _params_pretty_print(params, space: str, header: str, non_optimized={}) -> None:
-        if space in params or space in non_optimized:
+    def _params_pretty_print(
+            params, space: str, header: str, non_optimized: Optional[Dict] = None) -> None:
+
+        if space in params or (non_optimized and space in non_optimized):
             space_params = HyperoptTools._space_params(params, space, 5)
             no_params = HyperoptTools._space_params(non_optimized, space, 5)
             appendix = ''
