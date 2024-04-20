@@ -81,23 +81,30 @@ class ExchangeWS:
             logger.info(f"Removal done: new watch list ({len(self._klines_watching)})")
 
     async def _schedule_while_true(self) -> None:
-
+        # For the ones we should be watching
         for p in self._klines_watching:
+            # Check if they're already scheduled
             if p not in self._klines_scheduled:
                 self._klines_scheduled.add(p)
                 pair, timeframe, candle_type = p
                 task = asyncio.create_task(
                     self._continuously_async_watch_ohlcv(pair, timeframe, candle_type))
                 self._background_tasks.add(task)
-                task.add_done_callback(partial(
-                    self._continuous_stopped, pair=pair, timeframe=timeframe)
+                task.add_done_callback(
+                    partial(
+                        self._continuous_stopped,
+                        pair=pair,
+                        timeframe=timeframe,
+                        candle_type=candle_type
+                    )
                 )
 
-    def _continuous_stopped(self, task: asyncio.Task, pair: str, timeframe: str):
+    def _continuous_stopped(
+            self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType):
         self._background_tasks.discard(task)
         result = task.result()
         logger.info(f"{pair}, {timeframe} Task finished {result}")
-        # self._pairs_scheduled.discard(pair, timeframe, candle_type)
+        self._pairs_scheduled.discard(pair, timeframe, candle_type)
 
     async def _continuously_async_watch_ohlcv(
             self, pair: str, timeframe: str, candle_type: CandleType) -> None:
