@@ -122,6 +122,7 @@ target-version = "py38"
 # Exclude UP036 as it's causing the "exit if < 3.9" to fail.
 extend-select = [
   "C90",    # mccabe
+  # "B",      # bugbear
   # "N",    # pep8-naming
   "F",      # pyflakes
   "E",      # pycodestyle
@@ -141,6 +142,7 @@ extend-ignore = [
   "E241",  # Multiple spaces after comma
   "E272",  # Multiple spaces before keyword
   "E221",  # Multiple spaces before operator
+  "B007",  # Loop control variable not used
 ]
 
 [tool.ruff.lint.mccabe]
@@ -148,6 +150,10 @@ max-complexity = 12
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.flake8]
 # Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
