@@ -3122,7 +3122,7 @@ def test_exit_profit_only(
     if profit_only:
         assert freqtrade.handle_trade(trade) is False
         # Custom-exit is called
-        freqtrade.strategy.custom_exit.call_count == 1
+        assert freqtrade.strategy.custom_exit.call_count == 1
 
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is handle_first

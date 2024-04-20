@@ -5133,7 +5133,7 @@ def test_get_maintenance_ratio_and_amt(
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._leverage_tiers = leverage_tiers
-    exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
+    assert exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
 
 
 def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
