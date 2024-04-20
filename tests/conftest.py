@@ -52,7 +52,7 @@ def pytest_configure(config):
         "markers", "longrun: mark test that is running slowly and should not be run regularly"
     )
     if not config.option.longrun:
-        setattr(config.option, 'markexpr', 'not longrun')
+        config.option.markexpr = 'not longrun'
 
 
 class FixtureScheduler(LoadScopeScheduling):
