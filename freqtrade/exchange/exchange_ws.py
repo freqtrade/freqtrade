@@ -104,7 +104,7 @@ class ExchangeWS:
         self._background_tasks.discard(task)
         result = task.result()
         logger.info(f"{pair}, {timeframe} Task finished {result}")
-        self._pairs_scheduled.discard(pair, timeframe, candle_type)
+        self._klines_scheduled.discard((pair, timeframe, candle_type))
 
     async def _continuously_async_watch_ohlcv(
             self, pair: str, timeframe: str, candle_type: CandleType) -> None:
