@@ -239,7 +239,7 @@ class Bybit(Exchange):
 
         return orders
 
-    def fetch_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         order = super().fetch_order(order_id, pair, params)
         if (
             order.get('status') == 'canceled'

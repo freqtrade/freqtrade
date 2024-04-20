@@ -1300,9 +1300,11 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
+        if params is None:
+            params = {}
         try:
             if not self.exchange_has('fetchOrder'):
                 return self.fetch_order_emulated(order_id, pair, params)
@@ -1324,7 +1326,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         return self.fetch_order(order_id, pair, params)
 
     def fetch_order_or_stoploss_order(self, order_id: str, pair: str,

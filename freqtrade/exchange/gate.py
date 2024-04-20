@@ -98,7 +98,7 @@ class Gate(Exchange):
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
         return safe_value_fallback2(order, order, 'id_stop', 'id')
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         order = self.fetch_order(
             order_id=order_id,
             pair=pair,

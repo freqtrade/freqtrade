@@ -202,7 +202,7 @@ class Okx(Exchange):
         order['type'] = 'stoploss'
         return order
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
 
