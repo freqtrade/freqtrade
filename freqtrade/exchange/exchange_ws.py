@@ -12,7 +12,7 @@ from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import OHLCVResponse
-from freqtrade.util.datetime_helpers import dt_from_ts
+from freqtrade.util import format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -152,8 +152,8 @@ class ExchangeWS:
             drop_hint = (candles[-1][0] // 1000) >= candle_date
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
-            f"{dt_from_ts(candles[-1][0] // 1000)}, "
-            f"lref={dt_from_ts(refresh_date)}, "
-            f"candle_date={dt_from_ts(candle_date)}, {drop_hint=}"
+            f"{format_ms_time(candles[-1][0] // 1000)}, "
+            f"lref={format_ms_time(refresh_date)}, "
+            f"candle_date={format_ms_time(candle_date)}, {drop_hint=}"
             )
         return pair, timeframe, candle_type, candles, drop_hint
