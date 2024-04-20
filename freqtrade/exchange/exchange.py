@@ -239,8 +239,8 @@ class Exchange:
         self.validate_pricing(config['exit_pricing'])
         self.validate_pricing(config['entry_pricing'])
 
-    def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
-                   ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
+    def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt, *,
+                   ccxt_kwargs: Dict) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
         ccxt instance.
@@ -348,10 +348,13 @@ class Exchange:
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
             timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
-    def get_markets(self, base_currencies: List[str] = [], quote_currencies: List[str] = [],
-                    spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
-                    tradable_only: bool = True,
-                    active_only: bool = False) -> Dict[str, Any]:
+    def get_markets(
+            self,
+            base_currencies: Optional[List[str]] = None,
+            quote_currencies: Optional[List[str]] = None,
+            spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
+            tradable_only: bool = True,
+            active_only: bool = False) -> Dict[str, Any]:
         """
         Return exchange ccxt markets, filtered out by base currency and quote currency
         if this was requested in parameters.
@@ -848,7 +851,7 @@ class Exchange:
     # Dry-run methods
 
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                             rate: float, leverage: float, params: Dict = {},
+                             rate: float, leverage: float, params: Optional[Dict] = None,
                              stop_loss: bool = False) -> Dict[str, Any]:
         now = dt_now()
         order_id = f'dry_run_{side}_{pair}_{now.timestamp()}'
@@ -2786,7 +2789,7 @@ class Exchange:
 
     @retrier
     def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False,
-                        params: dict = {}):
+                        params: Optional[Dict] = None):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
@@ -2795,6 +2798,8 @@ class Exchange:
             # Some exchanges only support one margin_mode type
             return
 
+        if params is None:
+            params = {}
         try:
             res = self._api.set_margin_mode(margin_mode.value, pair, params)
             self._log_exchange_response('set_margin_mode', res)
