@@ -232,7 +232,8 @@ class Okx(Exchange):
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         params1 = {'stop': True}
         # 'ordType': 'conditional'
         #

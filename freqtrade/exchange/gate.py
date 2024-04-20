@@ -119,7 +119,8 @@ class Gate(Exchange):
                 return order1
         return order
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         return self.cancel_order(
             order_id=order_id,
             pair=pair,

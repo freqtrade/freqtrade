@@ -1350,7 +1350,7 @@ class Exchange:
                 and order.get('filled') == 0.0)
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self.fetch_dry_run_order(order_id)
@@ -1360,6 +1360,8 @@ class Exchange:
             except InvalidOrderException:
                 return {}
 
+        if params is None:
+            params = {}
         try:
             order = self._api.cancel_order(order_id, pair, params=params)
             self._log_exchange_response('cancel_order', order)
@@ -1376,7 +1378,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         return self.cancel_order(order_id, pair, params)
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
