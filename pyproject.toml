@@ -122,7 +122,7 @@ target-version = "py38"
 # Exclude UP036 as it's causing the "exit if < 3.9" to fail.
 extend-select = [
   "C90",    # mccabe
-  # "B",      # bugbear
+  # "B",    # bugbear
   # "N",    # pep8-naming
   "F",      # pyflakes
   "E",      # pycodestyle
@@ -130,6 +130,7 @@ extend-select = [
   "UP",     # pyupgrade
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
+  # "C4",     # flake8-comprehensions
   "YTT",    # flake8-2020
   # "S",    # flake8-bandit
   # "DTZ",  # flake8-datetimez
