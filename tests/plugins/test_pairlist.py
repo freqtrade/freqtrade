@@ -433,7 +433,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # ShuffleFilter, no seed
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "ShuffleFilter"}],
-     "USDT", 3),  # whitelist_result is integer -- check only length of randomized pairlist
+     "USDT", 4),  # whitelist_result is integer -- check only length of randomized pairlist
     # AgeFilter only
     ([{"method": "AgeFilter", "min_days_listed": 2}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
@@ -565,7 +565,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         if isinstance(whitelist_result, list):
             assert whitelist == whitelist_result
         else:
-            len(whitelist) == whitelist_result
+            assert len(whitelist) == whitelist_result
 
         for pairlist in pairlists:
             if pairlist['method'] == 'AgeFilter' and pairlist['min_days_listed'] and \
