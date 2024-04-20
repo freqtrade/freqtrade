@@ -2032,14 +2032,14 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
         '*Total:* `0.01465333 BTC / 180.895 USD`'
     )
 
-    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
+    freqtradebot.config['telegram']['notification_settings'] = {'entry': 'off'}
     caplog.clear()
     msg_mock.reset_mock()
     telegram.send_msg(msg)
     assert msg_mock.call_count == 0
-    log_has("Notification 'buy' not sent.", caplog)
+    assert log_has("Notification 'entry' not sent.", caplog)
 
-    freqtradebot.config['telegram']['notification_settings'] = {'buy': 'silent'}
+    freqtradebot.config['telegram']['notification_settings'] = {'entry': 'silent'}
     caplog.clear()
     msg_mock.reset_mock()
 
