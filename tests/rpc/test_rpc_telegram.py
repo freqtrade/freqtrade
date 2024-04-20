@@ -1846,7 +1846,7 @@ async def test_telegram_trades(mocker, update, default_conf, fee, is_short, rege
     context = MagicMock()
     context.args = [5]
     await telegram._trades(update=update, context=context)
-    msg_mock.call_count == 1
+    assert msg_mock.call_count == 1
     assert "2 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Close Date" in msg_mock.call_args_list[0][0][0]
@@ -1870,7 +1870,7 @@ async def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short
     context = MagicMock()
     context.args = [1]
     await telegram._delete_trade(update=update, context=context)
-    msg_mock.call_count == 1
+    assert msg_mock.call_count == 1
     assert "Deleted trade 1." in msg_mock.call_args_list[0][0][0]
     assert "Please make sure to take care of this asset" in msg_mock.call_args_list[0][0][0]
 
@@ -2036,7 +2036,7 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
     caplog.clear()
     msg_mock.reset_mock()
     telegram.send_msg(msg)
-    msg_mock.call_count == 0
+    assert msg_mock.call_count == 0
     log_has("Notification 'buy' not sent.", caplog)
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'silent'}
@@ -2044,8 +2044,8 @@ def test_send_msg_enter_notification(default_conf, mocker, caplog, message_type,
     msg_mock.reset_mock()
 
     telegram.send_msg(msg)
-    msg_mock.call_count == 1
-    msg_mock.call_args_list[0][1]['disable_notification'] is True
+    assert msg_mock.call_count == 1
+    assert msg_mock.call_args_list[0][1]['disable_notification'] is True
 
 
 @pytest.mark.parametrize('message_type,enter_signal', [
@@ -2423,7 +2423,7 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
     telegram.send_msg({
         'type': None,
     })
-    msg_mock.call_count == 0
+    assert msg_mock.call_count == 0
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
