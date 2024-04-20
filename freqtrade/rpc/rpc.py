@@ -460,8 +460,10 @@ class RPC:
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
-            start_date: datetime = datetime.fromtimestamp(0)) -> Dict[str, Any]:
+            start_date: Optional[datetime] = None) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
+        if start_date is None:
+            start_date = datetime.fromtimestamp(0)
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
         trades: Sequence[Trade] = Trade.session.scalars(Trade.get_trades_query(
