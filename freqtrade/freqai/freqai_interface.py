@@ -718,9 +718,6 @@ class IFreqaiModel(ABC):
             if self.pair_it == self.total_pairs:
                 logger.info(
                     f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
-                if self.inference_time > 0.25 * self.base_tf_seconds:
-                    logger.warning("Inference took over 25% of the candle time. Reduce pairlist to"
-                                   " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
         return
