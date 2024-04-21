@@ -30,8 +30,8 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import (decimals_per_coin, dt_humanize, dt_now, dt_ts_def, format_date,
-                            shorten_date)
+from freqtrade.util import decimals_per_coin, dt_now, dt_ts_def, format_date, shorten_date
+from freqtrade.util.datetime_helpers import dt_humanize_delta
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -307,7 +307,7 @@ class RPC:
                 detail_trade = [
                     f'{trade.id} {direction_str}',
                     trade.pair + active_attempt_side_symbols_str,
-                    shorten_date(dt_humanize(trade.open_date, only_distance=True)),
+                    shorten_date(dt_humanize_delta(trade.open_date_utc)),
                     profit_str
                 ]
 
@@ -599,10 +599,10 @@ class RPC:
             'trade_count': len(trades),
             'closed_trade_count': closed_trade_count,
             'first_trade_date': format_date(first_date),
-            'first_trade_humanized': dt_humanize(first_date) if first_date else '',
+            'first_trade_humanized': dt_humanize_delta(first_date) if first_date else '',
             'first_trade_timestamp': dt_ts_def(first_date, 0),
             'latest_trade_date': format_date(last_date),
-            'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
+            'latest_trade_humanized': dt_humanize_delta(last_date) if last_date else '',
             'latest_trade_timestamp': dt_ts_def(last_date, 0),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',

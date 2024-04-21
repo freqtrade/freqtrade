@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional, Union
 
 import arrow
+import humanize
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 
@@ -74,6 +75,13 @@ def shorten_date(_date: str) -> str:
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
+
+
+def dt_humanize_delta(dt: datetime):
+    """
+    Return a humanized string for the given timedelta.
+    """
+    return humanize.naturaltime(dt)
 
 
 def dt_humanize(dt: datetime, **kwargs) -> str:
