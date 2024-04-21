@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_ts_def,
-                            dt_ts_none, dt_utc, format_date, format_ms_time, shorten_date)
+from freqtrade.util import (dt_floor_day, dt_from_ts, dt_now, dt_ts, dt_ts_def, dt_ts_none, dt_utc,
+                            format_date, format_ms_time, shorten_date)
+from freqtrade.util.datetime_helpers import dt_humanize_delta
 
 
 def test_dt_now():
@@ -68,9 +69,12 @@ def test_shorten_date() -> None:
 
 
 def test_dt_humanize() -> None:
-    assert dt_humanize(dt_now()) == 'just now'
-    assert dt_humanize(dt_now(), only_distance=True) == 'instantly'
-    assert dt_humanize(dt_now() - timedelta(hours=16), only_distance=True) == '16 hours'
+    assert dt_humanize_delta(dt_now()) == 'now'
+    assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == '50 minutes ago'
+    assert dt_humanize_delta(dt_now() - timedelta(hours=16)) == '16 hours ago'
+    assert dt_humanize_delta(dt_now() - timedelta(hours=16, minutes=30)) == '16 hours ago'
+    assert dt_humanize_delta(dt_now() - timedelta(days=16, hours=10, minutes=25)) == '16 days ago'
+    assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == '50 minutes ago'
 
 
 def test_format_ms_time() -> None:
