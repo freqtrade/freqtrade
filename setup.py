@@ -74,6 +74,7 @@ setup(
         'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=20.1',
         'arrow>=1.0.0',
+        'humanize>=4.0.0',
         'cachetools',
         'requests',
         'httpx>=0.24.1',
