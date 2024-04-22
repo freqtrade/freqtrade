@@ -79,11 +79,12 @@ def test_format_ms_time() -> None:
     date = format_ms_time(date_in_epoch_ms)
     assert isinstance(date, str)
     res = datetime(2018, 4, 10, 18, 2, 1, tzinfo=timezone.utc)
-    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    assert date == res.strftime('%Y-%m-%dT%H:%M:%S')
+    assert date == '2018-04-10T18:02:01'
     res = datetime(2017, 12, 13, 8, 2, 1, tzinfo=timezone.utc)
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
-    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    assert format_ms_time(date_in_epoch_ms) == res.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def test_format_date() -> None:

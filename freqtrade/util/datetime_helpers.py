@@ -101,4 +101,4 @@ def format_ms_time(date: Union[int, float]) -> str:
     convert MS date to readable format.
     : epoch-string in ms
     """
-    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+    return dt_from_ts(date).strftime('%Y-%m-%dT%H:%M:%S')
