@@ -116,9 +116,6 @@ class IFreqaiModel(ABC):
 
         record_params(config, self.full_path)
 
-        self.new_feature_selector = self.config.get('freqai', {}) \
-            .get('warn_exceptions_on_backtest_only', False)
-
     def __getstate__(self):
         """
         Return an empty state to be pickled in hyperopt
@@ -357,43 +354,25 @@ class IFreqaiModel(ABC):
                         logger.warning(
                             f"Training {pair} raised exception {msg.__class__.__name__}. "
                             f"Message: {msg}, skipping.", exc_info=True)
-
-                        if self.new_feature_selector:
-                            logger.warning(
-                                "Train failed. Try to train on next pair." \
-                                    if self.new_feature_selector else
-                                "Train failed. Raise error, fix data issue and try again."
-                            )
-                            self.tb_logger.close()
                         self.model = None
 
-                    hard_check_model_valid = True
-                    if self.new_feature_selector:
-                        hard_check_model_valid = bool(False if self.model is None else True)
-                        if hard_check_model_valid:
-                            logger.info(
-                                "Model is trained. Saving model and metadata to disk."
-                            )
-
-                    if hard_check_model_valid:
-                        self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
-                        if self.plot_features and self.model is not None:
-                            plot_feature_importance(self.model, pair, dk, self.plot_features)
-                        if self.save_backtest_models and self.model is not None:
-                            logger.info('Saving backtest model to disk.')
-                            self.dd.save_data(self.model, pair, dk)
-                        else:
-                            logger.info('Saving metadata to disk.')
-                            self.dd.save_metadata(dk)
+                    self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
+                    if self.plot_features and self.model is not None:
+                        plot_feature_importance(self.model, pair, dk, self.plot_features)
+                    if self.save_backtest_models and self.model is not None:
+                        logger.info('Saving backtest model to disk.')
+                        self.dd.save_data(self.model, pair, dk)
+                    else:
+                        logger.info('Saving metadata to disk.')
+                        self.dd.save_metadata(dk)
 
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
-                if hard_check_model_valid:
-                    pred_df, do_preds = self.predict(dataframe_backtest, dk)
-                    append_df = dk.get_predictions_to_append(pred_df, do_preds, dataframe_backtest)
-                    dk.append_predictions(append_df)
-                    dk.save_backtesting_prediction(append_df)
+                pred_df, do_preds = self.predict(dataframe_backtest, dk)
+                append_df = dk.get_predictions_to_append(pred_df, do_preds, dataframe_backtest)
+                dk.append_predictions(append_df)
+                dk.save_backtesting_prediction(append_df)
 
         self.backtesting_fit_live_predictions(dk)
         dk.fill_predictions(dataframe)
