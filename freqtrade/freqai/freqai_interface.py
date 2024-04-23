@@ -256,11 +256,10 @@ class IFreqaiModel(ABC):
                 if self.freqai_info.get('write_metrics_to_disk', False):
                     self.dd.save_metric_tracker_to_disk()
 
-
     def _train_model(self, dataframe_train, pair, dk, tr_backtest):
         try:
-            self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
-                                            self.activate_tensorboard)
+            self.tb_logger = get_tb_logger(
+                self.dd.model_type, dk.data_path, self.activate_tensorboard)
             model = self.train(dataframe_train, pair, dk)
             self.tb_logger.close()
             return model
