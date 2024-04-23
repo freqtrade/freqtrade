@@ -1538,7 +1538,7 @@ class Trade(ModelBase, LocalTrade):
     amount: Mapped[float] = mapped_column(Float())  # type: ignore
     amount_requested: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     open_date: Mapped[datetime] = mapped_column(
-        nullable=False, default=datetime.utcnow)  # type: ignore
+        nullable=False, default=datetime.now)  # type: ignore
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
