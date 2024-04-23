@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import datasieve.transforms as ds
 import numpy as np
@@ -108,7 +108,6 @@ class IFreqaiModel(ABC):
         self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
-        self.model: Union[Any, None] = None
         if self.ft_params.get('principal_component_analysis', False) and self.continual_learning:
             self.ft_params.update({'principal_component_analysis': False})
             logger.warning('User tried to use PCA with continual learning. Deactivating PCA.')
@@ -258,7 +257,7 @@ class IFreqaiModel(ABC):
                     self.dd.save_metric_tracker_to_disk()
 
 
-    def _train_model(self, dataframe_train, pair, dk, tr_backtest) -> Union[Any, None]:
+    def _train_model(self, dataframe_train, pair, dk, tr_backtest):
         try:
             self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path,
                                             self.activate_tensorboard)
