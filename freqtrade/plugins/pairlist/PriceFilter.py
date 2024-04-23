@@ -101,7 +101,7 @@ class PriceFilter(IPairList):
 
     def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """
-        Check if if one price-step (pip) is > than a certain barrier.
+        Check if one price-step (pip) is > than a certain barrier.
         :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed

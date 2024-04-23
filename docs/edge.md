@@ -137,7 +137,7 @@ $$ R = \frac{\text{average_profit}}{\text{average_loss}} = \frac{\mu_{win}}{\mu_
 
 ### Expectancy
 
-By combining the Win Rate $W$ and and the Risk Reward ratio $R$ to create an expectancy ratio $E$. A expectance ratio is the expected return of the investment made in a trade. We can compute the value of $E$ as follows:
+By combining the Win Rate $W$ and the Risk Reward ratio $R$ to create an expectancy ratio $E$. A expectance ratio is the expected return of the investment made in a trade. We can compute the value of $E$ as follows:
 
 $$E = R * W - L$$
 
