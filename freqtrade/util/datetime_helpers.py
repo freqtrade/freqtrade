@@ -2,7 +2,7 @@ import re
 from datetime import datetime, timezone
 from typing import Optional, Union
 
-import arrow
+import humanize
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 
@@ -76,13 +76,11 @@ def shorten_date(_date: str) -> str:
     return new_date
 
 
-def dt_humanize(dt: datetime, **kwargs) -> str:
+def dt_humanize_delta(dt: datetime):
     """
-    Return a humanized string for the given datetime.
-    :param dt: datetime to humanize
-    :param kwargs: kwargs to pass to arrow's humanize()
+    Return a humanized string for the given timedelta.
     """
-    return arrow.get(dt).humanize(**kwargs)
+    return humanize.naturaltime(dt)
 
 
 def format_date(date: Optional[datetime]) -> str:

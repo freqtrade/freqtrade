@@ -1821,8 +1821,8 @@ async def test_edge_enabled(edge_conf, update, mocker) -> None:
 
 
 @pytest.mark.parametrize('is_short,regex_pattern',
-                         [(True, r"just now[ ]*XRP\/BTC \(#3\)  -1.00% \("),
-                          (False, r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(")])
+                         [(True, r"now[ ]*XRP\/BTC \(#3\)  -1.00% \("),
+                          (False, r"now[ ]*XRP\/BTC \(#3\)  1.00% \(")])
 async def test_telegram_trades(mocker, update, default_conf, fee, is_short, regex_pattern):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
