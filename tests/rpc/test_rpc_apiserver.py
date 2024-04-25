@@ -1648,8 +1648,9 @@ def test_api_pair_history(botclient, mocker):
     assert rc.json()['detail'] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
 
-def test_api_plot_config(botclient, mocker):
+def test_api_plot_config(botclient, mocker, tmp_path):
     ftbot, client = botclient
+    ftbot.config['user_data_dir'] = tmp_path
 
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
