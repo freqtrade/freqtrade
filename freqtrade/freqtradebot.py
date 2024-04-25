@@ -462,6 +462,7 @@ class FreqtradeBot(LoggingMixin):
                 trade.pair, trade.open_date_utc - timedelta(seconds=10))
             prev_exit_reason = trade.exit_reason
             prev_trade_state = trade.is_open
+            prev_trade_amount = trade.amount
             for order in orders:
                 trade_order = [o for o in trade.orders if o.order_id == order['id']]
 
@@ -493,6 +494,26 @@ class FreqtradeBot(LoggingMixin):
                                         send_msg=prev_trade_state != trade.is_open)
             else:
                 trade.exit_reason = prev_exit_reason
+                total = self.wallets.get_total(trade.base_currency) if trade.base_currency else 0
+                if total < trade.amount:
+                    if total > trade.amount * 0.98:
+                        logger.warning(
+                            f"{trade} has a total of {trade.amount} {trade.base_currency}, "
+                            f"but the Wallet shows a total of {total} {trade.base_currency}. "
+                            f"Adjusting trade amount to {total}."
+                            "This may however lead to further issues."
+                        )
+                        trade.amount = total
+                    else:
+                        logger.warning(
+                            f"{trade} has a total of {trade.amount} {trade.base_currency}, "
+                            f"but the Wallet shows a total of {total} {trade.base_currency}. "
+                            "Refusing to adjust as the difference is too large."
+                            "This may however lead to further issues."
+                        )
+                if prev_trade_amount != trade.amount:
+                    # Cancel stoploss on exchange if the amount changed
+                    trade = self.cancel_stoploss_on_exchange(trade)
             Trade.commit()
 
         except ExchangeError:
@@ -1948,21 +1969,23 @@ class FreqtradeBot(LoggingMixin):
 
         trade.update_trade(order_obj, not send_msg)
 
-        trade = self._update_trade_after_fill(trade, order_obj)
+        trade = self._update_trade_after_fill(trade, order_obj, send_msg)
         Trade.commit()
 
         self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
 
         return False
 
-    def _update_trade_after_fill(self, trade: Trade, order: Order) -> Trade:
+    def _update_trade_after_fill(self, trade: Trade, order: Order, send_msg: bool) -> Trade:
         if order.status in constants.NON_OPEN_EXCHANGE_STATES:
             strategy_safe_wrapper(
                 self.strategy.order_filled, default_retval=None)(
                 pair=trade.pair, trade=trade, order=order, current_time=datetime.now(timezone.utc))
             # If a entry order was closed, force update on stoploss on exchange
             if order.ft_order_side == trade.entry_side:
-                trade = self.cancel_stoploss_on_exchange(trade)
+                if send_msg:
+                    # Don't cancel stoploss in recovery modes immediately
+                    trade = self.cancel_stoploss_on_exchange(trade)
                 if not self.edge:
                     # TODO: should shorting/leverage be supported by Edge,
                     # then this will need to be fixed.

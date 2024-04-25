@@ -14,7 +14,8 @@ from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
-def lookahead_conf(default_conf_usdt):
+def lookahead_conf(default_conf_usdt, tmp_path):
+    default_conf_usdt['user_data_dir'] = tmp_path
     default_conf_usdt['minimum_trade_amount'] = 10
     default_conf_usdt['targeted_trade_amount'] = 20
     default_conf_usdt['timerange'] = '20220101-20220501'

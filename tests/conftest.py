@@ -490,10 +490,10 @@ def user_dir(mocker, tmp_path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def patch_coingekko(mocker) -> None:
+def patch_coingecko(mocker) -> None:
     """
-    Mocker to coingekko to speed up tests
-    :param mocker: mocker to patch coingekko class
+    Mocker to coingecko to speed up tests
+    :param mocker: mocker to patch coingecko class
     :return: None
     """
 

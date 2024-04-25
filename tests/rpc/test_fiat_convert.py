@@ -90,7 +90,7 @@ def test_loadcryptomap(mocker):
     fiat_convert = CryptoToFiatConverter()
     assert len(fiat_convert._coinlistings) == 2
 
-    assert fiat_convert._get_gekko_id("btc") == "bitcoin"
+    assert fiat_convert._get_gecko_id("btc") == "bitcoin"
 
 
 def test_fiat_init_network_exception(mocker):
@@ -109,16 +109,16 @@ def test_fiat_init_network_exception(mocker):
 
 
 def test_fiat_convert_without_network(mocker):
-    # Because CryptoToFiatConverter is a Singleton we reset the value of _coingekko
+    # Because CryptoToFiatConverter is a Singleton we reset the value of _coingecko
 
     fiat_convert = CryptoToFiatConverter()
 
-    cmc_temp = CryptoToFiatConverter._coingekko
-    CryptoToFiatConverter._coingekko = None
+    cmc_temp = CryptoToFiatConverter._coingecko
+    CryptoToFiatConverter._coingecko = None
 
-    assert fiat_convert._coingekko is None
+    assert fiat_convert._coingecko is None
     assert fiat_convert._find_price(crypto_symbol='btc', fiat_symbol='usd') == 0.0
-    CryptoToFiatConverter._coingekko = cmc_temp
+    CryptoToFiatConverter._coingecko = cmc_temp
 
 
 def test_fiat_too_many_requests_response(mocker, caplog):
@@ -152,9 +152,9 @@ def test_fiat_multiple_coins(mocker, caplog):
         {'id': 'ethereum-wormhole', 'symbol': 'eth', 'name': 'Ethereum Wormhole'},
     ]
 
-    assert fiat_convert._get_gekko_id('btc') == 'bitcoin'
-    assert fiat_convert._get_gekko_id('hnt') is None
-    assert fiat_convert._get_gekko_id('eth') == 'ethereum'
+    assert fiat_convert._get_gecko_id('btc') == 'bitcoin'
+    assert fiat_convert._get_gecko_id('hnt') is None
+    assert fiat_convert._get_gecko_id('eth') == 'ethereum'
 
     assert log_has('Found multiple mappings in CoinGecko for hnt.', caplog)
 

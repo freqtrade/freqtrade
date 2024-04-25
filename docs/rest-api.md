@@ -89,7 +89,8 @@ Make sure that the following 2 lines are available in your docker-compose file:
 ```
 
 !!! Danger "Security warning"
-    By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    By using `"8080:8080"` (or `"0.0.0.0:8080:8080"`) in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    This **may** be safe if you're running the bot in a secure environment (like your home network), but it's not recommended to expose the API to the internet.
 
 ## Rest API
 
