@@ -84,7 +84,7 @@ class CryptoToFiatConverter(LoggingMixin):
             logger.error(
                 f"Could not load FIAT Cryptocurrency map for the following problem: {exception}")
 
-    def _get_gekko_id(self, crypto_symbol):
+    def _get_gecko_id(self, crypto_symbol):
         if not self._coinlistings:
             if self._backoff <= datetime.now().timestamp():
                 self._load_cryptomap()
@@ -180,9 +180,9 @@ class CryptoToFiatConverter(LoggingMixin):
         if crypto_symbol == fiat_symbol:
             return 1.0
 
-        _gekko_id = self._get_gekko_id(crypto_symbol)
+        _gecko_id = self._get_gecko_id(crypto_symbol)
 
-        if not _gekko_id:
+        if not _gecko_id:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
             self.log_once(
                 f"unsupported crypto-symbol {crypto_symbol.upper()} - returning 0.0",
@@ -192,9 +192,9 @@ class CryptoToFiatConverter(LoggingMixin):
         try:
             return float(
                 self._coingecko.get_price(
-                    ids=_gekko_id,
+                    ids=_gecko_id,
                     vs_currencies=fiat_symbol
-                )[_gekko_id][fiat_symbol]
+                )[_gecko_id][fiat_symbol]
             )
         except Exception as exception:
             logger.error("Error in _find_price: %s", exception)
