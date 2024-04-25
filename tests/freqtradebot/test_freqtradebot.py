@@ -4560,6 +4560,67 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("factor,adjusts", [
+    (0.99, True),
+    (0.97, False),
+])
+def test_handle_onexchange_order_changed_amount(
+    mocker, default_conf_usdt, limit_order, is_short, caplog,
+    factor, adjusts,
+):
+    default_conf_usdt['dry_run'] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_uts = mocker.spy(freqtrade, 'update_trade_state')
+
+    entry_order = limit_order[entry_side(is_short)]
+    mock_fo = mocker.patch(f'{EXMS}.fetch_orders', return_value=[
+        entry_order,
+    ])
+
+    trade = Trade(
+        pair='ETH/USDT',
+        fee_open=0.001,
+        base_currency='ETH',
+        fee_close=0.001,
+        open_rate=entry_order['price'],
+        open_date=dt_now(),
+        stake_amount=entry_order['cost'],
+        amount=entry_order['amount'],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_total = MagicMock(return_value=entry_order['amount'] * factor)
+
+    trade.orders.append(Order.parse_from_ccxt_object(
+        entry_order, 'ADA/USDT', entry_side(is_short))
+    )
+    Trade.session.add(trade)
+
+    # assert trade.amount > entry_order['amount']
+
+    freqtrade.handle_onexchange_order(trade)
+    assert mock_uts.call_count == 1
+    assert mock_fo.call_count == 1
+
+    trade = Trade.session.scalars(select(Trade)).first()
+
+    assert log_has_re(r'.*has a total of .* but the Wallet shows.*', caplog)
+    if adjusts:
+        # Trade amount is updated
+        assert trade.amount == entry_order['amount'] * factor
+        assert log_has_re(r'.*Adjusting trade amount to.*', caplog)
+    else:
+        assert log_has_re(r'.*Refusing to adjust as the difference.*', caplog)
+        assert trade.amount == entry_order['amount']
+
+    assert len(trade.orders) == 1
+    assert trade.is_open is True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_onexchange_order_exit(mocker, default_conf_usdt, limit_order, is_short, caplog):
     default_conf_usdt['dry_run'] = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
