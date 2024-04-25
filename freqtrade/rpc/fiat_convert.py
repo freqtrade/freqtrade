@@ -39,7 +39,7 @@ class CryptoToFiatConverter(LoggingMixin):
     This object is also a Singleton
     """
     __instance = None
-    _coingekko: CoinGeckoAPI = None
+    _coingecko: CoinGeckoAPI = None
     _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
@@ -52,9 +52,9 @@ class CryptoToFiatConverter(LoggingMixin):
             try:
                 # Limit retires to 1 (0 and 1)
                 # otherwise we risk bot impact if coingecko is down.
-                CryptoToFiatConverter._coingekko = CoinGeckoAPI(retries=1)
+                CryptoToFiatConverter._coingecko = CoinGeckoAPI(retries=1)
             except BaseException:
-                CryptoToFiatConverter._coingekko = None
+                CryptoToFiatConverter._coingecko = None
         return CryptoToFiatConverter.__instance
 
     def __init__(self) -> None:
@@ -67,7 +67,7 @@ class CryptoToFiatConverter(LoggingMixin):
     def _load_cryptomap(self) -> None:
         try:
             # Use list-comprehension to ensure we get a list.
-            self._coinlistings = [x for x in self._coingekko.get_coins_list()]
+            self._coinlistings = [x for x in self._coingecko.get_coins_list()]
         except RequestException as request_exception:
             if "429" in str(request_exception):
                 logger.warning(
@@ -191,7 +191,7 @@ class CryptoToFiatConverter(LoggingMixin):
 
         try:
             return float(
-                self._coingekko.get_price(
+                self._coingecko.get_price(
                     ids=_gekko_id,
                     vs_currencies=fiat_symbol
                 )[_gekko_id][fiat_symbol]
