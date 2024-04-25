@@ -1577,8 +1577,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
              ])
 
 
-def test_api_pair_history(botclient, mocker):
+def test_api_pair_history(botclient, tmp_path, mocker):
     _ftbot, client = botclient
+    _ftbot.config['user_data_dir'] = tmp_path
+
     timeframe = '5m'
     lfm = mocker.patch('freqtrade.strategy.interface.IStrategy.load_freqAI_model')
     # No pair
@@ -1718,8 +1720,9 @@ def test_api_strategies(botclient, tmp_path):
     ]}
 
 
-def test_api_strategy(botclient):
+def test_api_strategy(botclient, tmp_path):
     _ftbot, client = botclient
+    _ftbot.config['user_data_dir'] = tmp_path
 
     rc = client_get(client, f"{BASE_URI}/strategy/{CURRENT_TEST_STRATEGY}")
 
