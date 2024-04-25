@@ -69,7 +69,7 @@ class IFreqaiModel(ABC):
         self.retrain = False
         self.first = True
         self.set_full_path()
-        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
+        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", False)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
 
