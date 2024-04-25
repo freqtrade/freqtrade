@@ -129,6 +129,8 @@ Below is an outline of exception inheritance hierarchy:
 + FreqtradeException
 |
 +---+ OperationalException
+|   |
+|   +---+ ConfigurationError
 |
 +---+ DependencyException
 |   |
@@ -259,7 +261,7 @@ For that reason, they must implement the following methods:
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 
-All Protections should use `"stop_duration"` / `"stop_duration_candles"` to define how long a a pair (or all pairs) should be locked.
+All Protections should use `"stop_duration"` / `"stop_duration_candles"` to define how long a pair (or all pairs) should be locked.
 The content of this is made available as `self._stop_duration` to the each Protection.
 
 If your protection requires a look-back period, please use `"lookback_period"` / `"lockback_period_candles"` to keep all protections aligned.
@@ -303,7 +305,7 @@ The `IProtection` parent class provides a helper method for this in `calculate_l
 
 Most exchanges supported by CCXT should work out of the box.
 
-To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
+To quickly test the public endpoints of an exchange, add a configuration for your exchange to `tests/exchange_online/conftest.py` and run these tests with `pytest --longrun tests/exchange_online/test_ccxt_compat.py`.
 Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
 
 Also try to use `freqtrade download-data` for an extended timerange (multiple months) and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
@@ -318,6 +320,7 @@ Additional tests / steps to complete:
 * Check if balance shows correctly (*)
 * Create market order (*)
 * Create limit order (*)
+* Cancel order (*)
 * Complete trade (enter + exit) (*)
   * Compare result calculation between exchange and bot
   * Ensure fees are applied correctly (check the database against the exchange)
@@ -375,7 +378,7 @@ from pathlib import Path
 
 exchange = ccxt.binance({
     'apiKey': '<apikey>',
-    'secret': '<secret>'
+    'secret': '<secret>',
     'options': {'defaultType': 'swap'}
     })
 _ = exchange.load_markets()
@@ -418,6 +421,9 @@ This part of the documentation is aimed at maintainers, and shows how to create 
 
 ### Create release branch
 
+!!! Note
+    Make sure that the `stable` branch is up-to-date!
+
 First, pick a commit that's about one week old (to not include latest additions to releases).
 
 ``` bash
@@ -430,13 +436,10 @@ Determine if crucial bugfixes have been made between this commit and the current
 * Merge the release branch (stable) into this branch.
 * Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part.
-* push that branch to the remote and create a PR against the stable branch.
+* Push that branch to the remote and create a PR against the **stable branch**.
 * Update develop version to next version following the pattern `2019.8-dev`.
 
 ### Create changelog from git commits
-
-!!! Note
-    Make sure that the `stable` branch is up-to-date!
 
 ``` bash
 # Needs to be done before merging / pulling that branch.

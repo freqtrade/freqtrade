@@ -36,7 +36,7 @@ freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4 5
 ```
 
 This command will read from the last backtesting results. The `--analysis-groups` option is
-used to specify the various tabular outputs showing the profit fo each group or trade,
+used to specify the various tabular outputs showing the profit of each group or trade,
 ranging from the simplest (0) to the most detailed per pair, per buy and per sell tag (4):
 
 * 0: overall winrate and profit summary by enter_tag
@@ -109,12 +109,12 @@ automatically accessible by including them on the indicator-list, and these incl
 - **open_date     :** trade open datetime
 - **close_date    :** trade close datetime
 - **min_rate      :** minimum price seen throughout the position
-- **max_rate      :** maxiumum price seen throughout the position
+- **max_rate      :** maximum price seen throughout the position
 - **open          :** signal candle open price
 - **close         :** signal candle close price
 - **high          :** signal candle high price
 - **low           :** signal candle low price
-- **volume        :** signal candle volumne
+- **volume        :** signal candle volume
 - **profit_ratio  :** trade profit ratio
 - **profit_abs    :** absolute profit return of the trade 
 

@@ -30,8 +30,25 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
     return float(np.mean(tmp_means))
 
 
-def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
-                                 column: str = "close") -> pd.DataFrame:
+def combine_dataframes_by_column(
+        data: Dict[str, pd.DataFrame], column: str = "close") -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key.
+    :raise: ValueError if no data is provided.
+    """
+    if not data:
+        raise ValueError("No data provided.")
+    df_comb = pd.concat([data[pair].set_index('date').rename(
+        {column: pair}, axis=1)[pair] for pair in data], axis=1)
+    return df_comb
+
+
+def combined_dataframes_with_rel_mean(
+        data: Dict[str, pd.DataFrame], fromdt: datetime, todt: datetime,
+        column: str = "close") -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
     :param data: Dict of Dataframes, dict key should be pair.
@@ -40,8 +57,26 @@ def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
         named mean, containing the mean of all pairs.
     :raise: ValueError if no data is provided.
     """
-    df_comb = pd.concat([data[pair].set_index('date').rename(
-        {column: pair}, axis=1)[pair] for pair in data], axis=1)
+    df_comb = combine_dataframes_by_column(data, column)
+    # Trim dataframes to the given timeframe
+    df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
+    df_comb['count'] = df_comb.count(axis=1)
+    df_comb['mean'] = df_comb.mean(axis=1)
+    df_comb['rel_mean'] = df_comb['mean'].pct_change().fillna(0).cumsum()
+    return df_comb[['mean', 'rel_mean', 'count']]
+
+
+def combine_dataframes_with_mean(
+        data: Dict[str, pd.DataFrame], column: str = "close") -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key, and a column
+        named mean, containing the mean of all pairs.
+    :raise: ValueError if no data is provided.
+    """
+    df_comb = combine_dataframes_by_column(data, column)
 
     df_comb['mean'] = df_comb.mean(axis=1)
 
@@ -61,10 +96,10 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_minutes = timeframe_to_minutes(timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq
+    timeframe_freq = timeframe_to_resample_freq(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
+    _trades_sum = trades.resample(timeframe_freq, on='close_date'
                                   )[['profit_abs']].sum()
     df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
     # Set first value to 0
@@ -143,8 +178,10 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
         starting_balance=starting_balance
     )
 
-    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative \
-        else max_drawdown_df['drawdown'].idxmin()
+    idxmin = (
+        max_drawdown_df['drawdown_relative'].idxmax()
+        if relative else max_drawdown_df['drawdown'].idxmin()
+    )
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
@@ -191,6 +228,9 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     :param final_balance: Final balance to calculate CAGR against
     :return: CAGR
     """
+    if final_balance < 0:
+        # With leveraged trades, final_balance can become negative.
+        return 0
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 

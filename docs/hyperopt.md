@@ -337,11 +337,15 @@ There are four parameter types each suited for different purposes.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
 * `BooleanParameter` - Shorthand for `CategoricalParameter([True, False])` - great for "enable" parameters.
 
-!!! Tip "Disabling parameter optimization"
-    Each parameter takes two boolean parameters:
-    * `load` - when set to `False` it will not load values configured in `buy_params` and `sell_params`.
-    * `optimize` - when set to `False` parameter will not be included in optimization process.
-    Use these parameters to quickly prototype various ideas.
+### Parameter options
+
+There are two parameter options that can help you to quickly test various ideas:
+
+* `optimize` - when set to `False`, the parameter will not be included in optimization process. (Default: True)
+* `load` - when set to `False`, results of a previous hyperopt run (in `buy_params` and `sell_params` either in your strategy or the JSON output file) will not be used as the starting value for subsequent hyperopts. The default value specified in the parameter will be used instead. (Default: True)
+
+!!! Tip "Effects of `load=False` on backtesting"
+    Be aware that setting the `load` option to `False` will mean backtesting will also use the default value specified in the parameter and *not* the value found through hyperoptimisation.
 
 !!! Warning
     Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.
@@ -435,7 +439,7 @@ While this strategy is most likely too simple to provide consistent profit, it s
 ??? Hint "Performance tip"
     During normal hyperopting, indicators are calculated once and supplied to each epoch, linearly increasing RAM usage as a factor of increasing cores. As this also has performance implications, there are two alternatives to reduce RAM usage
 
-    * Move `ema_short` and `ema_long` calculations from `populate_indicators()` to `populate_entry_trend()`. Since `populate_entry_trend()` gonna be calculated every epochs, you don't need to use `.range` functionality.
+    * Move `ema_short` and `ema_long` calculations from `populate_indicators()` to `populate_entry_trend()`. Since `populate_entry_trend()` will be calculated every epoch, you don't need to use `.range` functionality.
     * hyperopt provides `--analyze-per-epoch` which will move the execution of `populate_indicators()` to the epoch process, calculating a single value per parameter per epoch instead of using the `.range` functionality. In this case, `.range` functionality will only return the actually used value.
 
     These alternatives will reduce RAM usage, but increase CPU usage. However, your hyperopting run will be less likely to fail due to Out Of Memory (OOM) issues.
@@ -922,6 +926,12 @@ Once the optimized strategy has been implemented into your strategy, you should 
 
 To achieve same the results (number of trades, their durations, profit, etc.) as during Hyperopt, please use the same configuration and parameters (timerange, timeframe, ...) used for hyperopt `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
 
-Should results not match, please double-check to make sure you transferred all conditions correctly.
-Pay special care to the stoploss, max_open_trades and trailing stoploss parameters, as these are often set in configuration files, which override changes to the strategy.
-You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss`, `max_open_trades` or `trailing_stop`).
+### Why do my backtest results not match my hyperopt results?
+Should results not match, check the following factors:
+
+* You may have added parameters to hyperopt in `populate_indicators()` where they will be calculated only once **for all epochs**. If you are, for example, trying to optimise multiple SMA timeperiod values, the hyperoptable timeperiod parameter should be placed in `populate_entry_trend()` which is calculated every epoch. See [Optimizing an indicator parameter](https://www.freqtrade.io/en/stable/hyperopt/#optimizing-an-indicator-parameter).
+* If you have disabled the auto-export of hyperopt parameters into the JSON parameters file, double-check to make sure you transferred all hyperopted values into your strategy correctly.
+* Check the logs to verify what parameters are being set and what values are being used.
+* Pay special care to the stoploss, max_open_trades and trailing stoploss parameters, as these are often set in configuration files, which override changes to the strategy. Check the logs of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss`, `max_open_trades` or `trailing_stop`).
+* Verify that you do not have an unexpected parameters JSON file overriding the parameters or the default hyperopt settings in your strategy.
+* Verify that any protections that are enabled in backtesting are also enabled when hyperopting, and vice versa. When using `--space protection`, protections are auto-enabled for hyperopting.

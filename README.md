@@ -28,9 +28,9 @@ hesitate to read the source code and understand the mechanism of this bot.
 Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
 - [X] [Binance](https://www.binance.com/)
-- [X] [Bittrex](https://bittrex.com/)
+- [X] [Bitmart](https://bitmart.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [Huobi](http://huobi.com/)
+- [X] [HTX](https://www.htx.com/) (Former Huobi)
 - [X] [Kraken](https://kraken.com/)
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_

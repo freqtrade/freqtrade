@@ -12,6 +12,7 @@ import pytest
 from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.exchange import timeframe_to_msecs
+from freqtrade.util import dt_floor_day, dt_now, dt_ts
 from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE, EXCHANGES
 
 
@@ -133,6 +134,7 @@ class TestCCXTExchange:
         exch, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
         l2 = exch.fetch_l2_order_book(pair)
+        orderbook_max_entries = EXCHANGES[exchangename].get('orderbook_max_entries')
         assert 'asks' in l2
         assert 'bids' in l2
         assert len(l2['asks']) >= 1
@@ -143,7 +145,7 @@ class TestCCXTExchange:
             # TODO: Gate is unstable here at the moment, ignoring the limit partially.
             return
         for val in [1, 2, 5, 25, 50, 100]:
-            if val > 50 and exchangename == 'bybit':
+            if orderbook_max_entries and val > orderbook_max_entries:
                 continue
             l2 = exch.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
@@ -186,6 +188,25 @@ class TestCCXTExchange:
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exch.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
+    def test_ccxt_fetch_ohlcv_startdate(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        """
+        Test that pair data starts at the provided startdate
+        """
+        exch, exchangename = exchange
+        pair = EXCHANGES[exchangename]['pair']
+        timeframe = '1d'
+
+        pair_tf = (pair, timeframe, CandleType.SPOT)
+        # last 5 days ...
+        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=6))
+        ohlcv = exch.refresh_latest_ohlcv([pair_tf], since_ms=since_ms)
+        assert isinstance(ohlcv, dict)
+        assert len(ohlcv[pair_tf]) == len(exch.klines(pair_tf))
+        # Check if last-timeframe is within the last 2 intervals
+        now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
+        assert exch.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
+        assert exch.klines(pair_tf)['date'].astype(int).iloc[0] // 1e6 == since_ms
+
     def ccxt__async_get_candle_history(
             self, exchange, exchangename, pair, timeframe, candle_type, factor=0.9):
 
@@ -217,9 +238,6 @@ class TestCCXTExchange:
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exc, exchangename = exchange
-        if exchangename in ('bittrex'):
-            # For some weired reason, this test returns random lengths for bittrex.
-            pytest.skip("Exchange doesn't provide stable ohlcv history")
 
         if not exc._ft_has['ohlcv_has_history']:
             pytest.skip("Exchange does not support candle history")

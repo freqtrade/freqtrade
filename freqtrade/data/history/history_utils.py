@@ -8,18 +8,18 @@ from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
-                                 DL_DATA_TIMEFRAMES, Config)
+                                 DL_DATA_TIMEFRAMES, DOCS_LINK, Config)
 from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
                                       ohlcv_to_dataframe, trades_df_remove_duplicates,
                                       trades_list_to_df)
-from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
-from freqtrade.enums import CandleType
+from freqtrade.data.history.datahandlers import IDataHandler, get_datahandler
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.util import dt_ts, format_ms_time
-from freqtrade.util.binance_mig import migrate_binance_futures_data
 from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util.migrations import migrate_data
 
 
 logger = logging.getLogger(__name__)
@@ -311,15 +311,19 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # Predefined candletype (and timeframe) depending on exchange
             # Downloads what is necessary to backtest based on futures data.
             tf_mark = exchange.get_option('mark_ohlcv_timeframe')
+            tf_funding_rate = exchange.get_option('funding_fee_timeframe')
+
             fr_candle_type = CandleType.from_string(exchange.get_option('mark_ohlcv_price'))
             # All exchanges need FundingRate for futures trading.
             # The timeframe is aligned to the mark-price timeframe.
-            for funding_candle_type in (CandleType.FUNDING_RATE, fr_candle_type):
+            combs = ((CandleType.FUNDING_RATE, tf_funding_rate), (fr_candle_type, tf_mark))
+            for candle_type_f, tf in combs:
+                logger.debug(f'Downloading pair {pair}, {candle_type_f}, interval {tf}.')
                 _download_pair_history(pair=pair, process=process,
                                        datadir=datadir, exchange=exchange,
                                        timerange=timerange, data_handler=data_handler,
-                                       timeframe=str(tf_mark), new_pairs_days=new_pairs_days,
-                                       candle_type=funding_candle_type,
+                                       timeframe=str(tf), new_pairs_days=new_pairs_days,
+                                       candle_type=candle_type_f,
                                        erase=erase, prepend=prepend)
 
     return pairs_not_available
@@ -329,7 +333,8 @@ def _download_trades_history(exchange: Exchange,
                              pair: str, *,
                              new_pairs_days: int = 30,
                              timerange: Optional[TimeRange] = None,
-                             data_handler: IDataHandler
+                             data_handler: IDataHandler,
+                             trading_mode: TradingMode,
                              ) -> bool:
     """
     Download trade history from the exchange.
@@ -345,7 +350,7 @@ def _download_trades_history(exchange: Exchange,
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
 
-        trades = data_handler.trades_load(pair)
+        trades = data_handler.trades_load(pair, trading_mode)
 
         # TradesList columns are defined in constants.DEFAULT_TRADES_COLUMNS
         # DEFAULT_TRADES_COLUMNS: 0 -> timestamp
@@ -384,7 +389,7 @@ def _download_trades_history(exchange: Exchange,
         trades = concat([trades, new_trades_df], axis=0)
         # Remove duplicates to make sure we're not storing data we don't need
         trades = trades_df_remove_duplicates(trades)
-        data_handler.trades_store(pair, data=trades)
+        data_handler.trades_store(pair, trades, trading_mode)
 
         logger.debug("New Start: %s", 'None' if trades.empty else
                      f"{trades.iloc[0]['date']:{DATETIME_PRINT_FORMAT}}")
@@ -401,8 +406,10 @@ def _download_trades_history(exchange: Exchange,
 
 
 def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: Path,
-                                 timerange: TimeRange, new_pairs_days: int = 30,
-                                 erase: bool = False, data_format: str = 'feather') -> List[str]:
+                                 timerange: TimeRange, trading_mode: TradingMode,
+                                 new_pairs_days: int = 30,
+                                 erase: bool = False, data_format: str = 'feather',
+                                 ) -> List[str]:
     """
     Refresh stored trades data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -417,7 +424,7 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
             continue
 
         if erase:
-            if data_handler.trades_purge(pair):
+            if data_handler.trades_purge(pair, trading_mode):
                 logger.info(f'Deleting existing data for pair {pair}.')
 
         logger.info(f'Downloading trades for pair {pair}.')
@@ -425,7 +432,8 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
                                  pair=pair,
                                  new_pairs_days=new_pairs_days,
                                  timerange=timerange,
-                                 data_handler=data_handler)
+                                 data_handler=data_handler,
+                                 trading_mode=trading_mode)
     return pairs_not_available
 
 
@@ -500,18 +508,24 @@ def download_data_main(config: Config) -> None:
     logger.info(f"About to download pairs: {expanded_pairs}, "
                 f"intervals: {config['timeframes']} to {config['datadir']}")
 
+    if len(expanded_pairs) == 0:
+        logger.warning(
+            "No pairs available for download. "
+            "Please make sure you're using the correct Pair naming for your selected trade mode. \n"
+            f"More info: {DOCS_LINK}/bot-basics/#pair-naming")
+
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)
 
     # Start downloading
     try:
         if config.get('download_trades'):
-            if config.get('trading_mode') == 'futures':
-                raise OperationalException("Trade download not supported for futures.")
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=expanded_pairs, datadir=config['datadir'],
                 timerange=timerange, new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_trades'])
+                erase=bool(config.get('erase')), data_format=config['dataformat_trades'],
+                trading_mode=config.get('trading_mode', TradingMode.SPOT),
+                )
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
@@ -519,6 +533,7 @@ def download_data_main(config: Config) -> None:
                 datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format_ohlcv=config['dataformat_ohlcv'],
                 data_format_trades=config['dataformat_trades'],
+                candle_type=config.get('candle_type_def', CandleType.SPOT),
             )
         else:
             if not exchange.get_option('ohlcv_has_history', True):
@@ -527,7 +542,7 @@ def download_data_main(config: Config) -> None:
                     "Please use `--dl-trades` instead for this exchange "
                     "(will unfortunately take a long time)."
                     )
-            migrate_binance_futures_data(config)
+            migrate_data(config, exchange)
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,

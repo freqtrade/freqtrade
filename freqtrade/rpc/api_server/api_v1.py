@@ -12,15 +12,15 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, DailyWeeklyMonthly,
-                                                  DeleteLockRequest, DeleteTrade,
-                                                  ExchangeListResponse, ForceEnterPayload,
+                                                  DeleteLockRequest, DeleteTrade, Entry,
+                                                  ExchangeListResponse, Exit, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
-                                                  FreqAIModelListResponse, Health, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version,
-                                                  WhitelistResponse)
+                                                  FreqAIModelListResponse, Health, Locks,
+                                                  LocksPayload, Logs, MixTag, OpenTradeSchema,
+                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
+                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -52,7 +52,8 @@ logger = logging.getLogger(__name__)
 # 2.31: new /backtest/history/ delete endpoint
 # 2.32: new /backtest/history/ patch endpoint
 # 2.33: Additional weekly/monthly metrics
-API_VERSION = 2.33
+# 2.34: new entries/exits/mix_tags endpoints
+API_VERSION = 2.34
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -81,6 +82,21 @@ def balance(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
 @router.get('/count', response_model=Count, tags=['info'])
 def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
+
+
+@router.get('/entries', response_model=List[Entry], tags=['info'])
+def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_enter_tag_performance(pair)
+
+
+@router.get('/exits', response_model=List[Exit], tags=['info'])
+def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_exit_reason_performance(pair)
+
+
+@router.get('/mix_tags', response_model=List[MixTag], tags=['info'])
+def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_mix_tag_performance(pair)
 
 
 @router.get('/performance', response_model=List[PerformanceEntry], tags=['info'])
@@ -199,7 +215,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_force_exit(payload.tradeid, ordertype, amount=payload.amount)
+    return rpc._rpc_force_exit(str(payload.tradeid), ordertype, amount=payload.amount)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
@@ -237,6 +253,13 @@ def delete_lock(lockid: int, rpc: RPC = Depends(get_rpc)):
 @router.post('/locks/delete', response_model=Locks, tags=['info', 'locks'])
 def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
+
+
+@router.post('/locks', response_model=Locks, tags=['info', 'locks'])
+def add_locks(payload: List[LocksPayload], rpc: RPC = Depends(get_rpc)):
+    for lock in payload:
+        rpc._rpc_add_lock(lock.pair, lock.until, lock.reason, lock.side)
+    return rpc._rpc_locks()
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])
@@ -334,6 +357,7 @@ def get_strategy(strategy: str, config=Depends(get_config)):
     return {
         'strategy': strategy_obj.get_strategy_name(),
         'code': strategy_obj.__source__,
+        'timeframe': getattr(strategy_obj, 'timeframe', None),
     }
 
 

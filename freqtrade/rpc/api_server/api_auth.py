@@ -1,6 +1,6 @@
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Union
 
 import jwt
@@ -26,6 +26,7 @@ def verify_auth(api_config, username: str, password: str):
 
 
 httpbasic = HTTPBasic(auto_error=False)
+security = HTTPBasic()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
@@ -88,14 +89,14 @@ async def validate_ws_token(
 def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:
     to_encode = data.copy()
     if token_type == "access":
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     elif token_type == "refresh":
-        expire = datetime.utcnow() + timedelta(days=30)
+        expire = datetime.now(timezone.utc) + timedelta(days=30)
     else:
         raise ValueError()
     to_encode.update({
         "exp": expire,
-        "iat": datetime.utcnow(),
+        "iat": datetime.now(timezone.utc),
         "type": token_type,
     })
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
@@ -117,7 +118,7 @@ def http_basic_or_jwt_token(form_data: HTTPBasicCredentials = Depends(httpbasic)
 
 
 @router_login.post('/token/login', response_model=AccessAndRefreshToken)
-def token_login(form_data: HTTPBasicCredentials = Depends(HTTPBasic()),
+def token_login(form_data: HTTPBasicCredentials = Depends(security),
                 api_config=Depends(get_api_config)):
 
     if verify_auth(api_config, form_data.username, form_data.password):

@@ -13,7 +13,6 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.exchange.exchange import market_is_active
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
@@ -33,8 +32,11 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
 
     if dp._exchange is None:
         raise OperationalException('No exchange object found.')
-    markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
-               or config.get('include_inactive')]
+    markets = [
+        p for p in dp._exchange.get_markets(
+            tradable_only=True, active_only=not config.get('include_inactive')
+            ).keys()
+    ]
 
     all_pairs = dynamic_expand_pairlist(config, markets)
 
@@ -116,10 +118,12 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         mdl = models[label]
         if "catboost.core" in str(mdl.__class__):
             feature_importance = mdl.get_feature_importance()
-        elif "lightgbm.sklearn" or "xgb" in str(mdl.__class__):
+        elif "lightgbm.sklearn" in str(mdl.__class__):
+            feature_importance = mdl.feature_importances_
+        elif "xgb" in str(mdl.__class__):
             feature_importance = mdl.feature_importances_
         else:
-            logger.info('Model type not support for generating feature importances.')
+            logger.info('Model type does not support generating feature importances.')
             return
 
         # Data preparation
@@ -174,7 +178,7 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
 
 def get_timerange_backtest_live_models(config: Config) -> str:
     """
-    Returns a formated timerange for backtest live/ready models
+    Returns a formatted timerange for backtest live/ready models
     :param config: Configuration dictionary
 
     :return: a string timerange (format example: '20220801-20220822')

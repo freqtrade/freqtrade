@@ -59,7 +59,7 @@ For the Freqtrade configuration, you can then use the the full value (including 
    "chat_id": "-1001332619709"
 ```
 !!! Warning "Using telegram groups"
-    When using telegram groups, you're giving every member of the telegram group access to your freqtrade bot and to all commands possible via telegram. Please make sure that you can trust everyone in the telegram group to avoid unpleasent surprises.
+    When using telegram groups, you're giving every member of the telegram group access to your freqtrade bot and to all commands possible via telegram. Please make sure that you can trust everyone in the telegram group to avoid unpleasant surprises.
 
 ## Control telegram noise
 
@@ -175,11 +175,13 @@ official commands. You can ask at any moment for help with `/help`.
 | `/status` | Lists all open trades
 | `/status <trade_id>` | Lists one or more specific trade. Separate multiple <trade_id> with a blank space.
 | `/status table` | List all open trades in a table format. Pending buy orders are marked with an asterisk (*) Pending sell orders are marked with a double asterisk (**)
+| `/order <trade_id>` | Lists orders of one or more specific trade. Separate multiple <trade_id> with a blank space.
 | `/trades [limit]` | List all recently closed trades in a table format.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/marketdir [long | short | even | none]` | Updates the user managed variable that represents the current market direction. If no direction is provided, the currently set direction will be displayed.
+| `/list_custom_data <trade_id> [key]` | List custom_data for Trade ID & Key combination. If no Key is supplied it will list all key-value pairs found for that Trade ID.
 | **Modify Trade states** |
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).

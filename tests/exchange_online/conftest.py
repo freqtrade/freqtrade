@@ -14,14 +14,6 @@ EXCHANGE_FIXTURE_TYPE = Tuple[Exchange, str]
 
 # Exchanges that should be tested online
 EXCHANGES = {
-    'bittrex': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
-        'hasQuoteVolume': False,
-        'timeframe': '1h',
-        'leverage_tiers_public': False,
-        'leverage_in_spot_market': False,
-    },
     'binance': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
@@ -227,6 +219,7 @@ EXCHANGES = {
         'timeframe': '1h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
+        'orderbook_max_entries': 50,
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
         'sample_order': [
@@ -247,7 +240,14 @@ EXCHANGES = {
             }
         ]
     },
-    'huobi': {
+    'bitmart': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '1h',
+        'orderbook_max_entries': 50,
+    },
+    'htx': {
         'pair': 'ETH/BTC',
         'stake_currency': 'BTC',
         'hasQuoteVolume': True,
@@ -261,6 +261,13 @@ EXCHANGES = {
         'timeframe': '1h',
         'leverage_tiers_public': False,
         'leverage_in_spot_market': False,
+    },
+    'bingx': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '1h',
+        'futures': False,
     },
 }
 
@@ -324,7 +331,8 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
 
 
 @pytest.fixture(params=EXCHANGES, scope="class")
-def exchange(request, exchange_conf):
+def exchange(request, exchange_conf, class_mocker):
+    class_mocker.patch('freqtrade.exchange.bybit.Bybit.additional_exchange_init')
     yield from get_exchange(request.param, exchange_conf)
 
 

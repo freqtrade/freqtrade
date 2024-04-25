@@ -10,7 +10,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, amount_to_precision,
                                 date_minus_candles, price_to_precision, timeframe_to_minutes,
                                 timeframe_to_msecs, timeframe_to_next_date, timeframe_to_prev_date,
-                                timeframe_to_seconds)
+                                timeframe_to_resample_freq, timeframe_to_seconds)
 from freqtrade.exchange.check_exchange import check_exchange
 from tests.conftest import log_has_re
 
@@ -18,7 +18,7 @@ from tests.conftest import log_has_re
 def test_check_exchange(default_conf, caplog) -> None:
     # Test an officially supported by Freqtrade team exchange
     default_conf['runmode'] = RunMode.DRY_RUN
-    default_conf.get('exchange').update({'name': 'BITTREX'})
+    default_conf.get('exchange').update({'name': 'BINANCE'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
                       caplog)
@@ -41,14 +41,14 @@ def test_check_exchange(default_conf, caplog) -> None:
     caplog.clear()
 
     # Test an officially supported by Freqtrade team exchange - with remapping
-    default_conf.get('exchange').update({'name': 'okex'})
+    default_conf.get('exchange').update({'name': 'okx'})
     assert check_exchange(default_conf)
     assert log_has_re(
-        r"Exchange \"okex\" is officially supported by the Freqtrade development team\.",
+        r"Exchange \"okx\" is officially supported by the Freqtrade development team\.",
         caplog)
     caplog.clear()
     # Test an available exchange, supported by ccxt
-    default_conf.get('exchange').update({'name': 'huobipro'})
+    default_conf.get('exchange').update({'name': 'huobijp'})
     assert check_exchange(default_conf)
     assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
                       r"but not officially supported "
@@ -122,6 +122,21 @@ def test_timeframe_to_msecs():
     assert timeframe_to_msecs("10m") == 600000
     assert timeframe_to_msecs("1h") == 3600000
     assert timeframe_to_msecs("1d") == 86400000
+
+
+@pytest.mark.parametrize("timeframe,expected", [
+    ("1s", '1s'),
+    ("15s", '15s'),
+    ("5m", '300s'),
+    ("10m", '600s'),
+    ("1h", '3600s'),
+    ("1d", '86400s'),
+    ("1w", '1W-MON'),
+    ("1M", '1MS'),
+    ("1y", '1YS'),
+])
+def test_timeframe_to_resample_freq(timeframe, expected):
+    assert timeframe_to_resample_freq(timeframe) == expected
 
 
 def test_timeframe_to_prev_date():

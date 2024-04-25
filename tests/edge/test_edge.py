@@ -226,8 +226,10 @@ def test_edge_heartbeat_calculate(mocker, edge_conf):
     assert edge.calculate(edge_conf['exchange']['pair_whitelist']) is False
 
 
-def mocked_load_data(datadir, pairs=[], timeframe='0m',
+def mocked_load_data(datadir, pairs=None, timeframe='0m',
                      timerange=None, *args, **kwargs):
+    if pairs is None:
+        pairs = []
     hz = 0.1
     base = 0.001
 

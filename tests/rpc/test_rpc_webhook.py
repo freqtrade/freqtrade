@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, protected-access
 
+import logging
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
@@ -331,6 +332,7 @@ def test_send_msg_webhook(default_conf, mocker):
 
 
 def test_exception_send_msg(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
     default_conf["webhook"] = get_webhook_dict()
     del default_conf["webhook"]["entry"]
     del default_conf["webhook"]["webhookentry"]

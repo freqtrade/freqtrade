@@ -14,7 +14,7 @@ You can specify a different configuration file used by the bot with the `-c/--co
 If you used the [Quick start](docker_quickstart.md#docker-quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
-If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
+If the default configuration file is not created we recommend to use `freqtrade new-config --config user_data/config.json` to generate a basic configuration file.
 
 The Freqtrade configuration file is to be written in JSON format.
 
@@ -49,12 +49,22 @@ FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
 !!! Note
     Environment variables detected are logged at startup - so if you can't find why a value is not what you think it should be based on the configuration, make sure it's not loaded from an environment variable.
 
+!!! Tip "Validate combined result"
+    You can use the [show-config subcommand](utils.md#show-config) to see the final, combined configuration.
+
+??? Warning "Loading sequence"
+    Environment variables are loaded after the initial configuration. As such, you cannot provide the path to the configuration through environment variables. Please use `--config path/to/config.json` for that.
+    This also applies to user_dir to some degree. while the user directory can be set through environment variables - the configuration will **not** be loaded from that location.
+
 ### Multiple configuration files
 
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
 You can specify additional configuration files in `add_config_files`. Files specified in this parameter will be loaded and merged with the initial config file. The files are resolved relative to the initial configuration file.
 This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
+
+!!! Tip "Validate combined result"
+    You can use the [show-config subcommand](utils.md#show-config) to see the final, combined configuration.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
     You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
@@ -321,10 +331,12 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 To fully utilize compounding profits when using multiple bots on the same exchange account, you'll want to limit each bot to a certain starting balance.
 This can be accomplished by setting `available_capital` to the desired starting balance.
 
-Assuming your account has 10.000 USDT and you want to run 2 different strategies on this exchange.
+Assuming your account has 10000 USDT and you want to run 2 different strategies on this exchange.
 You'd set `available_capital=5000` - granting each bot an initial capital of 5000 USDT.
 The bot will then split this starting balance equally into `max_open_trades` buckets.
 Profitable trades will result in increased stake-sizes for this bot - without affecting the stake-sizes of the other bot.
+
+Adjusting `available_capital` requires reloading the configuration to take effect. Adjusting the `available_capital` adds the difference between the previous `available_capital` and the new `available_capital`. Decreasing the available capital when trades are open doesn't exit the trades. The difference is returned to the wallet when the trades conclude. The outcome of this differs depending on the price movement between the adjustment and exiting the trades.
 
 !!! Warning "Incompatible with `tradable_balance_ratio`"
     Setting this option will replace any configuration of `tradable_balance_ratio`.
@@ -503,13 +515,13 @@ Configuration:
     Please carefully read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
 !!! Note "Stoploss on exchange"
-    `stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
+    `order_types.stoploss_on_exchange_interval` is not mandatory. Do not change its value if you are
     unsure of what you are doing. For more information about how stoploss works please
     refer to [the stoploss documentation](stoploss.md).
 
-    If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
+    If `order_types.stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
-!!! Warning "Warning: stoploss_on_exchange failures"
+!!! Warning "Warning: order_types.stoploss_on_exchange failures"
     If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will exit the trade using a market order. The order-type for the emergency-exit can be changed by setting the `emergency_exit` value in the `order_types` dictionary - however, this is not advised.
 
 ### Understand order_time_in_force
@@ -535,7 +547,7 @@ is automatically cancelled by the exchange.
 **PO (Post only):**
 
 Post only order. The order is either placed as a maker order, or it is canceled.
-This means the order must be placed on orderbook for at at least time in an unfilled state.
+This means the order must be placed on orderbook for at least time in an unfilled state.
 
 #### time_in_force config
 
@@ -572,8 +584,10 @@ In addition to fiat currencies, a range of crypto currencies is supported.
 The valid values are:
 
 ```json
-"BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+"BTC", "ETH", "XRP", "LTC", "BCH", "BNB"
 ```
+
+Removing `fiat_display_currency` completely from the configuration will skip initializing coingecko, and will not show any FIAT currency conversion. This has no importance for the correct functioning of the bot.
 
 ## Using Dry-run mode
 
@@ -594,7 +608,7 @@ creating trades on the exchange.
 
 ```json
 "exchange": {
-    "name": "bittrex",
+    "name": "binance",
     "key": "key",
     "secret": "secret",
     ...
@@ -644,7 +658,7 @@ API Keys are usually only required for live trading (trading for real money, bot
 ```json
 {
     "exchange": {
-        "name": "bittrex",
+        "name": "binance",
         "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         //"password": "", // Optional, not needed by all exchanges)

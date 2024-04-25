@@ -1400,6 +1400,8 @@ def test_to_json(fee):
         'is_open': None,
         'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
         'open_timestamp': int(trade.open_date.timestamp() * 1000),
+        'open_fill_date': None,
+        'open_fill_timestamp': None,
         'close_date': None,
         'close_timestamp': None,
         'open_rate': 0.123,
@@ -1432,7 +1434,6 @@ def test_to_json(fee):
         'stop_loss_abs': None,
         'stop_loss_ratio': None,
         'stop_loss_pct': None,
-        'stoploss_order_id': None,
         'stoploss_last_update': None,
         'stoploss_last_update_timestamp': None,
         'initial_stop_loss_abs': None,
@@ -1487,6 +1488,8 @@ def test_to_json(fee):
         'quote_currency': 'BTC',
         'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
         'open_timestamp': int(trade.open_date.timestamp() * 1000),
+        'open_fill_date': None,
+        'open_fill_timestamp': None,
         'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
         'close_timestamp': int(trade.close_date.timestamp() * 1000),
         'open_rate': 0.123,
@@ -1500,7 +1503,6 @@ def test_to_json(fee):
         'stop_loss_abs': None,
         'stop_loss_pct': None,
         'stop_loss_ratio': None,
-        'stoploss_order_id': None,
         'stoploss_last_update': None,
         'stoploss_last_update_timestamp': None,
         'initial_stop_loss_abs': None,
@@ -1869,7 +1871,7 @@ def test_get_trades__query(fee, is_short):
     # without orders there should be no join issued.
     query1 = Trade.get_trades_query([], include_orders=False)
 
-    # Empty "with-options -> default - selectin"
+    # Empty "with-options -> default - selection"
     assert query._with_options == ()
     assert query1._with_options != ()
 
@@ -2097,6 +2099,7 @@ def test_Trade_object_idem():
         'get_mix_tag_performance',
         'get_trading_volume',
         'validate_string_len',
+        'custom_data'
     )
     EXCLUDES2 = ('trades', 'trades_open', 'bt_trades_open_pp', 'bt_open_open_trade_count',
                  'total_profit', 'from_json',)
@@ -2300,6 +2303,101 @@ def test_recalc_trade_from_orders(fee):
     assert trade.open_rate == avg_price
     assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_recalc_trade_from_orders_kucoin():
+    # Taken from https://github.com/freqtrade/freqtrade/issues/9346
+    o1_amount = 11511963.8634448908
+    o2_amount = 11750101.7743937783
+    o3_amount = 23262065.6378386617  # Exit amount - barely doesn't even out
+
+    res = o1_amount + o2_amount - o3_amount
+    assert res > 0.0
+    assert res < 0.1
+    o1_rate = 0.000029901
+    o2_rate = 0.000029295
+    o3_rate = 0.000029822
+
+    o1_cost = o1_amount * o1_rate
+
+    trade = Trade(
+        pair='FLOKI/USDT',
+        stake_amount=o1_cost,
+        open_date=dt_now() - timedelta(hours=2),
+        amount=o1_amount,
+        fee_open=0.001,
+        fee_close=0.001,
+        exchange='binance',
+        open_rate=o1_rate,
+        max_rate=o1_rate,
+        leverage=1,
+    )
+    # Check with 1 order
+    order1 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order1)
+    order2 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o2_rate,
+        average=o2_rate,
+        filled=o2_amount,
+        remaining=0,
+        cost=o2_amount * o2_rate,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order2)
+    trade.recalc_trade_from_orders()
+    assert trade.amount == o1_amount + o2_amount
+    profit = trade.calculate_profit(o3_rate)
+    assert profit.profit_abs == pytest.approx(3.90069871)
+    assert profit.profit_ratio == pytest.approx(0.00566035)
+
+    order3 = Order(
+        ft_order_side='sell',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="sell",
+        price=o3_rate,
+        average=o3_rate,
+        filled=o3_amount,
+        remaining=0,
+        cost=o2_amount * o2_rate,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+
+    trade.orders.append(order3)
+    trade.update_trade(order3)
+    assert trade.is_open is False
+    # Trade closed correctly - but left a minimal amount.
+    assert trade.amount == 8e-09
+    assert pytest.approx(trade.close_profit_abs) == 3.90069871
+    assert pytest.approx(trade.close_profit) == 0.00566035
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -2581,9 +2679,9 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         'orders': [
             (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
             (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
-            (('sell', 50, 12), (150.0, 12.5, 1875.0, -25.0, -25.0, -0.04)),
-            (('sell', 100, 20), (50.0, 12.5, 625.0, 725.0, 750.0, 0.60)),
-            (('sell', 50, 5), (50.0, 12.5, 625.0, 350.0, -375.0, -0.60)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -25.0, -25.0, -0.01)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 725.0, 750.0, 0.29)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 350.0, -375.0, 0.14)),
         ],
         'end_profit': 350.0,
         'end_profit_ratio': 0.14,
@@ -2593,9 +2691,9 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         'orders': [
             (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
             (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
-            (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625, -0.044788)),
-            (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875, 0.59201995)),
-            (('sell', 50, 5), (50.0, 12.5, 625.0, 336.625, -377.1875, -0.60199501)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625, -0.011197)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875, 0.2848129)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 336.625, -377.1875, 0.1343142)),
         ],
         'end_profit': 336.625,
         'end_profit_ratio': 0.1343142,
@@ -2605,10 +2703,10 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         'orders': [
             (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
             (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
-            (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0, 1.189027)),
-            (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0, 1.189027)),
-            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5, 0.7186579)),
-            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 1787.25, 1.08048062)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0, 0.5945137)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0, 0.5945137)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5, 0.4261653)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 1787.25, 0.9747170)),
         ],
         'end_profit': 3175.75,
         'end_profit_ratio': 0.9747170,
@@ -2619,10 +2717,10 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         'orders': [
             (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
             (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
-            (('sell', 100, 11), (100.0, 5.0, 500.0, 600.0, 600.0, 1.2)),
-            (('buy', 150, 15), (250.0, 11.0, 2750.0, 600.0, 600.0, 1.2)),
-            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1400.0, 800.0, 0.72727273)),
-            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3200.0, 1800.0, 1.09090909)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 600.0, 600.0, 0.6)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 600.0, 600.0, 0.6)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1400.0, 800.0, 0.43076923)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3200.0, 1800.0, 0.98461538)),
         ],
         'end_profit': 3200.0,
         'end_profit_ratio': 0.98461538,
@@ -2632,10 +2730,10 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         'orders': [
             (('buy', 100, 8), (100.0, 8.0, 800.0, 0.0, None, None)),
             (('buy', 100, 9), (200.0, 8.5, 1700.0, 0.0, None, None)),
-            (('sell', 100, 10), (100.0, 8.5, 850.0, 150.0, 150.0, 0.17647059)),
-            (('buy', 150, 11), (250.0, 10, 2500.0, 150.0, 150.0, 0.17647059)),
-            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 200.0, 0.2)),
-            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 600.0, 0.40)),
+            (('sell', 100, 10), (100.0, 8.5, 850.0, 150.0, 150.0, 0.08823529)),
+            (('buy', 150, 11), (250.0, 10, 2500.0, 150.0, 150.0, 0.08823529)),
+            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 200.0, 0.1044776)),
+            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 600.0, 0.283582)),
         ],
         'end_profit': 950.0,
         'end_profit_ratio': 0.283582,

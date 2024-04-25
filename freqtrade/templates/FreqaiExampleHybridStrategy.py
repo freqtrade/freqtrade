@@ -29,7 +29,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         "enabled": true,
         "purge_old_models": 2,
         "train_period_days": 15,
-        "identifier": "uniqe-id",
+        "identifier": "unique-id",
         "feature_parameters": {
             "include_timeframes": [
                 "3m",

@@ -716,4 +716,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify startup candles to be checked (`199`, `499`, `999`, `1999`).',
         nargs='+',
     ),
+    "show_sensitive": Arg(
+        '--show-sensitive',
+        help='Show secrets in the output.',
+        action='store_true',
+        default=False,
+    ),
 }

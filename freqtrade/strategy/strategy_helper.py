@@ -36,7 +36,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     :return: Merged dataframe
     :raise: ValueError if the secondary timeframe is shorter than the dataframe timeframe
     """
-
+    informative = informative.copy()
     minutes_inf = timeframe_to_minutes(timeframe_inf)
     minutes = timeframe_to_minutes(timeframe)
     if minutes == minutes_inf:
@@ -46,10 +46,16 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
         # Subtract "small" timeframe so merging is not delayed by 1 small candle
         # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
         if not informative.empty:
-            informative['date_merge'] = (
-                informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
-                pd.to_timedelta(minutes, 'm')
-            )
+            if timeframe_inf == '1M':
+                informative['date_merge'] = (
+                    (informative[date_column] + pd.offsets.MonthBegin(1))
+                    - pd.to_timedelta(minutes, 'm')
+                )
+            else:
+                informative['date_merge'] = (
+                    informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
+                    pd.to_timedelta(minutes, 'm')
+                )
         else:
             informative['date_merge'] = informative[date_column]
     else:
@@ -72,16 +78,13 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     # all indicators on the informative sample MUST be calculated before this point
     if ffill:
         # https://pandas.pydata.org/docs/user_guide/merging.html#timeseries-friendly-merging
-        # merge_ordered - ffill method is 2.5x faster than seperate ffill()
+        # merge_ordered - ffill method is 2.5x faster than separate ffill()
         dataframe = pd.merge_ordered(dataframe, informative, fill_method="ffill", left_on='date',
                                      right_on=date_merge, how='left')
     else:
         dataframe = pd.merge(dataframe, informative, left_on='date',
                              right_on=date_merge, how='left')
     dataframe = dataframe.drop(date_merge, axis=1)
-
-    # if ffill:
-    #     dataframe = dataframe.ffill()
 
     return dataframe
 

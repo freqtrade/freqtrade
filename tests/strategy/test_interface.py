@@ -81,7 +81,7 @@ def test_returns_latest_signal(ohlcv_history):
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
 
     _STRATEGY.config['trading_mode'] = 'futures'
-    # Short signal get's ignored as can_short is not set.
+    # Short signal gets ignored as can_short is not set.
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
 
     _STRATEGY.can_short = True
@@ -105,7 +105,7 @@ def test_returns_latest_signal(ohlcv_history):
     _STRATEGY.config['trading_mode'] = 'spot'
 
 
-def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
+def test_analyze_pair_empty(mocker, caplog, ohlcv_history):
     mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
     mocker.patch.object(
         _STRATEGY, '_analyze_ticker_internal',
@@ -422,7 +422,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
         (0.2, 0.9, ExitType.NONE, None, False, False, 0.3, 0.9, ExitType.NONE, None),
         (0.2, 0.9, ExitType.NONE, None, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
-        (0.2, 0.9, ExitType.NONE, 0.8, False, False, -0.2, 0.9, ExitType.LIQUIDATION, None),
+        (0.2, 0.9, ExitType.NONE, 0.92, False, False, -0.09, 0.9, ExitType.LIQUIDATION, None),
         (0.2, 1.14, ExitType.NONE, None, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS,
          None),
         (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),
@@ -795,9 +795,6 @@ def test_strategy_safe_wrapper_error(caplog, error):
     def failing_method():
         raise error('This is an error.')
 
-    def working_method(argumentpassedin):
-        return argumentpassedin
-
     with pytest.raises(StrategyError, match=r'This is an error.'):
         strategy_safe_wrapper(failing_method, message='DeadBeef')()
 
@@ -1019,3 +1016,30 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
+
+
+@pytest.mark.parametrize('function,raises', [
+    ('populate_entry_trend', False),
+    ('advise_entry', False),
+    ('populate_exit_trend', False),
+    ('advise_exit', False),
+])
+def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
+
+    df = _STRATEGY.populate_indicators(ohlcv_history, {'pair': 'ETH/BTC'})
+    if raises:
+        assert len(recwarn) == 1
+        # https://github.com/pandas-dev/pandas/issues/56503
+        # Fixed in 2.2.x
+        getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+    else:
+        assert len(recwarn) == 0
+
+        getattr(_STRATEGY, function)(df, {'pair': 'ETH/BTC'})
+
+
+def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
+
+    mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
+    _STRATEGY.analyze_pair('ETH/BTC')
+    assert len(recwarn) == 0

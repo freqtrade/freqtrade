@@ -29,15 +29,15 @@ def test_init_create_session(default_conf):
     assert 'scoped_session' in type(Trade.session).__name__
 
 
-def test_init_custom_db_url(default_conf, tmpdir):
+def test_init_custom_db_url(default_conf, tmp_path):
     # Update path to a value other than default, but still in-memory
-    filename = f"{tmpdir}/freqtrade2_test.sqlite"
-    assert not Path(filename).is_file()
+    filename = tmp_path / "freqtrade2_test.sqlite"
+    assert not filename.is_file()
 
     default_conf.update({'db_url': f'sqlite:///{filename}'})
 
     init_db(default_conf['db_url'])
-    assert Path(filename).is_file()
+    assert filename.is_file()
     r = Trade.session.execute(text("PRAGMA journal_mode"))
     assert r.first() == ('wal',)
 
@@ -74,7 +74,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
     assert Path(filename).is_file()
 
 
-def test_migrate_new(mocker, default_conf, fee, caplog):
+def test_migrate(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -277,8 +277,6 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id == 'dry_stop_order_id222'
-    assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
@@ -294,9 +292,10 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert orders[0].order_id == 'dry_buy_order'
     assert orders[0].ft_order_side == 'buy'
 
+    # All dry-run stoploss orders will be closed
     assert orders[-1].order_id == 'dry_stop_order_id222'
     assert orders[-1].ft_order_side == 'stoploss'
-    assert orders[-1].ft_is_open is True
+    assert orders[-1].ft_is_open is False
 
     assert orders[1].order_id == 'dry_buy_order22'
     assert orders[1].ft_order_side == 'buy'
@@ -437,8 +436,8 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
     assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == '*')).all()) == 1
     pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == 'ETH/BTC')).all()
     assert len(pairlocks) == 1
-    pairlocks[0].pair == 'ETH/BTC'
-    pairlocks[0].side == '*'
+    assert pairlocks[0].pair == 'ETH/BTC'
+    assert pairlocks[0].side == '*'
 
 
 @pytest.mark.parametrize('dialect', [

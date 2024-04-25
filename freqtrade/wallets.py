@@ -6,7 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Dict, NamedTuple, Optional
 
-from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config, IntOrInf
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
@@ -36,9 +36,9 @@ class PositionWallet(NamedTuple):
 
 class Wallets:
 
-    def __init__(self, config: Config, exchange: Exchange, log: bool = True) -> None:
+    def __init__(self, config: Config, exchange: Exchange, is_backtest: bool = False) -> None:
         self._config = config
-        self._log = log
+        self._is_backtest = is_backtest
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
         self._positions: Dict[str, PositionWallet] = {}
@@ -78,11 +78,11 @@ class Wallets:
         _wallets = {}
         _positions = {}
         open_trades = Trade.get_trades_proxy(is_open=True)
-        # If not backtesting...
-        # TODO: potentially remove the ._log workaround to determine backtest mode.
-        if self._log:
+        if not self._is_backtest:
+            # Live / Dry-run mode
             tot_profit = Trade.get_total_closed_profit()
         else:
+            # Backtest mode
             tot_profit = LocalTrade.total_profit
         tot_profit += sum(trade.realized_profit for trade in open_trades)
         tot_in_trades = sum(trade.stake_amount for trade in open_trades)
@@ -177,7 +177,7 @@ class Wallets:
                 self._update_live()
             else:
                 self._update_dry()
-            if self._log:
+            if not self._is_backtest:
                 logger.info('Wallets synced.')
             self._last_wallet_refresh = dt_now()
 
@@ -262,15 +262,15 @@ class Wallets:
         return min(self.get_total_stake_amount() - Trade.total_open_trades_stakes(), free)
 
     def _calculate_unlimited_stake_amount(self, available_amount: float,
-                                          val_tied_up: float) -> float:
+                                          val_tied_up: float, max_open_trades: IntOrInf) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
         """
-        if self._config['max_open_trades'] == 0:
+        if max_open_trades == 0:
             return 0
 
-        possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
+        possible_stake = (available_amount + val_tied_up) / max_open_trades
         # Theoretical amount can be above available amount - therefore limit to available amount!
         return min(possible_stake, available_amount)
 
@@ -298,14 +298,15 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, edge=None, update: bool = True) -> float:
+    def get_trade_stake_amount(
+            self, pair: str, max_open_trades: IntOrInf, edge=None, update: bool = True) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
         :raise: DependencyException if the available stake amount is too low
         """
         stake_amount: float
-        # Ensure wallets are uptodate.
+        # Ensure wallets are up-to-date.
         if update:
             self.update()
         val_tied_up = Trade.total_open_trades_stakes()
@@ -322,7 +323,7 @@ class Wallets:
             stake_amount = self._config['stake_amount']
             if stake_amount == UNLIMITED_STAKE_AMOUNT:
                 stake_amount = self._calculate_unlimited_stake_amount(
-                    available_amount, val_tied_up)
+                    available_amount, val_tied_up, max_open_trades)
 
         return self._check_available_stake_amount(stake_amount, available_amount)
 
@@ -340,19 +341,19 @@ class Wallets:
             max_allowed_stake = min(max_allowed_stake, max_stake_amount - trade_amount)
 
         if min_stake_amount is not None and min_stake_amount > max_allowed_stake:
-            if self._log:
+            if not self._is_backtest:
                 logger.warning("Minimum stake amount > available balance. "
                                f"{min_stake_amount} > {max_allowed_stake}")
             return 0
         if min_stake_amount is not None and stake_amount < min_stake_amount:
-            if self._log:
+            if not self._is_backtest:
                 logger.info(
                     f"Stake amount for pair {pair} is too small "
                     f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
                 )
             if stake_amount * 1.3 < min_stake_amount:
                 # Top-cap stake-amount adjustments to +30%.
-                if self._log:
+                if not self._is_backtest:
                     logger.info(
                         f"Adjusted stake amount for pair {pair} is more than 30% bigger than "
                         f"the desired stake amount of ({stake_amount:.8f} * 1.3 = "
@@ -362,7 +363,7 @@ class Wallets:
             stake_amount = min_stake_amount
 
         if stake_amount > max_allowed_stake:
-            if self._log:
+            if not self._is_backtest:
                 logger.info(
                     f"Stake amount for pair {pair} is too big "
                     f"({stake_amount} > {max_allowed_stake}), adjusting to {max_allowed_stake}."

@@ -11,11 +11,12 @@ from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
-from freqtrade.data.history.featherdatahandler import FeatherDataHandler
-from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
-from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
-from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
-from freqtrade.data.history.parquetdatahandler import ParquetDataHandler
+from freqtrade.data.history.datahandlers.featherdatahandler import FeatherDataHandler
+from freqtrade.data.history.datahandlers.hdf5datahandler import HDF5DataHandler
+from freqtrade.data.history.datahandlers.idatahandler import (IDataHandler, get_datahandler,
+                                                              get_datahandlerclass)
+from freqtrade.data.history.datahandlers.jsondatahandler import JsonDataHandler, JsonGzDataHandler
+from freqtrade.data.history.datahandlers.parquetdatahandler import ParquetDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from tests.conftest import log_has, log_has_re
 
@@ -148,18 +149,24 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
 def test_datahandler_ohlcv_data_min_max(testdatadir):
     dh = JsonDataHandler(testdatadir)
     min_max = dh.ohlcv_data_min_max('UNITTEST/BTC', '5m', 'spot')
-    assert len(min_max) == 2
+    assert len(min_max) == 3
 
     # Empty pair
     min_max = dh.ohlcv_data_min_max('UNITTEST/BTC', '8m', 'spot')
-    assert len(min_max) == 2
+    assert len(min_max) == 3
     assert min_max[0] == datetime.fromtimestamp(0, tz=timezone.utc)
     assert min_max[0] == min_max[1]
     # Empty pair2
-    min_max = dh.ohlcv_data_min_max('NOPAIR/XXX', '4m', 'spot')
-    assert len(min_max) == 2
+    min_max = dh.ohlcv_data_min_max('NOPAIR/XXX', '41m', 'spot')
+    assert len(min_max) == 3
     assert min_max[0] == datetime.fromtimestamp(0, tz=timezone.utc)
     assert min_max[0] == min_max[1]
+
+    # Existing pair ...
+    min_max = dh.ohlcv_data_min_max('UNITTEST/BTC', '1m', 'spot')
+    assert len(min_max) == 3
+    assert min_max[0] == datetime(2017, 11, 4, 23, 2, tzinfo=timezone.utc)
+    assert min_max[1] == datetime(2017, 11, 14, 22, 59, tzinfo=timezone.utc)
 
 
 def test_datahandler__check_empty_df(testdatadir, caplog):
@@ -244,7 +251,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
 # @pytest.mark.parametrize('datahandler', [])
 @pytest.mark.skip("All datahandlers currently support trades data.")
 def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
-    # Currently disabled. Reenable should a new provider not support trades data.
+    # Currently disabled. Re-enable should a new provider not support trades data.
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.trades_load('UNITTEST/ETH')
@@ -255,11 +262,11 @@ def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
 def test_jsondatahandler_trades_load(testdatadir, caplog):
     dh = JsonGzDataHandler(testdatadir)
     logmsg = "Old trades format detected - converting"
-    dh.trades_load('XRP/ETH')
+    dh.trades_load('XRP/ETH', TradingMode.SPOT)
     assert not log_has(logmsg, caplog)
 
     # Test conversation is happening
-    dh.trades_load('XRP/OLD')
+    dh.trades_load('XRP/OLD', TradingMode.SPOT)
     assert log_has(logmsg, caplog)
 
 
@@ -294,16 +301,16 @@ def test_datahandler_trades_get_pairs(testdatadir, datahandler, expected):
 
 def test_hdf5datahandler_trades_load(testdatadir):
     dh = get_datahandler(testdatadir, 'hdf5')
-    trades = dh.trades_load('XRP/ETH')
+    trades = dh.trades_load('XRP/ETH', TradingMode.SPOT)
     assert isinstance(trades, DataFrame)
 
-    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    trades1 = dh.trades_load('UNITTEST/NONEXIST', TradingMode.SPOT)
     assert isinstance(trades1, DataFrame)
     assert trades1.empty
     # data goes from 2019-10-11 - 2019-10-13
     timerange = TimeRange.parse_timerange('20191011-20191012')
 
-    trades2 = dh._trades_load('XRP/ETH', timerange)
+    trades2 = dh._trades_load('XRP/ETH', TradingMode.SPOT, timerange)
     assert len(trades) > len(trades2)
     # Check that ID is None (If it's nan, it's wrong)
     assert trades2.iloc[0]['type'] is None
@@ -328,17 +335,16 @@ def test_hdf5datahandler_trades_load(testdatadir):
 ])
 def test_hdf5datahandler_ohlcv_load_and_resave(
     testdatadir,
-    tmpdir,
+    tmp_path,
     pair,
     timeframe,
     candle_type,
     candle_append,
     startdt, enddt
 ):
-    tmpdir1 = Path(tmpdir)
-    tmpdir2 = tmpdir1
+    tmpdir2 = tmp_path
     if candle_type not in ('', 'spot'):
-        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2 = tmp_path / 'futures'
         tmpdir2.mkdir()
     dh = get_datahandler(testdatadir, 'hdf5')
     ohlcv = dh._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
@@ -348,7 +354,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
     assert not file.is_file()
 
-    dh1 = get_datahandler(tmpdir1, 'hdf5')
+    dh1 = get_datahandler(tmp_path, 'hdf5')
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
@@ -379,17 +385,16 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 def test_generic_datahandler_ohlcv_load_and_resave(
     datahandler,
     testdatadir,
-    tmpdir,
+    tmp_path,
     pair,
     timeframe,
     candle_type,
     candle_append,
     startdt, enddt
 ):
-    tmpdir1 = Path(tmpdir)
-    tmpdir2 = tmpdir1
+    tmpdir2 = tmp_path
     if candle_type not in ('', 'spot'):
-        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2 = tmp_path / 'futures'
         tmpdir2.mkdir()
     # Load data from one common file
     dhbase = get_datahandler(testdatadir, 'feather')
@@ -403,7 +408,7 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
     assert not file.is_file()
 
-    dh1 = get_datahandler(tmpdir1, datahandler)
+    dh1 = get_datahandler(tmp_path, datahandler)
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
@@ -447,30 +452,29 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
 @pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
 def test_datahandler_trades_load(testdatadir, datahandler):
     dh = get_datahandler(testdatadir, datahandler)
-    trades = dh.trades_load('XRP/ETH')
+    trades = dh.trades_load('XRP/ETH', TradingMode.SPOT)
     assert isinstance(trades, DataFrame)
     assert trades.iloc[0]['timestamp'] == 1570752011620
     assert trades.iloc[0]['date'] == Timestamp('2019-10-11 00:00:11.620000+0000')
     assert trades.iloc[-1]['cost'] == 0.1986231
 
-    trades1 = dh.trades_load('UNITTEST/NONEXIST')
+    trades1 = dh.trades_load('UNITTEST/NONEXIST', TradingMode.SPOT)
     assert isinstance(trades, DataFrame)
     assert trades1.empty
 
 
 @pytest.mark.parametrize('datahandler', ['jsongz', 'hdf5', 'feather', 'parquet'])
-def test_datahandler_trades_store(testdatadir, tmpdir, datahandler):
-    tmpdir1 = Path(tmpdir)
+def test_datahandler_trades_store(testdatadir, tmp_path, datahandler):
     dh = get_datahandler(testdatadir, datahandler)
-    trades = dh.trades_load('XRP/ETH')
+    trades = dh.trades_load('XRP/ETH', TradingMode.SPOT)
 
-    dh1 = get_datahandler(tmpdir1, datahandler)
-    dh1.trades_store('XRP/NEW', trades)
+    dh1 = get_datahandler(tmp_path, datahandler)
+    dh1.trades_store('XRP/NEW', trades, TradingMode.SPOT)
 
-    file = tmpdir1 / f'XRP_NEW-trades.{dh1._get_file_extension()}'
+    file = tmp_path / f'XRP_NEW-trades.{dh1._get_file_extension()}'
     assert file.is_file()
     # Load trades back
-    trades_new = dh1.trades_load('XRP/NEW')
+    trades_new = dh1.trades_load('XRP/NEW', TradingMode.SPOT)
     assert_frame_equal(trades, trades_new, check_exact=True)
     assert len(trades_new) == len(trades)
 
@@ -480,11 +484,11 @@ def test_datahandler_trades_purge(mocker, testdatadir, datahandler):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = get_datahandler(testdatadir, datahandler)
-    assert not dh.trades_purge('UNITTEST/NONEXIST')
+    assert not dh.trades_purge('UNITTEST/NONEXIST', TradingMode.SPOT)
     assert unlinkmock.call_count == 0
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    assert dh.trades_purge('UNITTEST/NONEXIST')
+    assert dh.trades_purge('UNITTEST/NONEXIST', TradingMode.SPOT)
     assert unlinkmock.call_count == 1
 
 
@@ -516,11 +520,11 @@ def test_gethandlerclass():
 
 def test_get_datahandler(testdatadir):
     dh = get_datahandler(testdatadir, 'json')
-    assert type(dh) == JsonDataHandler
+    assert isinstance(dh, JsonDataHandler)
     dh = get_datahandler(testdatadir, 'jsongz')
-    assert type(dh) == JsonGzDataHandler
+    assert isinstance(dh, JsonGzDataHandler)
     dh1 = get_datahandler(testdatadir, 'jsongz', dh)
     assert id(dh1) == id(dh)
 
     dh = get_datahandler(testdatadir, 'hdf5')
-    assert type(dh) == HDF5DataHandler
+    assert isinstance(dh, HDF5DataHandler)

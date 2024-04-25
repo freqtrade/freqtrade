@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
-from pathlib import Path
 from shutil import copyfile
 
 import numpy as np
@@ -16,9 +15,10 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
-from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.data.history.datahandlers import IDataHandler
 from freqtrade.enums import CandleType
-from tests.conftest import generate_test_data, log_has, log_has_re
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
 
@@ -50,8 +50,51 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
     assert 'high' in df.columns
     assert 'low' in df.columns
     assert 'close' in df.columns
-    assert df.loc[:, 'high'][0] == 0.019627
-    assert df.loc[:, 'low'][0] == 0.019626
+    assert df.iloc[0, :]['high'] == 0.019627
+    assert df.iloc[0, :]['low'] == 0.019626
+    assert df.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:00+0000')
+
+    df_1h = trades_to_ohlcv(trades_history_df, '1h')
+    assert len(df_1h) == 1
+    assert df_1h.iloc[0, :]['high'] == 0.019627
+    assert df_1h.iloc[0, :]['low'] == 0.019626
+    assert df_1h.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:00:00+0000')
+
+    df_1s = trades_to_ohlcv(trades_history_df, '1s')
+    assert len(df_1s) == 2
+    assert df_1s.iloc[0, :]['high'] == 0.019627
+    assert df_1s.iloc[0, :]['low'] == 0.019627
+    assert df_1s.iloc[0, :]['date'] == pd.Timestamp('2019-08-14 15:59:49+0000')
+    assert df_1s.iloc[-1, :]['date'] == pd.Timestamp('2019-08-14 15:59:59+0000')
+
+
+@pytest.mark.parametrize('timeframe,rows,days,candles,start,end,weekday', [
+    ('1s', 20_000, 5, 19522, '2020-01-01 00:00:05', '2020-01-05 23:59:27', None),
+    ('1m', 20_000, 5, 6745, '2020-01-01 00:00:00', '2020-01-05 23:59:00', None),
+    ('5m', 20_000, 5, 1440, '2020-01-01 00:00:00', '2020-01-05 23:55:00', None),
+    ('15m', 20_000, 5, 480, '2020-01-01 00:00:00', '2020-01-05 23:45:00', None),
+    ('1h', 20_000, 5, 120, '2020-01-01 00:00:00', '2020-01-05 23:00:00', None),
+    ('2h', 20_000, 5, 60, '2020-01-01 00:00:00', '2020-01-05 22:00:00', None),
+    ('4h', 20_000, 5, 30, '2020-01-01 00:00:00', '2020-01-05 20:00:00', None),
+    ('8h', 20_000, 5, 15, '2020-01-01 00:00:00', '2020-01-05 16:00:00', None),
+    ('12h', 20_000, 5, 10, '2020-01-01 00:00:00', '2020-01-05 12:00:00', None),
+    ('1d', 20_000, 5, 5, '2020-01-01 00:00:00', '2020-01-05 00:00:00', 'Sunday'),
+    ('7d', 20_000, 37, 6, '2020-01-06 00:00:00', '2020-02-10 00:00:00', 'Monday'),
+    ('1w', 20_000, 37, 6, '2020-01-06 00:00:00', '2020-02-10 00:00:00', 'Monday'),
+    ('1M', 20_000, 74, 3, '2020-01-01 00:00:00', '2020-03-01 00:00:00', None),
+    ('3M', 20_000, 100, 2, '2020-01-01 00:00:00', '2020-04-01 00:00:00', None),
+    ('1y', 20_000, 1000, 3, '2020-01-01 00:00:00', '2022-01-01 00:00:00', None),
+])
+def test_trades_to_ohlcv_multi(timeframe, rows, days, candles, start, end, weekday):
+    trades_history = generate_trades_history(n_rows=rows, days=days)
+    df = trades_to_ohlcv(trades_history, timeframe)
+    assert not df.empty
+    assert len(df) == candles
+    assert df.iloc[0, :]['date'] == pd.Timestamp(f'{start}+0000')
+    assert df.iloc[-1, :]['date'] == pd.Timestamp(f'{end}+0000')
+    if weekday:
+        # Weekday is only relevant for daily and weekly candles.
+        assert df.iloc[-1, :]['date'].day_name() == weekday
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
@@ -65,7 +108,7 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC, 1m: before: "
                       f"{len(data)} - after: {len(data2)}.*", caplog)
 
     # Test fillup actually fixes invalid backtest data
@@ -129,8 +172,47 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC, {timeframe}: before: "
                       f"{len(data)} - after: {len(data2)}.*", caplog)
+
+
+@pytest.mark.parametrize('timeframe', [
+    '1s', '1m', '5m', '15m', '1h', '2h', '4h', '8h', '12h', '1d', '7d', '1w', '1M', '3M', '1y'
+])
+def test_ohlcv_to_dataframe_multi(timeframe):
+    data = generate_test_data(timeframe, 180)
+    assert len(data) == 180
+    df = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT')
+    assert len(df) == len(data) - 1
+    df1 = ohlcv_to_dataframe(data, timeframe, 'UNITTEST/USDT', drop_incomplete=False)
+    assert len(df1) == len(data)
+    assert data.equals(df1)
+
+    data1 = data.copy()
+    if timeframe in ('1M', '3M', '1y'):
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + pd.to_timedelta('1w')
+    else:
+        # Shift by half a timeframe
+        data1.loc[:, 'date'] = data1.loc[:, 'date'] + (pd.to_timedelta(timeframe) / 2)
+    df2 = ohlcv_to_dataframe(data1, timeframe, 'UNITTEST/USDT')
+
+    assert len(df2) == len(data) - 1
+    tfs = timeframe_to_seconds(timeframe)
+    tfm = timeframe_to_minutes(timeframe)
+    if 1 <= tfm < 10000:
+        # minute based resampling does not work on timeframes >= 1 week
+        ohlcv_dict = {
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum'
+        }
+        dfs = data1.resample(f"{tfs}s", on='date').agg(ohlcv_dict).reset_index(drop=False)
+        dfm = data1.resample(f"{tfm}min", on='date').agg(ohlcv_dict).reset_index(drop=False)
+
+        assert dfs.equals(dfm)
+        assert dfs.equals(df1)
 
 
 def test_ohlcv_to_dataframe_1M():
@@ -323,18 +405,17 @@ def test_trades_dict_to_list(fetch_trades_result):
         assert t[6] == fetch_trades_result[i]['cost']
 
 
-def test_convert_trades_format(default_conf, testdatadir, tmpdir):
-    tmpdir1 = Path(tmpdir)
-    files = [{'old': tmpdir1 / "XRP_ETH-trades.json.gz",
-              'new': tmpdir1 / "XRP_ETH-trades.json"},
-             {'old': tmpdir1 / "XRP_OLD-trades.json.gz",
-              'new': tmpdir1 / "XRP_OLD-trades.json"},
+def test_convert_trades_format(default_conf, testdatadir, tmp_path):
+    files = [{'old': tmp_path / "XRP_ETH-trades.json.gz",
+              'new': tmp_path / "XRP_ETH-trades.json"},
+             {'old': tmp_path / "XRP_OLD-trades.json.gz",
+              'new': tmp_path / "XRP_OLD-trades.json"},
              ]
     for file in files:
         copyfile(testdatadir / file['old'].name, file['old'])
         assert not file['new'].exists()
 
-    default_conf['datadir'] = tmpdir1
+    default_conf['datadir'] = tmp_path
 
     convert_trades_format(default_conf, convert_from='jsongz',
                           convert_to='json', erase=False)
@@ -362,16 +443,15 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
     (['UNITTEST_USDT_USDT-1h-mark', 'XRP_USDT_USDT-1h-mark'], CandleType.MARK),
     (['XRP_USDT_USDT-1h-futures'], CandleType.FUTURES),
 ])
-def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
-    tmpdir1 = Path(tmpdir)
+def test_convert_ohlcv_format(default_conf, testdatadir, tmp_path, file_base, candletype):
     prependix = '' if candletype == CandleType.SPOT else 'futures/'
     files_orig = []
     files_temp = []
     files_new = []
     for file in file_base:
         file_orig = testdatadir / f"{prependix}{file}.feather"
-        file_temp = tmpdir1 / f"{prependix}{file}.feather"
-        file_new = tmpdir1 / f"{prependix}{file}.json.gz"
+        file_temp = tmp_path / f"{prependix}{file}.feather"
+        file_new = tmp_path / f"{prependix}{file}.json.gz"
         IDataHandler.create_dir_if_needed(file_temp)
         copyfile(file_orig, file_temp)
 
@@ -379,7 +459,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         files_temp.append(file_temp)
         files_new.append(file_new)
 
-    default_conf['datadir'] = tmpdir1
+    default_conf['datadir'] = tmp_path
     default_conf['candle_types'] = [candletype]
 
     if candletype == CandleType.SPOT:
@@ -445,30 +525,31 @@ def test_reduce_dataframe_footprint():
     assert df2['close_copy'].dtype == np.float32
 
 
-def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
-    tmpdir1 = Path(tmpdir)
+def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
     pair = 'XRP/ETH'
-    file1 = tmpdir1 / 'XRP_ETH-1m.feather'
-    file5 = tmpdir1 / 'XRP_ETH-5m.feather'
-    filetrades = tmpdir1 / 'XRP_ETH-trades.json.gz'
+    file1 = tmp_path / 'XRP_ETH-1m.feather'
+    file5 = tmp_path / 'XRP_ETH-5m.feather'
+    filetrades = tmp_path / 'XRP_ETH-trades.json.gz'
     copyfile(testdatadir / file1.name, file1)
     copyfile(testdatadir / file5.name, file5)
     copyfile(testdatadir / filetrades.name, filetrades)
 
     # Compare downloaded dataset with converted dataset
-    dfbak_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
-    dfbak_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
+    dfbak_1m = load_pair_history(datadir=tmp_path, timeframe="1m", pair=pair)
+    dfbak_5m = load_pair_history(datadir=tmp_path, timeframe="5m", pair=pair)
 
     tr = TimeRange.parse_timerange('20191011-20191012')
 
     convert_trades_to_ohlcv([pair], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
-                            datadir=tmpdir1, timerange=tr, erase=True)
+                            datadir=tmp_path, timerange=tr, erase=True,
+                            data_format_ohlcv='feather',
+                            candle_type=CandleType.SPOT)
 
     assert log_has("Deleting existing data for pair XRP/ETH, interval 1m.", caplog)
     # Load new data
-    df_1m = load_pair_history(datadir=tmpdir1, timeframe="1m", pair=pair)
-    df_5m = load_pair_history(datadir=tmpdir1, timeframe="5m", pair=pair)
+    df_1m = load_pair_history(datadir=tmp_path, timeframe="1m", pair=pair)
+    df_5m = load_pair_history(datadir=tmp_path, timeframe="5m", pair=pair)
 
     assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
     assert_frame_equal(dfbak_5m, df_5m, check_exact=True)
@@ -477,5 +558,7 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
 
     convert_trades_to_ohlcv(['NoDatapair'], timeframes=['1m', '5m'],
                             data_format_trades='jsongz',
-                            datadir=tmpdir1, timerange=tr, erase=True)
+                            datadir=tmp_path, timerange=tr, erase=True,
+                            data_format_ohlcv='feather',
+                            candle_type=CandleType.SPOT)
     assert log_has(msg, caplog)

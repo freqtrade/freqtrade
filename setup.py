@@ -5,8 +5,8 @@ from setuptools import setup
 plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',
-    'scikit-learn<=1.1.3',
-    'scikit-optimize>=0.7.0',
+    'scikit-learn',
+    'ft-scikit-optimize>=0.9.2',
     'filelock',
 ]
 
@@ -35,21 +35,21 @@ hdf5 = [
 
 develop = [
     'coveralls',
+    'isort',
     'mypy',
-    'ruff',
     'pre-commit',
-    'pytest',
     'pytest-asyncio',
     'pytest-cov',
     'pytest-mock',
     'pytest-random-order',
-    'isort',
+    'pytest',
+    'ruff',
     'time-machine',
     'types-cachetools',
     'types-filelock',
+    'types-python-dateutil'
     'types-requests',
     'types-tabulate',
-    'types-python-dateutil'
 ]
 
 jupyter = [
@@ -70,14 +70,17 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=4.0.0',
+        'ccxt>=4.2.47',
         'SQLAlchemy>=2.0.6',
         'python-telegram-bot>=20.1',
-        'arrow>=1.0.0',
+        'humanize>=4.0.0',
         'cachetools',
         'requests',
+        'httpx>=0.24.1',
         'urllib3',
         'jsonschema',
+        'numpy',
+        'pandas>=2.2.0,<3.0',
         'TA-Lib',
         'pandas-ta',
         'technical',
@@ -86,31 +89,30 @@ setup(
         'py_find_1st',
         'python-rapidjson',
         'orjson',
-        'sdnotify',
         'colorama',
         'jinja2',
         'questionary',
         'prompt-toolkit',
-        'numpy',
-        'pandas',
         'joblib>=1.2.0',
         'rich',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'pydantic>=2.2.0',
+        'pyjwt',
+        'websockets',
         'uvicorn',
         'psutil',
-        'pyjwt',
-        'aiofiles',
         'schedule',
-        'websockets',
         'janus',
         'ast-comments',
+        'aiofiles',
         'aiohttp',
         'cryptography',
-        'httpx>=0.24.1',
+        'sdnotify',
         'python-dateutil',
+        'pytz',
         'packaging',
+        'freqtrade-client',
     ],
     extras_require={
         'dev': all_extra,
@@ -122,4 +124,5 @@ setup(
         'freqai_rl': freqai_rl,
         'all': all_extra,
     },
+    url="https://github.com/freqtrade/freqtrade",
 )

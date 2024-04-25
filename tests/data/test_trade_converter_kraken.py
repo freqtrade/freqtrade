@@ -1,17 +1,17 @@
 from datetime import datetime, timezone
-from pathlib import Path
 from shutil import copytree
 from unittest.mock import PropertyMock
 
 import pytest
 
 from freqtrade.data.converter.trade_converter_kraken import import_kraken_trades_from_csv
-from freqtrade.data.history.idatahandler import get_datahandler
+from freqtrade.data.history import get_datahandler
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from tests.conftest import EXMS, log_has, log_has_re, patch_exchange
 
 
-def test_import_kraken_trades_from_csv(testdatadir, tmpdir, caplog, default_conf_usdt, mocker):
+def test_import_kraken_trades_from_csv(testdatadir, tmp_path, caplog, default_conf_usdt, mocker):
     with pytest.raises(OperationalException, match="This function is only for the kraken exchange"):
         import_kraken_trades_from_csv(default_conf_usdt, 'feather')
 
@@ -21,10 +21,9 @@ def test_import_kraken_trades_from_csv(testdatadir, tmpdir, caplog, default_conf
     mocker.patch(f'{EXMS}.markets', PropertyMock(return_value={
         'BCH/EUR': {'symbol': 'BCH/EUR', 'id': 'BCHEUR', 'altname': 'BCHEUR'},
     }))
-    tmpdir1 = Path(tmpdir)
-    dstfile = tmpdir1 / 'BCH_EUR-trades.feather'
+    dstfile = tmp_path / 'BCH_EUR-trades.feather'
     assert not dstfile.is_file()
-    default_conf_usdt['datadir'] = tmpdir1
+    default_conf_usdt['datadir'] = tmp_path
     # There's 2 files in this tree, containing a total of 2 days.
     # tests/testdata/kraken/
     # └── trades_csv
@@ -32,16 +31,17 @@ def test_import_kraken_trades_from_csv(testdatadir, tmpdir, caplog, default_conf
     # └── incremental_q2
     #     └── BCHEUR.csv   <-- 2023-01-02
 
-    copytree(testdatadir / 'kraken/trades_csv', tmpdir1 / 'trades_csv')
+    copytree(testdatadir / 'kraken/trades_csv', tmp_path / 'trades_csv')
 
     import_kraken_trades_from_csv(default_conf_usdt, 'feather')
     assert log_has("Found csv files for BCHEUR.", caplog)
+    assert log_has("Converting pairs: BCH/EUR.", caplog)
     assert log_has_re(r"BCH/EUR: 340 trades.* 2023-01-01.* 2023-01-02.*", caplog)
 
     assert dstfile.is_file()
 
-    dh = get_datahandler(tmpdir1, 'feather')
-    trades = dh.trades_load('BCH_EUR')
+    dh = get_datahandler(tmp_path, 'feather')
+    trades = dh.trades_load('BCH_EUR', TradingMode.SPOT)
     assert len(trades) == 340
 
     assert trades['date'].min().to_pydatetime() == datetime(2023, 1, 1, 0, 3, 56,
@@ -50,3 +50,10 @@ def test_import_kraken_trades_from_csv(testdatadir, tmpdir, caplog, default_conf
                                                             tzinfo=timezone.utc)
     # ID is not filled
     assert len(trades.loc[trades['id'] != '']) == 0
+
+    caplog.clear()
+    default_conf_usdt['pairs'] = ['XRP/EUR']
+    # Filtered to non-existing pair
+    import_kraken_trades_from_csv(default_conf_usdt, 'feather')
+    assert log_has("Found csv files for BCHEUR.", caplog)
+    assert log_has("No data found for pairs XRP/EUR.", caplog)

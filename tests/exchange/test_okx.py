@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
@@ -197,7 +196,7 @@ def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
     exchange = get_patched_exchange(mocker, default_conf, id="okx")
     exchange._leverage_tiers = leverage_tiers
 
-    assert exchange.get_max_pair_stake_amount('BNB/BUSD:BUSD', 1.0) == 30000000
+    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 1.0) == 30000000
     assert exchange.get_max_pair_stake_amount('BNB/USDT:USDT', 1.0) == 50000000
     assert exchange.get_max_pair_stake_amount('BTC/USDT:USDT', 1.0) == 1000000000
     assert exchange.get_max_pair_stake_amount('BTC/USDT:USDT', 1.0, 10.0) == 100000000
@@ -269,9 +268,9 @@ def test_additional_exchange_init_okx(default_conf, mocker):
                            "additional_exchange_init", "fetch_accounts")
 
 
-def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, time_machine):
+def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog, time_machine):
 
-    default_conf['datadir'] = Path(tmpdir)
+    default_conf['datadir'] = tmp_path
     # fd_mock = mocker.patch('freqtrade.exchange.exchange.file_dump_json')
     api_mock = MagicMock()
     type(api_mock).has = PropertyMock(return_value={
@@ -473,7 +472,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
     exchange.load_leverage_tiers()
     assert not log_has(logmsg, caplog)
 
-    api_mock.fetch_market_leverage_tiers.call_count == 0
+    assert api_mock.fetch_market_leverage_tiers.call_count == 0
     # 2 day passes ...
     time_machine.move_to(datetime.now() + timedelta(weeks=5))
     exchange.load_leverage_tiers()
@@ -501,7 +500,7 @@ def test__set_leverage_okx(mocker, default_conf):
         'posSide': 'net'}
     api_mock.set_leverage = MagicMock(side_effect=ccxt.NetworkError())
     exchange._lev_prep('BTC/USDT:USDT', 3.2, 'buy')
-    api_mock.fetch_leverage.call_count == 1
+    assert api_mock.fetch_leverage.call_count == 1
 
     api_mock.fetch_leverage = MagicMock(side_effect=ccxt.NetworkError())
     ccxt_exceptionhandlers(

@@ -24,6 +24,8 @@ from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 
+pd.set_option('future.no_silent_downcasting', True)
+
 SECONDS_IN_DAY = 86400
 SECONDS_IN_HOUR = 3600
 
@@ -221,7 +223,7 @@ class FreqaiDataKitchen:
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
         drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
-        drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
+        drop_index = drop_index.replace(True, 1).replace(False, 0).infer_objects(copy=False)
         if (training_filter):
 
             # we don't care about total row number (total no. datapoints) in training, we only care
@@ -229,7 +231,9 @@ class FreqaiDataKitchen:
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_df.filter(label_list, axis=1)
             drop_index_labels = pd.isnull(labels).any(axis=1)
-            drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
+            drop_index_labels = drop_index_labels.replace(
+                True, 1
+            ).replace(False, 0).infer_objects(copy=False)
             dates = unfiltered_df['date']
             filtered_df = filtered_df[
                 (drop_index == 0) & (drop_index_labels == 0)
@@ -244,7 +248,7 @@ class FreqaiDataKitchen:
                 f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
-            if len(unfiltered_df) == 0 and not self.live:
+            if len(filtered_df) == 0 and not self.live:
                 raise OperationalException(
                     f"{self.pair}: all training data dropped due to NaNs. "
                     "You likely did not download enough training data prior "
@@ -255,7 +259,7 @@ class FreqaiDataKitchen:
             if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
                 worst_indicator = str(unfiltered_df.count().idxmin())
                 logger.warning(
-                    f" {(1 - len(filtered_df)/len(unfiltered_df)) * 100:.0f} percent "
+                    f" {(1 - len(filtered_df) / len(unfiltered_df)) * 100:.0f} percent "
                     " of training data dropped due to NaNs, model may perform inconsistent "
                     f"with expectations. Verify {worst_indicator}"
                 )
@@ -432,8 +436,12 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
+        user_cols = [col for col in dataframe_backtest.columns if col.startswith("%%")]
+        cols = ["date"]
+        cols.extend(user_cols)
+
         dataframe_backtest.reset_index(drop=True, inplace=True)
-        merged_df = pd.concat([dataframe_backtest["date"], append_df], axis=1)
+        merged_df = pd.concat([dataframe_backtest[cols], append_df], axis=1)
         return merged_df
 
     def append_predictions(self, append_df: DataFrame) -> None:
@@ -451,7 +459,8 @@ class FreqaiDataKitchen:
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
-        to_keep = [col for col in dataframe.columns if not col.startswith("&")]
+        to_keep = [col for col in dataframe.columns if
+                   not col.startswith("&") and not col.startswith("%%")]
         self.return_dataframe = pd.merge(dataframe[to_keep],
                                          self.full_df, how='left', on='date')
         self.return_dataframe[self.full_df.columns] = (
@@ -603,7 +612,7 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
-            pair = pair.replace(':', '')  # lightgbm doesnt like colons
+            pair = pair.replace(':', '')  # lightgbm does not like colons
             pair_cols = [col for col in dataframe.columns if col.startswith("%")
                          and f"{pair}_" in col]
 
@@ -629,7 +638,7 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         current_pair = current_pair.replace(':', '')
         for pair in pairs:
-            pair = pair.replace(':', '')  # lightgbm doesnt work with colons
+            pair = pair.replace(':', '')  # lightgbm does not work with colons
             if current_pair != pair:
                 dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
 
@@ -708,6 +717,8 @@ class FreqaiDataKitchen:
             informative_df = self.get_pair_data_for_features(
                 pair, tf, strategy, corr_dataframes, base_dataframes, is_corr_pairs)
             informative_copy = informative_df.copy()
+
+            logger.debug(f"Populating features for {pair} {tf}")
 
             for t in self.freqai_config["feature_parameters"]["indicator_periods_candles"]:
                 df_features = strategy.feature_engineering_expand_all(
@@ -788,6 +799,7 @@ class FreqaiDataKitchen:
 
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
+            base_dataframes[self.config["timeframe"]] = dataframe.copy()
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 
@@ -829,7 +841,7 @@ class FreqaiDataKitchen:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
-        # incase targets are classifications
+        # in case targets are classifications
         for label in self.unique_class_list:
             self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
 

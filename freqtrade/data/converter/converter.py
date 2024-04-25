@@ -84,7 +84,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
 
     """
-    from freqtrade.exchange import timeframe_to_minutes
+    from freqtrade.exchange import timeframe_to_resample_freq
 
     ohlcv_dict = {
         'open': 'first',
@@ -93,13 +93,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         'close': 'last',
         'volume': 'sum'
     }
-    timeframe_minutes = timeframe_to_minutes(timeframe)
-    resample_interval = f'{timeframe_minutes}min'
-    if timeframe_minutes >= 43200 and timeframe_minutes < 525600:
-        # Monthly candles need special treatment to stick to the 1st of the month
-        resample_interval = f'{timeframe}S'
-    elif timeframe_minutes > 43200:
-        resample_interval = timeframe
+    resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
     df = dataframe.resample(resample_interval, on='date').agg(ohlcv_dict)
 
@@ -116,8 +110,8 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     len_after = len(df)
     pct_missing = (len_after - len_before) / len_before if len_before > 0 else 0
     if len_before != len_after:
-        message = (f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}"
-                   f" - {pct_missing:.2%}")
+        message = (f"Missing data fillup for {pair}, {timeframe}: "
+                   f"before: {len_before} - after: {len_after} - {pct_missing:.2%}")
         if pct_missing > 0.01:
             logger.info(message)
         else:
@@ -206,7 +200,7 @@ def convert_ohlcv_format(
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
     """
-    from freqtrade.data.history.idatahandler import get_datahandler
+    from freqtrade.data.history import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
     trg = get_datahandler(config['datadir'], convert_to)
     timeframes = config.get('timeframes', [config.get('timeframe')])

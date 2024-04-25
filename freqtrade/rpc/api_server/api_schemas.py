@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, RootModel, SerializeAsAny
+from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, IntOrInf
+from freqtrade.constants import IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
 from freqtrade.types import ValidExchangesType
 
@@ -95,13 +95,28 @@ class Count(BaseModel):
     total_stake: float
 
 
-class PerformanceEntry(BaseModel):
-    pair: str
-    profit: float
+class __BaseStatsModel(BaseModel):
     profit_ratio: float
     profit_pct: float
     profit_abs: float
     count: int
+
+
+class Entry(__BaseStatsModel):
+    enter_tag: str
+
+
+class Exit(__BaseStatsModel):
+    exit_reason: str
+
+
+class MixTag(__BaseStatsModel):
+    mix_tag: str
+
+
+class PerformanceEntry(__BaseStatsModel):
+    pair: str
+    profit: float
 
 
 class Profit(BaseModel):
@@ -246,6 +261,7 @@ class OrderSchema(BaseModel):
     order_timestamp: Optional[int] = None
     order_filled_timestamp: Optional[int] = None
     ft_fee_base: Optional[float] = None
+    ft_order_tag: Optional[str] = None
 
 
 class TradeSchema(BaseModel):
@@ -272,6 +288,8 @@ class TradeSchema(BaseModel):
 
     open_date: str
     open_timestamp: int
+    open_fill_date: Optional[str]
+    open_fill_timestamp: Optional[int]
     open_rate: float
     open_rate_requested: Optional[float] = None
     open_trade_value: float
@@ -299,7 +317,6 @@ class TradeSchema(BaseModel):
     stop_loss_abs: Optional[float] = None
     stop_loss_ratio: Optional[float] = None
     stop_loss_pct: Optional[float] = None
-    stoploss_order_id: Optional[str] = None
     stoploss_last_update: Optional[str] = None
     stoploss_last_update_timestamp: Optional[int] = None
     initial_stop_loss_abs: Optional[float] = None
@@ -361,6 +378,13 @@ class Locks(BaseModel):
     locks: List[LockModel]
 
 
+class LocksPayload(BaseModel):
+    pair: str
+    side: str = '*'  # Default to both sides
+    until: AwareDatetime
+    reason: Optional[str] = None
+
+
 class DeleteLockRequest(BaseModel):
     pair: Optional[str] = None
     lockid: Optional[int] = None
@@ -382,7 +406,7 @@ class ForceEnterPayload(BaseModel):
 
 
 class ForceExitPayload(BaseModel):
-    tradeid: str
+    tradeid: Union[str, int]
     ordertype: Optional[OrderTypeValues] = None
     amount: Optional[float] = None
 
@@ -456,6 +480,7 @@ class FreqAIModelListResponse(BaseModel):
 class StrategyResponse(BaseModel):
     strategy: str
     code: str
+    timeframe: Optional[str]
 
 
 class AvailablePairs(BaseModel):
@@ -484,11 +509,6 @@ class PairHistory(BaseModel):
     data_start: str
     data_stop: str
     data_stop_ts: int
-    # TODO[pydantic]: The following keys were removed: `json_encoders`.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    model_config = ConfigDict(json_encoders={
-        datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
-    })
 
 
 class BacktestFreqAIInputs(BaseModel):
@@ -527,11 +547,21 @@ class BacktestHistoryEntry(BaseModel):
     run_id: str
     backtest_start_time: int
     notes: Optional[str] = ''
+    backtest_start_ts: Optional[int] = None
+    backtest_end_ts: Optional[int] = None
+    timeframe: Optional[str] = None
+    timeframe_detail: Optional[str] = None
 
 
 class BacktestMetadataUpdate(BaseModel):
     strategy: str
     notes: str = ''
+
+
+class BacktestMarketChange(BaseModel):
+    columns: List[str]
+    length: int
+    data: List[List[Any]]
 
 
 class SysInfo(BaseModel):
@@ -542,3 +572,7 @@ class SysInfo(BaseModel):
 class Health(BaseModel):
     last_process: Optional[datetime] = None
     last_process_ts: Optional[int] = None
+    bot_start: Optional[datetime] = None
+    bot_start_ts: Optional[int] = None
+    bot_startup: Optional[datetime] = None
+    bot_startup_ts: Optional[int] = None

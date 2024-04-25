@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from copy import deepcopy
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
@@ -11,19 +11,18 @@ from unittest.mock import MagicMock, Mock, PropertyMock
 import numpy as np
 import pandas as pd
 import pytest
+from xdist.scheduler.loadscope import LoadScopeScheduling
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_list_to_df
 from freqtrade.edge import PairInfo
 from freqtrade.enums import CandleType, MarginMode, RunMode, SignalDirection, TradingMode
-from freqtrade.exchange import Exchange
-from freqtrade.exchange.exchange import timeframe_to_minutes
+from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
-from freqtrade.util import dt_ts
-from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util import dt_now, dt_ts
 from freqtrade.worker import Worker
 from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
                                    mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
@@ -50,10 +49,31 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "longrun: mark test that is running slowly and should not be run regularily"
+        "markers", "longrun: mark test that is running slowly and should not be run regularly"
     )
     if not config.option.longrun:
-        setattr(config.option, 'markexpr', 'not longrun')
+        config.option.markexpr = 'not longrun'
+
+
+class FixtureScheduler(LoadScopeScheduling):
+    # Based on the suggestion in
+    # https://github.com/pytest-dev/pytest-xdist/issues/18
+
+    def _split_scope(self, nodeid):
+        if 'exchange_online' in nodeid:
+            try:
+                # Extract exchange ID from nodeid
+                exchange_id = nodeid.split('[')[1].split('-')[0].rstrip(']')
+                return exchange_id
+            except Exception as e:
+                print(e)
+                pass
+
+        return nodeid
+
+
+def pytest_xdist_make_scheduler(config, log):
+    return FixtureScheduler(config, log)
 
 
 def log_has(line, logs):
@@ -85,13 +105,62 @@ def get_args(args):
     return Arguments(args).get_parsed_arg()
 
 
-def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
+def generate_trades_history(n_rows, start_date: Optional[datetime] = None, days=5):
     np.random.seed(42)
-    tf_mins = timeframe_to_minutes(timeframe)
+    if not start_date:
+        start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
+        # Generate random data
+    end_date = start_date + timedelta(days=days)
+    _start_timestamp = start_date.timestamp()
+    _end_timestamp = pd.to_datetime(end_date).timestamp()
+
+    random_timestamps_in_seconds = np.random.uniform(_start_timestamp, _end_timestamp, n_rows)
+    timestamp = pd.to_datetime(random_timestamps_in_seconds, unit='s')
+
+    id = [
+        f'a{np.random.randint(1e6, 1e7 - 1)}cd{np.random.randint(100, 999)}'
+        for _ in range(n_rows)
+    ]
+
+    side = np.random.choice(['buy', 'sell'], n_rows)
+
+    # Initial price and subsequent changes
+    initial_price = 0.019626
+    price_changes = np.random.normal(0, initial_price * 0.05, n_rows)
+    price = np.cumsum(np.concatenate(([initial_price], price_changes)))[:n_rows]
+
+    amount = np.random.uniform(0.011, 20, n_rows)
+    cost = price * amount
+
+    # Create DataFrame
+    df = pd.DataFrame({'timestamp': timestamp, 'id': id, 'type': None, 'side': side,
+                       'price': price, 'amount': amount, 'cost': cost})
+    df['date'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
+    df = df.sort_values('timestamp').reset_index(drop=True)
+    assert list(df.columns) == constants.DEFAULT_TRADES_COLUMNS + ['date']
+    return df
+
+
+def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05', random_seed=42):
+    np.random.seed(random_seed)
 
     base = np.random.normal(20, 2, size=size)
-
-    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+    if timeframe == '1y':
+        date = pd.date_range(start, periods=size, freq='1YS', tz='UTC')
+    elif timeframe == '1M':
+        date = pd.date_range(start, periods=size, freq='1MS', tz='UTC')
+    elif timeframe == '3M':
+        date = pd.date_range(start, periods=size, freq='3MS', tz='UTC')
+    elif timeframe == '1w' or timeframe == '7d':
+        date = pd.date_range(start, periods=size, freq='1W-MON', tz='UTC')
+    else:
+        tf_mins = timeframe_to_minutes(timeframe)
+        if tf_mins >= 1:
+            date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
+        else:
+            tf_secs = timeframe_to_seconds(timeframe)
+            date = pd.date_range(start, periods=size, freq=f'{tf_secs}s', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,
@@ -105,10 +174,10 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     return df
 
 
-def generate_test_data_raw(timeframe: str, size: int, start: str = '2020-07-05'):
+def generate_test_data_raw(timeframe: str, size: int, start: str = '2020-07-05', random_seed=42):
     """ Generates data in the ohlcv format used by ccxt """
-    df = generate_test_data(timeframe, size, start)
-    df['date'] = df.loc[:, 'date'].view(np.int64) // 1000 // 1000
+    df = generate_test_data(timeframe, size, start, random_seed)
+    df['date'] = df.loc[:, 'date'].astype(np.int64) // 1000 // 1000
     return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
 
 
@@ -413,8 +482,8 @@ def patch_gc(mocker) -> None:
 
 
 @pytest.fixture(autouse=True)
-def user_dir(mocker, tmpdir) -> Path:
-    user_dir = Path(tmpdir) / "user_data"
+def user_dir(mocker, tmp_path) -> Path:
+    user_dir = tmp_path / "user_data"
     mocker.patch('freqtrade.configuration.configuration.create_userdata_dir',
                  return_value=user_dir)
     return user_dir
@@ -527,6 +596,7 @@ def get_default_conf(testdatadir):
         "internals": {},
         "export": "none",
         "dataformat_ohlcv": "feather",
+        "runmode": "dry_run",
         "candle_type_def": CandleType.SPOT,
     }
     return configuration
@@ -924,6 +994,58 @@ def get_markets():
                 },
                 'price': {
                     'min': 1e-08,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
+            },
+            'info': {
+                'maintenance_rate': '0.005',
+            },
+        },
+        'BTC/USDT': {
+            'id': 'USDT-BTC',
+            'symbol': 'BTC/USDT',
+            'base': 'BTC',
+            'quote': 'USDT',
+            'settle': None,
+            'baseId': 'BTC',
+            'quoteId': 'USDT',
+            'settleId': None,
+            'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': False,
+            'future': False,
+            'option': False,
+            'active': True,
+            'contract': None,
+            'linear': None,
+            'inverse': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'contractSize': None,
+            'expiry': None,
+            'expiryDateTime': None,
+            'strike': None,
+            'optionType': None,
+            'precision': {
+                'amount': 4,
+                'price': 4,
+            },
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100,
+                },
+                'amount': {
+                    'min': 0.000221,
+                    'max': None,
+                },
+                'price': {
+                    'min': 1e-02,
                     'max': None,
                 },
                 'cost': {
@@ -2359,14 +2481,7 @@ def trades_history_df(trades_history):
 
 @pytest.fixture(scope="function")
 def fetch_trades_result():
-    return [{'info': {'a': 126181329,
-                      'p': '0.01962700',
-                      'q': '0.04000000',
-                      'f': 138604155,
-                      'l': 138604155,
-                      'T': 1565798399463,
-                      'm': False,
-                      'M': True},
+    return [{'info': ['0.01962700', '0.04000000', '1565798399.4631551', 'b', 'm', '', '126181329'],
              'timestamp': 1565798399463,
              'datetime': '2019-08-14T15:59:59.463Z',
              'symbol': 'ETH/BTC',
@@ -2379,14 +2494,7 @@ def fetch_trades_result():
              'amount': 0.04,
              'cost': 0.00078508,
              'fee': None},
-            {'info': {'a': 126181330,
-                      'p': '0.01962700',
-                      'q': '0.24400000',
-                      'f': 138604156,
-                      'l': 138604156,
-                      'T': 1565798399629,
-                      'm': False,
-                      'M': True},
+            {'info': ['0.01962700', '0.24400000', '1565798399.6291551', 'b', 'm', '', '126181330'],
              'timestamp': 1565798399629,
              'datetime': '2019-08-14T15:59:59.629Z',
              'symbol': 'ETH/BTC',
@@ -2399,14 +2507,7 @@ def fetch_trades_result():
              'amount': 0.244,
              'cost': 0.004788987999999999,
              'fee': None},
-            {'info': {'a': 126181331,
-                      'p': '0.01962600',
-                      'q': '0.01100000',
-                      'f': 138604157,
-                      'l': 138604157,
-                      'T': 1565798399752,
-                      'm': True,
-                      'M': True},
+            {'info': ['0.01962600', '0.01100000', '1565798399.7521551', 's', 'm', '', '126181331'],
              'timestamp': 1565798399752,
              'datetime': '2019-08-14T15:59:59.752Z',
              'symbol': 'ETH/BTC',
@@ -2419,14 +2520,7 @@ def fetch_trades_result():
              'amount': 0.011,
              'cost': 0.00021588599999999999,
              'fee': None},
-            {'info': {'a': 126181332,
-                      'p': '0.01962600',
-                      'q': '0.01100000',
-                      'f': 138604158,
-                      'l': 138604158,
-                      'T': 1565798399862,
-                      'm': True,
-                      'M': True},
+            {'info': ['0.01962600', '0.01100000', '1565798399.8621551', 's', 'm', '', '126181332'],
              'timestamp': 1565798399862,
              'datetime': '2019-08-14T15:59:59.862Z',
              'symbol': 'ETH/BTC',
@@ -2439,14 +2533,8 @@ def fetch_trades_result():
              'amount': 0.011,
              'cost': 0.00021588599999999999,
              'fee': None},
-            {'info': {'a': 126181333,
-                      'p': '0.01952600',
-                      'q': '0.01200000',
-                      'f': 138604158,
-                      'l': 138604158,
-                      'T': 1565798399872,
-                      'm': True,
-                      'M': True},
+            {'info': ['0.01952600', '0.01200000', '1565798399.8721551', 's', 'm', '', '126181333',
+                      1565798399872512133],
              'timestamp': 1565798399872,
              'datetime': '2019-08-14T15:59:59.872Z',
              'symbol': 'ETH/BTC',
@@ -3254,7 +3342,7 @@ def leverage_tiers():
                 'maintAmt': 386950.0
             },
         ],
-        "ADA/BUSD:BUSD": [
+        "ADA/USDT:USDT": [
             {
                 "minNotional": 0,
                 "maxNotional": 100000,
@@ -3298,7 +3386,7 @@ def leverage_tiers():
                 "maintAmt": 1527500.0
             },
         ],
-        'BNB/BUSD:BUSD': [
+        'XRP/USDT:USDT': [
             {
                 "minNotional": 0,       # stake(before leverage) = 0
                 "maxNotional": 100000,  # max stake(before leverage) = 5000

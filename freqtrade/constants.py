@@ -33,9 +33,10 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'MaxDrawDownHyperOptLoss', 'MaxDrawDownRelativeHyperOptLoss',
                          'ProfitDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList', 'RemotePairList',
-                       'AgeFilter', "FullTradesFilter", 'OffsetFilter', 'PerformanceFilter',
-                       'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
-                       'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
+                       'MarketCapPairList', 'AgeFilter', "FullTradesFilter", 'OffsetFilter',
+                       'PerformanceFilter', 'PrecisionFilter', 'PriceFilter',
+                       'RangeStabilityFilter', 'ShuffleFilter', 'SpreadFilter',
+                       'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod',
                          'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5', 'feather', 'parquet']
@@ -105,7 +106,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "UAH", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR",
-    "USD", "BTC", "ETH", "XRP", "LTC", "BCH"
+    "USD", "BTC", "ETH", "XRP", "LTC", "BCH", "BNB"
 ]
 
 MINIMAL_CONFIG = {

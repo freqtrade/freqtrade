@@ -9,11 +9,15 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.util import render_template, render_template_with_fallback
 
 
 logger = logging.getLogger(__name__)
+
+
+# Timeout for requests
+req_timeout = 30
 
 
 def start_create_userdir(args: Dict[str, Any]) -> None:
@@ -89,7 +93,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         deploy_new_strategy(args['strategy'], new_path, args['template'])
 
     else:
-        raise OperationalException("`new-strategy` requires --strategy to be set.")
+        raise ConfigurationError("`new-strategy` requires --strategy to be set.")
 
 
 def clean_ui_subdir(directory: Path):

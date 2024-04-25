@@ -2,6 +2,56 @@
 requires = ["setuptools >= 64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "freqtrade"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+authors = [
+  {name = "Freqtrade Team"},
+  {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
+]
+
+description = "Freqtrade - Crypto Trading Bot"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "GPLv3"}
+# license = "GPLv3"
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/freqtrade/freqtrade"
+Documentation = "https://freqtrade.io"
+"Bug Tracker" = "https://github.com/freqtrade/freqtrade/issues"
+
+
+[project.scripts]
+freqtrade = "freqtrade.main:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freqtrade*"]
+exclude = ["tests", "tests.*", "user_data", "user_data*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "freqtrade.__version__"}
+
 [tool.black]
 line-length = 100
 exclude = '''
@@ -31,13 +81,15 @@ skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+addopts = "--dist loadscope"
 
 [tool.mypy]
 ignore_missing_imports = true
 namespace_packages = false
 warn_unused_ignores = true
 exclude = [
-    '^build_helpers\.py$'
+    '^build_helpers\.py$',
+    '^ft_client/build/.*$',
 ]
 plugins = [
   "sqlalchemy.ext.mypy.plugin"
@@ -65,9 +117,12 @@ ignore = ["freqtrade/vendor/**"]
 line-length = 100
 extend-exclude = [".env", ".venv"]
 target-version = "py38"
+
+[tool.ruff.lint]
 # Exclude UP036 as it's causing the "exit if < 3.9" to fail.
 extend-select = [
   "C90",    # mccabe
+  # "B",    # bugbear
   # "N",    # pep8-naming
   "F",      # pyflakes
   "E",      # pycodestyle
@@ -75,6 +130,7 @@ extend-select = [
   "UP",     # pyupgrade
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
+  # "C4",     # flake8-comprehensions
   "YTT",    # flake8-2020
   # "S",    # flake8-bandit
   # "DTZ",  # flake8-datetimez
@@ -83,8 +139,38 @@ extend-select = [
   "PTH",    # flake8-use-pathlib
 ]
 
-[tool.ruff.mccabe]
+extend-ignore = [
+  "E241",  # Multiple spaces after comma
+  "E272",  # Multiple spaces before keyword
+  "E221",  # Multiple spaces before operator
+  "B007",  # Loop control variable not used
+]
+
+[tool.ruff.lint.mccabe]
 max-complexity = 12
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.flake8]
+# Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
+# minus E226
+ignore = ["E121","E123","E126","E24","E704","W503","W504"]
+max-line-length = 100
+max-complexity = 12
+exclude = [
+    ".git",
+    "__pycache__",
+    ".eggs",
+    "user_data",
+    ".venv",
+    ".env",
+]
+
+[tool.codespell]
+ignore-words-list = "coo,fo,strat,zar,selectin"
+skip="*.svg,./user_data,./freqtrade/rpc/api_server/ui/installed"

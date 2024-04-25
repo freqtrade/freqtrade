@@ -54,7 +54,7 @@ optional arguments:
 ### Create config examples
 
 ```
-$ freqtrade new-config --config config_binance.json
+$ freqtrade new-config --config user_data/config_binance.json
 
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC
@@ -65,6 +65,53 @@ $ freqtrade new-config --config config_binance.json
 ? Select exchange  binance
 ? Do you want to enable Telegram?  No
 ```
+
+## Show config
+
+Show configuration file (with sensitive values redacted by default).
+Especially useful with [split configuration files](configuration.md#multiple-configuration-files) or [environment variables](configuration.md#environment-variables), where this command will show the merged configuration.
+
+![Show config output](assets/show-config-output.png)
+
+```
+usage: freqtrade show-config [-h] [--userdir PATH] [-c PATH]
+                             [--show-sensitive]
+
+options:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  --show-sensitive      Show secrets in the output.
+```
+
+``` output
+Your combined configuration is:
+{
+  "exit_pricing": {
+    "price_side": "other",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "stake_currency": "USDT",
+  "exchange": {
+    "name": "binance",
+    "key": "REDACTED",
+    "secret": "REDACTED",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+  }
+  // ...
+}
+```
+
+!!! Warning "Sharing information provided by this command"
+    We try to remove all known sensitive information from the default output (without `--show-sensitive`). 
+    Yet, please do double-check for sensitive values in your output to make sure you're not accidentally exposing some private info.
 
 ## Create new strategy
 
@@ -219,232 +266,80 @@ optional arguments:
   -a, --all         Print all exchanges known to the ccxt library.
 ```
 
-* Example: see exchanges available for the bot:
+Example: see exchanges available for the bot:
+
 ```
 $ freqtrade list-exchanges
 Exchanges available for Freqtrade:
-Exchange name    Valid    reason
----------------  -------  --------------------------------------------
-aax              True
-ascendex         True     missing opt: fetchMyTrades
-bequant          True
-bibox            True
-bigone           True
-binance          True
-binanceus        True
-bitbank          True     missing opt: fetchTickers
-bitcoincom       True
-bitfinex         True
-bitforex         True     missing opt: fetchMyTrades, fetchTickers
-bitget           True
-bithumb          True     missing opt: fetchMyTrades
-bitkk            True     missing opt: fetchMyTrades
-bitmart          True
-bitmax           True     missing opt: fetchMyTrades
-bitpanda         True
-bittrex          True
-bitvavo          True
-bitz             True     missing opt: fetchMyTrades
-btcalpha         True     missing opt: fetchTicker, fetchTickers
-btcmarkets       True     missing opt: fetchTickers
-buda             True     missing opt: fetchMyTrades, fetchTickers
-bw               True     missing opt: fetchMyTrades, fetchL2OrderBook
-bybit            True
-bytetrade        True
-cdax             True
-cex              True     missing opt: fetchMyTrades
-coinbaseprime    True     missing opt: fetchTickers
-coinbasepro      True     missing opt: fetchTickers
-coinex           True
-crex24           True
-deribit          True
-digifinex        True
-equos            True     missing opt: fetchTicker, fetchTickers
-eterbase         True
-fcoin            True     missing opt: fetchMyTrades, fetchTickers
-fcoinjp          True     missing opt: fetchMyTrades, fetchTickers
-gateio           True
-gemini           True
-gopax            True
-hbtc             True
-hitbtc           True
-huobijp          True
-huobipro         True
-idex             True
-kraken           True
-kucoin           True
-lbank            True     missing opt: fetchMyTrades
-mercado          True     missing opt: fetchTickers
-ndax             True     missing opt: fetchTickers
-novadax          True
-okcoin           True
-okex             True
-probit           True
-qtrade           True
-stex             True
-timex            True
-upbit            True     missing opt: fetchMyTrades
-vcc              True
-zb               True     missing opt: fetchMyTrades
-
+Exchange name       Supported    Markets                 Reason
+------------------  -----------  ----------------------  ------------------------------------------------------------------------
+binance             Official     spot, isolated futures
+bitmart             Official     spot
+bybit                            spot, isolated futures
+gate                Official     spot, isolated futures
+htx                 Official     spot
+huobi                            spot
+kraken              Official     spot
+okx                 Official     spot, isolated futures
 ```
+
+!!! info ""
+    Output reduced for clarity - supported and available exchanges may change over time.
 
 !!! Note "missing opt exchanges"
     Values with "missing opt:" might need special configuration (e.g. using orderbook if `fetchTickers` is missing) - but should in theory work (although we cannot guarantee they will).
 
-* Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade):
+Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade)
+
 ```
 $ freqtrade list-exchanges -a
 All exchanges supported by the ccxt library:
-Exchange name       Valid    reason
-------------------  -------  ---------------------------------------------------------------------------------------
-aax                 True
-aofex               False    missing: fetchOrder
-ascendex            True     missing opt: fetchMyTrades
-bequant             True
-bibox               True
-bigone              True
-binance             True
-binanceus           True
-bit2c               False    missing: fetchOrder, fetchOHLCV
-bitbank             True     missing opt: fetchTickers
-bitbay              False    missing: fetchOrder
-bitcoincom          True
-bitfinex            True
-bitfinex2           False    missing: fetchOrder
-bitflyer            False    missing: fetchOrder, fetchOHLCV
-bitforex            True     missing opt: fetchMyTrades, fetchTickers
-bitget              True
-bithumb             True     missing opt: fetchMyTrades
-bitkk               True     missing opt: fetchMyTrades
-bitmart             True
-bitmax              True     missing opt: fetchMyTrades
-bitmex              False    Various reasons.
-bitpanda            True
-bitso               False    missing: fetchOHLCV
-bitstamp            True     missing opt: fetchTickers
-bitstamp1           False    missing: fetchOrder, fetchOHLCV
-bittrex             True
-bitvavo             True
-bitz                True     missing opt: fetchMyTrades
-bl3p                False    missing: fetchOrder, fetchOHLCV
-bleutrade           False    missing: fetchOrder
-braziliex           False    missing: fetchOHLCV
-btcalpha            True     missing opt: fetchTicker, fetchTickers
-btcbox              False    missing: fetchOHLCV
-btcmarkets          True     missing opt: fetchTickers
-btctradeua          False    missing: fetchOrder, fetchOHLCV
-btcturk             False    missing: fetchOrder
-buda                True     missing opt: fetchMyTrades, fetchTickers
-bw                  True     missing opt: fetchMyTrades, fetchL2OrderBook
-bybit               True
-bytetrade           True
-cdax                True
-cex                 True     missing opt: fetchMyTrades
-chilebit            False    missing: fetchOrder, fetchOHLCV
-coinbase            False    missing: fetchOrder, cancelOrder, createOrder, fetchOHLCV
-coinbaseprime       True     missing opt: fetchTickers
-coinbasepro         True     missing opt: fetchTickers
-coincheck           False    missing: fetchOrder, fetchOHLCV
-coinegg             False    missing: fetchOHLCV
-coinex              True
-coinfalcon          False    missing: fetchOHLCV
-coinfloor           False    missing: fetchOrder, fetchOHLCV
-coingi              False    missing: fetchOrder, fetchOHLCV
-coinmarketcap       False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance, fetchOHLCV
-coinmate            False    missing: fetchOHLCV
-coinone             False    missing: fetchOHLCV
-coinspot            False    missing: fetchOrder, cancelOrder, fetchOHLCV
-crex24              True
-currencycom         False    missing: fetchOrder
-delta               False    missing: fetchOrder
-deribit             True
-digifinex           True
-equos               True     missing opt: fetchTicker, fetchTickers
-eterbase            True
-exmo                False    missing: fetchOrder
-exx                 False    missing: fetchOHLCV
-fcoin               True     missing opt: fetchMyTrades, fetchTickers
-fcoinjp             True     missing opt: fetchMyTrades, fetchTickers
-flowbtc             False    missing: fetchOrder, fetchOHLCV
-foxbit              False    missing: fetchOrder, fetchOHLCV
-gateio              True
-gemini              True
-gopax               True
-hbtc                True
-hitbtc              True
-hollaex             False    missing: fetchOrder
-huobijp             True
-huobipro            True
-idex                True
-independentreserve  False    missing: fetchOHLCV
-indodax             False    missing: fetchOHLCV
-itbit               False    missing: fetchOHLCV
-kraken              True
-kucoin              True
-kuna                False    missing: fetchOHLCV
-lakebtc             False    missing: fetchOrder, fetchOHLCV
-latoken             False    missing: fetchOrder, fetchOHLCV
-lbank               True     missing opt: fetchMyTrades
-liquid              False    missing: fetchOHLCV
-luno                False    missing: fetchOHLCV
-lykke               False    missing: fetchOHLCV
-mercado             True     missing opt: fetchTickers
-mixcoins            False    missing: fetchOrder, fetchOHLCV
-ndax                True     missing opt: fetchTickers
-novadax             True
-oceanex             False    missing: fetchOHLCV
-okcoin              True
-okex                True
-paymium             False    missing: fetchOrder, fetchOHLCV
-phemex              False    Does not provide history.
-poloniex            False    missing: fetchOrder
-probit              True
-qtrade              True
-rightbtc            False    missing: fetchOrder
-ripio               False    missing: fetchOHLCV
-southxchange        False    missing: fetchOrder, fetchOHLCV
-stex                True
-surbitcoin          False    missing: fetchOrder, fetchOHLCV
-therock             False    missing: fetchOHLCV
-tidebit             False    missing: fetchOrder
-tidex               False    missing: fetchOHLCV
-timex               True
-upbit               True     missing opt: fetchMyTrades
-vbtc                False    missing: fetchOrder, fetchOHLCV
-vcc                 True
-wavesexchange       False    missing: fetchOrder
-whitebit            False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance
-xbtce               False    missing: fetchOrder, fetchOHLCV
-xena                False    missing: fetchOrder
-yobit               False    missing: fetchOHLCV
-zaif                False    missing: fetchOrder, fetchOHLCV
-zb                  True     missing opt: fetchMyTrades
+Exchange name       Valid    Supported    Markets                 Reason
+------------------  -------  -----------  ----------------------  ---------------------------------------------------------------------------------
+binance             True     Official     spot, isolated futures
+bitflyer            False                 spot                    missing: fetchOrder. missing opt: fetchTickers.
+bitmart             True     Official     spot
+bybit               True                  spot, isolated futures
+gate                True     Official     spot, isolated futures
+htx                 True     Official     spot
+kraken              True     Official     spot
+okx                 True     Official     spot, isolated futures
 ```
+
+!!! info ""
+    Reduced output - supported and available exchanges may change over time.
 
 ## List Timeframes
 
 Use the `list-timeframes` subcommand to see the list of timeframes available for the exchange.
 
 ```
-usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]
+usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [--exchange EXCHANGE] [-1]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   -1, --one-column      Print output in one column.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`). Multiple --config options may be used. Can be set to `-`
-                        to read config from stdin.
-  -d PATH, --datadir PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH, --data-dir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
+
 
 ```
 
@@ -479,20 +374,17 @@ usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                               [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
-                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
-                              [--trading-mode {spot,margin,futures}]
-
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                              [-a] [--trading-mode {spot,margin,futures}]
 usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                             [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                             [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
                             [--trading-mode {spot,margin,futures}]
-
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
   --print-list          Print list of pairs or market symbols. By default data
                         is printed in the tabular format.
   --print-json          Print list of pairs or market symbols in JSON format.
@@ -504,20 +396,22 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
-  --trading-mode {spot,margin,futures}
+  --trading-mode {spot,margin,futures}, --tradingmode {spot,margin,futures}
                         Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
                         'syslog', 'journald'. See the documentation for more
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
-  -d PATH, --datadir PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH, --data-dir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
@@ -532,7 +426,7 @@ Pairs/markets are sorted by its symbol string in the printed output.
 ### Examples
 
 * Print the list of active pairs with quote currency USD on exchange, specified in the default
-configuration file (i.e. pairs on the "Bittrex" exchange) in JSON format:
+configuration file (i.e. pairs on the "Binance" exchange) in JSON format:
 
 ```
 $ freqtrade list-pairs --quote USD --print-json
@@ -564,7 +458,7 @@ usage: freqtrade test-pairlist [-h] [--userdir PATH] [-v] [-c PATH]
                                [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
                                [-1] [--print-json] [--exchange EXCHANGE]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
@@ -578,8 +472,7 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -1, --one-column      Print output in one column.
   --print-json          Print list of pairs or market symbols in JSON format.
-  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
-                        config is provided.
+  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.
 
 ```
 
@@ -986,11 +879,7 @@ options:
   -h, --help            show this help message and exit
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest. Please note that timeframe needs to be set
-                        either in config or via command line. When using this
-                        together with `--export trades`, the strategy-name is
-                        injected into the filename (so `backtest-data.json`
-                        becomes `backtest-data-SampleStrategy.json`
+                        be converted.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

@@ -68,6 +68,8 @@ Binance supports [time_in_force](configuration.md#understand-order_time_in_force
 For Binance, it is suggested to add `"BNB/<STAKE>"` to your blacklist to avoid issues, unless you are willing to maintain enough extra `BNB` on the account or unless you're willing to disable using `BNB` for fees.
 Binance accounts may use `BNB` for fees, and if a trade happens to be on `BNB`, further trades may consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
+If not enough `BNB` is available to cover transaction fees, then fees will not be covered by `BNB` and no fee reduction will occur. Freqtrade will never buy BNB to cover for fees. BNB needs to be bought and monitored manually to this end.
+
 ### Binance sites
 
 Binance has been split into 2, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
@@ -127,6 +129,8 @@ Freqtrade will not attempt to change these settings.
 
 ## Kraken
 
+Kraken supports [time_in_force](configuration.md#understand-order_time_in_force) with settings "GTC" (good till cancelled), "IOC" (immediate-or-cancel) and "PO" (Post only) settings.
+
 !!! Tip "Stoploss on Exchange"
     Kraken supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
     You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
@@ -181,48 +185,6 @@ freqtrade download-data --exchange kraken --dl-trades -p BTC/EUR BCH/EUR
     Please pay attention that rateLimit configuration entry holds delay in milliseconds between requests, NOT requests\sec rate.
     So, in order to mitigate Kraken API "Rate limit exceeded" exception, this configuration should be increased, NOT decreased.
 
-## Bittrex
-
-### Order types
-
-Bittrex does not support market orders. If you have a message at the bot startup about this, you should change order type values set in your configuration and/or in the strategy from `"market"` to `"limit"`. See some more details on this [here in the FAQ](faq.md#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy).
-
-Bittrex also does not support `VolumePairlist` due to limited / split API constellation at the moment.
-Please use `StaticPairlist`. Other pairlists (other than `VolumePairlist`) should not be affected.
-
-### Volume pairlist
-
-Bittrex does not support the direct usage of VolumePairList. This can however be worked around by using the advanced mode with `lookback_days: 1` (or more), which will emulate 24h volume.
-
-Read more in the [pairlist documentation](plugins.md#volumepairlist-advanced-mode).
-
-### Restricted markets
-
-Bittrex split its exchange into US and International versions.
-The International version has more pairs available, however the API always returns all pairs, so there is currently no automated way to detect if you're affected by the restriction.
-
-If you have restricted pairs in your whitelist, you'll get a warning message in the log on Freqtrade startup for each restricted pair.
-
-The warning message will look similar to the following:
-
-``` output
-[...] Message: bittrex {"success":false,"message":"RESTRICTED_MARKET","result":null,"explanation":null}"
-```
-
-If you're an "International" customer on the Bittrex exchange, then this warning will probably not impact you.
-If you're a US customer, the bot will fail to create orders for these pairs, and you should remove them from your whitelist.
-
-You can get a list of restricted markets by using the following snippet:
-
-``` python
-import ccxt
-ct = ccxt.bittrex()
-lm = ct.load_markets()
-
-res = [p for p, x in lm.items() if 'US' in x['info']['prohibitedIn']]
-print(res)
-```
-
 ## Kucoin
 
 Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
@@ -248,10 +210,10 @@ Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force)
 For Kucoin, it is suggested to add `"KCS/<STAKE>"` to your blacklist to avoid issues, unless you are willing to maintain enough extra `KCS` on the account or unless you're willing to disable using `KCS` for fees. 
 Kucoin accounts may use `KCS` for fees, and if a trade happens to be on `KCS`, further trades may consume this position and make the initial `KCS` trade unsellable as the expected amount is not there anymore.
 
-## Huobi
+## HTX (formerly Huobi)
 
 !!! Tip "Stoploss on Exchange"
-    Huobi supports `stoploss_on_exchange` and uses `stop-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+    HTX supports `stoploss_on_exchange` and uses `stop-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
 
 ## OKX (former OKEX)
 
@@ -301,6 +263,24 @@ We do strongly recommend to limit all API keys to the IP you're going to use it 
 !!! Tip "Stoploss on Exchange"
     Bybit (futures only) supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
     On futures, Bybit supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
+
+## Bitmart
+
+Bitmart requires the API key Memo (the name you give the API key) to go along with the exchange key and secret.
+It's therefore required to pass the UID as well.
+
+```json
+"exchange": {
+    "name": "bitmart",
+    "uid": "your_bitmart_api_key_memo",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+    // ...
+}
+```
+
+!!! Warning "Necessary Verification"
+    Bitmart requires Verification Lvl2 to successfully trade on the spot market through the API - even though trading via UI works just fine with just Lvl1 verification.
 
 ## All exchanges
 

@@ -10,12 +10,13 @@ from jsonschema import ValidationError
 
 from freqtrade.commands import Arguments
 from freqtrade.configuration import Configuration, validate_config_consistency
+from freqtrade.configuration.config_secrets import sanitize_config
 from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
+from freqtrade.configuration.environment_vars import _flat_vars_to_nested_dict
 from freqtrade.configuration.load_config import (load_config_file, load_file, load_from_files,
                                                  log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
@@ -104,8 +105,8 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert x == ''
 
 
-def test_load_file_error(tmpdir):
-    testpath = Path(tmpdir) / 'config.json'
+def test_load_file_error(tmp_path):
+    testpath = tmp_path / 'config.json'
     with pytest.raises(OperationalException, match=r"File .* not found!"):
         load_file(testpath)
 
@@ -601,9 +602,9 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     assert log_has('Verbosity set to 3', caplog)
 
 
-def test_set_logfile(default_conf, mocker, tmpdir):
+def test_set_logfile(default_conf, mocker, tmp_path):
     patched_configuration_load_config_file(mocker, default_conf)
-    f = Path(tmpdir / "test_file.log")
+    f = tmp_path / "test_file.log"
     assert not f.is_file()
     arglist = [
         'trade', '--logfile', str(f),
@@ -1145,7 +1146,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
         configuration.get_config()
 
 
-def test_pairlist_resolving_fallback(mocker, tmpdir):
+def test_pairlist_resolving_fallback(mocker, tmp_path):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
     mocker.patch("freqtrade.configuration.configuration.load_file",
@@ -1164,7 +1165,7 @@ def test_pairlist_resolving_fallback(mocker, tmpdir):
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
-    assert config['datadir'] == Path(tmpdir) / "user_data/data/binance"
+    assert config['datadir'] == tmp_path / "user_data/data/binance"
 
 
 @pytest.mark.parametrize("setting", [
@@ -1419,14 +1420,14 @@ def test_flat_vars_to_nested_dict(caplog):
             'chat_id': '2151'
         }
     }
-    res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
+    res = _flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
     assert res == expected
 
     assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
     assert not log_has("Loading variable 'NOT_RELEVANT'", caplog)
 
 
-def test_setup_hyperopt_freqai(mocker, default_conf, caplog) -> None:
+def test_setup_hyperopt_freqai(mocker, default_conf) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
@@ -1459,7 +1460,7 @@ def test_setup_hyperopt_freqai(mocker, default_conf, caplog) -> None:
         validate_config_consistency(config)
 
 
-def test_setup_freqai_backtesting(mocker, default_conf, caplog) -> None:
+def test_setup_freqai_backtesting(mocker, default_conf) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
@@ -1506,3 +1507,17 @@ def test_setup_freqai_backtesting(mocker, default_conf, caplog) -> None:
         OperationalException, match=r".* pass --timerange if you intend to use FreqAI .*"
     ):
         validate_config_consistency(conf)
+
+
+def test_sanitize_config(default_conf_usdt):
+    assert default_conf_usdt['exchange']['key'] != 'REDACTED'
+    res = sanitize_config(default_conf_usdt)
+    # Didn't modify original dict
+    assert default_conf_usdt['exchange']['key'] != 'REDACTED'
+
+    assert res['exchange']['key'] == 'REDACTED'
+    assert res['exchange']['secret'] == 'REDACTED'
+
+    res = sanitize_config(default_conf_usdt, show_sensitive=True)
+    assert res['exchange']['key'] == default_conf_usdt['exchange']['key']
+    assert res['exchange']['secret'] == default_conf_usdt['exchange']['secret']

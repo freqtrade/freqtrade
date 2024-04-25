@@ -125,7 +125,7 @@ def test_add_areas(default_conf, testdatadir, caplog):
     assert fig == fig2
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
-    # everythin given in plot config, row 3
+    # everything given in plot config, row 3
     fig3 = add_areas(fig, 3, data, indicators)
     figure = fig3.layout.figure
     fill_macd = find_trace_in_fig_data(figure.data, "MACD Fill")
@@ -377,7 +377,7 @@ def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
         "plot-dataframe",
-        "--config", "config_examples/config_bittrex.example.json",
+        "--config", "tests/testdata/testconfigs/main_test_config.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_dataframe(get_args(args))
@@ -420,7 +420,7 @@ def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
         "plot-profit",
-        "--config", "config_examples/config_bittrex.example.json",
+        "--config", "tests/testdata/testconfigs/main_test_config.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_profit(get_args(args))
@@ -495,7 +495,7 @@ def test_plot_profit(default_conf, mocker, testdatadir):
     # no main_plot, adds empty main_plot
     ([], [], {'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
      {'main_plot': {}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}}),
-    # indicator 1 / 2 should have prevelance
+    # indicator 1 / 2 should have prevalence
     (['sma', 'ema3'], ['macd'],
      {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
      {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}
