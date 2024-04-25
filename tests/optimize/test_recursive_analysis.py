@@ -14,7 +14,8 @@ from tests.conftest import get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
-def recursive_conf(default_conf_usdt):
+def recursive_conf(default_conf_usdt, tmp_path):
+    default_conf_usdt['user_data_dir'] = tmp_path
     default_conf_usdt['timerange'] = '20220101-20220501'
 
     default_conf_usdt['strategy_path'] = str(

@@ -901,6 +901,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmp_path, fee) -> None
         hyperopt.get_optimizer([], 2)
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path, fee) -> None:
     mocker.patch(f'{EXMS}.validate_config', MagicMock())
     mocker.patch(f'{EXMS}.get_fee', fee)

@@ -436,8 +436,8 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
     assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == '*')).all()) == 1
     pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == 'ETH/BTC')).all()
     assert len(pairlocks) == 1
-    pairlocks[0].pair == 'ETH/BTC'
-    pairlocks[0].side == '*'
+    assert pairlocks[0].pair == 'ETH/BTC'
+    assert pairlocks[0].side == '*'
 
 
 @pytest.mark.parametrize('dialect', [

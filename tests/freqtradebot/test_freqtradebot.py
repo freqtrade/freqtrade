@@ -285,7 +285,7 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
             'last': enter_price * buy_price_mult,
     })
 
-    # stoploss shoud be hit
+    # stoploss should be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
     if not ignore_strat_sl:
         assert log_has_re('Exit for NEO/BTC detected. Reason: stop_loss.*', caplog)
@@ -1398,7 +1398,7 @@ def test_update_trade_state_sell(
     assert order.status == 'open'
     freqtrade.update_trade_state(trade, trade.open_orders_ids[-1], l_order)
     assert trade.amount == l_order['amount']
-    # Wallet needs to be updated after closing a limit-sell order to reenable buying
+    # Wallet needs to be updated after closing a limit-sell order to re-enable buying
     assert wallet_mock.call_count == 1
     assert not trade.is_open
     # Order is updated by update_trade_state
@@ -3122,7 +3122,7 @@ def test_exit_profit_only(
     if profit_only:
         assert freqtrade.handle_trade(trade) is False
         # Custom-exit is called
-        freqtrade.strategy.custom_exit.call_count == 1
+        assert freqtrade.strategy.custom_exit.call_count == 1
 
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is handle_first
@@ -3240,7 +3240,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     )
     trade.close(ticker_usdt_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='*')
-    # Boths sides are locked
+    # Both sides are locked
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='long')
     assert freqtrade.strategy.is_pair_locked(trade.pair, side='short')
 
@@ -4560,6 +4560,67 @@ def test_handle_onexchange_order(mocker, default_conf_usdt, limit_order, is_shor
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("factor,adjusts", [
+    (0.99, True),
+    (0.97, False),
+])
+def test_handle_onexchange_order_changed_amount(
+    mocker, default_conf_usdt, limit_order, is_short, caplog,
+    factor, adjusts,
+):
+    default_conf_usdt['dry_run'] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_uts = mocker.spy(freqtrade, 'update_trade_state')
+
+    entry_order = limit_order[entry_side(is_short)]
+    mock_fo = mocker.patch(f'{EXMS}.fetch_orders', return_value=[
+        entry_order,
+    ])
+
+    trade = Trade(
+        pair='ETH/USDT',
+        fee_open=0.001,
+        base_currency='ETH',
+        fee_close=0.001,
+        open_rate=entry_order['price'],
+        open_date=dt_now(),
+        stake_amount=entry_order['cost'],
+        amount=entry_order['amount'],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_total = MagicMock(return_value=entry_order['amount'] * factor)
+
+    trade.orders.append(Order.parse_from_ccxt_object(
+        entry_order, 'ADA/USDT', entry_side(is_short))
+    )
+    Trade.session.add(trade)
+
+    # assert trade.amount > entry_order['amount']
+
+    freqtrade.handle_onexchange_order(trade)
+    assert mock_uts.call_count == 1
+    assert mock_fo.call_count == 1
+
+    trade = Trade.session.scalars(select(Trade)).first()
+
+    assert log_has_re(r'.*has a total of .* but the Wallet shows.*', caplog)
+    if adjusts:
+        # Trade amount is updated
+        assert trade.amount == entry_order['amount'] * factor
+        assert log_has_re(r'.*Adjusting trade amount to.*', caplog)
+    else:
+        assert log_has_re(r'.*Refusing to adjust as the difference.*', caplog)
+        assert trade.amount == entry_order['amount']
+
+    assert len(trade.orders) == 1
+    assert trade.is_open is True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_onexchange_order_exit(mocker, default_conf_usdt, limit_order, is_short, caplog):
     default_conf_usdt['dry_run'] = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -4829,7 +4890,7 @@ def test_update_funding_fees(
     freqtrade.execute_entry('ETH/USDT', 123, is_short=is_short)
     freqtrade.execute_entry('LTC/USDT', 2.0, is_short=is_short)
     freqtrade.execute_entry('XRP/USDT', 123, is_short=is_short)
-    multipl = 1 if is_short else -1
+    multiple = 1 if is_short else -1
     trades = Trade.get_open_trades()
     assert len(trades) == 3
     for trade in trades:
@@ -4847,7 +4908,7 @@ def test_update_funding_fees(
             assert trade.funding_fees == pytest.approx(sum(
                 trade.amount *
                 mark_prices[trade.pair].iloc[1:2]['open'] *
-                funding_rates[trade.pair].iloc[1:2]['open'] * multipl
+                funding_rates[trade.pair].iloc[1:2]['open'] * multiple
             ))
 
     else:
@@ -4859,7 +4920,7 @@ def test_update_funding_fees(
             trade.amount *
             mark_prices[trade.pair].iloc[1:2]['open'] *
             funding_rates[trade.pair].iloc[1:2]['open'] *
-            multipl
+            multiple
         ))
 
 

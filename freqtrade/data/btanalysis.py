@@ -238,6 +238,16 @@ def update_backtest_metadata(filename: Path, strategy: str, content: Dict[str, A
     file_dump_json(get_backtest_metadata_filename(filename), metadata)
 
 
+def get_backtest_market_change(filename: Path, include_ts: bool = True) -> pd.DataFrame:
+    """
+    Read backtest market change file.
+    """
+    df = pd.read_feather(filename)
+    if include_ts:
+        df.loc[:, '__date_ts'] = df.loc[:, 'date'].astype(np.int64) // 1000 // 1000
+    return df
+
+
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
                                  min_backtest_date: Optional[datetime] = None) -> Dict[str, Any]:
     """

@@ -523,7 +523,7 @@ class DataProvider:
         Send custom RPC Notifications from your bot.
         Will not send any bot in modes other than Dry-run or Live.
         :param message: Message to be sent. Must be below 4096.
-        :param always_send: If False, will send the message only once per candle, and surpress
+        :param always_send: If False, will send the message only once per candle, and suppress
                             identical messages.
                             Careful as this can end up spaming your chat.
                             Defaults to False

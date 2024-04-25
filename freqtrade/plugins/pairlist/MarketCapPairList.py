@@ -38,7 +38,7 @@ class MarketCapPairList(IPairList):
         self._refresh_period = self._pairlistconfig.get('refresh_period', 86400)
         self._marketcap_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._def_candletype = self._config['candle_type_def']
-        self._coingekko: CoinGeckoAPI = CoinGeckoAPI()
+        self._coingecko: CoinGeckoAPI = CoinGeckoAPI()
 
         if self._max_rank > 250:
             raise OperationalException(
@@ -127,7 +127,7 @@ class MarketCapPairList(IPairList):
         marketcap_list = self._marketcap_cache.get('marketcap')
 
         if marketcap_list is None:
-            data = self._coingekko.get_coins_markets(vs_currency='usd', order='market_cap_desc',
+            data = self._coingecko.get_coins_markets(vs_currency='usd', order='market_cap_desc',
                                                      per_page='250', page='1', sparkline='false',
                                                      locale='en')
             if data:

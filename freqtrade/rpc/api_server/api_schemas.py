@@ -558,6 +558,12 @@ class BacktestMetadataUpdate(BaseModel):
     notes: str = ''
 
 
+class BacktestMarketChange(BaseModel):
+    columns: List[str]
+    length: int
+    data: List[List[Any]]
+
+
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float

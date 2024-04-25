@@ -47,7 +47,7 @@ class IResolver:
 
     @classmethod
     def build_search_paths(cls, config: Config, user_subdir: Optional[str] = None,
-                           extra_dirs: List[str] = []) -> List[Path]:
+                           extra_dirs: Optional[List[str]] = None) -> List[Path]:
 
         abs_paths: List[Path] = []
         if cls.initial_search_path:
@@ -57,8 +57,9 @@ class IResolver:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
 
         # Add extra directory to the top of the search paths
-        for dir in extra_dirs:
-            abs_paths.insert(0, Path(dir).resolve())
+        if extra_dirs:
+            for dir in extra_dirs:
+                abs_paths.insert(0, Path(dir).resolve())
 
         if cls.extra_path and (extra := config.get(cls.extra_path)):
             abs_paths.insert(0, Path(extra).resolve())
@@ -139,7 +140,7 @@ class IResolver:
 
     @classmethod
     def _load_object(cls, paths: List[Path], *, object_name: str, add_source: bool = False,
-                     kwargs: dict = {}) -> Optional[Any]:
+                     kwargs: Dict) -> Optional[Any]:
         """
         Try to load object from path list.
         """
@@ -163,7 +164,7 @@ class IResolver:
     def load_object(cls, object_name: str, config: Config, *, kwargs: dict,
                     extra_dir: Optional[str] = None) -> Any:
         """
-        Search and loads the specified object as configured in hte child class.
+        Search and loads the specified object as configured in the child class.
         :param object_name: name of the module to import
         :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist

@@ -56,7 +56,7 @@ class Okx(Exchange):
         """
         Exchange ohlcv candle limit
         OKX has the following behaviour:
-        * 300 candles for uptodate data
+        * 300 candles for up-to-date data
         * 100 candles for historic data
         * 100 candles for additional candles (not futures or spot).
         :param timeframe: Timeframe to check
@@ -202,7 +202,7 @@ class Okx(Exchange):
         order['type'] = 'stoploss'
         return order
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
 
@@ -232,7 +232,8 @@ class Okx(Exchange):
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         params1 = {'stop': True}
         # 'ordType': 'conditional'
         #

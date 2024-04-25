@@ -178,7 +178,7 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
 
 def get_timerange_backtest_live_models(config: Config) -> str:
     """
-    Returns a formated timerange for backtest live/ready models
+    Returns a formatted timerange for backtest live/ready models
     :param config: Configuration dictionary
 
     :return: a string timerange (format example: '20220801-20220822')

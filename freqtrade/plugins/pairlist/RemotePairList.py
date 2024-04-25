@@ -116,7 +116,7 @@ class RemotePairList(IPairList):
                 "default": "filter",
                 "options": ["filter", "append"],
                 "description": "Processing mode",
-                "help": "Append pairs to incomming pairlist or filter them?",
+                "help": "Append pairs to incoming pairlist or filter them?",
             },
             **IPairList.refresh_period_parameter(),
             "keep_pairlist_on_failure": {

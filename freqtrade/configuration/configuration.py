@@ -202,7 +202,7 @@ class Configuration:
 
         if self.args.get('show_sensitive'):
             logger.warning(
-                "Sensitive information will be shown in the upcomming output. "
+                "Sensitive information will be shown in the upcoming output. "
                 "Please make sure to never share this output without redacting "
                 "the information yourself.")
 

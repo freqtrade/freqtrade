@@ -612,7 +612,7 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
-            pair = pair.replace(':', '')  # lightgbm doesnt like colons
+            pair = pair.replace(':', '')  # lightgbm does not like colons
             pair_cols = [col for col in dataframe.columns if col.startswith("%")
                          and f"{pair}_" in col]
 
@@ -638,7 +638,7 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         current_pair = current_pair.replace(':', '')
         for pair in pairs:
-            pair = pair.replace(':', '')  # lightgbm doesnt work with colons
+            pair = pair.replace(':', '')  # lightgbm does not work with colons
             if current_pair != pair:
                 dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
 
@@ -841,7 +841,7 @@ class FreqaiDataKitchen:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
-        # incase targets are classifications
+        # in case targets are classifications
         for label in self.unique_class_list:
             self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
 

@@ -381,10 +381,10 @@ def test_sync_wallet_futures_dry(mocker, default_conf, fee):
     assert len(freqtrade.wallets._wallets) == 1
     assert len(freqtrade.wallets._positions) == 4
     positions = freqtrade.wallets.get_all_positions()
-    positions['ETH/BTC'].side == 'short'
-    positions['ETC/BTC'].side == 'long'
-    positions['XRP/BTC'].side == 'long'
-    positions['LTC/BTC'].side == 'short'
+    assert positions['ETH/BTC'].side == 'short'
+    assert positions['ETC/BTC'].side == 'long'
+    assert positions['XRP/BTC'].side == 'long'
+    assert positions['LTC/BTC'].side == 'short'
 
     assert freqtrade.wallets.get_starting_balance() == default_conf['dry_run_wallet']
     total = freqtrade.wallets.get_total('BTC')
