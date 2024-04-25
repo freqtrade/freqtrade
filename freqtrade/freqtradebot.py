@@ -494,7 +494,7 @@ class FreqtradeBot(LoggingMixin):
                                         send_msg=prev_trade_state != trade.is_open)
             else:
                 trade.exit_reason = prev_exit_reason
-                total = self.wallets.get_total(trade.base_currency)
+                total = self.wallets.get_total(trade.base_currency) if trade.base_currency else 0
                 if total < trade.amount:
                     if total > trade.amount * 0.98:
                         logger.warning(
