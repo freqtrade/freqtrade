@@ -494,7 +494,23 @@ class FreqtradeBot(LoggingMixin):
                                         send_msg=prev_trade_state != trade.is_open)
             else:
                 trade.exit_reason = prev_exit_reason
-
+                total = self.wallets.get_total(trade.base_currency)
+                if total < trade.amount:
+                    if total > trade.amount * 0.98:
+                        logger.warning(
+                            f"{trade} has a total of {trade.amount} {trade.base_currency}, "
+                            f"but the Wallet shows a total of {total} {trade.base_currency}. "
+                            f"Adjusting trade amount to {total}."
+                            "This may however lead to further issues."
+                        )
+                        trade.amount = total
+                    else:
+                        logger.warning(
+                            f"{trade} has a total of {trade.amount} {trade.base_currency}, "
+                            f"but the Wallet shows a total of {total} {trade.base_currency}. "
+                            "Refusing to adjust as the difference is too large."
+                            "This may however lead to further issues."
+                        )
                 if prev_trade_amount != trade.amount:
                     # Cancel stoploss on exchange if the amount changed
                     trade = self.cancel_stoploss_on_exchange(trade)
