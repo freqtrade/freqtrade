@@ -13,7 +13,7 @@ from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import OHLCVResponse
-from freqtrade.util import format_ms_time
+from freqtrade.util import dt_ts, format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class ExchangeWS:
             _, timeframe, _ = p
             timeframe_s = timeframe_to_seconds(timeframe)
             last_refresh = self.klines_last_request.get(p, 0)
-            if last_refresh > 0 and time.time() - last_refresh > timeframe_s + 20:
+            if last_refresh > 0 and dt_ts() - last_refresh > timeframe_s + 20:
                 logger.info(f"Removing {p} from watchlist")
                 self._klines_watching.discard(p)
                 changed = True
@@ -115,12 +115,12 @@ class ExchangeWS:
             self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         try:
             while (pair, timeframe, candle_type) in self._klines_watching:
-                start = time.time()
+                start = dt_ts()
                 data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
-                self.klines_last_refresh[(pair, timeframe, candle_type)] = time.time()
+                self.klines_last_refresh[(pair, timeframe, candle_type)] = dt_ts()
                 logger.debug(
                     f"watch done {pair}, {timeframe}, data {len(data)} "
-                    f"in {time.time() - start:.2f}s")
+                    f"in {dt_ts() - start:.2f}s")
         except ccxt.BaseError:
             logger.exception(
                 f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
@@ -132,7 +132,7 @@ class ExchangeWS:
         Schedule a pair/timeframe combination to be watched
         """
         self._klines_watching.add((pair, timeframe, candle_type))
-        self.klines_last_request[(pair, timeframe, candle_type)] = time.time()
+        self.klines_last_request[(pair, timeframe, candle_type)] = dt_ts()
         # asyncio.run_coroutine_threadsafe(self.schedule_schedule(), loop=self._loop)
         asyncio.run_coroutine_threadsafe(self._schedule_while_true(), loop=self._loop)
         self.cleanup_expired()
@@ -154,11 +154,11 @@ class ExchangeWS:
         drop_hint = False
         if refresh_date > candle_date:
             # Refreshed after candle was complete.
-            # logger.info(f"{candles[-1][0] // 1000} >= {candle_date}")
-            drop_hint = (candles[-1][0] // 1000) >= candle_date
+            # logger.info(f"{candles[-1][0]} >= {candle_date}")
+            drop_hint = candles[-1][0] >= candle_date
         logger.info(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
-            f"{format_ms_time(candles[-1][0] // 1000)}, "
+            f"{format_ms_time(candles[-1][0])}, "
             f"lref={format_ms_time(refresh_date)}, "
             f"candle_date={format_ms_time(candle_date)}, {drop_hint=}"
             )
