@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freqtrade-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: freqtrade
+  template:
+    metadata:
+      labels:
+        app: freqtrade
+    spec:
+      containers:
+      - name: freqtrade-container
+        image: gcr.io/upheld-chimera-420907/freqtrade:latest
+        ports:
+        - containerPort: 80
