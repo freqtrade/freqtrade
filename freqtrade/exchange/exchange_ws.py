@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import time
+from copy import deepcopy
 from functools import partial
 from threading import Thread
 from typing import Dict, Set
@@ -147,7 +148,8 @@ class ExchangeWS:
         Returns cached klines from ccxt's "watch" cache.
         :param candle_date: timestamp of the end-time of the candle.
         """
-        candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
+        # Deepcopy the response - as it might be modified in the background as new messages arrive
+        candles = deepcopy(self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe))
         refresh_date = self.klines_last_refresh[(pair, timeframe, candle_type)]
         drop_hint = False
         if refresh_date > candle_date:
