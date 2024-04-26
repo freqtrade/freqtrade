@@ -472,7 +472,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog
     exchange.load_leverage_tiers()
     assert not log_has(logmsg, caplog)
 
-    api_mock.fetch_market_leverage_tiers.call_count == 0
+    assert api_mock.fetch_market_leverage_tiers.call_count == 0
     # 2 day passes ...
     time_machine.move_to(datetime.now() + timedelta(weeks=5))
     exchange.load_leverage_tiers()
@@ -500,7 +500,7 @@ def test__set_leverage_okx(mocker, default_conf):
         'posSide': 'net'}
     api_mock.set_leverage = MagicMock(side_effect=ccxt.NetworkError())
     exchange._lev_prep('BTC/USDT:USDT', 3.2, 'buy')
-    api_mock.fetch_leverage.call_count == 1
+    assert api_mock.fetch_leverage.call_count == 1
 
     api_mock.fetch_leverage = MagicMock(side_effect=ccxt.NetworkError())
     ccxt_exceptionhandlers(

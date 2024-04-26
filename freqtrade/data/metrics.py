@@ -30,8 +30,25 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
     return float(np.mean(tmp_means))
 
 
-def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
-                                 column: str = "close") -> pd.DataFrame:
+def combine_dataframes_by_column(
+        data: Dict[str, pd.DataFrame], column: str = "close") -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key.
+    :raise: ValueError if no data is provided.
+    """
+    if not data:
+        raise ValueError("No data provided.")
+    df_comb = pd.concat([data[pair].set_index('date').rename(
+        {column: pair}, axis=1)[pair] for pair in data], axis=1)
+    return df_comb
+
+
+def combined_dataframes_with_rel_mean(
+        data: Dict[str, pd.DataFrame], fromdt: datetime, todt: datetime,
+        column: str = "close") -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
     :param data: Dict of Dataframes, dict key should be pair.
@@ -40,8 +57,26 @@ def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
         named mean, containing the mean of all pairs.
     :raise: ValueError if no data is provided.
     """
-    df_comb = pd.concat([data[pair].set_index('date').rename(
-        {column: pair}, axis=1)[pair] for pair in data], axis=1)
+    df_comb = combine_dataframes_by_column(data, column)
+    # Trim dataframes to the given timeframe
+    df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
+    df_comb['count'] = df_comb.count(axis=1)
+    df_comb['mean'] = df_comb.mean(axis=1)
+    df_comb['rel_mean'] = df_comb['mean'].pct_change().fillna(0).cumsum()
+    return df_comb[['mean', 'rel_mean', 'count']]
+
+
+def combine_dataframes_with_mean(
+        data: Dict[str, pd.DataFrame], column: str = "close") -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key, and a column
+        named mean, containing the mean of all pairs.
+    :raise: ValueError if no data is provided.
+    """
+    df_comb = combine_dataframes_by_column(data, column)
 
     df_comb['mean'] = df_comb.mean(axis=1)
 

@@ -14,7 +14,8 @@ from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
-def lookahead_conf(default_conf_usdt):
+def lookahead_conf(default_conf_usdt, tmp_path):
+    default_conf_usdt['user_data_dir'] = tmp_path
     default_conf_usdt['minimum_trade_amount'] = 10
     default_conf_usdt['targeted_trade_amount'] = 20
     default_conf_usdt['timerange'] = '20220101-20220501'
@@ -152,7 +153,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert data[0][2].__contains__('too few trades')
     assert len(data[0]) == 3
 
-    # now check for an error which occured after enough trades
+    # now check for an error which occurred after enough trades
     analysis.total_signals = 12
     analysis.false_entry_signals = 11
     analysis.false_exit_signals = 10

@@ -79,7 +79,7 @@ class Gate(Exchange):
             # As such, futures orders on gate will not contain a fee, which causes
             # a repeated "update fee" cycle and wrong calculations.
             # Therefore we patch the response with fees if it's not available.
-            # An alternative also contianing fees would be
+            # An alternative also containing fees would be
             # privateFuturesGetSettleAccountBook({"settle": "usdt"})
             pair_fees = self._trading_fees.get(pair, {})
             if pair_fees:
@@ -98,7 +98,7 @@ class Gate(Exchange):
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
         return safe_value_fallback2(order, order, 'id_stop', 'id')
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         order = self.fetch_order(
             order_id=order_id,
             pair=pair,
@@ -119,7 +119,8 @@ class Gate(Exchange):
                 return order1
         return order
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         return self.cancel_order(
             order_id=order_id,
             pair=pair,

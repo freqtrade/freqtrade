@@ -587,7 +587,7 @@ These precision values are based on current exchange limits (as described in the
 
 ## Improved backtest accuracy
 
-One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).
+One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or vice-versa?).
 So assuming you run backtesting with a 1h timeframe, there will be 4 prices for that candle (Open, High, Low, Close).
 
 While backtesting does take some assumptions (read above) about this - this can never be perfect, and will always be biased in one way or the other.

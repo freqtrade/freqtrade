@@ -1,4 +1,4 @@
-FROM python:3.12.2-slim-bookworm as base
+FROM python:3.12.3-slim-bookworm as base
 
 # Setup env
 ENV LANG C.UTF-8

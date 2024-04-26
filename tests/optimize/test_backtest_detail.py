@@ -107,7 +107,7 @@ tc5 = BTContainer(data=[
     trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
-# Test 6: Drops 3% / Recovers 6% Positive / Closes 1% positve, Stop-Loss triggers 2% Loss
+# Test 6: Drops 3% / Recovers 6% Positive / Closes 1% positive, Stop-Loss triggers 2% Loss
 # stop-loss: 2% ROI: 5%
 tc6 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
@@ -121,7 +121,7 @@ tc6 = BTContainer(data=[
     trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
-# Test 7: 6% Positive / 1% Negative / Close 1% Positve, ROI Triggers 3% Gain
+# Test 7: 6% Positive / 1% Negative / Close 1% Positive, ROI Triggers 3% Gain
 # stop-loss: 2% ROI: 3%
 tc7 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT

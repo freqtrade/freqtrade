@@ -18,7 +18,7 @@ class _CustomData(ModelBase):
     """
     CustomData database model
     Keeps records of metadata as key/value store
-    for trades or global persistant values
+    for trades or global persistent values
     One to many relationship with Trades:
       - One trade can have many metadata entries
       - One metadata entry can only be associated with one Trade

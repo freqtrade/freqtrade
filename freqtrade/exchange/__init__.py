@@ -25,6 +25,7 @@ from freqtrade.exchange.exchange_utils_timeframe import (timeframe_to_minutes, t
 from freqtrade.exchange.gate import Gate
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.htx import Htx
+from freqtrade.exchange.idex import Idex
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
 from freqtrade.exchange.okx import Okx

@@ -13,7 +13,7 @@ from freqtrade.configuration.directory_operations import create_datadir, create_
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_file, load_from_files
 from freqtrade.constants import Config
-from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, CandleType, RunMode, TradingMode
+from freqtrade.enums import NON_UTIL_MODES, TRADE_MODES, CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
@@ -127,7 +127,7 @@ class Configuration:
         setup_logging(config)
 
     def _process_trading_options(self, config: Config) -> None:
-        if config['runmode'] not in TRADING_MODES:
+        if config['runmode'] not in TRADE_MODES:
             return
 
         if config.get('dry_run', False):
@@ -202,7 +202,7 @@ class Configuration:
 
         if self.args.get('show_sensitive'):
             logger.warning(
-                "Sensitive information will be shown in the upcomming output. "
+                "Sensitive information will be shown in the upcoming output. "
                 "Please make sure to never share this output without redacting "
                 "the information yourself.")
 

@@ -143,7 +143,7 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
 def test_set_initial_return_values(mocker, freqai_conf):
     """
     Simple test of the set initial return values that ensures
-    we are concatening and ffilling values properly.
+    we are concatenating and ffilling values properly.
     """
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)

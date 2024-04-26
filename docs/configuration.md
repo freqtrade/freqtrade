@@ -547,7 +547,7 @@ is automatically cancelled by the exchange.
 **PO (Post only):**
 
 Post only order. The order is either placed as a maker order, or it is canceled.
-This means the order must be placed on orderbook for at at least time in an unfilled state.
+This means the order must be placed on orderbook for at least time in an unfilled state.
 
 #### time_in_force config
 

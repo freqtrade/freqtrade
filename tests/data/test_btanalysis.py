@@ -16,7 +16,7 @@ from freqtrade.data.metrics import (calculate_cagr, calculate_calmar, calculate_
                                     calculate_expectancy, calculate_market_change,
                                     calculate_max_drawdown, calculate_sharpe, calculate_sortino,
                                     calculate_underwater, combine_dataframes_with_mean,
-                                    create_cum_profit)
+                                    combined_dataframes_with_rel_mean, create_cum_profit)
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
@@ -251,10 +251,29 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "mean" in df.columns
 
 
+def test_combined_dataframes_with_rel_mean(testdatadir):
+    pairs = ["ETH/BTC", "ADA/BTC"]
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
+    df = combined_dataframes_with_rel_mean(
+        data,
+        datetime(2018, 1, 12, tzinfo=timezone.utc),
+        datetime(2018, 1, 28, tzinfo=timezone.utc)
+    )
+    assert isinstance(df, DataFrame)
+    assert "ETH/BTC" not in df.columns
+    assert "ADA/BTC" not in df.columns
+    assert "mean" in df.columns
+    assert "rel_mean" in df.columns
+    assert "count" in df.columns
+    assert df.iloc[0]['count'] == 2
+    assert df.iloc[-1]['count'] == 2
+    assert len(df) < len(data['ETH/BTC'])
+
+
 def test_combine_dataframes_with_mean_no_data(testdatadir):
     pairs = ["ETH/BTC", "ADA/BTC"]
     data = load_data(datadir=testdatadir, pairs=pairs, timeframe='6m')
-    with pytest.raises(ValueError, match=r"No objects to concatenate"):
+    with pytest.raises(ValueError, match=r"No data provided\."):
         combine_dataframes_with_mean(data)
 
 
@@ -463,12 +482,12 @@ def test_calculate_max_drawdown2():
     assert drawdown == 0.043965
 
 
-@pytest.mark.parametrize('profits,relative,highd,lowd,result,result_rel', [
+@pytest.mark.parametrize('profits,relative,highd,lowdays,result,result_rel', [
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 3, 4, 1000.0, 0.090909),
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 0, 1, 500.0, 0.5),
 
 ])
-def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, result_rel):
+def test_calculate_max_drawdown_abs(profits, relative, highd, lowdays, result, result_rel):
     """
     Test case from issue https://github.com/freqtrade/freqtrade/issues/6655
     [1000, 500,  1000, 11000, 10000] # absolute results
@@ -488,7 +507,7 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, resu
     assert isinstance(drawdown, float)
     assert isinstance(drawdown_rel, float)
     assert hdate == init_date + timedelta(days=highd)
-    assert ldate == init_date + timedelta(days=lowd)
+    assert ldate == init_date + timedelta(days=lowdays)
 
     # High must be before low
     assert hdate < ldate

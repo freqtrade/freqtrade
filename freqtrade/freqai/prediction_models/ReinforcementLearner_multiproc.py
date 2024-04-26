@@ -63,6 +63,6 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
                                                                is_masking_supported(self.eval_env)))
 
         # TENSORBOARD CALLBACK DOES NOT RECOMMENDED TO USE WITH MULTIPLE ENVS,
-        # IT WILL RETURN FALSE INFORMATIONS, NEVERTHLESS NOT THREAD SAFE WITH SB3!!!
+        # IT WILL RETURN FALSE INFORMATION, NEVERTHELESS NOT THREAD SAFE WITH SB3!!!
         actions = self.train_env.env_method("get_actions")[0]
         self.tensorboard_callback = TensorboardCallback(verbose=1, actions=actions)

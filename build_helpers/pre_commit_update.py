@@ -1,4 +1,4 @@
-# File used in CI to ensure pre-commit dependencies are kept uptodate.
+# File used in CI to ensure pre-commit dependencies are kept up-to-date.
 
 import sys
 from pathlib import Path
@@ -21,7 +21,7 @@ type_reqs = [r.strip('\n') for r in requirements if r.startswith(
     'types-') or r.startswith('SQLAlchemy')]
 
 with pre_commit_file.open('r') as file:
-    f = yaml.load(file, Loader=yaml.FullLoader)
+    f = yaml.load(file, Loader=yaml.SafeLoader)
 
 
 mypy_repo = [repo for repo in f['repos'] if repo['repo']

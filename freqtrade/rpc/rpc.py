@@ -30,8 +30,8 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import (decimals_per_coin, dt_humanize, dt_now, dt_ts_def, format_date,
-                            shorten_date)
+from freqtrade.util import decimals_per_coin, dt_now, dt_ts_def, format_date, shorten_date
+from freqtrade.util.datetime_helpers import dt_humanize_delta
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -155,7 +155,7 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self, trade_ids: List[int] = []) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -301,13 +301,13 @@ class RPC:
                     for oo in trade.open_orders
                 ]
 
-                # exemple: '*.**.**' trying to enter, exit and exit with 3 different orders
+                # example: '*.**.**' trying to enter, exit and exit with 3 different orders
                 active_attempt_side_symbols_str = '.'.join(active_attempt_side_symbols)
 
                 detail_trade = [
                     f'{trade.id} {direction_str}',
                     trade.pair + active_attempt_side_symbols_str,
-                    shorten_date(dt_humanize(trade.open_date, only_distance=True)),
+                    shorten_date(dt_humanize_delta(trade.open_date_utc)),
                     profit_str
                 ]
 
@@ -460,8 +460,11 @@ class RPC:
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
-            start_date: datetime = datetime.fromtimestamp(0)) -> Dict[str, Any]:
+            start_date: Optional[datetime] = None) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
+
+        start_date = datetime.fromtimestamp(0) if start_date is None else start_date
+
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
         trades: Sequence[Trade] = Trade.session.scalars(Trade.get_trades_query(
@@ -596,10 +599,10 @@ class RPC:
             'trade_count': len(trades),
             'closed_trade_count': closed_trade_count,
             'first_trade_date': format_date(first_date),
-            'first_trade_humanized': dt_humanize(first_date) if first_date else '',
+            'first_trade_humanized': dt_humanize_delta(first_date) if first_date else '',
             'first_trade_timestamp': dt_ts_def(first_date, 0),
             'latest_trade_date': format_date(last_date),
-            'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
+            'latest_trade_humanized': dt_humanize_delta(last_date) if last_date else '',
             'latest_trade_timestamp': dt_ts_def(last_date, 0),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',

@@ -221,7 +221,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '0.00 (0.00)' == result[0][3]
     assert '0.00' == f'{fiat_profit_sum:.2f}'
@@ -232,7 +232,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.00)' == result[0][3]
     assert '-0.00' == f'{fiat_profit_sum:.2f}'
@@ -243,7 +243,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Since" in headers
     assert "Pair" in headers
     assert len(result[0]) == 4
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.06)' == result[0][3]
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
@@ -260,7 +260,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     mocker.patch(f'{EXMS}.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert 'nan%' == result[0][3]
     assert isnan(fiat_profit_sum)
