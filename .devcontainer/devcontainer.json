@@ -1,9 +1,6 @@
 {
     "name": "freqtrade Develop",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
-    },
+    "image": "ghcr.io/freqtrade/freqtrade-devcontainer:latest",
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     "forwardPorts": [
         8080

@@ -1,0 +1,7 @@
+{
+    "name": "freqtrade Dev container image builder",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../../"
+    }
+}
