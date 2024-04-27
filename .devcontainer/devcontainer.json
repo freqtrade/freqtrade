@@ -32,6 +32,7 @@
             "extensions": [
                 "ms-python.python",
                 "ms-python.vscode-pylance",
+                "ms-python.isort",
                 "davidanson.vscode-markdownlint",
                 "ms-azuretools.vscode-docker",
                 "vscode-icons-team.vscode-icons",
