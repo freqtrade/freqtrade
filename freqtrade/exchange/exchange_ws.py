@@ -74,7 +74,10 @@ class ExchangeWS:
             _, timeframe, _ = p
             timeframe_s = timeframe_to_seconds(timeframe)
             last_refresh = self.klines_last_request.get(p, 0)
-            if last_refresh > 0 and dt_ts() - last_refresh > timeframe_s + 20:
+            if (
+                last_refresh > 0
+                and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000)
+            ):
                 logger.info(f"Removing {p} from watchlist")
                 self._klines_watching.discard(p)
                 changed = True
