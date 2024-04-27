@@ -5,9 +5,6 @@
     "forwardPorts": [
         8080
     ],
-    "mounts": [
-        "source=freqtrade-bashhistory,target=/home/ftuser/commandhistory,type=volume"
-    ],
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/freqtrade,type=bind,consistency=cached",
     // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "ftuser",
