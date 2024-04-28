@@ -1511,6 +1511,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert 'data_stop_ts' in rc.json()
     assert len(rc.json()['data']) == 0
     ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
+    ohlcv_history['sma2'] = ohlcv_history['close'].rolling(2).mean()
     ohlcv_history['enter_long'] = 0
     ohlcv_history.loc[1, 'enter_long'] = 1
     ohlcv_history['exit_long'] = 0
@@ -1518,50 +1519,66 @@ def test_api_pair_candles(botclient, ohlcv_history):
     ohlcv_history['exit_short'] = 0
 
     ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history, CandleType.SPOT)
+    for call in ('get', 'post'):
+        if call == 'get':
+            rc = client_get(
+                client,
+                f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
+        else:
+            rc = client_post(
+                client,
+                f"{BASE_URI}/pair_candles",
+                data={
+                    "pair": "XRP/BTC",
+                    "timeframe": timeframe,
+                    "limit": amount,
+                    "columns": ['sma'],
+                }
+            )
+        assert_response(rc)
+        resp = rc.json()
+        assert 'strategy' in resp
+        assert resp['strategy'] == CURRENT_TEST_STRATEGY
+        assert 'columns' in resp
+        assert 'data_start_ts' in resp
+        assert 'data_start' in resp
+        assert 'data_stop' in resp
+        assert 'data_stop_ts' in resp
+        assert resp['data_start'] == '2017-11-26 08:50:00+00:00'
+        assert resp['data_start_ts'] == 1511686200000
+        assert resp['data_stop'] == '2017-11-26 09:00:00+00:00'
+        assert resp['data_stop_ts'] == 1511686800000
+        assert isinstance(resp['columns'], list)
+        if call == 'get':
+            assert set(resp['columns']) == {
+                'date', 'open', 'high', 'low', 'close', 'volume',
+                'sma', 'sma2', 'enter_long', 'exit_long', 'enter_short', 'exit_short', '__date_ts',
+                '_enter_long_signal_close', '_exit_long_signal_close',
+                '_enter_short_signal_close', '_exit_short_signal_close'
+            }
+        # All columns doesn't include the internal columns
+        assert set(resp['all_columns']) == {
+            'date', 'open', 'high', 'low', 'close', 'volume',
+            'sma', 'sma2', 'enter_long', 'exit_long', 'enter_short', 'exit_short'
+        }
+        assert 'pair' in resp
+        assert resp['pair'] == 'XRP/BTC'
 
-    rc = client_get(client,
-                    f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
-    assert_response(rc)
-    resp = rc.json()
-    assert 'strategy' in resp
-    assert resp['strategy'] == CURRENT_TEST_STRATEGY
-    assert 'columns' in resp
-    assert 'data_start_ts' in resp
-    assert 'data_start' in resp
-    assert 'data_stop' in resp
-    assert 'data_stop_ts' in resp
-    assert resp['data_start'] == '2017-11-26 08:50:00+00:00'
-    assert resp['data_start_ts'] == 1511686200000
-    assert resp['data_stop'] == '2017-11-26 09:00:00+00:00'
-    assert resp['data_stop_ts'] == 1511686800000
-    assert isinstance(resp['columns'], list)
-    assert set(resp['columns']) == {
-        'date', 'open', 'high', 'low', 'close', 'volume',
-        'sma', 'enter_long', 'exit_long', 'enter_short', 'exit_short', '__date_ts',
-        '_enter_long_signal_close', '_exit_long_signal_close',
-        '_enter_short_signal_close', '_exit_short_signal_close'
-    }
-    # All columns doesn't include the internal columns
-    assert set(resp['all_columns']) == {
-        'date', 'open', 'high', 'low', 'close', 'volume',
-        'sma', 'enter_long', 'exit_long', 'enter_short', 'exit_short'
-    }
-    assert 'pair' in resp
-    assert resp['pair'] == 'XRP/BTC'
+        assert 'data' in resp
+        assert len(resp['data']) == amount
+        if call == 'get':
+            assert resp['data'] == [
+                ['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05,
+                 0.0877869, None, None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
+                ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05, 8.893e-05, 0.05874751,
+                 8.886500000000001e-05, 8.886500000000001e-05, 1, 0, 0, 0, 1511686500000,
+                 8.893e-05, None, None, None],
+                ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None
+                 ]
+            ]
 
-    assert 'data' in resp
-    assert len(resp['data']) == amount
-
-    assert (resp['data'] ==
-            [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
-              None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
-             ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 0, 0, 1511686500000, 8.893e-05,
-                 None, None, None],
-             ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
-                 0.7039405, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None]
-
-             ])
+    # prep for next test
     ohlcv_history['exit_long'] = ohlcv_history['exit_long'].astype('float64')
     ohlcv_history.at[0, 'exit_long'] = float('inf')
     ohlcv_history['date1'] = ohlcv_history['date']
@@ -1573,12 +1590,12 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert_response(rc)
     assert (rc.json()['data'] ==
             [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
-              None, 0, None, 0, 0, None, 1511686200000, None, None, None, None],
+              None, None, 0, None, 0, 0, None, 1511686200000, None, None, None, None],
              ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, 0, 0, '2017-11-26T08:55:00Z',
-                 1511686500000, 8.893e-05, None, None, None],
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 8.886500000000001e-05, 1, 0.0, 0,
+                 0, '2017-11-26T08:55:00Z', 1511686500000, 8.893e-05, None, None, None],
              ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
-                 0.7039405, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z', 1511686800000,
+                 0.7039405, 8.885e-05, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z', 1511686800000,
                  None, None, None, None]
              ])
 
