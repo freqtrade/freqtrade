@@ -1202,7 +1202,7 @@ class RPC:
             'exit_short': 0,
         }
         if has_content:
-            if selected_cols:
+            if selected_cols is not None:
                 # Ensure OHLCV columns are always present
                 cols_set = set(DEFAULT_DATAFRAME_COLUMNS + list(signals.keys()) + selected_cols)
                 df_cols = [col for col in dataframe_columns if col in cols_set]
