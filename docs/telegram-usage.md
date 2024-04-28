@@ -53,7 +53,7 @@ You can use bots in telegram groups by just adding them to the group. You can fi
 }
 ```
 
-For the Freqtrade configuration, you can then use the the full value (including `-` if it's there) as string:
+For the Freqtrade configuration, you can then use the full value (including `-` if it's there) as string:
 
 ```json
    "chat_id": "-1001332619709"

@@ -50,7 +50,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'huobijp'})
     assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+    assert log_has_re(r"Exchange .* is known to the ccxt library, available for the bot, "
                       r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
@@ -65,7 +65,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange with check_for_bad=False
     default_conf.get('exchange').update({'name': 'bitmex'})
     assert check_exchange(default_conf, False)
-    assert log_has_re(r"Exchange .* is known to the the ccxt library, available for the bot, "
+    assert log_has_re(r"Exchange .* is known to the ccxt library, available for the bot, "
                       r"but not officially supported "
                       r"by the Freqtrade development team\. .*", caplog)
     caplog.clear()
