@@ -17,7 +17,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   ForceEnterResponse, ForceExitPayload,
                                                   FreqAIModelListResponse, Health, Locks,
                                                   LocksPayload, Logs, MixTag, OpenTradeSchema,
-                                                  PairHistory, PairHistoryRequest, PerformanceEntry,
+                                                  PairCandlesRequest, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
                                                   StrategyResponse, SysInfo, Version,
@@ -297,7 +297,7 @@ def pair_candles(
 
 
 @router.post('/pair_candles', response_model=PairHistory, tags=['candle data'])
-def pair_candles_filtered(payload: PairHistoryRequest, rpc: RPC = Depends(get_rpc)):
+def pair_candles_filtered(payload: PairCandlesRequest, rpc: RPC = Depends(get_rpc)):
     # Advanced pair_candles endpoint with column filtering
     return rpc._rpc_analysed_dataframe(
         payload.pair, payload.timeframe, payload.limit, payload.columns)

@@ -489,7 +489,7 @@ class AvailablePairs(BaseModel):
     pair_interval: List[List[str]]
 
 
-class PairHistoryRequest(BaseModel):
+class PairCandlesRequest(BaseModel):
     pair: str
     timeframe: str
     limit: Optional[int] = None
