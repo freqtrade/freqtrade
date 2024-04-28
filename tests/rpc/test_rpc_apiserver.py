@@ -1522,31 +1522,37 @@ def test_api_pair_candles(botclient, ohlcv_history):
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
-    assert 'strategy' in rc.json()
-    assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
-    assert 'columns' in rc.json()
-    assert 'data_start_ts' in rc.json()
-    assert 'data_start' in rc.json()
-    assert 'data_stop' in rc.json()
-    assert 'data_stop_ts' in rc.json()
-    assert rc.json()['data_start'] == '2017-11-26 08:50:00+00:00'
-    assert rc.json()['data_start_ts'] == 1511686200000
-    assert rc.json()['data_stop'] == '2017-11-26 09:00:00+00:00'
-    assert rc.json()['data_stop_ts'] == 1511686800000
-    assert isinstance(rc.json()['columns'], list)
-    assert set(rc.json()['columns']) == {
+    resp = rc.json()
+    assert 'strategy' in resp
+    assert resp['strategy'] == CURRENT_TEST_STRATEGY
+    assert 'columns' in resp
+    assert 'data_start_ts' in resp
+    assert 'data_start' in resp
+    assert 'data_stop' in resp
+    assert 'data_stop_ts' in resp
+    assert resp['data_start'] == '2017-11-26 08:50:00+00:00'
+    assert resp['data_start_ts'] == 1511686200000
+    assert resp['data_stop'] == '2017-11-26 09:00:00+00:00'
+    assert resp['data_stop_ts'] == 1511686800000
+    assert isinstance(resp['columns'], list)
+    assert set(resp['columns']) == {
         'date', 'open', 'high', 'low', 'close', 'volume',
         'sma', 'enter_long', 'exit_long', 'enter_short', 'exit_short', '__date_ts',
         '_enter_long_signal_close', '_exit_long_signal_close',
         '_enter_short_signal_close', '_exit_short_signal_close'
     }
-    assert 'pair' in rc.json()
-    assert rc.json()['pair'] == 'XRP/BTC'
+    # All columns doesn't include the internal columns
+    assert set(resp['all_columns']) == {
+        'date', 'open', 'high', 'low', 'close', 'volume',
+        'sma', 'enter_long', 'exit_long', 'enter_short', 'exit_short'
+    }
+    assert 'pair' in resp
+    assert resp['pair'] == 'XRP/BTC'
 
-    assert 'data' in rc.json()
-    assert len(rc.json()['data']) == amount
+    assert 'data' in resp
+    assert len(resp['data']) == amount
 
-    assert (rc.json()['data'] ==
+    assert (resp['data'] ==
             [['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
              ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05,

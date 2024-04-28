@@ -502,7 +502,7 @@ class PairHistory(BaseModel):
     timeframe: str
     timeframe_ms: int
     columns: List[str]
-    selected_columns: List[str] = []
+    all_columns: List[str] = []
     data: SerializeAsAny[List[Any]]
     length: int
     buy_signals: int

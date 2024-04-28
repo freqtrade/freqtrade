@@ -1204,7 +1204,7 @@ class RPC:
         if has_content:
             if selected_cols:
                 # Ensure OHLCV columns are always present
-                cols_set = set(DEFAULT_DATAFRAME_COLUMNS + selected_cols)
+                cols_set = set(DEFAULT_DATAFRAME_COLUMNS + list(signals.keys()) + selected_cols)
                 df_cols = [col for col in dataframe_columns if col in cols_set]
                 dataframe = dataframe.loc[:, df_cols]
 
@@ -1231,8 +1231,8 @@ class RPC:
             'timeframe': timeframe,
             'timeframe_ms': timeframe_to_msecs(timeframe),
             'strategy': strategy,
-            'columns': dataframe_columns,
-            'selected_columns': list(dataframe.columns),
+            'all_columns': dataframe_columns,
+            'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
             'buy_signals': signals['enter_long'],  # Deprecated
