@@ -1699,12 +1699,24 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         assert result['data_stop_ts'] == 1515715200000
         lfm.reset_mock()
 
-    # No data found
-    rc = client_get(client,
-                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
-                    f"&timerange=20200111-20200112&strategy={CURRENT_TEST_STRATEGY}")
-    assert_response(rc, 502)
-    assert rc.json()['detail'] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
+        # No data found
+        if call == 'get':
+            rc = client_get(client,
+                            f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                            f"&timerange=20200111-20200112&strategy={CURRENT_TEST_STRATEGY}")
+        else:
+            rc = client_post(
+                client,
+                f"{BASE_URI}/pair_history",
+                data={
+                    "pair": "UNITTEST/BTC",
+                    "timeframe": timeframe,
+                    "timerange": "20200111-20200112",
+                    "strategy": CURRENT_TEST_STRATEGY,
+                    "columns": ['rsi', 'fastd', 'fastk'],
+                })
+        assert_response(rc, 502)
+        assert rc.json()['detail'] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
 
 def test_api_plot_config(botclient, mocker, tmp_path):
