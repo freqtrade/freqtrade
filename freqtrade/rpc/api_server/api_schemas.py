@@ -489,12 +489,20 @@ class AvailablePairs(BaseModel):
     pair_interval: List[List[str]]
 
 
+class PairHistoryRequest(BaseModel):
+    pair: str
+    timeframe: str
+    limit: Optional[int] = None
+    columns: Optional[List[str]] = None
+
+
 class PairHistory(BaseModel):
     strategy: str
     pair: str
     timeframe: str
     timeframe_ms: int
     columns: List[str]
+    selected_columns: List[str] = []
     data: SerializeAsAny[List[Any]]
     length: int
     buy_signals: int
