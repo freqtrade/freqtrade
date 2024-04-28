@@ -1720,7 +1720,7 @@ def test_api_strategies(botclient, tmp_path):
     ]}
 
 
-def test_api_strategy(botclient, tmp_path):
+def test_api_strategy(botclient, tmp_path, mocker):
     _ftbot, client = botclient
     _ftbot.config['user_data_dir'] = tmp_path
 
@@ -1738,6 +1738,11 @@ def test_api_strategy(botclient, tmp_path):
     # Disallow base64 strategies
     rc = client_get(client, f"{BASE_URI}/strategy/xx:cHJpbnQoImhlbGxvIHdvcmxkIik=")
     assert_response(rc, 500)
+    mocker.patch('freqtrade.resolvers.strategy_resolver.StrategyResolver._load_strategy',
+                 side_effect=Exception("Test"))
+
+    rc = client_get(client, f"{BASE_URI}/strategy/NoStrat")
+    assert_response(rc, 502)
 
 
 def test_api_exchanges(botclient):
