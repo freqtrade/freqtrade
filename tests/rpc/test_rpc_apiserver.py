@@ -1549,13 +1549,17 @@ def test_api_pair_candles(botclient, ohlcv_history):
         assert resp['data_stop'] == '2017-11-26 09:00:00+00:00'
         assert resp['data_stop_ts'] == 1511686800000
         assert isinstance(resp['columns'], list)
-        if call == 'get':
-            assert set(resp['columns']) == {
+        base_cols = {
                 'date', 'open', 'high', 'low', 'close', 'volume',
-                'sma', 'sma2', 'enter_long', 'exit_long', 'enter_short', 'exit_short', '__date_ts',
+                'sma', 'enter_long', 'exit_long', 'enter_short', 'exit_short', '__date_ts',
                 '_enter_long_signal_close', '_exit_long_signal_close',
                 '_enter_short_signal_close', '_exit_short_signal_close'
             }
+        if call == 'get':
+            assert set(resp['columns']) == base_cols.union({'sma2'})
+        else:
+            assert set(resp['columns']) == base_cols
+
         # All columns doesn't include the internal columns
         assert set(resp['all_columns']) == {
             'date', 'open', 'high', 'low', 'close', 'volume',
@@ -1567,6 +1571,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
         assert 'data' in resp
         assert len(resp['data']) == amount
         if call == 'get':
+            assert len(resp['data'][0]) == 17
             assert resp['data'] == [
                 ['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05,
                  0.0877869, None, None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
@@ -1575,6 +1580,18 @@ def test_api_pair_candles(botclient, ohlcv_history):
                  8.893e-05, None, None, None],
                 ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None
+                 ]
+            ]
+        else:
+            assert len(resp['data'][0]) == 16
+            assert resp['data'] == [
+                ['2017-11-26T08:50:00Z', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05,
+                 0.0877869, None, 0, 0, 0, 0, 1511686200000, None, None, None, None],
+                ['2017-11-26T08:55:00Z', 8.88e-05, 8.942e-05, 8.88e-05, 8.893e-05, 0.05874751,
+                 8.886500000000001e-05, 1, 0, 0, 0, 1511686500000,
+                 8.893e-05, None, None, None],
+                ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 0, 0, 0, 0, 1511686800000, None, None, None, None
                  ]
             ]
 
@@ -1595,8 +1612,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
                  8.893e-05, 0.05874751, 8.886500000000001e-05, 8.886500000000001e-05, 1, 0.0, 0,
                  0, '2017-11-26T08:55:00Z', 1511686500000, 8.893e-05, None, None, None],
              ['2017-11-26T09:00:00Z', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
-                 0.7039405, 8.885e-05, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z', 1511686800000,
-                 None, None, None, None]
+                 0.7039405, 8.885e-05, 8.885e-05, 0, 0.0, 0, 0, '2017-11-26T09:00:00Z',
+                 1511686800000, None, None, None, None]
              ])
 
 
