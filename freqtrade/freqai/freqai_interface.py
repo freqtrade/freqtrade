@@ -826,7 +826,7 @@ class IFreqaiModel(ABC):
         :param pair: current pair
         :return: if the data exists or not
         """
-        if self.config.get("freqai_backtest_live_models", False) and len_dataframe_backtest == 0:
+        if len_dataframe_backtest == 0:
             logger.info(f"No data found for pair {pair} from "
                         f"from {tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
                         "Probably more than one training within the same candle period.")
