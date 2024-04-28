@@ -1654,33 +1654,50 @@ def test_api_pair_history(botclient, tmp_path, mocker):
     assert_response(rc, 502)
 
     # Working
-    rc = client_get(client,
-                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
-                    f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
-    assert_response(rc, 200)
-    result = rc.json()
-    assert result['length'] == 289
-    assert len(result['data']) == result['length']
-    assert 'columns' in result
-    assert 'data' in result
-    data = result['data']
-    assert len(data) == 289
-    # analyzed DF has 30 columns
-    assert len(result['columns']) == 30
-    assert len(data[0]) == 30
-    date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
-    rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
+    for call in ('get', 'post'):
+        if call == 'get':
+            rc = client_get(client,
+                            f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                            f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
+        else:
+            rc = client_post(
+                client,
+                f"{BASE_URI}/pair_history",
+                data={
+                    "pair": "UNITTEST/BTC",
+                    "timeframe": timeframe,
+                    "timerange": "20180111-20180112",
+                    "strategy": CURRENT_TEST_STRATEGY,
+                    "columns": ['rsi', 'fastd', 'fastk'],
+                })
 
-    assert data[0][date_col_idx] == '2018-01-11T00:00:00Z'
-    assert data[0][rsi_col_idx] is not None
-    assert data[0][rsi_col_idx] > 0
-    assert lfm.call_count == 1
-    assert result['pair'] == 'UNITTEST/BTC'
-    assert result['strategy'] == CURRENT_TEST_STRATEGY
-    assert result['data_start'] == '2018-01-11 00:00:00+00:00'
-    assert result['data_start_ts'] == 1515628800000
-    assert result['data_stop'] == '2018-01-12 00:00:00+00:00'
-    assert result['data_stop_ts'] == 1515715200000
+        assert_response(rc, 200)
+        result = rc.json()
+        assert result['length'] == 289
+        assert len(result['data']) == result['length']
+        assert 'columns' in result
+        assert 'data' in result
+        data = result['data']
+        assert len(data) == 289
+        col_count = 30 if call == 'get' else 18
+        # analyzed DF has 30 columns
+        assert len(result['columns']) == col_count
+        assert len(result['all_columns']) == 25
+        assert len(data[0]) == col_count
+        date_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'date'][0]
+        rsi_col_idx = [idx for idx, c in enumerate(result['columns']) if c == 'rsi'][0]
+
+        assert data[0][date_col_idx] == '2018-01-11T00:00:00Z'
+        assert data[0][rsi_col_idx] is not None
+        assert data[0][rsi_col_idx] > 0
+        assert lfm.call_count == 1
+        assert result['pair'] == 'UNITTEST/BTC'
+        assert result['strategy'] == CURRENT_TEST_STRATEGY
+        assert result['data_start'] == '2018-01-11 00:00:00+00:00'
+        assert result['data_start_ts'] == 1515628800000
+        assert result['data_stop'] == '2018-01-12 00:00:00+00:00'
+        assert result['data_stop_ts'] == 1515715200000
+        lfm.reset_mock()
 
     # No data found
     rc = client_get(client,

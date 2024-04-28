@@ -496,6 +496,12 @@ class PairCandlesRequest(BaseModel):
     columns: Optional[List[str]] = None
 
 
+class PairHistoryRequest(PairCandlesRequest):
+    timerange: str
+    strategy: str
+    freqaimodel: Optional[str] = None
+
+
 class PairHistory(BaseModel):
     strategy: str
     pair: str
