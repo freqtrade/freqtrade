@@ -522,8 +522,8 @@ To save time, by default backtest will reuse a cached result from within the las
 
 ### Further backtest-result analysis
 
-To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis as shown in the [data analysis](data-analysis.md#backtesting) backtesting section.
+To further analyze your backtest results, freqtrade will export the trades to file by default.
+You can then load the trades to perform further analysis as shown in the [data analysis](strategy_analysis_example.md#load-backtest-results-to-pandas-dataframe) backtesting section.
 
 ## Assumptions made by backtesting
 

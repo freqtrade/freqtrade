@@ -806,7 +806,7 @@ If you have the `stoploss_space()` method in your custom hyperopt file, remove i
 Override the `stoploss_space()` method and define the desired range in it if you need stoploss values to vary in other range during hyperoptimization. A sample for this method can be found in the [overriding pre-defined spaces section](advanced-hyperopt.md#overriding-pre-defined-spaces).
 
 !!! Note "Reduced search space"
-    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is usually sufficient, every value more precise than this will usually result in overfitted results. You can however [overriding pre-defined spaces](advanced-hyperopt.md#pverriding-pre-defined-spaces) to change this to your needs.
+    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is usually sufficient, every value more precise than this will usually result in overfitted results. You can however [overriding pre-defined spaces](advanced-hyperopt.md#overriding-pre-defined-spaces) to change this to your needs.
 
 ### Understand Hyperopt Trailing Stop results
 
