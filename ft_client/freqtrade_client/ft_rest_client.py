@@ -397,12 +397,13 @@ class FtRestClient:
             "timeframe": timeframe if timeframe else '',
         })
 
-    def pair_candles(self, pair, timeframe, limit=None):
+    def pair_candles(self, pair, timeframe, limit=None, columns=None):
         """Return live dataframe for <pair><timeframe>.
 
         :param pair: Pair to get data for
         :param timeframe: Only pairs with this timeframe available.
         :param limit: Limit result to the last n candles.
+        :param columns: List of dataframe columns to return. Empty list will return OHLCV.
         :return: json object
         """
         params = {
@@ -411,6 +412,14 @@ class FtRestClient:
         }
         if limit:
             params['limit'] = limit
+
+        if columns is not None:
+            params['columns'] = columns
+            return self._post(
+                "pair_candles",
+                data=params
+            )
+
         return self._get("pair_candles", params=params)
 
     def pair_history(self, pair, timeframe, strategy, timerange=None, freqaimodel=None):
