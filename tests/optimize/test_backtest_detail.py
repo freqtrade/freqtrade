@@ -921,12 +921,12 @@ def test_backtest_results(default_conf, mocker, caplog, data: BTContainer) -> No
     default_conf["use_exit_signal"] = data.use_exit_signal
     default_conf["max_open_trades"] = 10
 
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_fee", return_value=0.0)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch(f"{EXMS}.get_max_leverage", return_value=100)
     mocker.patch(f"{EXMS}.calculate_funding_fees", return_value=0)
-    patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
     # TODO: Should we initialize this properly??

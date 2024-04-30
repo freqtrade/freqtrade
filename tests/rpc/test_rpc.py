@@ -103,6 +103,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'funding_fee': ANY, 'ft_order_tag': None,
         }],
     }
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         EXMS,
@@ -111,7 +112,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         _dry_is_price_crossed=MagicMock(side_effect=[False, True]),
     )
 
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 

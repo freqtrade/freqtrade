@@ -298,12 +298,12 @@ def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
 
 def test_data_with_fee(default_conf, mocker) -> None:
     patch_exchange(mocker)
-    default_conf['fee'] = 0.1234
+    default_conf['fee'] = 0.01234
 
     fee_mock = mocker.patch(f'{EXMS}.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    assert backtesting.fee == 0.1234
+    assert backtesting.fee == 0.01234
     assert fee_mock.call_count == 0
 
     default_conf['fee'] = 0.0
@@ -620,12 +620,11 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     assert trade is None
 
 
-def test_backtest__check_trade_exit(default_conf, fee, mocker) -> None:
+def test_backtest__check_trade_exit(default_conf, mocker) -> None:
     default_conf['use_exit_signal'] = False
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
-    patch_exchange(mocker)
     default_conf['timeframe_detail'] = '1m'
     default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
@@ -683,14 +682,13 @@ def test_backtest__check_trade_exit(default_conf, fee, mocker) -> None:
     assert res is None
 
 
-def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
+def test_backtest_one(default_conf, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     default_conf['max_open_trades'] = 10
 
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
-    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'UNITTEST/BTC'
@@ -777,14 +775,13 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
 
 
 @pytest.mark.parametrize('use_detail', [True, False])
-def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_detail) -> None:
+def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail) -> None:
     default_conf_usdt['use_exit_signal'] = False
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     if use_detail:
         default_conf_usdt['timeframe_detail'] = '1m'
-    patch_exchange(mocker)
 
     def advise_entry(df, *args, **kwargs):
         # Mock function to force several entries
@@ -864,14 +861,14 @@ def test_backtest_one_detail(default_conf_usdt, fee, mocker, testdatadir, use_de
     (False, -0.01780296, 5),
     ])
 def test_backtest_one_detail_futures(
-        default_conf_usdt, fee, mocker, testdatadir, use_detail, exp_funding_fee,
+        default_conf_usdt, mocker, testdatadir, use_detail, exp_funding_fee,
         exp_ff_updates) -> None:
     default_conf_usdt['use_exit_signal'] = False
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
     default_conf_usdt['candle_type_def'] = CandleType.FUTURES
 
-    mocker.patch(f'{EXMS}.get_fee', fee)
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -881,7 +878,6 @@ def test_backtest_one_detail_futures(
     default_conf_usdt['timeframe'] = '1h'
     if use_detail:
         default_conf_usdt['timeframe_detail'] = '5m'
-    patch_exchange(mocker)
 
     def advise_entry(df, *args, **kwargs):
         # Mock function to force several entries
@@ -1237,19 +1233,18 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     ([{"method": "CooldownPeriod", "stop_duration": 3}], 'sine', 9),
     ([{"method": "CooldownPeriod", "stop_duration": 3}], 'raise', 10),
 ])
-def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
+def test_backtest_pricecontours(default_conf, mocker, testdatadir,
                                 protections, contour, expected) -> None:
     if protections:
         default_conf['protections'] = protections
         default_conf['enable_protections'] = True
 
+    patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float('inf'))
-    mocker.patch(f'{EXMS}.get_fee', fee)
     # While entry-signals are unrealistic, running backtesting
     # over and over again should not cause different results
 
-    patch_exchange(mocker)
     default_conf['timeframe'] = '1m'
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
