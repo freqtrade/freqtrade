@@ -222,7 +222,7 @@ class IFreqaiModel(ABC):
             time.sleep(1)
             pair = self.train_queue[0]
 
-            # ensure pair is avaialble in dp
+            # ensure pair is available in dp
             if pair not in strategy.dp.current_whitelist():
                 self.train_queue.popleft()
                 logger.warning(f'{pair} not in current whitelist, removing from train queue.')
@@ -675,6 +675,8 @@ class IFreqaiModel(ABC):
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = dk.data['extra_returns_per_train'][return_str]
 
+        hist_preds_df['high_price'] = strat_df['high']
+        hist_preds_df['low_price'] = strat_df['low']
         hist_preds_df['close_price'] = strat_df['close']
         hist_preds_df['date_pred'] = strat_df['date']
 
@@ -716,9 +718,6 @@ class IFreqaiModel(ABC):
             if self.pair_it == self.total_pairs:
                 logger.info(
                     f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
-                if self.inference_time > 0.25 * self.base_tf_seconds:
-                    logger.warning("Inference took over 25% of the candle time. Reduce pairlist to"
-                                   " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
         return

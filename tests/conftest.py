@@ -49,10 +49,10 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "longrun: mark test that is running slowly and should not be run regularily"
+        "markers", "longrun: mark test that is running slowly and should not be run regularly"
     )
     if not config.option.longrun:
-        setattr(config.option, 'markexpr', 'not longrun')
+        config.option.markexpr = 'not longrun'
 
 
 class FixtureScheduler(LoadScopeScheduling):
@@ -490,10 +490,10 @@ def user_dir(mocker, tmp_path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def patch_coingekko(mocker) -> None:
+def patch_coingecko(mocker) -> None:
     """
-    Mocker to coingekko to speed up tests
-    :param mocker: mocker to patch coingekko class
+    Mocker to coingecko to speed up tests
+    :param mocker: mocker to patch coingecko class
     :return: None
     """
 

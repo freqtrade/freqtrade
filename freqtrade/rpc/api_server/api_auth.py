@@ -26,6 +26,7 @@ def verify_auth(api_config, username: str, password: str):
 
 
 httpbasic = HTTPBasic(auto_error=False)
+security = HTTPBasic()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
@@ -117,7 +118,7 @@ def http_basic_or_jwt_token(form_data: HTTPBasicCredentials = Depends(httpbasic)
 
 
 @router_login.post('/token/login', response_model=AccessAndRefreshToken)
-def token_login(form_data: HTTPBasicCredentials = Depends(HTTPBasic()),
+def token_login(form_data: HTTPBasicCredentials = Depends(security),
                 api_config=Depends(get_api_config)):
 
     if verify_auth(api_config, form_data.username, form_data.password):

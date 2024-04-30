@@ -65,7 +65,7 @@ class VolumePairList(IPairList):
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
         _tf_in_sec = self._tf_in_min * 60
 
-        # wether to use range lookback or not
+        # whether to use range lookback or not
         self._use_range = (self._tf_in_min > 0) & (self._lookback_period > 0)
 
         if self._use_range & (self._refresh_period < _tf_in_sec):

@@ -15,16 +15,16 @@ from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backte
 from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
-                                                 generate_edge_table, generate_exit_reason_stats,
-                                                 generate_pair_metrics,
+                                                 generate_edge_table, generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_analysis_results,
                                                  store_backtest_stats, text_table_bt_results,
-                                                 text_table_exit_reason, text_table_strategy)
+                                                 text_table_strategy)
+from freqtrade.optimize.optimize_reports.bt_output import text_table_tags
 from freqtrade.optimize.optimize_reports.optimize_reports import (_get_resample_from_period,
-                                                                  calc_streak)
+                                                                  calc_streak, generate_tag_metrics)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc
@@ -129,7 +129,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
     assert strat_stats['backtest_start'] == min_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['backtest_end'] == max_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['total_trades'] == len(results['DefStrat']['results'])
-    # Above sample had no loosing trade
+    # Above sample had no losing trade
     assert strat_stats['max_drawdown_account'] == 0.0
 
     # Retry with losing trade
@@ -227,6 +227,28 @@ def test_store_backtest_stats(testdatadir, mocker):
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
+
+
+def test_store_backtest_stats_real(tmp_path):
+    data = {'metadata': {}, 'strategy': {}, 'strategy_comparison': []}
+    store_backtest_stats(tmp_path, data, '2022_01_01_15_05_13')
+
+    assert (tmp_path / 'backtest-result-2022_01_01_15_05_13.json').is_file()
+    assert (tmp_path / 'backtest-result-2022_01_01_15_05_13.meta.json').is_file()
+    assert not (tmp_path / 'backtest-result-2022_01_01_15_05_13_market_change.feather').is_file()
+    assert (tmp_path / LAST_BT_RESULT_FN).is_file()
+    fn = get_latest_backtest_filename(tmp_path)
+    assert fn == 'backtest-result-2022_01_01_15_05_13.json'
+
+    store_backtest_stats(tmp_path, data, '2024_01_01_15_05_25', market_change_data=pd.DataFrame())
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25.json').is_file()
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25.meta.json').is_file()
+    assert (tmp_path / 'backtest-result-2024_01_01_15_05_25_market_change.feather').is_file()
+    assert (tmp_path / LAST_BT_RESULT_FN).is_file()
+
+    # Last file reference should be updated
+    fn = get_latest_backtest_filename(tmp_path)
+    assert fn == 'backtest-result-2024_01_01_15_05_25.json'
 
 
 def test_store_backtest_candles(testdatadir, mocker):
@@ -392,20 +414,21 @@ def test_text_table_exit_reason():
     )
 
     result_str = (
-        '|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |'
-        '   Tot Profit BTC |   Tot Profit % |\n'
-        '|---------------+---------+--------------------------+----------------+'
-        '------------------+----------------|\n'
-        '|           roi |       2 |      2     0     0   100 |             15 |'
-        '              0.6 |             15 |\n'
-        '|     stop_loss |       1 |      0     0     1     0 |            -10 |'
-        '             -0.2 |             -5 |'
+        '|   Exit Reason |   Exits |   Avg Profit % |   Tot Profit BTC |   Tot Profit % |'
+        '   Avg Duration |   Win  Draw  Loss  Win% |\n'
+        '|---------------+---------+----------------+------------------+----------------+'
+        '----------------+-------------------------|\n'
+        '|           roi |       2 |          15.00 |       0.60000000 |           2.73 |'
+        '        0:20:00 |     2     0     0   100 |\n'
+        '|     stop_loss |       1 |         -10.00 |      -0.20000000 |          -0.91 |'
+        '        0:10:00 |     0     0     1     0 |\n'
+        '|         TOTAL |       3 |           6.67 |       0.40000000 |           1.82 |'
+        '        0:17:00 |     2     0     1  66.7 |'
     )
 
-    exit_reason_stats = generate_exit_reason_stats(max_open_trades=2,
-                                                   results=results)
-    assert text_table_exit_reason(exit_reason_stats=exit_reason_stats,
-                                  stake_currency='BTC') == result_str
+    exit_reason_stats = generate_tag_metrics('exit_reason', starting_balance=22,
+                                             results=results, skip_nan=False)
+    assert text_table_tags('exit_tag', exit_reason_stats, 'BTC') == result_str
 
 
 def test_generate_sell_reason_stats():
@@ -423,10 +446,10 @@ def test_generate_sell_reason_stats():
         }
     )
 
-    exit_reason_stats = generate_exit_reason_stats(max_open_trades=2,
-                                                   results=results)
+    exit_reason_stats = generate_tag_metrics('exit_reason', starting_balance=22,
+                                             results=results, skip_nan=False)
     roi_result = exit_reason_stats[0]
-    assert roi_result['exit_reason'] == 'roi'
+    assert roi_result['key'] == 'roi'
     assert roi_result['trades'] == 2
     assert pytest.approx(roi_result['profit_mean']) == 0.15
     assert roi_result['profit_mean_pct'] == round(roi_result['profit_mean'] * 100, 2)
@@ -435,7 +458,7 @@ def test_generate_sell_reason_stats():
 
     stop_result = exit_reason_stats[1]
 
-    assert stop_result['exit_reason'] == 'stop_loss'
+    assert stop_result['key'] == 'stop_loss'
     assert stop_result['trades'] == 1
     assert pytest.approx(stop_result['profit_mean']) == -0.1
     assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)

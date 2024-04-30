@@ -90,7 +90,7 @@ def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
         assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
 
     with pytest.raises(TemporaryError):
-        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError("DeaDBeef"))
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.OperationFailed("DeaDBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         getattr(exchange, fun)(**kwargs)
     assert api_mock.__dict__[mock_ccxt_fun].call_count == retries
@@ -3830,7 +3830,7 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
     [
         ("BTC/USDT", 'BTC', 'USDT', "binance", True, False, False, 'spot', {}, True),
         ("USDT/BTC", 'USDT', 'BTC', "binance", True, False, False, 'spot', {}, True),
-        # No seperating /
+        # No separating /
         ("BTCUSDT", 'BTC', 'USDT', "binance", True, False, False, 'spot', {}, True),
         ("BTCUSDT", None, "USDT", "binance", True, False, False, 'spot', {}, False),
         ("USDT/BTC", "BTC", None, "binance", True, False, False, 'spot', {}, False),
@@ -4346,7 +4346,7 @@ def test_combine_funding_and_mark(
     ('binance', 0, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.00091409999),
     ('binance', 0, 2, "2021-08-31 23:58:00", "2021-09-01 08:00:00",  30.0, -0.00091409999),
     ('binance', 0, 2, "2021-09-01 00:10:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
-    # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange.
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
     # ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
     # ('kraken', "2021-09-01 01:00:14", "2021-09-01 08:00:00",  30.0, -0.0008289),
@@ -4358,7 +4358,7 @@ def test_combine_funding_and_mark(
     ('gate', 0, 2, "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999),
     ('gate', 1, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', 0,  2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235),
-    # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange.
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
 ])
 def test__fetch_and_calculate_funding_fees(
@@ -5133,7 +5133,7 @@ def test_get_maintenance_ratio_and_amt(
     mocker.patch(f'{EXMS}.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._leverage_tiers = leverage_tiers
-    exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
+    assert exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
 
 
 def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):

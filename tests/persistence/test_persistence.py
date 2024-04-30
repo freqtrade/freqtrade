@@ -1871,7 +1871,7 @@ def test_get_trades__query(fee, is_short):
     # without orders there should be no join issued.
     query1 = Trade.get_trades_query([], include_orders=False)
 
-    # Empty "with-options -> default - selectin"
+    # Empty "with-options -> default - selection"
     assert query._with_options == ()
     assert query1._with_options != ()
 

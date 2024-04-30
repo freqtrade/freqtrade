@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, Config
+from freqtrade.constants import CANCEL_REASON, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
@@ -30,8 +30,8 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
-from freqtrade.util import (decimals_per_coin, dt_humanize, dt_now, dt_ts_def, format_date,
-                            shorten_date)
+from freqtrade.util import decimals_per_coin, dt_now, dt_ts_def, format_date, shorten_date
+from freqtrade.util.datetime_helpers import dt_humanize_delta
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -155,7 +155,7 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self, trade_ids: List[int] = []) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -301,13 +301,13 @@ class RPC:
                     for oo in trade.open_orders
                 ]
 
-                # exemple: '*.**.**' trying to enter, exit and exit with 3 different orders
+                # example: '*.**.**' trying to enter, exit and exit with 3 different orders
                 active_attempt_side_symbols_str = '.'.join(active_attempt_side_symbols)
 
                 detail_trade = [
                     f'{trade.id} {direction_str}',
                     trade.pair + active_attempt_side_symbols_str,
-                    shorten_date(dt_humanize(trade.open_date, only_distance=True)),
+                    shorten_date(dt_humanize_delta(trade.open_date_utc)),
                     profit_str
                 ]
 
@@ -460,8 +460,11 @@ class RPC:
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
-            start_date: datetime = datetime.fromtimestamp(0)) -> Dict[str, Any]:
+            start_date: Optional[datetime] = None) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
+
+        start_date = datetime.fromtimestamp(0) if start_date is None else start_date
+
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
         trades: Sequence[Trade] = Trade.session.scalars(Trade.get_trades_query(
@@ -596,10 +599,10 @@ class RPC:
             'trade_count': len(trades),
             'closed_trade_count': closed_trade_count,
             'first_trade_date': format_date(first_date),
-            'first_trade_humanized': dt_humanize(first_date) if first_date else '',
+            'first_trade_humanized': dt_humanize_delta(first_date) if first_date else '',
             'first_trade_timestamp': dt_ts_def(first_date, 0),
             'latest_trade_date': format_date(last_date),
-            'latest_trade_humanized': dt_humanize(last_date) if last_date else '',
+            'latest_trade_humanized': dt_humanize_delta(last_date) if last_date else '',
             'latest_trade_timestamp': dt_ts_def(last_date, 0),
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
@@ -1104,6 +1107,16 @@ class RPC:
 
         return self._rpc_locks()
 
+    def _rpc_add_lock(
+            self, pair: str, until: datetime, reason: Optional[str], side: str) -> PairLock:
+        lock = PairLocks.lock_pair(
+            pair=pair,
+            until=until,
+            reason=reason,
+            side=side,
+        )
+        return lock
+
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
         res = {'method': self._freqtrade.pairlists.name_list,
@@ -1177,9 +1190,11 @@ class RPC:
         return self._freqtrade.edge.accepted_pairs()
 
     @staticmethod
-    def _convert_dataframe_to_dict(strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
-                                   last_analyzed: datetime) -> Dict[str, Any]:
+    def _convert_dataframe_to_dict(
+            strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
+            last_analyzed: datetime, selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
+        dataframe_columns = list(dataframe.columns)
         signals = {
             'enter_long': 0,
             'exit_long': 0,
@@ -1187,6 +1202,11 @@ class RPC:
             'exit_short': 0,
         }
         if has_content:
+            if selected_cols is not None:
+                # Ensure OHLCV columns are always present
+                cols_set = set(DEFAULT_DATAFRAME_COLUMNS + list(signals.keys()) + selected_cols)
+                df_cols = [col for col in dataframe_columns if col in cols_set]
+                dataframe = dataframe.loc[:, df_cols]
 
             dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
@@ -1211,6 +1231,7 @@ class RPC:
             'timeframe': timeframe,
             'timeframe_ms': timeframe_to_msecs(timeframe),
             'strategy': strategy,
+            'all_columns': dataframe_columns,
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
@@ -1236,13 +1257,16 @@ class RPC:
             })
         return res
 
-    def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
-                                limit: Optional[int]) -> Dict[str, Any]:
+    def _rpc_analysed_dataframe(
+            self, pair: str, timeframe: str, limit: Optional[int],
+            selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         """ Analyzed dataframe in Dict form """
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-        return RPC._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                              pair, timeframe, _data, last_analyzed)
+        return RPC._convert_dataframe_to_dict(
+            self._freqtrade.config['strategy'], pair, timeframe, _data, last_analyzed,
+            selected_cols
+        )
 
     def __rpc_analysed_dataframe_raw(
         self,
@@ -1309,7 +1333,7 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config: Config, pair: str, timeframe: str,
-                                   exchange) -> Dict[str, Any]:
+                                   exchange, selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
         from freqtrade.data.converter import trim_dataframe
@@ -1339,7 +1363,8 @@ class RPC:
         df_analyzed = trim_dataframe(df_analyzed, timerange_parsed, startup_candles=startup_candles)
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed.copy(), dt_now())
+                                              df_analyzed.copy(), dt_now(),
+                                              selected_cols)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and

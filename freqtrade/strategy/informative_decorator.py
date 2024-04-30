@@ -64,7 +64,7 @@ def informative(timeframe: str, asset: str = '',
     def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, '_ft_informative', [])
         informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill, _candle_type))
-        setattr(fn, '_ft_informative', informative_pairs)
+        setattr(fn, '_ft_informative', informative_pairs)  # noqa: B010
         return fn
     return decorator
 

@@ -137,7 +137,7 @@ class Worker:
         Throttles the given callable that it
         takes at least `min_secs` to finish execution.
         :param func: Any callable
-        :param throttle_secs: throttling interation execution time limit in seconds
+        :param throttle_secs: throttling iteration execution time limit in seconds
         :param timeframe: ensure iteration is executed at the beginning of the next candle.
         :param timeframe_offset: offset in seconds to apply to the next candle time.
         :return: Any (result of execution of func)

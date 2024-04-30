@@ -87,9 +87,9 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
 
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
-        # Check open trade rate alignes to open rate
+        # Check open trade rate aligns to open rate
         assert ln is not None
-        # check close trade rate alignes to close rate or is between high and low
+        # check close trade rate aligns to close rate or is between high and low
         ln = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
                 round(ln.iloc[0]["low"], 6) < round(
@@ -121,8 +121,8 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'XRP/USDT:USDT'
-    row = [
-            pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
+    row_enter = [
+            pd.Timestamp(year=2020, month=1, day=1, hour=4, minute=0),
             2.1,  # Open
             2.2,  # High
             1.9,  # Low
@@ -133,10 +133,24 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
             0,  # exit_short
             '',  # enter_tag
             '',  # exit_tag
-            ]
+        ]
+    # Exit row - with slightly different values
+    row_exit = [
+            pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
+            2.2,  # Open
+            2.3,  # High
+            2.0,  # Low
+            2.2,  # Close
+            1,  # enter_long
+            0,  # exit_long
+            0,  # enter_short
+            0,  # exit_short
+            '',  # enter_tag
+            '',  # exit_tag
+        ]
     backtesting.strategy.leverage = MagicMock(return_value=leverage)
-    trade = backtesting._enter_trade(pair, row=row, direction='long')
-    current_time = row[0].to_pydatetime()
+    trade = backtesting._enter_trade(pair, row=row_enter, direction='long')
+    current_time = row_enter[0].to_pydatetime()
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
     assert pytest.approx(trade.amount) == 47.61904762 * leverage
@@ -144,7 +158,7 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=None)
     assert pytest.approx(trade.liquidation_price) == (0.10278333 if leverage == 1 else 1.2122249)
 
-    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_enter, current_time)
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
     assert pytest.approx(trade.amount) == 47.61904762 * leverage
@@ -152,30 +166,32 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     # Increase position by 100
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=(100, 'PartIncrease'))
 
-    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_enter, current_time)
 
+    liq_price = 0.1038916 if leverage == 1 else 1.2127791
     assert trade
     assert pytest.approx(trade.stake_amount) == 200.0
     assert pytest.approx(trade.amount) == 95.23809524 * leverage
     assert len(trade.orders) == 2
     assert trade.orders[-1].ft_order_tag == 'PartIncrease'
-    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
+    assert pytest.approx(trade.liquidation_price) == liq_price
 
     # Reduce by more than amount - no change to trade.
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=-500)
+    current_time = row_exit[0].to_pydatetime()
 
-    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_exit, current_time)
 
     assert trade
     assert pytest.approx(trade.stake_amount) == 200.0
     assert pytest.approx(trade.amount) == 95.23809524 * leverage
     assert len(trade.orders) == 2
     assert trade.nr_of_successful_entries == 2
-    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
+    assert pytest.approx(trade.liquidation_price) == liq_price
 
     # Reduce position by 50
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=(-100, 'partDecrease'))
-    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_exit, current_time)
 
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
@@ -184,11 +200,11 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert trade.orders[-1].ft_order_tag == 'partDecrease'
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
-    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
+    assert pytest.approx(trade.liquidation_price) == liq_price
 
     # Adjust below minimum
     backtesting.strategy.adjust_trade_position = MagicMock(return_value=-99)
-    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row, current_time)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_exit, current_time)
 
     assert trade
     assert pytest.approx(trade.stake_amount) == 100.0
@@ -196,4 +212,4 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert len(trade.orders) == 3
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
-    assert pytest.approx(trade.liquidation_price) == (0.1038916 if leverage == 1 else 1.2127791)
+    assert pytest.approx(trade.liquidation_price) == liq_price

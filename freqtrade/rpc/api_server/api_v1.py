@@ -15,12 +15,13 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   DeleteLockRequest, DeleteTrade, Entry,
                                                   ExchangeListResponse, Exit, ForceEnterPayload,
                                                   ForceEnterResponse, ForceExitPayload,
-                                                  FreqAIModelListResponse, Health, Locks, Logs,
-                                                  MixTag, OpenTradeSchema, PairHistory,
-                                                  PerformanceEntry, Ping, PlotConfig, Profit,
-                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse, SysInfo,
-                                                  Version, WhitelistResponse)
+                                                  FreqAIModelListResponse, Health, Locks,
+                                                  LocksPayload, Logs, MixTag, OpenTradeSchema,
+                                                  PairCandlesRequest, PairHistory,
+                                                  PairHistoryRequest, PerformanceEntry, Ping,
+                                                  PlotConfig, Profit, ResultMsg, ShowConfig, Stats,
+                                                  StatusMsg, StrategyListResponse, StrategyResponse,
+                                                  SysInfo, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -53,7 +54,8 @@ logger = logging.getLogger(__name__)
 # 2.32: new /backtest/history/ patch endpoint
 # 2.33: Additional weekly/monthly metrics
 # 2.34: new entries/exits/mix_tags endpoints
-API_VERSION = 2.34
+# 2.35: pair_candles and pair_history endpoints as Post variant
+API_VERSION = 2.35
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -255,6 +257,13 @@ def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
 
 
+@router.post('/locks', response_model=Locks, tags=['info', 'locks'])
+def add_locks(payload: List[LocksPayload], rpc: RPC = Depends(get_rpc)):
+    for lock in payload:
+        rpc._rpc_add_lock(lock.pair, lock.until, lock.reason, lock.side)
+    return rpc._rpc_locks()
+
+
 @router.get('/logs', response_model=Logs, tags=['info'])
 def logs(limit: Optional[int] = None):
     return RPC._rpc_get_logs(limit)
@@ -284,7 +293,14 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
 @router.get('/pair_candles', response_model=PairHistory, tags=['candle data'])
 def pair_candles(
         pair: str, timeframe: str, limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_analysed_dataframe(pair, timeframe, limit)
+    return rpc._rpc_analysed_dataframe(pair, timeframe, limit, None)
+
+
+@router.post('/pair_candles', response_model=PairHistory, tags=['candle data'])
+def pair_candles_filtered(payload: PairCandlesRequest, rpc: RPC = Depends(get_rpc)):
+    # Advanced pair_candles endpoint with column filtering
+    return rpc._rpc_analysed_dataframe(
+        payload.pair, payload.timeframe, payload.limit, payload.columns)
 
 
 @router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
@@ -300,7 +316,25 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
         'freqaimodel': freqaimodel if freqaimodel else config.get('freqaimodel'),
     })
     try:
-        return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange)
+        return RPC._rpc_analysed_history_full(config, pair, timeframe, exchange, None)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post('/pair_history', response_model=PairHistory, tags=['candle data'])
+def pair_history_filtered(payload: PairHistoryRequest,
+                          config=Depends(get_config), exchange=Depends(get_exchange)):
+    # The initial call to this endpoint can be slow, as it may need to initialize
+    # the exchange class.
+    config = deepcopy(config)
+    config.update({
+        'strategy': payload.strategy,
+        'timerange': payload.timerange,
+        'freqaimodel': payload.freqaimodel if payload.freqaimodel else config.get('freqaimodel'),
+    })
+    try:
+        return RPC._rpc_analysed_history_full(
+            config, payload.pair, payload.timeframe, exchange, payload.columns)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 

@@ -33,7 +33,7 @@ from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
-from freqtrade.util import dt_humanize, fmt_coin, format_date, round_value
+from freqtrade.util import dt_from_ts, dt_humanize_delta, fmt_coin, format_date, round_value
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
@@ -488,7 +488,7 @@ class Telegram(RPCHandler):
         elif msg['type'] == RPCMessageType.WARNING:
             message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
         elif msg['type'] == RPCMessageType.EXCEPTION:
-            # Errors will contain exceptions, which are wrapped in tripple ticks.
+            # Errors will contain exceptions, which are wrapped in triple ticks.
             message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
         elif msg['type'] == RPCMessageType.STARTUP:
@@ -573,8 +573,7 @@ class Telegram(RPCHandler):
                 # TODO: This calculation ignores fees.
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
                 if is_open:
-                    lines.append("({})".format(dt_humanize(order["order_filled_date"],
-                                                           granularity=["day", "hour", "minute"])))
+                    lines.append("({})".format(dt_humanize_delta(order["order_filled_date"])))
                 lines.append(f"*Amount:* {round_value(cur_entry_amount, 8)} "
                              f"({fmt_coin(order['cost'], quote_currency)})")
                 lines.append(f"*Average {wording} Price:* {round_value(cur_entry_average, 8)} "
@@ -657,7 +656,7 @@ class Telegram(RPCHandler):
         position_adjust = self._config.get('position_adjustment_enable', False)
         max_entries = self._config.get('max_entry_position_adjustment', -1)
         for r in results:
-            r['open_date_hum'] = dt_humanize(r['open_date'])
+            r['open_date_hum'] = dt_humanize_delta(r['open_date'])
             r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
             r['num_exits'] = len([o for o in r['orders'] if not o['ft_is_entry']
                                  and not o['ft_order_side'] == 'stoploss'])
@@ -1174,7 +1173,7 @@ class Telegram(RPCHandler):
                 text='Cancel', callback_data='force_exit__cancel')])
             await self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
 
-    async def _force_exit_action(self, trade_id):
+    async def _force_exit_action(self, trade_id: str):
         if trade_id != 'cancel':
             try:
                 loop = asyncio.get_running_loop()
@@ -1289,7 +1288,7 @@ class Telegram(RPCHandler):
             nrecent
         )
         trades_tab = tabulate(
-            [[dt_humanize(trade['close_date']),
+            [[dt_humanize_delta(dt_from_ts(trade['close_timestamp'])),
                 trade['pair'] + " (#" + str(trade['trade_id']) + ")",
                 f"{(trade['close_profit']):.2%} ({trade['close_profit_abs']})"]
                 for trade in trades['trades']],
@@ -1549,7 +1548,7 @@ class Telegram(RPCHandler):
 
     async def send_blacklist_msg(self, blacklist: Dict):
         errmsgs = []
-        for pair, error in blacklist['errors'].items():
+        for _, error in blacklist['errors'].items():
             errmsgs.append(f"Error: {error['error_msg']}")
         if errmsgs:
             await self._send_msg('\n'.join(errmsgs))

@@ -89,7 +89,8 @@ Make sure that the following 2 lines are available in your docker-compose file:
 ```
 
 !!! Danger "Security warning"
-    By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    By using `"8080:8080"` (or `"0.0.0.0:8080:8080"`) in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    This **may** be safe if you're running the bot in a secure environment (like your home network), but it's not recommended to expose the API to the internet.
 
 ## Rest API
 
@@ -166,6 +167,7 @@ freqtrade-client --config rest_config.json <command> [optional parameters]
 | `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
+| `locks add <pair>, <until>, [side], [reason]` | Locks a pair until "until". (Until will be rounded up to the nearest timeframe).
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
@@ -453,7 +455,7 @@ To properly configure your reverse proxy (securely), please consult it's documen
 - **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
 
 !!! Tip "SSL certificates"
-    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any fo the above reverse proxies.
+    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any of the above reverse proxies.
     While this will protect your data in transit, we do not recommend to run the freqtrade API outside of your private network (VPN, SSH tunnel).
 
 ### OpenAPI interface

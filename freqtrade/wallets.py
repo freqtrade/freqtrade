@@ -70,7 +70,7 @@ class Wallets:
     def _update_dry(self) -> None:
         """
         Update from database in dry-run mode
-        - Apply apply profits of closed trades on top of stake amount
+        - Apply profits of closed trades on top of stake amount
         - Subtract currently tied up stake_amount in open trades
         - update balances for currencies currently in trades
         """
@@ -306,7 +306,7 @@ class Wallets:
         :raise: DependencyException if the available stake amount is too low
         """
         stake_amount: float
-        # Ensure wallets are uptodate.
+        # Ensure wallets are up-to-date.
         if update:
             self.update()
         val_tied_up = Trade.total_open_trades_stakes()

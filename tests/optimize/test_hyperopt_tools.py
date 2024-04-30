@@ -172,8 +172,8 @@ def test__pprint_dict():
 }"""
 
 
-def test_get_strategy_filename(default_conf):
-
+def test_get_strategy_filename(default_conf, tmp_path):
+    default_conf['user_data_dir'] = tmp_path
     x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV3')
     assert isinstance(x, Path)
     assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v3.py'
@@ -233,6 +233,7 @@ def test_export_params(tmp_path):
 
 def test_try_export_params(default_conf, tmp_path, caplog, mocker):
     default_conf['disableparamexport'] = False
+    default_conf['user_data_dir'] = tmp_path
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
     filename = tmp_path / f"{CURRENT_TEST_STRATEGY}.json"

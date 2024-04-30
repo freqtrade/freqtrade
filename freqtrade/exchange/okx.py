@@ -56,7 +56,7 @@ class Okx(Exchange):
         """
         Exchange ohlcv candle limit
         OKX has the following behaviour:
-        * 300 candles for uptodate data
+        * 300 candles for up-to-date data
         * 100 candles for historic data
         * 100 candles for additional candles (not futures or spot).
         :param timeframe: Timeframe to check
@@ -87,7 +87,7 @@ class Okx(Exchange):
                     self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
                 ) from e
@@ -153,7 +153,7 @@ class Okx(Exchange):
 
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
                 already_set = self.__fetch_leverage_already_set(pair, leverage, side)
                 if not already_set:
                     raise TemporaryError(
@@ -202,7 +202,7 @@ class Okx(Exchange):
         order['type'] = 'stoploss'
         return order
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
 
@@ -232,7 +232,8 @@ class Okx(Exchange):
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+    def cancel_stoploss_order(
+            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         params1 = {'stop': True}
         # 'ordType': 'conditional'
         #

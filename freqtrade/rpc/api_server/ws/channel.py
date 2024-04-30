@@ -152,7 +152,7 @@ class WebSocketChannel:
         """
         return self._closed.is_set()
 
-    def set_subscriptions(self, subscriptions: List[str] = []) -> None:
+    def set_subscriptions(self, subscriptions: List[str]) -> None:
         """
         Set which subscriptions this channel is subscribed to
 

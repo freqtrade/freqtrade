@@ -20,7 +20,10 @@ logger = logging.getLogger("ft_rest_client")
 
 
 def add_arguments(args: Any = None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+            prog="freqtrade-client",
+            description="Client for the freqtrade REST API",
+    )
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.",
                         nargs="?"
@@ -67,7 +70,7 @@ def print_commands():
     # Print dynamic help for the different commands using the commands doc-strings
     client = FtRestClient(None)
     print("Possible commands:\n")
-    for x, y in inspect.getmembers(client):
+    for x, _ in inspect.getmembers(client):
         if not x.startswith('_'):
             doc = re.sub(':return:.*', '', getattr(client, x).__doc__, flags=re.MULTILINE).rstrip()
             print(f"{x}\n\t{doc}\n")

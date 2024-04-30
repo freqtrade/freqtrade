@@ -847,7 +847,7 @@ class LocalTrade:
                 isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC)
                 or (not recalculating and order.safe_amount_after_fee > amount_tr)
             ):
-                # When recalculating a trade, only comming out to 0 can force a close
+                # When recalculating a trade, only coming out to 0 can force a close
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
@@ -1125,7 +1125,7 @@ class LocalTrade:
                 prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
                 close_profit_abs += prof.profit_abs
                 if total_stake > 0:
-                    # This needs to be calculated based on the last occuring exit to be aligned
+                    # This needs to be calculated based on the last occurring exit to be aligned
                     # with realized_profit.
                     close_profit = (close_profit_abs / total_stake) * self.leverage
             else:
@@ -1538,7 +1538,7 @@ class Trade(ModelBase, LocalTrade):
     amount: Mapped[float] = mapped_column(Float())  # type: ignore
     amount_requested: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     open_date: Mapped[datetime] = mapped_column(
-        nullable=False, default=datetime.utcnow)  # type: ignore
+        nullable=False, default=datetime.now)  # type: ignore
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore

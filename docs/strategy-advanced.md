@@ -209,7 +209,7 @@ def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_r
 
 ## Exit tag
 
-Similar to [Buy Tagging](#buy-tag), you can also specify a sell tag.
+Similar to [Entry Tagging](#enter-tag), you can also specify an exit tag.
 
 ``` python
 def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -326,4 +326,4 @@ for val in self.buy_ema_short.range:
 dataframe = pd.concat(frames, axis=1)
 ```
 
-Freqtrade does however also counter this by running `dataframe.copy()` on the dataframe right after the `populate_indicators()` method - so performance implications of this should be low to non-existant.
+Freqtrade does however also counter this by running `dataframe.copy()` on the dataframe right after the `populate_indicators()` method - so performance implications of this should be low to non-existent.

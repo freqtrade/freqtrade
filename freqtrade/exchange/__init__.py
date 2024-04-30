@@ -4,6 +4,7 @@ from freqtrade.exchange.common import remove_exchange_credentials, MAP_EXCHANGE_
 from freqtrade.exchange.exchange import Exchange
 # isort: on
 from freqtrade.exchange.binance import Binance
+from freqtrade.exchange.bingx import Bingx
 from freqtrade.exchange.bitmart import Bitmart
 from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bitvavo import Bitvavo
@@ -24,6 +25,7 @@ from freqtrade.exchange.exchange_utils_timeframe import (timeframe_to_minutes, t
 from freqtrade.exchange.gate import Gate
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.htx import Htx
+from freqtrade.exchange.idex import Idex
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
 from freqtrade.exchange.okx import Okx

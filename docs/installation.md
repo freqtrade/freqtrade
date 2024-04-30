@@ -51,7 +51,7 @@ These requirements apply to both [Script Installation](#script-installation) and
 ### Install code
 
 We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
-OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
+OS Specific steps are listed first, the common section below is necessary for all systems.
 
 !!! Note
     Python3.9 or higher and the corresponding pip are assumed to be available.

@@ -251,7 +251,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
 # @pytest.mark.parametrize('datahandler', [])
 @pytest.mark.skip("All datahandlers currently support trades data.")
 def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
-    # Currently disabled. Reenable should a new provider not support trades data.
+    # Currently disabled. Re-enable should a new provider not support trades data.
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.trades_load('UNITTEST/ETH')

@@ -78,7 +78,9 @@ def test_load_strategy_base64(dataframe_1m, caplog, default_conf):
                       r".*(/|\\).*(/|\\)SampleStrategy\.py'\.\.\.", caplog)
 
 
-def test_load_strategy_invalid_directory(caplog, default_conf):
+def test_load_strategy_invalid_directory(caplog, default_conf, tmp_path):
+    default_conf['user_data_dir'] = tmp_path
+
     extra_dir = Path.cwd() / 'some/path'
     with pytest.raises(OperationalException, match=r"Impossible to load Strategy.*"):
         StrategyResolver._load_strategy('StrategyTestV333', config=default_conf,
@@ -87,7 +89,8 @@ def test_load_strategy_invalid_directory(caplog, default_conf):
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
 
 
-def test_load_not_found_strategy(default_conf):
+def test_load_not_found_strategy(default_conf, tmp_path):
+    default_conf['user_data_dir'] = tmp_path
     default_conf['strategy'] = 'NotFoundStrategy'
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Strategy 'NotFoundStrategy'. "

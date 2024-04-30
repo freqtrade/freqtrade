@@ -1,8 +1,9 @@
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from time import time
+from typing import Optional, Union
 
-import arrow
+import humanize
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 
@@ -25,7 +26,7 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
     """
     if dt:
         return int(dt.timestamp() * 1000)
-    return int(dt_now().timestamp() * 1000)
+    return int(time() * 1000)
 
 
 def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
@@ -76,13 +77,11 @@ def shorten_date(_date: str) -> str:
     return new_date
 
 
-def dt_humanize(dt: datetime, **kwargs) -> str:
+def dt_humanize_delta(dt: datetime):
     """
-    Return a humanized string for the given datetime.
-    :param dt: datetime to humanize
-    :param kwargs: kwargs to pass to arrow's humanize()
+    Return a humanized string for the given timedelta.
     """
-    return arrow.get(dt).humanize(**kwargs)
+    return humanize.naturaltime(dt)
 
 
 def format_date(date: Optional[datetime]) -> str:
@@ -96,9 +95,9 @@ def format_date(date: Optional[datetime]) -> str:
     return ''
 
 
-def format_ms_time(date: int) -> str:
+def format_ms_time(date: Union[int, float]) -> str:
     """
     convert MS date to readable format.
     : epoch-string in ms
     """
-    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+    return dt_from_ts(date).strftime('%Y-%m-%dT%H:%M:%S')

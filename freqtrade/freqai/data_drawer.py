@@ -4,6 +4,7 @@ import logging
 import re
 import shutil
 import threading
+import warnings
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple, TypedDict
@@ -262,10 +263,11 @@ class FreqaiDataDrawer:
             self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
             return
 
-    def set_initial_return_values(self, pair: str,
-                                  pred_df: DataFrame,
-                                  dataframe: DataFrame
-                                  ) -> None:
+    def set_initial_return_values(
+        self, pair: str,
+        pred_df: DataFrame,
+        dataframe: DataFrame
+    ) -> None:
         """
         Set the initial return values to the historical predictions dataframe. This avoids needing
         to repredict on historical candles, and also stores historical predictions despite
@@ -278,10 +280,15 @@ class FreqaiDataDrawer:
 
         new_pred = pred_df.copy()
         # set new_pred values to nans (we want to signal to user that there was nothing
-        # historically made during downtime. The newest pred will get appeneded later in
+        # historically made during downtime. The newest pred will get appended later in
         # append_model_predictions)
-        new_pred.iloc[:, :] = np.nan
+
         new_pred["date_pred"] = dataframe["date"]
+        # set everything to nan except date_pred
+        columns_to_nan = new_pred.columns.difference(['date_pred', 'date'])
+        new_pred[columns_to_nan] = new_pred[columns_to_nan].astype(
+            float).values * np.nan
+
         hist_preds = self.historic_predictions[pair].copy()
 
         # ensure both dataframes have the same date format so they can be merged
@@ -290,7 +297,8 @@ class FreqaiDataDrawer:
 
         # find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
-        common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
+        common_dates = pd.merge(new_pred, hist_preds,
+                                on="date_pred", how="inner")
         if len(common_dates.index) > 0:
             new_pred = new_pred.iloc[len(common_dates):]
         else:
@@ -298,15 +306,23 @@ class FreqaiDataDrawer:
                            "predictions. You likely left your FreqAI instance offline "
                            f"for more than {len(dataframe.index)} candles.")
 
-        # reindex new_pred columns to match the historic predictions dataframe
-        new_pred_reindexed = new_pred.reindex(columns=hist_preds.columns)
-        df_concat = pd.concat([hist_preds, new_pred_reindexed], ignore_index=True)
+        # Pandas warns that its keeping dtypes of non NaN columns...
+        # yea we know and we already want that behavior. Ignoring.
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=FutureWarning)
+            # reindex new_pred columns to match the historic predictions dataframe
+            new_pred_reindexed = new_pred.reindex(columns=hist_preds.columns)
+            df_concat = pd.concat(
+                [hist_preds, new_pred_reindexed],
+                ignore_index=True
+            )
 
         # any missing values will get zeroed out so users can see the exact
         # downtime in FreqUI
         df_concat = df_concat.fillna(0)
         self.historic_predictions[pair] = df_concat
-        self.model_return_values[pair] = df_concat.tail(len(dataframe.index)).reset_index(drop=True)
+        self.model_return_values[pair] = df_concat.tail(
+            len(dataframe.index)).reset_index(drop=True)
 
     def append_model_predictions(self, pair: str, predictions: DataFrame,
                                  do_preds: NDArray[np.int_],
@@ -323,38 +339,56 @@ class FreqaiDataDrawer:
         index = self.historic_predictions[pair].index[-1:]
         columns = self.historic_predictions[pair].columns
 
-        zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
+        zeros_df = pd.DataFrame(
+            np.zeros((1, len(columns))),
+            index=index,
+            columns=columns
+        )
         self.historic_predictions[pair] = pd.concat(
-            [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0)
+            [self.historic_predictions[pair], zeros_df],
+            ignore_index=True,
+            axis=0
+        )
         df = self.historic_predictions[pair]
 
         # model outputs and associated statistics
         for label in predictions.columns:
-            df[label].iloc[-1] = predictions[label].iloc[-1]
+            label_loc = df.columns.get_loc(label)
+            pred_label_loc = predictions.columns.get_loc(label)
+            df.iloc[-1, label_loc] = predictions.iloc[-1, pred_label_loc]
             if df[label].dtype == object:
                 continue
-            df[f"{label}_mean"].iloc[-1] = dk.data["labels_mean"][label]
-            df[f"{label}_std"].iloc[-1] = dk.data["labels_std"][label]
+            label_mean_loc = df.columns.get_loc(f"{label}_mean")
+            label_std_loc = df.columns.get_loc(f"{label}_std")
+            df.iloc[-1, label_mean_loc] = dk.data["labels_mean"][label]
+            df.iloc[-1, label_std_loc] = dk.data["labels_std"][label]
 
         # outlier indicators
-        df["do_predict"].iloc[-1] = do_preds[-1]
+        do_predict_loc = df.columns.get_loc("do_predict")
+        df.iloc[-1, do_predict_loc] = do_preds[-1]
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
-            df["DI_values"].iloc[-1] = dk.DI_values[-1]
+            DI_values_loc = df.columns.get_loc("DI_values")
+            df.iloc[-1, DI_values_loc] = dk.DI_values[-1]
 
         # extra values the user added within custom prediction model
         if dk.data['extra_returns_per_train']:
             rets = dk.data['extra_returns_per_train']
             for return_str in rets:
-                df[return_str].iloc[-1] = rets[return_str]
+                return_loc = df.columns.get_loc(return_str)
+                df.iloc[-1, return_loc] = rets[return_str]
 
-        # this logic carries users between version without needing to
-        # change their identifier
-        if 'close_price' not in df.columns:
-            df['close_price'] = np.nan
-            df['date_pred'] = np.nan
-
-        df['close_price'].iloc[-1] = strat_df['close'].iloc[-1]
-        df['date_pred'].iloc[-1] = strat_df['date'].iloc[-1]
+        high_price_loc = df.columns.get_loc("high_price")
+        high_loc = strat_df.columns.get_loc("high")
+        df.iloc[-1, high_price_loc] = strat_df.iloc[-1, high_loc]
+        low_price_loc = df.columns.get_loc("low_price")
+        low_loc = strat_df.columns.get_loc("low")
+        df.iloc[-1, low_price_loc] = strat_df.iloc[-1, low_loc]
+        close_price_loc = df.columns.get_loc("close_price")
+        close_loc = strat_df.columns.get_loc("close")
+        df.iloc[-1, close_price_loc] = strat_df.iloc[-1, close_loc]
+        date_pred_loc = df.columns.get_loc("date_pred")
+        date_loc = strat_df.columns.get_loc("date")
+        df.iloc[-1, date_pred_loc] = strat_df.iloc[-1, date_loc]
 
         self.model_return_values[pair] = df.tail(len_df).reset_index(drop=True)
 

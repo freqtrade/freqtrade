@@ -11,7 +11,6 @@ from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.key_value_store import set_startup_time
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
@@ -222,7 +221,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '0.00 (0.00)' == result[0][3]
     assert '0.00' == f'{fiat_profit_sum:.2f}'
@@ -233,7 +232,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.00)' == result[0][3]
     assert '-0.00' == f'{fiat_profit_sum:.2f}'
@@ -244,7 +243,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert "Since" in headers
     assert "Pair" in headers
     assert len(result[0]) == 4
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.06)' == result[0][3]
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
@@ -261,7 +260,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     mocker.patch(f'{EXMS}.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
-    assert 'instantly' == result[0][2]
+    assert 'now' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert 'nan%' == result[0][3]
     assert isnan(fiat_profit_sum)
@@ -1171,14 +1170,15 @@ def test_rpc_force_entry_wrong_mode(mocker, default_conf) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_rpc_delete_lock(mocker, default_conf):
+def test_rpc_add_and_delete_lock(mocker, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
 
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
-    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=4), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=5), '', '*')
+    rpc._rpc_add_lock(pair, datetime.now(timezone.utc) + timedelta(minutes=10), '', '*')
+
     locks = rpc._rpc_locks()
     assert locks['lock_count'] == 3
     locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])

@@ -158,7 +158,7 @@ You could also have a default stop loss when you are in the red with your buy (b
 For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
 
 !!! Note
-    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with [offset enabled](#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
+    If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with [offset enabled](#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset).
 
 Both values require `trailing_stop` to be set to true and `trailing_stop_positive` with a value.
 
@@ -240,7 +240,7 @@ When using leverage, the same principle is applied - with stoploss defining the 
 
 Therefore, a stoploss of 10% on a 10x trade would trigger on a 1% price move.
 If your stake amount (own capital) was 100$ - this trade would be 1000$ at 10x (after leverage).
-If price moves 1% - you've lost 10$ of your own capital - therfore stoploss will trigger in this case.
+If price moves 1% - you've lost 10$ of your own capital - therefore stoploss will trigger in this case.
 
 Make sure to be aware of this, and avoid using too tight stoploss (at 10x leverage, 10% risk may be too little to allow the trade to "breath" a little).
 

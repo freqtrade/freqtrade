@@ -253,7 +253,7 @@ def test_stoploss_from_open(side, profitrange):
 
                     assert stoploss >= 0
                     # Technically the formula can yield values greater than 1 for shorts
-                    # eventhough it doesn't make sense because the position would be liquidated
+                    # even though it doesn't make sense because the position would be liquidated
                     if side == 'long':
                         assert stoploss <= 1
 
