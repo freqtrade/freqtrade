@@ -2279,7 +2279,6 @@ class Exchange:
                 half_candle = int(candle_date - (candle_date - prev_candle_date) * 0.5)
                 last_refresh_time = int(
                     self._exchange_ws.klines_last_refresh.get((pair, timeframe, candle_type), 0)
-                    * 1000
                 )
 
                 if (
