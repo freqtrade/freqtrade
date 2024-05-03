@@ -18,7 +18,8 @@ nav:
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
-        - REST API & FreqUI: rest-api.md
+        - freqUI: freq-ui.md
+        - REST API: rest-api.md
         - Web Hook: webhook-config.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
