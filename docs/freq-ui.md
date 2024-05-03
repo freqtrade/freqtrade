@@ -20,4 +20,45 @@ Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the U
 FreqUI does not have it's own configuration file - but assumes a working setup for the [rest-api](rest-api.md) is available.
 Please refer to the corresponding documentation page to get setup with freqUI
 
+## UI
+
+### Login
+
+The below screenshot shows the login screen of freqUI.
+
+![FreqUI - login](assets/frequi-login-CORS.png)
+
+!!! Hint "CORS"
+    The Cors error shown in this screenshot is due to the fact that the UI is running on a different port than the API, and [CORS](#cors) has not been setup correctly yet.
+
+### Trade view
+
+The trade view allows you to visualize the trades that the bot is making and to interact with the bot.
+On this page, you can also interact with the bot by starting and stopping it and - if configured - force trade entries and exits.
+
+![FreqUI - trade view](assets/freqUI-trade-pane.png)
+
+### Plot Configurator
+
+FreqUI Plots can be configured either via a `plot_config` configuration object in the strategy (which can be loaded via "from strategy" button) or via the UI.
+Multiple plot configurations can be created and switched at will - allowing for flexible, different views into your charts.
+
+The plot configuration can be accessed via the "Plot Configurator" (Cog icon) button in the top right corner of the trade view.
+
+![FreqUI - plot configuration](assets/freqUI-plot-configurator.png)
+
+### Settings
+
+Several UI related settings can be changed by accessing the settings page.
+
+Things you can change (among others):
+
+* Timezone of the UI
+* Visualization of open trades as part of the favicon (browser tab)
+* Candle colors (up/down -> red/green)
+* Enable / disable in-app notification types
+
+
+![FreqUI - Settings view](image.png)
+
 --8<-- "includes/cors.md"
