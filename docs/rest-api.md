@@ -1,16 +1,8 @@
-# REST API & FreqUI
+# REST API
 
 ## FreqUI
 
-Freqtrade provides a builtin webserver, which can serve [FreqUI](https://github.com/freqtrade/frequi), the freqtrade UI.
-
-By default, the UI is not included in the installation (except for docker images), and must be installed explicitly with `freqtrade install-ui`.
-This same command can also be used to update freqUI, should there be a new release.
-
-Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the UI will be available under the configured port below (usually `http://127.0.0.1:8080`).
-
-!!! Note "developers"
-    Developers should not use this method, but instead use the method described in the [freqUI repository](https://github.com/freqtrade/frequi) to get the source-code of freqUI.
+FreqUI now has it's own dedicated [documentation section](frequi.md) - please refer to that section for all information regarding the FreqUI.
 
 ## Configuration
 
