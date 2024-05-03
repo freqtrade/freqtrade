@@ -22,6 +22,11 @@ Please refer to the corresponding documentation page to get setup with freqUI
 
 ## UI
 
+FreqUI is a modern, responsive web application that can be used to monitor and interact with your bot.
+
+FreqUI provides a light, as well as a dark theme.
+Themes can be easily switched via a prominent button at the top of the page.
+
 ### Login
 
 The below screenshot shows the login screen of freqUI.
@@ -48,6 +53,7 @@ The plot configuration can be accessed via the "Plot Configurator" (Cog icon) bu
 ![FreqUI - plot configuration](assets/freqUI-plot-configurator.png)
 
 ### Settings
+
 
 Several UI related settings can be changed by accessing the settings page.
 
