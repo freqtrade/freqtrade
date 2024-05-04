@@ -1209,15 +1209,13 @@ class Backtesting:
                     LocalTrade.close_bt_trade(trade)
                 self.wallets.update()
                 self.run_protections(pair, current_time, trade.trade_direction)
-            elif closed_exit_order:
-                # check for full exit from adjust trade position
-                remaining = trade.amount - closed_exit_order.safe_filled
-                if remaining == 0:
-                    trade.close_date = current_time
-                    trade.close(closed_exit_order.ft_price, show_msg=False)
-                    LocalTrade.close_bt_trade(trade)
-                    self.wallets.update()
-                    self.run_protections(pair, current_time, trade.trade_direction)
+            elif closed_exit_order and ((trade.amount - closed_exit_order.safe_filled) == 0):
+                # full exit from adjust trade position
+                trade.close_date = current_time
+                trade.close(closed_exit_order.ft_price, show_msg=False)
+                LocalTrade.close_bt_trade(trade)
+                self.wallets.update()
+                self.run_protections(pair, current_time, trade.trade_direction)
         return open_trade_count_start
 
     def backtest(self, processed: Dict,
