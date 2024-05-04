@@ -587,6 +587,9 @@ class Backtesting:
             exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT, order_tag)
             pos_trade = self._get_exit_for_signal(trade, row, exit_, current_time, amount)
             if pos_trade is not None:
+                order = pos_trade.orders[-1]
+                # If the order was filled and for the full trade amount, we need to close the trade.
+                self._process_exit_order(order, pos_trade, current_time, row, trade.pair)
                 return pos_trade
 
         return trade
@@ -760,7 +763,7 @@ class Backtesting:
         if self.strategy.position_adjustment_enable:
             trade = self._get_adjust_trade_entry_for_candle(trade, row, current_time)
 
-        if not trade.has_open_orders:
+        if trade.is_open:
             enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
             exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
             exits = self.strategy.should_exit(
