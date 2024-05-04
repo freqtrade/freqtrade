@@ -587,10 +587,6 @@ class Backtesting:
             exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT, order_tag)
             pos_trade = self._get_exit_for_signal(trade, row, exit_, current_time, amount)
             if pos_trade is not None:
-                order = pos_trade.orders[-1]
-                if self._try_close_open_order(order, trade, current_time, row):
-                    trade.recalc_trade_from_orders()
-                self.wallets.update()
                 return pos_trade
 
         return trade
@@ -748,18 +744,18 @@ class Backtesting:
         if self.strategy.position_adjustment_enable:
             trade = self._get_adjust_trade_entry_for_candle(trade, row, current_time)
 
-        enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
-        exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
-        exits = self.strategy.should_exit(
-            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
-            enter=enter, exit_=exit_sig,
-            low=row[LOW_IDX], high=row[HIGH_IDX]
-        )
-        for exit_ in exits:
-            t = self._get_exit_for_signal(trade, row, exit_, current_time)
-            if t:
-                return t
-        return None
+        if not trade.has_open_orders:
+            enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
+            exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
+            exits = self.strategy.should_exit(
+                trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
+                enter=enter, exit_=exit_sig,
+                low=row[LOW_IDX], high=row[HIGH_IDX]
+            )
+            for exit_ in exits:
+                t = self._get_exit_for_signal(trade, row, exit_, current_time)
+                if t:
+                    return t
 
     def _run_funding_fees(self, trade: LocalTrade, current_time: datetime, force: bool = False):
         """
