@@ -632,6 +632,22 @@ class Backtesting:
             return True
         return False
 
+    def _process_exit_order(
+            self, order: Order, trade: LocalTrade, current_time: datetime, row: Tuple, pair: str
+    ):
+        if self._try_close_open_order(order, trade, current_time, row):
+            sub_trade = order.safe_amount_after_fee != trade.amount
+            if sub_trade:
+                trade.recalc_trade_from_orders()
+            else:
+                trade.close_date = current_time
+                trade.close(order.ft_price, show_msg=False)
+
+                # logger.debug(f"{pair} - Backtesting exit {trade}")
+                LocalTrade.close_bt_trade(trade)
+            self.wallets.update()
+            self.run_protections(pair, current_time, trade.trade_direction)
+
     def _get_exit_for_signal(
             self, trade: LocalTrade, row: Tuple, exit_: ExitCheckTuple,
             current_time: datetime,
@@ -1192,18 +1208,8 @@ class Backtesting:
 
             # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
-            if order and self._try_close_open_order(order, trade, current_time, row):
-                sub_trade = order.safe_amount_after_fee != trade.amount
-                if sub_trade:
-                    trade.recalc_trade_from_orders()
-                else:
-                    trade.close_date = current_time
-                    trade.close(order.ft_price, show_msg=False)
-
-                    # logger.debug(f"{pair} - Backtesting exit {trade}")
-                    LocalTrade.close_bt_trade(trade)
-                self.wallets.update()
-                self.run_protections(pair, current_time, trade.trade_direction)
+            if order:
+                self._process_exit_order(order, trade, current_time, row, pair)
         return open_trade_count_start
 
     def backtest(self, processed: Dict,
