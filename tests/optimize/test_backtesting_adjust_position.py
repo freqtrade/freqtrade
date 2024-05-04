@@ -213,3 +213,8 @@ def test_backtest_position_adjustment_detailed(default_conf, fee, mocker, levera
     assert trade.nr_of_successful_entries == 2
     assert trade.nr_of_successful_exits == 1
     assert pytest.approx(trade.liquidation_price) == liq_price
+
+    # Adjust to close trade
+    backtesting.strategy.adjust_trade_position = MagicMock(return_value=-trade.stake_amount)
+    trade = backtesting._get_adjust_trade_entry_for_candle(trade, row_exit, current_time)
+    assert trade.is_open is False

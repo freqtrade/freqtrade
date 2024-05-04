@@ -778,6 +778,7 @@ class Backtesting:
                 t = self._get_exit_for_signal(trade, row, exit_, current_time)
                 if t:
                     return t
+        return None
 
     def _run_funding_fees(self, trade: LocalTrade, current_time: datetime, force: bool = False):
         """
