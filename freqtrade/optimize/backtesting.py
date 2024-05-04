@@ -134,8 +134,17 @@ class Backtesting:
 
         if config.get('fee', None) is not None:
             self.fee = config['fee']
+            logger.info(f"Using fee {self.fee:.4%} from config.")
         else:
-            self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
+            fees = [
+                self.exchange.get_fee(
+                    symbol=self.pairlists.whitelist[0],
+                    taker_or_maker=mt,  # type: ignore
+                    )
+                for mt in ('taker', 'maker')
+            ]
+            self.fee = max(fee for fee in fees if fee is not None)
+            logger.info(f"Using fee {self.fee:.4%} - worst case fee from exchange (lowest tier).")
         self.precision_mode = self.exchange.precisionMode
 
         if self.config.get('freqai_backtest_live_models', False):

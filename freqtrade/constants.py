@@ -171,6 +171,7 @@ CONF_SCHEMA = {
         'use_exit_signal': {'type': 'boolean'},
         'exit_profit_only': {'type': 'boolean'},
         'exit_profit_offset': {'type': 'number'},
+        'fee': {'type': 'number', 'minimum': 0, 'maximum': 0.1},
         'ignore_roi_if_entry_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},

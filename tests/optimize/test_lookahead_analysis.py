@@ -14,7 +14,8 @@ from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
-def lookahead_conf(default_conf_usdt):
+def lookahead_conf(default_conf_usdt, tmp_path):
+    default_conf_usdt['user_data_dir'] = tmp_path
     default_conf_usdt['minimum_trade_amount'] = 10
     default_conf_usdt['targeted_trade_amount'] = 20
     default_conf_usdt['timerange'] = '20220101-20220501'
@@ -342,11 +343,11 @@ def test_initialize_single_lookahead_analysis(lookahead_conf, mocker, caplog):
     'no_bias', 'bias1'
 ])
 def test_biased_strategy(lookahead_conf, mocker, caplog, scenario) -> None:
+    patch_exchange(mocker)
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
     mocker.patch(f'{EXMS}.get_min_pair_stake_amount', return_value=0.00001)
     mocker.patch(f'{EXMS}.get_max_pair_stake_amount', return_value=float('inf'))
-    patch_exchange(mocker)
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     lookahead_conf['pairs'] = ['UNITTEST/USDT']

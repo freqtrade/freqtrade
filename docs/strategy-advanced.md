@@ -209,7 +209,7 @@ def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_r
 
 ## Exit tag
 
-Similar to [Buy Tagging](#buy-tag), you can also specify a sell tag.
+Similar to [Entry Tagging](#enter-tag), you can also specify an exit tag.
 
 ``` python
 def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

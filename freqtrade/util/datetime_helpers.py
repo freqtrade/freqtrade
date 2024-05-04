@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from time import time
 from typing import Optional, Union
 
 import humanize
@@ -25,7 +26,7 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
     """
     if dt:
         return int(dt.timestamp() * 1000)
-    return int(dt_now().timestamp() * 1000)
+    return int(time() * 1000)
 
 
 def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:

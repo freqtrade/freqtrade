@@ -56,7 +56,7 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
         logger.info(f'Exchange "{exchange}" is officially supported '
                     f'by the Freqtrade development team.')
     else:
-        logger.warning(f'Exchange "{exchange}" is known to the the ccxt library, '
+        logger.warning(f'Exchange "{exchange}" is known to the ccxt library, '
                        f'available for the bot, but not officially supported '
                        f'by the Freqtrade development team. '
                        f'It may work flawlessly (please report back) or have serious issues. '

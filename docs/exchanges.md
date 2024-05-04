@@ -299,7 +299,7 @@ $ pip3 install web3
 Most exchanges return current incomplete candle via their OHLCV/klines API interface.
 By default, Freqtrade assumes that incomplete candle is fetched from the exchange and removes the last candle assuming it's the incomplete candle.
 
-Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
+Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#incomplete-candles) from the Contributor documentation.
 
 Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
