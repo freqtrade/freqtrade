@@ -26,6 +26,7 @@ FreqUI is a modern, responsive web application that can be used to monitor and i
 
 FreqUI provides a light, as well as a dark theme.
 Themes can be easily switched via a prominent button at the top of the page.
+The theme of the screenshots on this page will adapt to the selected documentation Theme, so to see the dark (or light) version, please switch the theme of the Documentation.
 
 ### Login
 
