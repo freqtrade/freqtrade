@@ -1195,6 +1195,7 @@ class Backtesting:
                 self._check_trade_exit(trade, row, current_time)  # Place exit order if necessary
 
             # 5. Process exit orders.
+            closed_exit_order = trade.select_order(trade.exit_side, is_open=False)
             order = trade.select_order(trade.exit_side, is_open=True)
             if order and self._try_close_open_order(order, trade, current_time, row):
                 sub_trade = order.safe_amount_after_fee != trade.amount
@@ -1208,17 +1209,15 @@ class Backtesting:
                     LocalTrade.close_bt_trade(trade)
                 self.wallets.update()
                 self.run_protections(pair, current_time, trade.trade_direction)
-            else:
-                closed_exit_order = trade.select_order(trade.exit_side, is_open=False)
-                if closed_exit_order:
-                    # check for full exit from adjust trade position
-                    remaining = trade.amount - closed_exit_order.safe_filled
-                    if remaining == 0:
-                        trade.close_date = current_time
-                        trade.close(closed_exit_order.ft_price, show_msg=False)
-                        LocalTrade.close_bt_trade(trade)
-                        self.wallets.update()
-                        self.run_protections(pair, current_time, trade.trade_direction)
+            elif closed_exit_order:
+                # check for full exit from adjust trade position
+                remaining = trade.amount - closed_exit_order.safe_filled
+                if remaining == 0:
+                    trade.close_date = current_time
+                    trade.close(closed_exit_order.ft_price, show_msg=False)
+                    LocalTrade.close_bt_trade(trade)
+                    self.wallets.update()
+                    self.run_protections(pair, current_time, trade.trade_direction)
         return open_trade_count_start
 
     def backtest(self, processed: Dict,
