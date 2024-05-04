@@ -964,6 +964,7 @@ class Backtesting:
                     contract_size=contract_size,
                     orders=[],
                 )
+                LocalTrade.add_bt_trade(trade)
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
@@ -1196,8 +1197,6 @@ class Backtesting:
                     # This emulates previous behavior - not sure if this is correct
                     # Prevents entering if the trade-slot was freed in this candle
                     open_trade_count_start += 1
-                    # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
-                    LocalTrade.add_bt_trade(trade)
                     self.wallets.update()
             else:
                 self._collate_rejected(pair, row)
