@@ -42,6 +42,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.types import BacktestResultType, get_BacktestResultType_default
+from freqtrade.util import FtPrecise
 from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
 
@@ -575,7 +576,8 @@ class Backtesting:
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = amount_to_contract_precision(
-                abs(stake_amount * trade.amount / trade.stake_amount),
+                abs(float(FtPrecise(stake_amount) * FtPrecise(trade.amount)
+                    / FtPrecise(trade.stake_amount))),
                 trade.amount_precision,
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
