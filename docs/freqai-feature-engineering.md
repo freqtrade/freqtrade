@@ -391,3 +391,18 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 ![dbscan](assets/freqai_dbscan.jpg)
 
 FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (external website)) with `min_samples` ($N$) taken as 1/4 of the no. of time points (candles) in the feature set. `eps` ($\varepsilon$) is computed automatically as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
+
+
+### Data dimensionality reduction with Principal Component Analysis
+
+You can reduce the dimensionality of your features by activating the principal_component_analysis in the config:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+            "principal_component_analysis": true
+        }
+    }
+```
+
+This will perform PCA on the features and reduce their dimensionality so that the explained variance of the data set is >= 0.999. Reducing data dimensionality makes training the model faster and hence allows for more up-to-date models.
