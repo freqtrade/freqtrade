@@ -31,7 +31,8 @@ Themes can be easily switched via a prominent button at the top of the page.
 
 The below screenshot shows the login screen of freqUI.
 
-![FreqUI - login](assets/frequi-login-CORS.png)
+![FreqUI - login](assets/frequi-login-CORS.png#only-dark)
+![FreqUI - login](assets/frequi-login-CORS-light.png#only-light)
 
 !!! Hint "CORS"
     The Cors error shown in this screenshot is due to the fact that the UI is running on a different port than the API, and [CORS](#cors) has not been setup correctly yet.
@@ -41,7 +42,8 @@ The below screenshot shows the login screen of freqUI.
 The trade view allows you to visualize the trades that the bot is making and to interact with the bot.
 On this page, you can also interact with the bot by starting and stopping it and - if configured - force trade entries and exits.
 
-![FreqUI - trade view](assets/freqUI-trade-pane.png)
+![FreqUI - trade view](assets/freqUI-trade-pane-dark.png#only-dark)
+![FreqUI - trade view](assets/freqUI-trade-pane-light.png#only-light)
 
 ### Plot Configurator
 
@@ -50,7 +52,8 @@ Multiple plot configurations can be created and switched at will - allowing for 
 
 The plot configuration can be accessed via the "Plot Configurator" (Cog icon) button in the top right corner of the trade view.
 
-![FreqUI - plot configuration](assets/freqUI-plot-configurator.png)
+![FreqUI - plot configuration](assets/freqUI-plot-configurator-dark.png#only-dark)
+![FreqUI - plot configuration](assets/freqUI-plot-configurator-light.png#only-light)
 
 ### Settings
 
@@ -64,7 +67,7 @@ Things you can change (among others):
 * Candle colors (up/down -> red/green)
 * Enable / disable in-app notification types
 
-
-![FreqUI - Settings view](image.png)
+![FreqUI - Settings view](assets/frequi-settings-dark.png#only-dark)
+![FreqUI - Settings view](assets/frequi-settings-light.png#only-light)
 
 --8<-- "includes/cors.md"
