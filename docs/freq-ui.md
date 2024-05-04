@@ -71,4 +71,15 @@ Things you can change (among others):
 ![FreqUI - Settings view](assets/frequi-settings-dark.png#only-dark)
 ![FreqUI - Settings view](assets/frequi-settings-light.png#only-light)
 
+## Backtesting
+
+When freqtrade is started in [webserver mode](utils.md#webserver-mode) (freqtrade started with `freqtrade webserver`), the backtesting view becomes available.
+This view allows you to backtest strategies and visualize the results.
+
+You can also load and visualize previous backtest results, as well as compare the results with each other.
+
+![FreqUI - Backtesting](assets/freqUI-backtesting-dark.png#only-dark)
+![FreqUI - Backtesting](assets/freqUI-backtesting-light.png#only-light)
+
+
 --8<-- "includes/cors.md"
