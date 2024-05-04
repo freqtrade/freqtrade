@@ -638,6 +638,9 @@ class Backtesting:
     def _process_exit_order(
             self, order: Order, trade: LocalTrade, current_time: datetime, row: Tuple, pair: str
     ):
+        """
+        Takes an exit order and processes it, potentially closing the trade.
+        """
         if self._try_close_open_order(order, trade, current_time, row):
             sub_trade = order.safe_amount_after_fee != trade.amount
             if sub_trade:
