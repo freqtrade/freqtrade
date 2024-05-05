@@ -429,9 +429,9 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert pytest.approx(stats['profit_closed_coin']) == 2.74
     assert pytest.approx(stats['profit_closed_percent_mean']) == -1.67
     assert pytest.approx(stats['profit_closed_fiat']) == 3.014
-    assert pytest.approx(stats['profit_all_coin']) == -77.45964918
-    assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
-    assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
+    assert pytest.approx(stats['profit_all_coin']) == -57.40975881
+    assert pytest.approx(stats['profit_all_percent_mean']) == -50.83
+    assert pytest.approx(stats['profit_all_fiat']) == -63.150734691
     assert pytest.approx(stats['winrate']) == 0.666666667
     assert pytest.approx(stats['expectancy']) == 0.913333333
     assert pytest.approx(stats['expectancy_ratio']) == 0.223308883

@@ -499,6 +499,9 @@ class RPC:
                     losing_profit += profit_abs
             else:
                 # Get current rate
+                if len(trade.select_filled_orders(trade.entry_side)) == 0:
+                    # Skip trades with no filled orders
+                    continue
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
                         trade.pair, side='exit', is_short=trade.is_short, refresh=False)
