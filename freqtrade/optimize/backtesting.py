@@ -42,6 +42,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.types import BacktestResultType, get_BacktestResultType_default
+from freqtrade.util import FtPrecise
 from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
 
@@ -575,7 +576,8 @@ class Backtesting:
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = amount_to_contract_precision(
-                abs(stake_amount * trade.amount / trade.stake_amount),
+                abs(float(FtPrecise(stake_amount) * FtPrecise(trade.amount)
+                    / FtPrecise(trade.stake_amount))),
                 trade.amount_precision,
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
@@ -588,9 +590,8 @@ class Backtesting:
             pos_trade = self._get_exit_for_signal(trade, row, exit_, current_time, amount)
             if pos_trade is not None:
                 order = pos_trade.orders[-1]
-                if self._try_close_open_order(order, trade, current_time, row):
-                    trade.recalc_trade_from_orders()
-                self.wallets.update()
+                # If the order was filled and for the full trade amount, we need to close the trade.
+                self._process_exit_order(order, pos_trade, current_time, row, trade.pair)
                 return pos_trade
 
         return trade
@@ -635,6 +636,25 @@ class Backtesting:
                 # pass
             return True
         return False
+
+    def _process_exit_order(
+            self, order: Order, trade: LocalTrade, current_time: datetime, row: Tuple, pair: str
+    ):
+        """
+        Takes an exit order and processes it, potentially closing the trade.
+        """
+        if self._try_close_open_order(order, trade, current_time, row):
+            sub_trade = order.safe_amount_after_fee != trade.amount
+            if sub_trade:
+                trade.recalc_trade_from_orders()
+            else:
+                trade.close_date = current_time
+                trade.close(order.ft_price, show_msg=False)
+
+                # logger.debug(f"{pair} - Backtesting exit {trade}")
+                LocalTrade.close_bt_trade(trade)
+            self.wallets.update()
+            self.run_protections(pair, current_time, trade.trade_direction)
 
     def _get_exit_for_signal(
             self, trade: LocalTrade, row: Tuple, exit_: ExitCheckTuple,
@@ -748,17 +768,18 @@ class Backtesting:
         if self.strategy.position_adjustment_enable:
             trade = self._get_adjust_trade_entry_for_candle(trade, row, current_time)
 
-        enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
-        exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
-        exits = self.strategy.should_exit(
-            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
-            enter=enter, exit_=exit_sig,
-            low=row[LOW_IDX], high=row[HIGH_IDX]
-        )
-        for exit_ in exits:
-            t = self._get_exit_for_signal(trade, row, exit_, current_time)
-            if t:
-                return t
+        if trade.is_open:
+            enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
+            exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
+            exits = self.strategy.should_exit(
+                trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
+                enter=enter, exit_=exit_sig,
+                low=row[LOW_IDX], high=row[HIGH_IDX]
+            )
+            for exit_ in exits:
+                t = self._get_exit_for_signal(trade, row, exit_, current_time)
+                if t:
+                    return t
         return None
 
     def _run_funding_fees(self, trade: LocalTrade, current_time: datetime, force: bool = False):
@@ -946,6 +967,7 @@ class Backtesting:
                     contract_size=contract_size,
                     orders=[],
                 )
+                LocalTrade.add_bt_trade(trade)
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
@@ -1178,8 +1200,6 @@ class Backtesting:
                     # This emulates previous behavior - not sure if this is correct
                     # Prevents entering if the trade-slot was freed in this candle
                     open_trade_count_start += 1
-                    # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
-                    LocalTrade.add_bt_trade(trade)
                     self.wallets.update()
             else:
                 self._collate_rejected(pair, row)
@@ -1196,18 +1216,8 @@ class Backtesting:
 
             # 5. Process exit orders.
             order = trade.select_order(trade.exit_side, is_open=True)
-            if order and self._try_close_open_order(order, trade, current_time, row):
-                sub_trade = order.safe_amount_after_fee != trade.amount
-                if sub_trade:
-                    trade.recalc_trade_from_orders()
-                else:
-                    trade.close_date = current_time
-                    trade.close(order.ft_price, show_msg=False)
-
-                    # logger.debug(f"{pair} - Backtesting exit {trade}")
-                    LocalTrade.close_bt_trade(trade)
-                self.wallets.update()
-                self.run_protections(pair, current_time, trade.trade_direction)
+            if order:
+                self._process_exit_order(order, trade, current_time, row, pair)
         return open_trade_count_start
 
     def backtest(self, processed: Dict,
