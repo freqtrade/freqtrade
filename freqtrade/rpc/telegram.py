@@ -917,13 +917,15 @@ class Telegram(RPCHandler):
                                 f"∙ `{fmt_coin(profit_closed_fiat, fiat_disp_cur)}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
-
+            fiat_all_trades = (
+                f"∙ `{fmt_coin(profit_all_fiat, fiat_disp_cur)}`\n" if fiat_disp_cur else ""
+            )
             markdown_msg += (
                 f"*ROI:* All trades\n"
                 f"∙ `{fmt_coin(profit_all_coin, stake_cur)} "
                 f"({profit_all_ratio_mean:.2%}) "
                 f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                f"∙ `{fmt_coin(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"{fiat_all_trades}"
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*Bot started:* `{stats['bot_start_date']}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
