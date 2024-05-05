@@ -508,10 +508,10 @@ class RPC:
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit = trade.calculate_profit(trade.close_rate or current_rate)
+                    _profit = trade.calculate_profit(trade.close_rate or current_rate)
 
-                    profit_ratio = profit.profit_ratio
-                    profit_abs = profit.total_profit
+                    profit_ratio = _profit.profit_ratio
+                    profit_abs = _profit.total_profit
 
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
