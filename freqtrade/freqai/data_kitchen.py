@@ -776,7 +776,7 @@ class FreqaiDataKitchen:
         corr_dataframes: dict = {},
         base_dataframes: dict = {},
         pair: str = "",
-        prediction_dataframe: DataFrame = pd.DataFrame(),
+        prediction_dataframe: Optional[DataFrame] = None,
         do_corr_pairs: bool = True,
     ) -> DataFrame:
         """
@@ -822,7 +822,7 @@ class FreqaiDataKitchen:
                 if tf not in corr_dataframes[p]:
                     corr_dataframes[p][tf] = pd.DataFrame()
 
-        if not prediction_dataframe.empty:
+        if prediction_dataframe is not None and not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
             base_dataframes[self.config["timeframe"]] = dataframe.copy()
         else:
