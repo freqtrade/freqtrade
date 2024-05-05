@@ -507,7 +507,6 @@ class RPC:
                         trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                if isnan(current_rate):
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
