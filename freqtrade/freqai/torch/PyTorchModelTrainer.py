@@ -25,7 +25,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         criterion: nn.Module,
         device: str,
         data_convertor: PyTorchDataConvertor,
-        model_meta_data: Dict[str, Any] = {},
+        model_meta_data: Optional[Dict[str, Any]] = None,
         window_size: int = 1,
         tb_logger: Any = None,
         **kwargs,
@@ -45,6 +45,8 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         :param n_epochs: The maximum number batches to use for evaluation.
         :param batch_size: The size of the batches to use during training.
         """
+        if model_meta_data is None:
+            model_meta_data = {}
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
