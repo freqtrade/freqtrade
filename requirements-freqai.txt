@@ -4,7 +4,7 @@
 
 # Required for freqai
 scikit-learn==1.4.2
-joblib==1.4.0
+joblib==1.4.2
 catboost==1.2.5; 'arm' not in platform_machine
 lightgbm==4.3.0
 xgboost==2.0.3
