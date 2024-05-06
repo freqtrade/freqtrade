@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, Config
+from freqtrade.constants import CANCEL_REASON, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
@@ -499,19 +499,21 @@ class RPC:
                     losing_profit += profit_abs
             else:
                 # Get current rate
+                if len(trade.select_filled_orders(trade.entry_side)) == 0:
+                    # Skip trades with no filled orders
+                    continue
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
                         trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                if isnan(current_rate):
                     profit_ratio = NAN
                     profit_abs = NAN
                 else:
-                    profit = trade.calculate_profit(trade.close_rate or current_rate)
+                    _profit = trade.calculate_profit(trade.close_rate or current_rate)
 
-                    profit_ratio = profit.profit_ratio
-                    profit_abs = profit.total_profit
+                    profit_ratio = _profit.profit_ratio
+                    profit_abs = _profit.total_profit
 
             profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
@@ -1190,9 +1192,11 @@ class RPC:
         return self._freqtrade.edge.accepted_pairs()
 
     @staticmethod
-    def _convert_dataframe_to_dict(strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
-                                   last_analyzed: datetime) -> Dict[str, Any]:
+    def _convert_dataframe_to_dict(
+            strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
+            last_analyzed: datetime, selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
+        dataframe_columns = list(dataframe.columns)
         signals = {
             'enter_long': 0,
             'exit_long': 0,
@@ -1200,6 +1204,11 @@ class RPC:
             'exit_short': 0,
         }
         if has_content:
+            if selected_cols is not None:
+                # Ensure OHLCV columns are always present
+                cols_set = set(DEFAULT_DATAFRAME_COLUMNS + list(signals.keys()) + selected_cols)
+                df_cols = [col for col in dataframe_columns if col in cols_set]
+                dataframe = dataframe.loc[:, df_cols]
 
             dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
@@ -1224,6 +1233,7 @@ class RPC:
             'timeframe': timeframe,
             'timeframe_ms': timeframe_to_msecs(timeframe),
             'strategy': strategy,
+            'all_columns': dataframe_columns,
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
@@ -1249,13 +1259,16 @@ class RPC:
             })
         return res
 
-    def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
-                                limit: Optional[int]) -> Dict[str, Any]:
+    def _rpc_analysed_dataframe(
+            self, pair: str, timeframe: str, limit: Optional[int],
+            selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         """ Analyzed dataframe in Dict form """
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-        return RPC._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                              pair, timeframe, _data, last_analyzed)
+        return RPC._convert_dataframe_to_dict(
+            self._freqtrade.config['strategy'], pair, timeframe, _data, last_analyzed,
+            selected_cols
+        )
 
     def __rpc_analysed_dataframe_raw(
         self,
@@ -1322,7 +1335,7 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config: Config, pair: str, timeframe: str,
-                                   exchange) -> Dict[str, Any]:
+                                   exchange, selected_cols: Optional[List[str]]) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(config.get('timerange'))
 
         from freqtrade.data.converter import trim_dataframe
@@ -1352,7 +1365,8 @@ class RPC:
         df_analyzed = trim_dataframe(df_analyzed, timerange_parsed, startup_candles=startup_candles)
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
-                                              df_analyzed.copy(), dt_now())
+                                              df_analyzed.copy(), dt_now(),
+                                              selected_cols)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
         if (self._freqtrade.strategy.plot_config and

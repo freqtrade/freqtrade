@@ -21,6 +21,9 @@ updates:
     pytest:
       patterns:
         - "pytest*"
+    mkdocs:
+      patterns:
+        - "mkdocs*"
 
 - package-ecosystem: "github-actions"
   directory: "/"

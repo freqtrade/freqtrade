@@ -1121,12 +1121,12 @@ def test_create_dry_run_order_fees(
     price_side,
     fee,
 ):
+    exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch(
      f'{EXMS}.get_fee',
      side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
     )
     mocker.patch(f'{EXMS}._dry_is_price_crossed', return_value=price_side == 'other')
-    exchange = get_patched_exchange(mocker, default_conf)
 
     order = exchange.create_dry_run_order(
         pair='LTC/USDT',

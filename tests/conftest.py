@@ -241,6 +241,7 @@ def patch_exchange(
     if api_mock:
         mocker.patch(f'{EXMS}._init_ccxt', return_value=api_mock)
     else:
+        mocker.patch(f'{EXMS}.get_fee', return_value=0.0025)
         mocker.patch(f'{EXMS}._init_ccxt', MagicMock())
         mocker.patch(f'{EXMS}.timeframes', PropertyMock(
                 return_value=['5m', '15m', '1h', '1d']))

@@ -70,7 +70,7 @@ class Wallets:
     def _update_dry(self) -> None:
         """
         Update from database in dry-run mode
-        - Apply apply profits of closed trades on top of stake amount
+        - Apply profits of closed trades on top of stake amount
         - Subtract currently tied up stake_amount in open trades
         - update balances for currencies currently in trades
         """

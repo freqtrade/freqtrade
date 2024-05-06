@@ -10,7 +10,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.analysis.recursive import RecursiveAnalysis
 from freqtrade.optimize.analysis.recursive_helpers import RecursiveAnalysisSubFunctions
-from tests.conftest import get_args, log_has_re, patch_exchange
+from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
 @pytest.fixture
@@ -152,8 +152,9 @@ def test_initialize_single_recursive_analysis(recursive_conf, mocker, caplog):
     'no_bias', 'bias1', 'bias2'
 ])
 def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> None:
-    mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
+    mocker.patch(f'{EXMS}.get_fee', return_value=0.0)
+    mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     recursive_conf['pairs'] = ['UNITTEST/BTC']

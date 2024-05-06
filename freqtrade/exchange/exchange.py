@@ -2145,11 +2145,11 @@ class Exchange:
         results_df = {}
         # Chunk requests into batches of 100 to avoid overwhelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
-            async def gather_stuff():
-                return await asyncio.gather(*input_coro, return_exceptions=True)
+            async def gather_stuff(coro):
+                return await asyncio.gather(*coro, return_exceptions=True)
 
             with self._loop_lock:
-                results = self.loop.run_until_complete(gather_stuff())
+                results = self.loop.run_until_complete(gather_stuff(input_coro))
 
             for res in results:
                 if isinstance(res, Exception):

@@ -405,7 +405,7 @@ The metadata-dict (available for `populate_entry_trend`, `populate_exit_trend`, 
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
+Instead, have a look at the [Storing information](strategy-advanced.md#storing-information-persistent) section.
 
 ## Strategy file loading
 

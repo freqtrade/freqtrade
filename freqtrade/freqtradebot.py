@@ -250,12 +250,12 @@ class FreqtradeBot(LoggingMixin):
             # First process current opened trades (positions)
             self.exit_positions(trades)
 
-        # Check if we need to adjust our current positions before attempting to buy new trades.
+        # Check if we need to adjust our current positions before attempting to enter new trades.
         if self.strategy.position_adjustment_enable:
             with self._exit_lock:
                 self.process_open_trade_positions()
 
-        # Then looking for buy opportunities
+        # Then looking for entry opportunities
         if self.get_free_open_trades():
             self.enter_positions()
         if self.trading_mode == TradingMode.FUTURES:
@@ -522,7 +522,7 @@ class FreqtradeBot(LoggingMixin):
             # catching https://github.com/freqtrade/freqtrade/issues/9025
             logger.warning("Error finding onexchange order", exc_info=True)
 #
-# BUY / enter positions / open trades logic and methods
+# enter positions / open trades logic and methods
 #
 
     def enter_positions(self) -> int:
@@ -572,10 +572,10 @@ class FreqtradeBot(LoggingMixin):
 
     def create_trade(self, pair: str) -> bool:
         """
-        Check the implemented trading strategy for buy signals.
+        Check the implemented trading strategy for entry signals.
 
-        If the pair triggers the buy signal a new trade record gets created
-        and the buy-order opening the trade gets issued towards the exchange.
+        If the pair triggers the enter signal a new trade record gets created
+        and the entry-order opening the trade gets issued towards the exchange.
 
         :return: True if a trade has been created.
         """
@@ -634,7 +634,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
 #
-# BUY / increase positions / DCA logic and methods
+# Modify positions / DCA logic and methods
 #
     def process_open_trade_positions(self):
         """
@@ -717,7 +717,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
         """
-        Checks depth of market before executing a buy
+        Checks depth of market before executing an entry
         """
         conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
         logger.info(f"Checking depth of market for {pair} ...")
@@ -761,10 +761,10 @@ class FreqtradeBot(LoggingMixin):
         leverage_: Optional[float] = None,
     ) -> bool:
         """
-        Executes a limit buy for the given pair
-        :param pair: pair for which we want to create a LIMIT_BUY
+        Executes an entry for the given pair
+        :param pair: pair for which we want to create a LIMIT order
         :param stake_amount: amount of stake-currency for the pair
-        :return: True if a buy order is created, false if it fails.
+        :return: True if an entry order is created, False if it fails.
         :raise: DependencyException or it's subclasses like ExchangeError.
         """
         time_in_force = self.strategy.order_time_in_force['entry']
@@ -893,7 +893,7 @@ class FreqtradeBot(LoggingMixin):
             trade.adjust_stop_loss(trade.open_rate, stoploss, initial=True)
 
         else:
-            # This is additional buy, we reset fee_open_currency so timeout checking can work
+            # This is additional entry, we reset fee_open_currency so timeout checking can work
             trade.is_open = True
             trade.fee_open_currency = None
             trade.open_rate_requested = enter_limit_requested
@@ -1266,7 +1266,7 @@ class FreqtradeBot(LoggingMixin):
                 return True
 
         if trade.has_open_orders or not trade.is_open:
-            # Trade has an open Buy or Sell order, Stoploss-handling can't happen in this case
+            # Trade has an open order, Stoploss-handling can't happen in this case
             # as the Amount on the exchange is tied up in another trade.
             # The trade can be closed already (sell-order fill confirmation came in this iteration)
             return False
@@ -2035,7 +2035,7 @@ class FreqtradeBot(LoggingMixin):
             self._notify_enter(trade, order, order.order_type, fill=True, sub_trade=sub_trade)
 
     def handle_protections(self, pair: str, side: LongShort) -> None:
-        # Lock pair for one candle to prevent immediate rebuys
+        # Lock pair for one candle to prevent immediate re-entries
         self.strategy.lock_pair(pair, datetime.now(timezone.utc), reason='Auto lock')
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
@@ -2071,7 +2071,7 @@ class FreqtradeBot(LoggingMixin):
             amount_ = trade.amount - amount
 
         if trade.nr_of_successful_entries >= 1 and order_obj.ft_order_side == trade.entry_side:
-            # In case of rebuy's, trade.amount doesn't contain the amount of the last entry.
+            # In case of re-entry's, trade.amount doesn't contain the amount of the last entry.
             amount_ = trade.amount + amount
 
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
