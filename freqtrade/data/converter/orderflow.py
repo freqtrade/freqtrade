@@ -39,9 +39,7 @@ def _convert_timeframe_to_pandas_frequency(timeframe: str):
 
 
 def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
-    from freqtrade.exchange import timeframe_to_resample_freq
-    _, timeframe_minutes = _convert_timeframe_to_pandas_frequency(
-        timeframe)
+    from freqtrade.exchange import timeframe_to_resample_freq, timeframe_to_next_date
 
     timeframe_frequency = timeframe_to_resample_freq(timeframe)
     # calculate ohlcv candle start and end
@@ -49,8 +47,10 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
         df['datetime'] = pd.to_datetime(df['date'], unit='ms')
         df['candle_start'] = df['datetime'].dt.floor(timeframe_frequency)
         # used in _now_is_time_to_refresh_trades
-        df['candle_end'] = df['candle_start'] + pd.Timedelta(minutes=timeframe_minutes)
-        df.drop(columns=['datetime'], inplace=True)
+        df['candle_end'] = df['candle_start'].apply(
+            lambda candle_start: timeframe_to_next_date(timeframe, candle_start)
+        )
+        df.drop(columns=["datetime"], inplace=True)
 
 
 def populate_dataframe_with_trades(config: Config,
@@ -72,11 +72,10 @@ def populate_dataframe_with_trades(config: Config,
     try:
         start_time = time.time()
         # calculate ohlcv candle start and end
-        _calculate_ohlcv_candle_start_and_end(df, timeframe)
         _calculate_ohlcv_candle_start_and_end(trades, timeframe)
 
         # slice of trades that are before current ohlcv candles to make groupby faster
-        trades = trades.loc[trades.candle_start >= df.candle_start[0]]
+        trades = trades.loc[trades.candle_start >= df.date[0]]
         trades.reset_index(inplace=True, drop=True)
 
         # group trades by candle start
@@ -84,11 +83,12 @@ def populate_dataframe_with_trades(config: Config,
             'candle_start', group_keys=False)
 
         for candle_start in trades_grouped_by_candle_start.groups:
-            trades_grouped_df = trades[candle_start == trades['candle_start']]
-            is_between = (candle_start == df['candle_start'])
+            trades_grouped_df = trades[candle_start == trades["candle_start"]]
+            is_between = candle_start == df["date"]
             if np.any(is_between == True):  # noqa: E712
-                (_, timeframe_minutes) = _convert_timeframe_to_pandas_frequency(timeframe)
-                candle_next = candle_start + pd.Timedelta(minutes=timeframe_minutes)
+                from freqtrade.exchange import timeframe_to_next_date
+
+                candle_next = timeframe_to_next_date(timeframe, candle_start)
                 # skip if there are no trades at next candle
                 # because that this candle isn't finished yet
                 if candle_next not in trades_grouped_by_candle_start.groups:
