@@ -126,7 +126,6 @@ class Exchange:
 
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: Dict[PairWithTimeframe, int] = {}
-        self._trades_last_refresh_time: Dict[PairWithTimeframe, int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
 
@@ -2329,9 +2328,6 @@ class Exchange:
         # keeping last candle time as last refreshed time of the pair
         if ticks and cache:
             idx = -1
-            # NOTE: // is floor: divides and rounds to nearest int
-            self._trades_last_refresh_time[
-                (pair, timeframe, c_type)] = trades_df['timestamp'].iat[idx] // 1000
 
         if cache:
             if (pair, timeframe, c_type) in self._trades:
@@ -2448,17 +2444,15 @@ class Exchange:
 
         return results_df
 
-    def _now_is_time_to_refresh_trades(self,
-                                       pair: str,
-                                       timeframe: str,
-                                       candle_type: CandleType) -> bool:
-        # Timeframe in seconds
-        df = self.klines((pair, timeframe, candle_type), True)
-        _calculate_ohlcv_candle_start_and_end(df, timeframe)
-        timeframe_to_seconds(timeframe)
-        plr = round(df.iloc[-1]["candle_end"].timestamp())
-        now = int(timeframe_to_prev_date(timeframe).timestamp())
-        return plr < now
+    def _now_is_time_to_refresh_trades(
+        self, pair: str, timeframe: str, candle_type: CandleType
+    ) -> bool:  # Timeframe in seconds
+        trades = self.trades((pair, timeframe, candle_type), False)
+        pair_last_refreshed = int(trades.iloc[-1]["timestamp"])
+        full_candle = int(timeframe_to_next_date(
+            timeframe, dt_from_ts(pair_last_refreshed)).timestamp()) * 1000
+        now = dt_ts()
+        return full_candle <= now
 
     # Fetch historic trades
 
