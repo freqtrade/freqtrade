@@ -249,3 +249,44 @@ class Bybit(Exchange):
             # Canceled orders will have "remaining=0" on bybit.
             order['remaining'] = None
         return order
+
+    @retrier
+    def get_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        """
+        Temporary workaround for https://github.com/freqtrade/freqtrade/issues/10196
+        should be removed or updated once https://github.com/ccxt/ccxt/issues/22448 is fixed.
+        """
+
+        # Load cached tiers
+        tiers_cached = self.load_cached_leverage_tiers(self._config['stake_currency'])
+        if tiers_cached:
+            tiers = tiers_cached
+            return tiers
+
+        # Fetch tiers from exchange
+
+        symbols = self._api.market_symbols([])
+
+        def parse_resp(response):
+            result = self._api.safe_dict(response, 'result', {})
+            data = self._api.safe_list(result, 'list', [])
+            return self._api.parse_leverage_tiers(data, symbols, 'symbol')
+
+        params = {
+            'category': 'linear',
+        }
+        tiers = {}
+        # 20 pairs ... should be sufficient assuming 30 pairs per page
+        # Aimed to avoid a potential infinite loop
+        for _ in range(20):
+            # Fetch from private endpoint
+            response = self._api.publicGetV5MarketRiskLimit(params)
+            tiers = tiers | parse_resp(response)
+            if (cursor := response['result']['nextPageCursor']) == '':
+                break
+            params.update({
+                "cursor": cursor
+            })
+
+        self.cache_leverage_tiers(tiers, self._config['stake_currency'])
+        return tiers

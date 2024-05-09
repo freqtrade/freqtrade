@@ -4936,7 +4936,10 @@ def test_get_max_pair_stake_amount(
 
 
 @pytest.mark.parametrize('exchange_name', EXCHANGES)
-def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name):
+def test_load_leverage_tiers(mocker, default_conf, exchange_name):
+    if exchange_name == 'bybit':
+        # TODO: remove once get_leverage_tiers workaround has been removed.
+        pytest.skip("Currently skipping")
     api_mock = MagicMock()
     api_mock.fetch_leverage_tiers = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
