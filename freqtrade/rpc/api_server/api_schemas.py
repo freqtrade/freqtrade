@@ -44,6 +44,7 @@ class BackgroundTaskStatus(BaseModel):
     status: str
     running: bool
     progress: Optional[float] = None
+    error: Optional[str] = None
 
 
 class BackgroundTaskResult(BaseModel):

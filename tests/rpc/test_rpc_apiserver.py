@@ -1964,6 +1964,15 @@ def test_api_pairlists_evaluate(botclient, tmp_path, mocker):
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Job not found.'
 
+    # Background list
+    rc = client_get(client, f"{BASE_URI}/background")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response, list)
+    assert len(response) == 1
+    assert response[0]['job_id'] == job_id
+
+    # Get individual job
     rc = client_get(client, f"{BASE_URI}/background/{job_id}")
     assert_response(rc)
     response = rc.json()
