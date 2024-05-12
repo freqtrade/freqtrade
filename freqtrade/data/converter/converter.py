@@ -98,7 +98,7 @@ def clean_ohlcv_dataframe(
 def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) -> DataFrame:
     """
     Fills up missing data with 0 volume rows,
-    using the previous close as price for "open", "high" "low" and "close", volume is set to 0
+    using the previous close as price for "open", "high", "low" and "close", volume is set to 0
 
     """
     from freqtrade.exchange import timeframe_to_resample_freq
@@ -175,7 +175,7 @@ def trim_dataframes(
             processed[pair] = trimed_df
         else:
             logger.warning(
-                f"{pair} has no data left after adjusting for startup candles, " f"skipping."
+                f"{pair} has no data left after adjusting for startup candles, skipping."
             )
     return processed
 
@@ -285,7 +285,7 @@ def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
     :return: Dataframe converted to float/int 32s
     """
 
-    logger.debug(f"Memory usage of dataframe is " f"{df.memory_usage().sum() / 1024**2:.2f} MB")
+    logger.debug(f"Memory usage of dataframe is {df.memory_usage().sum() / 1024**2:.2f} MB")
 
     df_dtypes = df.dtypes
     for column, dtype in df_dtypes.items():
@@ -297,8 +297,6 @@ def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
             df_dtypes[column] = np.int32
     df = df.astype(df_dtypes)
 
-    logger.debug(
-        f"Memory usage after optimization is: " f"{df.memory_usage().sum() / 1024**2:.2f} MB"
-    )
+    logger.debug(f"Memory usage after optimization is: {df.memory_usage().sum() / 1024**2:.2f} MB")
 
     return df

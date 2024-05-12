@@ -186,7 +186,7 @@ def test_list_timeframes(mocker, capsys):
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
     assert re.match(
-        "Timeframes available for the exchange `Bybit`: " "1m, 5m, 30m, 1h, 1d", captured.out
+        "Timeframes available for the exchange `Bybit`: 1m, 5m, 30m, 1h, 1d", captured.out
     )
 
     # Test with --exchange bybit
@@ -198,7 +198,7 @@ def test_list_timeframes(mocker, capsys):
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
     assert re.match(
-        "Timeframes available for the exchange `Bybit`: " "1m, 5m, 30m, 1h, 1d", captured.out
+        "Timeframes available for the exchange `Bybit`: 1m, 5m, 30m, 1h, 1d", captured.out
     )
 
     api_mock.timeframes = {
@@ -222,7 +222,7 @@ def test_list_timeframes(mocker, capsys):
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
     assert re.match(
-        "Timeframes available for the exchange `Binance`: " "1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 3d",
+        "Timeframes available for the exchange `Binance`: 1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 3d",
         captured.out,
     )
 

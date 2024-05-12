@@ -218,7 +218,7 @@ class Configuration:
         self._args_to_config(
             config,
             argname="timeframe",
-            logstring="Parameter -i/--timeframe detected ... " "Using timeframe: {} ...",
+            logstring="Parameter -i/--timeframe detected ... Using timeframe: {} ...",
         )
 
         self._args_to_config(
@@ -240,7 +240,7 @@ class Configuration:
         elif "max_open_trades" in self.args and self.args["max_open_trades"]:
             config.update({"max_open_trades": self.args["max_open_trades"]})
             logger.info(
-                "Parameter --max-open-trades detected, " "overriding max_open_trades to: %s ...",
+                "Parameter --max-open-trades detected, overriding max_open_trades to: %s ...",
                 config.get("max_open_trades"),
             )
         elif config["runmode"] in NON_UTIL_MODES:
@@ -417,7 +417,7 @@ class Configuration:
         self._args_to_config(
             config,
             argname="dry_run",
-            logstring="Parameter --dry-run detected, " "overriding dry_run to: {} ...",
+            logstring="Parameter --dry-run detected, overriding dry_run to: {} ...",
         )
 
         if not self.runmode:

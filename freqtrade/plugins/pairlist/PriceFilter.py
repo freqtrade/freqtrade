@@ -84,7 +84,7 @@ class PriceFilter(IPairList):
                 "default": 0,
                 "description": "Low price ratio",
                 "help": (
-                    "Remove pairs where a price move of 1 price unit (pip) " "is above this ratio."
+                    "Remove pairs where a price move of 1 price unit (pip) is above this ratio."
                 ),
             },
             "min_price": {
@@ -130,7 +130,7 @@ class PriceFilter(IPairList):
             changeperc = compare / price
             if changeperc > self._low_price_ratio:
                 self.log_once(
-                    f"Removed {pair} from whitelist, " f"because 1 unit is {changeperc:.3%}",
+                    f"Removed {pair} from whitelist, because 1 unit is {changeperc:.3%}",
                     logger.info,
                 )
                 return False

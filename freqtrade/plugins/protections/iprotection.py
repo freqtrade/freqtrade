@@ -65,7 +65,7 @@ class IProtection(LoggingMixin, ABC):
                 f"{plural(self._stop_duration_candles, 'candle', 'candles')}"
             )
         else:
-            return f"{self._stop_duration} " f"{plural(self._stop_duration, 'minute', 'minutes')}"
+            return f"{self._stop_duration} {plural(self._stop_duration, 'minute', 'minutes')}"
 
     @property
     def lookback_period_str(self) -> str:
@@ -78,9 +78,7 @@ class IProtection(LoggingMixin, ABC):
                 f"{plural(self._lookback_period_candles, 'candle', 'candles')}"
             )
         else:
-            return (
-                f"{self._lookback_period} " f"{plural(self._lookback_period, 'minute', 'minutes')}"
-            )
+            return f"{self._lookback_period} {plural(self._lookback_period, 'minute', 'minutes')}"
 
     @abstractmethod
     def short_desc(self) -> str:

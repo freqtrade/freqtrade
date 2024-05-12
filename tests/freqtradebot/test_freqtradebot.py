@@ -3771,7 +3771,7 @@ def test_get_real_amount_quote_dust(
     assert freqtrade.get_real_amount(trade, buy_order_fee, order_obj) is None
     assert walletmock.call_count == 1
     assert log_has_re(
-        r"Fee amount for Trade.* was in base currency " "- Eating Fee 0.008 into dust", caplog
+        r"Fee amount for Trade.* was in base currency - Eating Fee 0.008 into dust", caplog
     )
 
 

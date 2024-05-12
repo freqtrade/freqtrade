@@ -201,12 +201,12 @@ class RemotePairList(IPairList):
                     pairlist = self._handle_error(f"Failed processing JSON data: {type(e)}")
             else:
                 pairlist = self._handle_error(
-                    f"RemotePairList is not of type JSON." f" {self._pairlist_url}"
+                    f"RemotePairList is not of type JSON. {self._pairlist_url}"
                 )
 
         except requests.exceptions.RequestException:
             pairlist = self._handle_error(
-                f"Was not able to fetch pairlist from:" f" {self._pairlist_url}"
+                f"Was not able to fetch pairlist from: {self._pairlist_url}"
             )
 
             time_elapsed = 0

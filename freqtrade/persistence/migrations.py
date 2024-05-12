@@ -361,9 +361,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     if not has_column(cols_pairlocks, "side"):
         migrating = True
-        logger.info(
-            f"Running database migration for pairlocks - " f"backup: {pairlock_table_bak_name}"
-        )
+        logger.info(f"Running database migration for pairlocks - backup: {pairlock_table_bak_name}")
 
         migrate_pairlocks_table(
             decl_base, inspector, engine, pairlock_table_bak_name, cols_pairlocks

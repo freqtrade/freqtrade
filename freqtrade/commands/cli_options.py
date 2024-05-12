@@ -369,7 +369,7 @@ AVAILABLE_CLI_OPTIONS = {
     "list_pairs_all": Arg(
         "-a",
         "--all",
-        help="Print all pairs or market symbols. By default only active " "ones are shown.",
+        help="Print all pairs or market symbols. By default only active ones are shown.",
         action="store_true",
     ),
     "print_list": Arg(
@@ -490,7 +490,7 @@ AVAILABLE_CLI_OPTIONS = {
     "timeframes": Arg(
         "-t",
         "--timeframes",
-        help="Specify which tickers to download. Space-separated list. " "Default: `1m 5m`.",
+        help="Specify which tickers to download. Space-separated list. Default: `1m 5m`.",
         nargs="+",
     ),
     "prepend_data": Arg(

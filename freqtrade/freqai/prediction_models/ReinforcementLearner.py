@@ -73,7 +73,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             )
         else:
             logger.info(
-                "Continual training activated - starting training from previously " "trained agent."
+                "Continual training activated - starting training from previously trained agent."
             )
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)

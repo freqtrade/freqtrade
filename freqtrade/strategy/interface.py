@@ -1201,7 +1201,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Tags can be None, which does not resolve to False.
         exit_tag = exit_tag if isinstance(exit_tag, str) and exit_tag != "nan" else None
 
-        logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) " f"enter={enter} exit={exit_}")
+        logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) enter={enter} exit={exit_}")
 
         return enter, exit_, exit_tag
 

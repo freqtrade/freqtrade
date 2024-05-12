@@ -89,7 +89,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
 
         if new_path.exists():
             raise OperationalException(
-                f"`{new_path}` already exists. " "Please choose another Strategy Name."
+                f"`{new_path}` already exists. Please choose another Strategy Name."
             )
 
         deploy_new_strategy(args["strategy"], new_path, args["template"])

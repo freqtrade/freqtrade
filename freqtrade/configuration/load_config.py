@@ -69,7 +69,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
     except rapidjson.JSONDecodeError as e:
         err_range = log_config_error_range(path, str(e))
         raise ConfigurationError(
-            f"{e}\n" f"Please verify the following segment of your configuration:\n{err_range}"
+            f"{e}\nPlease verify the following segment of your configuration:\n{err_range}"
             if err_range
             else "Please verify your configuration file for syntax errors."
         )

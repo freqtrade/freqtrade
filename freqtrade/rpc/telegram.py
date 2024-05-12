@@ -219,7 +219,7 @@ class Telegram(RPCHandler):
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
-                logger.info("using custom keyboard from " f"config.json: {self._keyboard}")
+                logger.info("using custom keyboard from config.json: {self._keyboard}")
 
     def _init_telegram_app(self):
         return Application.builder().token(self._config["telegram"]["token"]).build()
@@ -1749,9 +1749,7 @@ class Telegram(RPCHandler):
 
         for chunk in chunks(edge_pairs, 25):
             edge_pairs_tab = tabulate(chunk, headers="keys", tablefmt="simple")
-            message = (
-                f"<b>Edge only validated following pairs:</b>\n" f"<pre>{edge_pairs_tab}</pre>"
-            )
+            message = f"<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>"
 
             await self._send_msg(message, parse_mode=ParseMode.HTML)
 

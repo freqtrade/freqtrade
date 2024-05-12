@@ -645,7 +645,7 @@ def test_validate_stakecurrency_error(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}._load_async_markets")
     with pytest.raises(
         ConfigurationError,
-        match=r"XRP is not available as stake on .*" "Available currencies are: BTC, ETH, USDT",
+        match=r"XRP is not available as stake on .*Available currencies are: BTC, ETH, USDT",
     ):
         Exchange(default_conf)
 
@@ -2328,7 +2328,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
 
     assert exchange._api_async.fetch_ohlcv.call_count == 0
     assert log_has(
-        f"Using cached candle (OHLCV) data for {pairs[0][0]}, " f"{pairs[0][1]}, {candle_type} ...",
+        f"Using cached candle (OHLCV) data for {pairs[0][0]}, {pairs[0][1]}, {candle_type} ...",
         caplog,
     )
     caplog.clear()

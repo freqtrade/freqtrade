@@ -44,7 +44,7 @@ class StrategyResolver(IResolver):
 
         if not config.get("strategy"):
             raise OperationalException(
-                "No strategy set. Please use `--strategy` to specify " "the strategy class to use."
+                "No strategy set. Please use `--strategy` to specify the strategy class to use."
             )
 
         strategy_name = config["strategy"]

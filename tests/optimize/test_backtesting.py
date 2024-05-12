@@ -393,9 +393,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     backtesting.strategy.bot_start = MagicMock()
     backtesting.start()
     # check the logs, that will contain the backtest result
-    exists = [
-        "Backtesting with data from 2017-11-14 21:17:00 " "up to 2017-11-14 22:59:00 (0 days)."
-    ]
+    exists = ["Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days)."]
     for line in exists:
         assert log_has(line, caplog)
     assert backtesting.strategy.dp._pairlists is not None
@@ -1574,8 +1572,8 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         "Ignoring max_open_trades (--disable-max-market-positions was used) ...",
         "Parameter --timerange detected: 1510694220-1510700340 ...",
         f"Using data directory: {testdatadir} ...",
-        "Loading data from 2017-11-14 20:57:00 " "up to 2017-11-14 22:59:00 (0 days).",
-        "Backtesting with data from 2017-11-14 21:17:00 " "up to 2017-11-14 22:59:00 (0 days).",
+        "Loading data from 2017-11-14 20:57:00 up to 2017-11-14 22:59:00 (0 days).",
+        "Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days).",
         "Parameter --enable-position-stacking detected ...",
     ]
 
@@ -1665,8 +1663,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         "Ignoring max_open_trades (--disable-max-market-positions was used) ...",
         "Parameter --timerange detected: 1510694220-1510700340 ...",
         f"Using data directory: {testdatadir} ...",
-        "Loading data from 2017-11-14 20:57:00 " "up to 2017-11-14 22:59:00 (0 days).",
-        "Backtesting with data from 2017-11-14 21:17:00 " "up to 2017-11-14 22:59:00 (0 days).",
+        "Loading data from 2017-11-14 20:57:00 up to 2017-11-14 22:59:00 (0 days).",
+        "Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days).",
         "Parameter --enable-position-stacking detected ...",
         f"Running backtesting for Strategy {CURRENT_TEST_STRATEGY}",
         "Running backtesting for Strategy StrategyTestV2",
@@ -1799,8 +1797,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         "Ignoring max_open_trades (--disable-max-market-positions was used) ...",
         "Parameter --timerange detected: 1510694220-1510700340 ...",
         f"Using data directory: {testdatadir} ...",
-        "Loading data from 2017-11-14 20:57:00 " "up to 2017-11-14 22:59:00 (0 days).",
-        "Backtesting with data from 2017-11-14 21:17:00 " "up to 2017-11-14 22:59:00 (0 days).",
+        "Loading data from 2017-11-14 20:57:00 up to 2017-11-14 22:59:00 (0 days).",
+        "Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days).",
         "Parameter --enable-position-stacking detected ...",
         f"Running backtesting for Strategy {CURRENT_TEST_STRATEGY}",
         "Running backtesting for Strategy StrategyTestV2",
@@ -1975,8 +1973,8 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker, caplog, testda
     exists = [
         "Parameter -i/--timeframe detected ... Using timeframe: 1h ...",
         f"Using data directory: {testdatadir} ...",
-        "Loading data from 2021-11-17 01:00:00 " "up to 2021-11-21 04:00:00 (4 days).",
-        "Backtesting with data from 2021-11-17 21:00:00 " "up to 2021-11-21 04:00:00 (3 days).",
+        "Loading data from 2021-11-17 01:00:00 up to 2021-11-21 04:00:00 (4 days).",
+        "Backtesting with data from 2021-11-17 21:00:00 up to 2021-11-21 04:00:00 (3 days).",
         "XRP/USDT:USDT, funding_rate, 8h, data starts at 2021-11-18 00:00:00",
         "XRP/USDT:USDT, mark, 8h, data starts at 2021-11-18 00:00:00",
         f"Running backtesting for Strategy {CURRENT_TEST_STRATEGY}",
@@ -2112,8 +2110,8 @@ def test_backtest_start_multi_strat_nomock_detail(
         "Parameter -i/--timeframe detected ... Using timeframe: 5m ...",
         "Parameter --timeframe-detail detected, using 1m for intra-candle backtesting ...",
         f"Using data directory: {testdatadir} ...",
-        "Loading data from 2019-10-11 00:00:00 " "up to 2019-10-13 11:15:00 (2 days).",
-        "Backtesting with data from 2019-10-11 01:40:00 " "up to 2019-10-13 11:15:00 (2 days).",
+        "Loading data from 2019-10-11 00:00:00 up to 2019-10-13 11:15:00 (2 days).",
+        "Backtesting with data from 2019-10-11 01:40:00 up to 2019-10-13 11:15:00 (2 days).",
         f"Running backtesting for Strategy {CURRENT_TEST_STRATEGY}",
     ]
 

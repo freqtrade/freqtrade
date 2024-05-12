@@ -111,7 +111,7 @@ def test_load_strategy_noname(default_conf):
     default_conf["strategy"] = ""
     with pytest.raises(
         OperationalException,
-        match="No strategy set. Please use `--strategy` to specify " "the strategy class to use.",
+        match="No strategy set. Please use `--strategy` to specify the strategy class to use.",
     ):
         StrategyResolver.load_strategy(default_conf)
 

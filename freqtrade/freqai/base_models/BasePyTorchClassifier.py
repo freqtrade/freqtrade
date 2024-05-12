@@ -59,7 +59,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         class_names = self.model.model_meta_data.get("class_names", None)
         if not class_names:
             raise ValueError(
-                "Missing class names. " "self.model.model_meta_data['class_names'] is None."
+                "Missing class names. self.model.model_meta_data['class_names'] is None."
             )
 
         if not self.class_name_to_index:

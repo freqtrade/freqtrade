@@ -105,7 +105,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        logger.info("--------------------Starting training " f"{pair} --------------------")
+        logger.info(f"--------------------Starting training {pair} --------------------")
 
         features_filtered, labels_filtered = dk.filter_features(
             unfiltered_df,
@@ -430,7 +430,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
             # you can use feature values from dataframe
             rsi_now = self.raw_features[
-                f"%-rsi-period-10_shift-1_{self.pair}_" f"{self.config['timeframe']}"
+                f"%-rsi-period-10_shift-1_{self.pair}_{self.config['timeframe']}"
             ].iloc[self._current_tick]
 
             # reward agent for entering trades

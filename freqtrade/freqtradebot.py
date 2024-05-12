@@ -1015,9 +1015,7 @@ class FreqtradeBot(LoggingMixin):
         # First cancelling stoploss on exchange ...
         for oslo in trade.open_sl_orders:
             try:
-                logger.info(
-                    f"Cancelling stoploss on exchange for {trade} order: {oslo.order_id}"
-                )
+                logger.info(f"Cancelling stoploss on exchange for {trade} order: {oslo.order_id}")
                 co = self.exchange.cancel_stoploss_order_with_result(
                     oslo.order_id, trade.pair, trade.amount
                 )
@@ -2285,7 +2283,7 @@ class FreqtradeBot(LoggingMixin):
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
             # Eat into dust if we own more than base currency
             logger.info(
-                f"Fee amount for {trade} was in base currency - " f"Eating Fee {fee_abs} into dust."
+                f"Fee amount for {trade} was in base currency - Eating Fee {fee_abs} into dust."
             )
         elif fee_abs != 0:
             logger.info(f"Applying fee on amount for {trade}, fee={fee_abs}.")

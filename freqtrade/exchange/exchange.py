@@ -849,7 +849,7 @@ class Exchange:
         if max_stake_amount is None:
             # * Should never be executed
             raise OperationalException(
-                f"{self.name}.get_max_pair_stake_amount should" "never set max_stake_amount to None"
+                f"{self.name}.get_max_pair_stake_amount should never set max_stake_amount to None"
             )
         return max_stake_amount
 
@@ -1375,7 +1375,7 @@ class Exchange:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f"Could not place stoploss order due to {e.__class__.__name__}. " f"Message: {e}"
+                f"Could not place stoploss order due to {e.__class__.__name__}. Message: {e}"
             ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
@@ -1800,7 +1800,7 @@ class Exchange:
             return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
             raise OperationalException(
-                f"Exchange {self._api.name} does not support fetching order book." f"Message: {e}"
+                f"Exchange {self._api.name} does not support fetching order book. Message: {e}"
             ) from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -2498,7 +2498,7 @@ class Exchange:
             ) from e
         except ccxt.BaseError as e:
             raise OperationalException(
-                f"Could not fetch historical candle (OHLCV) data " f"for pair {pair}. Message: {e}"
+                f"Could not fetch historical candle (OHLCV) data for pair {pair}. Message: {e}"
             ) from e
 
     async def _fetch_funding_rate_history(
@@ -2555,7 +2555,7 @@ class Exchange:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f"Could not load trade history due to {e.__class__.__name__}. " f"Message: {e}"
+                f"Could not load trade history due to {e.__class__.__name__}. Message: {e}"
             ) from e
         except ccxt.BaseError as e:
             raise OperationalException(f"Could not fetch trade data. Msg: {e}") from e
@@ -2701,7 +2701,7 @@ class Exchange:
             )
         else:
             raise OperationalException(
-                f"Exchange {self.name} does use neither time, " f"nor id based pagination"
+                f"Exchange {self.name} does use neither time, nor id based pagination"
             )
 
     def get_historic_trades(

@@ -316,7 +316,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['worst_pair']['profit_total']:.2%}",
             ),
             ("Best trade", f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
-            ("Worst trade", f"{worst_trade['pair']} " f"{worst_trade['profit_ratio']:.2%}"),
+            ("Worst trade", f"{worst_trade['pair']} {worst_trade['profit_ratio']:.2%}"),
             (
                 "Best day",
                 fmt_coin(strat_results["backtest_best_day_abs"], strat_results["stake_currency"]),

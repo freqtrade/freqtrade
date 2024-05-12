@@ -664,7 +664,7 @@ def test_validate_max_open_trades(default_conf):
     default_conf["stake_amount"] = "unlimited"
     with pytest.raises(
         OperationalException,
-        match="`max_open_trades` and `stake_amount` " "cannot both be unlimited.",
+        match="`max_open_trades` and `stake_amount` cannot both be unlimited.",
     ):
         validate_config_consistency(default_conf)
 
@@ -767,7 +767,7 @@ def test_validate_edge2(edge_conf):
     )
     with pytest.raises(
         OperationalException,
-        match="Edge requires `use_exit_signal` to be True, " "otherwise no sells will happen.",
+        match="Edge requires `use_exit_signal` to be True, otherwise no sells will happen.",
     ):
         validate_config_consistency(edge_conf)
 

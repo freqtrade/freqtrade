@@ -618,7 +618,7 @@ class FreqaiDataDrawer:
 
         if not model:
             raise OperationalException(
-                f"Unable to load model, ensure model exists at " f"{dk.data_path} "
+                f"Unable to load model, ensure model exists at {dk.data_path} "
             )
 
         # load it into ram if it was loaded from disk

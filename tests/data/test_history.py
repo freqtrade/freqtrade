@@ -415,7 +415,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     assert td != len(data["UNITTEST/BTC"])
     start_real = data["UNITTEST/BTC"].iloc[0, 0]
     assert log_has(
-        f"UNITTEST/BTC, spot, 5m, " f"data starts at {start_real.strftime(DATETIME_PRINT_FORMAT)}",
+        f"UNITTEST/BTC, spot, 5m, data starts at {start_real.strftime(DATETIME_PRINT_FORMAT)}",
         caplog,
     )
     # Make sure we start fresh - test missing data at end
@@ -435,7 +435,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     # Shift endtime with +5
     end_real = data["UNITTEST/BTC"].iloc[-1, 0].to_pydatetime()
     assert log_has(
-        f"UNITTEST/BTC, spot, 5m, " f"data ends at {end_real.strftime(DATETIME_PRINT_FORMAT)}",
+        f"UNITTEST/BTC, spot, 5m, data ends at {end_real.strftime(DATETIME_PRINT_FORMAT)}",
         caplog,
     )
 
