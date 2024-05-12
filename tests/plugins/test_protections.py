@@ -455,8 +455,8 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
      None
      ),
     ({"method": "MaxDrawdown", "lookback_period": 60, "stop_duration": 60},
-     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
-     "within 60 minutes.'}]",
+     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+     "if drawdown is > 0.0 within 60 minutes.'}]",
      None
      ),
     ({"method": "StoplossGuard", "lookback_period_candles": 12, "trade_limit": 2,
@@ -475,8 +475,8 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
      None
      ),
     ({"method": "MaxDrawdown", "lookback_period_candles": 20, "stop_duration": 60},
-     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading if drawdown is > 0.0 "
-     "within 20 candles.'}]",
+     "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+     "if drawdown is > 0.0 within 20 candles.'}]",
      None
      ),
 ])

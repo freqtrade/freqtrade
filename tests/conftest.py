@@ -221,6 +221,8 @@ def patch_exchange(
     mocker.patch(f'{EXMS}.id', PropertyMock(return_value=id))
     mocker.patch(f'{EXMS}.name', PropertyMock(return_value=id.title()))
     mocker.patch(f'{EXMS}.precisionMode', PropertyMock(return_value=2))
+    # Temporary patch ...
+    mocker.patch('freqtrade.exchange.bybit.Bybit.cache_leverage_tiers')
 
     if mock_markets:
         if isinstance(mock_markets, bool):
