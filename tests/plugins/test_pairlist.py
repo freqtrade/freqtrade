@@ -19,8 +19,16 @@ from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist,
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from freqtrade.util.datetime_helpers import dt_now
-from tests.conftest import (EXMS, create_mock_trades_usdt, generate_test_data, get_patched_exchange,
-                            get_patched_freqtradebot, log_has, log_has_re, num_log_has)
+from tests.conftest import (
+    EXMS,
+    create_mock_trades_usdt,
+    generate_test_data,
+    get_patched_exchange,
+    get_patched_freqtradebot,
+    log_has,
+    log_has_re,
+    num_log_has,
+)
 
 
 # Exclude RemotePairList from tests.

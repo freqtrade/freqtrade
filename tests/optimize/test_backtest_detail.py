@@ -9,8 +9,13 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence.trade_model import LocalTrade
 from tests.conftest import EXMS, patch_exchange
-from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
-                            _get_frame_time_from_offset, tests_timeframe)
+from tests.optimize import (
+    BTContainer,
+    BTrade,
+    _build_backtest_dataframe,
+    _get_frame_time_from_offset,
+    tests_timeframe,
+)
 
 
 # Test 0: Sell with signal sell in candle 3

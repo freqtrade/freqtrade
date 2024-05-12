@@ -13,8 +13,13 @@ from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
-                            get_patched_freqtradebot, patch_get_signal)
+from tests.conftest import (
+    EXMS,
+    create_mock_trades,
+    create_mock_trades_usdt,
+    get_patched_freqtradebot,
+    patch_get_signal,
+)
 
 
 def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:

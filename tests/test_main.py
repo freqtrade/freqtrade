@@ -12,8 +12,12 @@ from freqtrade.exceptions import ConfigurationError, FreqtradeException, Operati
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.worker import Worker
-from tests.conftest import (log_has, log_has_re, patch_exchange,
-                            patched_configuration_load_config_file)
+from tests.conftest import (
+    log_has,
+    log_has_re,
+    patch_exchange,
+    patched_configuration_load_config_file,
+)
 
 
 def test_parse_args_None(caplog) -> None:

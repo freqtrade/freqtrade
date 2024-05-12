@@ -14,8 +14,13 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, create_mock_trades, get_patched_exchange, log_has_re
-from tests.freqai.conftest import (get_patched_freqai_strategy, is_arm, is_mac, make_rl_config,
-                                   mock_pytorch_mlp_model_training_parameters)
+from tests.freqai.conftest import (
+    get_patched_freqai_strategy,
+    is_arm,
+    is_mac,
+    make_rl_config,
+    mock_pytorch_mlp_model_training_parameters,
+)
 
 
 def can_run_model(model: str) -> None:

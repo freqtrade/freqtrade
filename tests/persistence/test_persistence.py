@@ -10,8 +10,13 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.util import dt_now
-from tests.conftest import (create_mock_trades, create_mock_trades_usdt,
-                            create_mock_trades_with_leverage, log_has, log_has_re)
+from tests.conftest import (
+    create_mock_trades,
+    create_mock_trades_usdt,
+    create_mock_trades_with_leverage,
+    log_has,
+    log_has_re,
+)
 
 
 spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES

@@ -22,8 +22,14 @@ from telegram.error import BadRequest, NetworkError, TelegramError
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
-from freqtrade.enums import (ExitType, MarketDirection, RPCMessageType, RunMode, SignalDirection,
-                             State)
+from freqtrade.enums import (
+    ExitType,
+    MarketDirection,
+    RPCMessageType,
+    RunMode,
+    SignalDirection,
+    State,
+)
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
@@ -33,9 +39,18 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.util.datetime_helpers import dt_now
-from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades,
-                            create_mock_trades_usdt, get_patched_freqtradebot, log_has, log_has_re,
-                            patch_exchange, patch_get_signal, patch_whitelist)
+from tests.conftest import (
+    CURRENT_TEST_STRATEGY,
+    EXMS,
+    create_mock_trades,
+    create_mock_trades_usdt,
+    get_patched_freqtradebot,
+    log_has,
+    log_has_re,
+    patch_exchange,
+    patch_get_signal,
+    patch_whitelist,
+)
 
 
 @pytest.fixture(autouse=True)

@@ -8,8 +8,13 @@ from sqlalchemy import select
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
-from tests.conftest import (EXMS, create_mock_trades, create_mock_trades_usdt,
-                            get_patched_freqtradebot, patch_wallet)
+from tests.conftest import (
+    EXMS,
+    create_mock_trades,
+    create_mock_trades_usdt,
+    get_patched_freqtradebot,
+    patch_wallet,
+)
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):

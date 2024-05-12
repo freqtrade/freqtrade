@@ -26,8 +26,15 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.util.datetime_helpers import dt_utc
-from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, log_has, log_has_re,
-                            patch_exchange, patched_configuration_load_config_file)
+from tests.conftest import (
+    CURRENT_TEST_STRATEGY,
+    EXMS,
+    get_args,
+    log_has,
+    log_has_re,
+    patch_exchange,
+    patched_configuration_load_config_file,
+)
 
 
 ORDER_TYPES = [

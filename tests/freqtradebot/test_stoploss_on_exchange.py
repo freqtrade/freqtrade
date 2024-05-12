@@ -11,8 +11,16 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.util.datetime_helpers import dt_now
-from tests.conftest import (EXMS, get_patched_freqtradebot, log_has, log_has_re, patch_edge,
-                            patch_exchange, patch_get_signal, patch_whitelist)
+from tests.conftest import (
+    EXMS,
+    get_patched_freqtradebot,
+    log_has,
+    log_has_re,
+    patch_edge,
+    patch_exchange,
+    patch_get_signal,
+    patch_whitelist,
+)
 from tests.conftest_trades import entry_side, exit_side
 from tests.freqtradebot.test_freqtradebot import patch_RPCManager
 

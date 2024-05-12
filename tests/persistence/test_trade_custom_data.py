@@ -7,8 +7,13 @@ from freqtrade.data.history.history_utils import get_timerange
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade, disable_database_use, enable_database_use
 from freqtrade.persistence.custom_data import CustomDataWrapper
-from tests.conftest import (EXMS, create_mock_trades_usdt, generate_test_data,
-                            get_patched_freqtradebot, patch_exchange)
+from tests.conftest import (
+    EXMS,
+    create_mock_trades_usdt,
+    generate_test_data,
+    get_patched_freqtradebot,
+    patch_exchange,
+)
 
 
 @pytest.mark.usefixtures("init_persistence")

@@ -10,21 +10,33 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
-from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
-                                       load_backtest_stats)
+from freqtrade.data.btanalysis import (
+    get_latest_backtest_filename,
+    load_backtest_data,
+    load_backtest_stats,
+)
 from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
-from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
-                                                 generate_edge_table, generate_pair_metrics,
-                                                 generate_periodic_breakdown_stats,
-                                                 generate_strategy_comparison,
-                                                 generate_trading_stats, show_sorted_pairlist,
-                                                 store_backtest_analysis_results,
-                                                 store_backtest_stats, text_table_bt_results,
-                                                 text_table_strategy)
+from freqtrade.optimize.optimize_reports import (
+    generate_backtest_stats,
+    generate_daily_stats,
+    generate_edge_table,
+    generate_pair_metrics,
+    generate_periodic_breakdown_stats,
+    generate_strategy_comparison,
+    generate_trading_stats,
+    show_sorted_pairlist,
+    store_backtest_analysis_results,
+    store_backtest_stats,
+    text_table_bt_results,
+    text_table_strategy,
+)
 from freqtrade.optimize.optimize_reports.bt_output import text_table_tags
-from freqtrade.optimize.optimize_reports.optimize_reports import (_get_resample_from_period,
-                                                                  calc_streak, generate_tag_metrics)
+from freqtrade.optimize.optimize_reports.optimize_reports import (
+    _get_resample_from_period,
+    calc_streak,
+    generate_tag_metrics,
+)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_utc

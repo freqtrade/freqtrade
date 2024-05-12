@@ -11,17 +11,42 @@ from numpy import NaN
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import (ConfigurationError, DDosProtection, DependencyException,
-                                  ExchangeError, InsufficientFundsError, InvalidOrderException,
-                                  OperationalException, PricingError, TemporaryError)
-from freqtrade.exchange import (Binance, Bybit, Exchange, Kraken, market_is_active,
-                                timeframe_to_prev_date)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
-                                       calculate_backoff, remove_exchange_credentials)
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DDosProtection,
+    DependencyException,
+    ExchangeError,
+    InsufficientFundsError,
+    InvalidOrderException,
+    OperationalException,
+    PricingError,
+    TemporaryError,
+)
+from freqtrade.exchange import (
+    Binance,
+    Bybit,
+    Exchange,
+    Kraken,
+    market_is_active,
+    timeframe_to_prev_date,
+)
+from freqtrade.exchange.common import (
+    API_FETCH_ORDER_RETRY_COUNT,
+    API_RETRY_COUNT,
+    calculate_backoff,
+    remove_exchange_credentials,
+)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.util import dt_now, dt_ts
-from tests.conftest import (EXMS, generate_test_data_raw, get_mock_coro, get_patched_exchange,
-                            log_has, log_has_re, num_log_has_re)
+from tests.conftest import (
+    EXMS,
+    generate_test_data_raw,
+    get_mock_coro,
+    get_patched_exchange,
+    log_has,
+    log_has_re,
+    num_log_has_re,
+)
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!

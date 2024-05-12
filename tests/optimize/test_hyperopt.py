@@ -20,8 +20,16 @@ from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IntParameter
 from freqtrade.util import dt_utc
-from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, get_args, get_markets, log_has, log_has_re,
-                            patch_exchange, patched_configuration_load_config_file)
+from tests.conftest import (
+    CURRENT_TEST_STRATEGY,
+    EXMS,
+    get_args,
+    get_markets,
+    log_has,
+    log_has_re,
+    patch_exchange,
+    patched_configuration_load_config_file,
+)
 
 
 def generate_result_metrics():

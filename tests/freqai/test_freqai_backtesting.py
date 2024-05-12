@@ -14,8 +14,14 @@ from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.optimize.backtesting import Backtesting
-from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, get_patched_exchange, log_has_re,
-                            patch_exchange, patched_configuration_load_config_file)
+from tests.conftest import (
+    CURRENT_TEST_STRATEGY,
+    get_args,
+    get_patched_exchange,
+    log_has_re,
+    patch_exchange,
+    patched_configuration_load_config_file,
+)
 from tests.freqai.conftest import get_patched_freqai_strategy
 
 

@@ -7,10 +7,19 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from freqtrade.misc import (dataframe_to_json, deep_merge_dicts, file_dump_json, file_load_json,
-                            is_file_in_dir, json_to_dataframe, pair_to_filename,
-                            parse_db_uri_for_logging, plural, safe_value_fallback,
-                            safe_value_fallback2)
+from freqtrade.misc import (
+    dataframe_to_json,
+    deep_merge_dicts,
+    file_dump_json,
+    file_load_json,
+    is_file_in_dir,
+    json_to_dataframe,
+    pair_to_filename,
+    parse_db_uri_for_logging,
+    plural,
+    safe_value_fallback,
+    safe_value_fallback2,
+)
 
 
 def test_file_dump_json(mocker) -> None:

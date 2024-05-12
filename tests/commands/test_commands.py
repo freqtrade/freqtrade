@@ -8,16 +8,35 @@ from zipfile import ZipFile
 
 import pytest
 
-from freqtrade.commands import (start_backtesting_show, start_convert_data, start_convert_trades,
-                                start_create_userdir, start_download_data, start_hyperopt_list,
-                                start_hyperopt_show, start_install_ui, start_list_data,
-                                start_list_exchanges, start_list_markets, start_list_strategies,
-                                start_list_timeframes, start_new_strategy, start_show_config,
-                                start_show_trades, start_strategy_update, start_test_pairlist,
-                                start_trading, start_webserver)
+from freqtrade.commands import (
+    start_backtesting_show,
+    start_convert_data,
+    start_convert_trades,
+    start_create_userdir,
+    start_download_data,
+    start_hyperopt_list,
+    start_hyperopt_show,
+    start_install_ui,
+    start_list_data,
+    start_list_exchanges,
+    start_list_markets,
+    start_list_strategies,
+    start_list_timeframes,
+    start_new_strategy,
+    start_show_config,
+    start_show_trades,
+    start_strategy_update,
+    start_test_pairlist,
+    start_trading,
+    start_webserver,
+)
 from freqtrade.commands.db_commands import start_convert_db
-from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
-                                                get_ui_download_url, read_ui_version)
+from freqtrade.commands.deploy_commands import (
+    clean_ui_subdir,
+    download_and_install_ui,
+    get_ui_download_url,
+    read_ui_version,
+)
 from freqtrade.commands.list_commands import start_list_freqAI_models
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
@@ -25,8 +44,16 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.models import init_db
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.util import dt_floor_day, dt_now, dt_utc
-from tests.conftest import (CURRENT_TEST_STRATEGY, EXMS, create_mock_trades, get_args, log_has,
-                            log_has_re, patch_exchange, patched_configuration_load_config_file)
+from tests.conftest import (
+    CURRENT_TEST_STRATEGY,
+    EXMS,
+    create_mock_trades,
+    get_args,
+    log_has,
+    log_has_re,
+    patch_exchange,
+    patched_configuration_load_config_file,
+)
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 

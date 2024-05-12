@@ -8,8 +8,13 @@ from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.persistence import Trade
-from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
-                                RealParameter)
+from freqtrade.strategy import (
+    BooleanParameter,
+    DecimalParameter,
+    IntParameter,
+    IStrategy,
+    RealParameter,
+)
 
 
 class StrategyTestV3(IStrategy):

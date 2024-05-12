@@ -13,8 +13,11 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
 from freqtrade.data.history.datahandlers.featherdatahandler import FeatherDataHandler
 from freqtrade.data.history.datahandlers.hdf5datahandler import HDF5DataHandler
-from freqtrade.data.history.datahandlers.idatahandler import (IDataHandler, get_datahandler,
-                                                              get_datahandlerclass)
+from freqtrade.data.history.datahandlers.idatahandler import (
+    IDataHandler,
+    get_datahandler,
+    get_datahandlerclass,
+)
 from freqtrade.data.history.datahandlers.jsondatahandler import JsonDataHandler, JsonGzDataHandler
 from freqtrade.data.history.datahandlers.parquetdatahandler import ParquetDataHandler
 from freqtrade.enums import CandleType, TradingMode

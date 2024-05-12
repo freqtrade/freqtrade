@@ -16,8 +16,12 @@ from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
 from freqtrade.util.datetime_helpers import dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has
-from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
-                            _get_frame_time_from_offset)
+from tests.optimize import (
+    BTContainer,
+    BTrade,
+    _build_backtest_dataframe,
+    _get_frame_time_from_offset,
+)
 
 
 # Cases to be tested:
