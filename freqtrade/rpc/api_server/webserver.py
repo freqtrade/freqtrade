@@ -125,6 +125,7 @@ class ApiServer(RPCHandler):
 
         app.include_router(api_v1_public, prefix="/api/v1")
 
+        app.include_router(router_login, prefix="/api/v1", tags=["auth"])
         app.include_router(api_v1, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
@@ -137,7 +138,6 @@ class ApiServer(RPCHandler):
                                          Depends(is_webserver_mode)],
                            )
         app.include_router(ws_router, prefix="/api/v1")
-        app.include_router(router_login, prefix="/api/v1", tags=["auth"])
         # UI Router MUST be last!
         app.include_router(router_ui, prefix='')
 
