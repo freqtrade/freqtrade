@@ -873,9 +873,9 @@ class Backtesting:
             enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
             exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
             exits = self.strategy.should_exit(
-                trade,
+                trade,  # type: ignore
                 row[OPEN_IDX],
-                row[DATE_IDX].to_pydatetime(),  # type: ignore
+                row[DATE_IDX].to_pydatetime(),
                 enter=enter,
                 exit_=exit_sig,
                 low=row[LOW_IDX],

@@ -334,7 +334,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ("Avg. Duration Loser", f"{strat_results['loser_holding_avg']}"),
             (
                 "Max Consecutive Wins / Loss",
-                f"{strat_results['max_consecutive_wins']} / {strat_results['max_consecutive_losses']}"
+                (
+                    f"{strat_results['max_consecutive_wins']} / "
+                    f"{strat_results['max_consecutive_losses']}"
+                )
                 if "max_consecutive_losses" in strat_results
                 else "N/A",
             ),

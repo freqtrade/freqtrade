@@ -41,8 +41,8 @@ class XGBoostRegressorMultiTarget(BaseRegressionModel):
         if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
             eval_weights = [data_dictionary["test_weights"]]
             for i in range(data_dictionary["test_labels"].shape[1]):
-                eval_sets[i] = [
-                    (  # type: ignore
+                eval_sets[i] = [  # type: ignore
+                    (
                         data_dictionary["test_features"],
                         data_dictionary["test_labels"].iloc[:, i],
                     )

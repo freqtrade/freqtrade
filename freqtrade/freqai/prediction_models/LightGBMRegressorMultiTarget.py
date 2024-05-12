@@ -42,8 +42,8 @@ class LightGBMRegressorMultiTarget(BaseRegressionModel):
             eval_weights = [data_dictionary["test_weights"]]
             eval_sets = [(None, None)] * data_dictionary["test_labels"].shape[1]  # type: ignore
             for i in range(data_dictionary["test_labels"].shape[1]):
-                eval_sets[i] = [
-                    (  # type: ignore
+                eval_sets[i] = [  # type: ignore
+                    (
                         data_dictionary["test_features"],
                         data_dictionary["test_labels"].iloc[:, i],
                     )

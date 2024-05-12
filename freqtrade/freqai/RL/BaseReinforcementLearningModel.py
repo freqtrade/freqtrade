@@ -197,9 +197,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             "df_raw": self.df_raw,
         }
         if self.data_provider:
-            env_info["fee"] = self.data_provider._exchange.get_fee(
+            env_info["fee"] = self.data_provider._exchange.get_fee(  # type: ignore
                 symbol=self.data_provider.current_whitelist()[0]
-            )  # type: ignore
+            )
 
         return env_info
 
