@@ -2288,7 +2288,7 @@ class Exchange:
                 ):
                     # Usable result, candle contains the previous candle.
                     # Also, we check if the last refresh time is no more than half the candle ago.
-                    logger.info(f"reuse watch result for {pair}, {timeframe}, {last_refresh_time}")
+                    logger.debug(f"reuse watch result for {pair}, {timeframe}, {last_refresh_time}")
 
                     return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_date)
                 logger.info(
