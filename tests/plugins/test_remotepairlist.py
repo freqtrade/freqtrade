@@ -114,7 +114,7 @@ def test_fetch_pairlist_timeout_keep_last_pairlist(mocker, rpl_config, caplog):
     pairlist_url = rpl_config["pairlists"][0]["pairlist_url"]
     pairs, _time_elapsed = remote_pairlist.fetch_pairlist()
 
-    assert log_has(f"Error: Was not able to fetch pairlist from: " f"{pairlist_url}", caplog)
+    assert log_has(f"Error: Was not able to fetch pairlist from: {pairlist_url}", caplog)
     assert log_has("Keeping last fetched pairlist", caplog)
     assert pairs == ["BTC/USDT", "ETH/USDT", "LTC/USDT"]
 

@@ -219,7 +219,7 @@ class Telegram(RPCHandler):
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
-                logger.info("using custom keyboard from config.json: {self._keyboard}")
+                logger.info(f"using custom keyboard from config.json: {self._keyboard}")
 
     def _init_telegram_app(self):
         return Application.builder().token(self._config["telegram"]["token"]).build()

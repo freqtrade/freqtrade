@@ -223,7 +223,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         model_file_extension = ".zip"
     else:
         raise Exception(
-            f"Unsupported model type: {freqai.dd.model_type}," f" can't assign model_file_extension"
+            f"Unsupported model type: {freqai.dd.model_type}, can't assign model_file_extension"
         )
 
     assert Path(
