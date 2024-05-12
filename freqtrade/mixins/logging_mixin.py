@@ -8,6 +8,7 @@ class LoggingMixin:
     Logging Mixin
     Shows similar messages only once every `refresh_period`.
     """
+
     # Disable output completely
     show_output = True
 
@@ -27,6 +28,7 @@ class LoggingMixin:
         :param logmethod: Function that'll be called. Most likely `logger.info`.
         :return: None.
         """
+
         @cached(cache=self._log_cache)
         def _log_once(message: str):
             logmethod(message)
