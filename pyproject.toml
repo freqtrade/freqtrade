@@ -79,6 +79,7 @@ profile = "black"
 # multi_line_output=3
 lines_after_imports=2
 skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
+known_first_party = ["freqtrade_client"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -160,6 +161,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+known-first-party = ["freqtrade_client"]
 
 [tool.flake8]
 # Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore

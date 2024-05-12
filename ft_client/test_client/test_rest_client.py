@@ -2,9 +2,10 @@ import re
 from unittest.mock import MagicMock
 
 import pytest
+from requests.exceptions import ConnectionError
+
 from freqtrade_client import FtRestClient
 from freqtrade_client.ft_client import add_arguments, main_exec
-from requests.exceptions import ConnectionError
 
 
 def log_has_re(line, logs):

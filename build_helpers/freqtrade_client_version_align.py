@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from freqtrade_client import __version__ as client_version
-
 from freqtrade import __version__ as ft_version
+from freqtrade_client import __version__ as client_version
 
 
 def main():

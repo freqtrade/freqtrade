@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import rapidjson
+
 from freqtrade_client import __version__
 from freqtrade_client.ft_rest_client import FtRestClient
 
