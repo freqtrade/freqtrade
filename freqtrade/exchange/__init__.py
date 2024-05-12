@@ -2,6 +2,7 @@
 # isort: off
 from freqtrade.exchange.common import remove_exchange_credentials, MAP_EXCHANGE_CHILDCLASS
 from freqtrade.exchange.exchange import Exchange
+
 # isort: on
 from freqtrade.exchange.binance import Binance
 from freqtrade.exchange.bingx import Bingx
