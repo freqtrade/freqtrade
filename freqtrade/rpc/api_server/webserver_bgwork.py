@@ -1,4 +1,3 @@
-
 from typing import Any, Dict, Literal, Optional, TypedDict
 from uuid import uuid4
 
@@ -6,7 +5,7 @@ from freqtrade.exchange.exchange import Exchange
 
 
 class JobsContainer(TypedDict):
-    category: Literal['pairlist']
+    category: Literal["pairlist"]
     is_running: bool
     status: str
     progress: Optional[float]
@@ -17,11 +16,11 @@ class JobsContainer(TypedDict):
 class ApiBG:
     # Backtesting type: Backtesting
     bt: Dict[str, Any] = {
-        'bt': None,
-        'data': None,
-        'timerange': None,
-        'last_config': {},
-        'bt_error': None,
+        "bt": None,
+        "data": None,
+        "timerange": None,
+        "last_config": {},
+        "bt_error": None,
     }
     bgtask_running: bool = False
     # Exchange - only available in webserver mode.
