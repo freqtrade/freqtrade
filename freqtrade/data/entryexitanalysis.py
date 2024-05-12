@@ -8,8 +8,11 @@ from tabulate import tabulate
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
-from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
-                                       load_backtest_stats)
+from freqtrade.data.btanalysis import (
+    get_latest_backtest_filename,
+    load_backtest_data,
+    load_backtest_stats,
+)
 from freqtrade.exceptions import OperationalException
 
 

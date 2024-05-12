@@ -19,10 +19,15 @@ from freqtrade.enums import RPCMessageType
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
-from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzedDFRequest,
-                                                 WSMessageSchema, WSRequestSchema,
-                                                 WSSubscribeRequest, WSWhitelistMessage,
-                                                 WSWhitelistRequest)
+from freqtrade.rpc.api_server.ws_schemas import (
+    WSAnalyzedDFMessage,
+    WSAnalyzedDFRequest,
+    WSMessageSchema,
+    WSRequestSchema,
+    WSSubscribeRequest,
+    WSWhitelistMessage,
+    WSWhitelistRequest,
+)
 
 
 if TYPE_CHECKING:

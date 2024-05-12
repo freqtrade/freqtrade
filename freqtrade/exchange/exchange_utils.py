@@ -6,11 +6,23 @@ from math import ceil, floor
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
-from ccxt import (DECIMAL_PLACES, ROUND, ROUND_DOWN, ROUND_UP, SIGNIFICANT_DIGITS, TICK_SIZE,
-                  TRUNCATE, decimal_to_precision)
+from ccxt import (
+    DECIMAL_PLACES,
+    ROUND,
+    ROUND_DOWN,
+    ROUND_UP,
+    SIGNIFICANT_DIGITS,
+    TICK_SIZE,
+    TRUNCATE,
+    decimal_to_precision,
+)
 
-from freqtrade.exchange.common import (BAD_EXCHANGES, EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
-                                       SUPPORTED_EXCHANGES)
+from freqtrade.exchange.common import (
+    BAD_EXCHANGES,
+    EXCHANGE_HAS_OPTIONAL,
+    EXCHANGE_HAS_REQUIRED,
+    SUPPORTED_EXCHANGES,
+)
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.types import ValidExchangesType
 from freqtrade.util import FtPrecise

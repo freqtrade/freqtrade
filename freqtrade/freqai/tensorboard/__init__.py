@@ -4,8 +4,10 @@ try:
     TBLogger = TensorboardLogger
     TBCallback = TensorBoardCallback
 except ModuleNotFoundError:
-    from freqtrade.freqai.tensorboard.base_tensorboard import (BaseTensorBoardCallback,
-                                                               BaseTensorboardLogger)
+    from freqtrade.freqai.tensorboard.base_tensorboard import (
+        BaseTensorBoardCallback,
+        BaseTensorboardLogger,
+    )
     TBLogger = BaseTensorboardLogger  # type: ignore
     TBCallback = BaseTensorBoardCallback  # type: ignore
 

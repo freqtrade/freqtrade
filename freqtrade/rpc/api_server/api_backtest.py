@@ -10,16 +10,25 @@ from fastapi.exceptions import HTTPException
 
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.constants import Config
-from freqtrade.data.btanalysis import (delete_backtest_result, get_backtest_market_change,
-                                       get_backtest_result, get_backtest_resultlist,
-                                       load_and_merge_backtest_result, update_backtest_metadata)
+from freqtrade.data.btanalysis import (
+    delete_backtest_result,
+    get_backtest_market_change,
+    get_backtest_result,
+    get_backtest_resultlist,
+    load_and_merge_backtest_result,
+    update_backtest_metadata,
+)
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
 from freqtrade.misc import deep_merge_dicts, is_file_in_dir
-from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestMarketChange,
-                                                  BacktestMetadataUpdate, BacktestRequest,
-                                                  BacktestResponse)
+from freqtrade.rpc.api_server.api_schemas import (
+    BacktestHistoryEntry,
+    BacktestMarketChange,
+    BacktestMetadataUpdate,
+    BacktestRequest,
+    BacktestResponse,
+)
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException

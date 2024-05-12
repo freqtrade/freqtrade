@@ -7,11 +7,20 @@ from typing import Dict, List, Optional, Tuple
 from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import (DATETIME_PRINT_FORMAT, DEFAULT_DATAFRAME_COLUMNS,
-                                 DL_DATA_TIMEFRAMES, DOCS_LINK, Config)
-from freqtrade.data.converter import (clean_ohlcv_dataframe, convert_trades_to_ohlcv,
-                                      ohlcv_to_dataframe, trades_df_remove_duplicates,
-                                      trades_list_to_df)
+from freqtrade.constants import (
+    DATETIME_PRINT_FORMAT,
+    DEFAULT_DATAFRAME_COLUMNS,
+    DL_DATA_TIMEFRAMES,
+    DOCS_LINK,
+    Config,
+)
+from freqtrade.data.converter import (
+    clean_ohlcv_dataframe,
+    convert_trades_to_ohlcv,
+    ohlcv_to_dataframe,
+    trades_df_remove_duplicates,
+    trades_list_to_df,
+)
 from freqtrade.data.history.datahandlers import IDataHandler, get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException

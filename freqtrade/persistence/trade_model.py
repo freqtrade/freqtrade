@@ -8,18 +8,39 @@ from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
-from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select, String,
-                        UniqueConstraint, desc, func, select)
+from sqlalchemy import (
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    ScalarResult,
+    Select,
+    String,
+    UniqueConstraint,
+    desc,
+    func,
+    select,
+)
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
 from typing_extensions import Self
 
-from freqtrade.constants import (CANCELED_EXCHANGE_STATES, CUSTOM_TAG_MAX_LENGTH,
-                                 DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
-                                 BuySell, LongShort)
+from freqtrade.constants import (
+    CANCELED_EXCHANGE_STATES,
+    CUSTOM_TAG_MAX_LENGTH,
+    DATETIME_PRINT_FORMAT,
+    MATH_CLOSE_PREC,
+    NON_OPEN_EXCHANGE_STATES,
+    BuySell,
+    LongShort,
+)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, amount_to_contract_precision,
-                                price_to_precision)
+from freqtrade.exchange import (
+    ROUND_DOWN,
+    ROUND_UP,
+    amount_to_contract_precision,
+    price_to_precision,
+)
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.base import ModelBase, SessionType

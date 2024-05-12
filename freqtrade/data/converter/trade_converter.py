@@ -9,8 +9,13 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TRADES_DTYPES,
-                                 Config, TradeList)
+from freqtrade.constants import (
+    DEFAULT_DATAFRAME_COLUMNS,
+    DEFAULT_TRADES_COLUMNS,
+    TRADES_DTYPES,
+    Config,
+    TradeList,
+)
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 

@@ -3,11 +3,8 @@ import shutil
 import pytest
 
 from freqtrade.persistence import Trade
-from freqtrade.util.migrations import (
-    migrate_binance_futures_data,
-    migrate_binance_futures_names,
-    migrate_data,
-)
+from freqtrade.util.migrations import migrate_binance_futures_data, migrate_data
+from freqtrade.util.migrations.binance_mig import migrate_binance_futures_names
 from tests.conftest import create_mock_trades_usdt, log_has
 
 

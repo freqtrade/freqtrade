@@ -4,8 +4,10 @@ from pathlib import Path
 import pandas as pd
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_TRADES_COLUMNS, Config
-from freqtrade.data.converter.trade_converter import (trades_convert_types,
-                                                      trades_df_remove_duplicates)
+from freqtrade.data.converter.trade_converter import (
+    trades_convert_types,
+    trades_df_remove_duplicates,
+)
 from freqtrade.data.history import get_datahandler
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException

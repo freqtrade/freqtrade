@@ -9,9 +9,14 @@ from freqtrade.constants import Config
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import FtNoDBContext
-from freqtrade.rpc.api_server.api_schemas import (BackgroundTaskStatus, BgJobStarted,
-                                                  ExchangeModePayloadMixin, PairListsPayload,
-                                                  PairListsResponse, WhitelistEvaluateResponse)
+from freqtrade.rpc.api_server.api_schemas import (
+    BackgroundTaskStatus,
+    BgJobStarted,
+    ExchangeModePayloadMixin,
+    PairListsPayload,
+    PairListsResponse,
+    WhitelistEvaluateResponse,
+)
 from freqtrade.rpc.api_server.deps import get_config, get_exchange
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 

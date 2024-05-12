@@ -4,8 +4,14 @@ from pathlib import Path
 from typing import Optional
 
 from freqtrade.configuration.detect_environment import running_in_docker
-from freqtrade.constants import (USER_DATA_FILES, USERPATH_FREQAIMODELS, USERPATH_HYPEROPTS,
-                                 USERPATH_NOTEBOOKS, USERPATH_STRATEGIES, Config)
+from freqtrade.constants import (
+    USER_DATA_FILES,
+    USERPATH_FREQAIMODELS,
+    USERPATH_HYPEROPTS,
+    USERPATH_NOTEBOOKS,
+    USERPATH_STRATEGIES,
+    Config,
+)
 from freqtrade.exceptions import OperationalException
 
 

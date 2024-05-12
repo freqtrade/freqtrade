@@ -16,8 +16,12 @@ from pandas import DataFrame
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_TRADES_COLUMNS, ListPairsWithTimeframes
-from freqtrade.data.converter import (clean_ohlcv_dataframe, trades_convert_types,
-                                      trades_df_remove_duplicates, trim_dataframe)
+from freqtrade.data.converter import (
+    clean_ohlcv_dataframe,
+    trades_convert_types,
+    trades_df_remove_duplicates,
+    trim_dataframe,
+)
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_seconds
 

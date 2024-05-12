@@ -19,8 +19,15 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, SignalDirection,
-                             State, TradingMode)
+from freqtrade.enums import (
+    CandleType,
+    ExitCheckTuple,
+    ExitType,
+    MarketDirection,
+    SignalDirection,
+    State,
+    TradingMode,
+)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.exchange.types import Tickers

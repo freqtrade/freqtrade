@@ -9,8 +9,10 @@ from pandas import DataFrame
 
 from freqtrade.data.history import get_timerange
 from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.loggers.set_log_levels import (reduce_verbosity_for_bias_tester,
-                                              restore_verbosity_for_bias_tester)
+from freqtrade.loggers.set_log_levels import (
+    reduce_verbosity_for_bias_tester,
+    restore_verbosity_for_bias_tester,
+)
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.optimize.base_analysis import BaseAnalysis, VarHolder
 

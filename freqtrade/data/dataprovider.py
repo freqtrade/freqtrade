@@ -12,8 +12,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import (FULL_DATAFRAME_THRESHOLD, Config, ListPairsWithTimeframes,
-                                 PairWithTimeframe)
+from freqtrade.constants import (
+    FULL_DATAFRAME_THRESHOLD,
+    Config,
+    ListPairsWithTimeframes,
+    PairWithTimeframe,
+)
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException

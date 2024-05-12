@@ -6,8 +6,12 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
-from freqtrade.exceptions import (DDosProtection, OperationalException, RetryableOrderError,
-                                  TemporaryError)
+from freqtrade.exceptions import (
+    DDosProtection,
+    OperationalException,
+    RetryableOrderError,
+    TemporaryError,
+)
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
 from freqtrade.misc import safe_value_fallback2

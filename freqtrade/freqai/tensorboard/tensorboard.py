@@ -5,8 +5,10 @@ from typing import Any
 from torch.utils.tensorboard import SummaryWriter
 from xgboost import callback
 
-from freqtrade.freqai.tensorboard.base_tensorboard import (BaseTensorBoardCallback,
-                                                           BaseTensorboardLogger)
+from freqtrade.freqai.tensorboard.base_tensorboard import (
+    BaseTensorBoardCallback,
+    BaseTensorboardLogger,
+)
 
 
 logger = logging.getLogger(__name__)

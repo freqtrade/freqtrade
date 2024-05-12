@@ -18,12 +18,29 @@ from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfi
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, SignalDirection, State,
-                             TradingMode)
-from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, PricingError)
-from freqtrade.exchange import (ROUND_DOWN, ROUND_UP, remove_exchange_credentials,
-                                timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds)
+from freqtrade.enums import (
+    ExitCheckTuple,
+    ExitType,
+    RPCMessageType,
+    SignalDirection,
+    State,
+    TradingMode,
+)
+from freqtrade.exceptions import (
+    DependencyException,
+    ExchangeError,
+    InsufficientFundsError,
+    InvalidOrderException,
+    PricingError,
+)
+from freqtrade.exchange import (
+    ROUND_DOWN,
+    ROUND_UP,
+    remove_exchange_credentials,
+    timeframe_to_minutes,
+    timeframe_to_next_date,
+    timeframe_to_seconds,
+)
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
@@ -33,12 +50,18 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from freqtrade.rpc.rpc_types import (ProfitLossStr, RPCCancelMsg, RPCEntryMsg, RPCExitCancelMsg,
-                                     RPCExitMsg, RPCProtectionMsg)
+from freqtrade.rpc.rpc_types import (
+    ProfitLossStr,
+    RPCCancelMsg,
+    RPCEntryMsg,
+    RPCExitCancelMsg,
+    RPCExitMsg,
+    RPCProtectionMsg,
+)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import MeasureTime
-from freqtrade.util.migrations import migrate_binance_futures_names
+from freqtrade.util.migrations.binance_mig import migrate_binance_futures_names
 from freqtrade.wallets import Wallets
 
 

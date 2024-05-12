@@ -11,16 +11,28 @@ from pandas import DataFrame
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, MarketDirection, RunMode,
-                             SignalDirection, SignalTagType, SignalType, TradingMode)
+from freqtrade.enums import (
+    CandleType,
+    ExitCheckTuple,
+    ExitType,
+    MarketDirection,
+    RunMode,
+    SignalDirection,
+    SignalTagType,
+    SignalType,
+    TradingMode,
+)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
-from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
-                                                      _create_and_merge_informative_pair,
-                                                      _format_pair_name)
+from freqtrade.strategy.informative_decorator import (
+    InformativeData,
+    PopulateIndicators,
+    _create_and_merge_informative_pair,
+    _format_pair_name,
+)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import dt_now
 from freqtrade.wallets import Wallets

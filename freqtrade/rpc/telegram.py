@@ -18,8 +18,14 @@ from threading import Thread
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
 
 from tabulate import tabulate
-from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
-                      ReplyKeyboardMarkup, Update)
+from telegram import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    Update,
+)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
 from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler

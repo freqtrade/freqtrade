@@ -18,8 +18,15 @@ from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from joblib.externals import cloudpickle
 from pandas import DataFrame
-from rich.progress import (BarColumn, MofNCompleteColumn, Progress, TaskProgressColumn, TextColumn,
-                           TimeElapsedColumn, TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
@@ -29,11 +36,15 @@ from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
+
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
-from freqtrade.optimize.hyperopt_tools import (HyperoptStateContainer, HyperoptTools,
-                                               hyperopt_serializer)
+from freqtrade.optimize.hyperopt_tools import (
+    HyperoptStateContainer,
+    HyperoptTools,
+    hyperopt_serializer,
+)
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 

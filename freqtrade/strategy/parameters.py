@@ -12,7 +12,8 @@ from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 
 
 with suppress(ImportError):
-    from skopt.space import Integer, Real, Categorical
+    from skopt.space import Categorical, Integer, Real
+
     from freqtrade.optimize.space import SKDecimal
 
 from freqtrade.exceptions import OperationalException

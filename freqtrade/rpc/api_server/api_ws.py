@@ -12,9 +12,13 @@ from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_message_stream, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
-from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSErrorMessage,
-                                                 WSMessageSchema, WSRequestSchema,
-                                                 WSWhitelistMessage)
+from freqtrade.rpc.api_server.ws_schemas import (
+    WSAnalyzedDFMessage,
+    WSErrorMessage,
+    WSMessageSchema,
+    WSRequestSchema,
+    WSWhitelistMessage,
+)
 from freqtrade.rpc.rpc import RPC
 
 
