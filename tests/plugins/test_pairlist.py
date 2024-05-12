@@ -1067,7 +1067,7 @@ def test_VolumePairList_range(
     elif volumefilter_result == "lookback_days_and_period":
         with pytest.raises(
             OperationalException,
-            match=r"Ambigous configuration: lookback_days and lookback_period both "
+            match=r"Ambiguous configuration: lookback_days and lookback_period both "
             r"set in pairlist config\..*",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)

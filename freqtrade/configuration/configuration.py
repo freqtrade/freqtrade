@@ -349,7 +349,7 @@ class Configuration:
             ("hyperopt_list_max_objective", "Parameter --max-objective detected: {}"),
             ("hyperopt_list_no_details", "Parameter --no-details detected: {}"),
             ("hyperopt_show_no_header", "Parameter --no-header detected: {}"),
-            ("hyperopt_ignore_missing_space", "Paramter --ignore-missing-space detected: {}"),
+            ("hyperopt_ignore_missing_space", "Parameter --ignore-missing-space detected: {}"),
         ]
 
         self._args_to_config_loop(config, configurations)

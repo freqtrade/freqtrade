@@ -63,9 +63,9 @@ def test_get_balances_prod(default_conf, mocker):
     api_mock.fetch_balance = MagicMock(
         return_value={
             "1ST": balance_item.copy(),
-            "2ST": balance_item.copy(),
-            "3ST": balance_item.copy(),
-            "4ST": balance_item.copy(),
+            "2ND": balance_item.copy(),
+            "3RD": balance_item.copy(),
+            "4TH": balance_item.copy(),
             "EUR": balance_item.copy(),
             "timestamp": 123123,
         }
@@ -84,7 +84,7 @@ def test_get_balances_prod(default_conf, mocker):
         },
         {
             "status": "open",
-            "symbol": "2ST/EUR",
+            "symbol": "2ND/EUR",
             "type": "limit",
             "side": "sell",
             "price": 20.0,
@@ -96,7 +96,7 @@ def test_get_balances_prod(default_conf, mocker):
         },
         {
             "status": "open",
-            "symbol": "2ST/USD",
+            "symbol": "2ND/USD",
             "type": "limit",
             "side": "sell",
             "price": 20.0,
@@ -108,7 +108,7 @@ def test_get_balances_prod(default_conf, mocker):
         },
         {
             "status": "open",
-            "symbol": "3ST/EUR",
+            "symbol": "3RD/EUR",
             "type": "limit",
             "side": "buy",
             "price": 0.02,
@@ -129,17 +129,17 @@ def test_get_balances_prod(default_conf, mocker):
     assert balances["1ST"]["total"] == 10.0
     assert balances["1ST"]["used"] == 1.0
 
-    assert balances["2ST"]["free"] == 6.0
-    assert balances["2ST"]["total"] == 10.0
-    assert balances["2ST"]["used"] == 4.0
+    assert balances["2ND"]["free"] == 6.0
+    assert balances["2ND"]["total"] == 10.0
+    assert balances["2ND"]["used"] == 4.0
 
-    assert balances["3ST"]["free"] == 10.0
-    assert balances["3ST"]["total"] == 10.0
-    assert balances["3ST"]["used"] == 0.0
+    assert balances["3RD"]["free"] == 10.0
+    assert balances["3RD"]["total"] == 10.0
+    assert balances["3RD"]["used"] == 0.0
 
-    assert balances["4ST"]["free"] == 10.0
-    assert balances["4ST"]["total"] == 10.0
-    assert balances["4ST"]["used"] == 0.0
+    assert balances["4TH"]["free"] == 10.0
+    assert balances["4TH"]["total"] == 10.0
+    assert balances["4TH"]["used"] == 0.0
 
     assert balances["EUR"]["free"] == 8.0
     assert balances["EUR"]["total"] == 10.0

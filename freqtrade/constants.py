@@ -610,7 +610,7 @@ CONF_SCHEMA = {
                 "message_size_limit": {  # In megabytes
                     "type": "integer",
                     "minimum": 1,
-                    "maxmium": 20,
+                    "maximum": 20,
                     "default": 8,
                 },
             },

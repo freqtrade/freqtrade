@@ -78,7 +78,7 @@ def test_get_latest_hyperopt_file(testdatadir):
 
 
 def test_load_backtest_metadata(mocker, testdatadir):
-    res = load_backtest_metadata(testdatadir / "nonexistant.file.json")
+    res = load_backtest_metadata(testdatadir / "nonexistent.file.json")
     assert res == {}
 
     mocker.patch("freqtrade.data.btanalysis.get_backtest_metadata_filename")
@@ -86,7 +86,7 @@ def test_load_backtest_metadata(mocker, testdatadir):
     with pytest.raises(
         OperationalException, match=r"Unexpected error.*loading backtest metadata\."
     ):
-        load_backtest_metadata(testdatadir / "nonexistant.file.json")
+        load_backtest_metadata(testdatadir / "nonexistent.file.json")
 
 
 def test_load_backtest_data_old_format(testdatadir, mocker):

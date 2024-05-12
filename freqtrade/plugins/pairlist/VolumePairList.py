@@ -57,7 +57,7 @@ class VolumePairList(IPairList):
 
         if (self._lookback_days > 0) & (self._lookback_period > 0):
             raise OperationalException(
-                "Ambigous configuration: lookback_days and lookback_period both set in pairlist "
+                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
                 "config. Please set lookback_days only or lookback_period and lookback_timeframe "
                 "and restart the bot."
             )

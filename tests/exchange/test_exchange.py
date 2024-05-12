@@ -1777,7 +1777,7 @@ def test_get_balances_prod(default_conf, mocker, exchange_name):
 
     api_mock = MagicMock()
     api_mock.fetch_balance = MagicMock(
-        return_value={"1ST": balance_item, "2ST": balance_item, "3ST": balance_item}
+        return_value={"1ST": balance_item, "2ND": balance_item, "3RD": balance_item}
     )
     default_conf["dry_run"] = False
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
