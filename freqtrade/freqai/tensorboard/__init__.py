@@ -1,6 +1,7 @@
 # ensure users can still use a non-torch freqai version
 try:
     from freqtrade.freqai.tensorboard.tensorboard import TensorBoardCallback, TensorboardLogger
+
     TBLogger = TensorboardLogger
     TBCallback = TensorBoardCallback
 except ModuleNotFoundError:
@@ -8,10 +9,8 @@ except ModuleNotFoundError:
         BaseTensorBoardCallback,
         BaseTensorboardLogger,
     )
+
     TBLogger = BaseTensorboardLogger  # type: ignore
     TBCallback = BaseTensorBoardCallback  # type: ignore
 
-__all__ = (
-    "TBLogger",
-    "TBCallback"
-)
+__all__ = ("TBLogger", "TBCallback")

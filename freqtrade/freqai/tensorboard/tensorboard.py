@@ -31,7 +31,6 @@ class TensorboardLogger(BaseTensorboardLogger):
 
 
 class TensorBoardCallback(BaseTensorBoardCallback):
-
     def __init__(self, logdir: Path, activate: bool = True):
         self.activate = activate
         if self.activate:

@@ -20,13 +20,10 @@ class BaseTensorboardLogger:
 
 
 class BaseTensorBoardCallback(TrainingCallback):
-
     def __init__(self, logdir: Path, activate: bool = True):
         pass
 
-    def after_iteration(
-        self, model, epoch: int, evals_log: TrainingCallback.EvalsLog
-    ) -> bool:
+    def after_iteration(self, model, epoch: int, evals_log: TrainingCallback.EvalsLog) -> bool:
         return False
 
     def after_training(self, model):
