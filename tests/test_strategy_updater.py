@@ -18,41 +18,34 @@ if sys.version_info < (3, 9):
 
 def test_strategy_updater_start(user_dir, capsys) -> None:
     # Effective test without mocks.
-    teststrats = Path(__file__).parent / 'strategy/strats'
+    teststrats = Path(__file__).parent / "strategy/strats"
     tmpdirp = Path(user_dir) / "strategies"
     tmpdirp.mkdir(parents=True, exist_ok=True)
-    shutil.copy(teststrats / 'strategy_test_v2.py', tmpdirp)
-    old_code = (teststrats / 'strategy_test_v2.py').read_text()
+    shutil.copy(teststrats / "strategy_test_v2.py", tmpdirp)
+    old_code = (teststrats / "strategy_test_v2.py").read_text()
 
-    args = [
-        "strategy-updater",
-        "--userdir",
-        str(user_dir),
-        "--strategy-list",
-        "StrategyTestV2"
-         ]
+    args = ["strategy-updater", "--userdir", str(user_dir), "--strategy-list", "StrategyTestV2"]
     pargs = get_args(args)
-    pargs['config'] = None
+    pargs["config"] = None
 
     start_strategy_update(pargs)
 
     assert Path(user_dir / "strategies_orig_updater").exists()
     # Backup file exists
-    assert Path(user_dir / "strategies_orig_updater" / 'strategy_test_v2.py').exists()
+    assert Path(user_dir / "strategies_orig_updater" / "strategy_test_v2.py").exists()
     # updated file exists
-    new_file = tmpdirp / 'strategy_test_v2.py'
+    new_file = tmpdirp / "strategy_test_v2.py"
     assert new_file.exists()
     new_code = new_file.read_text()
-    assert 'INTERFACE_VERSION = 3' in new_code
-    assert 'INTERFACE_VERSION = 2' in old_code
+    assert "INTERFACE_VERSION = 3" in new_code
+    assert "INTERFACE_VERSION = 2" in old_code
     captured = capsys.readouterr()
 
-    assert 'Conversion of strategy_test_v2.py started.' in captured.out
-    assert re.search(r'Conversion of strategy_test_v2\.py took .* seconds', captured.out)
+    assert "Conversion of strategy_test_v2.py started." in captured.out
+    assert re.search(r"Conversion of strategy_test_v2\.py took .* seconds", captured.out)
 
 
 def test_strategy_updater_methods(default_conf, caplog) -> None:
-
     instance_strategy_updater = StrategyUpdater()
     modified_code1 = instance_strategy_updater.update_code("""
 class testClass(IStrategy):
