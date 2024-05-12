@@ -10,6 +10,7 @@ class FTBufferingHandler(BufferingHandler):
         self.acquire()
         try:
             # Keep half of the records in buffer.
-            self.buffer = self.buffer[-int(self.capacity / 2):]
+            records_to_keep = -int(self.capacity / 2)
+            self.buffer = self.buffer[records_to_keep:]
         finally:
             self.release()
