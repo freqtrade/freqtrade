@@ -77,7 +77,7 @@ exclude = '''
 line_length = 100
 profile = "black"
 # multi_line_output=3
-# lines_after_imports=2
+lines_after_imports=2
 skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
 
 [tool.pytest.ini_options]
@@ -129,6 +129,7 @@ extend-select = [
   "E",      # pycodestyle
   "W",      # pycodestyle
   "UP",     # pyupgrade
+  "I",      # isort
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
   # "C4",     # flake8-comprehensions
@@ -156,6 +157,9 @@ max-complexity = 12
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
 
 [tool.flake8]
 # Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
