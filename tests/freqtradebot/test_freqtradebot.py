@@ -5385,9 +5385,9 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
 
 
 @pytest.mark.parametrize('data', [
+    # tuple 1 - side amount, price
+    # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
     (
-        # tuple 1 - side amount, price
-        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
         (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
         (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
         (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625, -0.011197)),

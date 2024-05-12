@@ -2673,9 +2673,9 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('data', [
+    # tuple 1 - side, amount, price
+    # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
     {
-        # tuple 1 - side, amount, price
-        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
         'orders': [
             (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
             (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
