@@ -64,7 +64,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         # "120": 0.0,  # exit after 120 minutes at break even
         "60": 0.01,
         "30": 0.02,
-        "0": 0.04
+        "0": 0.04,
     }
 
     plot_config = {
