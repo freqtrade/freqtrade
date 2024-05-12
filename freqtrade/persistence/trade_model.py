@@ -1597,46 +1597,76 @@ class Trade(ModelBase, LocalTrade):
     is_open: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)  # type: ignore
     fee_open: Mapped[float] = mapped_column(Float(), nullable=False, default=0.0)  # type: ignore
     fee_open_cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    fee_open_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)  # type: ignore
-    fee_close: Mapped[Optional[float]] = mapped_column(Float(), nullable=False, default=0.0)  # type: ignore
+    fee_open_currency: Mapped[Optional[str]] = mapped_column(  # type: ignore
+        String(25), nullable=True
+    )
+    fee_close: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=False, default=0.0
+    )
     fee_close_cost: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    fee_close_currency: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)  # type: ignore
+    fee_close_currency: Mapped[Optional[str]] = mapped_column(  # type: ignore
+        String(25), nullable=True
+    )
     open_rate: Mapped[float] = mapped_column(Float())  # type: ignore
-    open_rate_requested: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
+    open_rate_requested: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True
+    )
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value: Mapped[float] = mapped_column(Float(), nullable=True)  # type: ignore
     close_rate: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     close_rate_requested: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
-    realized_profit: Mapped[float] = mapped_column(Float(), default=0.0, nullable=True)  # type: ignore
+    realized_profit: Mapped[float] = mapped_column(  # type: ignore
+        Float(), default=0.0, nullable=True
+    )
     close_profit: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     close_profit_abs: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     stake_amount: Mapped[float] = mapped_column(Float(), nullable=False)  # type: ignore
     max_stake_amount: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
     amount: Mapped[float] = mapped_column(Float())  # type: ignore
     amount_requested: Mapped[Optional[float]] = mapped_column(Float())  # type: ignore
-    open_date: Mapped[datetime] = mapped_column(nullable=False, default=datetime.now)  # type: ignore
+    open_date: Mapped[datetime] = mapped_column(  # type: ignore
+        nullable=False, default=datetime.now
+    )
     close_date: Mapped[Optional[datetime]] = mapped_column()  # type: ignore
     # absolute value of the stop loss
     stop_loss: Mapped[float] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
     # percentage value of the stop loss
     stop_loss_pct: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
     # absolute value of the initial stop loss
-    initial_stop_loss: Mapped[Optional[float]] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
+    initial_stop_loss: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True, default=0.0
+    )
     # percentage value of the initial stop loss
-    initial_stop_loss_pct: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    is_stop_loss_trailing: Mapped[bool] = mapped_column(nullable=False, default=False)  # type: ignore
+    initial_stop_loss_pct: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True
+    )
+    is_stop_loss_trailing: Mapped[bool] = mapped_column(  # type: ignore
+        nullable=False, default=False
+    )
     # absolute value of the highest reached price
-    max_rate: Mapped[Optional[float]] = mapped_column(Float(), nullable=True, default=0.0)  # type: ignore
+    max_rate: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True, default=0.0
+    )
     # Lowest price reached
     min_rate: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
-    exit_reason: Mapped[Optional[str]] = mapped_column(String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
-    exit_order_status: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
+    exit_reason: Mapped[Optional[str]] = mapped_column(  # type: ignore
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True
+    )
+    exit_order_status: Mapped[Optional[str]] = mapped_column(  # type: ignore
+        String(100), nullable=True
+    )
     strategy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # type: ignore
-    enter_tag: Mapped[Optional[str]] = mapped_column(String(CUSTOM_TAG_MAX_LENGTH), nullable=True)  # type: ignore
+    enter_tag: Mapped[Optional[str]] = mapped_column(  # type: ignore
+        String(CUSTOM_TAG_MAX_LENGTH), nullable=True
+    )
     timeframe: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
 
-    trading_mode: Mapped[TradingMode] = mapped_column(Enum(TradingMode), nullable=True)  # type: ignore
-    amount_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
+    trading_mode: Mapped[TradingMode] = mapped_column(  # type: ignore
+        Enum(TradingMode), nullable=True
+    )
+    amount_precision: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True
+    )
     price_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
     precision_mode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
     contract_size: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
@@ -1644,16 +1674,22 @@ class Trade(ModelBase, LocalTrade):
     # Leverage trading properties
     leverage: Mapped[float] = mapped_column(Float(), nullable=True, default=1.0)  # type: ignore
     is_short: Mapped[bool] = mapped_column(nullable=False, default=False)  # type: ignore
-    liquidation_price: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
+    liquidation_price: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True
+    )
 
     # Margin Trading Properties
-    interest_rate: Mapped[float] = mapped_column(Float(), nullable=False, default=0.0)  # type: ignore
+    interest_rate: Mapped[float] = mapped_column(  # type: ignore
+        Float(), nullable=False, default=0.0
+    )
 
     # Futures properties
-    funding_fees: Mapped[Optional[float]] = mapped_column(Float(), nullable=True, default=None)  # type: ignore
-    funding_fee_running: Mapped[Optional[float]] = mapped_column(
+    funding_fees: Mapped[Optional[float]] = mapped_column(  # type: ignore
         Float(), nullable=True, default=None
-    )  # type: ignore
+    )
+    funding_fee_running: Mapped[Optional[float]] = mapped_column(  # type: ignore
+        Float(), nullable=True, default=None
+    )
 
     def __init__(self, **kwargs):
         from_json = kwargs.pop("__FROM_JSON", None)
