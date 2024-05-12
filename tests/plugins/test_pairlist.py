@@ -1776,7 +1776,7 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     assert markets_mock.call_count == 3
 
 
-def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, markets, time_machine):
+def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
 
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList"}]
