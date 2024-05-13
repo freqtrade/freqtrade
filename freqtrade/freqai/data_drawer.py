@@ -286,8 +286,7 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = dataframe["date"]
         # set everything to nan except date_pred
         columns_to_nan = new_pred.columns.difference(['date_pred', 'date'])
-        new_pred[columns_to_nan] = new_pred[columns_to_nan].astype(
-            float).values * np.nan
+        new_pred[columns_to_nan] = None
 
         hist_preds = self.historic_predictions[pair].copy()
 

@@ -6,8 +6,8 @@
 -r requirements-freqai-rl.txt
 -r docs/requirements-docs.txt
 
-coveralls==3.3.1
-ruff==0.4.2
+coveralls==4.0.0
+ruff==0.4.3
 mypy==1.10.0
 pre-commit==3.7.0
 pytest==8.2.0
@@ -21,7 +21,7 @@ isort==5.13.2
 time-machine==2.14.1
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==7.16.3
+nbconvert==7.16.4
 
 # mypy types
 types-cachetools==5.3.0.7

@@ -1285,11 +1285,13 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      None
      ),
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010},
-     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or below 0.00000010.'}]",
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+     "or below 0.00000010.'}]",
      None
      ),
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "max_price": 1.00010000},
-     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% or above 1.00010000.'}]",
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+     "or above 1.00010000.'}]",
      None
      ),
     ({"method": "PriceFilter", "min_price": 0.00002000},
@@ -1322,14 +1324,14 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      ),  # OperationalException expected
     ({"method": "RangeStabilityFilter", "lookback_days": 10,
       "min_rate_of_change": 0.01},
-     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
-     "0.01 over the last days.'}]",
+     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+     "of change below 0.01 over the last days.'}]",
         None
      ),
     ({"method": "RangeStabilityFilter", "lookback_days": 10,
      "min_rate_of_change": 0.01, "max_rate_of_change": 0.99},
-     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
-     "0.01 and above 0.99 over the last days.'}]",
+     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+     "of change below 0.01 and above 0.99 over the last days.'}]",
         None
      ),
     ({"method": "OffsetFilter", "offset": 5, "number_assets": 10},
@@ -1774,7 +1776,7 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     assert markets_mock.call_count == 3
 
 
-def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, markets, time_machine):
+def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
 
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt['pairlists'] = [{"method": "MarketCapPairList"}]
