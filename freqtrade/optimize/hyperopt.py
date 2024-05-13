@@ -230,9 +230,11 @@ class Hyperopt:
             result["trailing"] = self.custom_hyperopt.generate_trailing_params(params)
         if HyperoptTools.has_space(self.config, "trades"):
             result["max_open_trades"] = {
-                "max_open_trades": self.backtesting.strategy.max_open_trades
-                if self.backtesting.strategy.max_open_trades != float("inf")
-                else -1
+                "max_open_trades": (
+                    self.backtesting.strategy.max_open_trades
+                    if self.backtesting.strategy.max_open_trades != float("inf")
+                    else -1
+                )
             }
 
         return result

@@ -508,9 +508,9 @@ def test_min_roi_reached3(default_conf, fee) -> None:
             0.09,
             0.98,
             ExitType.NONE,
-            lambda current_profit, **kwargs: -0.1
-            if current_profit < 0.6
-            else -(current_profit * 2),
+            lambda current_profit, **kwargs: (
+                -0.1 if current_profit < 0.6 else -(current_profit * 2)
+            ),
         ),
         # Error case - static stoploss in place
         (

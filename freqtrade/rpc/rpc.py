@@ -148,9 +148,9 @@ class RPC:
             "bot_name": config.get("bot_name", "freqtrade"),
             "timeframe": config.get("timeframe"),
             "timeframe_ms": timeframe_to_msecs(config["timeframe"]) if "timeframe" in config else 0,
-            "timeframe_min": timeframe_to_minutes(config["timeframe"])
-            if "timeframe" in config
-            else 0,
+            "timeframe_min": (
+                timeframe_to_minutes(config["timeframe"]) if "timeframe" in config else 0
+            ),
             "exchange": config["exchange"]["name"],
             "strategy": config["strategy"],
             "force_entry_enable": config.get("force_entry_enable", False),
@@ -404,11 +404,13 @@ class RPC:
                 "abs_profit": value["amount"],
                 "starting_balance": value["daily_stake"],
                 "rel_profit": value["rel_profit"],
-                "fiat_value": self._fiat_converter.convert_amount(
-                    value["amount"], stake_currency, fiat_display_currency
-                )
-                if self._fiat_converter
-                else 0,
+                "fiat_value": (
+                    self._fiat_converter.convert_amount(
+                        value["amount"], stake_currency, fiat_display_currency
+                    )
+                    if self._fiat_converter
+                    else 0
+                ),
                 "trade_count": value["trades"],
             }
             for key, value in profit_units.items()

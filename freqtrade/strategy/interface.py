@@ -927,9 +927,11 @@ class IStrategy(ABC, HyperStrategyMixin):
             (
                 p[0],
                 p[1],
-                CandleType.from_string(p[2])
-                if len(p) > 2 and p[2] != ""
-                else self.config.get("candle_type_def", CandleType.SPOT),
+                (
+                    CandleType.from_string(p[2])
+                    if len(p) > 2 and p[2] != ""
+                    else self.config.get("candle_type_def", CandleType.SPOT)
+                ),
             )
             for p in informative_pairs
         ]

@@ -457,11 +457,13 @@ class HyperoptTools:
             lambda x: f"{x:,.2%}".rjust(7, " ") if not isna(x) else "--".rjust(7, " ")
         )
         trials["Avg duration"] = trials["Avg duration"].apply(
-            lambda x: f"{x:,.1f} m".rjust(7, " ")
-            if isinstance(x, float)
-            else f"{x}"
-            if not isna(x)
-            else "--".rjust(7, " ")
+            lambda x: (
+                f"{x:,.1f} m".rjust(7, " ")
+                if isinstance(x, float)
+                else f"{x}"
+                if not isna(x)
+                else "--".rjust(7, " ")
+            )
         )
         trials["Objective"] = trials["Objective"].apply(
             lambda x: f"{x:,.5f}".rjust(8, " ") if x != 100000 else "N/A".rjust(8, " ")
@@ -470,28 +472,32 @@ class HyperoptTools:
         stake_currency = config["stake_currency"]
 
         trials[f"Max Drawdown{' (Acct)' if has_account_drawdown else ''}"] = trials.apply(
-            lambda x: "{} {}".format(
-                fmt_coin(x["max_drawdown_abs"], stake_currency, keep_trailing_zeros=True),
-                (
-                    f"({x['max_drawdown_account']:,.2%})"
-                    if has_account_drawdown
-                    else f"({x['max_drawdown']:,.2%})"
-                ).rjust(10, " "),
-            ).rjust(25 + len(stake_currency))
-            if x["max_drawdown"] != 0.0 or x["max_drawdown_account"] != 0.0
-            else "--".rjust(25 + len(stake_currency)),
+            lambda x: (
+                "{} {}".format(
+                    fmt_coin(x["max_drawdown_abs"], stake_currency, keep_trailing_zeros=True),
+                    (
+                        f"({x['max_drawdown_account']:,.2%})"
+                        if has_account_drawdown
+                        else f"({x['max_drawdown']:,.2%})"
+                    ).rjust(10, " "),
+                ).rjust(25 + len(stake_currency))
+                if x["max_drawdown"] != 0.0 or x["max_drawdown_account"] != 0.0
+                else "--".rjust(25 + len(stake_currency))
+            ),
             axis=1,
         )
 
         trials = trials.drop(columns=["max_drawdown_abs", "max_drawdown", "max_drawdown_account"])
 
         trials["Profit"] = trials.apply(
-            lambda x: "{} {}".format(
-                fmt_coin(x["Total profit"], stake_currency, keep_trailing_zeros=True),
-                f"({x['Profit']:,.2%})".rjust(10, " "),
-            ).rjust(25 + len(stake_currency))
-            if x["Total profit"] != 0.0
-            else "--".rjust(25 + len(stake_currency)),
+            lambda x: (
+                "{} {}".format(
+                    fmt_coin(x["Total profit"], stake_currency, keep_trailing_zeros=True),
+                    f"({x['Profit']:,.2%})".rjust(10, " "),
+                ).rjust(25 + len(stake_currency))
+                if x["Total profit"] != 0.0
+                else "--".rjust(25 + len(stake_currency))
+            ),
             axis=1,
         )
         trials = trials.drop(columns=["Total profit"])

@@ -379,9 +379,9 @@ def pair_history_filtered(
         {
             "strategy": payload.strategy,
             "timerange": payload.timerange,
-            "freqaimodel": payload.freqaimodel
-            if payload.freqaimodel
-            else config.get("freqaimodel"),
+            "freqaimodel": (
+                payload.freqaimodel if payload.freqaimodel else config.get("freqaimodel")
+            ),
         }
     )
     try:

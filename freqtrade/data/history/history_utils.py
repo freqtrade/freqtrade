@@ -262,7 +262,7 @@ def _download_pair_history(
 
         logger.info(
             f'({process}) - Download history data for "{pair}", {timeframe}, '
-            f'{candle_type} and store in {datadir}. '
+            f"{candle_type} and store in {datadir}. "
             f'From {format_ms_time(since_ms) if since_ms else "start"} to '
             f'{format_ms_time(until_ms) if until_ms else "now"}'
         )
@@ -280,9 +280,11 @@ def _download_pair_history(
         new_data = exchange.get_historic_ohlcv(
             pair=pair,
             timeframe=timeframe,
-            since_ms=since_ms
-            if since_ms
-            else int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000,
+            since_ms=(
+                since_ms
+                if since_ms
+                else int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
+            ),
             is_new_pair=data.empty,
             candle_type=candle_type,
             until_ms=until_ms if until_ms else None,

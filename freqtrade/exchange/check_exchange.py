@@ -33,17 +33,17 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
     exchange = config.get("exchange", {}).get("name", "").lower()
     if not exchange:
         raise OperationalException(
-            f'This command requires a configured exchange. You should either use '
-            f'`--exchange <exchange_name>` or specify a configuration file via `--config`.\n'
-            f'The following exchanges are available for Freqtrade: '
+            f"This command requires a configured exchange. You should either use "
+            f"`--exchange <exchange_name>` or specify a configuration file via `--config`.\n"
+            f"The following exchanges are available for Freqtrade: "
             f'{", ".join(available_exchanges())}'
         )
 
     if not is_exchange_known_ccxt(exchange):
         raise OperationalException(
             f'Exchange "{exchange}" is not known to the ccxt library '
-            f'and therefore not available for the bot.\n'
-            f'The following exchanges are available for Freqtrade: '
+            f"and therefore not available for the bot.\n"
+            f"The following exchanges are available for Freqtrade: "
             f'{", ".join(available_exchanges())}'
         )
 

@@ -693,7 +693,7 @@ def test_process_trade_creation(
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
-        'with stake_amount: 60.0 ...',
+        "with stake_amount: 60.0 ...",
         caplog,
     )
 

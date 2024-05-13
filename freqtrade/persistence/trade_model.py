@@ -266,17 +266,19 @@ class Order(ModelBase):
                     "cost": self.cost if self.cost else 0,
                     "filled": self.filled,
                     "is_open": self.ft_is_open,
-                    "order_date": self.order_date.strftime(DATETIME_PRINT_FORMAT)
-                    if self.order_date
-                    else None,
-                    "order_timestamp": int(
-                        self.order_date.replace(tzinfo=timezone.utc).timestamp() * 1000
-                    )
-                    if self.order_date
-                    else None,
-                    "order_filled_date": self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
-                    if self.order_filled_date
-                    else None,
+                    "order_date": (
+                        self.order_date.strftime(DATETIME_PRINT_FORMAT) if self.order_date else None
+                    ),
+                    "order_timestamp": (
+                        int(self.order_date.replace(tzinfo=timezone.utc).timestamp() * 1000)
+                        if self.order_date
+                        else None
+                    ),
+                    "order_filled_date": (
+                        self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
+                        if self.order_filled_date
+                        else None
+                    ),
                     "order_type": self.order_type,
                     "price": self.price,
                     "remaining": self.remaining,

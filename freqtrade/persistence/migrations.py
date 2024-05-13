@@ -164,7 +164,8 @@ def migrate_trades_and_orders_table(
     # Copy data back - following the correct schema
     with engine.begin() as connection:
         connection.execute(
-            text(f"""insert into trades
+            text(
+                f"""insert into trades
             (id, exchange, pair, base_currency, stake_currency, is_open,
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_close_currency, open_rate,
@@ -209,7 +210,8 @@ def migrate_trades_and_orders_table(
             {precision_mode} precision_mode, {contract_size} contract_size,
             {max_stake_amount} max_stake_amount
             from {trade_back_name}
-            """)
+            """
+            )
         )
 
     migrate_orders_table(engine, order_back_name, cols_order)
@@ -238,7 +240,8 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(
-            text(f"""
+            text(
+                f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
             stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee,
@@ -251,7 +254,8 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
             {ft_amount} ft_amount, {ft_price} ft_price, {ft_cancel_reason} ft_cancel_reason,
             {ft_order_tag} ft_order_tag
             from {table_back_name}
-            """)
+            """
+            )
         )
 
 
@@ -269,13 +273,15 @@ def migrate_pairlocks_table(decl_base, inspector, engine, pairlock_back_name: st
     # Copy data back - following the correct schema
     with engine.begin() as connection:
         connection.execute(
-            text(f"""insert into pairlocks
+            text(
+                f"""insert into pairlocks
         (id, pair, side, reason, lock_time,
          lock_end_time, active)
         select id, pair, {side} side, reason, lock_time,
          lock_end_time, active
         from {pairlock_back_name}
-        """)
+        """
+            )
         )
 
 

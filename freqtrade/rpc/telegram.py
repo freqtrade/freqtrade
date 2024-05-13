@@ -729,9 +729,12 @@ class Telegram(RPCHandler):
             lines = [
                 "*Trade ID:* `{trade_id}`" + (" `(since {open_date_hum})`" if r["is_open"] else ""),
                 "*Current Pair:* {pair}",
-                f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}" + " ` ({leverage}x)`"
-                if r.get("leverage")
-                else "",
+                (
+                    f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}"
+                    + " ` ({leverage}x)`"
+                    if r.get("leverage")
+                    else ""
+                ),
                 "*Amount:* `{amount} ({stake_amount_r})`",
                 "*Total invested:* `{max_stake_amount_r}`" if position_adjust else "",
                 "*Enter Tag:* `{enter_tag}`" if r["enter_tag"] else "",
@@ -753,9 +756,11 @@ class Telegram(RPCHandler):
                     f"*Close Rate:* `{round_value(r['close_rate'], 8)}`" if r["close_rate"] else "",
                     "*Open Date:* `{open_date}`",
                     "*Close Date:* `{close_date}`" if r["close_date"] else "",
-                    f" \n*Current Rate:* `{round_value(r['current_rate'], 8)}`"
-                    if r["is_open"]
-                    else "",
+                    (
+                        f" \n*Current Rate:* `{round_value(r['current_rate'], 8)}`"
+                        if r["is_open"]
+                        else ""
+                    ),
                     ("*Unrealized Profit:* " if r["is_open"] else "*Close Profit: *")
                     + "`{profit_ratio:.2%}` `({profit_abs_r})`",
                 ]
@@ -1072,15 +1077,19 @@ class Telegram(RPCHandler):
             [
                 [
                     "Wins",
-                    str(timedelta(seconds=durations["wins"]))
-                    if durations["wins"] is not None
-                    else "N/A",
+                    (
+                        str(timedelta(seconds=durations["wins"]))
+                        if durations["wins"] is not None
+                        else "N/A"
+                    ),
                 ],
                 [
                     "Losses",
-                    str(timedelta(seconds=durations["losses"]))
-                    if durations["losses"] is not None
-                    else "N/A",
+                    (
+                        str(timedelta(seconds=durations["losses"]))
+                        if durations["losses"] is not None
+                        else "N/A"
+                    ),
                 ],
             ],
             headers=["", "Avg. Duration"],
@@ -1429,7 +1438,7 @@ class Telegram(RPCHandler):
         msg = self._rpc._rpc_delete(trade_id)
         await self._send_msg(
             f"`{msg['result_msg']}`\n"
-            'Please make sure to take care of this asset on the exchange manually.'
+            "Please make sure to take care of this asset on the exchange manually."
         )
 
     @authorized_only

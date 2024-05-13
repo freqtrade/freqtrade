@@ -80,17 +80,19 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         "key": first_column,
         "trades": len(result),
         "profit_mean": result["profit_ratio"].mean() if len(result) > 0 else 0.0,
-        "profit_mean_pct": round(result["profit_ratio"].mean() * 100.0, 2)
-        if len(result) > 0
-        else 0.0,
+        "profit_mean_pct": (
+            round(result["profit_ratio"].mean() * 100.0, 2) if len(result) > 0 else 0.0
+        ),
         "profit_sum": profit_sum,
         "profit_sum_pct": round(profit_sum * 100.0, 2),
         "profit_total_abs": result["profit_abs"].sum(),
         "profit_total": profit_total,
         "profit_total_pct": round(profit_total * 100.0, 2),
-        "duration_avg": str(timedelta(minutes=round(result["trade_duration"].mean())))
-        if not result.empty
-        else "0:00",
+        "duration_avg": (
+            str(timedelta(minutes=round(result["trade_duration"].mean())))
+            if not result.empty
+            else "0:00"
+        ),
         # 'duration_max': str(timedelta(
         #                     minutes=round(result['trade_duration'].max()))
         #                     ) if not result.empty else '0:00',

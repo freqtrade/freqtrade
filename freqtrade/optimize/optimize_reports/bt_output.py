@@ -89,9 +89,11 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
-            t["key"]
-            if t.get("key") is not None and len(str(t["key"])) > 0
-            else t.get(fallback, "OTHER"),
+            (
+                t["key"]
+                if t.get("key") is not None and len(str(t["key"])) > 0
+                else t.get(fallback, "OTHER")
+            ),
             t["trades"],
             t["profit_mean_pct"],
             t["profit_total_abs"],
@@ -218,9 +220,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             )
         drawdown_metrics.extend(
             [
-                ("Absolute Drawdown (Account)", f"{strat_results['max_drawdown_account']:.2%}")
-                if "max_drawdown_account" in strat_results
-                else ("Drawdown", f"{strat_results['max_drawdown']:.2%}"),
+                (
+                    ("Absolute Drawdown (Account)", f"{strat_results['max_drawdown_account']:.2%}")
+                    if "max_drawdown_account" in strat_results
+                    else ("Drawdown", f"{strat_results['max_drawdown']:.2%}")
+                ),
                 (
                     "Absolute Drawdown",
                     fmt_coin(strat_results["max_drawdown_abs"], strat_results["stake_currency"]),
@@ -279,9 +283,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ("Calmar", f"{strat_results['calmar']:.2f}" if "calmar" in strat_results else "N/A"),
             (
                 "Profit factor",
-                f'{strat_results["profit_factor"]:.2f}'
-                if "profit_factor" in strat_results
-                else "N/A",
+                (
+                    f'{strat_results["profit_factor"]:.2f}'
+                    if "profit_factor" in strat_results
+                    else "N/A"
+                ),
             ),
             (
                 "Expectancy (Ratio)",
@@ -335,11 +341,13 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             (
                 "Max Consecutive Wins / Loss",
                 (
-                    f"{strat_results['max_consecutive_wins']} / "
-                    f"{strat_results['max_consecutive_losses']}"
-                )
-                if "max_consecutive_losses" in strat_results
-                else "N/A",
+                    (
+                        f"{strat_results['max_consecutive_wins']} / "
+                        f"{strat_results['max_consecutive_losses']}"
+                    )
+                    if "max_consecutive_losses" in strat_results
+                    else "N/A"
+                ),
             ),
             ("Rejected Entry signals", strat_results.get("rejected_signals", "N/A")),
             (
