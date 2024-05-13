@@ -3,7 +3,7 @@ pandas==2.2.2
 pandas-ta==0.3.14b
 
 ccxt==4.3.16
-cryptography==42.0.5
+cryptography==42.0.7
 aiohttp==3.9.5
 SQLAlchemy==2.0.30
 python-telegram-bot==21.1.1
