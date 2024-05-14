@@ -20,6 +20,7 @@ from freqtrade.data.btanalysis import (
 )
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.data.metrics import (
+    calc_max_drawdown,
     calculate_cagr,
     calculate_calmar,
     calculate_csum,
@@ -343,23 +344,21 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
-    _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
-        bt_data, value_col="profit_abs"
-    )
-    assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.29753914
-    assert isinstance(hdate, Timestamp)
-    assert isinstance(lowdate, Timestamp)
-    assert isinstance(hval, float)
-    assert isinstance(lval, float)
-    assert hdate == Timestamp("2018-01-16 19:30:00", tz="UTC")
-    assert lowdate == Timestamp("2018-01-16 22:25:00", tz="UTC")
+    drawdown = calc_max_drawdown(bt_data, value_col="profit_abs")
+    assert isinstance(drawdown.relative_account_drawdown, float)
+    assert pytest.approx(drawdown.relative_account_drawdown) == 0.29753914
+    assert isinstance(drawdown.high_date, Timestamp)
+    assert isinstance(drawdown.low_date, Timestamp)
+    assert isinstance(drawdown.high_value, float)
+    assert isinstance(drawdown.low_value, float)
+    assert drawdown.high_date == Timestamp("2018-01-16 19:30:00", tz="UTC")
+    assert drawdown.low_date == Timestamp("2018-01-16 22:25:00", tz="UTC")
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)
 
     with pytest.raises(ValueError, match="Trade dataframe empty."):
-        calculate_max_drawdown(DataFrame())
+        calc_max_drawdown(DataFrame())
 
     with pytest.raises(ValueError, match="Trade dataframe empty."):
         calculate_underwater(DataFrame())
