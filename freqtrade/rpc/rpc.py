@@ -596,7 +596,7 @@ class RPC:
 
         expectancy, expectancy_ratio = calculate_expectancy(trades_df)
 
-        drawdown = DrawDownResult(0.0, 0.0, None, None, 0.0)
+        drawdown = DrawDownResult()
         if len(trades_df) > 0:
             try:
                 drawdown = calc_max_drawdown(

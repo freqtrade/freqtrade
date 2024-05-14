@@ -163,21 +163,12 @@ def calculate_underwater(
 
 @dataclass()
 class DrawDownResult:
-    __slots__ = [
-        "drawdown_abs",
-        "high_date",
-        "low_date",
-        "high_value",
-        "low_value",
-        "relative_account_drawdown",
-    ]
-
-    drawdown_abs: float
-    high_date: datetime
-    low_date: datetime
-    high_value: float
-    low_value: float
-    relative_account_drawdown: float
+    drawdown_abs: float = 0.0
+    high_date: datetime = None
+    low_date: datetime = None
+    high_value: float = 0.0
+    low_value: float = 0.0
+    relative_account_drawdown: float = 0.0
 
 
 def calc_max_drawdown(
