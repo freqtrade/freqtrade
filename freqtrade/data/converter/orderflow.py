@@ -39,7 +39,7 @@ def _convert_timeframe_to_pandas_frequency(timeframe: str):
 
 
 def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
-    from freqtrade.exchange import timeframe_to_resample_freq, timeframe_to_next_date
+    from freqtrade.exchange import timeframe_to_next_date, timeframe_to_resample_freq
 
     timeframe_frequency = timeframe_to_resample_freq(timeframe)
     # calculate ohlcv candle start and end

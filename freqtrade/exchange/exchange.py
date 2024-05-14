@@ -24,7 +24,6 @@ from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, DEFAULT_TRADES_
                                  ExchangeConfig, ListPairsWithTimeframes, MakerTaker, OBLiteral,
                                  PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe
-from freqtrade.data.converter.orderflow import _calculate_ohlcv_candle_start_and_end
 from freqtrade.data.converter.trade_converter import (trades_df_remove_duplicates,
                                                       trades_dict_to_list, trades_list_to_df)
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
@@ -2325,9 +2324,6 @@ class Exchange:
                            first_required_candle_date: Optional[int]) -> DataFrame:
         # keeping parsed dataframe in cache
         trades_df = trades_list_to_df(ticks, True)
-        # keeping last candle time as last refreshed time of the pair
-        if ticks and cache:
-            idx = -1
 
         if cache:
             if (pair, timeframe, c_type) in self._trades:
