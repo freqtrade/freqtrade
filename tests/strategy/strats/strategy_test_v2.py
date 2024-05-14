@@ -15,28 +15,24 @@ class StrategyTestV2(IStrategy):
     or strategy repository https://github.com/freqtrade/freqtrade-strategies
     for samples and inspiration.
     """
+
     INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy
-    minimal_roi = {
-        "40": 0.0,
-        "30": 0.01,
-        "20": 0.02,
-        "0": 0.04
-    }
+    minimal_roi = {"40": 0.0, "30": 0.01, "20": 0.02, "0": 0.04}
 
     # Optimal stoploss designed for the strategy
     stoploss = -0.10
 
     # Optimal timeframe for the strategy
-    timeframe = '5m'
+    timeframe = "5m"
 
     # Optional order type mapping
     order_types = {
-        'entry': 'limit',
-        'exit': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False
+        "entry": "limit",
+        "exit": "limit",
+        "stoploss": "limit",
+        "stoploss_on_exchange": False,
     }
 
     # Number of candles the strategy requires before producing valid signals
@@ -44,8 +40,8 @@ class StrategyTestV2(IStrategy):
 
     # Optional time in force for orders
     order_time_in_force = {
-        'entry': 'gtc',
-        'exit': 'gtc',
+        "entry": "gtc",
+        "exit": "gtc",
     }
     # Test legacy use_sell_signal definition
     use_sell_signal = False
@@ -69,36 +65,36 @@ class StrategyTestV2(IStrategy):
         # ------------------------------------
 
         # ADX
-        dataframe['adx'] = ta.ADX(dataframe)
+        dataframe["adx"] = ta.ADX(dataframe)
 
         # MACD
         macd = ta.MACD(dataframe)
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['macdhist'] = macd['macdhist']
+        dataframe["macd"] = macd["macd"]
+        dataframe["macdsignal"] = macd["macdsignal"]
+        dataframe["macdhist"] = macd["macdhist"]
 
         # Minus Directional Indicator / Movement
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+        dataframe["minus_di"] = ta.MINUS_DI(dataframe)
 
         # Plus Directional Indicator / Movement
-        dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+        dataframe["plus_di"] = ta.PLUS_DI(dataframe)
 
         # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe["rsi"] = ta.RSI(dataframe)
 
         # Stoch fast
         stoch_fast = ta.STOCHF(dataframe)
-        dataframe['fastd'] = stoch_fast['fastd']
-        dataframe['fastk'] = stoch_fast['fastk']
+        dataframe["fastd"] = stoch_fast["fastd"]
+        dataframe["fastk"] = stoch_fast["fastk"]
 
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
-        dataframe['bb_upperband'] = bollinger['upper']
+        dataframe["bb_lowerband"] = bollinger["lower"]
+        dataframe["bb_middleband"] = bollinger["mid"]
+        dataframe["bb_upperband"] = bollinger["upper"]
 
         # EMA - Exponential Moving Average
-        dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+        dataframe["ema10"] = ta.EMA(dataframe, timeperiod=10)
 
         return dataframe
 
@@ -111,16 +107,14 @@ class StrategyTestV2(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['rsi'] < 35) &
-                (dataframe['fastd'] < 35) &
-                (dataframe['adx'] > 30) &
-                (dataframe['plus_di'] > 0.5)
-            ) |
-            (
-                (dataframe['adx'] > 65) &
-                (dataframe['plus_di'] > 0.5)
-            ),
-            'buy'] = 1
+                (dataframe["rsi"] < 35)
+                & (dataframe["fastd"] < 35)
+                & (dataframe["adx"] > 30)
+                & (dataframe["plus_di"] > 0.5)
+            )
+            | ((dataframe["adx"] > 65) & (dataframe["plus_di"] > 0.5)),
+            "buy",
+        ] = 1
 
         return dataframe
 
@@ -134,15 +128,13 @@ class StrategyTestV2(IStrategy):
         dataframe.loc[
             (
                 (
-                    (qtpylib.crossed_above(dataframe['rsi'], 70)) |
-                    (qtpylib.crossed_above(dataframe['fastd'], 70))
-                ) &
-                (dataframe['adx'] > 10) &
-                (dataframe['minus_di'] > 0)
-            ) |
-            (
-                (dataframe['adx'] > 70) &
-                (dataframe['minus_di'] > 0.5)
-            ),
-            'sell'] = 1
+                    (qtpylib.crossed_above(dataframe["rsi"], 70))
+                    | (qtpylib.crossed_above(dataframe["fastd"], 70))
+                )
+                & (dataframe["adx"] > 10)
+                & (dataframe["minus_di"] > 0)
+            )
+            | ((dataframe["adx"] > 70) & (dataframe["minus_di"] > 0.5)),
+            "sell",
+        ] = 1
         return dataframe

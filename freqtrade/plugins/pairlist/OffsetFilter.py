@@ -1,6 +1,7 @@
 """
 Offset pair list filter
 """
+
 import logging
 from typing import Any, Dict, List
 
@@ -14,14 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 class OffsetFilter(IPairList):
-
-    def __init__(self, exchange, pairlistmanager,
-                 config: Config, pairlistconfig: Dict[str, Any],
-                 pairlist_pos: int) -> None:
+    def __init__(
+        self,
+        exchange,
+        pairlistmanager,
+        config: Config,
+        pairlistconfig: Dict[str, Any],
+        pairlist_pos: int,
+    ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._offset = pairlistconfig.get('offset', 0)
-        self._number_pairs = pairlistconfig.get('number_assets', 0)
+        self._offset = pairlistconfig.get("offset", 0)
+        self._number_pairs = pairlistconfig.get("number_assets", 0)
 
         if self._offset < 0:
             raise OperationalException("OffsetFilter requires offset to be >= 0")
@@ -73,11 +78,13 @@ class OffsetFilter(IPairList):
         :return: new whitelist
         """
         if self._offset > len(pairlist):
-            self.log_once(f"Offset of {self._offset} is larger than " +
-                          f"pair count of {len(pairlist)}", logger.warning)
-        pairs = pairlist[self._offset:]
+            self.log_once(
+                f"Offset of {self._offset} is larger than " + f"pair count of {len(pairlist)}",
+                logger.warning,
+            )
+        pairs = pairlist[self._offset :]
         if self._number_pairs:
-            pairs = pairs[:self._number_pairs]
+            pairs = pairs[: self._number_pairs]
 
         self.log_once(f"Searching {len(pairs)} pairs: {pairs}", logger.info)
 

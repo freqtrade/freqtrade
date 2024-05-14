@@ -1,6 +1,7 @@
 """
 Precision pair list filter
 """
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -15,17 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 class PrecisionFilter(IPairList):
-
-    def __init__(self, exchange, pairlistmanager,
-                 config: Config, pairlistconfig: Dict[str, Any],
-                 pairlist_pos: int) -> None:
+    def __init__(
+        self,
+        exchange,
+        pairlistmanager,
+        config: Config,
+        pairlistconfig: Dict[str, Any],
+        pairlist_pos: int,
+    ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        if 'stoploss' not in self._config:
+        if "stoploss" not in self._config:
             raise OperationalException(
-                'PrecisionFilter can only work with stoploss defined. Please add the '
-                'stoploss key to your configuration (overwrites eventual strategy settings).')
-        self._stoploss = self._config['stoploss']
+                "PrecisionFilter can only work with stoploss defined. Please add the "
+                "stoploss key to your configuration (overwrites eventual strategy settings)."
+            )
+        self._stoploss = self._config["stoploss"]
         self._enabled = self._stoploss != 0
 
         # Precalculate sanitized stoploss value to avoid recalculation for every pair
@@ -58,23 +64,29 @@ class PrecisionFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
-        if not ticker or ticker.get('last', None) is None:
-            self.log_once(f"Removed {pair} from whitelist, because "
-                          "ticker['last'] is empty (Usually no trade in the last 24h).",
-                          logger.info)
+        if not ticker or ticker.get("last", None) is None:
+            self.log_once(
+                f"Removed {pair} from whitelist, because "
+                "ticker['last'] is empty (Usually no trade in the last 24h).",
+                logger.info,
+            )
             return False
-        stop_price = ticker['last'] * self._stoploss
+        stop_price = ticker["last"] * self._stoploss
 
         # Adjust stop-prices to precision
         sp = self._exchange.price_to_precision(pair, stop_price, rounding_mode=ROUND_UP)
 
-        stop_gap_price = self._exchange.price_to_precision(pair, stop_price * 0.99,
-                                                           rounding_mode=ROUND_UP)
+        stop_gap_price = self._exchange.price_to_precision(
+            pair, stop_price * 0.99, rounding_mode=ROUND_UP
+        )
         logger.debug(f"{pair} - {sp} : {stop_gap_price}")
 
         if sp <= stop_gap_price:
-            self.log_once(f"Removed {pair} from whitelist, because "
-                          f"stop price {sp} would be <= stop limit {stop_gap_price}", logger.info)
+            self.log_once(
+                f"Removed {pair} from whitelist, because "
+                f"stop price {sp} would be <= stop limit {stop_gap_price}",
+                logger.info,
+            )
             return False
 
         return True

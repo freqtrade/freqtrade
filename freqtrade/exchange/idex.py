@@ -1,4 +1,5 @@
-""" Idex exchange subclass """
+"""Idex exchange subclass"""
+
 import logging
 from typing import Dict
 

@@ -1,4 +1,5 @@
-""" Kraken exchange subclass """
+"""Kraken exchange subclass"""
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -18,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class Kraken(Exchange):
-
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
@@ -47,18 +47,17 @@ class Kraken(Exchange):
         """
         parent_check = super().market_is_tradable(market)
 
-        return (parent_check and
-                market.get('darkpool', False) is False)
+        return parent_check and market.get("darkpool", False) is False
 
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         # Only fetch tickers for current stake currency
         # Otherwise the request for kraken becomes too large.
-        symbols = list(self.get_markets(quote_currencies=[self._config['stake_currency']]))
+        symbols = list(self.get_markets(quote_currencies=[self._config["stake_currency"]]))
         return super().get_tickers(symbols=symbols, cached=cached)
 
     @retrier
     def get_balances(self) -> dict:
-        if self._config['dry_run']:
+        if self._config["dry_run"]:
             return {}
 
         try:
@@ -70,23 +69,28 @@ class Kraken(Exchange):
             balances.pop("used", None)
 
             orders = self._api.fetch_open_orders()
-            order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
-                           x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
-                           # Don't remove the below comment, this can be important for debugging
-                           # x["side"], x["amount"],
-                           ) for x in orders]
+            order_list = [
+                (
+                    x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
+                    x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
+                    # Don't remove the below comment, this can be important for debugging
+                    # x["side"], x["amount"],
+                )
+                for x in orders
+            ]
             for bal in balances:
                 if not isinstance(balances[bal], dict):
                     continue
-                balances[bal]['used'] = sum(order[1] for order in order_list if order[0] == bal)
-                balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
+                balances[bal]["used"] = sum(order[1] for order in order_list if order[0] == bal)
+                balances[bal]["free"] = balances[bal]["total"] - balances[bal]["used"]
 
             return balances
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
+                f"Could not get balance due to {e.__class__.__name__}. Message: {e}"
+            ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
@@ -108,7 +112,7 @@ class Kraken(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'GTC'
+        time_in_force: str = "GTC",
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -118,10 +122,10 @@ class Kraken(Exchange):
             time_in_force=time_in_force,
         )
         if leverage > 1.0:
-            params['leverage'] = round(leverage)
-        if time_in_force == 'PO':
-            params.pop('timeInForce', None)
-            params['postOnly'] = True
+            params["leverage"] = round(leverage)
+        if time_in_force == "PO":
+            params.pop("timeInForce", None)
+            params["postOnly"] = True
         return params
 
     def calculate_funding_fees(
@@ -131,7 +135,7 @@ class Kraken(Exchange):
         is_short: bool,
         open_date: datetime,
         close_date: datetime,
-        time_in_ratio: Optional[float] = None
+        time_in_ratio: Optional[float] = None,
     ) -> float:
         """
         # ! This method will always error when run by Freqtrade because time_in_ratio is never
@@ -149,12 +153,13 @@ class Kraken(Exchange):
         """
         if not time_in_ratio:
             raise OperationalException(
-                f"time_in_ratio is required for {self.name}._get_funding_fee")
+                f"time_in_ratio is required for {self.name}._get_funding_fee"
+            )
         fees: float = 0
 
         if not df.empty:
-            df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
-            fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)
+            df = df[(df["date"] >= open_date) & (df["date"] <= close_date)]
+            fees = sum(df["open_fund"] * df["open_mark"] * amount * time_in_ratio)
 
         return fees if is_short else -fees
 
@@ -164,14 +169,11 @@ class Kraken(Exchange):
         Applies only to fetch_trade_history by id.
         """
         if len(trades) > 0:
-            if (
-                isinstance(trades[-1].get('info'), list)
-                and len(trades[-1].get('info', [])) > 7
-            ):
+            if isinstance(trades[-1].get("info"), list) and len(trades[-1].get("info", [])) > 7:
                 # Trade response's "last" value.
-                return trades[-1].get('info', [])[-1]
+                return trades[-1].get("info", [])[-1]
             # Fall back to timestamp if info is somehow empty.
-            return trades[-1].get('timestamp')
+            return trades[-1].get("timestamp")
         return None
 
     def _valid_trade_pagination_id(self, pair: str, from_id: str) -> bool:

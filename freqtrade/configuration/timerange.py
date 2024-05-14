@@ -1,6 +1,7 @@
 """
 This module contains the argument manager class
 """
+
 import logging
 import re
 from datetime import datetime, timezone
@@ -22,9 +23,13 @@ class TimeRange:
     if *type is None, don't use corresponding startvalue.
     """
 
-    def __init__(self, starttype: Optional[str] = None, stoptype: Optional[str] = None,
-                 startts: int = 0, stopts: int = 0):
-
+    def __init__(
+        self,
+        starttype: Optional[str] = None,
+        stoptype: Optional[str] = None,
+        startts: int = 0,
+        stopts: int = 0,
+    ):
         self.starttype: Optional[str] = starttype
         self.stoptype: Optional[str] = stoptype
         self.startts: int = startts
@@ -48,12 +53,12 @@ class TimeRange:
         Returns a string representation of the timerange as used by parse_timerange.
         Follows the format yyyymmdd-yyyymmdd - leaving out the parts that are not set.
         """
-        start = ''
-        stop = ''
+        start = ""
+        stop = ""
         if startdt := self.startdt:
-            start = startdt.strftime('%Y%m%d')
+            start = startdt.strftime("%Y%m%d")
         if stopdt := self.stopdt:
-            stop = stopdt.strftime('%Y%m%d')
+            stop = stopdt.strftime("%Y%m%d")
         return f"{start}-{stop}"
 
     @property
@@ -61,7 +66,7 @@ class TimeRange:
         """
         Returns a string representation of the start date
         """
-        val = 'unbounded'
+        val = "unbounded"
         if (startdt := self.startdt) is not None:
             val = startdt.strftime(DATETIME_PRINT_FORMAT)
         return val
@@ -71,15 +76,19 @@ class TimeRange:
         """
         Returns a string representation of the stop date
         """
-        val = 'unbounded'
+        val = "unbounded"
         if (stopdt := self.stopdt) is not None:
             val = stopdt.strftime(DATETIME_PRINT_FORMAT)
         return val
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
-        return (self.starttype == other.starttype and self.stoptype == other.stoptype
-                and self.startts == other.startts and self.stopts == other.stopts)
+        return (
+            self.starttype == other.starttype
+            and self.stoptype == other.stoptype
+            and self.startts == other.startts
+            and self.stopts == other.stopts
+        )
 
     def subtract_start(self, seconds: int) -> None:
         """
@@ -90,8 +99,9 @@ class TimeRange:
         if self.startts:
             self.startts = self.startts - seconds
 
-    def adjust_start_if_necessary(self, timeframe_secs: int, startup_candles: int,
-                                  min_date: datetime) -> None:
+    def adjust_start_if_necessary(
+        self, timeframe_secs: int, startup_candles: int, min_date: datetime
+    ) -> None:
         """
         Adjust startts by <startup_candles> candles.
         Applies only if no startup-candles have been available.
@@ -101,13 +111,13 @@ class TimeRange:
                          has to be moved
         :return: None (Modifies the object in place)
         """
-        if (not self.starttype or (startup_candles
-                                   and min_date.timestamp() >= self.startts)):
+        if not self.starttype or (startup_candles and min_date.timestamp() >= self.startts):
             # If no startts was defined, or backtest-data starts at the defined backtest-date
-            logger.warning("Moving start-date by %s candles to account for startup time.",
-                           startup_candles)
+            logger.warning(
+                "Moving start-date by %s candles to account for startup time.", startup_candles
+            )
             self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
-            self.starttype = 'date'
+            self.starttype = "date"
 
     @classmethod
     def parse_timerange(cls, text: Optional[str]) -> Self:
@@ -118,16 +128,17 @@ class TimeRange:
         """
         if not text:
             return cls(None, None, 0, 0)
-        syntax = [(r'^-(\d{8})$', (None, 'date')),
-                  (r'^(\d{8})-$', ('date', None)),
-                  (r'^(\d{8})-(\d{8})$', ('date', 'date')),
-                  (r'^-(\d{10})$', (None, 'date')),
-                  (r'^(\d{10})-$', ('date', None)),
-                  (r'^(\d{10})-(\d{10})$', ('date', 'date')),
-                  (r'^-(\d{13})$', (None, 'date')),
-                  (r'^(\d{13})-$', ('date', None)),
-                  (r'^(\d{13})-(\d{13})$', ('date', 'date')),
-                  ]
+        syntax = [
+            (r"^-(\d{8})$", (None, "date")),
+            (r"^(\d{8})-$", ("date", None)),
+            (r"^(\d{8})-(\d{8})$", ("date", "date")),
+            (r"^-(\d{10})$", (None, "date")),
+            (r"^(\d{10})-$", ("date", None)),
+            (r"^(\d{10})-(\d{10})$", ("date", "date")),
+            (r"^-(\d{13})$", (None, "date")),
+            (r"^(\d{13})-$", ("date", None)),
+            (r"^(\d{13})-(\d{13})$", ("date", "date")),
+        ]
         for rex, stype in syntax:
             # Apply the regular expression to text
             match = re.match(rex, text)
@@ -138,9 +149,12 @@ class TimeRange:
                 stop: int = 0
                 if stype[0]:
                     starts = rvals[index]
-                    if stype[0] == 'date' and len(starts) == 8:
-                        start = int(datetime.strptime(starts, '%Y%m%d').replace(
-                            tzinfo=timezone.utc).timestamp())
+                    if stype[0] == "date" and len(starts) == 8:
+                        start = int(
+                            datetime.strptime(starts, "%Y%m%d")
+                            .replace(tzinfo=timezone.utc)
+                            .timestamp()
+                        )
                     elif len(starts) == 13:
                         start = int(starts) // 1000
                     else:
@@ -148,15 +162,19 @@ class TimeRange:
                     index += 1
                 if stype[1]:
                     stops = rvals[index]
-                    if stype[1] == 'date' and len(stops) == 8:
-                        stop = int(datetime.strptime(stops, '%Y%m%d').replace(
-                            tzinfo=timezone.utc).timestamp())
+                    if stype[1] == "date" and len(stops) == 8:
+                        stop = int(
+                            datetime.strptime(stops, "%Y%m%d")
+                            .replace(tzinfo=timezone.utc)
+                            .timestamp()
+                        )
                     elif len(stops) == 13:
                         stop = int(stops) // 1000
                     else:
                         stop = int(stops)
                 if start > stop > 0:
                     raise ConfigurationError(
-                        f'Start date is after stop date for timerange "{text}"')
+                        f'Start date is after stop date for timerange "{text}"'
+                    )
                 return cls(stype[0], stype[1], start, stop)
         raise ConfigurationError(f'Incorrect syntax for timerange "{text}"')

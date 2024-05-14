@@ -6,8 +6,12 @@ import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
-from freqtrade.exceptions import (DDosProtection, OperationalException, RetryableOrderError,
-                                  TemporaryError)
+from freqtrade.exceptions import (
+    DDosProtection,
+    OperationalException,
+    RetryableOrderError,
+    TemporaryError,
+)
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
 from freqtrade.misc import safe_value_fallback2
@@ -37,7 +41,7 @@ class Okx(Exchange):
             PriceType.LAST: "last",
             PriceType.MARK: "index",
             PriceType.INDEX: "mark",
-            },
+        },
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -49,10 +53,11 @@ class Okx(Exchange):
 
     net_only = True
 
-    _ccxt_params: Dict = {'options': {'brokerId': 'ffb5405ad327SUDE'}}
+    _ccxt_params: Dict = {"options": {"brokerId": "ffb5405ad327SUDE"}}
 
     def ohlcv_candle_limit(
-            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+        self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None
+    ) -> int:
         """
         Exchange ohlcv candle limit
         OKX has the following behaviour:
@@ -64,9 +69,8 @@ class Okx(Exchange):
         :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
-        if (
-            candle_type in (CandleType.FUTURES, CandleType.SPOT) and
-            (not since_ms or since_ms > (date_minus_candles(timeframe, 300).timestamp() * 1000))
+        if candle_type in (CandleType.FUTURES, CandleType.SPOT) and (
+            not since_ms or since_ms > (date_minus_candles(timeframe, 300).timestamp() * 1000)
         ):
             return 300
 
@@ -80,29 +84,29 @@ class Okx(Exchange):
         Must be overridden in child methods if required.
         """
         try:
-            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
+            if self.trading_mode == TradingMode.FUTURES and not self._config["dry_run"]:
                 accounts = self._api.fetch_accounts()
-                self._log_exchange_response('fetch_accounts', accounts)
+                self._log_exchange_response("fetch_accounts", accounts)
                 if len(accounts) > 0:
-                    self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
+                    self.net_only = accounts[0].get("info", {}).get("posMode") == "net_mode"
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
-                ) from e
+                f"Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}"
+            ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
     def _get_posSide(self, side: BuySell, reduceOnly: bool):
         if self.net_only:
-            return 'net'
+            return "net"
         if not reduceOnly:
             # Enter
-            return 'long' if side == 'buy' else 'short'
+            return "long" if side == "buy" else "short"
         else:
             # Exit
-            return 'long' if side == 'sell' else 'short'
+            return "long" if side == "sell" else "short"
 
     def _get_params(
         self,
@@ -110,7 +114,7 @@ class Okx(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'GTC',
+        time_in_force: str = "GTC",
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -120,18 +124,21 @@ class Okx(Exchange):
             time_in_force=time_in_force,
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
-            params['tdMode'] = self.margin_mode.value
-            params['posSide'] = self._get_posSide(side, reduceOnly)
+            params["tdMode"] = self.margin_mode.value
+            params["posSide"] = self._get_posSide(side, reduceOnly)
         return params
 
     def __fetch_leverage_already_set(self, pair: str, leverage: float, side: BuySell) -> bool:
         try:
-            res_lev = self._api.fetch_leverage(symbol=pair, params={
+            res_lev = self._api.fetch_leverage(
+                symbol=pair,
+                params={
                     "mgnMode": self.margin_mode.value,
                     "posSide": self._get_posSide(side, False),
-                })
-            self._log_exchange_response('get_leverage', res_lev)
-            already_set = all(float(x['lever']) == leverage for x in res_lev['data'])
+                },
+            )
+            self._log_exchange_response("get_leverage", res_lev)
+            already_set = all(float(x["lever"]) == leverage for x in res_lev["data"])
             return already_set
 
         except ccxt.BaseError:
@@ -148,8 +155,9 @@ class Okx(Exchange):
                     params={
                         "mgnMode": self.margin_mode.value,
                         "posSide": self._get_posSide(side, False),
-                    })
-                self._log_exchange_response('set_leverage', res)
+                    },
+                )
+                self._log_exchange_response("set_leverage", res)
 
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
@@ -157,84 +165,81 @@ class Okx(Exchange):
                 already_set = self.__fetch_leverage_already_set(pair, leverage, side)
                 if not already_set:
                     raise TemporaryError(
-                        f'Could not set leverage due to {e.__class__.__name__}. Message: {e}'
-                        ) from e
+                        f"Could not set leverage due to {e.__class__.__name__}. Message: {e}"
+                    ) from e
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
-    def get_max_pair_stake_amount(
-        self,
-        pair: str,
-        price: float,
-        leverage: float = 1.0
-    ) -> float:
-
+    def get_max_pair_stake_amount(self, pair: str, price: float, leverage: float = 1.0) -> float:
         if self.trading_mode == TradingMode.SPOT:
-            return float('inf')  # Not actually inf, but this probably won't matter for SPOT
+            return float("inf")  # Not actually inf, but this probably won't matter for SPOT
 
         if pair not in self._leverage_tiers:
-            return float('inf')
+            return float("inf")
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]['maxNotional'] / leverage
+        return pair_tiers[-1]["maxNotional"] / leverage
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
         params = super()._get_stop_params(side, ordertype, stop_price)
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
-            params['tdMode'] = self.margin_mode.value
-            params['posSide'] = self._get_posSide(side, True)
+            params["tdMode"] = self.margin_mode.value
+            params["posSide"] = self._get_posSide(side, True)
         return params
 
     def _convert_stop_order(self, pair: str, order_id: str, order: Dict) -> Dict:
         if (
-            order.get('status', 'open') == 'closed'
-            and (real_order_id := order.get('info', {}).get('ordId')) is not None
+            order.get("status", "open") == "closed"
+            and (real_order_id := order.get("info", {}).get("ordId")) is not None
         ):
             # Once a order triggered, we fetch the regular followup order.
             order_reg = self.fetch_order(real_order_id, pair)
-            self._log_exchange_response('fetch_stoploss_order1', order_reg)
-            order_reg['id_stop'] = order_reg['id']
-            order_reg['id'] = order_id
-            order_reg['type'] = 'stoploss'
-            order_reg['status_stop'] = 'triggered'
+            self._log_exchange_response("fetch_stoploss_order1", order_reg)
+            order_reg["id_stop"] = order_reg["id"]
+            order_reg["id"] = order_id
+            order_reg["type"] = "stoploss"
+            order_reg["status_stop"] = "triggered"
             return order_reg
         order = self._order_contracts_to_amount(order)
-        order['type'] = 'stoploss'
+        order["type"] = "stoploss"
         return order
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
-        if self._config['dry_run']:
+        if self._config["dry_run"]:
             return self.fetch_dry_run_order(order_id)
 
         try:
-            params1 = {'stop': True}
+            params1 = {"stop": True}
             order_reg = self._api.fetch_order(order_id, pair, params=params1)
-            self._log_exchange_response('fetch_stoploss_order', order_reg)
+            self._log_exchange_response("fetch_stoploss_order", order_reg)
             return self._convert_stop_order(pair, order_id, order_reg)
         except ccxt.OrderNotFound:
             pass
-        params2 = {'stop': True, 'ordType': 'conditional'}
-        for method in (self._api.fetch_open_orders, self._api.fetch_closed_orders,
-                       self._api.fetch_canceled_orders):
+        params2 = {"stop": True, "ordType": "conditional"}
+        for method in (
+            self._api.fetch_open_orders,
+            self._api.fetch_closed_orders,
+            self._api.fetch_canceled_orders,
+        ):
             try:
                 orders = method(pair, params=params2)
-                orders_f = [order for order in orders if order['id'] == order_id]
+                orders_f = [order for order in orders if order["id"] == order_id]
                 if orders_f:
                     order = orders_f[0]
                     return self._convert_stop_order(pair, order_id, order)
             except ccxt.BaseError:
                 pass
-        raise RetryableOrderError(
-                f'StoplossOrder not found (pair: {pair} id: {order_id}).')
+        raise RetryableOrderError(f"StoplossOrder not found (pair: {pair} id: {order_id}).")
 
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
-        if order.get('type', '') == 'stop':
-            return safe_value_fallback2(order, order, 'id_stop', 'id')
-        return order['id']
+        if order.get("type", "") == "stop":
+            return safe_value_fallback2(order, order, "id_stop", "id")
+        return order["id"]
 
     def cancel_stoploss_order(
-            self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
-        params1 = {'stop': True}
+        self, order_id: str, pair: str, params: Optional[Dict] = None
+    ) -> Dict:
+        params1 = {"stop": True}
         # 'ordType': 'conditional'
         #
         return self.cancel_order(
@@ -247,10 +252,10 @@ class Okx(Exchange):
         orders = []
 
         orders = self._api.fetch_closed_orders(pair, since=since_ms)
-        if (since_ms < dt_ts(dt_now() - timedelta(days=6, hours=23))):
+        if since_ms < dt_ts(dt_now() - timedelta(days=6, hours=23)):
             # Regular fetch_closed_orders only returns 7 days of data.
             # Force usage of "archive" endpoint, which returns 3 months of data.
-            params = {'method': 'privateGetTradeOrdersHistoryArchive'}
+            params = {"method": "privateGetTradeOrdersHistoryArchive"}
             orders_hist = self._api.fetch_closed_orders(pair, since=since_ms, params=params)
             orders.extend(orders_hist)
 

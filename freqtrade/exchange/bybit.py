@@ -1,4 +1,5 @@
-""" Bybit exchange subclass """
+"""Bybit exchange subclass"""
+
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -25,6 +26,7 @@ class Bybit(Exchange):
     officially supported by the Freqtrade development team. So some features
     may still not work as expected.
     """
+
     unified_account = False
 
     _ft_has: Dict = {
@@ -60,20 +62,14 @@ class Bybit(Exchange):
         # ccxt defaults to swap mode.
         config = {}
         if self.trading_mode == TradingMode.SPOT:
-            config.update({
-                "options": {
-                    "defaultType": "spot"
-                }
-            })
+            config.update({"options": {"defaultType": "spot"}})
         config.update(super()._ccxt_config)
         return config
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
         main = super().market_is_future(market)
         # For ByBit, we'll only support USDT markets for now.
-        return (
-            main and market['settle'] == 'USDT'
-        )
+        return main and market["settle"] == "USDT"
 
     @retrier
     def additional_exchange_init(self) -> None:
@@ -83,17 +79,19 @@ class Bybit(Exchange):
         Must be overridden in child methods if required.
         """
         try:
-            if not self._config['dry_run']:
+            if not self._config["dry_run"]:
                 if self.trading_mode == TradingMode.FUTURES:
                     position_mode = self._api.set_position_mode(False)
-                    self._log_exchange_response('set_position_mode', position_mode)
+                    self._log_exchange_response("set_position_mode", position_mode)
                 is_unified = self._api.is_unified_enabled()
                 # Returns a tuple of bools, first for margin, second for Account
                 if is_unified and len(is_unified) > 1 and is_unified[1]:
                     self.unified_account = True
                     logger.info("Bybit: Unified account.")
-                    raise OperationalException("Bybit: Unified account is not supported. "
-                                               "Please use a standard (sub)account.")
+                    raise OperationalException(
+                        "Bybit: Unified account is not supported. "
+                        "Please use a standard (sub)account."
+                    )
                 else:
                     self.unified_account = False
                     logger.info("Bybit: Standard account.")
@@ -101,14 +99,14 @@ class Bybit(Exchange):
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
-                ) from e
+                f"Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}"
+            ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
     def ohlcv_candle_limit(
-            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
-
+        self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None
+    ) -> int:
         if candle_type in (CandleType.FUNDING_RATE):
             return 200
 
@@ -116,7 +114,7 @@ class Bybit(Exchange):
 
     def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.trading_mode != TradingMode.SPOT:
-            params = {'leverage': leverage}
+            params = {"leverage": leverage}
             self.set_margin_mode(pair, self.margin_mode, accept_fail=True, params=params)
             self._set_leverage(leverage, pair, accept_fail=True)
 
@@ -126,7 +124,7 @@ class Bybit(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'GTC',
+        time_in_force: str = "GTC",
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -136,13 +134,13 @@ class Bybit(Exchange):
             time_in_force=time_in_force,
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
-            params['position_idx'] = 0
+            params["position_idx"] = 0
         return params
 
     def dry_run_liquidation_price(
         self,
         pair: str,
-        open_rate: float,   # Entry price of position
+        open_rate: float,  # Entry price of position
         is_short: bool,
         amount: float,
         stake_amount: float,
@@ -185,10 +183,8 @@ class Bybit(Exchange):
         mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
-
-            if market['inverse']:
-                raise OperationalException(
-                    "Freqtrade does not yet support inverse contracts")
+            if market["inverse"]:
+                raise OperationalException("Freqtrade does not yet support inverse contracts")
             initial_margin_rate = 1 / leverage
 
             # See docstring - ignores extra margin!
@@ -199,10 +195,12 @@ class Bybit(Exchange):
 
         else:
             raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
+                "Freqtrade only supports isolated futures for leverage trading"
+            )
 
     def get_funding_fees(
-            self, pair: str, amount: float, is_short: bool, open_date: datetime) -> float:
+        self, pair: str, amount: float, is_short: bool, open_date: datetime
+    ) -> float:
         """
         Fetch funding fees, either from the exchange (live) or calculates them
         based on funding rate/mark price history
@@ -216,8 +214,7 @@ class Bybit(Exchange):
         # Bybit does not provide "applied" funding fees per position.
         if self.trading_mode == TradingMode.FUTURES:
             try:
-                return self._fetch_and_calculate_funding_fees(
-                        pair, amount, is_short, open_date)
+                return self._fetch_and_calculate_funding_fees(pair, amount, is_short, open_date)
             except ExchangeError:
                 logger.warning(f"Could not update funding fees for {pair}.")
         return 0.0
@@ -234,7 +231,7 @@ class Bybit(Exchange):
 
         while since < dt_now():
             until = since + timedelta(days=7, minutes=-1)
-            orders += super().fetch_orders(pair, since, params={'until': dt_ts(until)})
+            orders += super().fetch_orders(pair, since, params={"until": dt_ts(until)})
             since = until
 
         return orders
@@ -242,12 +239,12 @@ class Bybit(Exchange):
     def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         order = super().fetch_order(order_id, pair, params)
         if (
-            order.get('status') == 'canceled'
-            and order.get('filled') == 0.0
-            and order.get('remaining') == 0.0
+            order.get("status") == "canceled"
+            and order.get("filled") == 0.0
+            and order.get("remaining") == 0.0
         ):
             # Canceled orders will have "remaining=0" on bybit.
-            order['remaining'] = None
+            order["remaining"] = None
         return order
 
     @retrier
@@ -258,7 +255,7 @@ class Bybit(Exchange):
         """
 
         # Load cached tiers
-        tiers_cached = self.load_cached_leverage_tiers(self._config['stake_currency'])
+        tiers_cached = self.load_cached_leverage_tiers(self._config["stake_currency"])
         if tiers_cached:
             tiers = tiers_cached
             return tiers
@@ -268,12 +265,12 @@ class Bybit(Exchange):
         symbols = self._api.market_symbols([])
 
         def parse_resp(response):
-            result = self._api.safe_dict(response, 'result', {})
-            data = self._api.safe_list(result, 'list', [])
-            return self._api.parse_leverage_tiers(data, symbols, 'symbol')
+            result = self._api.safe_dict(response, "result", {})
+            data = self._api.safe_list(result, "list", [])
+            return self._api.parse_leverage_tiers(data, symbols, "symbol")
 
         params = {
-            'category': 'linear',
+            "category": "linear",
         }
         tiers = {}
         # 20 pairs ... should be sufficient assuming 30 pairs per page
@@ -282,11 +279,9 @@ class Bybit(Exchange):
             # Fetch from private endpoint
             response = self._api.publicGetV5MarketRiskLimit(params)
             tiers = tiers | parse_resp(response)
-            if (cursor := response['result']['nextPageCursor']) == '':
+            if (cursor := response["result"]["nextPageCursor"]) == "":
                 break
-            params.update({
-                "cursor": cursor
-            })
+            params.update({"cursor": cursor})
 
-        self.cache_leverage_tiers(tiers, self._config['stake_currency'])
+        self.cache_leverage_tiers(tiers, self._config["stake_currency"])
         return tiers

@@ -21,7 +21,7 @@ class PairLocks:
     use_db = True
     locks: List[PairLock] = []
 
-    timeframe: str = ''
+    timeframe: str = ""
 
     @staticmethod
     def reset_locks() -> None:
@@ -32,8 +32,14 @@ class PairLocks:
             PairLocks.locks = []
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: Optional[str] = None, *,
-                  now: Optional[datetime] = None, side: str = '*') -> PairLock:
+    def lock_pair(
+        pair: str,
+        until: datetime,
+        reason: Optional[str] = None,
+        *,
+        now: Optional[datetime] = None,
+        side: str = "*",
+    ) -> PairLock:
         """
         Create PairLock from now to "until".
         Uses database by default, unless PairLocks.use_db is set to False,
@@ -50,7 +56,7 @@ class PairLocks:
             lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
             reason=reason,
             side=side,
-            active=True
+            active=True,
         )
         if PairLocks.use_db:
             PairLock.session.add(lock)
@@ -60,8 +66,9 @@ class PairLocks:
         return lock
 
     @staticmethod
-    def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None,
-                       side: str = '*') -> Sequence[PairLock]:
+    def get_pair_locks(
+        pair: Optional[str], now: Optional[datetime] = None, side: str = "*"
+    ) -> Sequence[PairLock]:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -74,17 +81,22 @@ class PairLocks:
         if PairLocks.use_db:
             return PairLock.query_pair_locks(pair, now, side).all()
         else:
-            locks = [lock for lock in PairLocks.locks if (
-                lock.lock_end_time >= now
-                and lock.active is True
-                and (pair is None or lock.pair == pair)
-                and (lock.side == '*' or lock.side == side)
-            )]
+            locks = [
+                lock
+                for lock in PairLocks.locks
+                if (
+                    lock.lock_end_time >= now
+                    and lock.active is True
+                    and (pair is None or lock.pair == pair)
+                    and (lock.side == "*" or lock.side == side)
+                )
+            ]
             return locks
 
     @staticmethod
     def get_pair_longest_lock(
-            pair: str, now: Optional[datetime] = None, side: str = '*') -> Optional[PairLock]:
+        pair: str, now: Optional[datetime] = None, side: str = "*"
+    ) -> Optional[PairLock]:
         """
         Get the lock that expires the latest for the pair given.
         """
@@ -93,7 +105,7 @@ class PairLocks:
         return locks[0] if locks else None
 
     @staticmethod
-    def unlock_pair(pair: str, now: Optional[datetime] = None, side: str = '*') -> None:
+    def unlock_pair(pair: str, now: Optional[datetime] = None, side: str = "*") -> None:
         """
         Release all locks for this pair.
         :param pair: Pair to unlock
@@ -124,10 +136,11 @@ class PairLocks:
         if PairLocks.use_db:
             # used in live modes
             logger.info(f"Releasing all locks with reason '{reason}':")
-            filters = [PairLock.lock_end_time > now,
-                       PairLock.active.is_(True),
-                       PairLock.reason == reason
-                       ]
+            filters = [
+                PairLock.lock_end_time > now,
+                PairLock.active.is_(True),
+                PairLock.reason == reason,
+            ]
             locks = PairLock.session.scalars(select(PairLock).filter(*filters)).all()
             for lock in locks:
                 logger.info(f"Releasing lock for {lock.pair} with reason '{reason}'.")
@@ -141,7 +154,7 @@ class PairLocks:
                     lock.active = False
 
     @staticmethod
-    def is_global_lock(now: Optional[datetime] = None, side: str = '*') -> bool:
+    def is_global_lock(now: Optional[datetime] = None, side: str = "*") -> bool:
         """
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
             defaults to datetime.now(timezone.utc)
@@ -149,10 +162,10 @@ class PairLocks:
         if not now:
             now = datetime.now(timezone.utc)
 
-        return len(PairLocks.get_pair_locks('*', now, side)) > 0
+        return len(PairLocks.get_pair_locks("*", now, side)) > 0
 
     @staticmethod
-    def is_pair_locked(pair: str, now: Optional[datetime] = None, side: str = '*') -> bool:
+    def is_pair_locked(pair: str, now: Optional[datetime] = None, side: str = "*") -> bool:
         """
         :param pair: Pair to check for
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
@@ -161,9 +174,8 @@ class PairLocks:
         if not now:
             now = datetime.now(timezone.utc)
 
-        return (
-            len(PairLocks.get_pair_locks(pair, now, side)) > 0
-            or PairLocks.is_global_lock(now, side)
+        return len(PairLocks.get_pair_locks(pair, now, side)) > 0 or PairLocks.is_global_lock(
+            now, side
         )
 
     @staticmethod
