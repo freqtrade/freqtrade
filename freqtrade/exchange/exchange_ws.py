@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import time
@@ -46,7 +45,7 @@ class ExchangeWS:
         self._klines_watching.clear()
         for task in self._background_tasks:
             task.cancel()
-        if hasattr(self, '_loop'):
+        if hasattr(self, "_loop"):
             asyncio.run_coroutine_threadsafe(self._cleanup_async(), loop=self._loop)
             while not self.__cleanup_called:
                 time.sleep(0.1)
@@ -74,10 +73,7 @@ class ExchangeWS:
             _, timeframe, _ = p
             timeframe_s = timeframe_to_seconds(timeframe)
             last_refresh = self.klines_last_request.get(p, 0)
-            if (
-                last_refresh > 0
-                and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000)
-            ):
+            if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000):
                 logger.info(f"Removing {p} from watchlist")
                 self._klines_watching.discard(p)
                 changed = True
@@ -92,19 +88,21 @@ class ExchangeWS:
                 self._klines_scheduled.add(p)
                 pair, timeframe, candle_type = p
                 task = asyncio.create_task(
-                    self._continuously_async_watch_ohlcv(pair, timeframe, candle_type))
+                    self._continuously_async_watch_ohlcv(pair, timeframe, candle_type)
+                )
                 self._background_tasks.add(task)
                 task.add_done_callback(
                     partial(
                         self._continuous_stopped,
                         pair=pair,
                         timeframe=timeframe,
-                        candle_type=candle_type
+                        candle_type=candle_type,
                     )
                 )
 
     def _continuous_stopped(
-            self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType):
+        self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType
+    ):
         self._background_tasks.discard(task)
         if task.cancelled():
             result = "cancelled"
@@ -115,7 +113,8 @@ class ExchangeWS:
         self._klines_scheduled.discard((pair, timeframe, candle_type))
 
     async def _continuously_async_watch_ohlcv(
-            self, pair: str, timeframe: str, candle_type: CandleType) -> None:
+        self, pair: str, timeframe: str, candle_type: CandleType
+    ) -> None:
         try:
             while (pair, timeframe, candle_type) in self._klines_watching:
                 start = dt_ts()
@@ -123,10 +122,10 @@ class ExchangeWS:
                 self.klines_last_refresh[(pair, timeframe, candle_type)] = dt_ts()
                 logger.debug(
                     f"watch done {pair}, {timeframe}, data {len(data)} "
-                    f"in {dt_ts() - start:.2f}s")
+                    f"in {dt_ts() - start:.2f}s"
+                )
         except ccxt.BaseError:
-            logger.exception(
-                f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
+            logger.exception(f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
         finally:
             self._klines_watching.discard((pair, timeframe, candle_type))
 
@@ -141,11 +140,11 @@ class ExchangeWS:
         self.cleanup_expired()
 
     async def get_ohlcv(
-            self,
-            pair: str,
-            timeframe: str,
-            candle_type: CandleType,
-            candle_date: int,
+        self,
+        pair: str,
+        timeframe: str,
+        candle_type: CandleType,
+        candle_date: int,
     ) -> OHLCVResponse:
         """
         Returns cached klines from ccxt's "watch" cache.
@@ -164,5 +163,5 @@ class ExchangeWS:
             f"{format_ms_time(candles[-1][0])}, "
             f"lref={format_ms_time(refresh_date)}, "
             f"candle_date={format_ms_time(candle_date)}, {drop_hint=}"
-            )
+        )
         return pair, timeframe, candle_type, candles, drop_hint

@@ -93,7 +93,7 @@ EXCHANGE_HAS_OPTIONAL = [
     # 'fetchOpenOrder', 'fetchClosedOrder',  # replacement for fetchOrder
     # 'fetchOpenOrders', 'fetchClosedOrders',  # 'fetchOrders',  # Refinding balance...
     # ccxt.pro
-    'watchOHLCV'
+    "watchOHLCV",
 ]
 
 

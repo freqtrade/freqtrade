@@ -8,7 +8,6 @@ from freqtrade.exchange.exchange_ws import ExchangeWS
 
 
 def test_exchangews_init(mocker):
-
     config = MagicMock()
     ccxt_object = MagicMock()
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
@@ -36,6 +35,7 @@ def patch_eventloop_threading(exchange):
         exchange._loop = asyncio.new_event_loop()
         is_init = True
         exchange._loop.run_forever()
+
     x = threading.Thread(target=thread_fuck, daemon=True)
     x.start()
     while not is_init:
@@ -52,16 +52,15 @@ async def test_exchangews_ohlcv(mocker):
     exchange_ws = ExchangeWS(config, ccxt_object)
     patch_eventloop_threading(exchange_ws)
     try:
-
         assert exchange_ws._klines_watching == set()
         assert exchange_ws._klines_scheduled == set()
 
         exchange_ws.schedule_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
-        sleep(.5)
+        sleep(0.5)
 
         assert exchange_ws._klines_watching == {("ETH/BTC", "1m", CandleType.SPOT)}
         assert exchange_ws._klines_scheduled == {("ETH/BTC", "1m", CandleType.SPOT)}
-        sleep(.1)
+        sleep(0.1)
         assert ccxt_object.watch_ohlcv.call_count == 1
     except Exception as e:
         print(e)
