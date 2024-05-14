@@ -16,7 +16,7 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
 from freqtrade.data.metrics import (
-    calculate_max_drawdown,
+    calc_max_drawdown,
     calculate_underwater,
     combine_dataframes_with_mean,
     create_cum_profit,
@@ -179,19 +179,17 @@ def add_max_drawdown(
     Add scatter points indicating max drawdown
     """
     try:
-        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(
-            trades, starting_balance=starting_balance
-        )
+        drawdown = calc_max_drawdown(trades, starting_balance=starting_balance)
 
         drawdown = go.Scatter(
-            x=[highdate, lowdate],
+            x=[drawdown.high_date, drawdown.low_date],
             y=[
-                df_comb.loc[timeframe_to_prev_date(timeframe, highdate), "cum_profit"],
-                df_comb.loc[timeframe_to_prev_date(timeframe, lowdate), "cum_profit"],
+                df_comb.loc[timeframe_to_prev_date(timeframe, drawdown.high_date), "cum_profit"],
+                df_comb.loc[timeframe_to_prev_date(timeframe, drawdown.low_date), "cum_profit"],
             ],
             mode="markers",
-            name=f"Max drawdown {max_drawdown:.2%}",
-            text=f"Max drawdown {max_drawdown:.2%}",
+            name=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
+            text=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
             marker=dict(symbol="square-open", size=9, line=dict(width=2), color="green"),
         )
         fig.add_trace(drawdown, row, 1)

@@ -408,9 +408,10 @@ def calculate_calmar(
 
     # calculate max drawdown
     try:
-        _, _, _, _, _, max_drawdown = calculate_max_drawdown(
+        drawdown = calc_max_drawdown(
             trades, value_col="profit_abs", starting_balance=starting_balance
         )
+        max_drawdown = drawdown.relative_account_drawdown
     except ValueError:
         max_drawdown = 0
 
