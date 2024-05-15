@@ -35,7 +35,7 @@ class SKLearnRandomForestClassifier(BaseClassifierModel):
         X = data_dictionary["train_features"].to_numpy()
         y = data_dictionary["train_labels"].to_numpy()[:, 0]
 
-        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) == 0:
             eval_set = None
         else:
             test_features = data_dictionary["test_features"].to_numpy()
@@ -44,8 +44,10 @@ class SKLearnRandomForestClassifier(BaseClassifierModel):
             eval_set = (test_features, test_labels)
 
         if self.freqai_info.get("continual_learning", False):
-            logger.warning("Continual learning is not supported for "
-                           "SKLearnRandomForestClassifier, ignoring.")
+            logger.warning(
+                "Continual learning is not supported for "
+                "SKLearnRandomForestClassifier, ignoring."
+            )
 
         train_weights = data_dictionary["train_weights"]
 
@@ -73,10 +75,11 @@ class SKLearnRandomForestClassifier(BaseClassifierModel):
 
         le = LabelEncoder()
         label = dk.label_list[0]
-        labels_before = list(dk.data['labels_std'].keys())
+        labels_before = list(dk.data["labels_std"].keys())
         labels_after = le.fit_transform(labels_before).tolist()
         pred_df[label] = le.inverse_transform(pred_df[label])
         pred_df = pred_df.rename(
-            columns={labels_after[i]: labels_before[i] for i in range(len(labels_before))})
+            columns={labels_after[i]: labels_before[i] for i in range(len(labels_before))}
+        )
 
         return (pred_df, dk.do_predict)

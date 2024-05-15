@@ -1,4 +1,5 @@
-""" Bitmart exchange subclass """
+"""Bitmart exchange subclass"""
+
 import logging
 from typing import Dict
 

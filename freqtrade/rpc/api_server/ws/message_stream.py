@@ -7,6 +7,7 @@ class MessageStream:
     A message stream for consumers to subscribe to,
     and for producers to publish to.
     """
+
     def __init__(self):
         self._loop = asyncio.get_running_loop()
         self._waiter = self._loop.create_future()

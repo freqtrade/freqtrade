@@ -32,13 +32,12 @@ def is_arm() -> bool:
 
 @pytest.fixture(autouse=True)
 def patch_torch_initlogs(mocker) -> None:
-
     if is_mac():
         # Mock torch import completely
         import sys
         import types
 
-        module_name = 'torch'
+        module_name = "torch"
         mocked_module = types.ModuleType(module_name)
         sys.modules[module_name] = mocked_module
     else:
@@ -80,25 +79,23 @@ def freqai_conf(default_conf, tmp_path):
                     "stratify_training_data": 0,
                     "indicator_periods_candles": [10],
                     "shuffle_after_split": False,
-                    "buffer_train_data_candles": 0
+                    "buffer_train_data_candles": 0,
                 },
                 "data_split_parameters": {"test_size": 0.33, "shuffle": False},
                 "model_training_parameters": {"n_estimators": 100},
             },
-            "config_files": [Path('config_examples', 'config_freqai.example.json')]
+            "config_files": [Path("config_examples", "config_freqai.example.json")],
         }
     )
-    freqaiconf['exchange'].update({'pair_whitelist': ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC']})
+    freqaiconf["exchange"].update({"pair_whitelist": ["ADA/BTC", "DASH/BTC", "ETH/BTC", "LTC/BTC"]})
     return freqaiconf
 
 
 def make_rl_config(conf):
     conf.update({"strategy": "freqai_rl_test_strat"})
-    conf["freqai"].update({"model_training_parameters": {
-        "learning_rate": 0.00025,
-        "gamma": 0.9,
-        "verbose": 1
-    }})
+    conf["freqai"].update(
+        {"model_training_parameters": {"learning_rate": 0.00025, "gamma": 0.9, "verbose": 1}}
+    )
     conf["freqai"]["rl_config"] = {
         "train_cycles": 1,
         "thread_count": 2,
@@ -107,31 +104,27 @@ def make_rl_config(conf):
         "policy_type": "MlpPolicy",
         "max_training_drawdown_pct": 0.5,
         "net_arch": [32, 32],
-        "model_reward_parameters": {
-            "rr": 1,
-            "profit_aim": 0.02,
-            "win_reward_factor": 2
-        },
-        "drop_ohlc_from_features": False
-        }
+        "model_reward_parameters": {"rr": 1, "profit_aim": 0.02, "win_reward_factor": 2},
+        "drop_ohlc_from_features": False,
+    }
 
     return conf
 
 
 def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
     return {
-            "learning_rate": 3e-4,
-            "trainer_kwargs": {
-                "n_steps": None,
-                "batch_size": 64,
-                "n_epochs": 1,
-            },
-            "model_kwargs": {
-                "hidden_dim": 32,
-                "dropout_percent": 0.2,
-                "n_layer": 1,
-            }
-        }
+        "learning_rate": 3e-4,
+        "trainer_kwargs": {
+            "n_steps": None,
+            "batch_size": 64,
+            "n_epochs": 1,
+        },
+        "model_kwargs": {
+            "hidden_dim": 32,
+            "dropout_percent": 0.2,
+            "n_layer": 1,
+        },
+    }
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
@@ -178,14 +171,14 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
     corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(
-            data_load_timerange, freqai.dk.pair, freqai.dk
-        )
+        data_load_timerange, freqai.dk.pair, freqai.dk
+    )
 
     unfiltered_dataframe = freqai.dk.use_strategy_to_populate_indicators(
-                strategy, corr_dataframes, base_dataframes, freqai.dk.pair
-            )
+        strategy, corr_dataframes, base_dataframes, freqai.dk.pair
+    )
     for i in range(5):
-        unfiltered_dataframe[f'constant_{i}'] = i
+        unfiltered_dataframe[f"constant_{i}"] = i
 
     unfiltered_dataframe = freqai.dk.slice_dataframe(new_timerange, unfiltered_dataframe)
 
@@ -212,23 +205,23 @@ def make_data_dictionary(mocker, freqai_conf):
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
     corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(
-            data_load_timerange, freqai.dk.pair, freqai.dk
-        )
+        data_load_timerange, freqai.dk.pair, freqai.dk
+    )
 
     unfiltered_dataframe = freqai.dk.use_strategy_to_populate_indicators(
-                strategy, corr_dataframes, base_dataframes, freqai.dk.pair
-            )
+        strategy, corr_dataframes, base_dataframes, freqai.dk.pair
+    )
 
     unfiltered_dataframe = freqai.dk.slice_dataframe(new_timerange, unfiltered_dataframe)
 
     freqai.dk.find_features(unfiltered_dataframe)
 
     features_filtered, labels_filtered = freqai.dk.filter_features(
-            unfiltered_dataframe,
-            freqai.dk.training_features_list,
-            freqai.dk.label_list,
-            training_filter=True,
-        )
+        unfiltered_dataframe,
+        freqai.dk.training_features_list,
+        freqai.dk.label_list,
+        training_filter=True,
+    )
 
     data_dictionary = freqai.dk.make_train_test_datasets(features_filtered, labels_filtered)
 
@@ -247,8 +240,8 @@ def get_freqai_live_analyzed_dataframe(mocker, freqaiconf):
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dk.load_all_pair_histories(timerange)
 
-    strategy.analyze_pair('ADA/BTC', '5m')
-    return strategy.dp.get_analyzed_dataframe('ADA/BTC', '5m')
+    strategy.analyze_pair("ADA/BTC", "5m")
+    return strategy.dp.get_analyzed_dataframe("ADA/BTC", "5m")
 
 
 def get_freqai_analyzed_dataframe(mocker, freqaiconf):
@@ -264,7 +257,7 @@ def get_freqai_analyzed_dataframe(mocker, freqaiconf):
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
     corr_df, base_df = freqai.dk.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC")
 
-    return freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, 'LTC/BTC')
+    return freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
 
 def get_ready_to_train(mocker, freqaiconf):

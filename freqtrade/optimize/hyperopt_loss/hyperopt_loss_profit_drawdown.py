@@ -7,6 +7,7 @@ Drawdown objective which can be used for Hyperoptimization.
 Possible to change `DRAWDOWN_MULT` to penalize drawdown objective for
 individual needs.
 """
+
 from pandas import DataFrame
 
 from freqtrade.data.metrics import calculate_max_drawdown

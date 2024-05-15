@@ -2,6 +2,7 @@
 IHyperStrategy interface, hyperoptable Parameter class.
 This module defines a base class for auto-hyperoptable strategies.
 """
+
 import logging
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
@@ -32,20 +33,22 @@ class HyperStrategyMixin:
         self.ft_protection_params: List[BaseParameter] = []
 
         params = self.load_params_from_file()
-        params = params.get('params', {})
+        params = params.get("params", {})
         self._ft_params_from_file = params
         # Init/loading of parameters is done as part of ft_bot_start().
 
     def enumerate_parameters(
-            self, category: Optional[str] = None) -> Iterator[Tuple[str, BaseParameter]]:
+        self, category: Optional[str] = None
+    ) -> Iterator[Tuple[str, BaseParameter]]:
         """
         Find all optimizable parameters and return (name, attr) iterator.
         :param category:
         :return:
         """
-        if category not in ('buy', 'sell', 'protection', None):
+        if category not in ("buy", "sell", "protection", None):
             raise OperationalException(
-                'Category must be one of: "buy", "sell", "protection", None.')
+                'Category must be one of: "buy", "sell", "protection", None.'
+            )
 
         if category is None:
             params = self.ft_buy_params + self.ft_sell_params + self.ft_protection_params
@@ -57,15 +60,13 @@ class HyperStrategyMixin:
 
     @classmethod
     def detect_all_parameters(cls) -> Dict:
-        """ Detect all parameters and return them as a list"""
+        """Detect all parameters and return them as a list"""
         params: Dict[str, Any] = {
-            'buy': list(detect_parameters(cls, 'buy')),
-            'sell': list(detect_parameters(cls, 'sell')),
-            'protection': list(detect_parameters(cls, 'protection')),
+            "buy": list(detect_parameters(cls, "buy")),
+            "sell": list(detect_parameters(cls, "sell")),
+            "protection": list(detect_parameters(cls, "protection")),
         }
-        params.update({
-            'count': len(params['buy'] + params['sell'] + params['protection'])
-        })
+        params.update({"count": len(params["buy"] + params["sell"] + params["protection"])})
 
         return params
 
@@ -77,23 +78,28 @@ class HyperStrategyMixin:
         if self._ft_params_from_file:
             # Set parameters from Hyperopt results file
             params = self._ft_params_from_file
-            self.minimal_roi = params.get('roi', getattr(self, 'minimal_roi', {}))
+            self.minimal_roi = params.get("roi", getattr(self, "minimal_roi", {}))
 
-            self.stoploss = params.get('stoploss', {}).get(
-                'stoploss', getattr(self, 'stoploss', -0.1))
-            self.max_open_trades = params.get('max_open_trades', {}).get(
-                'max_open_trades', getattr(self, 'max_open_trades', -1))
-            trailing = params.get('trailing', {})
+            self.stoploss = params.get("stoploss", {}).get(
+                "stoploss", getattr(self, "stoploss", -0.1)
+            )
+            self.max_open_trades = params.get("max_open_trades", {}).get(
+                "max_open_trades", getattr(self, "max_open_trades", -1)
+            )
+            trailing = params.get("trailing", {})
             self.trailing_stop = trailing.get(
-                'trailing_stop', getattr(self, 'trailing_stop', False))
+                "trailing_stop", getattr(self, "trailing_stop", False)
+            )
             self.trailing_stop_positive = trailing.get(
-                'trailing_stop_positive', getattr(self, 'trailing_stop_positive', None))
+                "trailing_stop_positive", getattr(self, "trailing_stop_positive", None)
+            )
             self.trailing_stop_positive_offset = trailing.get(
-                'trailing_stop_positive_offset',
-                getattr(self, 'trailing_stop_positive_offset', 0))
+                "trailing_stop_positive_offset", getattr(self, "trailing_stop_positive_offset", 0)
+            )
             self.trailing_only_offset_is_reached = trailing.get(
-                'trailing_only_offset_is_reached',
-                getattr(self, 'trailing_only_offset_is_reached', 0.0))
+                "trailing_only_offset_is_reached",
+                getattr(self, "trailing_only_offset_is_reached", 0.0),
+            )
 
     def ft_load_hyper_params(self, hyperopt: bool = False) -> None:
         """
@@ -104,29 +110,32 @@ class HyperStrategyMixin:
         * Parameter defaults
         """
 
-        buy_params = deep_merge_dicts(self._ft_params_from_file.get('buy', {}),
-                                      getattr(self, 'buy_params', {}))
-        sell_params = deep_merge_dicts(self._ft_params_from_file.get('sell', {}),
-                                       getattr(self, 'sell_params', {}))
-        protection_params = deep_merge_dicts(self._ft_params_from_file.get('protection', {}),
-                                             getattr(self, 'protection_params', {}))
+        buy_params = deep_merge_dicts(
+            self._ft_params_from_file.get("buy", {}), getattr(self, "buy_params", {})
+        )
+        sell_params = deep_merge_dicts(
+            self._ft_params_from_file.get("sell", {}), getattr(self, "sell_params", {})
+        )
+        protection_params = deep_merge_dicts(
+            self._ft_params_from_file.get("protection", {}), getattr(self, "protection_params", {})
+        )
 
-        self._ft_load_params(buy_params, 'buy', hyperopt)
-        self._ft_load_params(sell_params, 'sell', hyperopt)
-        self._ft_load_params(protection_params, 'protection', hyperopt)
+        self._ft_load_params(buy_params, "buy", hyperopt)
+        self._ft_load_params(sell_params, "sell", hyperopt)
+        self._ft_load_params(protection_params, "protection", hyperopt)
 
     def load_params_from_file(self) -> Dict:
-        filename_str = getattr(self, '__file__', '')
+        filename_str = getattr(self, "__file__", "")
         if not filename_str:
             return {}
-        filename = Path(filename_str).with_suffix('.json')
+        filename = Path(filename_str).with_suffix(".json")
 
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
                 params = HyperoptTools.load_params(filename)
-                if params.get('strategy_name') != self.__class__.__name__:
-                    raise OperationalException('Invalid parameter file provided.')
+                if params.get("strategy_name") != self.__class__.__name__:
+                    raise OperationalException("Invalid parameter file provided.")
                 return params
             except ValueError:
                 logger.warning("Invalid parameter file format.")
@@ -155,21 +164,23 @@ class HyperStrategyMixin:
             if params and attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
-                    logger.info(f'Strategy Parameter: {attr_name} = {attr.value}')
+                    logger.info(f"Strategy Parameter: {attr_name} = {attr.value}")
                 else:
-                    logger.warning(f'Parameter "{attr_name}" exists, but is disabled. '
-                                   f'Default value "{attr.value}" used.')
+                    logger.warning(
+                        f'Parameter "{attr_name}" exists, but is disabled. '
+                        f'Default value "{attr.value}" used.'
+                    )
             else:
-                logger.info(f'Strategy Parameter(default): {attr_name} = {attr.value}')
+                logger.info(f"Strategy Parameter(default): {attr_name} = {attr.value}")
 
     def get_no_optimize_params(self) -> Dict[str, Dict]:
         """
         Returns list of Parameters that are not part of the current optimize job
         """
         params: Dict[str, Dict] = {
-            'buy': {},
-            'sell': {},
-            'protection': {},
+            "buy": {},
+            "sell": {},
+            "protection": {},
         }
         for name, p in self.enumerate_parameters():
             if p.category and (not p.optimize or not p.in_space):
@@ -178,23 +189,27 @@ class HyperStrategyMixin:
 
 
 def detect_parameters(
-        obj: Union[HyperStrategyMixin, Type[HyperStrategyMixin]],
-        category: str
-        ) -> Iterator[Tuple[str, BaseParameter]]:
+    obj: Union[HyperStrategyMixin, Type[HyperStrategyMixin]], category: str
+) -> Iterator[Tuple[str, BaseParameter]]:
     """
     Detect all parameters for 'category' for "obj"
     :param obj: Strategy object or class
     :param category: category - usually `'buy', 'sell', 'protection',...
     """
     for attr_name in dir(obj):
-        if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
+        if not attr_name.startswith("__"):  # Ignore internals, not strictly necessary.
             attr = getattr(obj, attr_name)
             if issubclass(attr.__class__, BaseParameter):
-                if (attr_name.startswith(category + '_')
-                        and attr.category is not None and attr.category != category):
+                if (
+                    attr_name.startswith(category + "_")
+                    and attr.category is not None
+                    and attr.category != category
+                ):
                     raise OperationalException(
-                        f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
+                        f"Inconclusive parameter name {attr_name}, category: {attr.category}."
+                    )
 
-                if (category == attr.category or
-                        (attr_name.startswith(category + '_') and attr.category is None)):
+                if category == attr.category or (
+                    attr_name.startswith(category + "_") and attr.category is None
+                ):
                     yield attr_name, attr

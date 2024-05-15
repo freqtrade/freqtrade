@@ -3,9 +3,17 @@ from skopt.space import Integer
 
 
 class SKDecimal(Integer):
-
-    def __init__(self, low, high, decimals=3, prior="uniform", base=10, transform=None,
-                 name=None, dtype=np.int64):
+    def __init__(
+        self,
+        low,
+        high,
+        decimals=3,
+        prior="uniform",
+        base=10,
+        transform=None,
+        name=None,
+        dtype=np.int64,
+    ):
         self.decimals = decimals
 
         self.pow_dot_one = pow(0.1, self.decimals)

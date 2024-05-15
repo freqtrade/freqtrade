@@ -1,6 +1,7 @@
 """
 This module contain functions to load the configuration file
 """
+
 import logging
 import re
 import sys
@@ -25,25 +26,25 @@ def log_config_error_range(path: str, errmsg: str) -> str:
     """
     Parses configuration file and prints range around error
     """
-    if path != '-':
-        offsetlist = re.findall(r'(?<=Parse\serror\sat\soffset\s)\d+', errmsg)
+    if path != "-":
+        offsetlist = re.findall(r"(?<=Parse\serror\sat\soffset\s)\d+", errmsg)
         if offsetlist:
             offset = int(offsetlist[0])
             text = Path(path).read_text()
             # Fetch an offset of 80 characters around the error line
-            subtext = text[offset - min(80, offset):offset + 80]
-            segments = subtext.split('\n')
+            subtext = text[offset - min(80, offset) : offset + 80]
+            segments = subtext.split("\n")
             if len(segments) > 3:
                 # Remove first and last lines, to avoid odd truncations
-                return '\n'.join(segments[1:-1])
+                return "\n".join(segments[1:-1])
             else:
                 return subtext
-    return ''
+    return ""
 
 
 def load_file(path: Path) -> Dict[str, Any]:
     try:
-        with path.open('r') as file:
+        with path.open("r") as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
     except FileNotFoundError:
         raise OperationalException(f'File "{path}" not found!') from None
@@ -58,25 +59,27 @@ def load_config_file(path: str) -> Dict[str, Any]:
     """
     try:
         # Read config from stdin if requested in the options
-        with Path(path).open() if path != '-' else sys.stdin as file:
+        with Path(path).open() if path != "-" else sys.stdin as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
     except FileNotFoundError:
         raise OperationalException(
             f'Config file "{path}" not found!'
-            ' Please create a config file or check whether it exists.') from None
+            " Please create a config file or check whether it exists."
+        ) from None
     except rapidjson.JSONDecodeError as e:
         err_range = log_config_error_range(path, str(e))
         raise ConfigurationError(
-            f'{e}\n'
-            f'Please verify the following segment of your configuration:\n{err_range}'
-            if err_range else 'Please verify your configuration file for syntax errors.'
+            f"{e}\nPlease verify the following segment of your configuration:\n{err_range}"
+            if err_range
+            else "Please verify your configuration file for syntax errors."
         )
 
     return config
 
 
 def load_from_files(
-        files: List[str], base_path: Optional[Path] = None, level: int = 0) -> Dict[str, Any]:
+    files: List[str], base_path: Optional[Path] = None, level: int = 0
+) -> Dict[str, Any]:
     """
     Recursively load configuration files if specified.
     Sub-files are assumed to be relative to the initial config.
@@ -90,8 +93,8 @@ def load_from_files(
     files_loaded = []
     # We expect here a list of config filenames
     for filename in files:
-        logger.info(f'Using config: {filename} ...')
-        if filename == '-':
+        logger.info(f"Using config: {filename} ...")
+        if filename == "-":
             # Immediately load stdin and return
             return load_config_file(filename)
         file = Path(filename)
@@ -100,10 +103,11 @@ def load_from_files(
             file = base_path / file
 
         config_tmp = load_config_file(str(file))
-        if 'add_config_files' in config_tmp:
+        if "add_config_files" in config_tmp:
             config_sub = load_from_files(
-                config_tmp['add_config_files'], file.resolve().parent, level + 1)
-            files_loaded.extend(config_sub.get('config_files', []))
+                config_tmp["add_config_files"], file.resolve().parent, level + 1
+            )
+            files_loaded.extend(config_sub.get("config_files", []))
             config_tmp = deep_merge_dicts(config_tmp, config_sub)
 
         files_loaded.insert(0, str(file))
@@ -111,6 +115,6 @@ def load_from_files(
         # Merge config options, overwriting prior values
         config = deep_merge_dicts(config_tmp, config)
 
-    config['config_files'] = files_loaded
+    config["config_files"] = files_loaded
 
     return config
