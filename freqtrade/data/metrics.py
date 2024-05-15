@@ -171,7 +171,7 @@ class DrawDownResult:
     relative_account_drawdown: float = 0.0
 
 
-def calc_max_drawdown(
+def calculate_max_drawdown(
     trades: pd.DataFrame,
     *,
     date_col: str = "close_date",
@@ -185,7 +185,7 @@ def calc_max_drawdown(
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
     :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
     :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
-    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
+    :return: DrawDownResult object
              with absolute max drawdown, high and low time and high and low value,
              and the relative account drawdown
     :raise: ValueError if trade-dataframe was found empty.
@@ -219,44 +219,6 @@ def calc_max_drawdown(
         high_value=high_val,
         low_value=low_val,
         relative_account_drawdown=max_drawdown_rel,
-    )
-
-
-def calculate_max_drawdown(
-    trades: pd.DataFrame,
-    *,
-    date_col: str = "close_date",
-    value_col: str = "profit_abs",
-    starting_balance: float = 0,
-    relative: bool = False,
-) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
-    """
-    Calculate max drawdown and the corresponding close dates
-    Deprecated, favor calc_max_drawdown instead!
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
-    :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
-    :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
-    :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
-    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
-             with absolute max drawdown, high and low time and high and low value,
-             and the relative account drawdown
-    :raise: ValueError if trade-dataframe was found empty.
-    """
-    # TODO: add deprecation warning
-    res = calc_max_drawdown(
-        trades,
-        date_col=date_col,
-        value_col=value_col,
-        starting_balance=starting_balance,
-        relative=relative,
-    )
-    return (
-        res.drawdown_abs,
-        res.high_date,
-        res.low_date,
-        res.high_value,
-        res.low_value,
-        res.relative_account_drawdown,
     )
 
 
@@ -399,7 +361,7 @@ def calculate_calmar(
 
     # calculate max drawdown
     try:
-        drawdown = calc_max_drawdown(
+        drawdown = calculate_max_drawdown(
             trades, value_col="profit_abs", starting_balance=starting_balance
         )
         max_drawdown = drawdown.relative_account_drawdown

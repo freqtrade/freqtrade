@@ -10,7 +10,7 @@ individual needs.
 
 from pandas import DataFrame
 
-from freqtrade.data.metrics import calc_max_drawdown
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
@@ -24,7 +24,7 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
         total_profit = results["profit_abs"].sum()
 
         try:
-            drawdown = calc_max_drawdown(results, value_col="profit_abs")
+            drawdown = calculate_max_drawdown(results, value_col="profit_abs")
             relative_account_drawdown = drawdown.relative_account_drawdown
         except ValueError:
             relative_account_drawdown = 0

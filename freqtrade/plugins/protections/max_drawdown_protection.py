@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 from freqtrade.constants import Config, LongShort
-from freqtrade.data.metrics import calc_max_drawdown
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
@@ -59,7 +59,7 @@ class MaxDrawdown(IProtection):
         # Drawdown is always positive
         try:
             # TODO: This should use absolute profit calculation, considering account balance.
-            drawdown_obj = calc_max_drawdown(trades_df, value_col="close_profit")
+            drawdown_obj = calculate_max_drawdown(trades_df, value_col="close_profit")
             drawdown = drawdown_obj.drawdown_abs
         except ValueError:
             return None

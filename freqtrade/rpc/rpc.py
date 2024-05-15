@@ -21,8 +21,8 @@ from freqtrade.constants import CANCEL_REASON, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import (
     DrawDownResult,
-    calc_max_drawdown,
     calculate_expectancy,
+    calculate_max_drawdown,
 )
 from freqtrade.enums import (
     CandleType,
@@ -599,7 +599,7 @@ class RPC:
         drawdown = DrawDownResult()
         if len(trades_df) > 0:
             try:
-                drawdown = calc_max_drawdown(
+                drawdown = calculate_max_drawdown(
                     trades_df,
                     value_col="profit_abs",
                     date_col="close_date_dt",

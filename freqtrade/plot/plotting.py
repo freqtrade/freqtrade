@@ -16,7 +16,7 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
 from freqtrade.data.metrics import (
-    calc_max_drawdown,
+    calculate_max_drawdown,
     calculate_underwater,
     combine_dataframes_with_mean,
     create_cum_profit,
@@ -179,7 +179,7 @@ def add_max_drawdown(
     Add scatter points indicating max drawdown
     """
     try:
-        drawdown = calc_max_drawdown(trades, starting_balance=starting_balance)
+        drawdown = calculate_max_drawdown(trades, starting_balance=starting_balance)
 
         drawdown = go.Scatter(
             x=[drawdown.high_date, drawdown.low_date],

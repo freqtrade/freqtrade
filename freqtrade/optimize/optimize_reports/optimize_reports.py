@@ -8,12 +8,12 @@ from pandas import DataFrame, Series, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT
 from freqtrade.data.metrics import (
-    calc_max_drawdown,
     calculate_cagr,
     calculate_calmar,
     calculate_csum,
     calculate_expectancy,
     calculate_market_change,
+    calculate_max_drawdown,
     calculate_sharpe,
     calculate_sortino,
 )
@@ -497,12 +497,12 @@ def generate_strategy_stats(
     }
 
     try:
-        max_drawdown_legacy = calc_max_drawdown(results, value_col="profit_ratio")
-        drawdown = calc_max_drawdown(
+        max_drawdown_legacy = calculate_max_drawdown(results, value_col="profit_ratio")
+        drawdown = calculate_max_drawdown(
             results, value_col="profit_abs", starting_balance=start_balance
         )
         # max_relative_drawdown = Underwater
-        underwater = calc_max_drawdown(
+        underwater = calculate_max_drawdown(
             results, value_col="profit_abs", starting_balance=start_balance, relative=True
         )
 

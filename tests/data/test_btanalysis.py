@@ -20,7 +20,6 @@ from freqtrade.data.btanalysis import (
 )
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.data.metrics import (
-    calc_max_drawdown,
     calculate_cagr,
     calculate_calmar,
     calculate_csum,
@@ -344,7 +343,7 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
-    drawdown = calc_max_drawdown(bt_data, value_col="profit_abs")
+    drawdown = calculate_max_drawdown(bt_data, value_col="profit_abs")
     assert isinstance(drawdown.relative_account_drawdown, float)
     assert pytest.approx(drawdown.relative_account_drawdown) == 0.29753914
     assert isinstance(drawdown.high_date, Timestamp)
@@ -358,7 +357,7 @@ def test_calculate_max_drawdown(testdatadir):
     assert isinstance(underwater, DataFrame)
 
     with pytest.raises(ValueError, match="Trade dataframe empty."):
-        calc_max_drawdown(DataFrame())
+        calculate_max_drawdown(DataFrame())
 
     with pytest.raises(ValueError, match="Trade dataframe empty."):
         calculate_underwater(DataFrame())
@@ -508,7 +507,7 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values("profit").reset_index(drop=True)
     df1 = df.copy()
-    drawdown = calc_max_drawdown(df, date_col="open_date", value_col="profit")
+    drawdown = calculate_max_drawdown(df, date_col="open_date", value_col="profit")
     # Ensure df has not been altered.
     assert df.equals(df1)
 
@@ -522,12 +521,12 @@ def test_calculate_max_drawdown2():
 
     df = DataFrame(zip(values[:5], dates[:5]), columns=["profit", "open_date"])
     with pytest.raises(ValueError, match="No losing trade, therefore no drawdown."):
-        calc_max_drawdown(df, date_col="open_date", value_col="profit")
+        calculate_max_drawdown(df, date_col="open_date", value_col="profit")
 
     df1 = DataFrame(zip(values[:5], dates[:5]), columns=["profit", "open_date"])
     df1.loc[:, "profit"] = df1["profit"] * -1
     # No winning trade ...
-    drawdown = calc_max_drawdown(df1, date_col="open_date", value_col="profit")
+    drawdown = calculate_max_drawdown(df1, date_col="open_date", value_col="profit")
     assert drawdown.drawdown_abs == 0.043965
 
 
@@ -550,7 +549,9 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowdays, result, r
     # sort by profit and reset index
     df = df.sort_values("profit_abs").reset_index(drop=True)
     df1 = df.copy()
-    drawdown = calc_max_drawdown(df, date_col="open_date", starting_balance=1000, relative=relative)
+    drawdown = calculate_max_drawdown(
+        df, date_col="open_date", starting_balance=1000, relative=relative
+    )
     # Ensure df has not been altered.
     assert df.equals(df1)
 

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from pandas import DataFrame
 
-from freqtrade.data.metrics import calc_max_drawdown
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
@@ -38,7 +38,7 @@ class MaxDrawDownHyperOptLoss(IHyperOptLoss):
         """
         total_profit = results["profit_abs"].sum()
         try:
-            max_drawdown = calc_max_drawdown(results, value_col="profit_abs")
+            max_drawdown = calculate_max_drawdown(results, value_col="profit_abs")
         except ValueError:
             # No losing trade, therefore no drawdown.
             return -total_profit
