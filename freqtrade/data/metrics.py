@@ -164,8 +164,8 @@ def calculate_underwater(
 @dataclass()
 class DrawDownResult:
     drawdown_abs: float = 0.0
-    high_date: datetime = None
-    low_date: datetime = None
+    high_date: pd.Timestamp = None
+    low_date: pd.Timestamp = None
     high_value: float = 0.0
     low_value: float = 0.0
     relative_account_drawdown: float = 0.0
