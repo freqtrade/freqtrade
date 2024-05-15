@@ -2374,7 +2374,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
 
 
 @pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
-def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type) -> None:
+def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_path) -> None:
     # TODO: mock cached trades
     trades = [
         {
@@ -2409,6 +2409,7 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type) -> Non
     caplog.set_level(logging.DEBUG)
     use_trades_conf = default_conf
     use_trades_conf["exchange"]["use_public_trades"] = True
+    use_trades_conf["datadir"] = tmp_path
     exchange = get_patched_exchange(mocker, use_trades_conf)
     exchange._api_async.fetch_trades = get_mock_coro(trades)
     exchange._ft_has["exchange_has_overrides"]["fetchTrades"] = True
