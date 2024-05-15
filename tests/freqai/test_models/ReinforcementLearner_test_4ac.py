@@ -26,24 +26,25 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
         """
 
         def calculate_reward(self, action: int) -> float:
-
             # first, penalize if the action is not valid
             if not self._is_valid(action):
                 return -2
 
             pnl = self.get_unrealized_profit()
             rew = np.sign(pnl) * (pnl + 1)
-            factor = 100.
+            factor = 100.0
 
             # reward agent for entering trades
-            if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
-                    and self._position == Positions.Neutral):
+            if (
+                action in (Actions.Long_enter.value, Actions.Short_enter.value)
+                and self._position == Positions.Neutral
+            ):
                 return 25
             # discourage agent from not entering trades
             if action == Actions.Neutral.value and self._position == Positions.Neutral:
                 return -1
 
-            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+            max_trade_duration = self.rl_config.get("max_trade_duration_candles", 300)
             trade_duration = self._current_tick - self._last_trade_tick  # type: ignore
 
             if trade_duration <= max_trade_duration:
@@ -52,20 +53,22 @@ class ReinforcementLearner_test_4ac(ReinforcementLearner):
                 factor *= 0.5
 
             # discourage sitting in position
-            if (self._position in (Positions.Short, Positions.Long) and
-                    action == Actions.Neutral.value):
+            if (
+                self._position in (Positions.Short, Positions.Long)
+                and action == Actions.Neutral.value
+            ):
                 return -1 * trade_duration / max_trade_duration
 
             # close long
             if action == Actions.Exit.value and self._position == Positions.Long:
                 if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    factor *= self.rl_config["model_reward_parameters"].get("win_reward_factor", 2)
                 return float(rew * factor)
 
             # close short
             if action == Actions.Exit.value and self._position == Positions.Short:
                 if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    factor *= self.rl_config["model_reward_parameters"].get("win_reward_factor", 2)
                 return float(rew * factor)
 
-            return 0.
+            return 0.0

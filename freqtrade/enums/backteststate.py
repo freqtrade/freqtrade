@@ -5,6 +5,7 @@ class BacktestState(Enum):
     """
     Bot application states
     """
+
     STARTUP = 1
     DATALOAD = 2
     ANALYZE = 3

@@ -19,9 +19,9 @@ def start_convert_db(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    init_db(config['db_url'])
+    init_db(config["db_url"])
     session_target = Trade.session
-    init_db(config['db_url_from'])
+    init_db(config["db_url_from"])
     logger.info("Starting db migration.")
 
     trade_count = 0
@@ -47,9 +47,11 @@ def start_convert_db(args: Dict[str, Any]) -> None:
     max_order_id = session_target.scalar(select(func.max(Order.id)))
     max_pairlock_id = session_target.scalar(select(func.max(PairLock.id)))
 
-    set_sequence_ids(session_target.get_bind(),
-                     trade_id=max_trade_id,
-                     order_id=max_order_id,
-                     pairlock_id=max_pairlock_id)
+    set_sequence_ids(
+        session_target.get_bind(),
+        trade_id=max_trade_id,
+        order_id=max_order_id,
+        pairlock_id=max_pairlock_id,
+    )
 
     logger.info(f"Migrated {trade_count} Trades, and {pairlock_count} Pairlocks.")

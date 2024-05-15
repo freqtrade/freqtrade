@@ -10,5 +10,5 @@ so it can be used as a standalone script.
 from freqtrade_client.ft_client import main
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

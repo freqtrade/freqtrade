@@ -1,4 +1,5 @@
-""" Bingx exchange subclass """
+"""Bingx exchange subclass"""
+
 import logging
 from typing import Dict
 

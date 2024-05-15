@@ -6,10 +6,8 @@ from freqtrade.util import MeasureTime
 
 
 def test_measure_time():
-
     callback = MagicMock()
     with time_machine.travel("2021-09-01 05:00:00 +00:00", tick=False) as t:
-
         measure = MeasureTime(callback, 5, ttl=60)
         with measure:
             pass

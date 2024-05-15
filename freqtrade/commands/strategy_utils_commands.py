@@ -26,13 +26,15 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     strategy_objs = StrategyResolver.search_all_objects(
-        config, enum_failed=False, recursive=config.get('recursive_strategy_search', False))
+        config, enum_failed=False, recursive=config.get("recursive_strategy_search", False)
+    )
 
     filtered_strategy_objs = []
-    if args['strategy_list']:
+    if args["strategy_list"]:
         filtered_strategy_objs = [
-            strategy_obj for strategy_obj in strategy_objs
-            if strategy_obj['name'] in args['strategy_list']
+            strategy_obj
+            for strategy_obj in strategy_objs
+            if strategy_obj["name"] in args["strategy_list"]
         ]
 
     else:
@@ -41,8 +43,8 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
 
     processed_locations = set()
     for strategy_obj in filtered_strategy_objs:
-        if strategy_obj['location'] not in processed_locations:
-            processed_locations.add(strategy_obj['location'])
+        if strategy_obj["location"] not in processed_locations:
+            processed_locations.add(strategy_obj["location"])
             start_conversion(strategy_obj, config)
 
 

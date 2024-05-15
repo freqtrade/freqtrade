@@ -1,4 +1,5 @@
-""" HTX exchange subclass """
+"""HTX exchange subclass"""
+
 import logging
 from typing import Dict
 
@@ -26,10 +27,11 @@ class Htx(Exchange):
     }
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
-
         params = self._params.copy()
-        params.update({
-            "stopPrice": stop_price,
-            "operator": "lte",
-        })
+        params.update(
+            {
+                "stopPrice": stop_price,
+                "operator": "lte",
+            }
+        )
         return params
