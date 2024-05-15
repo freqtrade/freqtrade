@@ -1,5 +1,6 @@
 import logging
 import math
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Tuple
 
@@ -160,6 +161,16 @@ def calculate_underwater(
     return max_drawdown_df
 
 
+@dataclass()
+class DrawDownResult:
+    drawdown_abs: float = 0.0
+    high_date: pd.Timestamp = None
+    low_date: pd.Timestamp = None
+    high_value: float = 0.0
+    low_value: float = 0.0
+    relative_account_drawdown: float = 0.0
+
+
 def calculate_max_drawdown(
     trades: pd.DataFrame,
     *,
@@ -167,14 +178,14 @@ def calculate_max_drawdown(
     value_col: str = "profit_abs",
     starting_balance: float = 0,
     relative: bool = False,
-) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
+) -> DrawDownResult:
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
     :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
     :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
-    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
+    :return: DrawDownResult object
              with absolute max drawdown, high and low time and high and low value,
              and the relative account drawdown
     :raise: ValueError if trade-dataframe was found empty.
@@ -201,13 +212,13 @@ def calculate_max_drawdown(
     low_val = max_drawdown_df.loc[idxmin, "cumulative"]
     max_drawdown_rel = max_drawdown_df.loc[idxmin, "drawdown_relative"]
 
-    return (
-        abs(max_drawdown_df.loc[idxmin, "drawdown"]),
-        high_date,
-        low_date,
-        high_val,
-        low_val,
-        max_drawdown_rel,
+    return DrawDownResult(
+        drawdown_abs=abs(max_drawdown_df.loc[idxmin, "drawdown"]),
+        high_date=high_date,
+        low_date=low_date,
+        high_value=high_val,
+        low_value=low_val,
+        relative_account_drawdown=max_drawdown_rel,
     )
 
 
@@ -350,9 +361,10 @@ def calculate_calmar(
 
     # calculate max drawdown
     try:
-        _, _, _, _, _, max_drawdown = calculate_max_drawdown(
+        drawdown = calculate_max_drawdown(
             trades, value_col="profit_abs", starting_balance=starting_balance
         )
+        max_drawdown = drawdown.relative_account_drawdown
     except ValueError:
         max_drawdown = 0
 

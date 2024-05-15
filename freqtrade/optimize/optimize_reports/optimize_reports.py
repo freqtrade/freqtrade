@@ -497,29 +497,27 @@ def generate_strategy_stats(
     }
 
     try:
-        max_drawdown_legacy, _, _, _, _, _ = calculate_max_drawdown(
-            results, value_col="profit_ratio"
-        )
-        (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val, max_drawdown) = (
-            calculate_max_drawdown(results, value_col="profit_abs", starting_balance=start_balance)
+        max_drawdown_legacy = calculate_max_drawdown(results, value_col="profit_ratio")
+        drawdown = calculate_max_drawdown(
+            results, value_col="profit_abs", starting_balance=start_balance
         )
         # max_relative_drawdown = Underwater
-        (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
+        underwater = calculate_max_drawdown(
             results, value_col="profit_abs", starting_balance=start_balance, relative=True
         )
 
         strat_stats.update(
             {
-                "max_drawdown": max_drawdown_legacy,  # Deprecated - do not use
-                "max_drawdown_account": max_drawdown,
-                "max_relative_drawdown": max_relative_drawdown,
-                "max_drawdown_abs": drawdown_abs,
-                "drawdown_start": drawdown_start.strftime(DATETIME_PRINT_FORMAT),
-                "drawdown_start_ts": drawdown_start.timestamp() * 1000,
-                "drawdown_end": drawdown_end.strftime(DATETIME_PRINT_FORMAT),
-                "drawdown_end_ts": drawdown_end.timestamp() * 1000,
-                "max_drawdown_low": low_val,
-                "max_drawdown_high": high_val,
+                "max_drawdown": max_drawdown_legacy.drawdown_abs,  # Deprecated - do not use
+                "max_drawdown_account": drawdown.relative_account_drawdown,
+                "max_relative_drawdown": underwater.relative_account_drawdown,
+                "max_drawdown_abs": drawdown.drawdown_abs,
+                "drawdown_start": drawdown.high_date.strftime(DATETIME_PRINT_FORMAT),
+                "drawdown_start_ts": drawdown.high_date.timestamp() * 1000,
+                "drawdown_end": drawdown.low_date.strftime(DATETIME_PRINT_FORMAT),
+                "drawdown_end_ts": drawdown.low_date.timestamp() * 1000,
+                "max_drawdown_low": drawdown.low_value,
+                "max_drawdown_high": drawdown.high_value,
             }
         )
 

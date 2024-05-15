@@ -59,7 +59,8 @@ class MaxDrawdown(IProtection):
         # Drawdown is always positive
         try:
             # TODO: This should use absolute profit calculation, considering account balance.
-            drawdown, _, _, _, _, _ = calculate_max_drawdown(trades_df, value_col="close_profit")
+            drawdown_obj = calculate_max_drawdown(trades_df, value_col="close_profit")
+            drawdown = drawdown_obj.drawdown_abs
         except ValueError:
             return None
 
