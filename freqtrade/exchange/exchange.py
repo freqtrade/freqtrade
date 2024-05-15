@@ -2541,19 +2541,20 @@ class Exchange:
     # fetch Trade data stuff
 
     def needed_candle_ms(self, timeframe: str, candle_type: CandleType):
-        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
-            timeframe, candle_type)
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe, candle_type)
         move_to = one_call * self.required_candle_call_count
         now = timeframe_to_next_date(timeframe)
         return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
 
-    def _process_trades_df(self,
-                           pair: str,
-                           timeframe: str,
-                           c_type: CandleType,
-                           ticks: List[List],
-                           cache: bool,
-                           first_required_candle_date: Optional[int]) -> DataFrame:
+    def _process_trades_df(
+        self,
+        pair: str,
+        timeframe: str,
+        c_type: CandleType,
+        ticks: List[List],
+        cache: bool,
+        first_required_candle_date: Optional[int],
+    ) -> DataFrame:
         # keeping parsed dataframe in cache
         trades_df = trades_list_to_df(ticks, True)
 
@@ -2563,22 +2564,23 @@ class Exchange:
                 # Reassign so we return the updated, combined df
                 combined_df = concat([old, trades_df], axis=0)
                 logger.debug(f"Clean duplicated ticks from Trades data {pair}")
-                trades_df = DataFrame(trades_df_remove_duplicates(combined_df),
-                                      columns=combined_df.columns)
+                trades_df = DataFrame(
+                    trades_df_remove_duplicates(combined_df), columns=combined_df.columns
+                )
                 # Age out old candles
                 if first_required_candle_date:
                     # slice of older dates
-                    trades_df = trades_df[
-                        first_required_candle_date < trades_df['timestamp']]
+                    trades_df = trades_df[first_required_candle_date < trades_df["timestamp"]]
                     trades_df = trades_df.reset_index(drop=True)
             self._trades[(pair, timeframe, c_type)] = trades_df
         return trades_df
 
-    def refresh_latest_trades(self,
-                              pair_list: ListPairsWithTimeframes,
-                              *,
-                              cache: bool = True,
-                              ) -> Dict[PairWithTimeframe, DataFrame]:
+    def refresh_latest_trades(
+        self,
+        pair_list: ListPairsWithTimeframes,
+        *,
+        cache: bool = True,
+    ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory TRADES asynchronously and set `_trades` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
@@ -2588,24 +2590,27 @@ class Exchange:
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         from freqtrade.data.history import get_datahandler
+
         data_handler = get_datahandler(
-            self._config['datadir'], data_format=self._config['dataformat_trades']
+            self._config["datadir"], data_format=self._config["dataformat_trades"]
         )
         logger.debug("Refreshing TRADES data for %d pairs", len(pair_list))
         since_ms = None
         results_df = {}
         for pair, timeframe, candle_type in set(pair_list):
             new_ticks: List = []
-            all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ['date'])
+            all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ["date"])
             first_candle_ms = self.needed_candle_ms(timeframe, candle_type)
             # refresh, if
             # a. not in _trades
             # b. no cache used
             # c. need new data
             is_in_cache = (pair, timeframe, candle_type) in self._trades
-            if (not is_in_cache
-                    or not cache
-                    or self._now_is_time_to_refresh_trades(pair, timeframe, candle_type)):
+            if (
+                not is_in_cache
+                or not cache
+                or self._now_is_time_to_refresh_trades(pair, timeframe, candle_type)
+            ):
                 logger.debug(f"Refreshing TRADES data for {pair}")
                 # fetch trades since latest _trades and
                 # store together with existing trades
@@ -2613,26 +2618,29 @@ class Exchange:
                     until = None
                     from_id = None
                     if is_in_cache:
-                        from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]['id']
+                        from_id = self._trades[(pair, timeframe, candle_type)].iloc[-1]["id"]
                         until = dt_ts()  # now
 
                     else:
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
                         all_stored_ticks_df = data_handler.trades_load(
-                            f"{pair}-cached", self.trading_mode)
+                            f"{pair}-cached", self.trading_mode
+                        )
 
                         if not all_stored_ticks_df.empty:
-                            if all_stored_ticks_df.iloc[0]['timestamp'] <= first_candle_ms:
-                                last_cached_ms = all_stored_ticks_df.iloc[-1]['timestamp']
+                            if all_stored_ticks_df.iloc[0]["timestamp"] <= first_candle_ms:
+                                last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
                                 # only use cached if it's closer than first_candle_ms
                                 since_ms = (
-                                    last_cached_ms if last_cached_ms > first_candle_ms
+                                    last_cached_ms
+                                    if last_cached_ms > first_candle_ms
                                     else first_candle_ms
                                 )
                             # doesn't go far enough
                             else:
                                 all_stored_ticks_df = DataFrame(
-                                    columns=DEFAULT_TRADES_COLUMNS + ['date'])
+                                    columns=DEFAULT_TRADES_COLUMNS + ["date"]
+                                )
 
                     # from_id overrules with exchange set to id paginate
                     # TODO: DEBUG:
@@ -2643,7 +2651,7 @@ class Exchange:
                         pair,
                         since=since_ms if since_ms else first_candle_ms,
                         until=until,
-                        from_id=from_id
+                        from_id=from_id,
                     )
 
                 except Exception as e:
@@ -2652,8 +2660,9 @@ class Exchange:
                     raise e
 
                 if new_ticks:
-                    all_stored_ticks_list = all_stored_ticks_df[DEFAULT_TRADES_COLUMNS
-                                                                ].values.tolist()
+                    all_stored_ticks_list = all_stored_ticks_df[
+                        DEFAULT_TRADES_COLUMNS
+                    ].values.tolist()
                     all_stored_ticks_list.extend(new_ticks)
                     trades_df = self._process_trades_df(
                         pair,
@@ -2661,11 +2670,12 @@ class Exchange:
                         candle_type,
                         all_stored_ticks_list,
                         cache,
-                        first_required_candle_date=first_candle_ms
+                        first_required_candle_date=first_candle_ms,
                     )
                     results_df[(pair, timeframe, candle_type)] = trades_df
                     data_handler.trades_store(
-                        f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode)
+                        f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode
+                    )
 
                 else:
                     raise OperationalException("no new ticks")
@@ -2677,8 +2687,10 @@ class Exchange:
     ) -> bool:  # Timeframe in seconds
         trades = self.trades((pair, timeframe, candle_type), False)
         pair_last_refreshed = int(trades.iloc[-1]["timestamp"])
-        full_candle = int(timeframe_to_next_date(
-            timeframe, dt_from_ts(pair_last_refreshed)).timestamp()) * 1000
+        full_candle = (
+            int(timeframe_to_next_date(timeframe, dt_from_ts(pair_last_refreshed)).timestamp())
+            * 1000
+        )
         now = dt_ts()
         return full_candle <= now
 

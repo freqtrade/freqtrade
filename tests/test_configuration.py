@@ -1076,14 +1076,20 @@ def test__validate_consumers(default_conf, caplog) -> None:
 
 def test__validate_orderflow(default_conf) -> None:
     conf = deepcopy(default_conf)
-    conf['exchange']['use_public_trades'] = True
-    with pytest.raises(ConfigurationError,
-                       match="Orderflow is a required configuration key when using public trades."):
+    conf["exchange"]["use_public_trades"] = True
+    with pytest.raises(
+        ConfigurationError,
+        match="Orderflow is a required configuration key when using public trades.",
+    ):
         validate_config_consistency(conf)
 
-    conf.update({'orderflow': {
-        "scale": 0.5,
-    }})
+    conf.update(
+        {
+            "orderflow": {
+                "scale": 0.5,
+            }
+        }
+    )
     # Should pass.
     validate_config_consistency(conf)
 

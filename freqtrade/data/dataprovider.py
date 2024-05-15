@@ -455,7 +455,7 @@ class DataProvider:
         Refresh latest trades data (if enabled in config)
         """
 
-        use_public_trades = self._config.get('exchange', {}).get('use_public_trades', False)
+        use_public_trades = self._config.get("exchange", {}).get("use_public_trades", False)
         if use_public_trades:
             if self._exchange:
                 self._exchange.refresh_latest_trades(pairlist)
@@ -497,11 +497,7 @@ class DataProvider:
             return DataFrame()
 
     def trades(
-        self,
-        pair: str,
-        timeframe: Optional[str] = None,
-        copy: bool = True,
-        candle_type: str = ''
+        self, pair: str, timeframe: Optional[str] = None, copy: bool = True, candle_type: str = ""
     ) -> DataFrame:
         """
         Get candle (TRADES) data for the given pair as DataFrame
@@ -515,17 +511,23 @@ class DataProvider:
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             if self._exchange is None:
                 raise OperationalException(NO_EXCHANGE_EXCEPTION)
-            _candle_type = CandleType.from_string(
-                candle_type) if candle_type != '' else self._config['candle_type_def']
+            _candle_type = (
+                CandleType.from_string(candle_type)
+                if candle_type != ""
+                else self._config["candle_type_def"]
+            )
             return self._exchange.trades(
-                (pair, timeframe or self._config['timeframe'], _candle_type),
-                copy=copy
+                (pair, timeframe or self._config["timeframe"], _candle_type), copy=copy
             )
         elif self.runmode in (RunMode.BACKTEST, RunMode.HYPEROPT):
-            _candle_type = CandleType.from_string(
-                candle_type) if candle_type != '' else self._config['candle_type_def']
+            _candle_type = (
+                CandleType.from_string(candle_type)
+                if candle_type != ""
+                else self._config["candle_type_def"]
+            )
             data_handler = get_datahandler(
-                self._config['datadir'], data_format=self._config['dataformat_trades'])
+                self._config["datadir"], data_format=self._config["dataformat_trades"]
+            )
             trades_df = data_handler.trades_load(pair, TradingMode.FUTURES)
             return trades_df
 

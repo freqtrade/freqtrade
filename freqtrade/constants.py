@@ -3,6 +3,7 @@
 """
 bot constants
 """
+
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
@@ -531,7 +532,7 @@ CONF_SCHEMA = {
                 "stacked_imbalance_range": {"type": "number"},
                 "imbalance_volume": {"type": "number"},
                 "imbalance_ratio": {"type": "number"},
-            }
+            },
         },
     },
     "definitions": {

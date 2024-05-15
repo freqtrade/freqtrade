@@ -2414,8 +2414,7 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_pa
     exchange._api_async.fetch_trades = get_mock_coro(trades)
     exchange._ft_has["exchange_has_overrides"]["fetchTrades"] = True
 
-    pairs = [("IOTA/USDT:USDT", "5m", candle_type),
-             ("XRP/USDT:USDT", "5m", candle_type)]
+    pairs = [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
     # empty dicts
     assert not exchange._trades
     res = exchange.refresh_latest_trades(pairs, cache=False)
@@ -2442,10 +2441,8 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_pa
         # if copy is "True"
         assert exchange.trades(pair) is not exchange.trades(pair)
         assert exchange.trades(pair) is not exchange.trades(pair, copy=True)
-        assert exchange.trades(
-            pair, copy=True) is not exchange.trades(pair, copy=True)
-        assert exchange.trades(
-            pair, copy=False) is exchange.trades(pair, copy=False)
+        assert exchange.trades(pair, copy=True) is not exchange.trades(pair, copy=True)
+        assert exchange.trades(pair, copy=False) is exchange.trades(pair, copy=False)
 
         # test caching
         ohlcv = [
@@ -2470,12 +2467,10 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_pa
         trades_df = DataFrame(ohlcv, columns=cols)
 
         trades_df["date"] = to_datetime(trades_df["date"], unit="ms", utc=True)
-        trades_df["date"] = trades_df["date"].apply(
-            lambda date: timeframe_to_prev_date("5m", date))
+        trades_df["date"] = trades_df["date"].apply(lambda date: timeframe_to_prev_date("5m", date))
         exchange._klines[pair] = trades_df
     res = exchange.refresh_latest_trades(
-        [("IOTA/USDT:USDT", "5m", candle_type),
-         ("XRP/USDT:USDT", "5m", candle_type)]
+        [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
     )
     assert len(res) == 0
     assert exchange._api_async.fetch_trades.call_count == 0
@@ -2501,12 +2496,10 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_pa
             }
         ]
         trades_df = DataFrame(trades)
-        trades_df["date"] = to_datetime(
-            trades_df["timestamp"], unit="ms", utc=True)
+        trades_df["date"] = to_datetime(trades_df["timestamp"], unit="ms", utc=True)
         exchange._trades[pair] = trades_df
     res = exchange.refresh_latest_trades(
-        [("IOTA/USDT:USDT", "5m", candle_type),
-         ("XRP/USDT:USDT", "5m", candle_type)]
+        [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
     )
     assert len(res) == len(pairs)
 

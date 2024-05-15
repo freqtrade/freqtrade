@@ -66,7 +66,7 @@ def test_historic_trades(mocker, default_conf, trades_history_df):
     historymock = MagicMock(return_value=trades_history_df)
     mocker.patch(
         "freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._trades_load",
-        historymock
+        historymock,
     )
 
     dp = DataProvider(default_conf, None)
@@ -82,8 +82,8 @@ def test_historic_trades(mocker, default_conf, trades_history_df):
     assert len(data) == 0
 
     # Switch to backtest mode
-    default_conf['runmode'] = RunMode.BACKTEST
-    default_conf['dataformat_trades'] = 'feather'
+    default_conf["runmode"] = RunMode.BACKTEST
+    default_conf["dataformat_trades"] = "feather"
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
     data = dp.trades("UNITTEST/BTC", "5m")
@@ -91,7 +91,7 @@ def test_historic_trades(mocker, default_conf, trades_history_df):
     assert len(data) == len(trades_history_df)
 
     # Random other runmode
-    default_conf['runmode'] = RunMode.UTIL_EXCHANGE
+    default_conf["runmode"] = RunMode.UTIL_EXCHANGE
     dp = DataProvider(default_conf, None)
     data = dp.trades("UNITTEST/BTC", "5m")
     assert isinstance(data, DataFrame)
@@ -311,7 +311,7 @@ def test_refresh(mocker, default_conf):
     # Test with public trades
     refresh_mock.reset_mock()
     refresh_mock.reset_mock()
-    default_conf['exchange']['use_public_trades'] = True
+    default_conf["exchange"]["use_public_trades"] = True
     dp.refresh(pairs, pairs_non_trad)
     assert mock_refresh_trades.call_count == 1
     assert refresh_mock.call_count == 1

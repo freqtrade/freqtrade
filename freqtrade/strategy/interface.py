@@ -1594,17 +1594,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         return dataframe
 
     def _if_enabled_populate_trades(self, dataframe: DataFrame, metadata: dict):
-        use_public_trades = self.config.get('exchange', {}).get('use_public_trades', False)
+        use_public_trades = self.config.get("exchange", {}).get("use_public_trades", False)
         if use_public_trades:
-            trades = self.dp.trades(pair=metadata['pair'], copy=False)
+            trades = self.dp.trades(pair=metadata["pair"], copy=False)
 
             config = self.config
-            config['timeframe'] = self.timeframe
+            config["timeframe"] = self.timeframe
             # TODO: slice trades to size of dataframe for faster backtesting
-            dataframe = populate_dataframe_with_trades(
-                config,
-                dataframe,
-                trades)
+            dataframe = populate_dataframe_with_trades(config, dataframe, trades)
 
             logger.debug("Populated dataframe with trades.")
 

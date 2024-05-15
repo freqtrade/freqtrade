@@ -674,8 +674,9 @@ def test_download_trades_history(
     mocker.patch(f"{EXMS}.get_historic_trades", MagicMock(side_effect=ValueError))
     caplog.clear()
 
-    assert not _download_trades_history(data_handler=data_handler, exchange=exchange,
-                                        pair='ETH/BTC', trading_mode=TradingMode.SPOT)
+    assert not _download_trades_history(
+        data_handler=data_handler, exchange=exchange, pair="ETH/BTC", trading_mode=TradingMode.SPOT
+    )
     assert log_has_re('Failed to download and store historic trades for pair: "ETH/BTC".*', caplog)
 
     file2 = tmp_path / "XRP_ETH-trades.json.gz"
