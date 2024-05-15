@@ -2407,7 +2407,9 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type) -> Non
     ]
 
     caplog.set_level(logging.DEBUG)
-    exchange = get_patched_exchange(mocker, default_conf)
+    use_trades_conf = default_conf
+    use_trades_conf["exchange"]["use_public_trades"] = True
+    exchange = get_patched_exchange(mocker, use_trades_conf)
     exchange._api_async.fetch_trades = get_mock_coro(trades)
     exchange._ft_has["exchange_has_overrides"]["fetchTrades"] = True
 

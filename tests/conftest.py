@@ -593,7 +593,6 @@ def get_default_conf(testdatadir):
                 "DOGE/BTC",
                 "HOT/BTC",
             ],
-            "use_public_trades": True,
         },
         "pairlists": [{"method": "StaticPairList"}],
         "telegram": {
