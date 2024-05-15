@@ -522,8 +522,8 @@ To save time, by default backtest will reuse a cached result from within the las
 
 ### Further backtest-result analysis
 
-To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis as shown in the [data analysis](data-analysis.md#backtesting) backtesting section.
+To further analyze your backtest results, freqtrade will export the trades to file by default.
+You can then load the trades to perform further analysis as shown in the [data analysis](strategy_analysis_example.md#load-backtest-results-to-pandas-dataframe) backtesting section.
 
 ## Assumptions made by backtesting
 
@@ -531,12 +531,13 @@ Since backtesting lacks some detailed information about what happens within a ca
 
 - Exchange [trading limits](#trading-limits-in-backtesting) are respected
 - Entries happen at open-price
-- All orders are filled at the requested price (no slippage, no unfilled orders)
+- All orders are filled at the requested price (no slippage) as long as the price is within the candle's high/low range
 - Exit-signal exits happen at open-price of the consecutive candle
+- Exits don't free their trade slot for a new trade until the next candle
 - Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
-  - exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
-  - exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit
+  - Exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
+  - Exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit
   - ROI entries which came into effect on the triggering candle (e.g. `120: 0.02` for 1h candles, from `60: 0.05`) will use the candle's open as exit rate
   - Force-exits caused by `<N>=-1` ROI entries use low as exit value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss exits happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
@@ -587,7 +588,7 @@ These precision values are based on current exchange limits (as described in the
 
 ## Improved backtest accuracy
 
-One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).
+One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or vice-versa?).
 So assuming you run backtesting with a 1h timeframe, there will be 4 prices for that candle (Open, High, Low, Close).
 
 While backtesting does take some assumptions (read above) about this - this can never be perfect, and will always be biased in one way or the other.

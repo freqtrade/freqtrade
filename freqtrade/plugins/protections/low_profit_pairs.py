@@ -1,4 +1,3 @@
-
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -12,33 +11,37 @@ logger = logging.getLogger(__name__)
 
 
 class LowProfitPairs(IProtection):
-
     has_global_stop: bool = False
     has_local_stop: bool = True
 
     def __init__(self, config: Config, protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
-        self._trade_limit = protection_config.get('trade_limit', 1)
-        self._required_profit = protection_config.get('required_profit', 0.0)
-        self._only_per_side = protection_config.get('only_per_side', False)
+        self._trade_limit = protection_config.get("trade_limit", 1)
+        self._required_profit = protection_config.get("required_profit", 0.0)
+        self._only_per_side = protection_config.get("only_per_side", False)
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
         """
-        return (f"{self.name} - Low Profit Protection, locks pairs with "
-                f"profit < {self._required_profit} within {self.lookback_period_str}.")
+        return (
+            f"{self.name} - Low Profit Protection, locks pairs with "
+            f"profit < {self._required_profit} within {self.lookback_period_str}."
+        )
 
     def _reason(self, profit: float) -> str:
         """
         LockReason to use
         """
-        return (f'{profit} < {self._required_profit} in {self.lookback_period_str}, '
-                f'locking for {self.stop_duration_str}.')
+        return (
+            f"{profit} < {self._required_profit} in {self.lookback_period_str}, "
+            f"locking for {self.stop_duration_str}."
+        )
 
     def _low_profit(
-            self, date_now: datetime, pair: str, side: LongShort) -> Optional[ProtectionReturn]:
+        self, date_now: datetime, pair: str, side: LongShort
+    ) -> Optional[ProtectionReturn]:
         """
         Evaluate recent trades for pair
         """
@@ -57,20 +60,23 @@ class LowProfitPairs(IProtection):
             return None
 
         profit = sum(
-            trade.close_profit for trade in trades if trade.close_profit
-            and (not self._only_per_side or trade.trade_direction == side)
-            )
+            trade.close_profit
+            for trade in trades
+            if trade.close_profit and (not self._only_per_side or trade.trade_direction == side)
+        )
         if profit < self._required_profit:
             self.log_once(
                 f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
-                f"within {self._lookback_period} minutes.", logger.info)
+                f"within {self._lookback_period} minutes.",
+                logger.info,
+            )
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return ProtectionReturn(
                 lock=True,
                 until=until,
                 reason=self._reason(profit),
-                lock_side=(side if self._only_per_side else '*')
+                lock_side=(side if self._only_per_side else "*"),
             )
 
         return None
@@ -85,7 +91,8 @@ class LowProfitPairs(IProtection):
         return None
 
     def stop_per_pair(
-            self, pair: str, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
+        self, pair: str, date_now: datetime, side: LongShort
+    ) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

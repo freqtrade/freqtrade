@@ -167,7 +167,7 @@ During backtesting, `current_rate` (and `current_profit`) are provided against t
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
 
-Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
 !!! Note "Use of dates"
     All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
@@ -332,7 +332,7 @@ class AwesomeStrategy(IStrategy):
                         **kwargs) -> Optional[float]:
 
         if current_profit < 0.04:
-            return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
+            return None # return None to keep using the initial stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
         desired_stoploss = current_profit / 2
@@ -450,7 +450,7 @@ Stoploss values returned from `custom_stoploss()` must specify a percentage rela
 
     ```
 
-    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
+    Full examples can be found in the [Custom stoploss](strategy-callbacks.md#custom-stoploss) section of the Documentation.
 
 !!! Note
     Providing invalid input to `stoploss_from_open()` may produce "CustomStoploss function did not return valid stoploss" warnings.
@@ -809,6 +809,7 @@ Returning a value more than the above (so remaining stake_amount would become ne
 
 ``` python
 from freqtrade.persistence import Trade
+from typing import Optional, Tuple, Union
 
 
 class DigDeeperStrategy(IStrategy):
@@ -948,7 +949,7 @@ If the cancellation of the original order fails, then the order will not be repl
 
 ```python
 from freqtrade.persistence import Trade
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 class AwesomeStrategy(IStrategy):
 

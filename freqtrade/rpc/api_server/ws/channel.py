@@ -10,8 +10,10 @@ from fastapi import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosed
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
-from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
-                                                    WebSocketSerializer)
+from freqtrade.rpc.api_server.ws.serializer import (
+    HybridJSONWebSocketSerializer,
+    WebSocketSerializer,
+)
 from freqtrade.rpc.api_server.ws.types import WebSocketType
 from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 
@@ -23,12 +25,13 @@ class WebSocketChannel:
     """
     Object to help facilitate managing a websocket connection
     """
+
     def __init__(
         self,
         websocket: WebSocketType,
         channel_id: Optional[str] = None,
         serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer,
-        send_throttle: float = 0.01
+        send_throttle: float = 0.01,
     ):
         self.channel_id = channel_id if channel_id else uuid4().hex[:8]
         self._websocket = WebSocketProxy(websocket)
@@ -77,9 +80,7 @@ class WebSocketChannel:
             self._send_high_limit = min(max(self.avg_send_time * 2, 1), 3)
 
     async def send(
-        self,
-        message: Union[WSMessageSchemaType, Dict[str, Any]],
-        timeout: bool = False
+        self, message: Union[WSMessageSchemaType, Dict[str, Any]], timeout: bool = False
     ):
         """
         Send a message on the wrapped websocket. If the sending
@@ -95,8 +96,7 @@ class WebSocketChannel:
             # a TimeoutError and bubble up to the
             # message_endpoint to close the connection
             await asyncio.wait_for(
-                self._wrapped_ws.send(message),
-                timeout=self._send_high_limit if timeout else None
+                self._wrapped_ws.send(message), timeout=self._send_high_limit if timeout else None
             )
             total_time = time.time() - _
             self._send_times.append(total_time)
@@ -152,7 +152,7 @@ class WebSocketChannel:
         """
         return self._closed.is_set()
 
-    def set_subscriptions(self, subscriptions: List[str] = []) -> None:
+    def set_subscriptions(self, subscriptions: List[str]) -> None:
         """
         Set which subscriptions this channel is subscribed to
 
@@ -205,7 +205,7 @@ class WebSocketChannel:
                 asyncio.TimeoutError,
                 WebSocketDisconnect,
                 ConnectionClosed,
-                RuntimeError
+                RuntimeError,
             ):
                 pass
             except Exception as e:
@@ -225,10 +225,7 @@ class WebSocketChannel:
 
 
 @asynccontextmanager
-async def create_channel(
-    websocket: WebSocketType,
-    **kwargs
-) -> AsyncIterator[WebSocketChannel]:
+async def create_channel(websocket: WebSocketType, **kwargs) -> AsyncIterator[WebSocketChannel]:
     """
     Context manager for safely opening and closing a WebSocketChannel
     """

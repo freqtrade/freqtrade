@@ -16,7 +16,7 @@ def strip_trailing_zeros(value: str) -> str:
     :param value: Value to be stripped
     :return: Stripped value
     """
-    return value.rstrip('0').rstrip('.')
+    return value.rstrip("0").rstrip(".")
 
 
 def round_value(value: float, decimals: int, keep_trailing_zeros=False) -> str:
@@ -33,8 +33,7 @@ def round_value(value: float, decimals: int, keep_trailing_zeros=False) -> str:
     return val
 
 
-def fmt_coin(
-        value: float, coin: str, show_coin_name=True, keep_trailing_zeros=False) -> str:
+def fmt_coin(value: float, coin: str, show_coin_name=True, keep_trailing_zeros=False) -> str:
     """
     Format price value for this coin
     :param value: Value to be printed

@@ -1,6 +1,7 @@
 """
 Performance pair list filter
 """
+
 import logging
 from typing import Any, Dict, List
 
@@ -16,14 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 class PerformanceFilter(IPairList):
-
-    def __init__(self, exchange, pairlistmanager,
-                 config: Config, pairlistconfig: Dict[str, Any],
-                 pairlist_pos: int) -> None:
+    def __init__(
+        self,
+        exchange,
+        pairlistmanager,
+        config: Config,
+        pairlistconfig: Dict[str, Any],
+        pairlist_pos: int,
+    ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._minutes = pairlistconfig.get('minutes', 0)
-        self._min_profit = pairlistconfig.get('min_profit')
+        self._minutes = pairlistconfig.get("minutes", 0)
+        self._min_profit = pairlistconfig.get("min_profit")
 
     @property
     def needstickers(self) -> bool:
@@ -82,25 +87,29 @@ class PerformanceFilter(IPairList):
             return pairlist
 
         # Get pairlist from performance dataframe values
-        list_df = pd.DataFrame({'pair': pairlist})
-        list_df['prior_idx'] = list_df.index
+        list_df = pd.DataFrame({"pair": pairlist})
+        list_df["prior_idx"] = list_df.index
 
         # Set initial value for pairs with no trades to 0
         # Sort the list using:
         #  - primarily performance (high to low)
         #  - then count (low to high, so as to favor same performance with fewer trades)
         #  - then by prior index, keeping original sorting order
-        sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['profit_ratio', 'count', 'prior_idx'],
-                                   ascending=[False, True, True])
+        sorted_df = (
+            list_df.merge(performance, on="pair", how="left")
+            .fillna(0)
+            .sort_values(by=["profit_ratio", "count", "prior_idx"], ascending=[False, True, True])
+        )
         if self._min_profit is not None:
-            removed = sorted_df[sorted_df['profit_ratio'] < self._min_profit]
+            removed = sorted_df[sorted_df["profit_ratio"] < self._min_profit]
             for _, row in removed.iterrows():
                 self.log_once(
                     f"Removing pair {row['pair']} since {row['profit_ratio']} is "
-                    f"below {self._min_profit}", logger.info)
-            sorted_df = sorted_df[sorted_df['profit_ratio'] >= self._min_profit]
+                    f"below {self._min_profit}",
+                    logger.info,
+                )
+            sorted_df = sorted_df[sorted_df["profit_ratio"] >= self._min_profit]
 
-        pairlist = sorted_df['pair'].tolist()
+        pairlist = sorted_df["pair"].tolist()
 
         return pairlist

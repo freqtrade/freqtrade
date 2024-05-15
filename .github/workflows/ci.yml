@@ -111,7 +111,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -129,7 +133,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "macos-latest", "macos-13", "macos-14" ]
+        os: [ "macos-12", "macos-13", "macos-14" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
         exclude:
           - os: "macos-14"
@@ -230,7 +234,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -300,7 +308,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -414,7 +426,7 @@ jobs:
         pytest --random-order --longrun --durations 20 -n auto
 
 
-  # Notify only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successful
   notify-complete:
     needs: [
       build-linux,

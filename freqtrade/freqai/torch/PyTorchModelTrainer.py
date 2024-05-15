@@ -19,16 +19,16 @@ logger = logging.getLogger(__name__)
 
 class PyTorchModelTrainer(PyTorchTrainerInterface):
     def __init__(
-            self,
-            model: nn.Module,
-            optimizer: Optimizer,
-            criterion: nn.Module,
-            device: str,
-            data_convertor: PyTorchDataConvertor,
-            model_meta_data: Dict[str, Any] = {},
-            window_size: int = 1,
-            tb_logger: Any = None,
-            **kwargs
+        self,
+        model: nn.Module,
+        optimizer: Optimizer,
+        criterion: nn.Module,
+        device: str,
+        data_convertor: PyTorchDataConvertor,
+        model_meta_data: Dict[str, Any] = {},
+        window_size: int = 1,
+        tb_logger: Any = None,
+        **kwargs,
     ):
         """
         :param model: The PyTorch model to be trained.
@@ -38,7 +38,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         :param init_model: A dictionary containing the initial model/optimizer
             state_dict and model_meta_data saved by self.save() method.
         :param model_meta_data: Additional metadata about the model (optional).
-        :param data_convertor: convertor from pd.DataFrame to torch.tensor.
+        :param data_convertor: converter from pd.DataFrame to torch.tensor.
         :param n_steps: used to calculate n_epochs. The number of training iterations to run.
             iteration here refers to the number of times optimizer.step() is called.
             ignored if n_epochs is set.
@@ -101,9 +101,9 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
 
     @torch.no_grad()
     def estimate_loss(
-            self,
-            data_loader_dictionary: Dict[str, DataLoader],
-            split: str,
+        self,
+        data_loader_dictionary: Dict[str, DataLoader],
+        split: str,
     ) -> None:
         self.model.eval()
         for _, batch_data in enumerate(data_loader_dictionary[split]):
@@ -119,9 +119,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.model.train()
 
     def create_data_loaders_dictionary(
-            self,
-            data_dictionary: Dict[str, pd.DataFrame],
-            splits: List[str]
+        self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]
     ) -> Dict[str, DataLoader]:
         """
         Converts the input data to PyTorch tensors using a data loader.
@@ -168,12 +166,15 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
           user needs to store. e.g. class_names for classification models.
         """
 
-        torch.save({
-            "model_state_dict": self.model.state_dict(),
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "model_meta_data": self.model_meta_data,
-            "pytrainer": self
-        }, path)
+        torch.save(
+            {
+                "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "model_meta_data": self.model_meta_data,
+                "pytrainer": self,
+            },
+            path,
+        )
 
     def load(self, path: Path):
         checkpoint = torch.load(path)
@@ -198,9 +199,7 @@ class PyTorchTransformerTrainer(PyTorchModelTrainer):
     """
 
     def create_data_loaders_dictionary(
-            self,
-            data_dictionary: Dict[str, pd.DataFrame],
-            splits: List[str]
+        self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]
     ) -> Dict[str, DataLoader]:
         """
         Converts the input data to PyTorch tensors using a data loader.

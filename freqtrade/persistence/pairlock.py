@@ -12,7 +12,8 @@ class PairLock(ModelBase):
     """
     Pair Locks database model.
     """
-    __tablename__ = 'pairlocks'
+
+    __tablename__ = "pairlocks"
     session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -32,43 +33,48 @@ class PairLock(ModelBase):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (
-            f'PairLock(id={self.id}, pair={self.pair}, side={self.side}, lock_time={lock_time}, '
-            f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
+            f"PairLock(id={self.id}, pair={self.pair}, side={self.side}, lock_time={lock_time}, "
+            f"lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})"
+        )
 
     @staticmethod
     def query_pair_locks(
-            pair: Optional[str], now: datetime, side: str = '*') -> ScalarResult['PairLock']:
+        pair: Optional[str], now: datetime, side: str = "*"
+    ) -> ScalarResult["PairLock"]:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """
-        filters = [PairLock.lock_end_time > now,
-                   # Only active locks
-                   PairLock.active.is_(True), ]
+        filters = [
+            PairLock.lock_end_time > now,
+            # Only active locks
+            PairLock.active.is_(True),
+        ]
         if pair:
             filters.append(PairLock.pair == pair)
-        if side != '*':
-            filters.append(or_(PairLock.side == side, PairLock.side == '*'))
+        if side != "*":
+            filters.append(or_(PairLock.side == side, PairLock.side == "*"))
         else:
-            filters.append(PairLock.side == '*')
+            filters.append(PairLock.side == "*")
 
         return PairLock.session.scalars(select(PairLock).filter(*filters))
 
     @staticmethod
-    def get_all_locks() -> ScalarResult['PairLock']:
+    def get_all_locks() -> ScalarResult["PairLock"]:
         return PairLock.session.scalars(select(PairLock))
 
     def to_json(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'pair': self.pair,
-            'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
-            'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
-            'lock_end_time': self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
-            'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
-                                                                 ).timestamp() * 1000),
-            'reason': self.reason,
-            'side': self.side,
-            'active': self.active,
+            "id": self.id,
+            "pair": self.pair,
+            "lock_time": self.lock_time.strftime(DATETIME_PRINT_FORMAT),
+            "lock_timestamp": int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            "lock_end_time": self.lock_end_time.strftime(DATETIME_PRINT_FORMAT),
+            "lock_end_timestamp": int(
+                self.lock_end_time.replace(tzinfo=timezone.utc).timestamp() * 1000
+            ),
+            "reason": self.reason,
+            "side": self.side,
+            "active": self.active,
         }

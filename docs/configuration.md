@@ -197,7 +197,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 | `max_entry_position_adjustment` | Maximum additional order(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
 | | **Exchange**
-| `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
+| `exchange.name` | **Required.** Name of the exchange class to use. <br> **Datatype:** String
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -252,7 +252,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `internals.process_throttle_secs` | Set the process throttle, or minimum loop duration for one bot iteration loop. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
 | `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> **Datatype:** Positive Integer or 0
-| `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
+| `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](advanced-setup.md#configure-the-bot-running-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
 | `recursive_strategy_search` | Set to `true` to recursively search sub-directories inside `user_data/strategies` for a strategy. <br> **Datatype:** Boolean
@@ -370,7 +370,7 @@ This setting works in combination with `max_open_trades`. The maximum capital en
 For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a configuration of `max_open_trades=3` and `stake_amount=0.05`.
 
 !!! Note
-    This setting respects the [available balance configuration](#available-balance).
+    This setting respects the [available balance configuration](#tradable-balance).
 
 #### Dynamic stake amount
 
@@ -547,7 +547,7 @@ is automatically cancelled by the exchange.
 **PO (Post only):**
 
 Post only order. The order is either placed as a maker order, or it is canceled.
-This means the order must be placed on orderbook for at at least time in an unfilled state.
+This means the order must be placed on orderbook for at least time in an unfilled state.
 
 #### time_in_force config
 

@@ -19,8 +19,16 @@ class PyTorchTransformerModel(nn.Module):
     Lukasz Kaiser, and Illia Polosukhin. 2017.
     """
 
-    def __init__(self, input_dim: int = 7, output_dim: int = 7, hidden_dim=1024,
-                 n_layer=2, dropout_percent=0.1, time_window=10, nhead=8):
+    def __init__(
+        self,
+        input_dim: int = 7,
+        output_dim: int = 7,
+        hidden_dim=1024,
+        n_layer=2,
+        dropout_percent=0.1,
+        time_window=10,
+        nhead=8,
+    ):
         super().__init__()
         self.time_window = time_window
         # ensure the input dimension to the transformer is divisible by nhead
@@ -34,7 +42,8 @@ class PyTorchTransformerModel(nn.Module):
 
         # Define the encoder block of the Transformer
         self.encoder_layer = nn.TransformerEncoderLayer(
-            d_model=self.dim_val, nhead=nhead, dropout=dropout_percent, batch_first=True)
+            d_model=self.dim_val, nhead=nhead, dropout=dropout_percent, batch_first=True
+        )
         self.transformer = nn.TransformerEncoder(self.encoder_layer, num_layers=n_layer)
 
         # the pseudo decoding FC
@@ -48,7 +57,7 @@ class PyTorchTransformerModel(nn.Module):
             nn.Linear(int(hidden_dim / 2), int(hidden_dim / 4)),
             nn.ReLU(),
             nn.Dropout(dropout_percent),
-            nn.Linear(int(hidden_dim / 4), output_dim)
+            nn.Linear(int(hidden_dim / 4), output_dim),
         )
 
     def forward(self, x, mask=None, add_positional_encoding=True):

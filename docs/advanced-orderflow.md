@@ -22,7 +22,7 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 ```json
 "orderflow": {
     "scale": 0.5, 
-    "stacked_imbalance_range": 3, //  needs at least this amount of imblance next to each other
+    "stacked_imbalance_range": 3, //  needs at least this amount of imbalance next to each other
     "imbalance_volume": 1, //  filters out below
     "imbalance_ratio": 300 //  filters out ratio lower than
   },

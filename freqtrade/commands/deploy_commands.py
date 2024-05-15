@@ -16,6 +16,10 @@ from freqtrade.util import render_template, render_template_with_fallback
 logger = logging.getLogger(__name__)
 
 
+# Timeout for requests
+req_timeout = 30
+
+
 def start_create_userdir(args: Dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopt, ...)
@@ -34,7 +38,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     """
     Deploy new strategy from template to strategy_path
     """
-    fallback = 'full'
+    fallback = "full"
     attributes = render_template_with_fallback(
         templatefile=f"strategy_subtemplates/strategy_attributes_{subtemplate}.j2",
         templatefallbackfile=f"strategy_subtemplates/strategy_attributes_{fallback}.j2",
@@ -60,33 +64,35 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
         templatefallbackfile="strategy_subtemplates/strategy_methods_empty.j2",
     )
 
-    strategy_text = render_template(templatefile='base_strategy.py.j2',
-                                    arguments={"strategy": strategy_name,
-                                               "attributes": attributes,
-                                               "indicators": indicators,
-                                               "buy_trend": buy_trend,
-                                               "sell_trend": sell_trend,
-                                               "plot_config": plot_config,
-                                               "additional_methods": additional_methods,
-                                               })
+    strategy_text = render_template(
+        templatefile="base_strategy.py.j2",
+        arguments={
+            "strategy": strategy_name,
+            "attributes": attributes,
+            "indicators": indicators,
+            "buy_trend": buy_trend,
+            "sell_trend": sell_trend,
+            "plot_config": plot_config,
+            "additional_methods": additional_methods,
+        },
+    )
 
     logger.info(f"Writing strategy to `{strategy_path}`.")
     strategy_path.write_text(strategy_text)
 
 
 def start_new_strategy(args: Dict[str, Any]) -> None:
-
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
-
-        new_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args['strategy'] + '.py')
+        new_path = config["user_data_dir"] / USERPATH_STRATEGIES / (args["strategy"] + ".py")
 
         if new_path.exists():
-            raise OperationalException(f"`{new_path}` already exists. "
-                                       "Please choose another Strategy Name.")
+            raise OperationalException(
+                f"`{new_path}` already exists. Please choose another Strategy Name."
+            )
 
-        deploy_new_strategy(args['strategy'], new_path, args['template'])
+        deploy_new_strategy(args["strategy"], new_path, args["template"])
 
     else:
         raise ConfigurationError("`new-strategy` requires --strategy to be set.")
@@ -96,8 +102,8 @@ def clean_ui_subdir(directory: Path):
     if directory.is_dir():
         logger.info("Removing UI directory content.")
 
-        for p in reversed(list(directory.glob('**/*'))):  # iterate contents from leaves to root
-            if p.name in ('.gitkeep', 'fallback_file.html'):
+        for p in reversed(list(directory.glob("**/*"))):  # iterate contents from leaves to root
+            if p.name in (".gitkeep", "fallback_file.html"):
                 continue
             if p.is_file():
                 p.unlink()
@@ -106,11 +112,11 @@ def clean_ui_subdir(directory: Path):
 
 
 def read_ui_version(dest_folder: Path) -> Optional[str]:
-    file = dest_folder / '.uiversion'
+    file = dest_folder / ".uiversion"
     if not file.is_file():
         return None
 
-    with file.open('r') as f:
+    with file.open("r") as f:
         return f.read()
 
 
@@ -119,7 +125,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from zipfile import ZipFile
 
     logger.info(f"Downloading {dl_url}")
-    resp = requests.get(dl_url).content
+    resp = requests.get(dl_url, timeout=req_timeout).content
     dest_folder.mkdir(parents=True, exist_ok=True)
     with ZipFile(BytesIO(resp)) as zf:
         for fn in zf.filelist:
@@ -129,55 +135,54 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
                     destfile.mkdir(exist_ok=True)
                 else:
                     destfile.write_bytes(x.read())
-    with (dest_folder / '.uiversion').open('w') as f:
+    with (dest_folder / ".uiversion").open("w") as f:
         f.write(version)
 
 
 def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
-    base_url = 'https://api.github.com/repos/freqtrade/frequi/'
+    base_url = "https://api.github.com/repos/freqtrade/frequi/"
     # Get base UI Repo path
 
-    resp = requests.get(f"{base_url}releases")
+    resp = requests.get(f"{base_url}releases", timeout=req_timeout)
     resp.raise_for_status()
     r = resp.json()
 
     if version:
-        tmp = [x for x in r if x['name'] == version]
+        tmp = [x for x in r if x["name"] == version]
         if tmp:
-            latest_version = tmp[0]['name']
-            assets = tmp[0].get('assets', [])
+            latest_version = tmp[0]["name"]
+            assets = tmp[0].get("assets", [])
         else:
             raise ValueError("UI-Version not found.")
     else:
-        latest_version = r[0]['name']
-        assets = r[0].get('assets', [])
-    dl_url = ''
+        latest_version = r[0]["name"]
+        assets = r[0].get("assets", [])
+    dl_url = ""
     if assets and len(assets) > 0:
-        dl_url = assets[0]['browser_download_url']
+        dl_url = assets[0]["browser_download_url"]
 
     # URL not found - try assets url
     if not dl_url:
-        assets = r[0]['assets_url']
-        resp = requests.get(assets)
+        assets = r[0]["assets_url"]
+        resp = requests.get(assets, timeout=req_timeout)
         r = resp.json()
-        dl_url = r[0]['browser_download_url']
+        dl_url = r[0]["browser_download_url"]
 
     return dl_url, latest_version
 
 
 def start_install_ui(args: Dict[str, Any]) -> None:
-
-    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui/installed/'
+    dest_folder = Path(__file__).parents[1] / "rpc/api_server/ui/installed/"
     # First make sure the assets are removed.
-    dl_url, latest_version = get_ui_download_url(args.get('ui_version'))
+    dl_url, latest_version = get_ui_download_url(args.get("ui_version"))
 
     curr_version = read_ui_version(dest_folder)
-    if curr_version == latest_version and not args.get('erase_ui_only'):
+    if curr_version == latest_version and not args.get("erase_ui_only"):
         logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
         return
 
     clean_ui_subdir(dest_folder)
-    if args.get('erase_ui_only'):
+    if args.get("erase_ui_only"):
         logger.info("Erased UI directory content. Not downloading new version.")
     else:
         # Download a new version

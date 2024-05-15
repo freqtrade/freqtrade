@@ -2,7 +2,8 @@ from enum import Enum
 
 
 class HyperoptState(Enum):
-    """ Hyperopt states """
+    """Hyperopt states"""
+
     STARTUP = 1
     DATALOAD = 2
     INDICATORS = 3
