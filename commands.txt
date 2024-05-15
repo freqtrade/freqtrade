@@ -1,6 +1,6 @@
 freqtrade download-data --timerange=20240101- -t 1m
 
-freqtrade hyperopt --hyperopt-loss OnlyProfitHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 1000 --job-workers 3 --timerange=20240401-20240501
+freqtrade hyperopt --hyperopt-loss OnlyProfitHyperOptLoss --strategy EHMAStrategy --spaces buy sell stoploss -e 5000 --job-workers 3 --timerange=20240401-20240501
 
 freqtrade backtesting --strategy EHMAStrategy --timerange=20240401-
 
