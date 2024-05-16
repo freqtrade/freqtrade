@@ -2643,10 +2643,6 @@ class Exchange:
                                 )
 
                     # from_id overrules with exchange set to id paginate
-                    # TODO: DEBUG:
-                    # since_ms = 1698060269000
-                    # from_id = None
-                    # TODO: /DEBUG
                     [_, new_ticks] = self.get_historic_trades(
                         pair,
                         since=since_ms if since_ms else first_candle_ms,
