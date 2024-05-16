@@ -1,5 +1,4 @@
 import logging
-import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -68,8 +67,6 @@ class CatboostClassifierMultiTarget(BaseClassifierModel):
                 {
                     "eval_set": eval_sets[i],
                     "init_model": init_models[i],
-                    "log_cout": sys.stdout,
-                    "log_cerr": sys.stderr,
                 }
             )
 
