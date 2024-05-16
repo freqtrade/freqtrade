@@ -11,12 +11,3 @@
 .rst-versions .rst-other-versions {
     color: white;
 }
-
-header > img.logo {
-    display: none;
-}
-
-header > span {
-    font-size: .7rem;
-    color: white;
-}
