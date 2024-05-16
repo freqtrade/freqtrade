@@ -2375,7 +2375,6 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
 
 @pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
 def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_path) -> None:
-    # TODO: mock cached trades
     trades = [
         {
             # unix timestamp ms
