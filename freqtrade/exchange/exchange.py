@@ -2624,7 +2624,7 @@ class Exchange:
                     else:
                         until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
                         all_stored_ticks_df = data_handler.trades_load(
-                            f"{pair}-cached", self.trading_mode
+                            f"{pair}", self.trading_mode
                         )
 
                         if not all_stored_ticks_df.empty:
@@ -2674,7 +2674,7 @@ class Exchange:
                     )
                     results_df[(pair, timeframe, candle_type)] = trades_df
                     data_handler.trades_store(
-                        f"{pair}-cached", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode
+                        f"{pair}", trades_df[DEFAULT_TRADES_COLUMNS], self.trading_mode
                     )
 
                 else:
