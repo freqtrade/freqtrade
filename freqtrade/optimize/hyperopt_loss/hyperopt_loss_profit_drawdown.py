@@ -31,7 +31,7 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
 
         loss_value = (total_profit * (1 - relative_account_drawdown * DRAWDOWN_MULT))
 
-        if((total_profit < 0) and (loss_value > 0)):
+        if ((total_profit < 0) and (loss_value > 0)):
             return loss_value
 
         return -1 * loss_value
