@@ -2868,7 +2868,16 @@ class Exchange:
         }
         file_dump_json(filename, data)
 
-    def load_cached_leverage_tiers(self, stake_currency: str) -> Optional[Dict[str, List[Dict]]]:
+    def load_cached_leverage_tiers(
+        self, stake_currency: str, cache_time: Optional[timedelta] = None
+    ) -> Optional[Dict[str, List[Dict]]]:
+        """
+        Load cached leverage tiers from disk
+        :param cache_time: The maximum age of the cache before it is considered outdated
+        """
+        if not cache_time:
+            # Default to 4 weeks
+            cache_time = timedelta(weeks=4)
         filename = self._config["datadir"] / "futures" / f"leverage_tiers_{stake_currency}.json"
         if filename.is_file():
             try:
@@ -2876,7 +2885,7 @@ class Exchange:
                 updated = tiers.get("updated")
                 if updated:
                     updated_dt = parser.parse(updated)
-                    if updated_dt < datetime.now(timezone.utc) - timedelta(weeks=4):
+                    if updated_dt < datetime.now(timezone.utc) - cache_time:
                         logger.info("Cached leverage tiers are outdated. Will update.")
                         return None
                 return tiers["data"]
