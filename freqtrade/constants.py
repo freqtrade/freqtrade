@@ -529,8 +529,8 @@ CONF_SCHEMA = {
             "type": "object",
             "properties": {
                 "scale": {"type": "number", "minimum": 0.0},
-                "stacked_imbalance_range": {"type": "number"},
-                "imbalance_volume": {"type": "number"},
+                "stacked_imbalance_range": {"type": "number", "minimum": 0},
+                "imbalance_volume": {"type": "number", "minimum": 0},
                 "imbalance_ratio": {"type": "number", "minimum": 0.0},
             },
         },
