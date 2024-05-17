@@ -502,6 +502,7 @@ class DataProvider:
         """
         Get candle (TRADES) data for the given pair as DataFrame
         Please use the `available_pairs` method to verify which pairs are currently cached.
+        This is not meant to be used in callbacks because of lookahead bias.
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
