@@ -92,7 +92,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
         "orderflow": {
             "scale": 0.005,
             "imbalance_volume": 0,
-            "imbalance_ratio": 300,
+            "imbalance_ratio": 3,
             "stacked_imbalance_range": 3,
         },
     }
@@ -202,7 +202,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
         "orderflow": {
             "scale": 0.5,
             "imbalance_volume": 0,
-            "imbalance_ratio": 300,
+            "imbalance_ratio": 3,
             "stacked_imbalance_range": 3,
         },
     }

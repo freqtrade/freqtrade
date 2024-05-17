@@ -531,7 +531,7 @@ CONF_SCHEMA = {
                 "scale": {"type": "number", "minimum": 0.0},
                 "stacked_imbalance_range": {"type": "number"},
                 "imbalance_volume": {"type": "number"},
-                "imbalance_ratio": {"type": "number"},
+                "imbalance_ratio": {"type": "number", "minimum": 0.0},
             },
         },
     },

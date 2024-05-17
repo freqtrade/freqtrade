@@ -211,16 +211,16 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(trades: pd.DataFrame, scale
 def trades_orderflow_to_imbalances(df: pd.DataFrame, imbalance_ratio: int, imbalance_volume: int):
     """
     :param df: dataframes with bid and ask
-    :param imbalance_ratio: imbalance_ratio e.g. 300
-    :param imbalance_volume: imbalance volume e.g. 3)
+    :param imbalance_ratio: imbalance_ratio e.g. 3
+    :param imbalance_volume: imbalance volume e.g. 10
     :return: dataframe with bid and ask imbalance
     """
     bid = df.bid
     ask = df.ask.shift(-1)
-    bid_imbalance = (bid / ask) > (imbalance_ratio / 100)
+    bid_imbalance = (bid / ask) > (imbalance_ratio)
     # overwrite bid_imbalance with False if volume is not big enough
     bid_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, bid_imbalance)
-    ask_imbalance = (ask / bid) > (imbalance_ratio / 100)
+    ask_imbalance = (ask / bid) > (imbalance_ratio)
     # overwrite ask_imbalance with False if volume is not big enough
     ask_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, ask_imbalance)
     dataframe = pd.DataFrame(
