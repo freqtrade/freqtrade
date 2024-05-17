@@ -86,6 +86,33 @@ class TestCCXTExchange:
         else:
             pytest.skip(f"No sample order available for exchange {exchange_name}")
 
+    def test_ccxt_my_trades_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
+        exch, exchange_name = exchange
+        if trades := EXCHANGES[exchange_name].get("sample_my_trades"):
+            pair = "SOL/USDT"
+            for trade in trades:
+                market = exch._api.markets[pair]
+                po = exch._api.parse_trade(trade)
+                (trade, market)
+                assert isinstance(po["id"], str)
+                assert isinstance(po["side"], str)
+                assert isinstance(po["amount"], float)
+                assert isinstance(po["price"], float)
+                assert isinstance(po["datetime"], str)
+                assert isinstance(po["timestamp"], int)
+
+                if fees := po.get("fees"):
+                    assert isinstance(fees, list)
+                    for fee in fees:
+                        assert isinstance(fee, dict)
+                        assert isinstance(fee["cost"], str)
+                        # TODO: this should be a float!
+                        # assert isinstance(fee["cost"], float)
+                        assert isinstance(fee["currency"], str)
+
+        else:
+            pytest.skip(f"No sample Trades available for exchange {exchange_name}")
+
     def test_ccxt_fetch_tickers(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
         pair = EXCHANGES[exchangename]["pair"]

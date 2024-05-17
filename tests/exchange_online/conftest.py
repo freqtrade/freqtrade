@@ -200,6 +200,24 @@ EXCHANGES = {
                 "rebated_fee_currency": "USDT",
             },
         ],
+        "sample_my_trades": [
+            {
+                "id": "123412341234",
+                "create_time": "167997798",
+                "create_time_ms": "167997798825.566200",
+                "currency_pair": "ETH_USDT",
+                "side": "sell",
+                "role": "taker",
+                "amount": "0.0115",
+                "price": "1712.63",
+                "order_id": "1234123412",
+                "fee": "0.0",
+                "fee_currency": "USDT",
+                "point_fee": "0.03939049",
+                "gt_fee": "0.0",
+                "amend_text": "-",
+            }
+        ],
     },
     "okx": {
         "pair": "BTC/USDT",
