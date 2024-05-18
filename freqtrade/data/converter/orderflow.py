@@ -31,15 +31,6 @@ def _init_dataframe_with_trades_columns(dataframe: pd.DataFrame):
     dataframe["stacked_imbalances_ask"] = np.nan
 
 
-def _convert_timeframe_to_pandas_frequency(timeframe: str):
-    # convert timeframe to format usable by pandas
-    from freqtrade.exchange import timeframe_to_minutes
-
-    timeframe_minutes = timeframe_to_minutes(timeframe)
-    timeframe_frequency = f"{timeframe_minutes}min"
-    return (timeframe_frequency, timeframe_minutes)
-
-
 def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
     from freqtrade.exchange import timeframe_to_next_date, timeframe_to_resample_freq
 
