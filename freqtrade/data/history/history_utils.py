@@ -629,9 +629,7 @@ def download_data_main(config: Config) -> None:
                 trading_mode=config.get("trading_mode", TradingMode.SPOT),
             )
 
-            if config.get("convert_trades", False) or not exchange.get_option(
-                "ohlcv_has_history", True
-            ):
+            if config.get("convert_trades") or not exchange.get_option("ohlcv_has_history", True):
                 # Convert downloaded trade data to different timeframes
                 # Only auto-convert for exchanges without historic klines
 
