@@ -34,8 +34,9 @@ from freqtrade.constants import (
     OBLiteral,
     PairWithTimeframe,
 )
-from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe
-from freqtrade.data.converter.trade_converter import (
+from freqtrade.data.converter import (
+    clean_ohlcv_dataframe,
+    ohlcv_to_dataframe,
     trades_df_remove_duplicates,
     trades_dict_to_list,
     trades_list_to_df,
@@ -2553,7 +2554,7 @@ class Exchange:
         c_type: CandleType,
         ticks: List[List],
         cache: bool,
-        first_required_candle_date: Optional[int],
+        first_required_candle_date: int,
     ) -> DataFrame:
         # keeping parsed dataframe in cache
         trades_df = trades_list_to_df(ticks, True)
@@ -2568,10 +2569,8 @@ class Exchange:
                     trades_df_remove_duplicates(combined_df), columns=combined_df.columns
                 )
                 # Age out old candles
-                if first_required_candle_date:
-                    # slice of older dates
-                    trades_df = trades_df[first_required_candle_date < trades_df["timestamp"]]
-                    trades_df = trades_df.reset_index(drop=True)
+                trades_df = trades_df[first_required_candle_date < trades_df["timestamp"]]
+                trades_df = trades_df.reset_index(drop=True)
             self._trades[(pair, timeframe, c_type)] = trades_df
         return trades_df
 
