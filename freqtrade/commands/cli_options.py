@@ -452,7 +452,8 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "convert_trades": Arg(
         "--convert",
-        help="Convert downloaded trades to OHLCV data. Only applicable in combination with `--dl-trades`. "
+        help="Convert downloaded trades to OHLCV data. Only applicable in combination with "
+        "`--dl-trades`. "
         "Will be automatic for exchanges which don't have historic OHLCV (e.g. Kraken). "
         "If not provided, use `trades-to-ohlcv` to convert trades data to OHLCV data.",
         action="store_true",
