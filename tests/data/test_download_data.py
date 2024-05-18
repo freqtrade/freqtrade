@@ -69,13 +69,19 @@ def test_download_data_main_trades(mocker):
 
     assert dl_mock.call_args[1]["timerange"].starttype == "date"
     assert dl_mock.call_count == 1
-    assert convert_mock.call_count == 1
+    assert convert_mock.call_count == 0
+    dl_mock.reset_mock()
+
     config.update(
         {
-            "download_trades": True,
-            "trading_mode": "futures",
+            "convert_trades": True,
         }
     )
+    download_data_main(config)
+
+    assert dl_mock.call_args[1]["timerange"].starttype == "date"
+    assert dl_mock.call_count == 1
+    assert convert_mock.call_count == 1
 
 
 def test_download_data_main_data_invalid(mocker):
