@@ -48,9 +48,9 @@ nav:
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md
+        - SQL Cheat-sheet: sql_cheatsheet.md
         - Edge Positioning: edge.md
     - FAQ: faq.md
-    - SQL Cheat-sheet: sql_cheatsheet.md
     - Strategy migration: strategy_migration.md
     - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
