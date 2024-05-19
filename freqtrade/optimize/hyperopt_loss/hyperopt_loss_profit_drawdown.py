@@ -15,7 +15,7 @@ from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
-# higher numbers penalize drawdowns more severely
+# smaller numbers penalize drawdowns more severely
 DRAWDOWN_MULT = 0.075
 
 
@@ -32,4 +32,4 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
         except ValueError:
             relative_account_drawdown = 0
 
-        return -1 * (total_profit - (relative_account_drawdown * 1 * total_profit))
+        return -1 * (total_profit - (relative_account_drawdown * total_profit) / DRAWDOWN_MULT)
