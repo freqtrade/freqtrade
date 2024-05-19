@@ -2781,7 +2781,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.00125625,
                 "profit_total_abs": -2.50999,
-                "max_drawdown": 0.23,
+                "max_drawdown_account": 0.23,
                 "max_drawdown_abs": -0.00125625,
                 "holding_avg": timedelta(minutes=3930.0),
                 "stake_currency": "BTC",
@@ -2865,7 +2865,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": 6.185e-05,
                 "profit_total_abs": 0.12357,
-                "max_drawdown": 0.23,
+                "max_drawdown_account": 0.23,
                 "max_drawdown_abs": -0.00125625,
                 "holding_avg": timedelta(minutes=1200.0),
             },  # noqa: E501
@@ -2947,7 +2947,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.13639474,
                 "profit_total_abs": -272.515306,
-                "max_drawdown": 0.25,
+                "max_drawdown_account": 0.25,
                 "max_drawdown_abs": -272.515306,
                 "holding_avg": timedelta(minutes=1691.207729468599),
             },  # noqa: E501
@@ -3109,7 +3109,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.002480140000000001,
                 "profit_total_abs": -4.955321,
-                "max_drawdown": 0.34,
+                "max_drawdown_account": 0.34,
                 "max_drawdown_abs": -4.955321,
                 "holding_avg": timedelta(minutes=3402.8571428571427),
             },  # noqa: E501
@@ -3191,7 +3191,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.0041773,
                 "profit_total_abs": -8.346264999999997,
-                "max_drawdown": 0.45,
+                "max_drawdown_account": 0.45,
                 "max_drawdown_abs": -4.955321,
                 "holding_avg": timedelta(minutes=636.9230769230769),
             },  # noqa: E501
@@ -3273,7 +3273,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.06339929,
                 "profit_total_abs": -126.67197600000004,
-                "max_drawdown": 0.50,
+                "max_drawdown_account": 0.50,
                 "max_drawdown_abs": -200.955321,
                 "holding_avg": timedelta(minutes=3140.377358490566),
             },  # noqa: E501
@@ -3355,7 +3355,7 @@ def saved_hyperopt_results():
                 "profit_median": 0.0,
                 "profit_total": 0.0,
                 "profit_total_abs": 0.0,
-                "max_drawdown": 0.0,
+                "max_drawdown_account": 0.0,
                 "max_drawdown_abs": 0.52,
                 "holding_avg": timedelta(minutes=5340.0),
             },  # noqa: E501
@@ -3437,7 +3437,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.044050070000000004,
                 "profit_total_abs": -88.01256299999999,
-                "max_drawdown": 0.41,
+                "max_drawdown_account": 0.41,
                 "max_drawdown_abs": -150.955321,
                 "holding_avg": timedelta(minutes=6505.676855895196),
             },  # noqa: E501
@@ -3519,7 +3519,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": 0.00021629,
                 "profit_total_abs": 0.432154,
-                "max_drawdown": 0.13,
+                "max_drawdown_account": 0.13,
                 "max_drawdown_abs": -4.955321,
                 "holding_avg": timedelta(minutes=2850.0),
             },  # noqa: E501
@@ -3602,7 +3602,7 @@ def saved_hyperopt_results():
                 "profit_median": -0.012222,
                 "profit_total": -0.07436117,
                 "profit_total_abs": -148.573727,
-                "max_drawdown": 0.52,
+                "max_drawdown_account": 0.52,
                 "max_drawdown_abs": -224.955321,
                 "holding_avg": timedelta(minutes=4282.5641025641025),
             },  # noqa: E501
@@ -3684,7 +3684,7 @@ def saved_hyperopt_results():
                 "profit_median": None,
                 "profit_total": 0,
                 "profit_total_abs": 0.0,
-                "max_drawdown": 0.0,
+                "max_drawdown_account": 0.0,
                 "max_drawdown_abs": 0.0,
                 "holding_avg": timedelta(),
             },  # noqa: E501
