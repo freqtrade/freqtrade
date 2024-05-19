@@ -52,7 +52,7 @@ class HyperoptableStrategy(StrategyTestV3):
     bot_loop_started = False
     bot_started = False
 
-    def bot_loop_start(self):
+    def bot_loop_start(self, **kwargs):
         self.bot_loop_started = True
 
     def bot_start(self, **kwargs) -> None:
