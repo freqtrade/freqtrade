@@ -507,7 +507,9 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values("profit").reset_index(drop=True)
     df1 = df.copy()
-    drawdown = calculate_max_drawdown(df, date_col="open_date", value_col="profit")
+    drawdown = calculate_max_drawdown(
+        df, date_col="open_date", starting_balance=0.2, value_col="profit"
+    )
     # Ensure df has not been altered.
     assert df.equals(df1)
 
@@ -518,6 +520,7 @@ def test_calculate_max_drawdown2():
     # High value must be higher than low value
     assert drawdown.high_value > drawdown.low_value
     assert drawdown.drawdown_abs == 0.091755
+    assert pytest.approx(drawdown.relative_account_drawdown) == 0.32129575
 
     df = DataFrame(zip(values[:5], dates[:5]), columns=["profit", "open_date"])
     with pytest.raises(ValueError, match="No losing trade, therefore no drawdown."):
