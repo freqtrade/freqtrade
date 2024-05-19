@@ -497,7 +497,6 @@ def generate_strategy_stats(
     }
 
     try:
-        max_drawdown_legacy = calculate_max_drawdown(results, value_col="profit_ratio")
         drawdown = calculate_max_drawdown(
             results, value_col="profit_abs", starting_balance=start_balance
         )
@@ -508,7 +507,6 @@ def generate_strategy_stats(
 
         strat_stats.update(
             {
-                "max_drawdown": max_drawdown_legacy.drawdown_abs,  # Deprecated - do not use
                 "max_drawdown_account": drawdown.relative_account_drawdown,
                 "max_relative_drawdown": underwater.relative_account_drawdown,
                 "max_drawdown_abs": drawdown.drawdown_abs,
@@ -527,7 +525,6 @@ def generate_strategy_stats(
     except ValueError:
         strat_stats.update(
             {
-                "max_drawdown": 0.0,
                 "max_drawdown_account": 0.0,
                 "max_relative_drawdown": 0.0,
                 "max_drawdown_abs": 0.0,
