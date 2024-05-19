@@ -11,7 +11,7 @@ on:
     types: [published]
   pull_request:
   schedule:
-    - cron:  '0 5 * * 4'
+    - cron:  '0 3 * * 4'
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
@@ -19,7 +19,7 @@ concurrency:
 permissions:
   repository-projects: read
 jobs:
-  build_linux:
+  build-linux:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -60,11 +60,16 @@ jobs:
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
+
+    - name: Check for version alignment
+      run: |
+        python build_helpers/freqtrade_client_version_align.py
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
@@ -106,7 +111,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -124,8 +133,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "macos-latest", "macos-13" ]
+        os: [ "macos-12", "macos-13", "macos-14" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          - os: "macos-14"
+            python-version: "3.9"
 
     steps:
     - uses: actions/checkout@v4
@@ -154,7 +166,7 @@ jobs:
       run: |
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
-    - name: Installation - macOS
+    - name: Installation - macOS (Brew)
       run: |
         # brew update
         # TODO: Should be the brew upgrade
@@ -177,11 +189,15 @@ jobs:
         rm /usr/local/bin/python3.12-config || true
 
         brew install hdf5 c-blosc libomp
+
+    - name: Installation (python)
+      run: |
         python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
 
     - name: Tests
@@ -218,7 +234,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -288,7 +308,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -310,7 +334,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
 
     - name: pre-commit dependencies
       run: |
@@ -324,8 +348,8 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
-    - uses: pre-commit/action@v3.0.0
+        python-version: "3.12"
+    - uses: pre-commit/action@v3.0.1
 
   docs-check:
     runs-on: ubuntu-22.04
@@ -339,7 +363,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Documentation build
       run: |
@@ -356,7 +380,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
 
-  build_linux_online:
+  build-linux-online:
     # Run pytest with "live" checks
     runs-on: ubuntu-22.04
     steps:
@@ -365,7 +389,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Cache_dependencies
       uses: actions/cache@v4
@@ -392,29 +416,30 @@ jobs:
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
+        pip install -e ft_client/
         pip install -e .
 
     - name: Tests incl. ccxt compatibility tests
       env:
         CI_WEB_PROXY: http://152.67.78.211:13128
       run: |
-        pytest --random-order --longrun --durations 20 -n auto --dist loadscope
+        pytest --random-order --longrun --durations 20 -n auto
 
 
-  # Notify only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successful
   notify-complete:
     needs: [
-      build_linux,
+      build-linux,
       build-macos,
       build-windows,
       docs-check,
       mypy-version-check,
       pre-commit,
-      build_linux_online
+      build-linux-online
     ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
-    if: (github.event_name != 'schedule')
+    if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
     permissions:
       repository-projects: read
     steps:
@@ -437,7 +462,7 @@ jobs:
 
   build:
     name: "Build"
-    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    needs: [ build-linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     steps:
@@ -446,7 +471,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Build distribution
       run: |
@@ -459,6 +484,19 @@ jobs:
         name: freqtrade-build
         path: |
           dist
+        retention-days: 10
+
+    - name: Build Client distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel ft_client
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v4
+      with:
+        name: freqtrade-client-build
+        path: |
+          ft_client/dist
         retention-days: 10
 
   deploy-pypi:
@@ -478,20 +516,22 @@ jobs:
     - name: Download artifact  📦
       uses: actions/download-artifact@v4
       with:
-        name: freqtrade-build
+        pattern: freqtrade*-build
         path: dist
+        merge-multiple: true
+
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.11
+      uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.11
+      uses: pypa/gh-action-pypi-publish@v1.8.14
 
 
   deploy-docker:
-    needs: [ build_linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
+    needs: [ build-linux, build-macos, build-windows, docs-check, mypy-version-check, pre-commit ]
     runs-on: ubuntu-22.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -502,12 +542,13 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: extract_branch
+      id: extract-branch
+      run: |
+        echo "GITHUB_REF='${GITHUB_REF}'"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
@@ -536,7 +577,7 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ steps.extract-branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_multi.sh
 
@@ -553,9 +594,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: extract_branch
+      id: extract-branch
+      run: |
+        echo "GITHUB_REF='${GITHUB_REF}'"
+        echo "branch=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
     - name: Dockerhub login
       env:
@@ -566,7 +608,7 @@ jobs:
 
     - name: Build and test and push docker images
       env:
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ steps.extract-branch.outputs.branch }}
         GHCR_USERNAME: ${{ github.actor }}
         GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |

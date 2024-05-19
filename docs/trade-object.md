@@ -126,7 +126,7 @@ An `Order` object will always be tied to it's corresponding [`Trade`](#trade-obj
 ### Order - Available attributes
 
 an Order object is typically attached to a trade.
-Most properties here can be None as they are dependant on the exchange response.
+Most properties here can be None as they are dependent on the exchange response.
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
@@ -141,7 +141,7 @@ Most properties here can be None as they are dependant on the exchange response.
 `amount` | float | Amount in base currency
 `filled` | float | Filled amount (in base currency)
 `remaining` | float | Remaining amount
-`cost` | float | Cost of the order - usually average * filled (*Exchange dependant on futures, may contain the cost with or without leverage and may be in contracts.*)
+`cost` | float | Cost of the order - usually average * filled (*Exchange dependent on futures, may contain the cost with or without leverage and may be in contracts.*)
 `stake_amount` | float | Stake amount used for this order. *Added in 2023.7.*
 `order_date` | datetime | Order creation date **use `order_date_utc` instead**
 `order_date_utc` | datetime | Order creation date (in UTC)

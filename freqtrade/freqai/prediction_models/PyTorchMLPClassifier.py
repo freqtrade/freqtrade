@@ -4,8 +4,10 @@ import torch
 
 from freqtrade.freqai.base_models.BasePyTorchClassifier import BasePyTorchClassifier
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.torch.PyTorchDataConvertor import (DefaultPyTorchDataConvertor,
-                                                         PyTorchDataConvertor)
+from freqtrade.freqai.torch.PyTorchDataConvertor import (
+    DefaultPyTorchDataConvertor,
+    PyTorchDataConvertor,
+)
 from freqtrade.freqai.torch.PyTorchMLPModel import PyTorchMLPModel
 from freqtrade.freqai.torch.PyTorchModelTrainer import PyTorchModelTrainer
 
@@ -43,16 +45,15 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
     @property
     def data_convertor(self) -> PyTorchDataConvertor:
         return DefaultPyTorchDataConvertor(
-            target_tensor_type=torch.long,
-            squeeze_target_tensor=True
+            target_tensor_type=torch.long, squeeze_target_tensor=True
         )
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         config = self.freqai_info.get("model_training_parameters", {})
-        self.learning_rate: float = config.get("learning_rate",  3e-4)
-        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs",  {})
-        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs",  {})
+        self.learning_rate: float = config.get("learning_rate", 3e-4)
+        self.model_kwargs: Dict[str, Any] = config.get("model_kwargs", {})
+        self.trainer_kwargs: Dict[str, Any] = config.get("trainer_kwargs", {})
 
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
@@ -67,14 +68,12 @@ class PyTorchMLPClassifier(BasePyTorchClassifier):
         self.convert_label_column_to_int(data_dictionary, dk, class_names)
         n_features = data_dictionary["train_features"].shape[-1]
         model = PyTorchMLPModel(
-            input_dim=n_features,
-            output_dim=len(class_names),
-            **self.model_kwargs
+            input_dim=n_features, output_dim=len(class_names), **self.model_kwargs
         )
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.CrossEntropyLoss()
-        # check if continual_learning is activated, and retreive the model to continue training
+        # check if continual_learning is activated, and retrieve the model to continue training
         trainer = self.get_init_model(dk.pair)
         if trainer is None:
             trainer = PyTorchModelTrainer(

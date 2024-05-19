@@ -19,6 +19,7 @@ Currently available callbacks:
 * [`adjust_trade_position()`](#adjust-trade-position)
 * [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
+* [`order_filled()`](#order-filled-callback)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
@@ -166,7 +167,7 @@ During backtesting, `current_rate` (and `current_profit`) are provided against t
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
 
-Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
 !!! Note "Use of dates"
     All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
@@ -331,7 +332,7 @@ class AwesomeStrategy(IStrategy):
                         **kwargs) -> Optional[float]:
 
         if current_profit < 0.04:
-            return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
+            return None # return None to keep using the initial stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
         desired_stoploss = current_profit / 2
@@ -449,7 +450,7 @@ Stoploss values returned from `custom_stoploss()` must specify a percentage rela
 
     ```
 
-    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
+    Full examples can be found in the [Custom stoploss](strategy-callbacks.md#custom-stoploss) section of the Documentation.
 
 !!! Note
     Providing invalid input to `stoploss_from_open()` may produce "CustomStoploss function did not return valid stoploss" warnings.
@@ -767,6 +768,7 @@ This callback is **not** called when there is an open order (either buy or sell)
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
+Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2nd element the tag (e.g. `return 250, 'increase_favorable_conditions'`).
 
 Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.
 
@@ -782,7 +784,7 @@ Additional entries are ignored once you have reached the maximum amount of extra
 ### Decrease position
 
 The strategy is expected to return a negative stake_amount (in stake currency) for a partial exit.
-Returning the full owned stake at that point (based on the current price) (`-(trade.amount / trade.leverage) * current_exit_rate`) results in a full exit.  
+Returning the full owned stake at that point (`-trade.stake_amount`) results in a full exit.  
 Returning a value more than the above (so remaining stake_amount would become negative) will result in the bot ignoring the signal.
 
 !!! Note "About stake size"
@@ -790,7 +792,7 @@ Returning a value more than the above (so remaining stake_amount would become ne
     If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
     Using 'unlimited' stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
 
-!!! Warning
+!!! Warning "Stoploss calculation"
     Stoploss is still calculated from the initial opening price, not averaged price.
     Regular stoploss rules still apply (cannot move down).
 
@@ -800,8 +802,14 @@ Returning a value more than the above (so remaining stake_amount would become ne
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
     This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.
 
+!!! Warning "Performance with many position adjustments"
+    Position adjustments can be a good approach to increase a strategy's output - but it can also have drawbacks if using this feature extensively.  
+    Each of the orders will be attached to the trade object for the duration of the trade - hence increasing memory usage.
+    Trades with long duration and 10s or even 100ds of position adjustments are therefore not recommended, and should be closed at regular intervals to not affect performance.
+
 ``` python
 from freqtrade.persistence import Trade
+from typing import Optional, Tuple, Union
 
 
 class DigDeeperStrategy(IStrategy):
@@ -833,7 +841,8 @@ class DigDeeperStrategy(IStrategy):
                               min_stake: Optional[float], max_stake: float,
                               current_entry_rate: float, current_exit_rate: float,
                               current_entry_profit: float, current_exit_profit: float,
-                              **kwargs) -> Optional[float]:
+                              **kwargs
+                              ) -> Union[Optional[float], Tuple[Optional[float], Optional[str]]]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -859,11 +868,12 @@ class DigDeeperStrategy(IStrategy):
         :return float: Stake amount to adjust your trade,
                        Positive values to increase position, Negative values to decrease position.
                        Return None for no action.
+                       Optionally, return a tuple with a 2nd element with an order reason
         """
 
         if current_profit > 0.05 and trade.nr_of_successful_exits == 0:
             # Take half of the profit at +5%
-            return -(trade.stake_amount / 2)
+            return -(trade.stake_amount / 2), 'half_profit_5%'
 
         if current_profit > -0.05:
             return None
@@ -891,7 +901,7 @@ class DigDeeperStrategy(IStrategy):
             stake_amount = filled_entries[0].stake_amount
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
-            return stake_amount
+            return stake_amount, '1/3rd_increase'
         except Exception as exception:
             return None
 
@@ -939,7 +949,7 @@ If the cancellation of the original order fails, then the order will not be repl
 
 ```python
 from freqtrade.persistence import Trade
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 class AwesomeStrategy(IStrategy):
 
@@ -1014,3 +1024,33 @@ class AwesomeStrategy(IStrategy):
 
 All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
 Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.
+
+## Order filled Callback
+
+The `order_filled()` callback may be used to perform specific actions based on the current trade state after an order is filled.
+It will be called independent of the order type (entry, exit, stoploss or position adjustment).
+
+Assuming that your strategy needs to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
+
+``` python
+class AwesomeStrategy(IStrategy):
+    def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs) -> None:
+        """
+        Called right after an order fills. 
+        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        :param pair: Pair for trade
+        :param trade: trade object.
+        :param order: Order object.
+        :param current_time: datetime object, containing the current datetime
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        # Obtain pair dataframe (just to show how to access it)
+        dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+        
+        if (trade.nr_of_successful_entries == 1) and (order.ft_order_side == trade.entry_side):
+            trade.set_custom_data(key='entry_candle_high', value=last_candle['high'])
+
+        return None
+
+```

@@ -32,7 +32,6 @@ class FTJSONResponse(JSONResponse):
 
 
 class ApiServer(RPCHandler):
-
     __instance = None
     __initialized = False
 
@@ -61,13 +60,14 @@ class ApiServer(RPCHandler):
 
         ApiServer.__initialized = True
 
-        api_config = self._config['api_server']
+        api_config = self._config["api_server"]
 
-        self.app = FastAPI(title="Freqtrade API",
-                           docs_url='/docs' if api_config.get('enable_openapi', False) else None,
-                           redoc_url=None,
-                           default_response_class=FTJSONResponse,
-                           )
+        self.app = FastAPI(
+            title="Freqtrade API",
+            docs_url="/docs" if api_config.get("enable_openapi", False) else None,
+            redoc_url=None,
+            default_response_class=FTJSONResponse,
+        )
         self.configure_app(self.app, self._config)
         self.start_api()
 
@@ -80,10 +80,10 @@ class ApiServer(RPCHandler):
             ApiServer._has_rpc = True
         else:
             # This should not happen assuming we didn't mess up.
-            raise OperationalException('RPC Handler already attached.')
+            raise OperationalException("RPC Handler already attached.")
 
     def cleanup(self) -> None:
-        """ Cleanup pending module resources """
+        """Cleanup pending module resources"""
         ApiServer._has_rpc = False
         del ApiServer._rpc
         if self._server and not self._standalone:
@@ -109,8 +109,7 @@ class ApiServer(RPCHandler):
     def handle_rpc_exception(self, request, exc):
         logger.error(f"API Error calling: {exc}")
         return JSONResponse(
-            status_code=502,
-            content={'error': f"Error querying {request.url.path}: {exc.message}"}
+            status_code=502, content={"error": f"Error querying {request.url.path}: {exc.message}"}
         )
 
     def configure_app(self, app: FastAPI, config):
@@ -125,39 +124,37 @@ class ApiServer(RPCHandler):
 
         app.include_router(api_v1_public, prefix="/api/v1")
 
-        app.include_router(api_v1, prefix="/api/v1",
-                           dependencies=[Depends(http_basic_or_jwt_token)],
-                           )
-        app.include_router(api_backtest, prefix="/api/v1",
-                           dependencies=[Depends(http_basic_or_jwt_token),
-                                         Depends(is_webserver_mode)],
-                           )
-        app.include_router(api_bg_tasks, prefix="/api/v1",
-                           dependencies=[Depends(http_basic_or_jwt_token),
-                                         Depends(is_webserver_mode)],
-                           )
-        app.include_router(ws_router, prefix="/api/v1")
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
+        app.include_router(
+            api_v1,
+            prefix="/api/v1",
+            dependencies=[Depends(http_basic_or_jwt_token)],
+        )
+        app.include_router(
+            api_backtest,
+            prefix="/api/v1",
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
+        )
+        app.include_router(
+            api_bg_tasks,
+            prefix="/api/v1",
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
+        )
+        app.include_router(ws_router, prefix="/api/v1")
         # UI Router MUST be last!
-        app.include_router(router_ui, prefix='')
+        app.include_router(router_ui, prefix="")
 
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=config['api_server'].get('CORS_origins', []),
+            allow_origins=config["api_server"].get("CORS_origins", []),
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
 
         app.add_exception_handler(RPCException, self.handle_rpc_exception)
-        app.add_event_handler(
-            event_type="startup",
-            func=self._api_startup_event
-        )
-        app.add_event_handler(
-            event_type="shutdown",
-            func=self._api_shutdown_event
-        )
+        app.add_event_handler(event_type="startup", func=self._api_startup_event)
+        app.add_event_handler(event_type="shutdown", func=self._api_shutdown_event)
 
     async def _api_startup_event(self):
         """
@@ -179,35 +176,43 @@ class ApiServer(RPCHandler):
         """
         Start API ... should be run in thread.
         """
-        rest_ip = self._config['api_server']['listen_ip_address']
-        rest_port = self._config['api_server']['listen_port']
+        rest_ip = self._config["api_server"]["listen_ip_address"]
+        rest_port = self._config["api_server"]["listen_port"]
 
-        logger.info(f'Starting HTTP Server at {rest_ip}:{rest_port}')
+        logger.info(f"Starting HTTP Server at {rest_ip}:{rest_port}")
         if not IPv4Address(rest_ip).is_loopback and not running_in_docker():
             logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
-            logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
-                           "e.g 127.0.0.1 in config.json")
+            logger.warning(
+                "SECURITY WARNING - This is insecure please set to your loopback,"
+                "e.g 127.0.0.1 in config.json"
+            )
 
-        if not self._config['api_server'].get('password'):
-            logger.warning("SECURITY WARNING - No password for local REST Server defined. "
-                           "Please make sure that this is intentional!")
+        if not self._config["api_server"].get("password"):
+            logger.warning(
+                "SECURITY WARNING - No password for local REST Server defined. "
+                "Please make sure that this is intentional!"
+            )
 
-        if (self._config['api_server'].get('jwt_secret_key', 'super-secret')
-                in ('super-secret, somethingrandom')):
-            logger.warning("SECURITY WARNING - `jwt_secret_key` seems to be default."
-                           "Others may be able to log into your bot.")
+        if self._config["api_server"].get("jwt_secret_key", "super-secret") in (
+            "super-secret, somethingrandom"
+        ):
+            logger.warning(
+                "SECURITY WARNING - `jwt_secret_key` seems to be default."
+                "Others may be able to log into your bot."
+            )
 
-        logger.info('Starting Local Rest Server.')
-        verbosity = self._config['api_server'].get('verbosity', 'error')
+        logger.info("Starting Local Rest Server.")
+        verbosity = self._config["api_server"].get("verbosity", "error")
 
-        uvconfig = uvicorn.Config(self.app,
-                                  port=rest_port,
-                                  host=rest_ip,
-                                  use_colors=False,
-                                  log_config=None,
-                                  access_log=True if verbosity != 'error' else False,
-                                  ws_ping_interval=None  # We do this explicitly ourselves
-                                  )
+        uvconfig = uvicorn.Config(
+            self.app,
+            port=rest_port,
+            host=rest_ip,
+            use_colors=False,
+            log_config=None,
+            access_log=True if verbosity != "error" else False,
+            ws_ping_interval=None,  # We do this explicitly ourselves
+        )
         try:
             self._server = UvicornServer(uvconfig)
             if self._standalone:

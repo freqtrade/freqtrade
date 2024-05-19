@@ -32,6 +32,9 @@ FreqAI is configured through the typical [Freqtrade config file](configuration.m
 
 A full example config is available in `config_examples/config_freqai.example.json`.
 
+!!! Note
+    The `identifier` is commonly overlooked by newcomers, however, this value plays an important role in your configuration. This value is a unique ID that you choose to describe one of your runs. Keeping it the same allows you to maintain crash resilience as well as faster backtesting. As soon as you want to try a new run (new features, new model, etc.), you should change this value (or delete the `user_data/models/unique-id` folder. More details available in the [parameter table](freqai-parameter-table.md#feature-parameters).
+
 ## Building a FreqAI strategy
 
 The FreqAI strategy requires including the following lines of code in the standard [Freqtrade strategy](strategy-customization.md):

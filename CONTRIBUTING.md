@@ -48,7 +48,7 @@ pytest tests/test_<file_name>.py::test_<method_name>
 #### Run Ruff
 
 ```bash
-ruff .
+ruff check .
 ```
 
 We receive a lot of code that fails the `ruff` checks.
@@ -72,12 +72,12 @@ you can manually run pre-commit with `pre-commit run -a`.
 mypy freqtrade
 ```
 
-### 4. Ensure all imports are correct
+### 4. Ensure formatting is correct
 
-#### Run isort
+#### Run ruff
 
 ``` bash
-isort .
+ruff format .
 ```
 
 ## (Core)-Committer Guide

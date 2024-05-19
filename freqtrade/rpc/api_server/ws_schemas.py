@@ -26,7 +26,7 @@ class WSMessageSchemaType(TypedDict):
 class WSMessageSchema(BaseArbitraryModel):
     type: RPCMessageType
     data: Optional[Any] = None
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
 
 # ------------------------------ REQUEST SCHEMAS ----------------------------
@@ -49,6 +49,7 @@ class WSAnalyzedDFRequest(WSRequestSchema):
 
 # ------------------------------ MESSAGE SCHEMAS ----------------------------
 
+
 class WSWhitelistMessage(WSMessageSchema):
     type: RPCMessageType = RPCMessageType.WHITELIST
     data: List[str]
@@ -67,5 +68,6 @@ class WSAnalyzedDFMessage(WSMessageSchema):
 class WSErrorMessage(WSMessageSchema):
     type: RPCMessageType = RPCMessageType.EXCEPTION
     data: str
+
 
 # --------------------------------------------------------------------------

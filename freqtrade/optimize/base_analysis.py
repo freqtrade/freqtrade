@@ -25,7 +25,6 @@ class VarHolder:
 
 
 class BaseAnalysis:
-
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
         self.failed_bias_check = True
         self.full_varHolder = VarHolder()
@@ -34,7 +33,7 @@ class BaseAnalysis:
 
         # pull variables the scope of the lookahead_analysis-instance
         self.local_config = deepcopy(config)
-        self.local_config['strategy'] = strategy_obj['name']
+        self.local_config["strategy"] = strategy_obj["name"]
         self.strategy_obj = strategy_obj
 
     @staticmethod
@@ -46,7 +45,7 @@ class BaseAnalysis:
         self.full_varHolder = VarHolder()
 
         # define datetime in human-readable format
-        parsed_timerange = TimeRange.parse_timerange(self.local_config['timerange'])
+        parsed_timerange = TimeRange.parse_timerange(self.local_config["timerange"])
 
         if parsed_timerange.startdt is None:
             self.full_varHolder.from_dt = datetime.fromtimestamp(0, tz=timezone.utc)
@@ -58,9 +57,8 @@ class BaseAnalysis:
         else:
             self.full_varHolder.to_dt = parsed_timerange.stopdt
 
-        self.prepare_data(self.full_varHolder, self.local_config['pairs'])
+        self.prepare_data(self.full_varHolder, self.local_config["pairs"])
 
     def start(self) -> None:
-
         # first make a single backtest
         self.fill_full_varholder()
