@@ -358,14 +358,15 @@ class HyperoptTools:
         )
 
     @staticmethod
-    def prepare_trials_columns(trials: pd.DataFrame, has_drawdown: bool) -> pd.DataFrame:
+    def prepare_trials_columns(trials: pd.DataFrame) -> pd.DataFrame:
         trials["Best"] = ""
 
         if "results_metrics.winsdrawslosses" not in trials.columns:
             # Ensure compatibility with older versions of hyperopt results
             trials["results_metrics.winsdrawslosses"] = "N/A"
 
-        if not has_drawdown:
+        has_account_drawdown = "results_metrics.max_drawdown_account" in trials.columns
+        if not has_account_drawdown:
             # Ensure compatibility with older versions of hyperopt results
             trials["results_metrics.max_drawdown_account"] = None
         if "is_random" not in trials.columns:
@@ -389,7 +390,6 @@ class HyperoptTools:
                 "results_metrics.profit_total_abs",
                 "results_metrics.profit_total",
                 "results_metrics.holding_avg",
-                "results_metrics.max_drawdown",
                 "results_metrics.max_drawdown_account",
                 "results_metrics.max_drawdown_abs",
                 "loss",
@@ -408,7 +408,6 @@ class HyperoptTools:
             "Total profit",
             "Profit",
             "Avg duration",
-            "max_drawdown",
             "max_drawdown_account",
             "max_drawdown_abs",
             "Objective",
@@ -437,9 +436,7 @@ class HyperoptTools:
         tabulate.PRESERVE_WHITESPACE = True
         trials = json_normalize(results, max_level=1)
 
-        has_account_drawdown = "results_metrics.max_drawdown_account" in trials.columns
-
-        trials = HyperoptTools.prepare_trials_columns(trials, has_account_drawdown)
+        trials = HyperoptTools.prepare_trials_columns(trials)
 
         trials["is_profit"] = False
         trials.loc[trials["is_initial_point"] | trials["is_random"], "Best"] = "*     "
@@ -471,23 +468,19 @@ class HyperoptTools:
 
         stake_currency = config["stake_currency"]
 
-        trials[f"Max Drawdown{' (Acct)' if has_account_drawdown else ''}"] = trials.apply(
+        trials["Max Drawdown (Acct)"] = trials.apply(
             lambda x: (
                 "{} {}".format(
                     fmt_coin(x["max_drawdown_abs"], stake_currency, keep_trailing_zeros=True),
-                    (
-                        f"({x['max_drawdown_account']:,.2%})"
-                        if has_account_drawdown
-                        else f"({x['max_drawdown']:,.2%})"
-                    ).rjust(10, " "),
+                    (f"({x['max_drawdown_account']:,.2%})").rjust(10, " "),
                 ).rjust(25 + len(stake_currency))
-                if x["max_drawdown"] != 0.0 or x["max_drawdown_account"] != 0.0
+                if x["max_drawdown_account"] != 0.0
                 else "--".rjust(25 + len(stake_currency))
             ),
             axis=1,
         )
 
-        trials = trials.drop(columns=["max_drawdown_abs", "max_drawdown", "max_drawdown_account"])
+        trials = trials.drop(columns=["max_drawdown_abs", "max_drawdown_account"])
 
         trials["Profit"] = trials.apply(
             lambda x: (
