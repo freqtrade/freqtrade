@@ -11,6 +11,14 @@ from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import log_has, log_has_re
 
 
+def test_fiat_convert_is_singleton():
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert2 = CryptoToFiatConverter()
+
+    assert fiat_convert is fiat_convert2
+    assert id(fiat_convert) == id(fiat_convert2)
+
+
 def test_fiat_convert_is_supported():
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._is_supported_fiat(fiat="USD") is True
