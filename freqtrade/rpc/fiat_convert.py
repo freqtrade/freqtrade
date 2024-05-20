@@ -8,11 +8,11 @@ from datetime import datetime
 from typing import Dict, List
 
 from cachetools import TTLCache
-from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 
 from freqtrade.constants import SUPPORTED_FIAT
 from freqtrade.mixins.logging_mixin import LoggingMixin
+from freqtrade.util.CoinGecko import FtCoinGeckoApi
 
 
 logger = logging.getLogger(__name__)
@@ -40,11 +40,11 @@ class CryptoToFiatConverter(LoggingMixin):
     """
 
     __instance = None
-    _coingecko: CoinGeckoAPI = None
+    _coingecko: FtCoinGeckoApi = None
     _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         """
         This class is a singleton - cannot be instantiated twice.
         """
@@ -53,7 +53,7 @@ class CryptoToFiatConverter(LoggingMixin):
             try:
                 # Limit retires to 1 (0 and 1)
                 # otherwise we risk bot impact if coingecko is down.
-                CryptoToFiatConverter._coingecko = CoinGeckoAPI(retries=1)
+                CryptoToFiatConverter._coingecko = FtCoinGeckoApi(retries=1)
             except BaseException:
                 CryptoToFiatConverter._coingecko = None
         return CryptoToFiatConverter.__instance
