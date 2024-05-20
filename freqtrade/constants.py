@@ -322,6 +322,14 @@ CONF_SCHEMA = {
             },
             "required": REQUIRED_ORDERTIF,
         },
+        "coingecko": {
+            "type": "object",
+            "properties": {
+                "is_demo": {"type": "boolean", "default": True},
+                "api_key": {"type": "string"},
+            },
+            "required": ["is_demo", "api_key"],
+        },
         "exchange": {"$ref": "#/definitions/exchange"},
         "edge": {"$ref": "#/definitions/edge"},
         "freqai": {"$ref": "#/definitions/freqai"},

@@ -2306,7 +2306,7 @@ def test_MarketCapPairList_filter(
     )
 
     mocker.patch(
-        "freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
         return_value=test_value,
     )
 
@@ -2344,7 +2344,7 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     )
 
     mocker.patch(
-        "freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
         return_value=test_value,
     )
 
