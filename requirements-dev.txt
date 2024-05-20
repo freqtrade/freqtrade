@@ -6,7 +6,7 @@
 -r requirements-freqai-rl.txt
 -r docs/requirements-docs.txt
 
-coveralls==4.0.0
+coveralls==4.0.1
 ruff==0.4.4
 mypy==1.10.0
 pre-commit==3.7.1
