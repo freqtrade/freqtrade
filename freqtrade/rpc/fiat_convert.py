@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from cachetools import TTLCache
 from requests.exceptions import RequestException
 
-from freqtrade.constants import SUPPORTED_FIAT
+from freqtrade.constants import SUPPORTED_FIAT, Config
 from freqtrade.mixins.logging_mixin import LoggingMixin
 from freqtrade.util.CoinGecko import FtCoinGeckoApi
 
@@ -40,7 +40,7 @@ class CryptoToFiatConverter(LoggingMixin):
     """
 
     __instance = None
-    _coingecko: FtCoinGeckoApi = None
+
     _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
@@ -50,18 +50,18 @@ class CryptoToFiatConverter(LoggingMixin):
         """
         if not cls.__instance:
             cls.__instance = super().__new__(cls)
-            try:
-                # Limit retires to 1 (0 and 1)
-                # otherwise we risk bot impact if coingecko is down.
-                cls._coingecko = FtCoinGeckoApi(retries=1)
-            except BaseException:
-                cls._coingecko = None
         return cls.__instance
 
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         # Timeout: 6h
         self._pair_price: TTLCache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
+        coingecko_config = config.get("coingecko", {})
 
+        self._coingecko = FtCoinGeckoApi(
+            api_key=coingecko_config.get("api_key", ""),
+            is_demo=coingecko_config.get("is_demo", True),
+            retries=1,
+        )
         LoggingMixin.__init__(self, logger, 3600)
         self._load_cryptomap()
 

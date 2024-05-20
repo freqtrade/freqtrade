@@ -107,7 +107,7 @@ class RPC:
         self._freqtrade = freqtrade
         self._config: Config = freqtrade.config
         if self._config.get("fiat_display_currency"):
-            self._fiat_converter = CryptoToFiatConverter()
+            self._fiat_converter = CryptoToFiatConverter(self._config)
 
     @staticmethod
     def _rpc_show_config(
