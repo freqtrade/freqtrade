@@ -47,7 +47,7 @@ def generate_result_metrics():
         "profit_total_abs": 0.001,
         "profit_total": 0.01,
         "holding_avg": timedelta(minutes=20),
-        "max_drawdown": 0.001,
+        "max_drawdown_account": 0.001,
         "max_drawdown_abs": 0.001,
         "loss": 0.001,
         "is_initial_point": 0.001,

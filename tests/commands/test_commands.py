@@ -54,6 +54,7 @@ from tests.conftest import (
     patch_exchange,
     patched_configuration_load_config_file,
 )
+from tests.conftest_hyperopt import hyperopt_test_result
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -1137,7 +1138,8 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
         pytest.fail(f"Expected well formed JSON, but failed to parse: {captured.out}")
 
 
-def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmp_path):
+def test_hyperopt_list(mocker, capsys, caplog, tmp_path):
+    saved_hyperopt_results = hyperopt_test_result()
     csv_file = tmp_path / "test.csv"
     mocker.patch(
         "freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist",
@@ -1507,7 +1509,8 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmp_path)
     csv_file.unlink()
 
 
-def test_hyperopt_show(mocker, capsys, saved_hyperopt_results):
+def test_hyperopt_show(mocker, capsys):
+    saved_hyperopt_results = hyperopt_test_result()
     mocker.patch(
         "freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist",
         return_value=True,
