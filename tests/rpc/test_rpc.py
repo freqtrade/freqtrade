@@ -225,7 +225,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
 def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_price=MagicMock(return_value={"bitcoin": {"usd": 15000.0}}),
     )
     mocker.patch("freqtrade.rpc.rpc.CryptoToFiatConverter._find_price", return_value=15000.0)
@@ -495,7 +495,7 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     # ETH will be skipped due to mocked Error below
 
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_price=MagicMock(return_value={"bitcoin": {"usd": 15000.0}}),
     )
     mocker.patch("freqtrade.rpc.rpc.CryptoToFiatConverter._find_price", return_value=15000.0)
@@ -558,7 +558,7 @@ def test_rpc_balance_handle(default_conf_usdt, mocker, tickers):
     ]
 
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_price=MagicMock(return_value={"bitcoin": {"usd": 1.2}}),
     )
     mocker.patch("freqtrade.rpc.rpc.CryptoToFiatConverter._find_price", return_value=1.2)

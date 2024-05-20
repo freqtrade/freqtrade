@@ -12,7 +12,7 @@ from tests.conftest import log_has, log_has_re
 
 
 def test_fiat_convert_is_singleton():
-    fiat_convert = CryptoToFiatConverter()
+    fiat_convert = CryptoToFiatConverter({"a": 22})
     fiat_convert2 = CryptoToFiatConverter()
 
     assert fiat_convert is fiat_convert2
@@ -108,7 +108,7 @@ def test_fiat_init_network_exception(mocker):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(side_effect=RequestException)
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
@@ -137,7 +137,7 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     req_exception = "429 Too Many Requests"
     listmock = MagicMock(return_value="{}", side_effect=RequestException(req_exception))
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
@@ -173,7 +173,7 @@ def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(return_value=None)
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
