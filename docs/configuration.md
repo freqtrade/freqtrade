@@ -568,7 +568,14 @@ The possible values are: `GTC` (default), `FOK` or `IOC`.
     This is ongoing work. For now, it is supported only for binance, gate and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
-### What values can be used for fiat_display_currency?
+### Fiat conversion
+
+Freqtrade uses the Coingecko API to convert the coin value to it's corresponding fiat value for the Telegram reports.
+The FIAT currency can be set in the configuration file as `fiat_display_currency`.
+
+Removing `fiat_display_currency` completely from the configuration will skip initializing coingecko, and will not show any FIAT currency conversion. This has no importance for the correct functioning of the bot.
+
+#### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
 conversion from coin to fiat in the bot Telegram reports.
@@ -587,7 +594,25 @@ The valid values are:
 "BTC", "ETH", "XRP", "LTC", "BCH", "BNB"
 ```
 
-Removing `fiat_display_currency` completely from the configuration will skip initializing coingecko, and will not show any FIAT currency conversion. This has no importance for the correct functioning of the bot.
+#### Coingecko Rate limit problems
+
+On some IP ranges, coingecko is heavily rate-limiting.
+In such cases, you may want to add your coingecko API key to the configuration.
+
+``` json
+{
+    "fiat_display_currency": "USD",
+    "coingecko": {
+        "api_key": "your-api",
+        "is_demo": true
+    }
+}
+```
+
+Freqtrade supports both Demo and Pro coingecko API keys.
+
+The Coingecko API key is NOT required for the bot to function correctly.
+It is only used for the conversion of coin to fiat in the Telegram reports, which usually also work without API key.
 
 ## Using Dry-run mode
 
