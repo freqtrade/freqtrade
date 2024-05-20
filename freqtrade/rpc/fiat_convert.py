@@ -12,7 +12,7 @@ from requests.exceptions import RequestException
 
 from freqtrade.constants import SUPPORTED_FIAT, Config
 from freqtrade.mixins.logging_mixin import LoggingMixin
-from freqtrade.util.CoinGecko import FtCoinGeckoApi
+from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
 
 logger = logging.getLogger(__name__)
