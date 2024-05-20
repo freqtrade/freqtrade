@@ -5,7 +5,7 @@ e.g BTC to USD
 
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from cachetools import TTLCache
 from requests.exceptions import RequestException
@@ -44,19 +44,19 @@ class CryptoToFiatConverter(LoggingMixin):
     _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
         """
-        This class is a singleton - cannot be instantiated twice.
+        Singleton pattern to ensure only one instance is created.
         """
-        if CryptoToFiatConverter.__instance is None:
-            CryptoToFiatConverter.__instance = object.__new__(cls)
+        if not cls.__instance:
+            cls.__instance = super().__new__(cls)
             try:
                 # Limit retires to 1 (0 and 1)
                 # otherwise we risk bot impact if coingecko is down.
-                CryptoToFiatConverter._coingecko = FtCoinGeckoApi(retries=1)
+                cls._coingecko = FtCoinGeckoApi(retries=1)
             except BaseException:
-                CryptoToFiatConverter._coingecko = None
-        return CryptoToFiatConverter.__instance
+                cls._coingecko = None
+        return cls.__instance
 
     def __init__(self) -> None:
         # Timeout: 6h
