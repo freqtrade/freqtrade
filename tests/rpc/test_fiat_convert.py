@@ -8,6 +8,7 @@ import pytest
 from requests.exceptions import RequestException
 
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.util.coin_gecko import FtCoinGeckoApi
 from tests.conftest import log_has, log_has_re
 
 
@@ -201,3 +202,18 @@ def test_convert_amount(mocker):
         crypto_amount="1.23", crypto_symbol="BTC", fiat_symbol="BTC"
     )
     assert result == 1.23
+
+
+def test_FtCoinGeckoApi():
+    ftc = FtCoinGeckoApi()
+    assert ftc._api_key == ""
+    assert ftc.api_base_url == "https://api.coingecko.com/api/v3/"
+
+    # defaults to demo
+    ftc = FtCoinGeckoApi(api_key="123456")
+    assert ftc._api_key == "123456"
+    assert ftc.api_base_url == "https://api.coingecko.com/api/v3/"
+
+    ftc = FtCoinGeckoApi(api_key="123456", is_demo=False)
+    assert ftc._api_key == "123456"
+    assert ftc.api_base_url == "https://pro-api.coingecko.com/api/v3/"

@@ -16,10 +16,11 @@ class FtCoinGeckoApi(CoinGeckoAPI):
         # Doint' pass api_key to parent, instead set the header on the session directly
         self._api_key = api_key
 
-        if api_key and is_demo:
-            # Use demo api key
-            self.api_base_url = self.__API_URL_BASE
-            self.session.params.update({"x_cg_demo_api_key": api_key})
-        else:
+        if api_key and not is_demo:
             self.api_base_url = self.__PRO_API_URL_BASE
             self.session.params.update({"x_cg_pro_api_key": api_key})
+        else:
+            # Use demo api key
+            self.api_base_url = self.__API_URL_BASE
+            if api_key:
+                self.session.params.update({"x_cg_demo_api_key": api_key})
