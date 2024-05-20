@@ -55,11 +55,11 @@ class CryptoToFiatConverter(LoggingMixin):
     def __init__(self, config: Config) -> None:
         # Timeout: 6h
         self._pair_price: TTLCache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
-        coingecko_config = config.get("coingecko", {})
 
+        _coingecko_config = config.get("coingecko", {})
         self._coingecko = FtCoinGeckoApi(
-            api_key=coingecko_config.get("api_key", ""),
-            is_demo=coingecko_config.get("is_demo", True),
+            api_key=_coingecko_config.get("api_key", ""),
+            is_demo=_coingecko_config.get("is_demo", True),
             retries=1,
         )
         LoggingMixin.__init__(self, logger, 3600)
