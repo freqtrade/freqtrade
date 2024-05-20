@@ -116,12 +116,12 @@ def test_fiat_convert_without_network(mocker):
 
     fiat_convert = CryptoToFiatConverter()
 
-    cmc_temp = CryptoToFiatConverter._coingecko
-    CryptoToFiatConverter._coingecko = None
+    cmc_temp = fiat_convert._coingecko
+    fiat_convert._coingecko = None
 
     assert fiat_convert._coingecko is None
     assert fiat_convert._find_price(crypto_symbol="btc", fiat_symbol="usd") == 0.0
-    CryptoToFiatConverter._coingecko = cmc_temp
+    fiat_convert._coingecko = cmc_temp
 
 
 def test_fiat_too_many_requests_response(mocker, caplog):
