@@ -11,7 +11,7 @@ from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from tests.conftest import log_has, log_has_re
 
 
-def test_fiat_convert_is_supported(mocker):
+def test_fiat_convert_is_supported():
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._is_supported_fiat(fiat="USD") is True
     assert fiat_convert._is_supported_fiat(fiat="usd") is True
@@ -77,19 +77,19 @@ def test_fiat_convert_get_price(mocker):
     assert find_price.call_count == 1
 
 
-def test_fiat_convert_same_currencies(mocker):
+def test_fiat_convert_same_currencies():
     fiat_convert = CryptoToFiatConverter()
 
     assert fiat_convert.get_price(crypto_symbol="USD", fiat_symbol="USD") == 1.0
 
 
-def test_fiat_convert_two_FIAT(mocker):
+def test_fiat_convert_two_FIAT():
     fiat_convert = CryptoToFiatConverter()
 
     assert fiat_convert.get_price(crypto_symbol="USD", fiat_symbol="EUR") == 0.0
 
 
-def test_loadcryptomap(mocker):
+def test_loadcryptomap():
     fiat_convert = CryptoToFiatConverter()
     assert len(fiat_convert._coinlistings) == 2
 
@@ -111,7 +111,7 @@ def test_fiat_init_network_exception(mocker):
     assert len(fiat_convert._coinlistings) == 0
 
 
-def test_fiat_convert_without_network(mocker):
+def test_fiat_convert_without_network():
     # Because CryptoToFiatConverter is a Singleton we reset the value of _coingecko
 
     fiat_convert = CryptoToFiatConverter()
@@ -144,7 +144,7 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     )
 
 
-def test_fiat_multiple_coins(mocker, caplog):
+def test_fiat_multiple_coins(caplog):
     fiat_convert = CryptoToFiatConverter()
     fiat_convert._coinlistings = [
         {"id": "helium", "symbol": "hnt", "name": "Helium"},
