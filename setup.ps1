@@ -14,6 +14,7 @@ function Write-Log {
     [string]$Message,
     [string]$Level = 'INFO'
   )
+  
   switch ($Level) {
     'INFO' { Write-Host $Message -ForegroundColor Green }
     'WARNING' { Write-Host $Message -ForegroundColor Yellow }
@@ -47,15 +48,20 @@ function Get-UserSelection {
     $_.Trim().ToUpper()
   }
   
-  # Convert each selection from letter to index
-  $indices = $selections | ForEach-Object {
-    if ($_ -match '^[A-Z]$') {
-      # Ensure the input is a single uppercase letter
-      [int][char]$_ - [int][char]'A'
+  # Convert each selection from letter to index and validate
+  $indices = @()
+  foreach ($selection in $selections) {
+    if ($selection -match '^[A-Z]$') {
+      $index = [int][char]$selection - [int][char]'A'
+      if ($index -ge 0 -and $index -lt $options.Length) {
+        $indices += $index
+      }
+      else {
+        Write-Log "Invalid input: $selection. Please enter letters within the valid range of options." -Level 'ERROR'
+      }
     }
     else {
-      Write-Log "Invalid input: $_. Please enter letters between A and Z." -Level 'ERROR'
-      continue
+      Write-Log "Invalid input: $selection. Please enter letters between A and Z." -Level 'ERROR'
     }
   }
   
@@ -65,14 +71,14 @@ function Get-UserSelection {
 function Exit-Script {
   param (
     [int]$exitCode,
-    [bool]$isSubShell = $true
+    [bool]$isSubShell = $true,
+    [bool]$waitForKeypress = $true
   )
 
   if ($OldVirtualPath) {
     $env:PATH = $OldVirtualPath
   }
 
-  # Check if the script is exiting with an error and it's not a subshell
   if ($exitCode -ne 0 -and $isSubShell) {
     Write-Log "Script failed. Would you like to open the log file? (Y/N)" -Level 'PROMPT'
     $openLog = Read-Host
@@ -81,25 +87,29 @@ function Exit-Script {
     }
   }
 
-  Write-Log "Press any key to exit..."
-  $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
-  exit $exitCode
+  if ($waitForKeypress) {
+    Write-Log "Press any key to exit..."
+    $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
+  }
+
+  return $exitCode
 }
 
-# Function to handle installation and conflict resolution
-function Install-And-Resolve {
+# Function to handle installation
+function Install {
   param ([string]$InputPath)
+  
   if (-not $InputPath) {
-    Write-Log "ERROR: No input provided for installation." -Level 'ERROR'
+    Write-Log "No input provided for installation." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
+
   Write-Log "Installing $InputPath..."
   $installCmd = if (Test-Path $InputPath) { $VenvPip + @('install', '-r', $InputPath) } else { $VenvPip + @('install', $InputPath) }
   $output = & $installCmd[0] $installCmd[1..$installCmd.Length] 2>&1
   $output | Out-File $LogFilePath -Append
   if ($LASTEXITCODE -ne 0) {
-    Write-Log "Conflict detected, attempting to resolve..." -Level 'ERROR'
-    & $VenvPip[0] $VenvPip[1..$VenvPip.Length] 'check' | Out-File "conflicts.txt"
+    Write-Log "Conflict detected. Exiting now..." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
 }
@@ -109,6 +119,11 @@ function Get-PythonVersionTag {
   $pythonVersion = & python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')"
   $architecture = & python -c "import platform; print('win_amd64' if platform.machine().endswith('64') else 'win32')"
   return "$pythonVersion-$architecture"
+}
+
+# Exit in test environment
+if ($MyInvocation.InvocationName -ne $MyInvocation.MyCommand.Name) {
+  exit
 }
 
 # Check for admin privileges and elevate if necessary
@@ -179,7 +194,7 @@ foreach ($index in $selectedIndices) {
   
   $filePath = Join-Path $ProjectDir $RequirementFiles[$index]
   if (Test-Path $filePath) {
-    Install-And-Resolve $filePath
+    Install $filePath
   }
   else {
     Write-Log "Requirement file not found: $filePath" -Level 'ERROR'
