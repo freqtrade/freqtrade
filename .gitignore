@@ -114,6 +114,3 @@ target/
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
 !config_examples/config_freqai.example.json
-
-config_examples/nfi_configs/*.json
-docker-compose-*.yml
