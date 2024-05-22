@@ -2564,10 +2564,14 @@ def test_send_msg_buy_notification_no_fiat(
         ("Short", "short_signal_01", 2.0),
     ],
 )
+@pytest.mark.parametrize("fiat", ["", None])
 def test_send_msg_exit_notification_no_fiat(
-    default_conf, mocker, direction, enter_signal, leverage, time_machine
+    default_conf, mocker, direction, enter_signal, leverage, time_machine, fiat
 ) -> None:
-    del default_conf["fiat_display_currency"]
+    if fiat is None:
+        del default_conf["fiat_display_currency"]
+    else:
+        default_conf["fiat_display_currency"] = fiat
     time_machine.move_to("2022-05-02 00:00:00 +00:00", tick=False)
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 

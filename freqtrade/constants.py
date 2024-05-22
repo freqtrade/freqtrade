@@ -156,6 +156,7 @@ SUPPORTED_FIAT = [
     "LTC",
     "BCH",
     "BNB",
+    "",  # Allow empty field in config.
 ]
 
 MINIMAL_CONFIG = {
