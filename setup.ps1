@@ -148,26 +148,26 @@ function Install-Requirements {
 
 function Test-PythonExecutable {
   param(
-      [string]$PythonExecutable
+    [string]$PythonExecutable
   )
 
   $pythonCmd = Get-Command $PythonExecutable -ErrorAction SilentlyContinue
   if ($pythonCmd) {
-      $command = "$($pythonCmd.Source) --version 2>&1"
-      $versionOutput = Invoke-Expression $command
-      if ($LASTEXITCODE -eq 0) {
-          $version = $versionOutput | Select-String -Pattern "Python (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
-          Write-Log "Python version $version found using executable '$PythonExecutable'."
-          return $true
-      }
-      else {
-          Write-Log "Python executable '$PythonExecutable' not working correctly." -Level 'ERROR'
-          return $false
-      }
+    $command = "$($pythonCmd.Source) --version 2>&1"
+    $versionOutput = Invoke-Expression $command
+    if ($LASTEXITCODE -eq 0) {
+      $version = $versionOutput | Select-String -Pattern "Python (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+      Write-Log "Python version $version found using executable '$PythonExecutable'."
+      return $true
+    }
+    else {
+      Write-Log "Python executable '$PythonExecutable' not working correctly." -Level 'ERROR'
+      return $false
+    }
   }
   else {
-      Write-Log "Python executable '$PythonExecutable' not found." -Level 'ERROR'
-      return $false
+    Write-Log "Python executable '$PythonExecutable' not found." -Level 'ERROR'
+    return $false
   }
 }
 
@@ -176,9 +176,9 @@ function Find-PythonExecutable {
   $pythonExecutables = @("python", "python3", "python3.9", "python3.10", "python3.11", "C:\Python39\python.exe", "C:\Python310\python.exe", "C:\Python311\python.exe")
   
   foreach ($executable in $pythonExecutables) {
-      if (Test-PythonExecutable -PythonExecutable $executable) {
-          return $executable
-      }
+    if (Test-PythonExecutable -PythonExecutable $executable) {
+      return $executable
+    }
   }
 
   return $null
@@ -260,12 +260,12 @@ function Main {
 
   # Install the selected requirement files together
   if ($selectedRequirementFiles.Count -gt 0) {
-      Write-Log "Installing selected requirement files..."
-      $selectedRequirementFiles | ForEach-Object { & $VenvPython -m pip install -r $_ --quiet}
-      if ($LASTEXITCODE -ne 0) {
-          Write-Log "Failed to install selected requirement files. Exiting now..." -Level 'ERROR'
-          Exit-Script -exitCode 1
-      }
+    Write-Log "Installing selected requirement files..."
+    $selectedRequirementFiles | ForEach-Object { & $VenvPython -m pip install -r $_ --quiet }
+    if ($LASTEXITCODE -ne 0) {
+      Write-Log "Failed to install selected requirement files. Exiting now..." -Level 'ERROR'
+      Exit-Script -exitCode 1
+    }
   }
 
   # Install freqtrade from setup using the virtual environment's Python
