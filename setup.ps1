@@ -1,19 +1,23 @@
-# Set the console color to Matrix theme and clear the console
-$host.UI.RawUI.BackgroundColor = "Black"
-$host.UI.RawUI.ForegroundColor = "Green"
+Import-Module -Name ".\setupFunctions.psm1"
 Clear-Host
 
 # Set the log file path and initialize variables
-$LogFilePath = Join-Path $env:TEMP "script_log.txt"
-$ProjectDir = "G:\Downloads\GitHub\freqtrade"
-$RequirementFiles = @("requirements.txt", "requirements-dev.txt", "requirements-hyperopt.txt", "requirements-freqai.txt", "requirements-plot.txt")
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$Global:LogFilePath = Join-Path $env:TEMP "script_log_$timestamp.txt"
+
+$RequirementFiles = @("requirements.txt", "requirements-dev.txt", "requirements-hyperopt.txt", "requirements-freqai.txt", "requirements-freqai-rl.txt", "requirements-plot.txt")
 $VenvName = ".venv"
+$VenvDir = Join-Path $PSScriptRoot $VenvName
 
 function Write-Log {
   param (
     [string]$Message,
     [string]$Level = 'INFO'
   )
+
+  if (-not (Test-Path -Path $LogFilePath)) {
+    New-Item -ItemType File -Path $LogFilePath -Force | Out-Null
+  }
   
   switch ($Level) {
     'INFO' { Write-Host $Message -ForegroundColor Green }
@@ -26,60 +30,88 @@ function Write-Log {
 
 function Get-UserSelection {
   param (
-    [string]$prompt,
-    [string[]]$options,
-    [string]$defaultChoice = 'A'
+    [string]$Prompt,
+    [string[]]$Options,
+    [string]$DefaultChoice = 'A',
+    [bool]$AllowMultipleSelections = $true
   )
   
-  Write-Log "$prompt`n" -Level 'PROMPT'
-  for ($i = 0; $i -lt $options.Length; $i++) {
-    Write-Log "$([char](65 + $i)). $($options[$i])" -Level 'PROMPT'
+  Write-Log "$Prompt`n" -Level 'PROMPT'
+  for ($i = 0; $i -lt $Options.Length; $i++) {
+    Write-Log "$([char](65 + $i)). $($Options[$i])" -Level 'PROMPT'
   }
   
-  Write-Log "`nSelect one or more options by typing the corresponding letters, separated by commas." -Level 'PROMPT'
-  $inputPath = Read-Host 
-  if ([string]::IsNullOrEmpty($inputPath)) {
-    $inputPath = $defaultChoice
+  if ($AllowMultipleSelections) {
+    Write-Log "`nSelect one or more options by typing the corresponding letters, separated by commas." -Level 'PROMPT'
+  }
+  else {
+    Write-Log "`nSelect an option by typing the corresponding letter." -Level 'PROMPT'
   }
   
-  # Ensure $inputPath is treated as a string and split it by commas
-  $inputPath = [string]$inputPath
-  $selections = $inputPath.Split(',') | ForEach-Object {
-    $_.Trim().ToUpper()
+  $userInput = Read-Host
+  if ([string]::IsNullOrEmpty($userInput)) {
+    $userInput = $DefaultChoice
   }
   
-  # Convert each selection from letter to index and validate
-  $indices = @()
-  foreach ($selection in $selections) {
-    if ($selection -match '^[A-Z]$') {
-      $index = [int][char]$selection - [int][char]'A'
-      if ($index -ge 0 -and $index -lt $options.Length) {
-        $indices += $index
+  if ($AllowMultipleSelections) {
+    # Ensure $userInput is treated as a string and split it by commas
+    $userInput = [string]$userInput
+    $selections = $userInput.Split(',') | ForEach-Object {
+      $_.Trim().ToUpper()
+    }
+    
+    # Convert each selection from letter to index and validate
+    $selectedIndices = @()
+    foreach ($selection in $selections) {
+      if ($selection -match '^[A-Z]$') {
+        $index = [int][char]$selection - [int][char]'A'
+        if ($index -ge 0 -and $index -lt $Options.Length) {
+          $selectedIndices += $index
+        }
+        else {
+          Write-Log "Invalid input: $selection. Please enter letters within the valid range of options." -Level 'ERROR'
+          return -1
+        }
       }
       else {
-        Write-Log "Invalid input: $selection. Please enter letters within the valid range of options." -Level 'ERROR'
+        Write-Log "Invalid input: $selection. Please enter letters between A and Z." -Level 'ERROR'
+        return -1
+      }
+    }
+    
+    return $selectedIndices
+  }
+  else {
+    # Convert the selection from letter to index and validate
+    if ($userInput -match '^[A-Z]$') {
+      $selectedIndex = [int][char]$userInput - [int][char]'A'
+      if ($selectedIndex -ge 0 -and $selectedIndex -lt $Options.Length) {
+        return $selectedIndex
+      }
+      else {
+        Write-Log "Invalid input: $userInput. Please enter a letter within the valid range of options." -Level 'ERROR'
+        return -1
       }
     }
     else {
-      Write-Log "Invalid input: $selection. Please enter letters between A and Z." -Level 'ERROR'
+      Write-Log "Invalid input: $userInput. Please enter a letter between A and Z." -Level 'ERROR'
+      return -1
     }
   }
-  
-  return $indices
 }
 
 function Exit-Script {
   param (
-    [int]$exitCode,
-    [bool]$isSubShell = $true,
-    [bool]$waitForKeypress = $true
+    [int]$ExitCode,
+    [bool]$IsSubShell = $true,
+    [bool]$WaitForKeypress = $true
   )
 
-  if ($OldVirtualPath) {
-    $env:PATH = $OldVirtualPath
+  if ($Global:OldVirtualPath) {
+    $env:PATH = $Global:OldVirtualPath
   }
 
-  if ($exitCode -ne 0 -and $isSubShell) {
+  if ($ExitCode -ne 0 -and $IsSubShell) {
     Write-Log "Script failed. Would you like to open the log file? (Y/N)" -Level 'PROMPT'
     $openLog = Read-Host
     if ($openLog -eq 'Y' -or $openLog -eq 'y') {
@@ -87,143 +119,192 @@ function Exit-Script {
     }
   }
 
-  if ($waitForKeypress) {
+  if ($WaitForKeypress) {
     Write-Log "Press any key to exit..."
     $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
   }
 
-  return $exitCode
+  return $ExitCode
 }
 
-# Function to handle installation
-function Install {
-  param ([string]$InputPath)
+# Function to install requirements
+function Install-Requirements {
+  param ([string]$RequirementsPath)
   
-  if (-not $InputPath) {
-    Write-Log "No input provided for installation." -Level 'ERROR'
-    Exit-Script -exitCode 1
+  if (-not $RequirementsPath) {
+    Write-Log "No requirements path provided for installation." -Level 'ERROR'
+    Exit-Script -ExitCode 1
   }
 
-  Write-Log "Installing $InputPath..."
-  $installCmd = if (Test-Path $InputPath) { $VenvPip + @('install', '-r', $InputPath) } else { $VenvPip + @('install', $InputPath) }
+  Write-Log "Installing requirements from $RequirementsPath..."
+  $installCmd = if (Test-Path $RequirementsPath) { & $VenvPip install -r $RequirementsPath } else { & $VenvPip install $RequirementsPath }
   $output = & $installCmd[0] $installCmd[1..$installCmd.Length] 2>&1
   $output | Out-File $LogFilePath -Append
   if ($LASTEXITCODE -ne 0) {
     Write-Log "Conflict detected. Exiting now..." -Level 'ERROR'
-    Exit-Script -exitCode 1
+    Exit-Script -ExitCode 1
   }
 }
 
-# Function to get the installed Python version tag for wheel compatibility
-function Get-PythonVersionTag {
-  $pythonVersion = & python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')"
-  $architecture = & python -c "import platform; print('win_amd64' if platform.machine().endswith('64') else 'win32')"
-  return "$pythonVersion-$architecture"
-}
+function Test-PythonExecutable {
+  param(
+      [string]$PythonExecutable
+  )
 
-# Exit in test environment
-if ($MyInvocation.InvocationName -ne $MyInvocation.MyCommand.Name) {
-  exit
-}
-
-# Check for admin privileges and elevate if necessary
-if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-  Write-Log "Requesting administrative privileges..." -Level 'ERROR'
-  Start-Process PowerShell -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
-  Exit-Script -exitCode 1 -isSubShell $false
-}
-
-# Log file setup
-"Admin rights confirmed" | Out-File $LogFilePath -Append
-"Starting the script operations..." | Out-File $LogFilePath -Append
-
-# Navigate to the project directory
-Set-Location -Path $ProjectDir
-"Current directory: $(Get-Location)" | Out-File $LogFilePath -Append
-
-# Define the path to the Python executable in the virtual environment
-$VenvPython = Join-Path $ProjectDir "$VenvName\Scripts\python.exe"
-
-# Check if the virtual environment exists, if not, create it
-if (-Not (Test-Path $VenvPython)) {
-  Write-Log "Virtual environment not found. Creating virtual environment..." -IsError $false
-  python -m venv "$VenvName"
-  if (-Not (Test-Path $VenvPython)) {
-    Write-Log "Failed to create virtual environment." -Level 'ERROR'
-    Exit-Script -exitCode 1
-  }
-  Write-Log "Virtual environment created successfully." -IsError $false
-}
-
-# Define the pip command using the Python executable
-$VenvPip = @($VenvPython, '-m', 'pip')
-
-# Activate the virtual environment
-$OldVirtualPath = $env:PATH
-$env:PATH = "$ProjectDir\$VenvName\Scripts;$env:PATH"
-
-# Ensure setuptools is installed using the virtual environment's pip
-Write-Log "Ensuring setuptools is installed..."
-& $VenvPip[0] $VenvPip[1..$VenvPip.Length] 'install', '-v', 'setuptools' | Out-File $LogFilePath -Append 2>&1
-if ($LASTEXITCODE -ne 0) {
-  Write-Log "Failed to install setuptools." -Level 'ERROR'
-  Exit-Script -exitCode 1
-}
-
-# Pull latest updates
-Write-Log "Pulling latest updates..."
-& git pull | Out-File $LogFilePath -Append 2>&1
-if ($LASTEXITCODE -ne 0) {
-  Write-Log "Failed to pull updates from Git." -Level 'ERROR'
-  Exit-Script -exitCode 1
-}
-
-# Install TA-Lib using the virtual environment's pip
-Write-Log "Installing TA-Lib using virtual environment's pip..."
-& $VenvPip[0] $VenvPip[1..$VenvPip.Length] 'install', '--find-links=build_helpers\', '--prefer-binary', 'TA-Lib' | Out-File $LogFilePath -Append 2>&1
-
-# Present options for requirement files
-$selectedIndices = Get-UserSelection -prompt "Select which requirement files to install:" -options $RequirementFiles -defaultChoice 'A'
-
-# Install selected requirement files
-foreach ($index in $selectedIndices) {
-  if ($index -lt 0 -or $index -ge $RequirementFiles.Length) {
-    Write-Log "Invalid selection index: $index" -Level 'ERROR'
-    continue
-  }
-  
-  $filePath = Join-Path $ProjectDir $RequirementFiles[$index]
-  if (Test-Path $filePath) {
-    Install $filePath
+  $pythonCmd = Get-Command $PythonExecutable -ErrorAction SilentlyContinue
+  if ($pythonCmd) {
+      $command = "$($pythonCmd.Source) --version 2>&1"
+      $versionOutput = Invoke-Expression $command
+      if ($LASTEXITCODE -eq 0) {
+          $version = $versionOutput | Select-String -Pattern "Python (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+          Write-Log "Python version $version found using executable '$PythonExecutable'."
+          return $true
+      }
+      else {
+          Write-Log "Python executable '$PythonExecutable' not working correctly." -Level 'ERROR'
+          return $false
+      }
   }
   else {
-    Write-Log "Requirement file not found: $filePath" -Level 'ERROR'
-    Exit-Script -exitCode 1
+      Write-Log "Python executable '$PythonExecutable' not found." -Level 'ERROR'
+      return $false
   }
 }
 
-# Install freqtrade from setup using the virtual environment's Python
-Write-Log "Installing freqtrade from setup..."
-$setupInstallCommand = "$VenvPython -m pip install -e ."
-Invoke-Expression $setupInstallCommand | Out-File $LogFilePath -Append 2>&1
-if ($LASTEXITCODE -ne 0) {
-  Write-Log "Failed to install freqtrade." -Level 'ERROR'
-  Exit-Script -exitCode 1
+function Find-PythonExecutable {
+
+  $pythonExecutables = @("python", "python3", "python3.9", "python3.10", "python3.11", "C:\Python39\python.exe", "C:\Python310\python.exe", "C:\Python311\python.exe")
+  
+  foreach ($executable in $pythonExecutables) {
+      if (Test-PythonExecutable -PythonExecutable $executable) {
+          return $executable
+      }
+  }
+
+  return $null
 }
+function Main {
+  # Exit on lower versions than Python 3.9 or when Python executable not found
+  $pythonExecutable = Find-PythonExecutable
+  if ($null -eq $pythonExecutable) {
+    Write-Host "Error: No suitable Python executable found. Please ensure that Python 3.9 or higher is installed and available in the system PATH."
+    Exit 1
+  }
 
-# Ask if the user wants to install the UI
-$uiOptions = @("Yes", "No")
-$installUI = Get-UserSelection -prompt "Do you want to install the freqtrade UI?" -options $uiOptions -defaultChoice 'B'
+  # Check for admin privileges and elevate if necessary
+  if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Log "Requesting administrative privileges..."
+    Start-Process PowerShell -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
+  }
 
-if ($uiOptions[$installUI] -eq "Yes") {
-  # Install freqtrade UI using the virtual environment's install-ui command
-  Write-Log "Installing freqtrade UI..."
-  & $VenvPython 'freqtrade', 'install-ui' | Out-File $LogFilePath -Append 2>&1
+  # Log file setup
+  "Admin rights confirmed" | Out-File $LogFilePath -Append
+  "Starting the < operations..." | Out-File $LogFilePath -Append
+
+  # Navigate to the project directory
+  Set-Location -Path $PSScriptRoot
+  "Current directory: $(Get-Location)" | Out-File $LogFilePath -Append
+
+  # Define the path to the Python executable in the virtual environment
+  $VenvPython = "$VenvDir\Scripts\python.exe"
+
+  # Check if the virtual environment exists, if not, create it
+  if (-Not (Test-Path $VenvPython)) {
+    Write-Log "Virtual environment not found. Creating virtual environment..." -Level 'ERROR'
+    python -m venv "$VenvName"
+    if (-Not (Test-Path $VenvPython)) {
+      Write-Log "Failed to create virtual environment." -Level 'ERROR'
+      Exit-Script -exitCode 1
+    }
+    Write-Log "Virtual environment created successfully." -Level 'ERROR'
+  }
+
+  # Activate the virtual environment
+  $Global:OldVirtualPath = $env:PATH
+  $env:PATH = "$VenvDir\Scripts;$env:PATH"
+
+  # Pull latest updates
+  Write-Log "Pulling latest updates..."
+  & "C:\Program Files\Git\cmd\git.exe" pull | Out-File $LogFilePath -Append 2>&1
   if ($LASTEXITCODE -ne 0) {
-    Write-Log "Failed to install freqtrade UI." -Level 'ERROR'
+    Write-Log "Failed to pull updates from Git." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
+
+  if (-not (Test-Path "$VenvDir\Lib\site-packages\talib")) {
+    # Install TA-Lib using the virtual environment's pip
+    Write-Log "Installing TA-Lib using virtual environment's pip..."
+    & $VenvPython -m pip install --find-links=build_helpers\ --prefer-binary TA-Lib | Out-File $LogFilePath -Append 2>&1
+  }
+
+  # Present options for requirement files
+  $selectedIndices = Get-UserSelection -prompt "Select which requirement files to install:" -options $RequirementFiles -defaultChoice 'A'
+
+  # Cache the selected requirement files
+  $selectedRequirementFiles = @()
+  foreach ($index in $selectedIndices) {
+    if ($index -lt 0 -or $index -ge $RequirementFiles.Length) {
+      Write-Log "Invalid selection index: $index" -Level 'ERROR'
+      continue
+    }
+    
+    $filePath = Join-Path $PSScriptRoot $RequirementFiles[$index]
+    if (Test-Path $filePath) {
+      $selectedRequirementFiles += $filePath
+    }
+    else {
+      Write-Log "Requirement file not found: $filePath" -Level 'ERROR'
+      Exit-Script -exitCode 1
+    }
+  }
+
+  # Install the selected requirement files together
+  if ($selectedRequirementFiles.Count -gt 0) {
+      Write-Log "Installing selected requirement files..."
+      $selectedRequirementFiles | ForEach-Object { & $VenvPython -m pip install -r $_ --quiet}
+      if ($LASTEXITCODE -ne 0) {
+          Write-Log "Failed to install selected requirement files. Exiting now..." -Level 'ERROR'
+          Exit-Script -exitCode 1
+      }
+  }
+
+  # Install freqtrade from setup using the virtual environment's Python
+  Write-Log "Installing freqtrade from setup..."
+  $setupInstallCommand = "$VenvPython -m pip install -e ."
+  Invoke-Expression $setupInstallCommand | Out-File $LogFilePath -Append 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    Write-Log "Failed to install freqtrade." -Level 'ERROR'
+    Exit-Script -exitCode 1
+  }
+
+  $uiOptions = @("Yes", "No")
+  $installUI = Get-UserSelection -prompt "Do you want to install the freqtrade UI?" -options $uiOptions -defaultChoice 'B' -allowMultipleSelections $false
+
+  if ($installUI -eq 0) {
+    # User selected "Yes"
+    # Install freqtrade UI using the virtual environment's install-ui command
+    Write-Log "Installing freqtrade UI..."
+    & $VenvPython 'freqtrade', 'install-ui' | Out-File $LogFilePath -Append 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      Write-Log "Failed to install freqtrade UI." -Level 'ERROR'
+      Exit-Script -exitCode 1
+    }
+  }
+  elseif ($installUI -eq 1) {
+    # User selected "No"
+    # Skip installing freqtrade UI
+    Write-Log "Skipping freqtrade UI installation."
+  }
+  else {
+    # Invalid selection
+    # Handle the error case
+    Write-Log "Invalid selection for freqtrade UI installation." -Level 'ERROR'
+    Exit-Script -exitCode 1
+  }
+
+  Write-Log "Update complete!"
+  Exit-Script -exitCode 0
 }
 
-Write-Log "Update complete!"
-Exit-Script -exitCode 0
+# Call the Main function
+Main
