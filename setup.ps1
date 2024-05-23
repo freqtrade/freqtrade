@@ -225,7 +225,7 @@ function Main {
       Write-Log "Failed to create virtual environment." -Level 'ERROR'
       Exit-Script -exitCode 1
     }
-    Write-Log "Virtual environment created successfully." -Level 'ERROR'
+    Write-Log "Virtual environment created successfully."
   }
 
   # Activate the virtual environment
