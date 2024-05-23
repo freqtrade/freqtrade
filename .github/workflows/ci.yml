@@ -71,6 +71,11 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
+    - name: Run Pester tests with code coverage
+      shell: pwsh
+      run: |
+        Invoke-Pester -Path tests -EnableExit
+
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
       env:
