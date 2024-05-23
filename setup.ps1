@@ -1,4 +1,3 @@
-Import-Module -Name ".\setupFunctions.psm1"
 Clear-Host
 
 # Set the log file path and initialize variables
@@ -103,7 +102,6 @@ function Get-UserSelection {
 function Exit-Script {
   param (
     [int]$ExitCode,
-    [bool]$IsSubShell = $true,
     [bool]$WaitForKeypress = $true
   )
 
@@ -111,15 +109,14 @@ function Exit-Script {
     $env:PATH = $Global:OldVirtualPath
   }
 
-  if ($ExitCode -ne 0 -and $IsSubShell) {
+  if ($ExitCode -ne 0) {
     Write-Log "Script failed. Would you like to open the log file? (Y/N)" -Level 'PROMPT'
     $openLog = Read-Host
     if ($openLog -eq 'Y' -or $openLog -eq 'y') {
       Start-Process notepad.exe -ArgumentList $LogFilePath
     }
   }
-
-  if ($WaitForKeypress) {
+  elseif ($WaitForKeypress) {
     Write-Log "Press any key to exit..."
     $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
   }
@@ -183,6 +180,26 @@ function Find-PythonExecutable {
 
   return $null
 }
+
+# Function to get the list of requirements from a file
+function Get-Requirements($file) {
+  $requirements = @()
+  $lines = Get-Content $file
+  foreach ($line in $lines) {
+    if ($line.StartsWith("-r ")) {
+      $nestedFile = $line.Substring(3).Trim()
+      $nestedFilePath = Join-Path (Split-Path $file -Parent) $nestedFile
+      if (Test-Path $nestedFilePath) {
+        $requirements += Get-Requirements $nestedFilePath
+      }
+    }
+    elseif (-not $line.StartsWith("#")) {
+      $requirements += $line
+    }
+  }
+  return $requirements
+}
+
 function Main {
   # Exit on lower versions than Python 3.9 or when Python executable not found
   $pythonExecutable = Find-PythonExecutable
@@ -191,14 +208,6 @@ function Main {
     Exit 1
   }
 
-  # Check for admin privileges and elevate if necessary
-  if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Log "Requesting administrative privileges..."
-    Start-Process PowerShell -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
-  }
-
-  # Log file setup
-  "Admin rights confirmed" | Out-File $LogFilePath -Append
   "Starting the < operations..." | Out-File $LogFilePath -Append
 
   # Navigate to the project directory
@@ -211,7 +220,7 @@ function Main {
   # Check if the virtual environment exists, if not, create it
   if (-Not (Test-Path $VenvPython)) {
     Write-Log "Virtual environment not found. Creating virtual environment..." -Level 'ERROR'
-    python -m venv "$VenvName"
+    & $pythonExecutable -m venv "$VenvName"
     if (-Not (Test-Path $VenvPython)) {
       Write-Log "Failed to create virtual environment." -Level 'ERROR'
       Exit-Script -exitCode 1
@@ -244,10 +253,10 @@ function Main {
   $selectedRequirementFiles = @()
   foreach ($index in $selectedIndices) {
     if ($index -lt 0 -or $index -ge $RequirementFiles.Length) {
-      Write-Log "Invalid selection index: $index" -Level 'ERROR'
+      Write-Log "Invalid selection. Please try again using the allowed letters." -Level 'ERROR'
       continue
     }
-    
+  
     $filePath = Join-Path $PSScriptRoot $RequirementFiles[$index]
     if (Test-Path $filePath) {
       $selectedRequirementFiles += $filePath
@@ -258,14 +267,34 @@ function Main {
     }
   }
 
-  # Install the selected requirement files together
+  # Merge the contents of the selected requirement files
   if ($selectedRequirementFiles.Count -gt 0) {
-    Write-Log "Installing selected requirement files..."
-    $selectedRequirementFiles | ForEach-Object { & $VenvPython -m pip install -r $_ --quiet }
+    Write-Log "Merging selected requirement files..."
+    $mergedDependencies = @()
+    foreach ($file in $selectedRequirementFiles) {
+      $mergedDependencies += Get-Requirements $file
+    }
+    # Avoid duplicate dependencies
+    $mergedDependencies = $mergedDependencies | Select-Object -Unique
+
+    # Create a temporary directory
+    $tempDir = Join-Path $env:TEMP "freqtrade_requirements"
+    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+    # Create a temporary file with the merged dependencies
+    $tempFile = Join-Path $tempDir "requirements.txt"
+    $mergedDependencies | Out-File $tempFile
+
+    # Install the merged dependencies
+    Write-Log "Installing merged dependencies..."
+    & $VenvPython -m pip install -r $tempFile
     if ($LASTEXITCODE -ne 0) {
-      Write-Log "Failed to install selected requirement files. Exiting now..." -Level 'ERROR'
+      Write-Log "Failed to install merged dependencies. Exiting now..." -Level 'ERROR'
       Exit-Script -exitCode 1
     }
+
+    # Remove the temporary directory
+    Remove-Item $tempDir -Recurse -Force
   }
 
   # Install freqtrade from setup using the virtual environment's Python
@@ -301,7 +330,7 @@ function Main {
     Write-Log "Invalid selection for freqtrade UI installation." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
-
+  
   Write-Log "Update complete!"
   Exit-Script -exitCode 0
 }
