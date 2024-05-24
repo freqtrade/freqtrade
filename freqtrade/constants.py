@@ -156,6 +156,7 @@ SUPPORTED_FIAT = [
     "LTC",
     "BCH",
     "BNB",
+    "",  # Allow empty field in config.
 ]
 
 MINIMAL_CONFIG = {
@@ -321,6 +322,14 @@ CONF_SCHEMA = {
                 "exit": {"type": "string", "enum": ORDERTIF_POSSIBILITIES},
             },
             "required": REQUIRED_ORDERTIF,
+        },
+        "coingecko": {
+            "type": "object",
+            "properties": {
+                "is_demo": {"type": "boolean", "default": True},
+                "api_key": {"type": "string"},
+            },
+            "required": ["is_demo", "api_key"],
         },
         "exchange": {"$ref": "#/definitions/exchange"},
         "edge": {"$ref": "#/definitions/edge"},

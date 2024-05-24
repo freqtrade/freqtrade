@@ -5,14 +5,14 @@ e.g BTC to USD
 
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from cachetools import TTLCache
-from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 
-from freqtrade.constants import SUPPORTED_FIAT
+from freqtrade.constants import SUPPORTED_FIAT, Config
 from freqtrade.mixins.logging_mixin import LoggingMixin
+from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
 
 logger = logging.getLogger(__name__)
@@ -40,28 +40,28 @@ class CryptoToFiatConverter(LoggingMixin):
     """
 
     __instance = None
-    _coingecko: CoinGeckoAPI = None
+
     _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
-    def __new__(cls):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
         """
-        This class is a singleton - cannot be instantiated twice.
+        Singleton pattern to ensure only one instance is created.
         """
-        if CryptoToFiatConverter.__instance is None:
-            CryptoToFiatConverter.__instance = object.__new__(cls)
-            try:
-                # Limit retires to 1 (0 and 1)
-                # otherwise we risk bot impact if coingecko is down.
-                CryptoToFiatConverter._coingecko = CoinGeckoAPI(retries=1)
-            except BaseException:
-                CryptoToFiatConverter._coingecko = None
-        return CryptoToFiatConverter.__instance
+        if not cls.__instance:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
 
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         # Timeout: 6h
         self._pair_price: TTLCache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
 
+        _coingecko_config = config.get("coingecko", {})
+        self._coingecko = FtCoinGeckoApi(
+            api_key=_coingecko_config.get("api_key", ""),
+            is_demo=_coingecko_config.get("is_demo", True),
+            retries=1,
+        )
         LoggingMixin.__init__(self, logger, 3600)
         self._load_cryptomap()
 

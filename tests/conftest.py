@@ -539,7 +539,7 @@ def patch_coingecko(mocker) -> None:
         ]
     )
     mocker.patch.multiple(
-        "freqtrade.rpc.fiat_convert.CoinGeckoAPI",
+        "freqtrade.rpc.fiat_convert.FtCoinGeckoApi",
         get_price=tickermock,
         get_coins_list=listmock,
     )
