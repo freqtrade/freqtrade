@@ -23,7 +23,7 @@ class Base5ActionRLEnv(BaseEnvironment):
     """
 
     def __init__(self, *args, action_space_type: str = "Discrete", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.action_space_type = action_space_type
         self.actions = Actions
 
