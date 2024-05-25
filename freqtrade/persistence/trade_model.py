@@ -957,7 +957,24 @@ class LocalTrade:
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def get_canceled_exit_order_count(self) -> int:
+    @property
+    def fully_canceled_entry_order_count(self) -> int:
+        """
+        Get amount of failed exiting orders
+        assumes full exits.
+        """
+        return len(
+            [
+                o
+                for o in self.orders
+                if o.ft_order_side == self.entry_side
+                and o.status in CANCELED_EXCHANGE_STATES
+                and o.filled == 0
+            ]
+        )
+
+    @property
+    def canceled_exit_order_count(self) -> int:
         """
         Get amount of failed exiting orders
         assumes full exits.
@@ -969,6 +986,13 @@ class LocalTrade:
                 if o.ft_order_side == self.exit_side and o.status in CANCELED_EXCHANGE_STATES
             ]
         )
+
+    def get_canceled_exit_order_count(self) -> int:
+        """
+        Get amount of failed exiting orders
+        assumes full exits.
+        """
+        return self.canceled_exit_order_count
 
     def _calc_open_trade_value(self, amount: float, open_rate: float) -> float:
         """
