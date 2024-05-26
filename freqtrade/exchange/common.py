@@ -53,6 +53,7 @@ MAP_EXCHANGE_CHILDCLASS = {
 
 SUPPORTED_EXCHANGES = [
     "binance",
+    "bingx",
     "bitmart",
     "gate",
     "htx",

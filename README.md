@@ -29,6 +29,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bitmart](https://bitmart.com/)
+- [X] [BingX](https://bingx.com/invite/0EM9RX)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [HTX](https://www.htx.com/) (Former Huobi)
 - [X] [Kraken](https://kraken.com/)
