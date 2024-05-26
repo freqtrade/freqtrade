@@ -492,10 +492,11 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
-    def handle_onexchange_order(self, trade: Trade):
+    def handle_onexchange_order(self, trade: Trade) -> bool:
         """
         Try refinding a order that is not in the database.
         Only used balance disappeared, which would make exiting impossible.
+        :return: True if the trade was deleted, False otherwise
         """
         try:
             orders = self.exchange.fetch_orders(
@@ -541,6 +542,19 @@ class FreqtradeBot(LoggingMixin):
                 trade.exit_reason = prev_exit_reason
                 total = self.wallets.get_total(trade.base_currency) if trade.base_currency else 0
                 if total < trade.amount:
+                    if trade.fully_canceled_entry_order_count == len(trade.orders):
+                        logger.warning(
+                            f"Trade only had fully canceled entry orders. "
+                            f"Removing {trade} from database."
+                        )
+
+                        self._notify_enter_cancel(
+                            trade,
+                            order_type=self.strategy.order_types["entry"],
+                            reason=constants.CANCEL_REASON["FULLY_CANCELLED"],
+                        )
+                        trade.delete()
+                        return True
                     if total > trade.amount * 0.98:
                         logger.warning(
                             f"{trade} has a total of {trade.amount} {trade.base_currency}, "
@@ -566,6 +580,7 @@ class FreqtradeBot(LoggingMixin):
         except Exception:
             # catching https://github.com/freqtrade/freqtrade/issues/9025
             logger.warning("Error finding onexchange order", exc_info=True)
+        return False
 
     #
     # enter positions / open trades logic and methods
@@ -1007,7 +1022,13 @@ class FreqtradeBot(LoggingMixin):
 
         # Update fees if order is non-opened
         if order_status in constants.NON_OPEN_EXCHANGE_STATES:
-            self.update_trade_state(trade, order_id, order)
+            fully_canceled = self.update_trade_state(trade, order_id, order)
+            if fully_canceled and mode != "replace":
+                # Fully canceled orders, may happen with some time in force setups (IOC).
+                # Should be handled immediately.
+                self.handle_cancel_enter(
+                    trade, order, order_obj, constants.CANCEL_REASON["TIMEOUT"]
+                )
 
         return True
 
@@ -1229,7 +1250,9 @@ class FreqtradeBot(LoggingMixin):
                     f"Not enough {trade.safe_base_currency} in wallet to exit {trade}. "
                     "Trying to recover."
                 )
-                self.handle_onexchange_order(trade)
+                if self.handle_onexchange_order(trade):
+                    # Trade was deleted. Don't continue.
+                    continue
 
             try:
                 try:
