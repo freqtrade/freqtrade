@@ -1961,9 +1961,25 @@ def test_get_canceled_exit_order_count(fee, is_short):
     trade = Trade.get_trades([Trade.pair == "ETC/BTC"]).first()
     # No canceled order.
     assert trade.get_canceled_exit_order_count() == 0
+    # Property returns the same result
+    assert trade.canceled_exit_order_count == 0
 
     trade.orders[-1].status = "canceled"
     assert trade.get_canceled_exit_order_count() == 1
+    assert trade.canceled_exit_order_count == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [True, False])
+def test_fully_canceled_entry_order_count(fee, is_short):
+    create_mock_trades(fee, is_short=is_short)
+    trade = Trade.get_trades([Trade.pair == "ETC/BTC"]).first()
+    # No canceled order.
+    assert trade.fully_canceled_entry_order_count == 0
+
+    trade.orders[0].status = "canceled"
+    trade.orders[0].filled = 0
+    assert trade.fully_canceled_entry_order_count == 1
 
 
 @pytest.mark.usefixtures("init_persistence")

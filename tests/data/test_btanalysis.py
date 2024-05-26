@@ -343,17 +343,15 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)
-    _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
-        bt_data, value_col="profit_abs"
-    )
-    assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.29753914
-    assert isinstance(hdate, Timestamp)
-    assert isinstance(lowdate, Timestamp)
-    assert isinstance(hval, float)
-    assert isinstance(lval, float)
-    assert hdate == Timestamp("2018-01-16 19:30:00", tz="UTC")
-    assert lowdate == Timestamp("2018-01-16 22:25:00", tz="UTC")
+    drawdown = calculate_max_drawdown(bt_data, value_col="profit_abs")
+    assert isinstance(drawdown.relative_account_drawdown, float)
+    assert pytest.approx(drawdown.relative_account_drawdown) == 0.29753914
+    assert isinstance(drawdown.high_date, Timestamp)
+    assert isinstance(drawdown.low_date, Timestamp)
+    assert isinstance(drawdown.high_value, float)
+    assert isinstance(drawdown.low_value, float)
+    assert drawdown.high_date == Timestamp("2018-01-16 19:30:00", tz="UTC")
+    assert drawdown.low_date == Timestamp("2018-01-16 22:25:00", tz="UTC")
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)
@@ -509,19 +507,20 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values("profit").reset_index(drop=True)
     df1 = df.copy()
-    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
-        df, date_col="open_date", value_col="profit"
+    drawdown = calculate_max_drawdown(
+        df, date_col="open_date", starting_balance=0.2, value_col="profit"
     )
     # Ensure df has not been altered.
     assert df.equals(df1)
 
-    assert isinstance(drawdown, float)
-    assert isinstance(drawdown_rel, float)
+    assert isinstance(drawdown.drawdown_abs, float)
+    assert isinstance(drawdown.relative_account_drawdown, float)
     # High must be before low
-    assert hdate < ldate
+    assert drawdown.high_date < drawdown.low_date
     # High value must be higher than low value
-    assert hval > lval
-    assert drawdown == 0.091755
+    assert drawdown.high_value > drawdown.low_value
+    assert drawdown.drawdown_abs == 0.091755
+    assert pytest.approx(drawdown.relative_account_drawdown) == 0.32129575
 
     df = DataFrame(zip(values[:5], dates[:5]), columns=["profit", "open_date"])
     with pytest.raises(ValueError, match="No losing trade, therefore no drawdown."):
@@ -530,10 +529,8 @@ def test_calculate_max_drawdown2():
     df1 = DataFrame(zip(values[:5], dates[:5]), columns=["profit", "open_date"])
     df1.loc[:, "profit"] = df1["profit"] * -1
     # No winning trade ...
-    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
-        df1, date_col="open_date", value_col="profit"
-    )
-    assert drawdown == 0.043965
+    drawdown = calculate_max_drawdown(df1, date_col="open_date", value_col="profit")
+    assert drawdown.drawdown_abs == 0.043965
 
 
 @pytest.mark.parametrize(
@@ -555,20 +552,20 @@ def test_calculate_max_drawdown_abs(profits, relative, highd, lowdays, result, r
     # sort by profit and reset index
     df = df.sort_values("profit_abs").reset_index(drop=True)
     df1 = df.copy()
-    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
+    drawdown = calculate_max_drawdown(
         df, date_col="open_date", starting_balance=1000, relative=relative
     )
     # Ensure df has not been altered.
     assert df.equals(df1)
 
-    assert isinstance(drawdown, float)
-    assert isinstance(drawdown_rel, float)
-    assert hdate == init_date + timedelta(days=highd)
-    assert ldate == init_date + timedelta(days=lowdays)
+    assert isinstance(drawdown.drawdown_abs, float)
+    assert isinstance(drawdown.relative_account_drawdown, float)
+    assert drawdown.high_date == init_date + timedelta(days=highd)
+    assert drawdown.low_date == init_date + timedelta(days=lowdays)
 
     # High must be before low
-    assert hdate < ldate
+    assert drawdown.high_date < drawdown.low_date
     # High value must be higher than low value
-    assert hval > lval
-    assert drawdown == result
-    assert pytest.approx(drawdown_rel) == result_rel
+    assert drawdown.high_value > drawdown.low_value
+    assert drawdown.drawdown_abs == result
+    assert pytest.approx(drawdown.relative_account_drawdown) == result_rel

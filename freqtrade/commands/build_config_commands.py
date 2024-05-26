@@ -100,7 +100,10 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "fiat_display_currency",
-            "message": "Please insert your display Currency (for reporting):",
+            "message": (
+                "Please insert your display Currency for reporting "
+                "(leave empty to disable FIAT conversion):"
+            ),
             "default": "USD",
         },
         {

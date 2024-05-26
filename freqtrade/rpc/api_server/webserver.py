@@ -1,5 +1,5 @@
 import logging
-from ipaddress import IPv4Address
+from ipaddress import ip_address
 from typing import Any, Optional
 
 import orjson
@@ -180,7 +180,7 @@ class ApiServer(RPCHandler):
         rest_port = self._config["api_server"]["listen_port"]
 
         logger.info(f"Starting HTTP Server at {rest_ip}:{rest_port}")
-        if not IPv4Address(rest_ip).is_loopback and not running_in_docker():
+        if not ip_address(rest_ip).is_loopback and not running_in_docker():
             logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
             logger.warning(
                 "SECURITY WARNING - This is insecure please set to your loopback,"
