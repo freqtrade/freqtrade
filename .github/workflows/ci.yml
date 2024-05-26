@@ -71,11 +71,6 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - name: Run Pester tests with code coverage
-      shell: pwsh
-      run: |
-        Invoke-Pester -Path tests -EnableExit
-
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
       env:
@@ -322,6 +317,15 @@ jobs:
     - name: Mypy
       run: |
         mypy freqtrade scripts tests
+
+    - name: Run Pester tests (PowerShell)
+      run: |
+        Write-host $PSVersionTable.PSVersion.Major $PSVersionTable.PSRemotingProtocolVersion.Minor
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force
+        Invoke-Pester -Path "tests"
+        if ($Error[0].Fullyqualifiederrorid -eq 'PesterAssertionFailed') {exit 1}
+      shell: powershell
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
