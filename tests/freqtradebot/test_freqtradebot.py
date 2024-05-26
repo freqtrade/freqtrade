@@ -4978,6 +4978,47 @@ def test_handle_onexchange_order_exit(mocker, default_conf_usdt, limit_order, is
     assert trade.amount == 5.0
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_onexchange_order_fully_canceled_enter(
+    mocker, default_conf_usdt, limit_order, is_short, caplog
+):
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    entry_order = limit_order[entry_side(is_short)]
+    entry_order["status"] = "canceled"
+    entry_order["filled"] = 0.0
+    mock_fo = mocker.patch(
+        f"{EXMS}.fetch_orders",
+        return_value=[
+            entry_order,
+        ],
+    )
+    mocker.patch(f"{EXMS}.get_rate", return_value=entry_order["price"])
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=entry_order["price"],
+        open_date=dt_now(),
+        stake_amount=entry_order["cost"],
+        amount=entry_order["amount"],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
+
+    trade.orders.append(Order.parse_from_ccxt_object(entry_order, "ADA/USDT", entry_side(is_short)))
+    Trade.session.add(trade)
+    assert freqtrade.handle_onexchange_order(trade) is True
+    assert log_has_re(r"Trade only had fully canceled entry orders\. .*", caplog)
+    assert mock_fo.call_count == 1
+    trades = Trade.get_trades().all()
+    assert len(trades) == 0
+
+
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
