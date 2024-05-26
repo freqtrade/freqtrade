@@ -2271,7 +2271,6 @@ class Exchange:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
             min_date = int(date_minus_candles(timeframe, candle_limit - 5).timestamp())
 
-            last_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
             if self._exchange_ws:
                 candle_date = int(timeframe_to_prev_date(timeframe).timestamp() * 1000)
                 prev_candle_date = int(date_minus_candles(timeframe, 1).timestamp() * 1000)
@@ -2298,7 +2297,7 @@ class Exchange:
                 )
 
             # Check if 1 call can get us updated candles without hole in the data.
-            if min_date < last_refresh:
+            if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
                 # Cache can be used - do one-off call.
                 not_all_data = False
             else:

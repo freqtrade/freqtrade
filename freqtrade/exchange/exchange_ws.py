@@ -158,7 +158,7 @@ class ExchangeWS:
             # Refreshed after candle was complete.
             # logger.info(f"{candles[-1][0]} >= {candle_date}")
             drop_hint = candles[-1][0] >= candle_date
-        logger.info(
+        logger.debug(
             f"watch result for {pair}, {timeframe} with length {len(candles)}, "
             f"{format_ms_time(candles[-1][0])}, "
             f"lref={format_ms_time(refresh_date)}, "
