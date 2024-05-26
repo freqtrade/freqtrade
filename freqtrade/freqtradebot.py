@@ -1022,7 +1022,13 @@ class FreqtradeBot(LoggingMixin):
 
         # Update fees if order is non-opened
         if order_status in constants.NON_OPEN_EXCHANGE_STATES:
-            self.update_trade_state(trade, order_id, order)
+            fully_canceled = self.update_trade_state(trade, order_id, order)
+            if fully_canceled and mode != "replace":
+                # Fully canceled orders, may happen with some time in force setups (IOC).
+                # Should be handled immediately.
+                self.handle_cancel_enter(
+                    trade, order, order_obj, constants.CANCEL_REASON["TIMEOUT"]
+                )
 
         return True
 

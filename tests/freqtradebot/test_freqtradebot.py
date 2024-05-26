@@ -1147,6 +1147,36 @@ def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order
 
 
 @pytest.mark.parametrize("is_short", [False, True])
+def test_execute_entry_fully_canceled_on_create(
+    mocker, default_conf_usdt, fee, limit_order_open, is_short
+) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    mock_hce = mocker.spy(freqtrade, "handle_cancel_enter")
+    order = limit_order_open[entry_side(is_short)]
+    pair = "ETH/USDT"
+    order["symbol"] = pair
+    order["status"] = "canceled"
+    order["filled"] = 0.0
+
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={"bid": 1.9, "ask": 2.2, "last": 1.9}),
+        create_order=MagicMock(return_value=order),
+        get_rate=MagicMock(return_value=0.11),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+    stake_amount = 2
+
+    assert freqtrade.execute_entry(pair, stake_amount)
+    assert mock_hce.call_count == 1
+    # an order that immediately cancels completely should delete the order.
+    trades = Trade.get_trades().all()
+    assert len(trades) == 0
+
+
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry_min_leverage(mocker, default_conf_usdt, fee, limit_order, is_short) -> None:
     default_conf_usdt["trading_mode"] = "futures"
     default_conf_usdt["margin_mode"] = "isolated"
