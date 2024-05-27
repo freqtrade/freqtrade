@@ -53,7 +53,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 
 #Futures
-schedule==1.2.1
+schedule==1.2.2
 
 #WS Messages
 websockets==12.0
