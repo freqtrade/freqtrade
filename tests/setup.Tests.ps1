@@ -57,6 +57,13 @@ Describe "Setup and Tests" {
         $Result | Should -Be 1
       }
 
+      It "Should return the correct index for a valid single selection" {
+        $Options = @("Option1", "Option2", "Option3")
+        Mock Read-Host { return "b" }
+        $Result = Get-UserSelection -prompt "Select an option" -options $Options
+        $Result | Should -Be 1
+      }
+
       It "Should return the default choice when no input is provided" {
         $Options = @("Option1", "Option2", "Option3")
         Mock Read-Host { return "" }
@@ -97,6 +104,13 @@ Describe "Setup and Tests" {
 
     Context "Multiple selections" {
       It "Should handle valid input correctly" {
+        Mock Read-Host { return "A, B, C" }
+        $Options = @("Option1", "Option2", "Option3")
+        $Indices = Get-UserSelection -prompt "Select options" -options $Options -defaultChoice "A"
+        $Indices | Should -Be @(0, 1, 2)
+      }
+
+      It "Should handle valid input without whitespace correctly" {
         Mock Read-Host { return "A,B,C" }
         $Options = @("Option1", "Option2", "Option3")
         $Indices = Get-UserSelection -prompt "Select options" -options $Options -defaultChoice "A"

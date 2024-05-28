@@ -51,15 +51,10 @@ function Get-UserSelection {
   if ([string]::IsNullOrEmpty($UserInput)) {
     $UserInput = $DefaultChoice
   }
-  
-  if ($AllowMultipleSelections) {
-    $Selections = $UserInput.Split(',') | ForEach-Object {
-      $_.Trim().ToUpper()
-    }
-    
-    $ErrorMessage = "Invalid input: $Selection. Please enter letters within the valid range of options."
+  $UserInput = $UserInput.ToUpper()
 
-    # Convert each Selection from letter to Index and validate
+  if ($AllowMultipleSelections) {
+    $Selections = $UserInput.Split(',') | ForEach-Object { $_.Trim() }
     $SelectedIndices = @()
     foreach ($Selection in $Selections) {
       if ($Selection -match '^[A-Z]$') {
@@ -68,20 +63,18 @@ function Get-UserSelection {
           $SelectedIndices += $Index
         }
         else {
-          Write-Log $ErrorMessage -Level 'ERROR'
+          Write-Log "Invalid input: $Selection. Please enter letters within the valid range of options." -Level 'ERROR'
           return -1
         }
       }
       else {
-        Write-Log $ErrorMessage -Level 'ERROR'
+        Write-Log "Invalid input: $Selection. Please enter a letter between A and Z." -Level 'ERROR'
         return -1
       }
     }
-    
     return $SelectedIndices
   }
   else {
-    # Convert the Selection from letter to Index and validate
     if ($UserInput -match '^[A-Z]$') {
       $SelectedIndex = [int][char]$UserInput - [int][char]'A'
       if ($SelectedIndex -ge 0 -and $SelectedIndex -lt $Options.Length) {
@@ -98,15 +91,11 @@ function Get-UserSelection {
     }
   }
 }
-
 function Exit-Script {
   param (
     [int]$ExitCode,
     [bool]$WaitForKeypress = $true
   )
-
-  # Disable virtual environment
-  deactivate
 
   if ($ExitCode -ne 0) {
     Write-Log "Script failed. Would you like to open the log file? (Y/N)" -Level 'PROMPT'
@@ -128,10 +117,19 @@ function Test-PythonExecutable {
     [string]$PythonExecutable
   )
 
+  $DeactivateVenv = Join-Path $VenvDir "Scripts\Deactivate.bat"
+  if (Test-Path $DeactivateVenv) {
+    Write-Host "Deactivating virtual environment..."
+    & $DeactivateVenv
+    Write-Host "Virtual environment deactivated."
+  }
+  else {
+    Write-Host "Deactivation script not found: $DeactivateVenv"
+  }  
+
   $PythonCmd = Get-Command $PythonExecutable -ErrorAction SilentlyContinue
   if ($PythonCmd) {
-    $Command = "$($PythonCmd.Source) --version 2>&1"
-    $VersionOutput = Invoke-Expression $Command
+    $VersionOutput = & $PythonCmd.Source --version 2>&1
     if ($LASTEXITCODE -eq 0) {
       $Version = $VersionOutput | Select-String -Pattern "Python (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
       Write-Log "Python version $Version found using executable '$PythonExecutable'."
@@ -172,39 +170,59 @@ function Main {
   }
 
   # Define the path to the Python executable in the virtual environment
-  $VenvPython = "$VenvDir\Scripts\Activate.ps1"
+  $ActivateVenv = "$VenvDir\Scripts\Activate.ps1"
 
   # Check if the virtual environment exists, if not, create it
-  if (-Not (Test-Path $VenvPython)) {
+  if (-Not (Test-Path $ActivateVenv)) {
     Write-Log "Virtual environment not found. Creating virtual environment..." -Level 'ERROR'
-    & $PythonExecutable -m venv $VenvName
-    if (-Not (Test-Path $VenvPython)) {
+    & $PythonExecutable -m venv $VenvName 2>&1 | Out-File $LogFilePath -Append
+    if ($LASTEXITCODE -ne 0) {
       Write-Log "Failed to create virtual environment." -Level 'ERROR'
       Exit-Script -exitCode 1
     }
-    Write-Log "Virtual environment created successfully."
+    else {
+      Write-Log "Virtual environment created."
+    }
   }
+
+  # Activate the virtual environment and check if it was successful
+  Write-Log "Virtual environment found. Activating virtual environment..."
+  & $ActivateVenv 2>&1 | Out-File $LogFilePath -Append
+  # Check if virtual environment is activated
+  if ($env:VIRTUAL_ENV) {
+    Write-Host "Virtual environment is activated at: $($env:VIRTUAL_ENV)"
+  }
+  else {
+    Write-Log "Failed to activate virtual environment." -Level 'ERROR'
+    Exit-Script -exitCode 1
+  }
+  
+  # Ensure pip
+  python -m ensurepip --default-pip 2>&1 | Out-File $LogFilePath -Append
 
   # Pull latest updates only if the repository state is not dirty
   Write-Log "Checking if the repository is clean..."
-  $status = & "C:\Program Files\Git\cmd\git.exe" status --porcelain
-  if ($status) {
+  $Status = & "C:\Program Files\Git\cmd\git.exe" status --porcelain
+  if ($Status) {
     Write-Log "Repository is dirty. Skipping pull."
   }
   else {
     Write-Log "Pulling latest updates..."
-    & "C:\Program Files\Git\cmd\git.exe" pull | Out-File $LogFilePath -Append 2>&1
+    & "C:\Program Files\Git\cmd\git.exe" pull 2>&1 | Out-File $LogFilePath -Append
     if ($LASTEXITCODE -ne 0) {
       Write-Log "Failed to pull updates from Git." -Level 'ERROR'
       Exit-Script -exitCode 1
     }
   }
 
-
   if (-not (Test-Path "$VenvDir\Lib\site-packages\talib")) {
     # Install TA-Lib using the virtual environment's pip
     Write-Log "Installing TA-Lib using virtual environment's pip..."
-    python -m pip install --find-links=build_helpers\ --prefer-binary TA-Lib | Out-File $LogFilePath -Append 2>&1
+    python -m pip install --find-links=build_helpers\ --prefer-binary TA-Lib 2>&1 | Out-File $LogFilePath -Append
+    if ($LASTEXITCODE -ne 0) {
+      Write-Log "Failed to install TA-Lib." -Level 'ERROR'
+      Exit-Script -exitCode 1
+    }
   }
 
   # Present options for requirement files
@@ -212,25 +230,25 @@ function Main {
 
   # Cache the selected requirement files
   $SelectedRequirementFiles = @()
-  $PipInstallArguments = ""
+  $PipInstallArguments = @()
   foreach ($Index in $SelectedIndices) {
-    $FilePath = Join-Path $PSScriptRoot $RequirementFiles[$Index]
-    if (Test-Path $FilePath) {
-      $SelectedRequirementFiles += $FilePath
-      $PipInstallArguments += " -r $FilePath"
+    $RelativePath = $RequirementFiles[$Index]
+    if (Test-Path $RelativePath) {
+      $SelectedRequirementFiles += $RelativePath
+      $PipInstallArguments += "-r", $RelativePath  # Add each flag and path as separate elements
     }
     else {
-      Write-Log "Requirement file not found: $FilePath" -Level 'ERROR'
+      Write-Log "Requirement file not found: $RelativePath" -Level 'ERROR'
       Exit-Script -exitCode 1
     }
   }
-  if ($PipInstallArguments -ne "") {
-    python -m pip install $PipInstallArguments
+  if ($PipInstallArguments.Count -ne 0) {
+    & pip install @PipInstallArguments # Use array splatting to pass arguments correctly
   }
 
   # Install freqtrade from setup using the virtual environment's Python
   Write-Log "Installing freqtrade from setup..."
-  python -m pip install -e . | Out-File $LogFilePath -Append 2>&1
+  pip install -e . 2>&1 | Out-File $LogFilePath -Append
   if ($LASTEXITCODE -ne 0) {
     Write-Log "Failed to install freqtrade." -Level 'ERROR'
     Exit-Script -exitCode 1
@@ -243,7 +261,7 @@ function Main {
     # User selected "Yes"
     # Install freqtrade UI using the virtual environment's install-ui command
     Write-Log "Installing freqtrade UI..."
-    python 'freqtrade', 'install-ui' | Out-File $LogFilePath -Append 2>&1
+    python freqtrade install-ui 2>&1 | Out-File $LogFilePath -Append
     if ($LASTEXITCODE -ne 0) {
       Write-Log "Failed to install freqtrade UI." -Level 'ERROR'
       Exit-Script -exitCode 1
