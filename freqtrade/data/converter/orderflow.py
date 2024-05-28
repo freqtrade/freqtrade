@@ -208,6 +208,7 @@ def trades_orderflow_to_imbalances(df: pd.DataFrame, imbalance_ratio: int, imbal
     :return: dataframe with bid and ask imbalance
     """
     bid = df.bid
+    # compares bid and ask diagonally
     ask = df.ask.shift(-1)
     bid_imbalance = (bid / ask) > (imbalance_ratio)
     # overwrite bid_imbalance with False if volume is not big enough
