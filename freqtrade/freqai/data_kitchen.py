@@ -960,7 +960,7 @@ class FreqaiDataKitchen:
         """
         Remove all special characters from feature strings (:)
         :param dataframe: the dataframe that just finished indicator population. (unfiltered)
-        :return: dataframe with cleaned featrue names
+        :return: dataframe with cleaned feature names
         """
 
         spec_chars = [":"]
