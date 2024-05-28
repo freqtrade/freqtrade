@@ -3531,4 +3531,3 @@ class Exchange:
             # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
             raise ExchangeError(f"Cannot get maintenance ratio using {self.name}")
-            raise ExchangeError(f"Cannot get maintenance ratio using {self.name}")
