@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS, Config
+from freqtrade.exceptions import DependencyException
 
 
 logger = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ def populate_dataframe_with_trades(
 
     except Exception as e:
         logger.exception("Error populating dataframe with trades:", e)
-        raise e
+        raise DependencyException(e)
 
     return dataframe
 
