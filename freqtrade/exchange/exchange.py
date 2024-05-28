@@ -2650,8 +2650,7 @@ class Exchange:
                     )
 
                 except Exception as e:
-                    logger.error(f"Refreshing TRADES data for {pair} failed")
-                    logger.error(e)
+                    logger.exception(f"Refreshing TRADES data for {pair} failed")
                     raise e
 
                 if new_ticks:
