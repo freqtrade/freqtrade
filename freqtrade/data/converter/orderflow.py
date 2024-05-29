@@ -255,16 +255,3 @@ def stacked_imbalance_bid(df: pd.DataFrame, stacked_imbalance_range: int):
 
 def stacked_imbalance_ask(df: pd.DataFrame, stacked_imbalance_range: int):
     return stacked_imbalance(df, "ask", stacked_imbalance_range, should_reverse=True)
-
-
-def orderflow_to_volume_profile(df: pd.DataFrame):
-    """
-    :param orderflow: dataframe
-    :return: volume profile dataframe
-    """
-    bid = df.groupby("level").bid.sum()
-    ask = df.groupby("level").ask.sum()
-    df.groupby("level")["level"].sum()
-    delta = df.groupby("level").ask.sum() - df.groupby("level").bid.sum()
-    df = pd.DataFrame({"bid": bid, "ask": ask, "delta": delta})
-    return df
