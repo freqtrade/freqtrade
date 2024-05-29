@@ -2672,7 +2672,7 @@ class Exchange:
                     )
 
                 else:
-                    raise OperationalException("no new ticks")
+                    logger.error(f"No new ticks for {pair}")
 
         return results_df
 
