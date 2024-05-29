@@ -312,20 +312,41 @@ class FtRestClient:
         data = {"pair": pair, "price": price}
         return self._post("forcebuy", data=data)
 
-    def forceenter(self, pair, side, price=None):
+    def forceenter(self, pair, side,
+                   price=None, order_type=None,
+                   stake_amount=None, leverage=None,
+                   enter_tag=None):
         """Force entering a trade
 
         :param pair: Pair to buy (ETH/BTC)
         :param side: 'long' or 'short'
         :param price: Optional - price to buy
+        :param order_type: Optional - 'limit' or 'market'
+        :param stake_amount: Optional - stake amount (as a float)
+        :param leverage: Optional - leverage (as a float)
+        :param enter_tag: Optional - entry tag (as a string, default: 'force_enter')
         :return: json object of the trade
         """
         data = {
             "pair": pair,
             "side": side,
         }
+
         if price:
             data["price"] = price
+
+        if order_type:
+            data["ordertype"] = order_type
+
+        if stake_amount:
+            data["stakeamount"] = stake_amount
+
+        if leverage:
+            data["leverage"] = leverage
+
+        if enter_tag:
+            data["entry_tag"] = enter_tag
+
         return self._post("forceenter", data=data)
 
     def forceexit(self, tradeid, ordertype=None, amount=None):
