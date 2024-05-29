@@ -116,9 +116,6 @@ class TestCCXTExchange:
 
     def test_ccxt_fetch_tickers(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, exchangename = exchange
-        if exchangename in ("bitmart"):
-            # TODO: Remove once https://github.com/ccxt/ccxt/issues/22631 is fixed.
-            pytest.skip("Bitmart is unstable here at the moment")
         pair = EXCHANGES[exchangename]["pair"]
 
         tickers = exch.get_tickers()
