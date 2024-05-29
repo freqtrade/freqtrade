@@ -312,10 +312,16 @@ class FtRestClient:
         data = {"pair": pair, "price": price}
         return self._post("forcebuy", data=data)
 
-    def forceenter(self, pair, side,
-                   price=None, order_type=None,
-                   stake_amount=None, leverage=None,
-                   enter_tag=None):
+    def forceenter(
+        self,
+        pair,
+        side,
+        price=None,
+        order_type=None,
+        stake_amount=None,
+        leverage=None,
+        enter_tag=None,
+    ):
         """Force entering a trade
 
         :param pair: Pair to buy (ETH/BTC)
