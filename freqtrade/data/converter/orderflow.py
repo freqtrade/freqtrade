@@ -97,7 +97,7 @@ def populate_dataframe_with_trades(
                 # calculate orderflow for each candle
                 df.loc[is_between, "orderflow"] = df.loc[is_between, "orderflow"].apply(
                     lambda _: trades_to_volumeprofile_with_total_delta_bid_ask(
-                        pd.DataFrame(trades_grouped_df), scale=config_orderflow["scale"]
+                        trades_grouped_df, scale=config_orderflow["scale"]
                     )
                 )
                 # calculate imbalances for each candle's orderflow
@@ -152,9 +152,6 @@ def populate_dataframe_with_trades(
                     trades_grouped_df["side"].str.contains("sell"), 0, trades_grouped_df["amount"]
                 ).sum()
                 df.loc[is_between, "delta"] = df.loc[is_between, "ask"] - df.loc[is_between, "bid"]
-                min_delta = np.min(deltas_per_trade)
-                max_delta = np.max(deltas_per_trade)
-
                 df.loc[is_between, "total_trades"] = len(trades_grouped_df)
                 # copy to avoid memory leaks
                 dataframe.loc[is_between] = df.loc[is_between].copy()
