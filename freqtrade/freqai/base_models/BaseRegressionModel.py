@@ -20,9 +20,7 @@ class BaseRegressionModel(IFreqaiModel):
     such as prediction_models/CatboostRegressor.py for guidance.
     """
 
-    def train(
-        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
-    ) -> Any:
+    def train(self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
@@ -46,8 +44,10 @@ class BaseRegressionModel(IFreqaiModel):
 
         start_date = unfiltered_df["date"].iloc[0].strftime("%Y-%m-%d")
         end_date = unfiltered_df["date"].iloc[-1].strftime("%Y-%m-%d")
-        logger.info(f"-------------------- Training on data from {start_date} to "
-                    f"{end_date} --------------------")
+        logger.info(
+            f"-------------------- Training on data from {start_date} to "
+            f"{end_date} --------------------"
+        )
         # split data into train/test data.
         dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
         if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
@@ -55,19 +55,19 @@ class BaseRegressionModel(IFreqaiModel):
         dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
         dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
 
-        (dd["train_features"],
-         dd["train_labels"],
-         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
-                                                                  dd["train_labels"],
-                                                                  dd["train_weights"])
+        (dd["train_features"], dd["train_labels"], dd["train_weights"]) = (
+            dk.feature_pipeline.fit_transform(
+                dd["train_features"], dd["train_labels"], dd["train_weights"]
+            )
+        )
         dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
 
-        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
-            (dd["test_features"],
-             dd["test_labels"],
-             dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
-                                                                 dd["test_labels"],
-                                                                 dd["test_weights"])
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
+            (dd["test_features"], dd["test_labels"], dd["test_weights"]) = (
+                dk.feature_pipeline.transform(
+                    dd["test_features"], dd["test_labels"], dd["test_weights"]
+                )
+            )
             dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
 
         logger.info(
@@ -79,8 +79,10 @@ class BaseRegressionModel(IFreqaiModel):
 
         end_time = time()
 
-        logger.info(f"-------------------- Done training {pair} "
-                    f"({end_time - start_time:.2f} secs) --------------------")
+        logger.info(
+            f"-------------------- Done training {pair} "
+            f"({end_time - start_time:.2f} secs) --------------------"
+        )
 
         return model
 
@@ -102,7 +104,8 @@ class BaseRegressionModel(IFreqaiModel):
         )
 
         dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
-            dk.data_dictionary["prediction_features"], outlier_check=True)
+            dk.data_dictionary["prediction_features"], outlier_check=True
+        )
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
         if self.CONV_WIDTH == 1:

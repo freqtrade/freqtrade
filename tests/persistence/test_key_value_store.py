@@ -46,7 +46,7 @@ def test_key_value_store(time_machine):
     KeyValueStore.delete_value("test_float")
 
     with pytest.raises(ValueError, match=r"Unknown value type"):
-        KeyValueStore.store_value("test_float", {'some': 'dict'})
+        KeyValueStore.store_value("test_float", {"some": "dict"})
 
 
 @pytest.mark.usefixtures("init_persistence")

@@ -12,8 +12,10 @@ class MeasureTime:
     """
     Measure the time of a block of code and call a callback if the time limit is exceeded.
     """
+
     def __init__(
-            self, callback: Callable[[float, float], None], time_limit: float, ttl: int = 3600 * 4):
+        self, callback: Callable[[float, float], None], time_limit: float, ttl: int = 3600 * 4
+    ):
         """
         :param callback: The callback to call if the time limit is exceeded.
             This callback will be called once every "ttl" seconds,
@@ -32,7 +34,7 @@ class MeasureTime:
 
     def __exit__(self, *args):
         end = time.time()
-        if self.__cache.get('value'):
+        if self.__cache.get("value"):
             return
         duration = end - self._start
 
@@ -40,4 +42,4 @@ class MeasureTime:
             return
         self._callback(duration, self._time_limit)
 
-        self.__cache['value'] = True
+        self.__cache["value"] = True

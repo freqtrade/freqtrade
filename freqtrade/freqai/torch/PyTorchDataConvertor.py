@@ -31,9 +31,9 @@ class DefaultPyTorchDataConvertor(PyTorchDataConvertor):
     """
 
     def __init__(
-            self,
-            target_tensor_type: torch.dtype = torch.float32,
-            squeeze_target_tensor: bool = False,
+        self,
+        target_tensor_type: torch.dtype = torch.float32,
+        squeeze_target_tensor: bool = False,
     ):
         """
         :param target_tensor_type: type of target tensor, for classification use

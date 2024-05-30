@@ -5,6 +5,7 @@ class ExitType(Enum):
     """
     Enum to distinguish between exit reasons
     """
+
     ROI = "roi"
     STOP_LOSS = "stop_loss"
     STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"

@@ -3,6 +3,7 @@
 """
 This module load a custom model for freqai
 """
+
 import logging
 from pathlib import Path
 

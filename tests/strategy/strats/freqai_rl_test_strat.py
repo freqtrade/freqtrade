@@ -25,22 +25,20 @@ class freqai_rl_test_strat(IStrategy):
     startup_candle_count: int = 300
     can_short = False
 
-    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
-                                       metadata: Dict, **kwargs):
-
+    def feature_engineering_expand_all(
+        self, dataframe: DataFrame, period: int, metadata: Dict, **kwargs
+    ):
         dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
 
         return dataframe
 
     def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-raw_volume"] = dataframe["volume"]
 
         return dataframe
 
     def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
@@ -52,19 +50,16 @@ class freqai_rl_test_strat(IStrategy):
         return dataframe
 
     def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["&-action"] = 0
 
         return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
         dataframe = self.freqai.start(dataframe, metadata, self)
 
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-
         enter_long_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
 
         if enter_long_conditions:

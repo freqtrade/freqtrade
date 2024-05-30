@@ -18,15 +18,22 @@
                 "editor.insertSpaces": true,
                 "files.trimTrailingWhitespace": true,
                 "[markdown]": {
-                    "files.trimTrailingWhitespace": false,
+                    "files.trimTrailingWhitespace": false
                 },
                 "python.pythonPath": "/usr/local/bin/python",
+                "[python]": {
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": "explicit"
+                    },
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
             },
             // Add the IDs of extensions you want installed when the container is created.
             "extensions": [
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "ms-python.isort",
+                "charliermarsh.ruff",
                 "davidanson.vscode-markdownlint",
                 "ms-azuretools.vscode-docker",
                 "vscode-icons-team.vscode-icons",

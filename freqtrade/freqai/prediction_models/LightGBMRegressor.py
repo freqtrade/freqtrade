@@ -28,7 +28,7 @@ class LightGBMRegressor(BaseRegressionModel):
         :param dk: The datakitchen object for the current coin/model
         """
 
-        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) == 0:
             eval_set = None
             eval_weights = None
         else:
@@ -42,7 +42,13 @@ class LightGBMRegressor(BaseRegressionModel):
 
         model = LGBMRegressor(**self.model_training_parameters)
 
-        model.fit(X=X, y=y, eval_set=eval_set, sample_weight=train_weights,
-                  eval_sample_weight=[eval_weights], init_model=init_model)
+        model.fit(
+            X=X,
+            y=y,
+            eval_set=eval_set,
+            sample_weight=train_weights,
+            eval_sample_weight=[eval_weights],
+            init_model=init_model,
+        )
 
         return model

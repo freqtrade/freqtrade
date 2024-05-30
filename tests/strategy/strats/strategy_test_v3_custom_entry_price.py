@@ -17,24 +17,28 @@ class StrategyTestV3CustomEntryPrice(StrategyTestV3):
     or strategy repository https://github.com/freqtrade/freqtrade-strategies
     for samples and inspiration.
     """
+
     new_entry_price: float = 0.001
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        dataframe.loc[
-            dataframe['volume'] > 0,
-            'enter_long'] = 1
+        dataframe.loc[dataframe["volume"] > 0, "enter_long"] = 1
 
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         return dataframe
 
-    def custom_entry_price(self, pair: str, trade: Optional[Trade], current_time: datetime,
-                           proposed_rate: float,
-                           entry_tag: Optional[str], side: str, **kwargs) -> float:
-
+    def custom_entry_price(
+        self,
+        pair: str,
+        trade: Optional[Trade],
+        current_time: datetime,
+        proposed_rate: float,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> float:
         return self.new_entry_price

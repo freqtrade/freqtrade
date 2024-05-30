@@ -59,8 +59,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         class_names = self.model.model_meta_data.get("class_names", None)
         if not class_names:
             raise ValueError(
-                "Missing class names. "
-                "self.model.model_meta_data['class_names'] is None."
+                "Missing class names. self.model.model_meta_data['class_names'] is None."
             )
 
         if not self.class_name_to_index:
@@ -74,11 +73,11 @@ class BasePyTorchClassifier(BasePyTorchModel):
         dk.data_dictionary["prediction_features"] = filtered_df
 
         dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
-            dk.data_dictionary["prediction_features"], outlier_check=True)
+            dk.data_dictionary["prediction_features"], outlier_check=True
+        )
 
         x = self.data_convertor.convert_x(
-            dk.data_dictionary["prediction_features"],
-            device=self.device
+            dk.data_dictionary["prediction_features"], device=self.device
         )
         self.model.model.eval()
         logits = self.model.model(x)
@@ -100,10 +99,10 @@ class BasePyTorchClassifier(BasePyTorchModel):
         return (pred_df, dk.do_predict)
 
     def encode_class_names(
-            self,
-            data_dictionary: Dict[str, pd.DataFrame],
-            dk: FreqaiDataKitchen,
-            class_names: List[str],
+        self,
+        data_dictionary: Dict[str, pd.DataFrame],
+        dk: FreqaiDataKitchen,
+        class_names: List[str],
     ):
         """
         encode class name, str -> int
@@ -120,15 +119,12 @@ class BasePyTorchClassifier(BasePyTorchModel):
             )
 
     @staticmethod
-    def assert_valid_class_names(
-            target_column: pd.Series,
-            class_names: List[str]
-    ):
+    def assert_valid_class_names(target_column: pd.Series, class_names: List[str]):
         non_defined_labels = set(target_column) - set(class_names)
         if len(non_defined_labels) != 0:
             raise OperationalException(
                 f"Found non defined labels: {non_defined_labels}, ",
-                f"expecting labels: {class_names}"
+                f"expecting labels: {class_names}",
             )
 
     def decode_class_names(self, class_ints: torch.Tensor) -> List[str]:
@@ -144,10 +140,10 @@ class BasePyTorchClassifier(BasePyTorchModel):
         logger.info(f"encoded class name to index: {self.class_name_to_index}")
 
     def convert_label_column_to_int(
-            self,
-            data_dictionary: Dict[str, pd.DataFrame],
-            dk: FreqaiDataKitchen,
-            class_names: List[str]
+        self,
+        data_dictionary: Dict[str, pd.DataFrame],
+        dk: FreqaiDataKitchen,
+        class_names: List[str],
     ):
         self.init_class_names_to_index_mapping(class_names)
         self.encode_class_names(data_dictionary, dk, class_names)
@@ -162,9 +158,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
         return self.class_names
 
-    def train(
-        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
-    ) -> Any:
+    def train(self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
@@ -191,18 +185,18 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
         dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
 
-        (dd["train_features"],
-         dd["train_labels"],
-         dd["train_weights"]) = dk.feature_pipeline.fit_transform(dd["train_features"],
-                                                                  dd["train_labels"],
-                                                                  dd["train_weights"])
+        (dd["train_features"], dd["train_labels"], dd["train_weights"]) = (
+            dk.feature_pipeline.fit_transform(
+                dd["train_features"], dd["train_labels"], dd["train_weights"]
+            )
+        )
 
-        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
-            (dd["test_features"],
-             dd["test_labels"],
-             dd["test_weights"]) = dk.feature_pipeline.transform(dd["test_features"],
-                                                                 dd["test_labels"],
-                                                                 dd["test_weights"])
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
+            (dd["test_features"], dd["test_labels"], dd["test_weights"]) = (
+                dk.feature_pipeline.transform(
+                    dd["test_features"], dd["test_labels"], dd["test_weights"]
+                )
+            )
 
         logger.info(
             f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
@@ -212,7 +206,9 @@ class BasePyTorchClassifier(BasePyTorchModel):
         model = self.fit(dd, dk)
         end_time = time()
 
-        logger.info(f"-------------------- Done training {pair} "
-                    f"({end_time - start_time:.2f} secs) --------------------")
+        logger.info(
+            f"-------------------- Done training {pair} "
+            f"({end_time - start_time:.2f} secs) --------------------"
+        )
 
         return model

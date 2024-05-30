@@ -1,4 +1,5 @@
-""" CoinbasePro exchange subclass """
+"""CoinbasePro exchange subclass"""
+
 import logging
 from typing import Dict
 

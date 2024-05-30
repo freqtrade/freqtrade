@@ -72,12 +72,12 @@ you can manually run pre-commit with `pre-commit run -a`.
 mypy freqtrade
 ```
 
-### 4. Ensure all imports are correct
+### 4. Ensure formatting is correct
 
-#### Run isort
+#### Run ruff
 
 ``` bash
-isort .
+ruff format .
 ```
 
 ## (Core)-Committer Guide

@@ -5,6 +5,7 @@ class State(Enum):
     """
     Bot application states
     """
+
     RUNNING = 1
     STOPPED = 2
     RELOAD_CONFIG = 3

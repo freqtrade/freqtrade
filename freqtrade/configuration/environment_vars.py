@@ -16,9 +16,9 @@ def _get_var_typed(val):
         try:
             return float(val)
         except ValueError:
-            if val.lower() in ('t', 'true'):
+            if val.lower() in ("t", "true"):
                 return True
-            elif val.lower() in ('f', 'false'):
+            elif val.lower() in ("f", "false"):
                 return False
     # keep as string
     return val
@@ -32,16 +32,21 @@ def _flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str
     :param prefix: Prefix to consider (usually FREQTRADE__)
     :return: Nested dict based on available and relevant variables.
     """
-    no_convert = ['CHAT_ID', 'PASSWORD']
+    no_convert = ["CHAT_ID", "PASSWORD"]
     relevant_vars: Dict[str, Any] = {}
 
     for env_var, val in sorted(env_dict.items()):
         if env_var.startswith(prefix):
             logger.info(f"Loading variable '{env_var}'")
-            key = env_var.replace(prefix, '')
-            for k in reversed(key.split('__')):
-                val = {k.lower(): _get_var_typed(val)
-                       if not isinstance(val, dict) and k not in no_convert else val}
+            key = env_var.replace(prefix, "")
+            for k in reversed(key.split("__")):
+                val = {
+                    k.lower(): (
+                        _get_var_typed(val)
+                        if not isinstance(val, dict) and k not in no_convert
+                        else val
+                    )
+                }
             relevant_vars = deep_merge_dicts(val, relevant_vars)
     return relevant_vars
 

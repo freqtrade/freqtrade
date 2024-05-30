@@ -16,9 +16,9 @@ class BacktestResultType(TypedDict):
 
 def get_BacktestResultType_default() -> BacktestResultType:
     return {
-        'metadata': {},
-        'strategy': {},
-        'strategy_comparison': [],
+        "metadata": {},
+        "strategy": {},
+        "strategy_comparison": [],
     }
 
 

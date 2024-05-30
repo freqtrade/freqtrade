@@ -1,4 +1,3 @@
-
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -12,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class CooldownPeriod(IProtection):
-
     has_global_stop: bool = False
     has_local_stop: bool = True
 
@@ -20,13 +18,13 @@ class CooldownPeriod(IProtection):
         """
         LockReason to use
         """
-        return (f'Cooldown period for {self.stop_duration_str}.')
+        return f"Cooldown period for {self.stop_duration_str}."
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
         """
-        return (f"{self.name} - Cooldown period of {self.stop_duration_str}.")
+        return f"{self.name} - Cooldown period of {self.stop_duration_str}."
 
     def _cooldown_period(self, pair: str, date_now: datetime) -> Optional[ProtectionReturn]:
         """
@@ -66,7 +64,8 @@ class CooldownPeriod(IProtection):
         return None
 
     def stop_per_pair(
-            self, pair: str, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
+        self, pair: str, date_now: datetime, side: LongShort
+    ) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".
