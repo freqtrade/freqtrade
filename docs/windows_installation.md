@@ -2,22 +2,24 @@
 
 We **strongly** recommend that Windows users use [Docker](docker_quickstart.md) as this will work much easier and smoother (also more secure).
 
-If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.
+If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.\
 Otherwise, please follow the instructions below.
+
+---
+
+First of all, make sure you get the whole repository by running:
+
+git clone <https://github.com/freqtrade/freqtrade.git>
+
+Now, choose to install freqtrade automatically (recommended) or manually and follow the next instructions.
 
 ## Install freqtrade automatically
 
-### Using Invoke-WebRequest
+### Run these commands
 
-```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/setup.ps1" -UseBasicParsing | Invoke-Expression
-```
-
-### Or using curl
-
-```powershell
-curl -sSL "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/setup.ps1" | powershell -c -
-```
+Set-ExecutionPolicy -ExecutionPolicy Bypass
+cd freqtrade
+. .\setup.ps1
 
 ## Install freqtrade manually
 
@@ -28,13 +30,7 @@ curl -sSL "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/setup.ps
 !!! Hint
     Using the [Anaconda Distribution](https://www.anaconda.com/distribution/) under Windows can greatly help with installation problems. Check out the [Anaconda installation section](installation.md#installation-with-conda) in the documentation for more information.
 
-### 1. Clone the git repository
-
-```bash
-git clone https://github.com/freqtrade/freqtrade.git
-```
-
-### 2. Install ta-lib
+### Install ta-lib
 
 Install ta-lib according to the [ta-lib documentation](https://github.com/TA-Lib/ta-lib-python#windows).
 
@@ -43,17 +39,19 @@ These Wheels are also used by CI running on windows, and are therefore tested to
 
 Other versions must be downloaded from the above link.
 
-``` powershell
+ powershell
 cd \path\freqtrade
 python -m venv .venv
 .venv\Scripts\activate.ps1
+
 # optionally install ta-lib from wheel
+
 # Eventually adjust the below filename to match the downloaded wheel
+
 pip install --find-links build_helpers\ TA-Lib -U
 pip install -r requirements.txt
 pip install -e .
 freqtrade
-```
 
 !!! Note "Use Powershell"
     The above installation script assumes you're using powershell on a 64bit windows.
@@ -61,14 +59,11 @@ freqtrade
 
 ### Error during installation on Windows
 
-``` bash
-error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": http://landinghub.visualstudio.com/visual-cpp-build-tools
-```
+ bash
+error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": <http://landinghub.visualstudio.com/visual-cpp-build-tools>
 
 Unfortunately, many packages requiring compilation don't provide a pre-built wheel. It is therefore mandatory to have a C/C++ compiler installed and available for your python environment to use.
 
 You can download the Visual C++ build tools from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and install "Desktop development with C++" in it's default configuration. Unfortunately, this is a heavy download / dependency so you might want to consider WSL2 or [docker compose](docker_quickstart.md) first.
 
 ![Windows installation](assets/windows_install.png)
-
----
