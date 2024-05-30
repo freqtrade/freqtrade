@@ -16,7 +16,7 @@ repos:
         additional_dependencies:
           - types-cachetools==5.3.0.7
           - types-filelock==3.2.7
-          - types-requests==2.31.0.20240406
+          - types-requests==2.32.0.20240523
           - types-tabulate==0.9.0.20240106
           - types-python-dateutil==2.9.0.20240316
           - SQLAlchemy==2.0.30
@@ -31,7 +31,7 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.4.4'
+    rev: 'v0.4.5'
     hooks:
       - id: ruff
 
@@ -56,7 +56,7 @@ repos:
             )$
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
     - id: codespell
       additional_dependencies:

@@ -565,12 +565,12 @@ jobs:
           sudo systemctl restart docker
           docker version -f '{{.Server.Experimental}}'
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
     - name: Set up Docker Buildx
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v3.3.1
-      with:
-        buildx-version: latest
-        qemu-version: latest
+      uses: docker/setup-buildx-action@v1
 
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
