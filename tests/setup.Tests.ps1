@@ -22,17 +22,17 @@ Describe "Setup and Tests" {
 
     # Mock main to prevent it from running
     Mock Main {}
-    
+
     . $SetupScriptPath
   }
 
   Context "Write-Log Tests" -Tag "Unit" {
     It "should write INFO level log" {
       Remove-Item $Global:LogFilePath -ErrorAction SilentlyContinue
-    
+
       Write-Log -Message "Test Info Message" -Level "INFO"
       $Global:LogFilePath | Should -Exist
-      
+
       $LogContent = Get-Content $Global:LogFilePath
       $LogContent | Should -Contain "INFO: Test Info Message"
     }
@@ -153,12 +153,12 @@ Describe "Setup and Tests" {
       Mock Start-Process {}
       Mock Read-Host { return "Y" }
     }
-  
+
     It "should exit with the given exit code without waiting for key press" {
       $ExitCode = Exit-Script -ExitCode 0 -isSubShell $true -waitForKeypress $false
       $ExitCode | Should -Be 0
     }
-    
+
     It "should prompt to open log file on error" {
       Exit-Script -ExitCode 1 -isSubShell $true -waitForKeypress $false
       Assert-MockCalled Read-Host -Exactly 1
