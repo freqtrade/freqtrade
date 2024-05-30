@@ -254,32 +254,14 @@ function Main {
     Exit-Script -exitCode 1
   }
 
-  $UiOptions = @("Yes", "No")
-  $InstallUi = Get-UserSelection -prompt "Do you want to install the freqUI?" -options $UiOptions -defaultChoice 'B' -allowMultipleSelections $false
-
-  if ($InstallUi -eq 0) {
-    # User selected "Yes"
-    # Install freqUI using the virtual environment's install-ui command
-    Write-Log "Installing freqUI..."
-    python freqtrade install-ui 2>&1 | Out-File $LogFilePath -Append
-    if ($LASTEXITCODE -ne 0) {
-      Write-Log "Failed to install freqUI." -Level 'ERROR'
-      Exit-Script -exitCode 1
-    }
-  }
-  elseif ($InstallUi -eq 1) {
-    # User selected "No"
-    # Skip installing freqUI
-    Write-Log "Skipping freqUI installation."
-  }
-  else {
-    # Invalid Selection
-    # Handle the error case
-    Write-Log "Invalid Selection for freqUI installation." -Level 'ERROR'
+  Write-Log "Installing freqUI..."
+  python freqtrade install-ui 2>&1 | Out-File $LogFilePath -Append
+  if ($LASTEXITCODE -ne 0) {
+    Write-Log "Failed to install freqUI." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
 
-  Write-Log "Update complete!"
+  Write-Log "Installation/Update complete!"
   Exit-Script -exitCode 0
 }
 
