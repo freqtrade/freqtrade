@@ -5,6 +5,20 @@ We **strongly** recommend that Windows users use [Docker](docker_quickstart.md) 
 If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.
 Otherwise, please follow the instructions below.
 
+## Install freqtrade automatically
+
+### Using Invoke-WebRequest
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/setup.ps1" -UseBasicParsing | Invoke-Expression
+```
+
+### Or using curl
+
+```powershell
+curl -sSL "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/setup.ps1" | powershell -c -
+```
+
 ## Install freqtrade manually
 
 !!! Note "64bit Python version"

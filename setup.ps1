@@ -119,12 +119,12 @@ function Test-PythonExecutable {
 
   $DeactivateVenv = Join-Path $VenvDir "Scripts\Deactivate.bat"
   if (Test-Path $DeactivateVenv) {
-    Write-Host "Deactivating virtual environment..."
+    Write-Host "Deactivating virtual environment..." 2>&1 | Out-File $LogFilePath -Append
     & $DeactivateVenv
-    Write-Host "Virtual environment deactivated."
+    Write-Host "Virtual environment deactivated." 2>&1 | Out-File $LogFilePath -Append
   }
   else {
-    Write-Host "Deactivation script not found: $DeactivateVenv"
+    Write-Host "Deactivation script not found: $DeactivateVenv" 2>&1 | Out-File $LogFilePath -Append
   }
 
   $PythonCmd = Get-Command $PythonExecutable -ErrorAction SilentlyContinue
@@ -165,7 +165,7 @@ function Main {
   # Exit on lower versions than Python 3.9 or when Python executable not found
   $PythonExecutable = Find-PythonExecutable
   if ($null -eq $PythonExecutable) {
-    Write-Host "Error: No suitable Python executable found. Please ensure that Python 3.9 or higher is installed and available in the system PATH."
+    Write-Log "No suitable Python executable found. Please ensure that Python 3.9 or higher is installed and available in the system PATH." -Level 'ERROR'
     Exit 1
   }
 
@@ -190,7 +190,7 @@ function Main {
   & $ActivateVenv 2>&1 | Out-File $LogFilePath -Append
   # Check if virtual environment is activated
   if ($env:VIRTUAL_ENV) {
-    Write-Host "Virtual environment is activated at: $($env:VIRTUAL_ENV)"
+    Write-Log "Virtual environment is activated at: $($env:VIRTUAL_ENV)"
   }
   else {
     Write-Log "Failed to activate virtual environment." -Level 'ERROR'
