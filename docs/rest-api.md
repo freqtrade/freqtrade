@@ -161,7 +161,7 @@ freqtrade-client --config rest_config.json <command> [optional parameters]
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
 | `locks add <pair>, <until>, [side], [reason]` | Locks a pair until "until". (Until will be rounded up to the nearest timeframe).
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
-| `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `forceexit <trade_id> [order_type] [amount]` | Instantly exits the given trade (ignoring `minimum_roi`), using the given order type ("market" or "limit", uses your config setting if not specified), and the chosen amount (full sell if not specified).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `forceenter <pair> [rate]` | Instantly enters the given pair. Rate is optional. (`force_entry_enable` must be set to True)
 | `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`force_entry_enable` must be set to True)

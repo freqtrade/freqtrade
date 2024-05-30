@@ -2,11 +2,11 @@ numpy==1.26.4
 pandas==2.2.2
 pandas-ta==0.3.14b
 
-ccxt==4.3.27
+ccxt==4.3.35
 cryptography==42.0.7
 aiohttp==3.9.5
 SQLAlchemy==2.0.30
-python-telegram-bot==21.1.1
+python-telegram-bot==21.2
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 humanize==4.9.0
@@ -14,7 +14,7 @@ cachetools==5.3.3
 requests==2.32.2
 urllib3==2.2.1
 jsonschema==4.22.0
-TA-Lib==0.4.28
+TA-Lib==0.4.29
 technical==1.4.3
 tabulate==0.9.0
 pycoingecko==3.1.0
@@ -53,7 +53,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 
 #Futures
-schedule==1.2.1
+schedule==1.2.2
 
 #WS Messages
 websockets==12.0

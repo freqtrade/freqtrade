@@ -26,9 +26,6 @@ jobs:
     - name: Run auto-update
       run: pre-commit autoupdate
 
-    - name: Run pre-commit
-      run: pre-commit run --all-files
-
     - uses: peter-evans/create-pull-request@v6
       with:
         token: ${{ secrets.REPO_SCOPED_TOKEN }}

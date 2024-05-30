@@ -76,7 +76,8 @@ class TestCCXTExchange:
                 assert isinstance(po["timestamp"], int)
                 assert isinstance(po["price"], float)
                 assert po["price"] == 15.5
-                if po["average"] is not None:
+                if po["status"] == "closed":
+                    # Filled orders should have average assigned.
                     assert isinstance(po["average"], float)
                     assert po["average"] == 15.5
                 assert po["symbol"] == pair
