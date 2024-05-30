@@ -17,9 +17,11 @@ Now, choose to install freqtrade automatically (recommended) or manually and fol
 
 ### Run these commands
 
+```powershell
 Set-ExecutionPolicy -ExecutionPolicy Bypass
 cd freqtrade
 . .\setup.ps1
+```
 
 ## Install freqtrade manually
 
@@ -39,19 +41,17 @@ These Wheels are also used by CI running on windows, and are therefore tested to
 
 Other versions must be downloaded from the above link.
 
- powershell
+``` powershell
 cd \path\freqtrade
 python -m venv .venv
 .venv\Scripts\activate.ps1
-
 # optionally install ta-lib from wheel
-
 # Eventually adjust the below filename to match the downloaded wheel
-
 pip install --find-links build_helpers\ TA-Lib -U
 pip install -r requirements.txt
 pip install -e .
 freqtrade
+```
 
 !!! Note "Use Powershell"
     The above installation script assumes you're using powershell on a 64bit windows.
@@ -59,11 +59,14 @@ freqtrade
 
 ### Error during installation on Windows
 
- bash
-error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": <http://landinghub.visualstudio.com/visual-cpp-build-tools>
+``` bash
+error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": http://landinghub.visualstudio.com/visual-cpp-build-tools
+```
 
 Unfortunately, many packages requiring compilation don't provide a pre-built wheel. It is therefore mandatory to have a C/C++ compiler installed and available for your python environment to use.
 
 You can download the Visual C++ build tools from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and install "Desktop development with C++" in it's default configuration. Unfortunately, this is a heavy download / dependency so you might want to consider WSL2 or [docker compose](docker_quickstart.md) first.
 
 ![Windows installation](assets/windows_install.png)
+
+---
