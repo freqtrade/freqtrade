@@ -16,7 +16,7 @@ function Write-Log {
   if (-not (Test-Path -Path $LogFilePath)) {
     New-Item -ItemType File -Path $LogFilePath -Force | Out-Null
   }
-  
+
   switch ($Level) {
     'INFO' { Write-Host $Message -ForegroundColor Green }
     'WARNING' { Write-Host $Message -ForegroundColor Yellow }
@@ -34,19 +34,19 @@ function Get-UserSelection {
     [string]$DefaultChoice = 'A',
     [bool]$AllowMultipleSelections = $true
   )
-  
+
   Write-Log "$Prompt`n" -Level 'PROMPT'
   for ($I = 0; $I -lt $Options.Length; $I++) {
     Write-Log "$([char](65 + $I)). $($Options[$I])" -Level 'PROMPT'
   }
-  
+
   if ($AllowMultipleSelections) {
     Write-Log "`nSelect one or more options by typing the corresponding letters, separated by commas." -Level 'PROMPT'
   }
   else {
     Write-Log "`nSelect an option by typing the corresponding letter." -Level 'PROMPT'
   }
-  
+
   [string]$UserInput = Read-Host
   if ([string]::IsNullOrEmpty($UserInput)) {
     $UserInput = $DefaultChoice
@@ -125,7 +125,7 @@ function Test-PythonExecutable {
   }
   else {
     Write-Host "Deactivation script not found: $DeactivateVenv"
-  }  
+  }
 
   $PythonCmd = Get-Command $PythonExecutable -ErrorAction SilentlyContinue
   if ($PythonCmd) {
@@ -149,7 +149,7 @@ function Test-PythonExecutable {
 function Find-PythonExecutable {
   $PythonExecutables = @("python", "python3.12", "python3.11", "python3.10", "python3.9", "python3", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python310\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python39\python.exe", "C:\Python311\python.exe", "C:\Python310\python.exe", "C:\Python39\python.exe")
 
-  
+
   foreach ($Executable in $PythonExecutables) {
     if (Test-PythonExecutable -PythonExecutable $Executable) {
       return $Executable
@@ -196,7 +196,7 @@ function Main {
     Write-Log "Failed to activate virtual environment." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
-  
+
   # Ensure pip
   python -m ensurepip --default-pip 2>&1 | Out-File $LogFilePath -Append
 
@@ -255,30 +255,30 @@ function Main {
   }
 
   $UiOptions = @("Yes", "No")
-  $InstallUi = Get-UserSelection -prompt "Do you want to install the freqtrade UI?" -options $UiOptions -defaultChoice 'B' -allowMultipleSelections $false
+  $InstallUi = Get-UserSelection -prompt "Do you want to install the freqUI?" -options $UiOptions -defaultChoice 'B' -allowMultipleSelections $false
 
   if ($InstallUi -eq 0) {
     # User selected "Yes"
-    # Install freqtrade UI using the virtual environment's install-ui command
-    Write-Log "Installing freqtrade UI..."
+    # Install freqUI using the virtual environment's install-ui command
+    Write-Log "Installing freqUI..."
     python freqtrade install-ui 2>&1 | Out-File $LogFilePath -Append
     if ($LASTEXITCODE -ne 0) {
-      Write-Log "Failed to install freqtrade UI." -Level 'ERROR'
+      Write-Log "Failed to install freqUI." -Level 'ERROR'
       Exit-Script -exitCode 1
     }
   }
   elseif ($InstallUi -eq 1) {
     # User selected "No"
-    # Skip installing freqtrade UI
-    Write-Log "Skipping freqtrade UI installation."
+    # Skip installing freqUI
+    Write-Log "Skipping freqUI installation."
   }
   else {
     # Invalid Selection
     # Handle the error case
-    Write-Log "Invalid Selection for freqtrade UI installation." -Level 'ERROR'
+    Write-Log "Invalid Selection for freqUI installation." -Level 'ERROR'
     Exit-Script -exitCode 1
   }
-  
+
   Write-Log "Update complete!"
   Exit-Script -exitCode 0
 }
