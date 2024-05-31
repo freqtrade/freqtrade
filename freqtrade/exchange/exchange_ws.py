@@ -113,12 +113,14 @@ class ExchangeWS:
         self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType
     ):
         self._background_tasks.discard(task)
+        result = "done"
         if task.cancelled():
             result = "cancelled"
         else:
-            result = task.result()
+            if (result1 := task.result()) is not None:
+                result = str(result1)
 
-        logger.info(f"{pair}, {timeframe} Task finished: {result}")
+        logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
         self._klines_scheduled.discard((pair, timeframe, candle_type))
 
     async def _continuously_async_watch_ohlcv(
