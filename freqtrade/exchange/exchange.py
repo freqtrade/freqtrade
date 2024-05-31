@@ -563,6 +563,13 @@ class Exchange:
             amount, self.get_precision_amount(pair), self.precisionMode, contract_size
         )
 
+    def ws_connection_reset(self):
+        """
+        called at regular intervals to reset the websocket connection
+        """
+        if self._exchange_ws:
+            self._exchange_ws.reset_connections()
+
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
