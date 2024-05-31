@@ -46,14 +46,23 @@ class ExchangeWS:
         for task in self._background_tasks:
             task.cancel()
         if hasattr(self, "_loop"):
-            asyncio.run_coroutine_threadsafe(self._cleanup_async(), loop=self._loop)
-            while not self.__cleanup_called:
-                time.sleep(0.1)
+            self.reset_connections()
 
             self._loop.call_soon_threadsafe(self._loop.stop)
 
         self._thread.join()
         logger.debug("Stopped")
+
+    def reset_connections(self) -> None:
+        """
+        Reset all connections - avoids "connection-reset" errors that happen after ~9 days
+        """
+        if hasattr(self, "_loop"):
+            logger.info("Resetting WS connections.")
+            asyncio.run_coroutine_threadsafe(self._cleanup_async(), loop=self._loop)
+            while not self.__cleanup_called:
+                time.sleep(0.1)
+        self.__cleanup_called = False
 
     async def _cleanup_async(self) -> None:
         try:
