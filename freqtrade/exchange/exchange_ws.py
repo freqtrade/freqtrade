@@ -133,6 +133,8 @@ class ExchangeWS:
                     f"watch done {pair}, {timeframe}, data {len(data)} "
                     f"in {dt_ts() - start:.2f}s"
                 )
+        except ccxt.ExchangeClosedByUser:
+            logger.debug("Exchange connection closed by user")
         except ccxt.BaseError:
             logger.exception(f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
         finally:
