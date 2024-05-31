@@ -20,6 +20,7 @@ class Base4ActionRLEnv(BaseEnvironment):
     """
     Base class for a 4 action environment
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.actions = Actions
@@ -52,7 +53,6 @@ class Base4ActionRLEnv(BaseEnvironment):
 
         trade_type = None
         if self.is_tradesignal(action):
-
             if action == Actions.Neutral.value:
                 self._position = Positions.Neutral
                 trade_type = "neutral"
@@ -75,11 +75,18 @@ class Base4ActionRLEnv(BaseEnvironment):
 
             if trade_type is not None:
                 self.trade_history.append(
-                    {'price': self.current_price(), 'index': self._current_tick,
-                     'type': trade_type, 'profit': self.get_unrealized_profit()})
+                    {
+                        "price": self.current_price(),
+                        "index": self._current_tick,
+                        "type": trade_type,
+                        "profit": self.get_unrealized_profit(),
+                    }
+                )
 
-        if (self._total_profit < self.max_drawdown or
-                self._total_unrealized_profit < self.max_drawdown):
+        if (
+            self._total_profit < self.max_drawdown
+            or self._total_unrealized_profit < self.max_drawdown
+        ):
             self._done = True
 
         self._position_history.append(self._position)
@@ -91,7 +98,7 @@ class Base4ActionRLEnv(BaseEnvironment):
             total_profit=self._total_profit,
             position=self._position.value,
             trade_duration=self.get_trade_duration(),
-            current_profit_pct=self.get_unrealized_profit()
+            current_profit_pct=self.get_unrealized_profit(),
         )
 
         observation = self._get_observation()
@@ -108,14 +115,16 @@ class Base4ActionRLEnv(BaseEnvironment):
         Determine if the signal is a trade signal
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
         """
-        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral) or
-                    (action == Actions.Neutral.value and self._position == Positions.Short) or
-                    (action == Actions.Neutral.value and self._position == Positions.Long) or
-                    (action == Actions.Short_enter.value and self._position == Positions.Short) or
-                    (action == Actions.Short_enter.value and self._position == Positions.Long) or
-                    (action == Actions.Exit.value and self._position == Positions.Neutral) or
-                    (action == Actions.Long_enter.value and self._position == Positions.Long) or
-                    (action == Actions.Long_enter.value and self._position == Positions.Short))
+        return not (
+            (action == Actions.Neutral.value and self._position == Positions.Neutral)
+            or (action == Actions.Neutral.value and self._position == Positions.Short)
+            or (action == Actions.Neutral.value and self._position == Positions.Long)
+            or (action == Actions.Short_enter.value and self._position == Positions.Short)
+            or (action == Actions.Short_enter.value and self._position == Positions.Long)
+            or (action == Actions.Exit.value and self._position == Positions.Neutral)
+            or (action == Actions.Long_enter.value and self._position == Positions.Long)
+            or (action == Actions.Long_enter.value and self._position == Positions.Short)
+        )
 
     def _is_valid(self, action: int) -> bool:
         """

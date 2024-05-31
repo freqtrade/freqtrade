@@ -83,7 +83,7 @@ Details will obviously vary between setups - but this should work to get you sta
 ``` json
 {
     "name": "freqtrade trade",
-    "type": "python",
+    "type": "debugpy",
     "request": "launch",
     "module": "freqtrade",
     "console": "integratedTerminal",

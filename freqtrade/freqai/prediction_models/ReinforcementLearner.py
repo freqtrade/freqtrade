@@ -56,27 +56,30 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         train_df = data_dictionary["train_features"]
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
-        policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=self.net_arch)
+        policy_kwargs = dict(activation_fn=th.nn.ReLU, net_arch=self.net_arch)
 
         if self.activate_tensorboard:
-            tb_path = Path(dk.full_path / "tensorboard" / dk.pair.split('/')[0])
+            tb_path = Path(dk.full_path / "tensorboard" / dk.pair.split("/")[0])
         else:
             tb_path = None
 
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
-            model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                    tensorboard_log=tb_path,
-                                    **self.freqai_info.get('model_training_parameters', {})
-                                    )
+            model = self.MODELCLASS(
+                self.policy_type,
+                self.train_env,
+                policy_kwargs=policy_kwargs,
+                tensorboard_log=tb_path,
+                **self.freqai_info.get("model_training_parameters", {}),
+            )
         else:
-            logger.info('Continual training activated - starting training from previously '
-                        'trained agent.')
+            logger.info(
+                "Continual training activated - starting training from previously trained agent."
+            )
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)
         callbacks: List[Any] = [self.eval_callback, self.tensorboard_callback]
         progressbar_callback: Optional[ProgressBarCallback] = None
-        if self.rl_config.get('progress_bar', False):
+        if self.rl_config.get("progress_bar", False):
             progressbar_callback = ProgressBarCallback()
             callbacks.insert(0, progressbar_callback)
 
@@ -90,7 +93,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                 progressbar_callback.on_training_end()
 
         if Path(dk.data_path / "best_model.zip").is_file():
-            logger.info('Callback found a best model.')
+            logger.info("Callback found a best model.")
             best_model = self.MODELCLASS.load(dk.data_path / "best_model")
             return best_model
 
@@ -127,20 +130,18 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                 return -2
 
             pnl = self.get_unrealized_profit()
-            factor = 100.
+            factor = 100.0
 
             # reward agent for entering trades
-            if (action == Actions.Long_enter.value
-                    and self._position == Positions.Neutral):
+            if action == Actions.Long_enter.value and self._position == Positions.Neutral:
                 return 25
-            if (action == Actions.Short_enter.value
-                    and self._position == Positions.Neutral):
+            if action == Actions.Short_enter.value and self._position == Positions.Neutral:
                 return 25
             # discourage agent from not entering trades
             if action == Actions.Neutral.value and self._position == Positions.Neutral:
                 return -1
 
-            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+            max_trade_duration = self.rl_config.get("max_trade_duration_candles", 300)
             trade_duration = self._current_tick - self._last_trade_tick  # type: ignore
 
             if trade_duration <= max_trade_duration:
@@ -149,20 +150,22 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                 factor *= 0.5
 
             # discourage sitting in position
-            if (self._position in (Positions.Short, Positions.Long) and
-                    action == Actions.Neutral.value):
+            if (
+                self._position in (Positions.Short, Positions.Long)
+                and action == Actions.Neutral.value
+            ):
                 return -1 * trade_duration / max_trade_duration
 
             # close long
             if action == Actions.Long_exit.value and self._position == Positions.Long:
                 if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    factor *= self.rl_config["model_reward_parameters"].get("win_reward_factor", 2)
                 return float(pnl * factor)
 
             # close short
             if action == Actions.Short_exit.value and self._position == Positions.Short:
                 if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                    factor *= self.rl_config["model_reward_parameters"].get("win_reward_factor", 2)
                 return float(pnl * factor)
 
-            return 0.
+            return 0.0

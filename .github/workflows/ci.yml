@@ -111,7 +111,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -230,7 +234,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -300,7 +308,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -322,7 +334,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
 
     - name: pre-commit dependencies
       run: |
@@ -336,7 +348,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - uses: pre-commit/action@v3.0.1
 
   docs-check:
@@ -351,7 +363,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Documentation build
       run: |
@@ -377,7 +389,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Cache_dependencies
       uses: actions/cache@v4
@@ -459,7 +471,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Build distribution
       run: |
@@ -530,7 +542,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Extract branch name
       id: extract-branch
@@ -553,12 +565,12 @@ jobs:
           sudo systemctl restart docker
           docker version -f '{{.Server.Experimental}}'
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
     - name: Set up Docker Buildx
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v3.3.1
-      with:
-        buildx-version: latest
-        qemu-version: latest
+      uses: docker/setup-buildx-action@v1
 
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}

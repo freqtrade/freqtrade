@@ -17,20 +17,18 @@ class HyperoptableStrategy(StrategyTestV3):
     """
 
     buy_params = {
-        'buy_rsi': 35,
+        "buy_rsi": 35,
         # Intentionally not specified, so "default" is tested
         # 'buy_plusdi': 0.4
     }
 
-    sell_params = {
-        'sell_rsi': 74,
-        'sell_minusdi': 0.4
-    }
+    sell_params = {"sell_rsi": 74, "sell_minusdi": 0.4}
 
-    buy_plusdi = RealParameter(low=0, high=1, default=0.5, space='buy')
-    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
-    sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
-                                    load=False)
+    buy_plusdi = RealParameter(low=0, high=1, default=0.5, space="buy")
+    sell_rsi = IntParameter(low=50, high=100, default=70, space="sell")
+    sell_minusdi = DecimalParameter(
+        low=0, high=1, default=0.5001, decimals=3, space="sell", load=False
+    )
     protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
@@ -43,16 +41,18 @@ class HyperoptableStrategy(StrategyTestV3):
     def protections(self):
         prot = []
         if self.protection_enabled.value:
-            prot.append({
-                "method": "CooldownPeriod",
-                "stop_duration_candles": self.protection_cooldown_lookback.value
-            })
+            prot.append(
+                {
+                    "method": "CooldownPeriod",
+                    "stop_duration_candles": self.protection_cooldown_lookback.value,
+                }
+            )
         return prot
 
     bot_loop_started = False
     bot_started = False
 
-    def bot_loop_start(self):
+    def bot_loop_start(self, **kwargs):
         self.bot_loop_started = True
 
     def bot_start(self, **kwargs) -> None:
@@ -60,7 +60,7 @@ class HyperoptableStrategy(StrategyTestV3):
         Parameters can also be defined here ...
         """
         self.bot_started = True
-        self.buy_rsi = IntParameter([0, 50], default=30, space='buy')
+        self.buy_rsi = IntParameter([0, 50], default=30, space="buy")
 
     def informative_pairs(self):
         """
@@ -84,16 +84,14 @@ class HyperoptableStrategy(StrategyTestV3):
         """
         dataframe.loc[
             (
-                (dataframe['rsi'] < self.buy_rsi.value) &
-                (dataframe['fastd'] < 35) &
-                (dataframe['adx'] > 30) &
-                (dataframe['plus_di'] > self.buy_plusdi.value)
-            ) |
-            (
-                (dataframe['adx'] > 65) &
-                (dataframe['plus_di'] > self.buy_plusdi.value)
-            ),
-            'buy'] = 1
+                (dataframe["rsi"] < self.buy_rsi.value)
+                & (dataframe["fastd"] < 35)
+                & (dataframe["adx"] > 30)
+                & (dataframe["plus_di"] > self.buy_plusdi.value)
+            )
+            | ((dataframe["adx"] > 65) & (dataframe["plus_di"] > self.buy_plusdi.value)),
+            "buy",
+        ] = 1
 
         return dataframe
 
@@ -107,15 +105,13 @@ class HyperoptableStrategy(StrategyTestV3):
         dataframe.loc[
             (
                 (
-                    (qtpylib.crossed_above(dataframe['rsi'], self.sell_rsi.value)) |
-                    (qtpylib.crossed_above(dataframe['fastd'], 70))
-                ) &
-                (dataframe['adx'] > 10) &
-                (dataframe['minus_di'] > 0)
-            ) |
-            (
-                (dataframe['adx'] > 70) &
-                (dataframe['minus_di'] > self.sell_minusdi.value)
-            ),
-            'sell'] = 1
+                    (qtpylib.crossed_above(dataframe["rsi"], self.sell_rsi.value))
+                    | (qtpylib.crossed_above(dataframe["fastd"], 70))
+                )
+                & (dataframe["adx"] > 10)
+                & (dataframe["minus_di"] > 0)
+            )
+            | ((dataframe["adx"] > 70) & (dataframe["minus_di"] > self.sell_minusdi.value)),
+            "sell",
+        ] = 1
         return dataframe

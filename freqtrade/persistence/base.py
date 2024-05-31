@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import DeclarativeBase, Session, scoped_session
 
 

@@ -1,11 +1,12 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class RunMode(Enum):
+class RunMode(StrEnum):
     """
     Bot running mode (backtest, hyperopt, ...)
     can be "live", "dry-run", "backtest", "edge", "hyperopt".
     """
+
     LIVE = "live"
     DRY_RUN = "dry_run"
     BACKTEST = "backtest"

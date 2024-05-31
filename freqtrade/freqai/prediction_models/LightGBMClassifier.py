@@ -28,12 +28,16 @@ class LightGBMClassifier(BaseClassifierModel):
         :param dk: The datakitchen object for the current coin/model
         """
 
-        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) == 0:
             eval_set = None
             test_weights = None
         else:
-            eval_set = [(data_dictionary["test_features"].to_numpy(),
-                        data_dictionary["test_labels"].to_numpy()[:, 0])]
+            eval_set = [
+                (
+                    data_dictionary["test_features"].to_numpy(),
+                    data_dictionary["test_labels"].to_numpy()[:, 0],
+                )
+            ]
             test_weights = data_dictionary["test_weights"]
         X = data_dictionary["train_features"].to_numpy()
         y = data_dictionary["train_labels"].to_numpy()[:, 0]
@@ -42,7 +46,13 @@ class LightGBMClassifier(BaseClassifierModel):
         init_model = self.get_init_model(dk.pair)
 
         model = LGBMClassifier(**self.model_training_parameters)
-        model.fit(X=X, y=y, eval_set=eval_set, sample_weight=train_weights,
-                  eval_sample_weight=[test_weights], init_model=init_model)
+        model.fit(
+            X=X,
+            y=y,
+            eval_set=eval_set,
+            sample_weight=train_weights,
+            eval_sample_weight=[test_weights],
+            init_model=init_model,
+        )
 
         return model

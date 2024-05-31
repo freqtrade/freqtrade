@@ -7,24 +7,31 @@ Drawdown objective which can be used for Hyperoptimization.
 Possible to change `DRAWDOWN_MULT` to penalize drawdown objective for
 individual needs.
 """
+
 from pandas import DataFrame
 
+from freqtrade.constants import Config
 from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
-# higher numbers penalize drawdowns more severely
+# smaller numbers penalize drawdowns more severely
 DRAWDOWN_MULT = 0.075
 
 
 class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
     @staticmethod
-    def hyperopt_loss_function(results: DataFrame, trade_count: int, *args, **kwargs) -> float:
+    def hyperopt_loss_function(results: DataFrame, config: Config, *args, **kwargs) -> float:
         total_profit = results["profit_abs"].sum()
 
         try:
-            max_drawdown_abs = calculate_max_drawdown(results, value_col="profit_abs")[5]
+            drawdown = calculate_max_drawdown(
+                results, starting_balance=config["dry_run_wallet"], value_col="profit_abs"
+            )
+            relative_account_drawdown = drawdown.relative_account_drawdown
         except ValueError:
-            max_drawdown_abs = 0
+            relative_account_drawdown = 0
 
-        return -1 * (total_profit * (1 - max_drawdown_abs * DRAWDOWN_MULT))
+        return -1 * (
+            total_profit - (relative_account_drawdown * total_profit) * (1 - DRAWDOWN_MULT)
+        )

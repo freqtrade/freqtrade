@@ -12,6 +12,7 @@ class TensorboardCallback(BaseCallback):
     Custom callback for plotting additional values in tensorboard and
     episodic summary reports.
     """
+
     def __init__(self, verbose=1, actions: Type[Enum] = BaseActions):
         super().__init__(verbose)
         self.model: Any = None
@@ -40,10 +41,9 @@ class TensorboardCallback(BaseCallback):
         )
 
     def _on_step(self) -> bool:
-
         local_info = self.locals["infos"][0]
 
-        if hasattr(self.training_env, 'envs'):
+        if hasattr(self.training_env, "envs"):
             tensorboard_metrics = self.training_env.envs[0].unwrapped.tensorboard_metrics
 
         else:

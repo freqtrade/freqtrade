@@ -21,31 +21,26 @@ PostDataT = Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
 class FtRestClient:
-
-    def __init__(self, serverurl, username=None, password=None, *,
-                 pool_connections=10, pool_maxsize=10):
-
+    def __init__(
+        self, serverurl, username=None, password=None, *, pool_connections=10, pool_maxsize=10
+    ):
         self._serverurl = serverurl
         self._session = requests.Session()
 
         # allow configuration of pool
         adapter = requests.adapters.HTTPAdapter(
-            pool_connections=pool_connections,
-            pool_maxsize=pool_maxsize
+            pool_connections=pool_connections, pool_maxsize=pool_maxsize
         )
-        self._session.mount('http://', adapter)
+        self._session.mount("http://", adapter)
 
         self._session.auth = (username, password)
 
     def _call(self, method, apipath, params: Optional[dict] = None, data=None, files=None):
-
-        if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
-            raise ValueError(f'invalid method <{method}>')
+        if str(method).upper() not in ("GET", "POST", "PUT", "DELETE"):
+            raise ValueError(f"invalid method <{method}>")
         basepath = f"{self._serverurl}/api/v1/{apipath}"
 
-        hd = {"Accept": "application/json",
-              "Content-Type": "application/json"
-              }
+        hd = {"Accept": "application/json", "Content-Type": "application/json"}
 
         # Split url
         schema, netloc, path, par, query, fragment = urlparse(basepath)
@@ -151,7 +146,7 @@ class FtRestClient:
         """
         return self._delete(f"locks/{lock_id}")
 
-    def lock_add(self, pair: str, until: str, side: str = '*', reason: str = ''):
+    def lock_add(self, pair: str, until: str, side: str = "*", reason: str = ""):
         """Lock pair
 
         :param pair: Pair to lock
@@ -160,14 +155,7 @@ class FtRestClient:
         :param reason: Reason for the lock
         :return: json object
         """
-        data = [
-            {
-                "pair": pair,
-                "until": until,
-                "side": side,
-                "reason": reason
-            }
-        ]
+        data = [{"pair": pair, "until": until, "side": side, "reason": reason}]
         return self._post("locks", data=data)
 
     def daily(self, days=None):
@@ -234,7 +222,7 @@ class FtRestClient:
         return self._get("version")
 
     def show_config(self):
-        """ Returns part of the configuration, relevant for trading operations.
+        """Returns part of the configuration, relevant for trading operations.
         :return: json object containing the version
         """
         return self._get("show_config")
@@ -244,7 +232,7 @@ class FtRestClient:
         configstatus = self.show_config()
         if not configstatus:
             return {"status": "not_running"}
-        elif configstatus['state'] == "running":
+        elif configstatus["state"] == "running":
             return {"status": "pong"}
         else:
             return {"status": "not_running"}
@@ -266,9 +254,9 @@ class FtRestClient:
         """
         params = {}
         if limit:
-            params['limit'] = limit
+            params["limit"] = limit
         if offset:
-            params['offset'] = offset
+            params["offset"] = offset
         return self._get("trades", params)
 
     def trade(self, trade_id):
@@ -321,9 +309,7 @@ class FtRestClient:
         :param price: Optional - price to buy
         :return: json object of the trade
         """
-        data = {"pair": pair,
-                "price": price
-                }
+        data = {"pair": pair, "price": price}
         return self._post("forcebuy", data=data)
 
     def forceenter(self, pair, side, price=None):
@@ -334,11 +320,12 @@ class FtRestClient:
         :param price: Optional - price to buy
         :return: json object of the trade
         """
-        data = {"pair": pair,
-                "side": side,
-                }
+        data = {
+            "pair": pair,
+            "side": side,
+        }
         if price:
-            data['price'] = price
+            data["price"] = price
         return self._post("forceenter", data=data)
 
     def forceexit(self, tradeid, ordertype=None, amount=None):
@@ -350,11 +337,14 @@ class FtRestClient:
         :return: json object
         """
 
-        return self._post("forceexit", data={
-            "tradeid": tradeid,
-            "ordertype": ordertype,
-            "amount": amount,
-            })
+        return self._post(
+            "forceexit",
+            data={
+                "tradeid": tradeid,
+                "ordertype": ordertype,
+                "amount": amount,
+            },
+        )
 
     def strategies(self):
         """Lists available strategies
@@ -392,17 +382,21 @@ class FtRestClient:
         :param stake_currency: Only pairs that include this timeframe
         :return: json object
         """
-        return self._get("available_pairs", params={
-            "stake_currency": stake_currency if timeframe else '',
-            "timeframe": timeframe if timeframe else '',
-        })
+        return self._get(
+            "available_pairs",
+            params={
+                "stake_currency": stake_currency if timeframe else "",
+                "timeframe": timeframe if timeframe else "",
+            },
+        )
 
-    def pair_candles(self, pair, timeframe, limit=None):
+    def pair_candles(self, pair, timeframe, limit=None, columns=None):
         """Return live dataframe for <pair><timeframe>.
 
         :param pair: Pair to get data for
         :param timeframe: Only pairs with this timeframe available.
         :param limit: Limit result to the last n candles.
+        :param columns: List of dataframe columns to return. Empty list will return OHLCV.
         :return: json object
         """
         params = {
@@ -410,7 +404,12 @@ class FtRestClient:
             "timeframe": timeframe,
         }
         if limit:
-            params['limit'] = limit
+            params["limit"] = limit
+
+        if columns is not None:
+            params["columns"] = columns
+            return self._post("pair_candles", data=params)
+
         return self._get("pair_candles", params=params)
 
     def pair_history(self, pair, timeframe, strategy, timerange=None, freqaimodel=None):
@@ -423,13 +422,16 @@ class FtRestClient:
         :param timerange: Timerange to get data for (same format than --timerange endpoints)
         :return: json object
         """
-        return self._get("pair_history", params={
-            "pair": pair,
-            "timeframe": timeframe,
-            "strategy": strategy,
-            "freqaimodel": freqaimodel,
-            "timerange": timerange if timerange else '',
-        })
+        return self._get(
+            "pair_history",
+            params={
+                "pair": pair,
+                "timeframe": timeframe,
+                "strategy": strategy,
+                "freqaimodel": freqaimodel,
+                "timerange": timerange if timerange else "",
+            },
+        )
 
     def sysinfo(self):
         """Provides system information (CPU, RAM usage)

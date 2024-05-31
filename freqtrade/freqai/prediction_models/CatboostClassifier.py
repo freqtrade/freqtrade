@@ -1,5 +1,4 @@
 import logging
-import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -46,14 +45,17 @@ class CatboostClassifier(BaseClassifierModel):
 
         cbr = CatBoostClassifier(
             allow_writing_files=True,
-            loss_function='MultiClass',
+            loss_function="MultiClass",
             train_dir=Path(dk.data_path),
             **self.model_training_parameters,
         )
 
         init_model = self.get_init_model(dk.pair)
 
-        cbr.fit(X=train_data, eval_set=test_data, init_model=init_model,
-                log_cout=sys.stdout, log_cerr=sys.stderr)
+        cbr.fit(
+            X=train_data,
+            eval_set=test_data,
+            init_model=init_model,
+        )
 
         return cbr

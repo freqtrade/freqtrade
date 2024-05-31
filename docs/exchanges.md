@@ -127,6 +127,13 @@ These settings will be checked on startup, and freqtrade will show an error if t
 
 Freqtrade will not attempt to change these settings.
 
+## Bingx
+
+BingX supports [time_in_force](configuration.md#understand-order_time_in_force) with settings "GTC" (good till cancelled), "IOC" (immediate-or-cancel) and "PO" (Post only) settings.
+
+!!! Tip "Stoploss on Exchange"
+    Bingx supports `stoploss_on_exchange` and can use both stop-limit and stop-market orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+
 ## Kraken
 
 Kraken supports [time_in_force](configuration.md#understand-order_time_in_force) with settings "GTC" (good till cancelled), "IOC" (immediate-or-cancel) and "PO" (Post only) settings.
@@ -299,7 +306,7 @@ $ pip3 install web3
 Most exchanges return current incomplete candle via their OHLCV/klines API interface.
 By default, Freqtrade assumes that incomplete candle is fetched from the exchange and removes the last candle assuming it's the incomplete candle.
 
-Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#Incomplete-candles) from the Contributor documentation.
+Whether your exchange returns incomplete candles or not can be checked using [the helper script](developer.md#incomplete-candles) from the Contributor documentation.
 
 Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
