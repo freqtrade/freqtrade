@@ -421,6 +421,7 @@ def exchange_mode(request):
 
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
+    class_mocker.patch("freqtrade.exchange.bybit.Bybit.additional_exchange_init")
     exchange_conf["exchange"]["enable_ws"] = True
     if exchange_mode == "spot":
         exchange, name = get_exchange(request.param, exchange_conf)
