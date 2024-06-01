@@ -91,6 +91,7 @@ function Get-UserSelection {
     }
   }
 }
+
 function Exit-Script {
   param (
     [int]$ExitCode,
@@ -204,7 +205,7 @@ function Main {
   Write-Log "Checking if the repository is clean..."
   $Status = & "C:\Program Files\Git\cmd\git.exe" status --porcelain
   if ($Status) {
-    Write-Log "Repository is dirty. Skipping pull."
+    Write-Log "Changes in local git repository. Skipping git pull."
   }
   else {
     Write-Log "Pulling latest updates..."
