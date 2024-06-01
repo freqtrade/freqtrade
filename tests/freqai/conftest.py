@@ -50,6 +50,7 @@ def freqai_conf(default_conf, tmp_path):
     freqaiconf.update(
         {
             "datadir": Path(default_conf["datadir"]),
+            "runmode": "backtest",
             "strategy": "freqai_test_strat",
             "user_data_dir": tmp_path,
             "strategy-path": "freqtrade/tests/strategy/strats",
