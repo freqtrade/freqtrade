@@ -261,7 +261,8 @@ class IFreqaiModel(ABC):
     def _train_model(self, dataframe_train, pair, dk, tr_backtest):
         try:
             self.tb_logger = get_tb_logger(
-                self.dd.model_type, dk.data_path, self.activate_tensorboard)
+                self.dd.model_type, dk.data_path, self.activate_tensorboard
+            )
             model = self.train(dataframe_train, pair, dk)
             self.tb_logger.close()
             return model
@@ -269,7 +270,9 @@ class IFreqaiModel(ABC):
             logger.warning(
                 f"Training {pair} raised exception {msg.__class__.__name__}. "
                 f"from {tr_backtest.start_fmt} to {tr_backtest.stop_fmt}."
-                f"Message: {msg}, skipping.", exc_info=True)
+                f"Message: {msg}, skipping.",
+                exc_info=True,
+            )
             return None
 
     def start_backtesting(
@@ -373,10 +376,10 @@ class IFreqaiModel(ABC):
                         if self.plot_features and self.model is not None:
                             plot_feature_importance(self.model, pair, dk, self.plot_features)
                         if self.save_backtest_models and self.model is not None:
-                            logger.info('Saving backtest model to disk.')
+                            logger.info("Saving backtest model to disk.")
                             self.dd.save_data(self.model, pair, dk)
                         else:
-                            logger.info('Saving metadata to disk.')
+                            logger.info("Saving metadata to disk.")
                             self.dd.save_metadata(dk)
                 else:
                     self.model = self.dd.load_data(pair, dk)
@@ -833,9 +836,11 @@ class IFreqaiModel(ABC):
         :return: if the data exists or not
         """
         if len_dataframe_backtest == 0:
-            logger.info(f"No data found for pair {pair} from "
-                        f"from {tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
-                        "Probably more than one training within the same candle period.")
+            logger.info(
+                f"No data found for pair {pair} from "
+                f"from {tr_backtest.start_fmt} to {tr_backtest.stop_fmt}. "
+                "Probably more than one training within the same candle period."
+            )
             return False
         return True
 
