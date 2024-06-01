@@ -203,13 +203,13 @@ function Main {
 
   # Pull latest updates only if the repository state is not dirty
   Write-Log "Checking if the repository is clean..."
-  $Status = & "C:\Program Files\Git\cmd\git.exe" status --porcelain
+  $Status = & "git" status --porcelain
   if ($Status) {
     Write-Log "Changes in local git repository. Skipping git pull."
   }
   else {
     Write-Log "Pulling latest updates..."
-    & "C:\Program Files\Git\cmd\git.exe" pull 2>&1 | Out-File $LogFilePath -Append
+    & "git" pull 2>&1 | Out-File $LogFilePath -Append
     if ($LASTEXITCODE -ne 0) {
       Write-Log "Failed to pull updates from Git." -Level 'ERROR'
       Exit-Script -exitCode 1
