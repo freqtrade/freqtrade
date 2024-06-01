@@ -148,7 +148,21 @@ function Test-PythonExecutable {
 }
 
 function Find-PythonExecutable {
-  $PythonExecutables = @("python", "python3.12", "python3.11", "python3.10", "python3.9", "python3", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python310\python.exe", "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python39\python.exe", "C:\Python311\python.exe", "C:\Python310\python.exe", "C:\Python39\python.exe")
+  $PythonExecutables = @(
+    "python",
+    "python3.12",
+    "python3.11",
+    "python3.10",
+    "python3.9",
+    "python3",
+    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312\python.exe",
+    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\python.exe",
+    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python310\python.exe",
+    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python39\python.exe",
+    "C:\Python311\python.exe",
+    "C:\Python310\python.exe",
+    "C:\Python39\python.exe",
+  )
 
 
   foreach ($Executable in $PythonExecutables) {
