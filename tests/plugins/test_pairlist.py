@@ -773,6 +773,7 @@ def test_VolumePairList_whitelist_gen(
     whitelist_result,
     caplog,
 ) -> None:
+    whitelist_conf["runmode"] = "backtest"
     whitelist_conf["pairlists"] = pairlists
     whitelist_conf["stake_currency"] = base_currency
 
@@ -1270,6 +1271,7 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
         {"method": "StaticPairList"},
         {"method": "ShuffleFilter", "seed": 43},
     ]
+    whitelist_conf["runmode"] = "backtest"
 
     exchange = get_patched_exchange(mocker, whitelist_conf)
     plm = PairListManager(exchange, whitelist_conf)
