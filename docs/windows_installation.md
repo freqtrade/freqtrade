@@ -2,20 +2,26 @@
 
 We **strongly** recommend that Windows users use [Docker](docker_quickstart.md) as this will work much easier and smoother (also more secure).
 
-If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.\
+If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.
 Otherwise, please follow the instructions below.
 
----
+All instructions assume that python 3.9+ is installed and available.
 
-First of all, make sure you get the whole repository by running:
+## Clone the git repository
 
-git clone <https://github.com/freqtrade/freqtrade.git>
+First of all clone the repository by running:
 
-Now, choose to install freqtrade automatically (recommended) or manually and follow the next instructions.
+``` powershell
+git clone https://github.com/freqtrade/freqtrade.git
+```
+
+Now, choose your installation method, either automatically via script (recommended) or manually following the corresponding instructions.
 
 ## Install freqtrade automatically
 
-### Run these commands
+### Run the installation script
+
+The script will ask you a few questions to determine which parts should be installed.
 
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy Bypass
