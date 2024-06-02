@@ -162,7 +162,7 @@ function Find-PythonExecutable {
     "C:\Python312\python.exe",
     "C:\Python311\python.exe",
     "C:\Python310\python.exe",
-    "C:\Python39\python.exe",
+    "C:\Python39\python.exe"
   )
 
 
