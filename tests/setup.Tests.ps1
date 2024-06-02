@@ -1,13 +1,4 @@
-# Ensure the specific version 5.3.1 of Pester is installed and imported
-$RequiredVersion = [version]"5.3.1"
-$InstalledModule = Get-Module -ListAvailable -Name Pester
-if (-not ($InstalledModule) -or ($InstalledModule.Version -lt $RequiredVersion)) {
-  Install-Module -Name Pester -RequiredVersion $RequiredVersion -Force -Scope CurrentUser -SkipPublisherCheck
-}
 
-Import-Module -Name Pester -MinimumVersion 5.3.1
-
-# Describe block to contain all tests and setup
 Describe "Setup and Tests" {
   BeforeAll {
     # Setup variables
@@ -28,7 +19,9 @@ Describe "Setup and Tests" {
 
   Context "Write-Log Tests" -Tag "Unit" {
     It "should write INFO level log" {
-      Remove-Item $Global:LogFilePath -ErrorAction SilentlyContinue
+      if (Test-Path $Global:LogFilePath){
+        Remove-Item $Global:LogFilePath -ErrorAction SilentlyContinue
+      }
 
       Write-Log -Message "Test Info Message" -Level "INFO"
       $Global:LogFilePath | Should -Exist
@@ -38,7 +31,9 @@ Describe "Setup and Tests" {
     }
 
     It "should write ERROR level log" {
-      Remove-Item $Global:LogFilePath -ErrorAction SilentlyContinue
+      if (Test-Path $Global:LogFilePath){
+        Remove-Item $Global:LogFilePath -ErrorAction SilentlyContinue
+      }
 
       Write-Log -Message "Test Error Message" -Level "ERROR"
       $Global:LogFilePath | Should -Exist
