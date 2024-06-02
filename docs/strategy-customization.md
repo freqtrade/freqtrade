@@ -156,9 +156,9 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 Out of the box, freqtrade installs the following technical libraries:
 
-* [ta-lib](http://mrjbq7.github.io/ta-lib/)
-* [pandas-ta](https://twopirllc.github.io/pandas-ta/)
-* [technical](https://github.com/freqtrade/technical/)
+- [ta-lib](https://ta-lib.github.io/ta-lib-python/)
+- [pandas-ta](https://twopirllc.github.io/pandas-ta/)
+- [technical](https://github.com/freqtrade/technical/)
 
 Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
 
@@ -367,6 +367,11 @@ class AwesomeStrategy(IStrategy):
     }
 ```
 
+??? info "Orders that don't fill immediately"
+    `minimal_roi` will take the `trade.open_date` as reference, which is the time the trade was initialized / the first order for this trade was placed.  
+    This will also hold true for limit orders that don't fill immediately  (usually in combination with "off-spot" prices through `custom_entry_price()`), as well as for cases where the initial order is replaced through `adjust_entry_price()`.
+    The time used will still be from the initial `trade.open_date` (when the initial order was first placed), not from the newly placed order date.
+
 ### Stoploss
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
@@ -400,7 +405,7 @@ The metadata-dict (available for `populate_entry_trend`, `populate_exit_trend`, 
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
+Instead, have a look at the [Storing information](strategy-advanced.md#storing-information-persistent) section.
 
 ## Strategy file loading
 
@@ -546,8 +551,8 @@ for more information.
     
         # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
         # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
-        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
-        @informative('1h', 'BTC/{stake}', '{column}')
+        # formatting. Available in populate_indicators and other methods as 'rsi_upper_1h'.
+        @informative('1h', 'BTC/{stake}', '{column}_{timeframe}')
         def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
             return dataframe
@@ -771,7 +776,7 @@ The orderbook structure is aligned with the order structure from [ccxt](https://
 Therefore, using `ob['bids'][0][0]` as demonstrated above will result in using the best bid price. `ob['bids'][0][1]` would look at the amount at this orderbook position.
 
 !!! Warning "Warning about backtesting"
-    The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return uptodate values.
+    The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.
 
 ### *ticker(pair)*
 
@@ -1004,8 +1009,8 @@ This is a common pain-point, which can cause huge differences between backtestin
 
 The following lists some common patterns which should be avoided to prevent frustration:
 
-- don't use `shift(-1)`. This uses data from the future, which is not available.
-- don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
+- don't use `shift(-1)` or other negative values. This uses data from the future in backtesting, which is not available in dry or live modes.
+- don't use `.iloc[-1]` or any other absolute position in the dataframe within `populate_` functions, as this will be different between dry-run and backtesting. Absolute `iloc` indexing is safe to use in callbacks however - see [Strategy Callbacks](strategy-callbacks.md).
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 

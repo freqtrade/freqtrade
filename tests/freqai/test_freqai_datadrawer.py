@@ -1,4 +1,3 @@
-
 import shutil
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +14,7 @@ from tests.freqai.conftest import get_patched_freqai_strategy
 
 
 def test_update_historic_data(mocker, freqai_conf):
+    freqai_conf["runmode"] = "backtest"
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -98,7 +98,7 @@ def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
-    df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, 'LTC/BTC')
+    df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
     assert len(df.columns) == 33
     shutil.rmtree(Path(freqai.dk.full_path))
@@ -132,17 +132,14 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
     freqai = strategy.freqai
-    with pytest.raises(
-            OperationalException,
-            match=r'Historic predictions not found.*'
-            ):
+    with pytest.raises(OperationalException, match=r"Historic predictions not found.*"):
         freqai.dd.get_timerange_from_live_historic_predictions()
 
 
 def test_set_initial_return_values(mocker, freqai_conf):
     """
     Simple test of the set initial return values that ensures
-    we are concatening and ffilling values properly.
+    we are concatenating and ffilling values properly.
     """
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -157,13 +154,10 @@ def test_set_initial_return_values(mocker, freqai_conf):
     start_x_plus_1 = "2023-08-30"
     end_x_plus_5 = "2023-09-03"
 
-    historic_data = {
-        'date_pred': pd.date_range(end=end_x, periods=5),
-        'value': range(1, 6)
-    }
+    historic_data = {"date_pred": pd.date_range(end=end_x, periods=5), "value": range(1, 6)}
     new_data = {
-        'date': pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
-        'value': range(6, 11)
+        "date": pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
+        "value": range(6, 11),
     }
 
     freqai.dd.historic_predictions[pair] = pd.DataFrame(historic_data)
@@ -172,20 +166,21 @@ def test_set_initial_return_values(mocker, freqai_conf):
     dataframe = pd.DataFrame(new_data)
 
     # Action
-    with patch('logging.Logger.warning') as mock_logger_warning:
+    with patch("logging.Logger.warning") as mock_logger_warning:
         freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
 
     # Assertions
     hist_pred_df = freqai.dd.historic_predictions[pair]
     model_return_df = freqai.dd.model_return_values[pair]
 
-    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5)
-    assert 'date_pred' in hist_pred_df.columns
+    assert hist_pred_df["date_pred"].iloc[-1] == pd.Timestamp(end_x_plus_5)
+    assert "date_pred" in hist_pred_df.columns
     assert hist_pred_df.shape[0] == 8
 
     # compare values in model_return_df with hist_pred_df
-    assert (model_return_df["value"].values ==
-            hist_pred_df.tail(len(dataframe))["value"].values).all()
+    assert (
+        model_return_df["value"].values == hist_pred_df.tail(len(dataframe))["value"].values
+    ).all()
     assert model_return_df.shape[0] == len(dataframe)
 
     # Ensure logger error is not called
@@ -211,13 +206,10 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
     start_x_plus_1 = "2023-09-01"
     end_x_plus_5 = "2023-09-05"
 
-    historic_data = {
-        'date_pred': pd.date_range(end=end_x, periods=5),
-        'value': range(1, 6)
-    }
+    historic_data = {"date_pred": pd.date_range(end=end_x, periods=5), "value": range(1, 6)}
     new_data = {
-        'date': pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
-        'value': range(6, 11)
+        "date": pd.date_range(start=start_x_plus_1, end=end_x_plus_5),
+        "value": range(6, 11),
     }
 
     freqai.dd.historic_predictions[pair] = pd.DataFrame(historic_data)
@@ -226,20 +218,21 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
     dataframe = pd.DataFrame(new_data)
 
     # Action
-    with patch('logging.Logger.warning') as mock_logger_warning:
+    with patch("logging.Logger.warning") as mock_logger_warning:
         freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
 
     # Assertions
     hist_pred_df = freqai.dd.historic_predictions[pair]
     model_return_df = freqai.dd.model_return_values[pair]
 
-    assert hist_pred_df['date_pred'].iloc[-1] == pd.Timestamp(end_x_plus_5)
-    assert 'date_pred' in hist_pred_df.columns
+    assert hist_pred_df["date_pred"].iloc[-1] == pd.Timestamp(end_x_plus_5)
+    assert "date_pred" in hist_pred_df.columns
     assert hist_pred_df.shape[0] == 10
 
     # compare values in model_return_df with hist_pred_df
-    assert (model_return_df["value"].values == hist_pred_df.tail(
-        len(dataframe))["value"].values).all()
+    assert (
+        model_return_df["value"].values == hist_pred_df.tail(len(dataframe))["value"].values
+    ).all()
     assert model_return_df.shape[0] == len(dataframe)
 
     # Ensure logger error is not called

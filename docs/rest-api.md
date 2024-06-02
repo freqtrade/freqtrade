@@ -1,16 +1,8 @@
-# REST API & FreqUI
+# REST API
 
 ## FreqUI
 
-Freqtrade provides a builtin webserver, which can serve [FreqUI](https://github.com/freqtrade/frequi), the freqtrade UI.
-
-By default, the UI is not included in the installation (except for docker images), and must be installed explicitly with `freqtrade install-ui`.
-This same command can also be used to update freqUI, should there be a new release.
-
-Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the UI will be available under the configured port below (usually `http://127.0.0.1:8080`).
-
-!!! Note "developers"
-    Developers should not use this method, but instead use the method described in the [freqUI repository](https://github.com/freqtrade/frequi) to get the source-code of freqUI.
+FreqUI now has it's own dedicated [documentation section](frequi.md) - please refer to that section for all information regarding the FreqUI.
 
 ## Configuration
 
@@ -89,17 +81,20 @@ Make sure that the following 2 lines are available in your docker-compose file:
 ```
 
 !!! Danger "Security warning"
-    By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    By using `"8080:8080"` (or `"0.0.0.0:8080:8080"`) in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    This **may** be safe if you're running the bot in a secure environment (like your home network), but it's not recommended to expose the API to the internet.
 
 ## Rest API
 
 ### Consuming the API
 
-You can consume the API by using the script `scripts/rest_client.py`.
-The client script only requires the `requests` module, so Freqtrade does not need to be installed on the system.
+You can consume the API by using `freqtrade-client` (also available as `scripts/rest_client.py`).
+This command can be installed independent of the bot by using `pip install freqtrade-client`.
+
+This module is designed to be lightweight, and only depends on the `requests` and `python-rapidjson` modules, skipping all heavy dependencies freqtrade otherwise needs.
 
 ``` bash
-python3 scripts/rest_client.py <command> [optional parameters]
+freqtrade-client <command> [optional parameters]
 ```
 
 By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be used, however you can specify a configuration file to override this behaviour.
@@ -120,8 +115,26 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 ```
 
 ``` bash
-python3 scripts/rest_client.py --config rest_config.json <command> [optional parameters]
+freqtrade-client --config rest_config.json <command> [optional parameters]
 ```
+
+??? Note "Programmatic use"
+    The `freqtrade-client` package (installable independent of freqtrade) can be used in your own scripts to interact with the freqtrade API.
+    to do so, please use the following:
+
+    ``` python
+    from freqtrade_client import FtRestClient
+    
+
+    client = FtRestClient(server_url, username, password)
+
+    # Get the status of the bot
+    ping = client.ping()
+    print(ping)
+    # ... 
+    ```
+
+    For a full list of available commands, please refer to the list below.
 
 ### Available endpoints
 
@@ -134,9 +147,9 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `reload_config` | Reloads the configuration file.
 | `trades` | List last trades. Limited to 500 trades per call.
 | `trade/<tradeid>` | Get specific trade.
-| `trade/<tradeid>` | DELETE - Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
-| `trade/<tradeid>/open-order` | DELETE - Cancel open order for this trade.
-| `trade/<tradeid>/reload` | GET - Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
+| `trades/<tradeid>` | DELETE - Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `trades/<tradeid>/open-order` | DELETE - Cancel open order for this trade.
+| `trades/<tradeid>/reload` | GET - Reload a trade from the Exchange. Only works in live, and can potentially help recover a trade that was manually sold on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation.
 | `logs` | Shows last log messages.
 | `status` | Lists all open trades.
@@ -146,8 +159,9 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `mix_tags [pair]` | Shows profit statistics for each combinations of enter tag + exit reasons for given pair (or all pairs if pair isn't given). Pair is optional.
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
+| `locks add <pair>, <until>, [side], [reason]` | Locks a pair until "until". (Until will be rounded up to the nearest timeframe).
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
-| `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `forceexit <trade_id> [order_type] [amount]` | Instantly exits the given trade (ignoring `minimum_roi`), using the given order type ("market" or "limit", uses your config setting if not specified), and the chosen amount (full sell if not specified).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `forceenter <pair> [rate]` | Instantly enters the given pair. Rate is optional. (`force_entry_enable` must be set to True)
 | `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`force_entry_enable` must be set to True)
@@ -176,7 +190,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 Possible commands can be listed from the rest-client script using the `help` command.
 
 ``` bash
-python3 scripts/rest_client.py help
+freqtrade-client help
 ```
 
 ``` output
@@ -433,7 +447,7 @@ To properly configure your reverse proxy (securely), please consult it's documen
 - **Caddy**: Caddy v2 supports websockets out of the box, see the [documentation](https://caddyserver.com/docs/v2-upgrade#proxy)
 
 !!! Tip "SSL certificates"
-    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any fo the above reverse proxies.
+    You can use tools like certbot to setup ssl certificates to access your bot's UI through encrypted connection by using any of the above reverse proxies.
     While this will protect your data in transit, we do not recommend to run the freqtrade API outside of your private network (VPN, SSH tunnel).
 
 ### OpenAPI interface
@@ -466,42 +480,4 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 {"access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs"}
 ```
 
-### CORS
-
-This whole section is only necessary in cross-origin cases (where you multiple bot API's running on `localhost:8081`, `localhost:8082`, ...), and want to combine them into one FreqUI instance.
-
-??? info "Technical explanation"
-    All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
-    Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
-    Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
-
-Users can allow access from different origin URL's to the bot API via the `CORS_origins` configuration setting.
-It consists of a list of allowed URL's that are allowed to consume resources from the bot's API.
-
-Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
-
-```jsonc
-{
-    //...
-    "jwt_secret_key": "somethingrandom",
-    "CORS_origins": ["https://frequi.freqtrade.io"],
-    //...
-}
-```
-
-In the following (pretty common) case, FreqUI is accessible on `http://localhost:8080/trade` (this is what you see in your navbar when navigating to freqUI).
-![freqUI url](assets/frequi_url.png)
-
-The correct configuration for this case is `http://localhost:8080` - the main part of the URL including the port.
-
-```jsonc
-{
-    //...
-    "jwt_secret_key": "somethingrandom",
-    "CORS_origins": ["http://localhost:8080"],
-    //...
-}
-```
-
-!!! Note
-    We strongly recommend to also set `jwt_secret_key` to something random and known only to yourself to avoid unauthorized access to your bot.
+--8<-- "includes/cors.md"

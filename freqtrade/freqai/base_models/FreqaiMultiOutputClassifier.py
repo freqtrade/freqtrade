@@ -1,16 +1,14 @@
 import numpy as np
-from joblib import Parallel
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier, _fit_estimator
-from sklearn.utils.fixes import delayed
 from sklearn.utils.multiclass import check_classification_targets
+from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.validation import has_fit_parameter
 
 from freqtrade.exceptions import OperationalException
 
 
 class FreqaiMultiOutputClassifier(MultiOutputClassifier):
-
     def fit(self, X, y, sample_weight=None, fit_params=None):
         """Fit the model to data, separately for each output variable.
         Parameters
@@ -49,18 +47,14 @@ class FreqaiMultiOutputClassifier(MultiOutputClassifier):
                 "multi-output regression but has only one."
             )
 
-        if sample_weight is not None and not has_fit_parameter(
-            self.estimator, "sample_weight"
-        ):
+        if sample_weight is not None and not has_fit_parameter(self.estimator, "sample_weight"):
             raise ValueError("Underlying estimator does not support sample weights.")
 
         if not fit_params:
             fit_params = [None] * y.shape[1]
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-            delayed(_fit_estimator)(
-                self.estimator, X, y[:, i], sample_weight, **fit_params[i]
-            )
+            delayed(_fit_estimator)(self.estimator, X, y[:, i], sample_weight, **fit_params[i])
             for i in range(y.shape[1])
         )
 
@@ -68,8 +62,9 @@ class FreqaiMultiOutputClassifier(MultiOutputClassifier):
         for estimator in self.estimators_:
             self.classes_.extend(estimator.classes_)
         if len(set(self.classes_)) != len(self.classes_):
-            raise OperationalException(f"Class labels must be unique across targets: "
-                                       f"{self.classes_}")
+            raise OperationalException(
+                f"Class labels must be unique across targets: {self.classes_}"
+            )
 
         if hasattr(self.estimators_[0], "n_features_in_"):
             self.n_features_in_ = self.estimators_[0].n_features_in_

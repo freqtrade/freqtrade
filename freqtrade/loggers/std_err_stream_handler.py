@@ -18,7 +18,7 @@ class FTStdErrStreamHandler(Handler):
         try:
             msg = self.format(record)
             # Don't keep a reference to stderr - this can be problematic with progressbars.
-            sys.stderr.write(msg + '\n')
+            sys.stderr.write(msg + "\n")
             self.flush()
         except RecursionError:
             raise

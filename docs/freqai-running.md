@@ -41,11 +41,11 @@ FreqAI stores new model files after each successful training. These files become
 
 ```json
     "freqai": {
-        "purge_old_models": true,
+        "purge_old_models": 4,
     }
 ```
 
-This will automatically purge all models older than the two most recently trained ones to save disk space.
+This will automatically purge all models older than the four most recently trained ones to save disk space. Inputing "0" will never purge any models.
 
 ## Backtesting
 
@@ -68,7 +68,7 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
     This way, you can return to using any model you wish by simply specifying the `identifier`.
 
 !!! Note
-    Backtesting calls `set_freqai_targets()` one time for each backtest window (where the number of windows is the full backtest timerange divided by the `backtest_period_days` parameter). Doing this means that the targets simulate dry/live behavior without look ahead bias. However, the definition of the features in `feature_engineering_*()` is performed once on the entire backtest timerange. This means that you should be sure that features do look-ahead into the future.
+    Backtesting calls `set_freqai_targets()` one time for each backtest window (where the number of windows is the full backtest timerange divided by the `backtest_period_days` parameter). Doing this means that the targets simulate dry/live behavior without look ahead bias. However, the definition of the features in `feature_engineering_*()` is performed once on the entire training timerange. This means that you should be sure that features do not look-ahead into the future.
     More details about look-ahead bias can be found in [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies).
 
 ---

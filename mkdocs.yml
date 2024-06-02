@@ -1,5 +1,5 @@
 site_name: Freqtrade
-site_url: https://www.freqtrade.io/
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, 'https://www.freqtrade.io/en/latest/']
 repo_url: https://github.com/freqtrade/freqtrade
 edit_uri: edit/develop/docs/
 use_directory_urls: True
@@ -18,7 +18,8 @@ nav:
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
-        - REST API & FreqUI: rest-api.md
+        - freqUI: freq-ui.md
+        - REST API: rest-api.md
         - Web Hook: webhook-config.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
@@ -47,9 +48,9 @@ nav:
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md
+        - SQL Cheat-sheet: sql_cheatsheet.md
         - Edge Positioning: edge.md
     - FAQ: faq.md
-    - SQL Cheat-sheet: sql_cheatsheet.md
     - Strategy migration: strategy_migration.md
     - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md

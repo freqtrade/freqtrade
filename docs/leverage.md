@@ -17,7 +17,7 @@ If you already have an existing strategy, please read the [strategy migration gu
 
 ## Shorting
 
-Shorting is not possible when trading with [`trading_mode`](#understand-tradingmode) set to `spot`. To short trade, `trading_mode` must be set to `margin`(currently unavailable) or [`futures`](#futures), with [`margin_mode`](#margin-mode) set to `cross`(currently unavailable) or [`isolated`](#isolated-margin-mode)
+Shorting is not possible when trading with [`trading_mode`](#leverage-trading-modes) set to `spot`. To short trade, `trading_mode` must be set to `margin`(currently unavailable) or [`futures`](#futures), with [`margin_mode`](#margin-mode) set to `cross`(currently unavailable) or [`isolated`](#isolated-margin-mode)
 
 For a strategy to short, the strategy class must set the class variable `can_short = True`
 

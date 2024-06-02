@@ -7,6 +7,7 @@ class MarginMode(str, Enum):
     cross margin/futures margin_mode and
     isolated margin/futures margin_mode
     """
+
     CROSS = "cross"
     ISOLATED = "isolated"
-    NONE = ''
+    NONE = ""

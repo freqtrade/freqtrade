@@ -21,6 +21,7 @@ class BaseActions(Enum):
     """
     Default action space, mostly used for type handling.
     """
+
     Neutral = 0
     Long_enter = 1
     Long_exit = 2
@@ -44,11 +45,22 @@ class BaseEnvironment(gym.Env):
     See RL/Base5ActionRLEnv.py and RL/Base4ActionRLEnv.py
     """
 
-    def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
-                 reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}, live: bool = False,
-                 fee: float = 0.0015, can_short: bool = False, pair: str = "",
-                 df_raw: DataFrame = DataFrame()):
+    def __init__(
+        self,
+        df: DataFrame = DataFrame(),
+        prices: DataFrame = DataFrame(),
+        reward_kwargs: dict = {},
+        window_size=10,
+        starting_point=True,
+        id: str = "baseenv-1",
+        seed: int = 1,
+        config: dict = {},
+        live: bool = False,
+        fee: float = 0.0015,
+        can_short: bool = False,
+        pair: str = "",
+        df_raw: DataFrame = DataFrame(),
+    ):
         """
         Initializes the training/eval environment.
         :param df: dataframe of features
@@ -64,15 +76,15 @@ class BaseEnvironment(gym.Env):
         :param can_short: Whether or not the environment can short
         """
         self.config: dict = config
-        self.rl_config: dict = config['freqai']['rl_config']
-        self.add_state_info: bool = self.rl_config.get('add_state_info', False)
+        self.rl_config: dict = config["freqai"]["rl_config"]
+        self.add_state_info: bool = self.rl_config.get("add_state_info", False)
         self.id: str = id
-        self.max_drawdown: float = 1 - self.rl_config.get('max_training_drawdown_pct', 0.8)
-        self.compound_trades: bool = config['stake_amount'] == 'unlimited'
+        self.max_drawdown: float = 1 - self.rl_config.get("max_training_drawdown_pct", 0.8)
+        self.compound_trades: bool = config["stake_amount"] == "unlimited"
         self.pair: str = pair
         self.raw_features: DataFrame = df_raw
-        if self.config.get('fee', None) is not None:
-            self.fee = self.config['fee']
+        if self.config.get("fee", None) is not None:
+            self.fee = self.config["fee"]
         else:
             self.fee = fee
 
@@ -82,14 +94,22 @@ class BaseEnvironment(gym.Env):
         self.can_short: bool = can_short
         self.live: bool = live
         if not self.live and self.add_state_info:
-            raise OperationalException("`add_state_info` is not available in backtesting. Change "
-                                       "parameter to false in your rl_config. See `add_state_info` "
-                                       "docs for more info.")
+            raise OperationalException(
+                "`add_state_info` is not available in backtesting. Change "
+                "parameter to false in your rl_config. See `add_state_info` "
+                "docs for more info."
+            )
         self.seed(seed)
         self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
 
-    def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
-                  reward_kwargs: dict, starting_point=True):
+    def reset_env(
+        self,
+        df: DataFrame,
+        prices: DataFrame,
+        window_size: int,
+        reward_kwargs: dict,
+        starting_point=True,
+    ):
         """
         Resets the environment when the agent fails (in our case, if the drawdown
         exceeds the user set max_training_drawdown_pct)
@@ -113,8 +133,7 @@ class BaseEnvironment(gym.Env):
             self.total_features = self.signal_features.shape[1]
         self.shape = (window_size, self.total_features)
         self.set_action_space()
-        self.observation_space = spaces.Box(
-            low=-1, high=1, shape=self.shape, dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=self.shape, dtype=np.float32)
 
         # episode
         self._start_tick: int = self.window_size
@@ -151,8 +170,13 @@ class BaseEnvironment(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def tensorboard_log(self, metric: str, value: Optional[Union[int, float]] = None,
-                        inc: Optional[bool] = None, category: str = "custom"):
+    def tensorboard_log(
+        self,
+        metric: str,
+        value: Optional[Union[int, float]] = None,
+        inc: Optional[bool] = None,
+        category: str = "custom",
+    ):
         """
         Function builds the tensorboard_metrics dictionary
         to be parsed by the TensorboardCallback. This
@@ -195,7 +219,7 @@ class BaseEnvironment(gym.Env):
         self._done = False
 
         if self.starting_point is True:
-            if self.rl_config.get('randomize_starting_position', False):
+            if self.rl_config.get("randomize_starting_position", False):
                 length_of_data = int(self._end_tick / 4)
                 start_tick = random.randint(self.window_size + 1, length_of_data)
                 self._start_tick = start_tick
@@ -207,8 +231,8 @@ class BaseEnvironment(gym.Env):
         self._last_trade_tick = None
         self._position = Positions.Neutral
 
-        self.total_reward = 0.
-        self._total_profit = 1.  # unit
+        self.total_reward = 0.0
+        self._total_profit = 1.0  # unit
         self.history = {}
         self.trade_history = []
         self.portfolio_log_returns = np.zeros(len(self.prices))
@@ -222,7 +246,7 @@ class BaseEnvironment(gym.Env):
     @abstractmethod
     def step(self, action: int):
         """
-        Step depeneds on action types, this must be inherited.
+        Step depends on action types, this must be inherited.
         """
         return
 
@@ -231,18 +255,19 @@ class BaseEnvironment(gym.Env):
         This may or may not be independent of action types, user can inherit
         this in their custom "MyRLEnv"
         """
-        features_window = self.signal_features[(
-            self._current_tick - self.window_size):self._current_tick]
+        features_window = self.signal_features[
+            (self._current_tick - self.window_size) : self._current_tick
+        ]
         if self.add_state_info:
-            features_and_state = DataFrame(np.zeros((len(features_window), 3)),
-                                           columns=['current_profit_pct',
-                                                    'position',
-                                                    'trade_duration'],
-                                           index=features_window.index)
+            features_and_state = DataFrame(
+                np.zeros((len(features_window), 3)),
+                columns=["current_profit_pct", "position", "trade_duration"],
+                index=features_window.index,
+            )
 
-            features_and_state['current_profit_pct'] = self.get_unrealized_profit()
-            features_and_state['position'] = self._position.value
-            features_and_state['trade_duration'] = self.get_trade_duration()
+            features_and_state["current_profit_pct"] = self.get_unrealized_profit()
+            features_and_state["position"] = self._position.value
+            features_and_state["trade_duration"] = self.get_trade_duration()
             features_and_state = pd.concat([features_window, features_and_state], axis=1)
             return features_and_state
         else:
@@ -262,10 +287,10 @@ class BaseEnvironment(gym.Env):
         Get the unrealized profit if the agent is in a trade
         """
         if self._last_trade_tick is None:
-            return 0.
+            return 0.0
 
         if self._position == Positions.Neutral:
-            return 0.
+            return 0.0
         elif self._position == Positions.Short:
             current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
             last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
@@ -275,7 +300,7 @@ class BaseEnvironment(gym.Env):
             last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
-            return 0.
+            return 0.0
 
     @abstractmethod
     def is_tradesignal(self, action: int) -> bool:
@@ -326,7 +351,7 @@ class BaseEnvironment(gym.Env):
 
     def _update_unrealized_total_profit(self):
         """
-        Update the unrealized total profit incase of episode end.
+        Update the unrealized total profit in case of episode end.
         """
         if self._position in (Positions.Long, Positions.Short):
             pnl = self.get_unrealized_profit()
@@ -357,7 +382,7 @@ class BaseEnvironment(gym.Env):
         """
         return self.actions
 
-    # Keeping around incase we want to start building more complex environment
+    # Keeping around in case we want to start building more complex environment
     # templates in the future.
     # def most_recent_return(self):
     #     """

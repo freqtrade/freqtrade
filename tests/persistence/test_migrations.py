@@ -24,9 +24,9 @@ spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURE
 
 def test_init_create_session(default_conf):
     # Check if init create a session
-    init_db(default_conf['db_url'])
-    assert hasattr(Trade, 'session')
-    assert 'scoped_session' in type(Trade.session).__name__
+    init_db(default_conf["db_url"])
+    assert hasattr(Trade, "session")
+    assert "scoped_session" in type(Trade.session).__name__
 
 
 def test_init_custom_db_url(default_conf, tmp_path):
@@ -34,47 +34,44 @@ def test_init_custom_db_url(default_conf, tmp_path):
     filename = tmp_path / "freqtrade2_test.sqlite"
     assert not filename.is_file()
 
-    default_conf.update({'db_url': f'sqlite:///{filename}'})
+    default_conf.update({"db_url": f"sqlite:///{filename}"})
 
-    init_db(default_conf['db_url'])
+    init_db(default_conf["db_url"])
     assert filename.is_file()
     r = Trade.session.execute(text("PRAGMA journal_mode"))
-    assert r.first() == ('wal',)
+    assert r.first() == ("wal",)
 
 
 def test_init_invalid_db_url():
     # Update path to a value other than default, but still in-memory
-    with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init_db('unknown:///some.url')
+    with pytest.raises(OperationalException, match=r".*no valid database URL*"):
+        init_db("unknown:///some.url")
 
-    with pytest.raises(OperationalException, match=r'Bad db-url.*For in-memory database, pl.*'):
-        init_db('sqlite:///')
+    with pytest.raises(OperationalException, match=r"Bad db-url.*For in-memory database, pl.*"):
+        init_db("sqlite:///")
 
 
 def test_init_prod_db(default_conf, mocker):
-    default_conf.update({'dry_run': False})
-    default_conf.update({'db_url': DEFAULT_DB_PROD_URL})
+    default_conf.update({"dry_run": False})
+    default_conf.update({"db_url": DEFAULT_DB_PROD_URL})
 
-    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
+    create_engine_mock = mocker.patch("freqtrade.persistence.models.create_engine", MagicMock())
 
-    init_db(default_conf['db_url'])
+    init_db(default_conf["db_url"])
     assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
+    assert create_engine_mock.mock_calls[0][1][0] == "sqlite:///tradesv3.sqlite"
 
 
 def test_init_dryrun_db(default_conf, tmpdir):
     filename = f"{tmpdir}/freqtrade2_prod.sqlite"
     assert not Path(filename).is_file()
-    default_conf.update({
-        'dry_run': True,
-        'db_url': f'sqlite:///{filename}'
-    })
+    default_conf.update({"dry_run": True, "db_url": f"sqlite:///{filename}"})
 
-    init_db(default_conf['db_url'])
+    init_db(default_conf["db_url"])
     assert Path(filename).is_file()
 
 
-def test_migrate_new(mocker, default_conf, fee, caplog):
+def test_migrate(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -135,10 +132,9 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                           '2019-11-28 12:44:24.000000',
                           0.0, 0.0, 0.0, '5m',
                           'buy_order', 'dry_stop_order_id222')
-                          """.format(fee=fee.return_value,
-                                     stake=default_conf.get("stake_amount"),
-                                     amount=amount
-                                     )
+                          """.format(
+        fee=fee.return_value, stake=default_conf.get("stake_amount"), amount=amount
+    )
     insert_orders = f"""
         insert into orders (
             ft_trade_id,
@@ -237,8 +233,8 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
             {amount * 0.00258580}
         )
     """
-    engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
+    engine = create_engine("sqlite://")
+    mocker.patch("freqtrade.persistence.models.create_engine", lambda *args, **kwargs: engine)
 
     # Create table using the old format
     with engine.begin() as connection:
@@ -254,7 +250,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
         connection.execute(text("create table trades_bak1 as select * from trades"))
     # Run init to test migration
-    init_db(default_conf['db_url'])
+    init_db(default_conf["db_url"])
 
     trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 1
@@ -276,34 +272,35 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.exit_reason is None
     assert trade.strategy is None
-    assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id == 'dry_stop_order_id222'
-    assert trade.stoploss_last_update is None
+    assert trade.timeframe == "5m"
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
-    assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
-                   caplog)
+    assert log_has(
+        "Running database migration for trades - backup: trades_bak2, orders_bak0", caplog
+    )
     assert log_has("Database migration finished.", caplog)
     assert pytest.approx(trade.open_trade_value) == trade._calc_open_trade_value(
-        trade.amount, trade.open_rate)
+        trade.amount, trade.open_rate
+    )
     assert trade.close_profit_abs is None
     assert trade.stake_amount == trade.max_stake_amount
 
     orders = trade.orders
     assert len(orders) == 4
-    assert orders[0].order_id == 'dry_buy_order'
-    assert orders[0].ft_order_side == 'buy'
+    assert orders[0].order_id == "dry_buy_order"
+    assert orders[0].ft_order_side == "buy"
 
-    assert orders[-1].order_id == 'dry_stop_order_id222'
-    assert orders[-1].ft_order_side == 'stoploss'
-    assert orders[-1].ft_is_open is True
+    # All dry-run stoploss orders will be closed
+    assert orders[-1].order_id == "dry_stop_order_id222"
+    assert orders[-1].ft_order_side == "stoploss"
+    assert orders[-1].ft_is_open is False
 
-    assert orders[1].order_id == 'dry_buy_order22'
-    assert orders[1].ft_order_side == 'buy'
+    assert orders[1].order_id == "dry_buy_order22"
+    assert orders[1].ft_order_side == "buy"
     assert orders[1].ft_is_open is True
 
-    assert orders[2].order_id == 'dry_stop_order_id11X'
-    assert orders[2].ft_order_side == 'stoploss'
+    assert orders[2].order_id == "dry_stop_order_id11X"
+    assert orders[2].ft_order_side == "stoploss"
     assert orders[2].ft_is_open is False
 
     orders1 = Order.session.scalars(select(Order)).all()
@@ -343,12 +340,11 @@ def test_migrate_too_old(mocker, default_conf, fee, caplog):
                           VALUES ('binance', 'ETC/BTC', 1, {fee}, {fee},
                           0.00258580, {stake}, {amount},
                           '2019-11-28 12:44:24.000000')
-                          """.format(fee=fee.return_value,
-                                     stake=default_conf.get("stake_amount"),
-                                     amount=amount
-                                     )
-    engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
+                          """.format(
+        fee=fee.return_value, stake=default_conf.get("stake_amount"), amount=amount
+    )
+    engine = create_engine("sqlite://")
+    mocker.patch("freqtrade.persistence.models.create_engine", lambda *args, **kwargs: engine)
 
     # Create table using the old format
     with engine.begin() as connection:
@@ -356,22 +352,22 @@ def test_migrate_too_old(mocker, default_conf, fee, caplog):
         connection.execute(text(insert_table_old))
 
     # Run init to test migration
-    with pytest.raises(OperationalException, match=r'Your database seems to be very old'):
-        init_db(default_conf['db_url'])
+    with pytest.raises(OperationalException, match=r"Your database seems to be very old"):
+        init_db(default_conf["db_url"])
 
 
 def test_migrate_get_last_sequence_ids():
     engine = MagicMock()
     engine.begin = MagicMock()
-    engine.name = 'postgresql'
-    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+    engine.name = "postgresql"
+    get_last_sequence_ids(engine, "trades_bak", "orders_bak")
 
     assert engine.begin.call_count == 2
     engine.reset_mock()
     engine.begin.reset_mock()
 
-    engine.name = 'somethingelse'
-    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+    engine.name = "somethingelse"
+    get_last_sequence_ids(engine, "trades_bak", "orders_bak")
 
     assert engine.begin.call_count == 0
 
@@ -379,14 +375,14 @@ def test_migrate_get_last_sequence_ids():
 def test_migrate_set_sequence_ids():
     engine = MagicMock()
     engine.begin = MagicMock()
-    engine.name = 'postgresql'
+    engine.name = "postgresql"
     set_sequence_ids(engine, 22, 55, 5)
 
     assert engine.begin.call_count == 1
     engine.reset_mock()
     engine.begin.reset_mock()
 
-    engine.name = 'somethingelse'
+    engine.name = "somethingelse"
     set_sequence_ids(engine, 22, 55, 6)
 
     assert engine.begin.call_count == 0
@@ -419,8 +415,8 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
         id, pair, reason, lock_time, lock_end_time, active)
         VALUES (2, '*', 'Lock all', '2021-07-12 18:41:03', '2021-07-12 19:00:00', 1)
                           """
-    engine = create_engine('sqlite://')
-    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
+    engine = create_engine("sqlite://")
+    mocker.patch("freqtrade.persistence.models.create_engine", lambda *args, **kwargs: engine)
     # Create table using the old format
     with engine.begin() as connection:
         connection.execute(text(create_table_old))
@@ -431,22 +427,28 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
         connection.execute(text(create_index2))
         connection.execute(text(create_index3))
 
-    init_db(default_conf['db_url'])
+    init_db(default_conf["db_url"])
 
     assert len(PairLock.get_all_locks().all()) == 2
-    assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == '*')).all()) == 1
-    pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == 'ETH/BTC')).all()
+    assert len(PairLock.session.scalars(select(PairLock).filter(PairLock.pair == "*")).all()) == 1
+    pairlocks = PairLock.session.scalars(select(PairLock).filter(PairLock.pair == "ETH/BTC")).all()
     assert len(pairlocks) == 1
-    pairlocks[0].pair == 'ETH/BTC'
-    pairlocks[0].side == '*'
+    assert pairlocks[0].pair == "ETH/BTC"
+    assert pairlocks[0].side == "*"
 
 
-@pytest.mark.parametrize('dialect', [
-    'sqlite', 'postgresql', 'mysql', 'oracle', 'mssql',
-    ])
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        "sqlite",
+        "postgresql",
+        "mysql",
+        "oracle",
+        "mssql",
+    ],
+)
 def test_create_table_compiles(dialect):
-
     dialect_mod = import_module(f"sqlalchemy.dialects.{dialect}")
     for table in ModelBase.metadata.tables.values():
         create_sql = str(CreateTable(table).compile(dialect=dialect_mod.dialect()))
-        assert 'CREATE TABLE' in create_sql
+        assert "CREATE TABLE" in create_sql

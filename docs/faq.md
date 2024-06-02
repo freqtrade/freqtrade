@@ -2,7 +2,7 @@
 
 ## Supported Markets
 
-Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
+Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an up-to-date list of supported exchanges.
 
 ### Can my bot open short positions?
 
@@ -14,7 +14,7 @@ In spot markets, you can in some cases use leveraged spot tokens, which reflect 
 
 ### Can my bot trade options or futures?
 
-Futures trading is supported for selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
+Futures trading is supported for selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an up-to-date list of supported exchanges.
 
 ## Beginner Tips & Tricks
 
@@ -128,15 +128,9 @@ This warning can point to one of the below problems:
 * Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
 * API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
 
-### I'm getting the "RESTRICTED_MARKET" message in the log
-
-Currently known to happen for US Bittrex users.
-
-Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
-
 ### I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy
 
-As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex and Gate.io).
+As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Gate.io).
 
 To fix this, redefine order types in the strategy to use "limit" instead of "market":
 

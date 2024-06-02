@@ -1,0 +1,45 @@
+name: Devcontainer Pre-Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0"
+  # push:
+  #   branches:
+  #     - "master"
+  #   tags:
+  #     - "v*.*.*"
+  #   pull_requests:
+  #     branches:
+  #       - "master"
+
+concurrency:
+  group: "${{ github.workflow }}"
+  cancel-in-progress: true
+
+permissions:
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    -
+        name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+    -
+        name: Pre-build dev container image
+        uses: devcontainers/ci@v0.3
+        with:
+          subFolder: .github
+          imageName: ghcr.io/${{ github.repository }}-devcontainer
+          cacheFrom: ghcr.io/${{ github.repository }}-devcontainer
+          push: always

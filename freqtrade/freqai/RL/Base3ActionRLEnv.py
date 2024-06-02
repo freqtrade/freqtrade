@@ -19,6 +19,7 @@ class Base3ActionRLEnv(BaseEnvironment):
     """
     Base class for a 3 action environment
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.actions = Actions
@@ -73,11 +74,18 @@ class Base3ActionRLEnv(BaseEnvironment):
 
             if trade_type is not None:
                 self.trade_history.append(
-                    {'price': self.current_price(), 'index': self._current_tick,
-                     'type': trade_type, 'profit': self.get_unrealized_profit()})
+                    {
+                        "price": self.current_price(),
+                        "index": self._current_tick,
+                        "type": trade_type,
+                        "profit": self.get_unrealized_profit(),
+                    }
+                )
 
-        if (self._total_profit < self.max_drawdown or
-                self._total_unrealized_profit < self.max_drawdown):
+        if (
+            self._total_profit < self.max_drawdown
+            or self._total_unrealized_profit < self.max_drawdown
+        ):
             self._done = True
 
         self._position_history.append(self._position)
@@ -89,7 +97,7 @@ class Base3ActionRLEnv(BaseEnvironment):
             total_profit=self._total_profit,
             position=self._position.value,
             trade_duration=self.get_trade_duration(),
-            current_profit_pct=self.get_unrealized_profit()
+            current_profit_pct=self.get_unrealized_profit(),
         )
 
         observation = self._get_observation()
@@ -109,10 +117,14 @@ class Base3ActionRLEnv(BaseEnvironment):
         return (
             (action == Actions.Buy.value and self._position == Positions.Neutral)
             or (action == Actions.Sell.value and self._position == Positions.Long)
-            or (action == Actions.Sell.value and self._position == Positions.Neutral
-                and self.can_short)
-            or (action == Actions.Buy.value and self._position == Positions.Short
-                and self.can_short)
+            or (
+                action == Actions.Sell.value
+                and self._position == Positions.Neutral
+                and self.can_short
+            )
+            or (
+                action == Actions.Buy.value and self._position == Positions.Short and self.can_short
+            )
         )
 
     def _is_valid(self, action: int) -> bool:

@@ -1,8 +1,8 @@
 """
 Unit test file for rpc/external_message_consumer.py
 """
+
 import asyncio
-import functools
 import logging
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
@@ -22,19 +22,16 @@ _TEST_WS_PORT = 9989
 
 @pytest.fixture
 def patched_emc(default_conf, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": "null",
-                    "port": 9891,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ]
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {"name": "default", "host": "null", "port": 9891, "ws_token": _TEST_WS_TOKEN}
+                ],
+            }
         }
-    })
+    )
     dataprovider = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dataprovider)
 
@@ -82,7 +79,7 @@ def test_emc_init(patched_emc):
 # Parametrize this?
 def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
-    producer_name = test_producer['name']
+    producer_name = test_producer["name"]
     invalid_msg = r"Invalid message .+"
 
     caplog.set_level(logging.DEBUG)
@@ -93,7 +90,8 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
 
     assert log_has(f"Received message of type `whitelist` from `{producer_name}`", caplog)
     assert log_has(
-        f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`", caplog)
+        f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`", caplog
+    )
 
     # Test handle analyzed_df single candle message
     df_message = {
@@ -101,8 +99,8 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
         "data": {
             "key": ("BTC/USDT", "5m", "spot"),
             "df": ohlcv_history,
-            "la": datetime.now(timezone.utc)
-        }
+            "la": datetime.now(timezone.utc),
+        },
     }
     patched_emc.handle_producer_message(test_producer, df_message)
 
@@ -125,11 +123,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
 
     malformed_message = {
         "type": "analyzed_df",
-        "data": {
-            "key": "BTC/USDT",
-            "df": ohlcv_history,
-            "la": datetime.now(timezone.utc)
-        }
+        "data": {"key": "BTC/USDT", "df": ohlcv_history, "la": datetime.now(timezone.utc)},
     }
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
@@ -139,13 +133,13 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
 
     # Empty dataframe
     malformed_message = {
-            "type": "analyzed_df",
-            "data": {
-                "key": ("BTC/USDT", "5m", "spot"),
-                "df": ohlcv_history.loc[ohlcv_history['open'] < 0],
-                "la": datetime.now(timezone.utc)
-                }
-            }
+        "type": "analyzed_df",
+        "data": {
+            "key": ("BTC/USDT", "5m", "spot"),
+            "df": ohlcv_history.loc[ohlcv_history["open"] < 0],
+            "la": datetime.now(timezone.utc),
+        },
+    }
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
@@ -167,29 +161,32 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
 
 
 async def test_emc_create_connection_success(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 60,
-            "ping_timeout": 60,
-            "sleep_timeout": 60
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 60,
+                "ping_timeout": 60,
+                "sleep_timeout": 60,
+            }
         }
-    })
+    )
 
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
+    mocker.patch(
+        "freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start", MagicMock()
+    )
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
 
-    test_producer = default_conf['external_message_consumer']['producers'][0]
+    test_producer = default_conf["external_message_consumer"]["producers"][0]
     lock = asyncio.Lock()
 
     emc._running = True
@@ -206,27 +203,27 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
         emc.shutdown()
 
 
-@pytest.mark.parametrize('host,port', [
-    (_TEST_WS_HOST, -1),
-    ("10000.1241..2121/", _TEST_WS_PORT),
-])
+@pytest.mark.parametrize(
+    "host,port",
+    [
+        (_TEST_WS_HOST, -1),
+        ("10000.1241..2121/", _TEST_WS_PORT),
+    ],
+)
 async def test_emc_create_connection_invalid_url(default_conf, caplog, mocker, host, port):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": host,
-                    "port": port,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 60,
-            "ping_timeout": 60,
-            "sleep_timeout": 60
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {"name": "default", "host": host, "port": port, "ws_token": _TEST_WS_TOKEN}
+                ],
+                "wait_timeout": 60,
+                "ping_timeout": 60,
+                "sleep_timeout": 60,
+            }
         }
-    })
+    )
 
     dp = DataProvider(default_conf, None, None, None)
     # Handle start explicitly to avoid messing with threading in tests
@@ -243,25 +240,27 @@ async def test_emc_create_connection_invalid_url(default_conf, caplog, mocker, h
 
 
 async def test_emc_create_connection_error(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 60,
-            "ping_timeout": 60,
-            "sleep_timeout": 60
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 60,
+                "ping_timeout": 60,
+                "sleep_timeout": 60,
+            }
         }
-    })
+    )
 
     # Test unexpected error
-    mocker.patch('websockets.connect', side_effect=RuntimeError)
+    mocker.patch("websockets.connect", side_effect=RuntimeError)
 
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
@@ -276,45 +275,45 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
 async def test_emc_receive_messages_valid(default_conf, caplog, mocker):
     caplog.set_level(logging.DEBUG)
 
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 1,
-            "ping_timeout": 60,
-            "sleep_time": 60
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 1,
+                "ping_timeout": 60,
+                "sleep_time": 60,
+            }
         }
-    })
+    )
 
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
+    mocker.patch(
+        "freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start", MagicMock()
+    )
 
     lock = asyncio.Lock()
-    test_producer = default_conf['external_message_consumer']['producers'][0]
+    test_producer = default_conf["external_message_consumer"]["producers"][0]
 
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
 
-    loop = asyncio.get_event_loop()
-    def change_running(emc): emc._running = not emc._running
-
     class TestChannel:
         async def recv(self, *args, **kwargs):
+            emc._running = False
             return {"type": "whitelist", "data": ["BTC/USDT"]}
 
         async def ping(self, *args, **kwargs):
             return asyncio.Future()
 
     try:
-        change_running(emc)
-        loop.call_soon(functools.partial(change_running, emc=emc))
+        emc._running = True
         await emc._receive_messages(TestChannel(), test_producer, lock)
 
         assert log_has_re(r"Received message of type `whitelist`.+", caplog)
@@ -323,45 +322,45 @@ async def test_emc_receive_messages_valid(default_conf, caplog, mocker):
 
 
 async def test_emc_receive_messages_invalid(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 1,
-            "ping_timeout": 60,
-            "sleep_time": 60
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 1,
+                "ping_timeout": 60,
+                "sleep_time": 60,
+            }
         }
-    })
+    )
 
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
+    mocker.patch(
+        "freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start", MagicMock()
+    )
 
     lock = asyncio.Lock()
-    test_producer = default_conf['external_message_consumer']['producers'][0]
+    test_producer = default_conf["external_message_consumer"]["producers"][0]
 
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
 
-    loop = asyncio.get_event_loop()
-    def change_running(emc): emc._running = not emc._running
-
     class TestChannel:
         async def recv(self, *args, **kwargs):
+            emc._running = False
             return {"type": ["BTC/USDT"]}
 
         async def ping(self, *args, **kwargs):
             return asyncio.Future()
 
     try:
-        change_running(emc)
-        loop.call_soon(functools.partial(change_running, emc=emc))
+        emc._running = True
         await emc._receive_messages(TestChannel(), test_producer, lock)
 
         assert log_has_re(r"Invalid message from.+", caplog)
@@ -370,34 +369,37 @@ async def test_emc_receive_messages_invalid(default_conf, caplog, mocker):
 
 
 async def test_emc_receive_messages_timeout(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 0.1,
-            "ping_timeout": 1,
-            "sleep_time": 1
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 0.1,
+                "ping_timeout": 1,
+                "sleep_time": 1,
+            }
         }
-    })
+    )
 
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
+    mocker.patch(
+        "freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start", MagicMock()
+    )
 
     lock = asyncio.Lock()
-    test_producer = default_conf['external_message_consumer']['producers'][0]
+    test_producer = default_conf["external_message_consumer"]["producers"][0]
 
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
 
-    loop = asyncio.get_event_loop()
-    def change_running(emc): emc._running = not emc._running
+    def change_running():
+        emc._running = not emc._running
 
     class TestChannel:
         async def recv(self, *args, **kwargs):
@@ -407,8 +409,7 @@ async def test_emc_receive_messages_timeout(default_conf, caplog, mocker):
             return asyncio.Future()
 
     try:
-        change_running(emc)
-        loop.call_soon(functools.partial(change_running, emc=emc))
+        change_running()
 
         with pytest.raises(asyncio.TimeoutError):
             await emc._receive_messages(TestChannel(), test_producer, lock)
@@ -419,47 +420,47 @@ async def test_emc_receive_messages_timeout(default_conf, caplog, mocker):
 
 
 async def test_emc_receive_messages_handle_error(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 1,
-            "ping_timeout": 1,
-            "sleep_time": 1
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "host": _TEST_WS_HOST,
+                        "port": _TEST_WS_PORT,
+                        "ws_token": _TEST_WS_TOKEN,
+                    }
+                ],
+                "wait_timeout": 1,
+                "ping_timeout": 1,
+                "sleep_time": 1,
+            }
         }
-    })
+    )
 
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
+    mocker.patch(
+        "freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start", MagicMock()
+    )
 
     lock = asyncio.Lock()
-    test_producer = default_conf['external_message_consumer']['producers'][0]
+    test_producer = default_conf["external_message_consumer"]["producers"][0]
 
     dp = DataProvider(default_conf, None, None, None)
     emc = ExternalMessageConsumer(default_conf, dp)
 
     emc.handle_producer_message = MagicMock(side_effect=Exception)
 
-    loop = asyncio.get_event_loop()
-    def change_running(emc): emc._running = not emc._running
-
     class TestChannel:
         async def recv(self, *args, **kwargs):
+            emc._running = False
             return {"type": "whitelist", "data": ["BTC/USDT"]}
 
         async def ping(self, *args, **kwargs):
             return asyncio.Future()
 
     try:
-        change_running(emc)
-        loop.call_soon(functools.partial(change_running, emc=emc))
+        emc._running = True
         await emc._receive_messages(TestChannel(), test_producer, lock)
 
         assert log_has_re(r"Error handling producer message.+", caplog)
