@@ -117,31 +117,26 @@ def populate_dataframe_with_trades(
                     is_between, "imbalances"
                 ].apply(lambda x: stacked_imbalance_ask(x, stacked_imbalance_range=_stacked_imb))
 
-                bid = df.loc[is_between, "bid"].apply(
-                    lambda _: np.where(
-                        trades_grouped_df["side"].str.contains("sell"),
-                        trades_grouped_df["amount"],
-                        0,
-                    )
+                bid = np.where(
+                    trades_grouped_df["side"].str.contains("sell"),
+                    trades_grouped_df["amount"],
+                    0,
                 )
-                ask = df.loc[is_between, "ask"].apply(
-                    lambda _: np.where(
-                        trades_grouped_df["side"].str.contains("buy"),
-                        trades_grouped_df["amount"],
-                        0,
-                    )
+                ask = np.where(
+                    trades_grouped_df["side"].str.contains("buy"),
+                    trades_grouped_df["amount"],
+                    0,
                 )
                 deltas_per_trade = ask - bid
                 min_delta = 0
                 max_delta = 0
                 delta = 0
-                for deltas in deltas_per_trade:
-                    for d in deltas:
-                        delta += d
-                        if delta > max_delta:
-                            max_delta = delta
-                        if delta < min_delta:
-                            min_delta = delta
+                for d in deltas_per_trade:
+                    delta += d
+                    if delta > max_delta:
+                        max_delta = delta
+                    if delta < min_delta:
+                        min_delta = delta
                 df.loc[is_between, "max_delta"] = max_delta
                 df.loc[is_between, "min_delta"] = min_delta
 
