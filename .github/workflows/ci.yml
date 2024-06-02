@@ -323,7 +323,8 @@ jobs:
         Write-host $PSVersionTable.PSVersion.Major $PSVersionTable.PSRemotingProtocolVersion.Minor
         Set-PSRepository psgallery -InstallationPolicy trusted
         Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force
-        Invoke-Pester -Path "tests"
+
+        Invoke-Pester -Path "tests" -CI
       shell: powershell
 
     - name: Discord notification
