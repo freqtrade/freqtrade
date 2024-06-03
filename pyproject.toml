@@ -82,6 +82,9 @@ skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"
 known_first_party = ["freqtrade_client"]
 
 [tool.pytest.ini_options]
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+
 asyncio_mode = "auto"
 addopts = "--dist loadscope"
 
