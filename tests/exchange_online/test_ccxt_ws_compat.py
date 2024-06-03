@@ -19,6 +19,7 @@ from tests.exchange_online.conftest import EXCHANGE_WS_FIXTURE_TYPE
 
 
 @pytest.mark.longrun
+@pytest.mark.timeout(3 * 60)
 class TestCCXTExchangeWs:
     def test_ccxt_ohlcv(self, exchange_ws: EXCHANGE_WS_FIXTURE_TYPE, caplog, mocker):
         exch, exchangename, pair = exchange_ws
