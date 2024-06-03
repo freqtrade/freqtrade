@@ -577,7 +577,7 @@ jobs:
           docker version -f '{{.Server.Experimental}}'
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       id: buildx
