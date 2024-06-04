@@ -1087,6 +1087,9 @@ def test__validate_orderflow(default_conf) -> None:
         {
             "orderflow": {
                 "scale": 0.5,
+                "stacked_imbalance_range": 3,
+                "imbalance_volume": 100,
+                "imbalance_ratio": 3,
             }
         }
     )

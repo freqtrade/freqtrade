@@ -533,6 +533,7 @@ CONF_SCHEMA = {
                 "imbalance_volume": {"type": "number", "minimum": 0},
                 "imbalance_ratio": {"type": "number", "minimum": 0.0},
             },
+            "required": ["scale", "stacked_imbalance_range", "imbalance_volume", "imbalance_ratio"],
         },
     },
     "definitions": {
