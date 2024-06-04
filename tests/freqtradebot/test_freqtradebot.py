@@ -699,18 +699,20 @@ def test_process_trade_creation(
 
 
 def test_process_exchange_failures(default_conf_usdt, ticker_usdt, mocker) -> None:
+    # TODO: Move this test to test_worker
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
-        reload_markets=MagicMock(side_effect=TemporaryError),
+        reload_markets=MagicMock(),
         create_order=MagicMock(side_effect=TemporaryError),
     )
     sleep_mock = mocker.patch("time.sleep")
 
     worker = Worker(args=None, config=default_conf_usdt)
     patch_get_signal(worker.freqtrade)
+    mocker.patch(f"{EXMS}.reload_markets", MagicMock(side_effect=TemporaryError))
 
     worker._process_running()
     assert sleep_mock.called is True
