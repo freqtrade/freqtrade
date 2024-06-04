@@ -1944,7 +1944,9 @@ def test_fetch_trading_fees(default_conf, mocker):
     assert api_mock.fetch_trading_fees.call_count == 1
 
     api_mock.fetch_trading_fees.reset_mock()
-
+    # Reload-markets calls fetch_trading_fees, too - so the explicit calls in the below
+    # exception test would be called twice.
+    mocker.patch(f"{EXMS}.reload_markets")
     ccxt_exceptionhandlers(
         mocker, default_conf, api_mock, exchange_name, "fetch_trading_fees", "fetch_trading_fees"
     )
