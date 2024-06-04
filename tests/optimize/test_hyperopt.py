@@ -47,7 +47,7 @@ def generate_result_metrics():
         "profit_total_abs": 0.001,
         "profit_total": 0.01,
         "holding_avg": timedelta(minutes=20),
-        "max_drawdown": 0.001,
+        "max_drawdown_account": 0.001,
         "max_drawdown_abs": 0.001,
         "loss": 0.001,
         "is_initial_point": 0.001,
@@ -1063,7 +1063,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmp_path, fee) -> None
 def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path, fee) -> None:
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.get_fee", fee)
-    mocker.patch(f"{EXMS}._load_markets")
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.markets", PropertyMock(return_value=get_markets()))
     (tmp_path / "hyperopt_results").mkdir(parents=True)
     # Dummy-reduce points to ensure scikit-learn is forced to generate new values

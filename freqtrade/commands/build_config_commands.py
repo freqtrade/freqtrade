@@ -100,7 +100,10 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "fiat_display_currency",
-            "message": "Please insert your display Currency (for reporting):",
+            "message": (
+                "Please insert your display Currency for reporting "
+                "(leave empty to disable FIAT conversion):"
+            ),
             "default": "USD",
         },
         {
@@ -110,6 +113,7 @@ def ask_user_config() -> Dict[str, Any]:
             "choices": [
                 "binance",
                 "binanceus",
+                "bingx",
                 "gate",
                 "htx",
                 "kraken",
@@ -125,7 +129,7 @@ def ask_user_config() -> Dict[str, Any]:
             "message": "Do you want to trade Perpetual Swaps (perpetual futures)?",
             "default": False,
             "filter": lambda val: "futures" if val else "spot",
-            "when": lambda x: x["exchange_name"] in ["binance", "gate", "okx"],
+            "when": lambda x: x["exchange_name"] in ["binance", "gate", "okx", "bybit"],
         },
         {
             "type": "autocomplete",

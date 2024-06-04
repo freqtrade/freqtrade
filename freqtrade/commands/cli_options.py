@@ -450,6 +450,14 @@ AVAILABLE_CLI_OPTIONS = {
         "desired timeframe as specified as --timeframes/-t.",
         action="store_true",
     ),
+    "convert_trades": Arg(
+        "--convert",
+        help="Convert downloaded trades to OHLCV data. Only applicable in combination with "
+        "`--dl-trades`. "
+        "Will be automatic for exchanges which don't have historic OHLCV (e.g. Kraken). "
+        "If not provided, use `trades-to-ohlcv` to convert trades data to OHLCV data.",
+        action="store_true",
+    ),
     "format_from_trades": Arg(
         "--format-from",
         help="Source format for data conversion.",

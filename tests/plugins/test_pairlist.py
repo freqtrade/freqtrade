@@ -773,6 +773,7 @@ def test_VolumePairList_whitelist_gen(
     whitelist_result,
     caplog,
 ) -> None:
+    whitelist_conf["runmode"] = "backtest"
     whitelist_conf["pairlists"] = pairlists
     whitelist_conf["stake_currency"] = base_currency
 
@@ -1270,6 +1271,7 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
         {"method": "StaticPairList"},
         {"method": "ShuffleFilter", "seed": 43},
     ]
+    whitelist_conf["runmode"] = "backtest"
 
     exchange = get_patched_exchange(mocker, whitelist_conf)
     plm = PairListManager(exchange, whitelist_conf)
@@ -2306,7 +2308,7 @@ def test_MarketCapPairList_filter(
     )
 
     mocker.patch(
-        "freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
         return_value=test_value,
     )
 
@@ -2344,7 +2346,7 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     )
 
     mocker.patch(
-        "freqtrade.plugins.pairlist.MarketCapPairList.CoinGeckoAPI.get_coins_markets",
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
         return_value=test_value,
     )
 

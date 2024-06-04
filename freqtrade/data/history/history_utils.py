@@ -629,17 +629,20 @@ def download_data_main(config: Config) -> None:
                 trading_mode=config.get("trading_mode", TradingMode.SPOT),
             )
 
-            # Convert downloaded trade data to different timeframes
-            convert_trades_to_ohlcv(
-                pairs=expanded_pairs,
-                timeframes=config["timeframes"],
-                datadir=config["datadir"],
-                timerange=timerange,
-                erase=bool(config.get("erase")),
-                data_format_ohlcv=config["dataformat_ohlcv"],
-                data_format_trades=config["dataformat_trades"],
-                candle_type=config.get("candle_type_def", CandleType.SPOT),
-            )
+            if config.get("convert_trades") or not exchange.get_option("ohlcv_has_history", True):
+                # Convert downloaded trade data to different timeframes
+                # Only auto-convert for exchanges without historic klines
+
+                convert_trades_to_ohlcv(
+                    pairs=expanded_pairs,
+                    timeframes=config["timeframes"],
+                    datadir=config["datadir"],
+                    timerange=timerange,
+                    erase=bool(config.get("erase")),
+                    data_format_ohlcv=config["dataformat_ohlcv"],
+                    data_format_trades=config["dataformat_trades"],
+                    candle_type=config.get("candle_type_def", CandleType.SPOT),
+                )
         else:
             if not exchange.get_option("ohlcv_has_history", True):
                 raise OperationalException(

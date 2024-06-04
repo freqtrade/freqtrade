@@ -19,7 +19,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.data.history import load_data
-from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
+from freqtrade.data.metrics import DrawDownResult, calculate_expectancy, calculate_max_drawdown
 from freqtrade.enums import (
     CandleType,
     ExitCheckTuple,
@@ -107,7 +107,7 @@ class RPC:
         self._freqtrade = freqtrade
         self._config: Config = freqtrade.config
         if self._config.get("fiat_display_currency"):
-            self._fiat_converter = CryptoToFiatConverter()
+            self._fiat_converter = CryptoToFiatConverter(self._config)
 
     @staticmethod
     def _rpc_show_config(
@@ -592,21 +592,10 @@ class RPC:
 
         expectancy, expectancy_ratio = calculate_expectancy(trades_df)
 
-        max_drawdown_abs = 0.0
-        max_drawdown = 0.0
-        drawdown_start: Optional[datetime] = None
-        drawdown_end: Optional[datetime] = None
-        dd_high_val = dd_low_val = 0.0
+        drawdown = DrawDownResult()
         if len(trades_df) > 0:
             try:
-                (
-                    max_drawdown_abs,
-                    drawdown_start,
-                    drawdown_end,
-                    dd_high_val,
-                    dd_low_val,
-                    max_drawdown,
-                ) = calculate_max_drawdown(
+                drawdown = calculate_max_drawdown(
                     trades_df,
                     value_col="profit_abs",
                     date_col="close_date_dt",
@@ -663,14 +652,14 @@ class RPC:
             "winrate": winrate,
             "expectancy": expectancy,
             "expectancy_ratio": expectancy_ratio,
-            "max_drawdown": max_drawdown,
-            "max_drawdown_abs": max_drawdown_abs,
-            "max_drawdown_start": format_date(drawdown_start),
-            "max_drawdown_start_timestamp": dt_ts_def(drawdown_start),
-            "max_drawdown_end": format_date(drawdown_end),
-            "max_drawdown_end_timestamp": dt_ts_def(drawdown_end),
-            "drawdown_high": dd_high_val,
-            "drawdown_low": dd_low_val,
+            "max_drawdown": drawdown.relative_account_drawdown,
+            "max_drawdown_abs": drawdown.drawdown_abs,
+            "max_drawdown_start": format_date(drawdown.high_date),
+            "max_drawdown_start_timestamp": dt_ts_def(drawdown.high_date),
+            "max_drawdown_end": format_date(drawdown.low_date),
+            "max_drawdown_end_timestamp": dt_ts_def(drawdown.low_date),
+            "drawdown_high": drawdown.high_value,
+            "drawdown_low": drawdown.low_value,
             "trading_volume": trading_volume,
             "bot_start_timestamp": dt_ts_def(bot_start, 0),
             "bot_start_date": format_date(bot_start),

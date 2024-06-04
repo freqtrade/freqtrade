@@ -659,6 +659,16 @@ def test_validate_default_conf(default_conf) -> None:
     validate_config_schema(default_conf)
 
 
+@pytest.mark.parametrize("fiat", ["EUR", "USD", "", None])
+def test_validate_fiat_currency_options(default_conf, fiat) -> None:
+    # Validate via our validator - we allow setting defaults!
+    if fiat is not None:
+        default_conf["fiat_display_currency"] = fiat
+    else:
+        del default_conf["fiat_display_currency"]
+    validate_config_schema(default_conf)
+
+
 def test_validate_max_open_trades(default_conf):
     default_conf["max_open_trades"] = float("inf")
     default_conf["stake_amount"] = "unlimited"

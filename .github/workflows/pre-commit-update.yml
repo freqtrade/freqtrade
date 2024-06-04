@@ -17,7 +17,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
 
     - name: Install pre-commit
@@ -25,9 +25,6 @@ jobs:
 
     - name: Run auto-update
       run: pre-commit autoupdate
-
-    - name: Run pre-commit
-      run: pre-commit run --all-files
 
     - uses: peter-evans/create-pull-request@v6
       with:

@@ -142,6 +142,7 @@ ARGS_DOWNLOAD_DATA = [
     "include_inactive",
     "timerange",
     "download_trades",
+    "convert_trades",
     "exchange",
     "timeframes",
     "erase",

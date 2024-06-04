@@ -318,6 +318,17 @@ jobs:
       run: |
         mypy freqtrade scripts tests
 
+    - name: Run Pester tests (PowerShell)
+      run: |
+        $PSVersionTable
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force
+        $Error.clear()
+        Invoke-Pester -Path "tests" -CI
+        if ($Error.Length -gt 0) {exit 1}
+
+      shell: powershell
+
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
@@ -334,7 +345,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
 
     - name: pre-commit dependencies
       run: |
@@ -348,7 +359,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - uses: pre-commit/action@v3.0.1
 
   docs-check:
@@ -363,7 +374,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Documentation build
       run: |
@@ -389,7 +400,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Cache_dependencies
       uses: actions/cache@v4
@@ -471,7 +482,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Build distribution
       run: |
@@ -542,7 +553,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Extract branch name
       id: extract-branch
@@ -565,12 +576,12 @@ jobs:
           sudo systemctl restart docker
           docker version -f '{{.Server.Experimental}}'
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
     - name: Set up Docker Buildx
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v3.3.1
-      with:
-        buildx-version: latest
-        qemu-version: latest
+      uses: docker/setup-buildx-action@v3
 
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}

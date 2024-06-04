@@ -699,18 +699,20 @@ def test_process_trade_creation(
 
 
 def test_process_exchange_failures(default_conf_usdt, ticker_usdt, mocker) -> None:
+    # TODO: Move this test to test_worker
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         EXMS,
         fetch_ticker=ticker_usdt,
-        reload_markets=MagicMock(side_effect=TemporaryError),
+        reload_markets=MagicMock(),
         create_order=MagicMock(side_effect=TemporaryError),
     )
     sleep_mock = mocker.patch("time.sleep")
 
     worker = Worker(args=None, config=default_conf_usdt)
     patch_get_signal(worker.freqtrade)
+    mocker.patch(f"{EXMS}.reload_markets", MagicMock(side_effect=TemporaryError))
 
     worker._process_running()
     assert sleep_mock.called is True
@@ -1144,6 +1146,36 @@ def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order
 
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     assert not freqtrade.execute_entry(pair, stake_amount)
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_entry_fully_canceled_on_create(
+    mocker, default_conf_usdt, fee, limit_order_open, is_short
+) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    mock_hce = mocker.spy(freqtrade, "handle_cancel_enter")
+    order = limit_order_open[entry_side(is_short)]
+    pair = "ETH/USDT"
+    order["symbol"] = pair
+    order["status"] = "canceled"
+    order["filled"] = 0.0
+
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=MagicMock(return_value={"bid": 1.9, "ask": 2.2, "last": 1.9}),
+        create_order=MagicMock(return_value=order),
+        get_rate=MagicMock(return_value=0.11),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+    stake_amount = 2
+
+    assert freqtrade.execute_entry(pair, stake_amount)
+    assert mock_hce.call_count == 1
+    # an order that immediately cancels completely should delete the order.
+    trades = Trade.get_trades().all()
+    assert len(trades) == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -4976,6 +5008,47 @@ def test_handle_onexchange_order_exit(mocker, default_conf_usdt, limit_order, is
     assert trade.is_open is True
     assert trade.exit_reason is None
     assert trade.amount == 5.0
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_onexchange_order_fully_canceled_enter(
+    mocker, default_conf_usdt, limit_order, is_short, caplog
+):
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    entry_order = limit_order[entry_side(is_short)]
+    entry_order["status"] = "canceled"
+    entry_order["filled"] = 0.0
+    mock_fo = mocker.patch(
+        f"{EXMS}.fetch_orders",
+        return_value=[
+            entry_order,
+        ],
+    )
+    mocker.patch(f"{EXMS}.get_rate", return_value=entry_order["price"])
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=entry_order["price"],
+        open_date=dt_now(),
+        stake_amount=entry_order["cost"],
+        amount=entry_order["amount"],
+        exchange="binance",
+        is_short=is_short,
+        leverage=1,
+    )
+
+    trade.orders.append(Order.parse_from_ccxt_object(entry_order, "ADA/USDT", entry_side(is_short)))
+    Trade.session.add(trade)
+    assert freqtrade.handle_onexchange_order(trade) is True
+    assert log_has_re(r"Trade only had fully canceled entry orders\. .*", caplog)
+    assert mock_fo.call_count == 1
+    trades = Trade.get_trades().all()
+    assert len(trades) == 0
 
 
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
