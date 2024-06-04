@@ -530,14 +530,19 @@ class Exchange:
             amount, self.get_precision_amount(pair), self.precisionMode, contract_size
         )
 
-    def _load_async_markets(self, reload: bool = False) -> None:
+    def _load_async_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
             if self._api_async:
-                self.loop.run_until_complete(self._api_async.load_markets(reload=reload, params={}))
+                markets = self.loop.run_until_complete(
+                    self._api_async.load_markets(reload=reload, params={})
+                )
 
-        except (asyncio.TimeoutError, ccxt.BaseError) as e:
-            logger.warning("Could not load async markets. Reason: %s", e)
-            return
+                if isinstance(markets, Exception):
+                    raise markets
+                return markets
+        except asyncio.TimeoutError as e:
+            logger.warning("Could not load markets. Reason: %s", e)
+            raise TemporaryError from e
 
     def reload_markets(self, force: bool = False, *, load_leverage_tiers: bool = True) -> None:
         """
@@ -554,9 +559,9 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._markets = self._api.load_markets(reload=True, params={})
-            # Also reload async markets to avoid issues with newly listed pairs
-            self._load_async_markets(reload=True)
+            # Reload async markets, then assign them to sync api
+            self._markets = self._load_async_markets(reload=True)
+            self._api.set_markets(self._api_async.markets, self._api_async.currencies)
             self._last_markets_refresh = dt_ts()
 
             if is_initial and self._ft_has["needs_trading_fees"]:
@@ -564,7 +569,7 @@ class Exchange:
 
             if load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
                 self.fill_leverage_tiers()
-        except ccxt.BaseError:
+        except (ccxt.BaseError, TemporaryError):
             logger.exception("Could not load markets.")
 
     def validate_stakecurrency(self, stake_currency: str) -> None:
