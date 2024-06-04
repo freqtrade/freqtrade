@@ -233,7 +233,7 @@ class Exchange:
         self.required_candle_call_count = 1
         if validate:
             # Initial markets load
-            self._load_markets()
+            self.reload_markets(True, load_leverage_tiers=False)
             self.validate_config(config)
             self._startup_candle_count: int = config.get("startup_candle_count", 0)
             self.required_candle_call_count = self.validate_required_startup_candles(
@@ -354,7 +354,7 @@ class Exchange:
         """exchange ccxt markets"""
         if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")
-            self._load_markets()
+            self.reload_markets(True)
         return self._markets
 
     @property
@@ -539,21 +539,13 @@ class Exchange:
             logger.warning("Could not load async markets. Reason: %s", e)
             return
 
-    def _load_markets(self) -> None:
-        """Initialize markets both sync and async"""
-        try:
-            self._markets = self._api.load_markets(params={})
-            self._load_async_markets()
-            self._last_markets_refresh = dt_ts()
-            if self._ft_has["needs_trading_fees"]:
-                self._trading_fees = self.fetch_trading_fees()
+    def reload_markets(self, force: bool = False, *, load_leverage_tiers: bool = True) -> None:
+        """
+        Reload / Initialize markets both sync and async if refresh interval has passed
 
-        except ccxt.BaseError:
-            logger.exception("Unable to initialize markets.")
-
-    def reload_markets(self, force: bool = False) -> None:
-        """Reload markets both sync and async if refresh interval has passed"""
+        """
         # Check whether markets have to be reloaded
+        is_initial = self._last_markets_refresh == 0
         if (
             not force
             and self._last_markets_refresh > 0
@@ -566,9 +558,14 @@ class Exchange:
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = dt_ts()
-            self.fill_leverage_tiers()
+
+            if is_initial and self._ft_has["needs_trading_fees"]:
+                self._trading_fees = self.fetch_trading_fees()
+
+            if load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
+                self.fill_leverage_tiers()
         except ccxt.BaseError:
-            logger.exception("Could not reload markets.")
+            logger.exception("Could not load markets.")
 
     def validate_stakecurrency(self, stake_currency: str) -> None:
         """
