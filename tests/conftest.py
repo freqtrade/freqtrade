@@ -238,7 +238,6 @@ def patched_configuration_load_config_file(mocker, config) -> None:
 def patch_exchange(
     mocker, api_mock=None, id="binance", mock_markets=True, mock_supported_modes=True
 ) -> None:
-    mocker.patch(f"{EXMS}._load_async_markets", return_value={})
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.validate_timeframes", MagicMock())
     mocker.patch(f"{EXMS}.id", PropertyMock(return_value=id))
@@ -248,6 +247,7 @@ def patch_exchange(
     mocker.patch("freqtrade.exchange.bybit.Bybit.cache_leverage_tiers")
 
     if mock_markets:
+        mocker.patch(f"{EXMS}._load_async_markets", return_value={})
         if isinstance(mock_markets, bool):
             mock_markets = get_markets()
         mocker.patch(f"{EXMS}.markets", PropertyMock(return_value=mock_markets))
