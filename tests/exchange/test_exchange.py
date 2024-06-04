@@ -695,7 +695,7 @@ def test_get_pair_base_currency(default_conf, mocker, pair, expected):
     assert ex.get_pair_base_currency(pair) == expected
 
 
-def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
+def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(
         return_value={
@@ -713,6 +713,8 @@ def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs d
     mocker.patch(f"{EXMS}._load_async_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
+    # test exchange.validate_pairs directly
+    # No assert - but this should not fail (!)
     Exchange(default_conf)
 
 
