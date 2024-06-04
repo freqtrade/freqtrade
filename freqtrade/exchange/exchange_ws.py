@@ -45,10 +45,13 @@ class ExchangeWS:
         self._klines_watching.clear()
         for task in self._background_tasks:
             task.cancel()
-        if hasattr(self, "_loop"):
+        if hasattr(self, "_loop") and not self._loop.is_closed():
             self.reset_connections()
 
             self._loop.call_soon_threadsafe(self._loop.stop)
+            time.sleep(0.1)
+            if not self._loop.is_closed():
+                self._loop.close()
 
         self._thread.join()
         logger.debug("Stopped")
@@ -57,7 +60,7 @@ class ExchangeWS:
         """
         Reset all connections - avoids "connection-reset" errors that happen after ~9 days
         """
-        if hasattr(self, "_loop"):
+        if hasattr(self, "_loop") and not self._loop.is_closed():
             logger.info("Resetting WS connections.")
             asyncio.run_coroutine_threadsafe(self._cleanup_async(), loop=self._loop)
             while not self.__cleanup_called:
