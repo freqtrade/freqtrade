@@ -181,7 +181,7 @@ def test_remove_exchange_credentials(default_conf) -> None:
 
 
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     aei_mock = mocker.patch(f"{EXMS}.additional_exchange_init")
 
@@ -518,7 +518,7 @@ def test__load_async_markets(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}._init_ccxt")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}._load_markets")
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
     exchange = Exchange(default_conf)
@@ -544,7 +544,7 @@ def test__load_markets(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
     Exchange(default_conf)
-    assert log_has("Unable to initialize markets.", caplog)
+    assert log_has("Could not load markets.", caplog)
 
     expected_return = {"ETH/BTC": "available"}
     api_mock = MagicMock()
@@ -602,10 +602,11 @@ def test_reload_markets_exception(default_conf, mocker, caplog):
     default_conf["exchange"]["markets_refresh_interval"] = 10
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
 
+    exchange._last_markets_refresh = 2
     # less than 10 minutes have passed, no reload
     exchange.reload_markets()
-    assert exchange._last_markets_refresh == 0
-    assert log_has_re(r"Could not reload markets.*", caplog)
+    assert exchange._last_markets_refresh == 2
+    assert log_has_re(r"Could not load markets\..*", caplog)
 
 
 @pytest.mark.parametrize("stake_currency", ["ETH", "BTC", "USDT"])
@@ -847,7 +848,7 @@ def test_validate_timeframes(default_conf, mocker, timeframe):
     type(api_mock).timeframes = timeframes
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -865,7 +866,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     type(api_mock).timeframes = timeframes
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -895,7 +896,7 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
     del api_mock.timeframes
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     with pytest.raises(
@@ -917,7 +918,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
     del api_mock.timeframes
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={"timeframes": None}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs", MagicMock())
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     with pytest.raises(
@@ -939,7 +940,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     type(api_mock).timeframes = timeframes
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -955,7 +956,7 @@ def test_validate_pricing(default_conf, mocker):
     }
     type(api_mock).has = PropertyMock(return_value=has)
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_trading_mode_and_margin_mode")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
@@ -991,7 +992,7 @@ def test_validate_ordertypes(default_conf, mocker):
 
     type(api_mock).has = PropertyMock(return_value={"createMarketOrder": True})
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -1050,7 +1051,7 @@ def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, 
     default_conf["margin_mode"] = MarginMode.ISOLATED
     type(api_mock).has = PropertyMock(return_value={"createMarketOrder": True})
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -1075,7 +1076,7 @@ def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, 
 def test_validate_order_types_not_in_config(default_conf, mocker):
     api_mock = MagicMock()
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}._load_markets", MagicMock(return_value={}))
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_pricing")
