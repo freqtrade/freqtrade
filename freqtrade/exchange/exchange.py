@@ -151,7 +151,7 @@ class Exchange:
         :return: None
         """
         self._api: ccxt.Exchange
-        self._api_async: ccxt_async.Exchange = None
+        self._api_async: ccxt_async.Exchange
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
@@ -532,14 +532,13 @@ class Exchange:
 
     def _load_async_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
-            if self._api_async:
-                markets = self.loop.run_until_complete(
-                    self._api_async.load_markets(reload=reload, params={})
-                )
+            markets = self.loop.run_until_complete(
+                self._api_async.load_markets(reload=reload, params={})
+            )
 
-                if isinstance(markets, Exception):
-                    raise markets
-                return markets
+            if isinstance(markets, Exception):
+                raise markets
+            return markets
         except asyncio.TimeoutError as e:
             logger.warning("Could not load markets. Reason: %s", e)
             raise TemporaryError from e
