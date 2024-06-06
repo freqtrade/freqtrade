@@ -154,8 +154,6 @@ def populate_dataframe_with_trades(
                 logger.debug(f"Found NO candles for trades starting with {candle_start}")
         logger.debug(f"trades.groups_keys in {time.time() - start_time} seconds")
 
-        logger.debug(f"trades.singleton_iterate in {time.time() - start_time} seconds")
-
     except Exception as e:
         logger.exception("Error populating dataframe with trades:", e)
         raise DependencyException(e)
