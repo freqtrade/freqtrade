@@ -2630,6 +2630,7 @@ class Exchange:
                         if not all_stored_ticks_df.empty:
                             if all_stored_ticks_df.iloc[0]["timestamp"] <= first_candle_ms:
                                 last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
+                                from_id = all_stored_ticks_df.iloc[-1]["id"]
                                 # only use cached if it's closer than first_candle_ms
                                 since_ms = (
                                     last_cached_ms
@@ -2650,9 +2651,9 @@ class Exchange:
                         from_id=from_id,
                     )
 
-                except Exception as e:
+                except Exception:
                     logger.exception(f"Refreshing TRADES data for {pair} failed")
-                    raise e
+                    continue
 
                 if new_ticks:
                     all_stored_ticks_list = all_stored_ticks_df[
