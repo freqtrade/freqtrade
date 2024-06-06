@@ -2,16 +2,23 @@
 
 This guide walks you through utilizing public trade data for advanced orderflow analysis in Freqtrade.
 
+!!! Warning "Experimental Feature"
+    The orderflow feature is currently in beta and may be subject to changes in future releases. Please report any issues or feedback on the [Freqtrade GitHub repository](https://github.com/freqtrade/freqtrade/issues).
+
+!!! Warning "Performance"
+    Orderflow requires raw trades data. This data is rather large, and can cause a slow initial startup, when freqtrade needs to download the trades data for the last X candles. It can also cause increased memory usage. Please ensure you have sufficient resources available.
 
 ## Getting Started
 
 1. **Enable Public Trades:** in your `config.json` file, set the `use_public_trades` option to true under the `exchange` section.
+
 ```json
 "exchange": {
    ...
    "use_public_trades": true,
 }
 ```
+
 2. **Configure Orderflow Processing:** Define your desired settings for orderflow processing within the orderflow section of config.json. Here, you can adjust factors like:
 
 - `scale`: This controls the price bin size for the footprint chart.
@@ -36,31 +43,31 @@ To download historical trade data for backtesting, use the --dl-trades flag with
 freqtrade download-data -p BTC/USDT:USDT --timerange 20230101-  --trading-mode futures  --timeframes 5m --dl-trades
 ```
 
-
 ## Accessing Orderflow Data
 
 Once activated, several new columns become available in your dataframe:
 ``` python
 
-    dataframe['trades'] # Contains information about each individual trade.
-    dataframe['orderflow'] # Represents a footprint chart dataframe (see below)
-    dataframe['bid'] # Total bid volume 
-    dataframe['ask'] # Total ask volume
-    dataframe['delta'] # Difference between ask and bid volume.
-    dataframe['min_delta'] # Minimum delta within the candle
-    dataframe['max_delta'] # Maximum delta within the candle
-    dataframe['total_trades'] # Total number of trades
-    dataframe['stacked_imbalances_bid'] # Price level of stacked bid imbalance 
-    dataframe['stacked_imbalances_ask'] # Price level of stacked ask imbalance  
+    dataframe["trades"] # Contains information about each individual trade.
+    dataframe["orderflow"] # Represents a footprint chart dataframe (see below)
+    dataframe["bid"] # Total bid volume 
+    dataframe["ask"] # Total ask volume
+    dataframe["delta"] # Difference between ask and bid volume.
+    dataframe["min_delta"] # Minimum delta within the candle
+    dataframe["max_delta"] # Maximum delta within the candle
+    dataframe["total_trades"] # Total number of trades
+    dataframe["stacked_imbalances_bid"] # Price level of stacked bid imbalance 
+    dataframe["stacked_imbalances_ask"] # Price level of stacked ask imbalance  
 ```
 
 You can access these columns in your strategy code for further analysis. Here's an example:
+
 ``` python
 def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     # Calculating cumulative delta
-    dataframe['cum_delta'] = cumulative_delta(dataframe['delta'])
+    dataframe["cum_delta"] = cumulative_delta(dataframe["delta"])
     # Accessing total trades
-    total_trades = dataframe['total_trades']
+    total_trades = dataframe["total_trades"]
     ...
 
 def cumulative_delta(delta: Series):
@@ -68,7 +75,8 @@ def cumulative_delta(delta: Series):
     return cumdelta
 
 ```
-### Footprint chart (dataframe['orderflow'])
+
+### Footprint chart (dataframe["orderflow"])
 
 This column provides a detailed breakdown of buy and sell orders at different price levels, offering valuable insights into order flow dynamics. The scale parameter in your configuration determines the price bin size for this representation
 
