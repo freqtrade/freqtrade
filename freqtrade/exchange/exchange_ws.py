@@ -70,6 +70,9 @@ class ExchangeWS:
     async def _cleanup_async(self) -> None:
         try:
             await self.ccxt_object.close()
+            # Clear the cache.
+            # Not doing this will cause problems on startup with dynamic pairlists
+            self.ccxt_object.ohlcvs.clear()
         except Exception:
             logger.exception("Exception in _cleanup_async")
         finally:
