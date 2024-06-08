@@ -509,7 +509,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog, tmp_pa
     assert "pair_whitelist" in config["exchange"]
     assert "datadir" in config
     assert log_has("Using data directory: {} ...".format("/foo/bar"), caplog)
-    assert log_has(f"Using user-data directory: {tmp_path}/freqtrade ...", caplog)
+    assert log_has(f"Using user-data directory: {tmp_path / 'freqtrade'} ...", caplog)
     assert "user_data_dir" in config
 
     assert "timeframe" in config

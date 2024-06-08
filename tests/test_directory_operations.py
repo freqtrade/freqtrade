@@ -28,10 +28,10 @@ def test_create_userdata_dir(mocker, tmp_path, caplog) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, "mkdir", MagicMock())
 
-    x = create_userdata_dir(f"{tmp_path}/bar", create_dir=True)
+    x = create_userdata_dir(tmp_path / "bar", create_dir=True)
     assert md.call_count == 10
     assert md.call_args[1]["parents"] is False
-    assert log_has(f'Created user-data directory: {f"{tmp_path}/bar"}', caplog)
+    assert log_has(f'Created user-data directory: {tmp_path / "bar"}', caplog)
     assert isinstance(x, Path)
     assert str(x) == f"{tmp_path}/bar"
 
@@ -78,7 +78,7 @@ def test_copy_sample_files(mocker, tmp_path) -> None:
 
     copy_sample_files(Path(f"{tmp_path}/bar"))
     assert copymock.call_count == 3
-    assert copymock.call_args_list[0][0][1] == str(f"{tmp_path}/bar/strategies/sample_strategy.py")
+    assert copymock.call_args_list[0][0][1] == str(tmp_path / "bar/strategies/sample_strategy.py")
     assert copymock.call_args_list[1][0][1] == str(
         f"{tmp_path}/bar/hyperopts/sample_hyperopt_loss.py"
     )
