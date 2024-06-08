@@ -165,7 +165,6 @@ max-complexity = 12
 ]
 "tests/**/*.py" = [
   "S101",  # allow assert in tests
-  "S108",  # temp usage ...
   "S104",  #  Possible binding to all interfaces
   "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
   "S105",  # Possible hardcoded password assigned to: "secret"

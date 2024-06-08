@@ -62,14 +62,12 @@ def test_create_userdata_dir_exists(mocker, tmp_path) -> None:
     assert md.call_count == 0
 
 
-def test_create_userdata_dir_exists_exception(mocker, default_conf, caplog) -> None:
+def test_create_userdata_dir_exists_exception(mocker, tmp_path) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     md = mocker.patch.object(Path, "mkdir", MagicMock())
 
-    with pytest.raises(
-        OperationalException, match=r"Directory `.{1,2}tmp.{1,2}bar` does not exist.*"
-    ):
-        create_userdata_dir("/tmp/bar", create_dir=False)
+    with pytest.raises(OperationalException, match=r"Directory `.*.{1,2}bar` does not exist.*"):
+        create_userdata_dir(f"{tmp_path}/bar", create_dir=False)
     assert md.call_count == 0
 
 
@@ -89,26 +87,24 @@ def test_copy_sample_files(mocker, tmp_path) -> None:
     )
 
 
-def test_copy_sample_files_errors(mocker, default_conf, caplog) -> None:
+def test_copy_sample_files_errors(mocker, tmp_path, caplog) -> None:
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=False))
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     mocker.patch("shutil.copy", MagicMock())
-    with pytest.raises(
-        OperationalException, match=r"Directory `.{1,2}tmp.{1,2}bar` does not exist\."
-    ):
-        copy_sample_files(Path("/tmp/bar"))
+    with pytest.raises(OperationalException, match=r"Directory `.*.{1,2}bar` does not exist\."):
+        copy_sample_files(Path(f"{tmp_path}/bar"))
 
     mocker.patch.object(Path, "is_dir", MagicMock(side_effect=[True, False]))
 
     with pytest.raises(
         OperationalException,
-        match=r"Directory `.{1,2}tmp.{1,2}bar.{1,2}strategies` does not exist\.",
+        match=r"Directory `.*.{1,2}bar.{1,2}strategies` does not exist\.",
     ):
-        copy_sample_files(Path("/tmp/bar"))
+        copy_sample_files(Path(f"{tmp_path}/bar"))
     mocker.patch.object(Path, "is_dir", MagicMock(return_value=True))
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    copy_sample_files(Path("/tmp/bar"))
+    copy_sample_files(Path(f"{tmp_path}/bar"))
     assert log_has_re(r"File `.*` exists already, not deploying sample file\.", caplog)
     caplog.clear()
-    copy_sample_files(Path("/tmp/bar"), overwrite=True)
+    copy_sample_files(Path(f"{tmp_path}/bar"), overwrite=True)
     assert log_has_re(r"File `.*` exists already, overwriting\.", caplog)
