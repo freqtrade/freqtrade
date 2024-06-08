@@ -39,7 +39,7 @@ class ShuffleFilter(IPairList):
             self._seed = pairlistconfig.get("seed")
             logger.info(f"Backtesting mode detected, applying seed value: {self._seed}")
 
-        self._random = random.Random(self._seed)
+        self._random = random.Random(self._seed)  # noqa: S311
         self._shuffle_freq: ShuffleValues = pairlistconfig.get("shuffle_frequency", "candle")
         self.__pairlist_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config["timeframe"])
