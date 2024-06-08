@@ -33,7 +33,7 @@ def test_create_userdata_dir(mocker, tmp_path, caplog) -> None:
     assert md.call_args[1]["parents"] is False
     assert log_has(f'Created user-data directory: {tmp_path / "bar"}', caplog)
     assert isinstance(x, Path)
-    assert str(x) == f"{tmp_path}/bar"
+    assert str(x) == str(tmp_path / "bar")
 
 
 def test_create_userdata_dir_and_chown(mocker, tmp_path, caplog) -> None:
@@ -80,10 +80,10 @@ def test_copy_sample_files(mocker, tmp_path) -> None:
     assert copymock.call_count == 3
     assert copymock.call_args_list[0][0][1] == str(tmp_path / "bar/strategies/sample_strategy.py")
     assert copymock.call_args_list[1][0][1] == str(
-        f"{tmp_path}/bar/hyperopts/sample_hyperopt_loss.py"
+        tmp_path / "bar/hyperopts/sample_hyperopt_loss.py"
     )
     assert copymock.call_args_list[2][0][1] == str(
-        f"{tmp_path}/bar/notebooks/strategy_analysis_example.ipynb"
+        tmp_path / "bar/notebooks/strategy_analysis_example.ipynb"
     )
 
 
