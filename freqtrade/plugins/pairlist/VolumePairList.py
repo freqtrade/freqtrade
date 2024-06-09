@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Literal
 
 from cachetools import TTLCache
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Tickers
@@ -27,15 +27,8 @@ SORT_VALUES = ["quoteVolume"]
 class VolumePairList(IPairList):
     is_pairlist_generator = True
 
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(

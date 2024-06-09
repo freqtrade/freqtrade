@@ -5,13 +5,13 @@ Volatility pairlist filter
 import logging
 import sys
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 from cachetools import TTLCache
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
@@ -27,15 +27,8 @@ class VolatilityFilter(IPairList):
     Filters pairs by volatility
     """
 
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self._days = self._pairlistconfig.get("lookback_days", 10)
         self._min_volatility = self._pairlistconfig.get("min_volatility", 0)

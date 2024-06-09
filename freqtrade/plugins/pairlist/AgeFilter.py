@@ -5,11 +5,11 @@ Minimum age (days listed) pair list filter
 import logging
 from copy import deepcopy
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
@@ -21,15 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class AgeFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         # Checked symbols cache (dictionary of ticker symbol => timestamp)
         self._symbolsChecked: Dict[str, int] = {}

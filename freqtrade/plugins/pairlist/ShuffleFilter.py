@@ -4,9 +4,8 @@ Shuffle pair list filter
 
 import logging
 import random
-from typing import Any, Dict, List, Literal
+from typing import Dict, List, Literal
 
-from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import Tickers
@@ -20,15 +19,8 @@ ShuffleValues = Literal["candle", "iteration"]
 
 
 class ShuffleFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         # Apply seed in backtesting mode to get comparable results,
         # but not in live modes to get a non-repeating order of pairs during live modes.

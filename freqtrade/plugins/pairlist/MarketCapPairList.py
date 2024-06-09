@@ -5,11 +5,10 @@ Provides dynamic pair list based on Market Cap
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from cachetools import TTLCache
 
-from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
@@ -22,15 +21,8 @@ logger = logging.getLogger(__name__)
 class MarketCapPairList(IPairList):
     is_pairlist_generator = True
 
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(

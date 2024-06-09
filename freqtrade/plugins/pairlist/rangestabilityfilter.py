@@ -4,12 +4,12 @@ Rate of change pairlist filter
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from cachetools import TTLCache
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
@@ -21,15 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class RangeStabilityFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self._days = self._pairlistconfig.get("lookback_days", 10)
         self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
