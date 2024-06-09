@@ -3,9 +3,8 @@ Full trade slots pair list filter
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import List
 
-from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.IPairList import IPairList
