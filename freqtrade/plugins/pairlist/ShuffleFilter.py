@@ -32,15 +32,15 @@ class ShuffleFilter(IPairList):
 
         # Apply seed in backtesting mode to get comparable results,
         # but not in live modes to get a non-repeating order of pairs during live modes.
-        if config.get("runmode") in (RunMode.LIVE, RunMode.DRY_RUN):
+        if self._config.get("runmode") in (RunMode.LIVE, RunMode.DRY_RUN):
             self._seed = None
             logger.info("Live mode detected, not applying seed.")
         else:
-            self._seed = pairlistconfig.get("seed")
+            self._seed = self._pairlistconfig.get("seed")
             logger.info(f"Backtesting mode detected, applying seed value: {self._seed}")
 
         self._random = random.Random(self._seed)  # noqa: S311
-        self._shuffle_freq: ShuffleValues = pairlistconfig.get("shuffle_frequency", "candle")
+        self._shuffle_freq: ShuffleValues = self._pairlistconfig.get("shuffle_frequency", "candle")
         self.__pairlist_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config["timeframe"])
         )

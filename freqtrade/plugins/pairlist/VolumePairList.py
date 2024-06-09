@@ -43,7 +43,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"'
             )
 
-        self._stake_currency = config["stake_currency"]
+        self._stake_currency = self._config["stake_currency"]
         self._number_pairs = self._pairlistconfig["number_assets"]
         self._sort_key: Literal["quoteVolume"] = self._pairlistconfig.get("sort_key", "quoteVolume")
         self._min_value = self._pairlistconfig.get("min_value", 0)
@@ -94,7 +94,7 @@ class VolumePairList(IPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(f"key {self._sort_key} not in {SORT_VALUES}")
 
-        candle_limit = exchange.ohlcv_candle_limit(
+        candle_limit = self._exchange.ohlcv_candle_limit(
             self._lookback_timeframe, self._config["candle_type_def"]
         )
         if self._lookback_period < 0:

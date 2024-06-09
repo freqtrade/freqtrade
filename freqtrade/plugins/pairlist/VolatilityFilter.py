@@ -37,16 +37,16 @@ class VolatilityFilter(IPairList):
     ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._days = pairlistconfig.get("lookback_days", 10)
-        self._min_volatility = pairlistconfig.get("min_volatility", 0)
-        self._max_volatility = pairlistconfig.get("max_volatility", sys.maxsize)
-        self._refresh_period = pairlistconfig.get("refresh_period", 1440)
+        self._days = self._pairlistconfig.get("lookback_days", 10)
+        self._min_volatility = self._pairlistconfig.get("min_volatility", 0)
+        self._max_volatility = self._pairlistconfig.get("max_volatility", sys.maxsize)
+        self._refresh_period = self._pairlistconfig.get("refresh_period", 1440)
         self._def_candletype = self._config["candle_type_def"]
-        self._sort_direction: Optional[str] = pairlistconfig.get("sort_direction", None)
+        self._sort_direction: Optional[str] = self._pairlistconfig.get("sort_direction", None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
+        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
         if self._days < 1:
             raise OperationalException("VolatilityFilter requires lookback_days to be >= 1")
         if self._days > candle_limit:

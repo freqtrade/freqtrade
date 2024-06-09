@@ -25,8 +25,8 @@ class OffsetFilter(IPairList):
     ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._offset = pairlistconfig.get("offset", 0)
-        self._number_pairs = pairlistconfig.get("number_assets", 0)
+        self._offset = self._pairlistconfig.get("offset", 0)
+        self._number_pairs = self._pairlistconfig.get("number_assets", 0)
 
         if self._offset < 0:
             raise OperationalException("OffsetFilter requires offset to be >= 0")

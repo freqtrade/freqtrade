@@ -31,16 +31,16 @@ class RangeStabilityFilter(IPairList):
     ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._days = pairlistconfig.get("lookback_days", 10)
-        self._min_rate_of_change = pairlistconfig.get("min_rate_of_change", 0.01)
-        self._max_rate_of_change = pairlistconfig.get("max_rate_of_change")
-        self._refresh_period = pairlistconfig.get("refresh_period", 86400)
+        self._days = self._pairlistconfig.get("lookback_days", 10)
+        self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
+        self._max_rate_of_change = self._pairlistconfig.get("max_rate_of_change")
+        self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
         self._def_candletype = self._config["candle_type_def"]
-        self._sort_direction: Optional[str] = pairlistconfig.get("sort_direction", None)
+        self._sort_direction: Optional[str] = self._pairlistconfig.get("sort_direction", None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
+        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
         if self._days < 1:
             raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
         if self._days > candle_limit:
