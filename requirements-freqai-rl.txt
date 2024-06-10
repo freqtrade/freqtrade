@@ -2,7 +2,7 @@
 -r requirements-freqai.txt
 
 # Required for freqai-rl
-torch==2.2.2
+torch==2.3.1
 gymnasium==0.29.1
 stable_baselines3==2.3.2
 sb3_contrib>=2.2.1
