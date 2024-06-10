@@ -25,7 +25,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-20.04, ubuntu-22.04 ]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12.3"]
 
     steps:
     - uses: actions/checkout@v4
@@ -134,7 +134,8 @@ jobs:
     strategy:
       matrix:
         os: [ "macos-12", "macos-13", "macos-14" ]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        # TODO: Remove 3.12 hard-pin once https://github.com/actions/setup-python/issues/883 is fixed.
+        python-version: ["3.9", "3.10", "3.11", "3.12.3"]
         exclude:
           - os: "macos-14"
             python-version: "3.9"
@@ -258,7 +259,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12.3"]
 
     steps:
     - uses: actions/checkout@v4
