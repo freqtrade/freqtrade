@@ -116,10 +116,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
                     "is_short": [False, False, False, False],
                     "stake_amount": [0.01, 0.01, 0.01, 0.01],
                     "exit_reason": [
-                        ExitType.ROI,
-                        ExitType.STOP_LOSS,
-                        ExitType.ROI,
-                        ExitType.FORCE_EXIT,
+                        ExitType.ROI.value,
+                        ExitType.STOP_LOSS.value,
+                        ExitType.ROI.value,
+                        ExitType.FORCE_EXIT.value,
                     ],
                 }
             ),
@@ -183,10 +183,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
                     "is_short": [False, False, False, False],
                     "stake_amount": [0.01, 0.01, 0.01, 0.01],
                     "exit_reason": [
-                        ExitType.ROI,
-                        ExitType.ROI,
-                        ExitType.STOP_LOSS,
-                        ExitType.FORCE_EXIT,
+                        ExitType.ROI.value,
+                        ExitType.ROI.value,
+                        ExitType.STOP_LOSS.value,
+                        ExitType.FORCE_EXIT.value,
                     ],
                 }
             ),
@@ -444,7 +444,7 @@ def test_text_table_exit_reason():
             "wins": [2, 0, 0],
             "draws": [0, 0, 0],
             "losses": [0, 0, 1],
-            "exit_reason": [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS],
+            "exit_reason": [ExitType.ROI.value, ExitType.ROI.value, ExitType.STOP_LOSS.value],
         }
     )
 
