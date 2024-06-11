@@ -1,7 +1,7 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
 from pandas import DataFrame, Series, concat, to_datetime
@@ -141,7 +141,10 @@ def generate_pair_metrics(
 
 
 def generate_tag_metrics(
-    tag_type: str, starting_balance: int, results: DataFrame, skip_nan: bool = False
+    tag_type: Literal["enter_tag", "exit_reason"],
+    starting_balance: int,
+    results: DataFrame,
+    skip_nan: bool = False,
 ) -> List[Dict]:
     """
     Generates and returns a list of metrics for the given tag trades and the results dataframe
