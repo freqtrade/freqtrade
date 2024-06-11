@@ -157,12 +157,11 @@ def generate_tag_metrics(
     tabular_data = []
 
     if tag_type in results.columns:
-        for tag, count in results[tag_type].value_counts().items():
-            result = results[results[tag_type] == tag]
-            if skip_nan and result["profit_abs"].isnull().all():
+        for tags, group in results.groupby(tag_type):
+            if skip_nan and group["profit_abs"].isnull().all():
                 continue
 
-            tabular_data.append(_generate_result_line(result, starting_balance, tag))
+            tabular_data.append(_generate_result_line(group, starting_balance, tags))
 
         # Sort by total profit %:
         tabular_data = sorted(tabular_data, key=lambda k: k["profit_total_abs"], reverse=True)
