@@ -68,7 +68,9 @@ def generate_rejected_signals(
     return rejected_candles_only
 
 
-def _generate_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
+def _generate_result_line(
+    result: DataFrame, starting_balance: int, first_column: Union[str, List[str]]
+) -> Dict:
     """
     Generate one result dict, with "first_column" as key.
     """
@@ -141,7 +143,7 @@ def generate_pair_metrics(
 
 
 def generate_tag_metrics(
-    tag_type: Literal["enter_tag", "exit_reason"],
+    tag_type: Union[Literal["enter_tag", "exit_reason"], List[Literal["enter_tag", "exit_reason"]]],
     starting_balance: int,
     results: DataFrame,
     skip_nan: bool = False,
@@ -156,7 +158,9 @@ def generate_tag_metrics(
 
     tabular_data = []
 
-    if tag_type in results.columns:
+    if all(
+        tag in results.columns for tag in (tag_type if isinstance(tag_type, list) else [tag_type])
+    ):
         for tags, group in results.groupby(tag_type):
             if skip_nan and group["profit_abs"].isnull().all():
                 continue
@@ -380,11 +384,17 @@ def generate_strategy_stats(
         skip_nan=False,
     )
 
-    enter_tag_results = generate_tag_metrics(
+    enter_tag_stats = generate_tag_metrics(
         "enter_tag", starting_balance=start_balance, results=results, skip_nan=False
     )
     exit_reason_stats = generate_tag_metrics(
         "exit_reason", starting_balance=start_balance, results=results, skip_nan=False
+    )
+    mix_tag_stats = generate_tag_metrics(
+        ["enter_tag", "exit_reason"],
+        starting_balance=start_balance,
+        results=results,
+        skip_nan=False,
     )
     left_open_results = generate_pair_metrics(
         pairlist,
@@ -427,8 +437,9 @@ def generate_strategy_stats(
         "best_pair": best_pair,
         "worst_pair": worst_pair,
         "results_per_pair": pair_results,
-        "results_per_enter_tag": enter_tag_results,
+        "results_per_enter_tag": enter_tag_stats,
         "exit_reason_summary": exit_reason_stats,
+        "mix_tag_stats": mix_tag_stats,
         "left_open_trades": left_open_results,
         "total_trades": len(results),
         "trade_count_long": len(results.loc[~results["is_short"]]),
