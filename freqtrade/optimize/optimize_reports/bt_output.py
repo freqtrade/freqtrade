@@ -390,24 +390,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         return message
 
 
-def show_backtest_result(
-    strategy: str, results: Dict[str, Any], stake_currency: str, backtest_breakdown: List[str]
-):
+def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
     """
-    Print results for one strategy
+    Print tag subresults (enter_tag, exit_reason_summary, mix_tag_stats)
     """
-    # Print results
-    print(f"Result for strategy {strategy}")
-    table = text_table_bt_results(results["results_per_pair"], stake_currency=stake_currency)
-    if isinstance(table, str):
-        print(" BACKTESTING REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
-    table = text_table_bt_results(results["left_open_trades"], stake_currency=stake_currency)
-    if isinstance(table, str) and len(table) > 0:
-        print(" LEFT OPEN TRADES REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
     if (enter_tags := results.get("results_per_enter_tag")) is not None:
         table = text_table_tags("enter_tag", enter_tags, stake_currency)
 
@@ -428,6 +414,27 @@ def show_backtest_result(
         if isinstance(table, str) and len(table) > 0:
             print(" MIXED TAG STATS ".center(len(table.splitlines()[0]), "="))
         print(table)
+
+
+def show_backtest_result(
+    strategy: str, results: Dict[str, Any], stake_currency: str, backtest_breakdown: List[str]
+):
+    """
+    Print results for one strategy
+    """
+    # Print results
+    print(f"Result for strategy {strategy}")
+    table = text_table_bt_results(results["results_per_pair"], stake_currency=stake_currency)
+    if isinstance(table, str):
+        print(" BACKTESTING REPORT ".center(len(table.splitlines()[0]), "="))
+    print(table)
+
+    table = text_table_bt_results(results["left_open_trades"], stake_currency=stake_currency)
+    if isinstance(table, str) and len(table) > 0:
+        print(" LEFT OPEN TRADES REPORT ".center(len(table.splitlines()[0]), "="))
+    print(table)
+
+    _show_tag_subresults(results, stake_currency)
 
     for period in backtest_breakdown:
         if period in results.get("periodic_breakdown", {}):
