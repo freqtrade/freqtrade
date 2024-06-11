@@ -20,7 +20,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
 
 
 def _get_line_header(
-    first_column: str, stake_currency: str, direction: str = "Entries"
+    first_column: str, stake_currency: str, direction: str = "Trades"
 ) -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
@@ -54,7 +54,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     :return: pretty printed table with tabulate as string
     """
 
-    headers = _get_line_header("Pair", stake_currency)
+    headers = _get_line_header("Pair", stake_currency, "Trades")
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
@@ -81,7 +81,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     """
     fallback: str = ""
     if tag_type == "enter_tag":
-        headers = _get_line_header("TAG", stake_currency)
+        headers = _get_line_header("TAG", stake_currency, "Entries")
     else:
         headers = _get_line_header("Exit Reason", stake_currency, "Exits")
         fallback = "exit_reason"
@@ -144,7 +144,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
-    headers = _get_line_header("Strategy", stake_currency)
+    headers = _get_line_header("Strategy", stake_currency, "Trades")
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
     headers.append("Drawdown")
