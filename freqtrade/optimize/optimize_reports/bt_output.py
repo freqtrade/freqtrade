@@ -81,7 +81,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     """
     fallback: str = ""
     if tag_type == "enter_tag":
-        headers = _get_line_header("TAG", stake_currency, "Entries")
+        headers = _get_line_header("Enter Tag", stake_currency, "Entries")
     else:
         headers = _get_line_header("Exit Reason", stake_currency, "Exits")
         fallback = "exit_reason"
