@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from tabulate import tabulate
 
@@ -20,7 +20,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
 
 
 def _get_line_header(
-    first_column: str, stake_currency: str, direction: str = "Trades"
+    first_column: Union[str, List[str]], stake_currency: str, direction: str = "Trades"
 ) -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
