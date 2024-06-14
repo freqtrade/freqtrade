@@ -3,9 +3,8 @@ Full trade slots pair list filter
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import List
 
-from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -15,16 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class FullTradesFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
-
     @property
     def needstickers(self) -> bool:
         """

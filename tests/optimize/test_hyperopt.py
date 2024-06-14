@@ -415,10 +415,10 @@ def test_hyperopt_format_results(hyperopt):
                 "is_short": [False, False, False, False],
                 "stake_amount": [0.01, 0.01, 0.01, 0.01],
                 "exit_reason": [
-                    ExitType.ROI,
-                    ExitType.STOP_LOSS,
-                    ExitType.ROI,
-                    ExitType.FORCE_EXIT,
+                    ExitType.ROI.value,
+                    ExitType.STOP_LOSS.value,
+                    ExitType.ROI.value,
+                    ExitType.FORCE_EXIT.value,
                 ],
             }
         ),
@@ -507,10 +507,10 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                 "is_short": [False, False, False, False],
                 "stake_amount": [0.01, 0.01, 0.01, 0.01],
                 "exit_reason": [
-                    ExitType.ROI,
-                    ExitType.STOP_LOSS,
-                    ExitType.ROI,
-                    ExitType.FORCE_EXIT,
+                    ExitType.ROI.value,
+                    ExitType.STOP_LOSS.value,
+                    ExitType.ROI.value,
+                    ExitType.FORCE_EXIT.value,
                 ],
             }
         ),

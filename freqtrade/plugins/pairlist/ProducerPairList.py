@@ -5,7 +5,7 @@ Provides pair list from Leader data
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
@@ -32,19 +32,12 @@ class ProducerPairList(IPairList):
 
     is_pairlist_generator = True
 
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Dict[str, Any],
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self._num_assets: int = self._pairlistconfig.get("number_assets", 0)
         self._producer_name = self._pairlistconfig.get("producer_name", "default")
-        if not config.get("external_message_consumer", {}).get("enabled"):
+        if not self._config.get("external_message_consumer", {}).get("enabled"):
             raise OperationalException(
                 "ProducerPairList requires external_message_consumer to be enabled."
             )

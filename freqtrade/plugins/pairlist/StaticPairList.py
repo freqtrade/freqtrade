@@ -6,9 +6,8 @@ Provides pair white list as it configured in config
 
 import logging
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from freqtrade.constants import Config
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
 
@@ -19,15 +18,8 @@ logger = logging.getLogger(__name__)
 class StaticPairList(IPairList):
     is_pairlist_generator = True
 
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self._allow_inactive = self._pairlistconfig.get("allow_inactive", False)
 
