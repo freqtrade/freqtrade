@@ -118,6 +118,14 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 freqtrade-client --config rest_config.json <command> [optional parameters]
 ```
 
+Commands with many arguments may require keyword arguments (for clarity) - which can be provided as follows:
+
+``` bash
+freqtrade-client --config rest_config.json forceenter BTC/USDT long enter_tag=GutFeeling
+```
+
+This method will work for all arguments - check the "show" command for a list of available parameters.
+
 ??? Note "Programmatic use"
     The `freqtrade-client` package (installable independent of freqtrade) can be used in your own scripts to interact with the freqtrade API.
     to do so, please use the following:
