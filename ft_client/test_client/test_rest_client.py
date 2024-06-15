@@ -1,5 +1,5 @@
 import re
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import pytest
 from requests.exceptions import ConnectionError
@@ -167,3 +167,39 @@ def test_ft_client(mocker, capsys, caplog):
     )
     main_exec(args)
     assert log_has_re("Command whatever not defined", caplog)
+
+
+@pytest.mark.parametrize(
+    "params, expected_args, expected_kwargs",
+    [
+        ("forceenter BTC/USDT long", ["BTC/USDT", "long"], {}),
+        ("forceenter BTC/USDT long limit", ["BTC/USDT", "long", "limit"], {}),
+        (
+            # Skip most parameters, only providing enter_tag
+            "forceenter BTC/USDT long enter_tag=deadBeef",
+            ["BTC/USDT", "long"],
+            {"enter_tag": "deadBeef"},
+        ),
+        (
+            "forceenter BTC/USDT long invalid_key=123",
+            [],
+            SystemExit,
+            # {"invalid_key": "deadBeef"},
+        ),
+    ],
+)
+def test_ft_client_argparsing(mocker, params, expected_args, expected_kwargs, caplog):
+    mocked_method = params.split(" ")[0]
+    mm = mocker.patch(
+        f"freqtrade_client.ft_client.FtRestClient.{mocked_method}", return_value={}, autospec=True
+    )
+    args = add_arguments(params.split(" "))
+    if isinstance(expected_kwargs, dict):
+        main_exec(args)
+        mm.assert_called_once_with(ANY, *expected_args, **expected_kwargs)
+    else:
+        with pytest.raises(expected_kwargs):
+            main_exec(args)
+
+        assert log_has_re(f"Error executing command {mocked_method}: got an unexpected .*", caplog)
+        mm.assert_not_called()
