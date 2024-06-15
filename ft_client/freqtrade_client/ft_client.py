@@ -102,7 +102,18 @@ def main_exec(parsed: Dict[str, Any]):
         print_commands()
         return
 
-    print(json.dumps(getattr(client, command)(*parsed["command_arguments"])))
+    # Split arguments with = into key/value pairs
+    kwargs = {x.split("=")[0]: x.split("=")[1] for x in parsed["command_arguments"] if "=" in x}
+    args = [x for x in parsed["command_arguments"] if "=" not in x]
+    try:
+        res = getattr(client, command)(*args, **kwargs)
+        print(json.dumps(res))
+    except TypeError as e:
+        logger.error(f"Error executing command {command}: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Fatal Error executing command {command}: {e}")
+        sys.exit(1)
 
 
 def main():
