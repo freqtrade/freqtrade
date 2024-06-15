@@ -81,12 +81,12 @@ def print_commands():
             print(f"{x}\n\t{doc}\n")
 
 
-def main_exec(args: Dict[str, Any]):
-    if args.get("show"):
+def main_exec(parsed: Dict[str, Any]):
+    if parsed.get("show"):
         print_commands()
         sys.exit()
 
-    config = load_config(args["config"])
+    config = load_config(parsed["config"])
     url = config.get("api_server", {}).get("listen_ip_address", "127.0.0.1")
     port = config.get("api_server", {}).get("listen_port", "8080")
     username = config.get("api_server", {}).get("username")
@@ -96,13 +96,13 @@ def main_exec(args: Dict[str, Any]):
     client = FtRestClient(server_url, username, password)
 
     m = [x for x, y in inspect.getmembers(client) if not x.startswith("_")]
-    command = args["command"]
+    command = parsed["command"]
     if command not in m:
         logger.error(f"Command {command} not defined")
         print_commands()
         return
 
-    print(json.dumps(getattr(client, command)(*args["command_arguments"])))
+    print(json.dumps(getattr(client, command)(*parsed["command_arguments"])))
 
 
 def main():
