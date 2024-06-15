@@ -317,6 +317,7 @@ class FtRestClient:
         pair,
         side,
         price=None,
+        *,
         order_type=None,
         stake_amount=None,
         leverage=None,
@@ -327,10 +328,10 @@ class FtRestClient:
         :param pair: Pair to buy (ETH/BTC)
         :param side: 'long' or 'short'
         :param price: Optional - price to buy
-        :param order_type: Optional - 'limit' or 'market'
-        :param stake_amount: Optional - stake amount (as a float)
-        :param leverage: Optional - leverage (as a float)
-        :param enter_tag: Optional - entry tag (as a string, default: 'force_enter')
+        :param order_type: Optional keyword argument - 'limit' or 'market'
+        :param stake_amount: Optional keyword argument - stake amount (as a float)
+        :param leverage: Optional keyword argument - leverage (as a float)
+        :param enter_tag: Optional keyword argument - entry tag (as a string, default: 'force_enter')
         :return: json object of the trade
         """
         data = {
