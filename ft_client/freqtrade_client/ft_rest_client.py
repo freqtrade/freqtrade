@@ -54,7 +54,7 @@ class FtRestClient:
             # return resp.text
             return resp.json()
         except ConnectionError:
-            logger.warning("Connection error")
+            logger.warning(f"Connection error - could not connect to {netloc}.")
 
     def _get(self, apipath, params: ParamsT = None):
         return self._call("GET", apipath, params=params)
