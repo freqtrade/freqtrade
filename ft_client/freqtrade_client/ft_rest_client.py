@@ -329,9 +329,9 @@ class FtRestClient:
         :param side: 'long' or 'short'
         :param price: Optional - price to buy
         :param order_type: Optional keyword argument - 'limit' or 'market'
-        :param stake_amount: Optional keyword argument - stake amount (as a float)
-        :param leverage: Optional keyword argument - leverage (as a float)
-        :param enter_tag: Optional keyword argument - entry tag (as a string, default: 'force_enter')
+        :param stake_amount: Optional keyword argument - stake amount (as float)
+        :param leverage: Optional keyword argument - leverage (as float)
+        :param enter_tag: Optional keyword argument - entry tag (as string, default: 'force_enter')
         :return: json object of the trade
         """
         data = {
