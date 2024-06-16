@@ -397,6 +397,7 @@ class LocalTrade:
     fee_close_cost: Optional[float] = None
     fee_close_currency: Optional[str] = ""
     open_rate: float = 0.0
+    initial_open_rate: float =0.0
     open_rate_requested: Optional[float] = None
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value: float = 0.0
@@ -674,6 +675,7 @@ class LocalTrade:
             ),
             "open_fill_timestamp": dt_ts_none(self.date_entry_fill_utc),
             "open_rate": self.open_rate,
+            "initial_open_rate": self.initial_open_rate,
             "open_rate_requested": self.open_rate_requested,
             "open_trade_value": round(self.open_trade_value, 8),
             "close_date": (
@@ -1234,6 +1236,8 @@ class LocalTrade:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = float(current_stake / current_amount)
+            if self.nr_of_successful_entries<2:
+                self.initial_open_rate = float(current_stake / current_amount)
             self.amount = current_amount_tr
             self.stake_amount = float(current_stake) / (self.leverage or 1.0)
             self.fee_open_cost = self.fee_open * float(current_stake)
@@ -1534,6 +1538,7 @@ class LocalTrade:
             open_date=datetime.fromtimestamp(data["open_timestamp"] // 1000, tz=timezone.utc),
             open_rate=data["open_rate"],
             open_rate_requested=data["open_rate_requested"],
+            initial_open_rate = data["initial_open_rate"],
             open_trade_value=data["open_trade_value"],
             close_date=(
                 datetime.fromtimestamp(data["close_timestamp"] // 1000, tz=timezone.utc)
@@ -1634,6 +1639,7 @@ class Trade(ModelBase, LocalTrade):
         String(25), nullable=True
     )
     open_rate: Mapped[float] = mapped_column(Float())  # type: ignore
+    initial_open_rate: Mapped[float] = mapped_column(Float())  # type: ignore
     open_rate_requested: Mapped[Optional[float]] = mapped_column(  # type: ignore
         Float(), nullable=True
     )
