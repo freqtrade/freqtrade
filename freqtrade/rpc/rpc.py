@@ -1466,6 +1466,8 @@ class RPC:
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
 
         strategy = StrategyResolver.load_strategy(config)
+        # Manually load hyperparameters, as we don't call the bot-start callback.
+        strategy.ft_load_hyper_params(False)
 
         if strategy.plot_config and "subplots" not in strategy.plot_config:
             strategy.plot_config["subplots"] = {}
