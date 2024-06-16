@@ -190,6 +190,7 @@ def test_ft_client(mocker, capsys, caplog):
 )
 def test_ft_client_argparsing(mocker, params, expected_args, expected_kwargs, caplog):
     mocked_method = params.split(" ")[0]
+    mocker.patch("freqtrade_client.ft_client.load_config", return_value={}, autospec=True)
     mm = mocker.patch(
         f"freqtrade_client.ft_client.FtRestClient.{mocked_method}", return_value={}, autospec=True
     )
