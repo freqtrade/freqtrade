@@ -16,7 +16,7 @@ cachetools==5.3.3
 requests==2.32.3
 urllib3==2.2.1
 jsonschema==4.22.0
-TA-Lib==0.4.30
+TA-Lib==0.4.31
 technical==1.4.3
 tabulate==0.9.0
 pycoingecko==3.1.0
