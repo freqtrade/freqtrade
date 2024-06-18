@@ -279,7 +279,7 @@ class Exchange:
             self._exchange_ws.cleanup()
         logger.debug("Exchange object destroyed, closing async loop")
         if (
-            self._api_async
+            getattr(self, "_api_async", None)
             and inspect.iscoroutinefunction(self._api_async.close)
             and self._api_async.session
         ):
