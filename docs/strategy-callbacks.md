@@ -467,7 +467,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate=current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
     For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the [`custom_stoploss`](strategy-callbacks.md#custom-stoploss) callback  returns the ["risk for this trade"](stoploss.md#stoploss-and-leverage) - not the relative price movement.
 
     ``` python
@@ -492,7 +492,8 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
             candle = dataframe.iloc[-1].squeeze()
             side = 1 if trade.is_short else -1
             return stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), 
-                                          current_rate, is_short=trade.is_short,
+                                          current_rate=current_rate, 
+                                          is_short=trade.is_short,
                                           leverage=trade.leverage)
 
     ```

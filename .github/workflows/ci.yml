@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04, ubuntu-22.04 ]
+        os: [ "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -322,7 +322,7 @@ jobs:
       run: |
         $PSVersionTable
         Set-PSRepository psgallery -InstallationPolicy trusted
-        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force -SkipPublisherCheck
         $Error.clear()
         Invoke-Pester -Path "tests" -CI
         if ($Error.Length -gt 0) {exit 1}
@@ -533,12 +533,12 @@ jobs:
 
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
 
 
   deploy-docker:

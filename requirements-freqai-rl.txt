@@ -2,7 +2,8 @@
 -r requirements-freqai.txt
 
 # Required for freqai-rl
-torch==2.2.2
+torch==2.3.1; sys_platform != 'darwin' or platform_machine != 'x86_64'
+torch==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'
 gymnasium==0.29.1
 stable_baselines3==2.3.2
 sb3_contrib>=2.2.1

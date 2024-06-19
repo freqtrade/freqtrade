@@ -138,7 +138,7 @@ extend-select = [
   # "EXE",  # flake8-executable
   # "C4",     # flake8-comprehensions
   "YTT",    # flake8-2020
-  # "S",    # flake8-bandit
+  "S",    # flake8-bandit
   # "DTZ",  # flake8-datetimez
   # "RSE",  # flake8-raise
   # "TCH",  # flake8-type-checking
@@ -151,13 +151,30 @@ extend-ignore = [
   "E272",  # Multiple spaces before keyword
   "E221",  # Multiple spaces before operator
   "B007",  # Loop control variable not used
+  "S603",  # `subprocess` call: check for execution of untrusted input
+  "S607",  # Starting a process with a partial executable path
+  "S608",  # Possible SQL injection vector through string-based query construction
 ]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S"]
+"freqtrade/freqai/**/*.py" = [
+  "S311"  # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+"tests/**/*.py" = [
+  "S101",  # allow assert in tests
+  "S104",  #  Possible binding to all interfaces
+  "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
+  "S105",  # Possible hardcoded password assigned to: "secret"
+  "S106",  # Possible hardcoded password assigned to argument: "token_type"
+  "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+  ]
+
+"ft_client/test_client/**/*.py" = [
+  "S101",  # allow assert in tests
+]
 
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.

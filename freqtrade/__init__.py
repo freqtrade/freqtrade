@@ -30,5 +30,5 @@ if "dev" in __version__:
             versionfile = Path("./freqtrade_commit")
             if versionfile.is_file():
                 __version__ = f"docker-{__version__}-{versionfile.read_text()[:8]}"
-        except Exception:
+        except Exception:  # noqa: S110
             pass

@@ -187,7 +187,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "Insert Api server Listen Address (0.0.0.0 for docker, "
                 "otherwise best left untouched)"
             ),
-            "default": "127.0.0.1" if not running_in_docker() else "0.0.0.0",
+            "default": "127.0.0.1" if not running_in_docker() else "0.0.0.0",  # noqa: S104
             "when": lambda x: x["api_server"],
         },
         {

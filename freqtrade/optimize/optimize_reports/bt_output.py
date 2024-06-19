@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from tabulate import tabulate
 
@@ -20,13 +20,13 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
 
 
 def _get_line_header(
-    first_column: str, stake_currency: str, direction: str = "Entries"
+    first_column: Union[str, List[str]], stake_currency: str, direction: str = "Trades"
 ) -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
     """
     return [
-        first_column,
+        *([first_column] if isinstance(first_column, str) else first_column),
         direction,
         "Avg Profit %",
         f"Tot Profit {stake_currency}",
@@ -54,7 +54,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     :return: pretty printed table with tabulate as string
     """
 
-    headers = _get_line_header("Pair", stake_currency)
+    headers = _get_line_header("Pair", stake_currency, "Trades")
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
@@ -79,20 +79,30 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
+    floatfmt = _get_line_floatfmt(stake_currency)
     fallback: str = ""
+    is_list = False
     if tag_type == "enter_tag":
-        headers = _get_line_header("TAG", stake_currency)
-    else:
+        headers = _get_line_header("Enter Tag", stake_currency, "Entries")
+    elif tag_type == "exit_tag":
         headers = _get_line_header("Exit Reason", stake_currency, "Exits")
         fallback = "exit_reason"
+    else:
+        # Mix tag
+        headers = _get_line_header(["Enter Tag", "Exit Reason"], stake_currency, "Trades")
+        floatfmt.insert(0, "s")
+        is_list = True
 
-    floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
-            (
-                t["key"]
+            *(
+                (
+                    (t["key"] if isinstance(t["key"], list) else [t["key"], ""])
+                    if is_list
+                    else [t["key"]]
+                )
                 if t.get("key") is not None and len(str(t["key"])) > 0
-                else t.get(fallback, "OTHER")
+                else [t.get(fallback, "OTHER")]
             ),
             t["trades"],
             t["profit_mean_pct"],
@@ -144,7 +154,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
-    headers = _get_line_header("Strategy", stake_currency)
+    headers = _get_line_header("Strategy", stake_currency, "Trades")
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
     headers.append("Drawdown")
@@ -380,6 +390,32 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         return message
 
 
+def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
+    """
+    Print tag subresults (enter_tag, exit_reason_summary, mix_tag_stats)
+    """
+    if (enter_tags := results.get("results_per_enter_tag")) is not None:
+        table = text_table_tags("enter_tag", enter_tags, stake_currency)
+
+        if isinstance(table, str) and len(table) > 0:
+            print(" ENTER TAG STATS ".center(len(table.splitlines()[0]), "="))
+        print(table)
+
+    if (exit_reasons := results.get("exit_reason_summary")) is not None:
+        table = text_table_tags("exit_tag", exit_reasons, stake_currency)
+
+        if isinstance(table, str) and len(table) > 0:
+            print(" EXIT REASON STATS ".center(len(table.splitlines()[0]), "="))
+        print(table)
+
+    if (mix_tag := results.get("mix_tag_stats")) is not None:
+        table = text_table_tags("mix_tag", mix_tag, stake_currency)
+
+        if isinstance(table, str) and len(table) > 0:
+            print(" MIXED TAG STATS ".center(len(table.splitlines()[0]), "="))
+        print(table)
+
+
 def show_backtest_result(
     strategy: str, results: Dict[str, Any], stake_currency: str, backtest_breakdown: List[str]
 ):
@@ -398,19 +434,7 @@ def show_backtest_result(
         print(" LEFT OPEN TRADES REPORT ".center(len(table.splitlines()[0]), "="))
     print(table)
 
-    if (enter_tags := results.get("results_per_enter_tag")) is not None:
-        table = text_table_tags("enter_tag", enter_tags, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" ENTER TAG STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
-
-    if (exit_reasons := results.get("exit_reason_summary")) is not None:
-        table = text_table_tags("exit_tag", exit_reasons, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" EXIT REASON STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+    _show_tag_subresults(results, stake_currency)
 
     for period in backtest_breakdown:
         if period in results.get("periodic_breakdown", {}):
