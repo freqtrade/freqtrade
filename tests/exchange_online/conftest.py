@@ -362,6 +362,7 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
         config1 = deepcopy(config)
         config1["exchange"]["ccxt_config"] = {
             "httpsProxy": proxy,
+            "wsProxy": proxy,
         }
         return config1
 
