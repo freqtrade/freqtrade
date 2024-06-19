@@ -722,6 +722,7 @@ To use a proxy for exchange connections - you will have to define the proxies as
   "exchange": {
     "ccxt_config": {
       "httpsProxy": "http://addr:port",
+      "wsProxy": "http://addr:port",
     }
   }
 }
