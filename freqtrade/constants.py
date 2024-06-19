@@ -537,12 +537,19 @@ CONF_SCHEMA = {
         "orderflow": {
             "type": "object",
             "properties": {
+                "max_candles": {"type": "number", "minimum": 1, "default": 1500},
                 "scale": {"type": "number", "minimum": 0.0},
                 "stacked_imbalance_range": {"type": "number", "minimum": 0},
                 "imbalance_volume": {"type": "number", "minimum": 0},
                 "imbalance_ratio": {"type": "number", "minimum": 0.0},
             },
-            "required": ["scale", "stacked_imbalance_range", "imbalance_volume", "imbalance_ratio"],
+            "required": [
+                "max_candles",
+                "scale",
+                "stacked_imbalance_range",
+                "imbalance_volume",
+                "imbalance_ratio",
+            ],
         },
     },
     "definitions": {

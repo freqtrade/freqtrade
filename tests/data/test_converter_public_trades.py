@@ -90,6 +90,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     config = {
         "timeframe": "5m",
         "orderflow": {
+            "max_candles": 1500,
             "scale": 0.005,
             "imbalance_volume": 0,
             "imbalance_ratio": 3,
@@ -200,6 +201,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     config = {
         "timeframe": "5m",
         "orderflow": {
+            "max_candles": 1500,
             "scale": 0.5,
             "imbalance_volume": 0,
             "imbalance_ratio": 3,
@@ -353,6 +355,27 @@ def test_public_trades_binned_big_sample_list(public_trades_list):
     assert 710.98 == df["bid_amount"].iat[0]
     assert 111 == df["bid"].iat[0]
     assert 52.7199999 == pytest.approx(df["delta"].iat[0])  # delta
+
+
+def test_public_trades_config_max_trades(
+    default_conf, populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
+):
+    dataframe = populate_dataframe_with_trades_dataframe.copy()
+    trades = populate_dataframe_with_trades_trades.copy()
+    default_conf["exchange"]["use_public_trades"] = True
+    orderflow_config = {
+        "timeframe": "5m",
+        "orderflow": {
+            "max_candles": 1,
+            "scale": 0.005,
+            "imbalance_volume": 0,
+            "imbalance_ratio": 3,
+            "stacked_imbalance_range": 3,
+        },
+    }
+
+    df = populate_dataframe_with_trades(default_conf | orderflow_config, dataframe, trades)
+    assert df.delta.count() == 1
 
 
 def test_public_trades_testdata_sanity(

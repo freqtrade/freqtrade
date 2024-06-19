@@ -68,8 +68,11 @@ def populate_dataframe_with_trades(
         # calculate ohlcv candle start and end
         _calculate_ohlcv_candle_start_and_end(trades, timeframe)
 
+        # get date of earliest max_candles candle
+        max_candles = config_orderflow["max_candles"]
+        start_date = df.tail(max_candles).date.iat[0]
         # slice of trades that are before current ohlcv candles to make groupby faster
-        trades = trades.loc[trades.candle_start >= df.date[0]]
+        trades = trades.loc[trades.candle_start >= start_date]
         trades.reset_index(inplace=True, drop=True)
 
         # group trades by candle start

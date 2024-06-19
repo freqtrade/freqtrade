@@ -21,6 +21,7 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 
 2. **Configure Orderflow Processing:** Define your desired settings for orderflow processing within the orderflow section of config.json. Here, you can adjust factors like:
 
+- `max_candles`: Filter how many candles get processed from the tail
 - `scale`: This controls the price bin size for the footprint chart.
 - `stacked_imbalance_range`: Defines the minimum consecutive imbalanced price levels required for consideration.
 - `imbalance_volume`: Filters out imbalances with volume below this threshold.
@@ -28,6 +29,7 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 
 ```json
 "orderflow": {
+    "max_candles": 1500, 
     "scale": 0.5, 
     "stacked_imbalance_range": 3, //  needs at least this amount of imbalance next to each other
     "imbalance_volume": 1, //  filters out below
