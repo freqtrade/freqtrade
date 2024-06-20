@@ -31,6 +31,7 @@ class Gate(Exchange):
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",
         "marketOrderRequiresPrice": True,
+        "trades_has_history": False,  # Endpoint would support this - but ccxt doesn't.
     }
 
     _ft_has_futures: Dict = {
