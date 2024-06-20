@@ -4,7 +4,7 @@ This page explains how to plot prices, indicators and profits.
 
 !!! Warning "Deprecated"
     The commands described in this page (`plot-dataframe`, `plot-profit`) should be considered deprecated and are in maintenance mode.
-    This is in part due to how it works, but mostly for the performance problems even medium sized plots can cause.
+    This is mostly for the performance problems even medium sized plots can cause, but also because "store a file and open it in a browser" isn't very intuitive from a UI perspective.
 
     While there are no immediate plans to remove them, they are not actively maintained - and may be removed short-term should major changes be required to keep them working.
     
