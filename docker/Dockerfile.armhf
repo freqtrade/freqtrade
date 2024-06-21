@@ -17,7 +17,7 @@ RUN mkdir /freqtrade \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
   && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers \
-  && pip install --upgrade pip
+  && pip install --upgrade "pip<=24.0"
 
 WORKDIR /freqtrade
 
