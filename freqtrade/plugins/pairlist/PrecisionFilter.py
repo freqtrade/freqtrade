@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class PrecisionFilter(IPairList):
-    supports_backtesting = SupportsBacktesting.TODAYS_DATA
+    supports_backtesting = SupportsBacktesting.BIASED
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

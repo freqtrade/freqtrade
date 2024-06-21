@@ -60,7 +60,7 @@ class SupportsBacktesting(str, Enum):
     YES = "yes"
     NO = "no"
     NO_ACTION = "no_action"
-    TODAYS_DATA = "todays_data"
+    BIASED = "biased"
 
 
 class IPairList(LoggingMixin, ABC):

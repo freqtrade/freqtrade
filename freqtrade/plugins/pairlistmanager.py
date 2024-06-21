@@ -75,7 +75,7 @@ class PairListManager(LoggingMixin):
                 pairlist_errors.append(pairlist_handler.name)
             if pairlist_handler.supports_backtesting == SupportsBacktesting.NO_ACTION:
                 noaction_pairlists.append(pairlist_handler.name)
-            if pairlist_handler.supports_backtesting == SupportsBacktesting.TODAYS_DATA:
+            if pairlist_handler.supports_backtesting == SupportsBacktesting.BIASED:
                 biased_pairlists.append(pairlist_handler.name)
 
         if noaction_pairlists:
