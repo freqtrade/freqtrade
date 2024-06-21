@@ -217,8 +217,6 @@ class Backtesting:
             raise OperationalException(
                 "VolumePairList not allowed for backtesting. Please use StaticPairList instead."
             )
-        if "PerformanceFilter" in self.pairlists.name_list:
-            raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
         if len(self.strategylist) > 1 and "PrecisionFilter" in self.pairlists.name_list:
             raise OperationalException(
