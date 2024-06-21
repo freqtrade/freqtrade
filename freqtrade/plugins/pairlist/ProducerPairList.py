@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class ProducerPairList(IPairList):
     """
 
     is_pairlist_generator = True
+    supports_backtesting = SupportsBacktesting.NO
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
