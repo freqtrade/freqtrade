@@ -38,6 +38,7 @@ TESTABLE_PAIRLISTS = [p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairLis
 
 @pytest.fixture(scope="function")
 def whitelist_conf(default_conf):
+    default_conf["runmode"] = "dry_run"
     default_conf["stake_currency"] = "BTC"
     default_conf["exchange"]["pair_whitelist"] = [
         "ETH/BTC",
@@ -68,6 +69,7 @@ def whitelist_conf(default_conf):
 
 @pytest.fixture(scope="function")
 def whitelist_conf_2(default_conf):
+    default_conf["runmode"] = "dry_run"
     default_conf["stake_currency"] = "BTC"
     default_conf["exchange"]["pair_whitelist"] = [
         "ETH/BTC",
@@ -94,6 +96,7 @@ def whitelist_conf_2(default_conf):
 
 @pytest.fixture(scope="function")
 def whitelist_conf_agefilter(default_conf):
+    default_conf["runmode"] = "dry_run"
     default_conf["stake_currency"] = "BTC"
     default_conf["exchange"]["pair_whitelist"] = [
         "ETH/BTC",
@@ -773,7 +776,7 @@ def test_VolumePairList_whitelist_gen(
     whitelist_result,
     caplog,
 ) -> None:
-    whitelist_conf["runmode"] = "backtest"
+    whitelist_conf["runmode"] = "util_exchange"
     whitelist_conf["pairlists"] = pairlists
     whitelist_conf["stake_currency"] = base_currency
 
