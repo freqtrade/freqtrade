@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -535,6 +536,19 @@ def test_min_roi_reached3(default_conf, fee) -> None:
             0.9,
             ExitType.NONE,
             lambda **kwargs: None,
+        ),
+        # Error case - Returning inf.
+        (
+            0.05,
+            0.9,
+            ExitType.NONE,
+            None,
+            False,
+            True,
+            0.09,
+            0.9,
+            ExitType.NONE,
+            lambda **kwargs: math.inf,
         ),
     ],
 )
