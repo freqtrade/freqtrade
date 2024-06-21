@@ -227,14 +227,15 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
         "volume",
         "trades",
         "orderflow",
+        "imbalances",
+        "stacked_imbalances_bid",
+        "stacked_imbalances_ask",
+        "max_delta",
+        "min_delta",
         "bid",
         "ask",
         "delta",
-        "min_delta",
-        "max_delta",
         "total_trades",
-        "stacked_imbalances_bid",
-        "stacked_imbalances_ask",
     ]
     # Assert delta, bid, and ask values
     assert -50.519 == pytest.approx(row["delta"])
