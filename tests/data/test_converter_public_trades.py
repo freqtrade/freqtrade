@@ -90,6 +90,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     config = {
         "timeframe": "5m",
         "orderflow": {
+            "cache_size": 1000,
             "max_candles": 1500,
             "scale": 0.005,
             "imbalance_volume": 0,
@@ -201,6 +202,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     config = {
         "timeframe": "5m",
         "orderflow": {
+            "cache_size": 1000,
             "max_candles": 1500,
             "scale": 0.5,
             "imbalance_volume": 0,
@@ -243,7 +245,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     assert 169.442 == row["ask"]
 
     # Assert the number of trades
-    assert 151 == len(row.trades)
+    assert 151 == len(row["trades"])
 
     # Assert specific details of the first trade
     t = row["trades"].iloc[0]
@@ -367,6 +369,7 @@ def test_public_trades_config_max_trades(
     orderflow_config = {
         "timeframe": "5m",
         "orderflow": {
+            "cache_size": 1000,
             "max_candles": 1,
             "scale": 0.005,
             "imbalance_volume": 0,

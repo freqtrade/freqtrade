@@ -14,6 +14,9 @@ from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
+# Global cache dictionary
+cached_grouped_trades = OrderedDict()
+
 
 def _init_dataframe_with_trades_columns(dataframe: pd.DataFrame):
     """
@@ -56,11 +59,6 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
         df.drop(columns=["datetime"], inplace=True)
 
 
-# Global cache dictionary
-cache_size = 1000  # TODO move that in config
-cached_grouped_trades = OrderedDict()  # TODO move that where?
-
-
 def populate_dataframe_with_trades(config, dataframe, trades):
     """
     Populates a dataframe with trades
@@ -68,8 +66,9 @@ def populate_dataframe_with_trades(config, dataframe, trades):
     :param trades: Trades to populate with
     :return: Dataframe with trades populated
     """
-    config_orderflow = config["orderflow"]
     timeframe = config["timeframe"]
+    config_orderflow = config["orderflow"]
+    cache_size = config_orderflow["cache_size"]
 
     # create columns for trades
     _init_dataframe_with_trades_columns(dataframe)
