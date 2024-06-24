@@ -110,7 +110,7 @@ def populate_dataframe_with_trades(config, dataframe, trades):
 
                 indices = dataframe.index[is_between].tolist()
                 # Add trades to each candle
-                trades_series.loc[indices] = [trades_grouped_df] * len(indices)
+                trades_series.loc[indices] = [trades_grouped_df]
                 # Use caching mechanism
                 if (candle_start, candle_next) in cached_grouped_trades:
                     cache_entry = cached_grouped_trades[(candle_start, candle_next)]
@@ -127,26 +127,26 @@ def populate_dataframe_with_trades(config, dataframe, trades):
                 orderflow = trades_to_volumeprofile_with_total_delta_bid_ask(
                     trades_grouped_df, scale=config_orderflow["scale"]
                 )
-                orderflow_series.loc[indices] = [orderflow] * len(indices)
+                orderflow_series.loc[indices] = [orderflow]
                 # Calculate imbalances for each candle's orderflow
                 imbalances = trades_orderflow_to_imbalances(
                     orderflow,
                     imbalance_ratio=config_orderflow["imbalance_ratio"],
                     imbalance_volume=config_orderflow["imbalance_volume"],
                 )
-                imbalances_series.loc[indices] = [imbalances] * len(indices)
+                imbalances_series.loc[indices] = [imbalances]
 
                 stacked_imbalance_range = config_orderflow["stacked_imbalance_range"]
                 stacked_imbalances_bid_series.loc[indices] = [
                     stacked_imbalance_bid(
                         imbalances, stacked_imbalance_range=stacked_imbalance_range
                     )
-                ] * len(indices)
+                ]
                 stacked_imbalances_ask_series.loc[indices] = [
                     stacked_imbalance_ask(
                         imbalances, stacked_imbalance_range=stacked_imbalance_range
                     )
-                ] * len(indices)
+                ]
 
                 bid = np.where(
                     trades_grouped_df["side"].str.contains("sell"), trades_grouped_df["amount"], 0
