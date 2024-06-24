@@ -111,7 +111,13 @@ def populate_dataframe_with_trades(config, dataframe, trades):
                 # Use caching mechanism
                 if (candle_start, candle_next) in cached_grouped_trades:
                     cache_entry = cached_grouped_trades[(candle_start, candle_next)]
-                    dataframe.loc[is_between] = cache_entry
+                    # dataframe.loc[is_between] = cache_entry # doesn't take, so we need workaround:
+                    # Create a dictionary of the column values to be assigned
+                    update_dict = {c: cache_entry[c].iat[0] for c in cache_entry.columns}
+                    # Assign the values using the update_dict
+                    dataframe.loc[is_between, update_dict.keys()] = pd.DataFrame(
+                        [update_dict], index=dataframe.loc[is_between].index
+                    )
                     continue
 
                 # Store trades in Series using integer indices
