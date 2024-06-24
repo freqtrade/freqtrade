@@ -6,6 +6,8 @@ from freqtrade.constants import DEFAULT_TRADES_COLUMNS
 from freqtrade.data.converter import populate_dataframe_with_trades
 from freqtrade.data.converter.orderflow import trades_to_volumeprofile_with_total_delta_bid_ask
 from freqtrade.data.converter.trade_converter import trades_list_to_df
+from collections import OrderedDict
+from importlib import reload
 
 
 BIN_SIZE_SCALE = 0.5
@@ -47,6 +49,15 @@ def public_trades_list_simple(testdatadir):
     return read_csv(testdatadir / "orderflow/public_trades_list_simple_example.csv").copy()
 
 
+@pytest.fixture
+def reset_cache(request):
+    import freqtrade.data.converter.orderflow as orderflow
+
+    global orderflow
+    orderflow.cached_grouped_trades = OrderedDict()
+    yield
+
+
 def test_public_trades_columns_before_change(
     populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
 ):
@@ -71,7 +82,7 @@ def test_public_trades_columns_before_change(
 
 
 def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
-    populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
+    reset_cache, populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
 ):
     """
     Tests the `populate_dataframe_with_trades` function's order flow calculation.
@@ -170,7 +181,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
 
 
 def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
-    populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
+    reset_cache, populate_dataframe_with_trades_dataframe, populate_dataframe_with_trades_trades
 ):
     """
     Tests the `populate_dataframe_with_trades` function's handling of trades,
