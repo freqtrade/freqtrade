@@ -58,7 +58,7 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
 
 # Global cache dictionary
 cache_size = 1000  # TODO move that in config
-cached_grouped_trades = OrderedDict() # TODO move that where?
+cached_grouped_trades = OrderedDict()  # TODO move that where?
 
 
 def populate_dataframe_with_trades(config, dataframe, trades):
@@ -89,7 +89,6 @@ def populate_dataframe_with_trades(config, dataframe, trades):
         # group trades by candle start
         trades_grouped_by_candle_start = trades.groupby("candle_start")
 
-
         # Create Series to hold complex data
         trades_series = pd.Series(index=dataframe.index, dtype=object)
         orderflow_series = pd.Series(index=dataframe.index, dtype=object)
@@ -101,6 +100,7 @@ def populate_dataframe_with_trades(config, dataframe, trades):
             is_between = candle_start == dataframe["date"]
             if is_between.any():
                 from freqtrade.exchange import timeframe_to_next_date
+
                 candle_next = timeframe_to_next_date(timeframe, candle_start)
                 if candle_next not in trades_grouped_by_candle_start.groups:
                     logger.warning(
@@ -139,11 +139,21 @@ def populate_dataframe_with_trades(config, dataframe, trades):
                 imbalances_series.loc[indices] = [imbalances] * len(indices)
 
                 stacked_imb = config_orderflow["stacked_imbalance_range"]
-                stacked_imbalances_bid_series.loc[indices] = [stacked_imbalance_bid(imbalances, stacked_imbalance_range=stacked_imb)] * len(indices)
-                stacked_imbalances_ask_series.loc[indices] = [stacked_imbalance_ask(imbalances, stacked_imbalance_range=stacked_imb)] * len(indices)
+                stacked_imbalances_bid_series.loc[indices] = [
+                    stacked_imbalance_bid(imbalances, stacked_imbalance_range=stacked_imb)
+                ] * len(indices)
+                stacked_imbalances_ask_series.loc[indices] = [
+                    stacked_imbalance_ask(imbalances, stacked_imbalance_range=stacked_imb)
+                ] * len(indices)
 
-                bid = trades_grouped_df["side"].str.contains("sell").astype(int) * trades_grouped_df["amount"]
-                ask = trades_grouped_df["side"].str.contains("buy").astype(int) * trades_grouped_df["amount"]
+                bid = (
+                    trades_grouped_df["side"].str.contains("sell").astype(int)
+                    * trades_grouped_df["amount"]
+                )
+                ask = (
+                    trades_grouped_df["side"].str.contains("buy").astype(int)
+                    * trades_grouped_df["amount"]
+                )
                 deltas_per_trade = ask - bid
 
                 min_delta = deltas_per_trade.cumsum().min()
@@ -153,11 +163,15 @@ def populate_dataframe_with_trades(config, dataframe, trades):
 
                 dataframe.loc[indices, "bid"] = bid.sum()
                 dataframe.loc[indices, "ask"] = ask.sum()
-                dataframe.loc[indices, "delta"] = dataframe.loc[indices, "ask"] - dataframe.loc[indices, "bid"]
+                dataframe.loc[indices, "delta"] = (
+                    dataframe.loc[indices, "ask"] - dataframe.loc[indices, "bid"]
+                )
                 dataframe.loc[indices, "total_trades"] = len(trades_grouped_df)
 
                 # Cache the result
-                cached_grouped_trades[(candle_start, candle_next)] = dataframe.loc[is_between].copy()
+                cached_grouped_trades[(candle_start, candle_next)] = dataframe.loc[
+                    is_between
+                ].copy()
 
                 # Maintain cache size
                 if len(cached_grouped_trades) > cache_size:
