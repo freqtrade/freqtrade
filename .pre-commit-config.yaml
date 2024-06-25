@@ -13,7 +13,7 @@ repos:
     hooks:
       - id: mypy
         exclude: build_helpers
-        padditional_dependencies:
+        additional_dependencies:
           - types-cachetools==5.3.0.7
           - types-filelock==3.2.7
           - types-requests==2.32.0.20240622
