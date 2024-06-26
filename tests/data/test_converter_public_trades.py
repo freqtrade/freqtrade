@@ -54,7 +54,7 @@ def reset_cache(request):
     import freqtrade.data.converter.orderflow as orderflow
 
     global orderflow  # noqa F811
-    orderflow.cached_grouped_trades = OrderedDict()
+    orderflow.cached_grouped_trades_per_pair = {}
     yield
 
 
@@ -110,7 +110,7 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
         },
     }
     # Apply the function to populate the data frame with order flow data
-    df = populate_dataframe_with_trades(config, dataframe, trades)
+    df = populate_dataframe_with_trades("BTC/UDST", config, dataframe, trades)
     # Extract results from the first row of the DataFrame
     results = df.iloc[0]
     t = results["trades"]
@@ -223,7 +223,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     }
 
     # Populate the DataFrame with trades and order flow data
-    df = populate_dataframe_with_trades(config, dataframe, trades)
+    df = populate_dataframe_with_trades("BTC/UDST", config, dataframe, trades)
 
     # --- DataFrame and Trade Data Validation ---
 
@@ -389,7 +389,9 @@ def test_public_trades_config_max_trades(
         },
     }
 
-    df = populate_dataframe_with_trades(default_conf | orderflow_config, dataframe, trades)
+    df = populate_dataframe_with_trades(
+        "BTC/UDST", default_conf | orderflow_config, dataframe, trades
+    )
     assert df.delta.count() == 1
 
 

@@ -1601,7 +1601,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             config = self.config
             config["timeframe"] = self.timeframe
             # TODO: slice trades to size of dataframe for faster backtesting
-            dataframe = populate_dataframe_with_trades(config, dataframe, trades)
+            dataframe = populate_dataframe_with_trades(metadata["pair"], config, dataframe, trades)
 
             logger.debug("Populated dataframe with trades.")
 
