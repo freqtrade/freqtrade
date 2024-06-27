@@ -373,7 +373,7 @@ Filters low-value coins which would not allow setting stoplosses.
 
 Namely, pairs are blacklisted if a variance of one percent or more in the stop price would be caused by precision rounding on the exchange, i.e. `rounded(stop_price) <= rounded(stop_price * 0.99)`. The idea is to avoid coins with a value VERY close to their lower trading boundary, not allowing setting of proper stoploss.
 
-!!! Tip "PerformanceFilter is pointless for futures trading"
+!!! Tip "PrecisionFilter is pointless for futures trading"
     The above does not apply to shorts. And for longs, in theory the trade will be liquidated first.
 
 !!! Warning "Backtesting"

@@ -125,6 +125,7 @@ class Exchange:
         "trades_limit": 1000,  # Limit for 1 call to fetch_trades
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
+        "trades_has_history": False,
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",

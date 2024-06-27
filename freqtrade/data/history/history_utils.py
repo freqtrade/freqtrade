@@ -618,6 +618,11 @@ def download_data_main(config: Config) -> None:
     # Start downloading
     try:
         if config.get("download_trades"):
+            if not exchange.get_option("trades_has_history", True):
+                raise OperationalException(
+                    f"Trade history not available for {exchange.name}. "
+                    "You cannot use --dl-trades for this exchange."
+                )
             pairs_not_available = refresh_backtest_trades_data(
                 exchange,
                 pairs=expanded_pairs,

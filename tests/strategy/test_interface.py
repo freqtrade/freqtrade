@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -458,55 +459,66 @@ def test_min_roi_reached3(default_conf, fee) -> None:
             ExitType.TRAILING_STOP_LOSS,
             None,
         ),
-        (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),
-        (0.05, 1, ExitType.NONE, None, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
+        (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 0.998, ExitType.NONE, None),
+        (
+            0.05,
+            0.998,
+            ExitType.NONE,
+            None,
+            True,
+            False,
+            -0.01,
+            0.998,
+            ExitType.TRAILING_STOP_LOSS,
+            None,
+        ),
         # Default custom case - trails with 10%
-        (0.05, 0.95, ExitType.NONE, None, False, True, -0.02, 0.95, ExitType.NONE, None),
+        (0.05, 0.945, ExitType.NONE, None, False, True, -0.02, 0.945, ExitType.NONE, None),
         (
             0.05,
-            0.95,
+            0.945,
             ExitType.NONE,
             None,
             False,
             True,
             -0.06,
-            0.95,
+            0.945,
             ExitType.TRAILING_STOP_LOSS,
             None,
         ),
         (
             0.05,
-            1,
+            0.998,
             ExitType.NONE,
             None,
             False,
             True,
             -0.06,
-            1,
+            0.998,
             ExitType.TRAILING_STOP_LOSS,
             lambda **kwargs: -0.05,
         ),
         (
             0.05,
-            1,
+            0.998,
             ExitType.NONE,
             None,
             False,
             True,
             0.09,
-            1.04,
+            1.036,
             ExitType.NONE,
             lambda **kwargs: -0.05,
         ),
         (
             0.05,
-            0.95,
+            0.945,
             ExitType.NONE,
             None,
             False,
             True,
             0.09,
-            0.98,
+            0.981,
             ExitType.NONE,
             lambda current_profit, **kwargs: (
                 -0.1 if current_profit < 0.6 else -(current_profit * 2)
@@ -524,6 +536,19 @@ def test_min_roi_reached3(default_conf, fee) -> None:
             0.9,
             ExitType.NONE,
             lambda **kwargs: None,
+        ),
+        # Error case - Returning inf.
+        (
+            0.05,
+            0.9,
+            ExitType.NONE,
+            None,
+            False,
+            True,
+            0.09,
+            0.9,
+            ExitType.NONE,
+            lambda **kwargs: math.inf,
         ),
     ],
 )
@@ -552,6 +577,8 @@ def test_ft_stoploss_reached(
         exchange="binance",
         open_rate=1,
         liquidation_price=liq,
+        price_precision=4,
+        precision_mode=2,
     )
     trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing
@@ -577,7 +604,7 @@ def test_ft_stoploss_reached(
         assert sl_flag.exit_flag is False
     else:
         assert sl_flag.exit_flag is True
-    assert round(trade.stop_loss, 2) == adjusted
+    assert round(trade.stop_loss, 3) == adjusted
     current_rate2 = trade.open_rate * (1 + profit2)
 
     sl_flag = strategy.ft_stoploss_reached(
@@ -593,7 +620,7 @@ def test_ft_stoploss_reached(
         assert sl_flag.exit_flag is False
     else:
         assert sl_flag.exit_flag is True
-    assert round(trade.stop_loss, 2) == adjusted2
+    assert round(trade.stop_loss, 3) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
 
