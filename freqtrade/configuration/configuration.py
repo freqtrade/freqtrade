@@ -2,6 +2,7 @@
 This module contains the configuration class
 """
 
+import ast
 import logging
 import warnings
 from copy import deepcopy
@@ -301,7 +302,7 @@ class Configuration:
 
         # Edge section:
         if "stoploss_range" in self.args and self.args["stoploss_range"]:
-            txt_range = eval(self.args["stoploss_range"])
+            txt_range = ast.literal_eval(self.args["stoploss_range"])
             config["edge"].update({"stoploss_range_min": txt_range[0]})
             config["edge"].update({"stoploss_range_max": txt_range[1]})
             config["edge"].update({"stoploss_range_step": txt_range[2]})

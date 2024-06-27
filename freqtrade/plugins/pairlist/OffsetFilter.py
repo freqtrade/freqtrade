@@ -3,9 +3,8 @@ Offset pair list filter
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
@@ -15,18 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class OffsetFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
-        self._offset = pairlistconfig.get("offset", 0)
-        self._number_pairs = pairlistconfig.get("number_assets", 0)
+        self._offset = self._pairlistconfig.get("offset", 0)
+        self._number_pairs = self._pairlistconfig.get("number_assets", 0)
 
         if self._offset < 0:
             raise OperationalException("OffsetFilter requires offset to be >= 0")

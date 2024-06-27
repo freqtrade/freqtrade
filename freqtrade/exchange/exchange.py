@@ -117,6 +117,7 @@ class Exchange:
         "tickers_have_price": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
+        "trades_has_history": False,
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
@@ -151,7 +152,7 @@ class Exchange:
         :return: None
         """
         self._api: ccxt.Exchange
-        self._api_async: ccxt_async.Exchange = None
+        self._api_async: ccxt_async.Exchange
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
@@ -233,7 +234,7 @@ class Exchange:
         self.required_candle_call_count = 1
         if validate:
             # Initial markets load
-            self._load_markets()
+            self.reload_markets(True, load_leverage_tiers=False)
             self.validate_config(config)
             self._startup_candle_count: int = config.get("startup_candle_count", 0)
             self.required_candle_call_count = self.validate_required_startup_candles(
@@ -258,7 +259,7 @@ class Exchange:
     def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
         if (
-            self._api_async
+            getattr(self, "_api_async", None)
             and inspect.iscoroutinefunction(self._api_async.close)
             and self._api_async.session
         ):
@@ -354,7 +355,7 @@ class Exchange:
         """exchange ccxt markets"""
         if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")
-            self._load_markets()
+            self.reload_markets(True)
         return self._markets
 
     @property
@@ -530,30 +531,26 @@ class Exchange:
             amount, self.get_precision_amount(pair), self.precisionMode, contract_size
         )
 
-    def _load_async_markets(self, reload: bool = False) -> None:
+    def _load_async_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
-            if self._api_async:
-                self.loop.run_until_complete(self._api_async.load_markets(reload=reload, params={}))
+            markets = self.loop.run_until_complete(
+                self._api_async.load_markets(reload=reload, params={})
+            )
 
-        except (asyncio.TimeoutError, ccxt.BaseError) as e:
-            logger.warning("Could not load async markets. Reason: %s", e)
-            return
+            if isinstance(markets, Exception):
+                raise markets
+            return markets
+        except asyncio.TimeoutError as e:
+            logger.warning("Could not load markets. Reason: %s", e)
+            raise TemporaryError from e
 
-    def _load_markets(self) -> None:
-        """Initialize markets both sync and async"""
-        try:
-            self._markets = self._api.load_markets(params={})
-            self._load_async_markets()
-            self._last_markets_refresh = dt_ts()
-            if self._ft_has["needs_trading_fees"]:
-                self._trading_fees = self.fetch_trading_fees()
+    def reload_markets(self, force: bool = False, *, load_leverage_tiers: bool = True) -> None:
+        """
+        Reload / Initialize markets both sync and async if refresh interval has passed
 
-        except ccxt.BaseError:
-            logger.exception("Unable to initialize markets.")
-
-    def reload_markets(self, force: bool = False) -> None:
-        """Reload markets both sync and async if refresh interval has passed"""
+        """
         # Check whether markets have to be reloaded
+        is_initial = self._last_markets_refresh == 0
         if (
             not force
             and self._last_markets_refresh > 0
@@ -562,13 +559,18 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._markets = self._api.load_markets(reload=True, params={})
-            # Also reload async markets to avoid issues with newly listed pairs
-            self._load_async_markets(reload=True)
+            # Reload async markets, then assign them to sync api
+            self._markets = self._load_async_markets(reload=True)
+            self._api.set_markets(self._api_async.markets, self._api_async.currencies)
             self._last_markets_refresh = dt_ts()
-            self.fill_leverage_tiers()
-        except ccxt.BaseError:
-            logger.exception("Could not reload markets.")
+
+            if is_initial and self._ft_has["needs_trading_fees"]:
+                self._trading_fees = self.fetch_trading_fees()
+
+            if load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
+                self.fill_leverage_tiers()
+        except (ccxt.BaseError, TemporaryError):
+            logger.exception("Could not load markets.")
 
     def validate_stakecurrency(self, stake_currency: str) -> None:
         """

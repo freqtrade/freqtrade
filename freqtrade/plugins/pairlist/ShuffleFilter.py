@@ -4,9 +4,8 @@ Shuffle pair list filter
 
 import logging
 import random
-from typing import Any, Dict, List, Literal
+from typing import Dict, List, Literal
 
-from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.types import Tickers
@@ -20,27 +19,20 @@ ShuffleValues = Literal["candle", "iteration"]
 
 
 class ShuffleFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         # Apply seed in backtesting mode to get comparable results,
         # but not in live modes to get a non-repeating order of pairs during live modes.
-        if config.get("runmode") in (RunMode.LIVE, RunMode.DRY_RUN):
+        if self._config.get("runmode") in (RunMode.LIVE, RunMode.DRY_RUN):
             self._seed = None
             logger.info("Live mode detected, not applying seed.")
         else:
-            self._seed = pairlistconfig.get("seed")
+            self._seed = self._pairlistconfig.get("seed")
             logger.info(f"Backtesting mode detected, applying seed value: {self._seed}")
 
-        self._random = random.Random(self._seed)
-        self._shuffle_freq: ShuffleValues = pairlistconfig.get("shuffle_frequency", "candle")
+        self._random = random.Random(self._seed)  # noqa: S311
+        self._shuffle_freq: ShuffleValues = self._pairlistconfig.get("shuffle_frequency", "candle")
         self.__pairlist_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config["timeframe"])
         )

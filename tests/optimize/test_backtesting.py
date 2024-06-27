@@ -1650,11 +1650,11 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     ]
     args = get_args(args)
     start_backtesting(args)
-    # 2 backtests, 4 tables
+    # 2 backtests, 6 tables (entry, exit, mixed - each 2x)
     assert backtestmock.call_count == 2
     assert text_table_mock.call_count == 4
     assert strattable_mock.call_count == 1
-    assert tag_metrics_mock.call_count == 4
+    assert tag_metrics_mock.call_count == 6
     assert strat_summary.call_count == 1
 
     # check the logs, that will contain the backtest result
@@ -1709,7 +1709,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             "open_rate": [0.104445, 0.10302485],
             "close_rate": [0.104969, 0.103541],
             "is_short": [False, False],
-            "exit_reason": [ExitType.ROI, ExitType.ROI],
+            "exit_reason": [ExitType.ROI.value, ExitType.ROI.value],
         }
     )
     result2 = pd.DataFrame(
@@ -1729,7 +1729,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             "open_rate": [0.104445, 0.10302485, 0.122541],
             "close_rate": [0.104969, 0.103541, 0.123541],
             "is_short": [False, False, False],
-            "exit_reason": [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS],
+            "exit_reason": [ExitType.ROI.value, ExitType.ROI.value, ExitType.STOP_LOSS.value],
         }
     )
     backtestmock = MagicMock(

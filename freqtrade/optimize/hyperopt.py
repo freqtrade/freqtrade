@@ -489,7 +489,7 @@ class Hyperopt:
         )
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
-        return random_state or random.randint(1, 2**16 - 1)
+        return random_state or random.randint(1, 2**16 - 1)  # noqa: S311
 
     def advise_and_trim(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)

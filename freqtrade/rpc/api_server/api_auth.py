@@ -31,7 +31,7 @@ security = HTTPBasic()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
-def get_user_from_token(token, secret_key: str, token_type: str = "access") -> str:
+def get_user_from_token(token, secret_key: str, token_type: str = "access") -> str:  # noqa: S107
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -86,11 +86,11 @@ async def validate_ws_token(
     await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 
 
-def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:
+def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:  # noqa: S107
     to_encode = data.copy()
-    if token_type == "access":
+    if token_type == "access":  # noqa: S105
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    elif token_type == "refresh":
+    elif token_type == "refresh":  # noqa: S105
         expire = datetime.now(timezone.utc) + timedelta(days=30)
     else:
         raise ValueError()
@@ -127,9 +127,15 @@ def token_login(
 ):
     if verify_auth(api_config, form_data.username, form_data.password):
         token_data = {"identity": {"u": form_data.username}}
-        access_token = create_token(token_data, api_config.get("jwt_secret_key", "super-secret"))
+        access_token = create_token(
+            token_data,
+            api_config.get("jwt_secret_key", "super-secret"),
+            token_type="access",  # noqa: S106
+        )
         refresh_token = create_token(
-            token_data, api_config.get("jwt_secret_key", "super-secret"), token_type="refresh"
+            token_data,
+            api_config.get("jwt_secret_key", "super-secret"),
+            token_type="refresh",  # noqa: S106
         )
         return {
             "access_token": access_token,
@@ -148,6 +154,8 @@ def token_refresh(token: str = Depends(oauth2_scheme), api_config=Depends(get_ap
     u = get_user_from_token(token, api_config.get("jwt_secret_key", "super-secret"), "refresh")
     token_data = {"identity": {"u": u}}
     access_token = create_token(
-        token_data, api_config.get("jwt_secret_key", "super-secret"), token_type="access"
+        token_data,
+        api_config.get("jwt_secret_key", "super-secret"),
+        token_type="access",  # noqa: S106
     )
     return {"access_token": access_token}

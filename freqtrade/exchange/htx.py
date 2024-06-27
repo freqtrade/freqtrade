@@ -28,6 +28,7 @@ class Htx(Exchange):
             "1w": 500,
             "1M": 500,
         },
+        "trades_has_history": False,  # Endpoint doesn't have a "since" parameter
     }
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:

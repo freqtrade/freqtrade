@@ -4,12 +4,12 @@ Rate of change pairlist filter
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from cachetools import TTLCache
 from pandas import DataFrame
 
-from freqtrade.constants import Config, ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
@@ -21,26 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 class RangeStabilityFilter(IPairList):
-    def __init__(
-        self,
-        exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
-    ) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
-        self._days = pairlistconfig.get("lookback_days", 10)
-        self._min_rate_of_change = pairlistconfig.get("min_rate_of_change", 0.01)
-        self._max_rate_of_change = pairlistconfig.get("max_rate_of_change")
-        self._refresh_period = pairlistconfig.get("refresh_period", 86400)
+        self._days = self._pairlistconfig.get("lookback_days", 10)
+        self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
+        self._max_rate_of_change = self._pairlistconfig.get("max_rate_of_change")
+        self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
         self._def_candletype = self._config["candle_type_def"]
-        self._sort_direction: Optional[str] = pairlistconfig.get("sort_direction", None)
+        self._sort_direction: Optional[str] = self._pairlistconfig.get("sort_direction", None)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
+        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._config["candle_type_def"])
         if self._days < 1:
             raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
         if self._days > candle_limit:
