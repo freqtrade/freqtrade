@@ -11,10 +11,13 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import EXMS, generate_test_data, get_patched_exchange
 
 
-@pytest.mark.parametrize('candle_type', [
-    'mark',
-    '',
-])
+@pytest.mark.parametrize(
+    "candle_type",
+    [
+        "mark",
+        "",
+    ],
+)
 def test_dp_ohlcv(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
@@ -30,14 +33,12 @@ def test_dp_ohlcv(mocker, default_conf, ohlcv_history, candle_type):
     assert dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype) is not ohlcv_history
     assert dp.ohlcv("UNITTEST/BTC", timeframe, copy=False, candle_type=candletype) is ohlcv_history
     assert not dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype).empty
-    assert dp.ohlcv("NONESENSE/AAA", timeframe, candle_type=candletype).empty
+    assert dp.ohlcv("NONSENSE/AAA", timeframe, candle_type=candletype).empty
 
     # Test with and without parameter
-    assert dp.ohlcv(
-        "UNITTEST/BTC",
-        timeframe,
-        candle_type=candletype
-    ).equals(dp.ohlcv("UNITTEST/BTC", candle_type=candle_type))
+    assert dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype).equals(
+        dp.ohlcv("UNITTEST/BTC", candle_type=candle_type)
+    )
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
@@ -66,10 +67,12 @@ def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     featherloadmock = MagicMock(return_value=ohlcv_history)
     mocker.patch(
         "freqtrade.data.history.datahandlers.hdf5datahandler.HDF5DataHandler._ohlcv_load",
-        hdf5loadmock)
+        hdf5loadmock,
+    )
     mocker.patch(
         "freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler._ohlcv_load",
-        featherloadmock)
+        featherloadmock,
+    )
 
     default_conf["runmode"] = RunMode.BACKTEST
     exchange = get_patched_exchange(mocker, default_conf)
@@ -90,11 +93,14 @@ def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     featherloadmock.assert_not_called()
 
 
-@pytest.mark.parametrize('candle_type', [
-    'mark',
-    'futures',
-    '',
-])
+@pytest.mark.parametrize(
+    "candle_type",
+    [
+        "mark",
+        "futures",
+        "",
+    ],
+)
 def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
@@ -105,27 +111,34 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ohlcv_history.equals(dp.get_pair_dataframe(
-        "UNITTEST/BTC", timeframe, candle_type=candle_type))
-    assert ohlcv_history.equals(dp.get_pair_dataframe(
-        "UNITTEST/BTC", timeframe, candle_type=candletype))
-    assert isinstance(dp.get_pair_dataframe(
-        "UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
-    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe,
-                                 candle_type=candle_type) is not ohlcv_history
+    assert ohlcv_history.equals(
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)
+    )
+    assert ohlcv_history.equals(
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candletype)
+    )
+    assert isinstance(
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame
+    )
+    assert (
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)
+        is not ohlcv_history
+    )
     assert not dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type).empty
-    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe, candle_type=candle_type).empty
+    assert dp.get_pair_dataframe("NONSENSE/AAA", timeframe, candle_type=candle_type).empty
 
     # Test with and without parameter
-    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)\
-        .equals(dp.get_pair_dataframe("UNITTEST/BTC", candle_type=candle_type))
+    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type).equals(
+        dp.get_pair_dataframe("UNITTEST/BTC", candle_type=candle_type)
+    )
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.LIVE
-    assert isinstance(dp.get_pair_dataframe(
-        "UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
-    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe, candle_type=candle_type).empty
+    assert isinstance(
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame
+    )
+    assert dp.get_pair_dataframe("NONSENSE/AAA", timeframe, candle_type=candle_type).empty
 
     historymock = MagicMock(return_value=ohlcv_history)
     mocker.patch("freqtrade.data.dataprovider.load_pair_history", historymock)
@@ -136,7 +149,7 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
     assert isinstance(df, DataFrame)
     assert len(df) == 3  # ohlcv_history mock has just 3 rows
 
-    dp._set_dataframe_max_date(ohlcv_history.iloc[-1]['date'])
+    dp._set_dataframe_max_date(ohlcv_history.iloc[-1]["date"])
     df = dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)
     assert isinstance(df, DataFrame)
     assert len(df) == 2  # ohlcv_history is limited to 2 rows now
@@ -150,7 +163,10 @@ def test_available_pairs(mocker, default_conf, ohlcv_history):
 
     dp = DataProvider(default_conf, exchange)
     assert len(dp.available_pairs) == 2
-    assert dp.available_pairs == [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe), ]
+    assert dp.available_pairs == [
+        ("XRP/BTC", timeframe),
+        ("UNITTEST/BTC", timeframe),
+    ]
 
 
 def test_producer_pairs(default_conf):
@@ -172,9 +188,9 @@ def test_producer_pairs(default_conf):
 
 def test_get_producer_df(default_conf):
     dataprovider = DataProvider(default_conf, None)
-    ohlcv_history = generate_test_data('5m', 150)
-    pair = 'BTC/USDT'
-    timeframe = default_conf['timeframe']
+    ohlcv_history = generate_test_data("5m", 150)
+    pair = "BTC/USDT"
+    timeframe = default_conf["timeframe"]
     candle_type = CandleType.SPOT
 
     empty_la = datetime.fromtimestamp(0, tz=timezone.utc)
@@ -192,20 +208,20 @@ def test_get_producer_df(default_conf):
     assert la > empty_la
 
     # no data on this producer, should return empty dataframe
-    dataframe, la = dataprovider.get_producer_df(pair, producer_name='bad')
+    dataframe, la = dataprovider.get_producer_df(pair, producer_name="bad")
     assert dataframe.empty
     assert la == empty_la
 
     # non existent timeframe, empty dataframe
-    _dataframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
+    _dataframe, la = dataprovider.get_producer_df(pair, timeframe="1h")
     assert dataframe.empty
     assert la == empty_la
 
 
 def test_emit_df(mocker, default_conf, ohlcv_history):
-    mocker.patch('freqtrade.rpc.rpc_manager.RPCManager.__init__', MagicMock())
-    rpc_mock = mocker.patch('freqtrade.rpc.rpc_manager.RPCManager', MagicMock())
-    send_mock = mocker.patch('freqtrade.rpc.rpc_manager.RPCManager.send_msg', MagicMock())
+    mocker.patch("freqtrade.rpc.rpc_manager.RPCManager.__init__", MagicMock())
+    rpc_mock = mocker.patch("freqtrade.rpc.rpc_manager.RPCManager", MagicMock())
+    send_mock = mocker.patch("freqtrade.rpc.rpc_manager.RPCManager.send_msg", MagicMock())
 
     dataprovider = DataProvider(default_conf, exchange=None, rpc=rpc_mock)
     dataprovider_no_rpc = DataProvider(default_conf, exchange=None)
@@ -262,14 +278,14 @@ def test_orderbook(mocker, default_conf, order_book_l2):
     exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock)
 
     dp = DataProvider(default_conf, exchange)
-    res = dp.orderbook('ETH/BTC', 5)
+    res = dp.orderbook("ETH/BTC", 5)
     assert order_book_l2.call_count == 1
-    assert order_book_l2.call_args_list[0][0][0] == 'ETH/BTC'
+    assert order_book_l2.call_args_list[0][0][0] == "ETH/BTC"
     assert order_book_l2.call_args_list[0][0][1] >= 5
 
     assert isinstance(res, dict)
-    assert 'bids' in res
-    assert 'asks' in res
+    assert "bids" in res
+    assert "asks" in res
 
 
 def test_market(mocker, default_conf, markets):
@@ -278,41 +294,39 @@ def test_market(mocker, default_conf, markets):
     exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock)
 
     dp = DataProvider(default_conf, exchange)
-    res = dp.market('ETH/BTC')
+    res = dp.market("ETH/BTC")
 
     assert isinstance(res, dict)
-    assert 'symbol' in res
-    assert res['symbol'] == 'ETH/BTC'
+    assert "symbol" in res
+    assert res["symbol"] == "ETH/BTC"
 
-    res = dp.market('UNITTEST/BTC')
+    res = dp.market("UNITTEST/BTC")
     assert res is None
 
 
 def test_ticker(mocker, default_conf, tickers):
-    ticker_mock = MagicMock(return_value=tickers()['ETH/BTC'])
+    ticker_mock = MagicMock(return_value=tickers()["ETH/BTC"])
     mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
-    res = dp.ticker('ETH/BTC')
+    res = dp.ticker("ETH/BTC")
     assert isinstance(res, dict)
-    assert 'symbol' in res
-    assert res['symbol'] == 'ETH/BTC'
+    assert "symbol" in res
+    assert res["symbol"] == "ETH/BTC"
 
-    ticker_mock = MagicMock(side_effect=ExchangeError('Pair not found'))
+    ticker_mock = MagicMock(side_effect=ExchangeError("Pair not found"))
     mocker.patch(f"{EXMS}.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
-    res = dp.ticker('UNITTEST/BTC')
+    res = dp.ticker("UNITTEST/BTC")
     assert res == {}
 
 
 def test_current_whitelist(mocker, default_conf, tickers):
     # patch default conf to volumepairlist
-    default_conf['pairlists'][0] = {'method': 'VolumePairList', "number_assets": 5}
+    default_conf["pairlists"][0] = {"method": "VolumePairList", "number_assets": 5}
 
-    mocker.patch.multiple(EXMS,
-                          exchange_has=MagicMock(return_value=True),
-                          get_tickers=tickers)
+    mocker.patch.multiple(EXMS, exchange_has=MagicMock(return_value=True), get_tickers=tickers)
     exchange = get_patched_exchange(mocker, default_conf)
 
     pairlist = PairListManager(exchange, default_conf)
@@ -331,7 +345,6 @@ def test_current_whitelist(mocker, default_conf, tickers):
 
 
 def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
-
     default_conf["runmode"] = RunMode.DRY_RUN
 
     timeframe = default_conf["timeframe"]
@@ -384,28 +397,27 @@ def test_no_exchange_mode(default_conf):
         dp.refresh([()])
 
     with pytest.raises(OperationalException, match=message):
-        dp.ohlcv('XRP/USDT', '5m', '')
+        dp.ohlcv("XRP/USDT", "5m", "")
 
     with pytest.raises(OperationalException, match=message):
-        dp.market('XRP/USDT')
+        dp.market("XRP/USDT")
 
     with pytest.raises(OperationalException, match=message):
-        dp.ticker('XRP/USDT')
+        dp.ticker("XRP/USDT")
 
     with pytest.raises(OperationalException, match=message):
-        dp.orderbook('XRP/USDT', 20)
+        dp.orderbook("XRP/USDT", 20)
 
     with pytest.raises(OperationalException, match=message):
         dp.available_pairs()
 
 
 def test_dp_send_msg(default_conf):
-
     default_conf["runmode"] = RunMode.DRY_RUN
 
-    default_conf["timeframe"] = '1h'
+    default_conf["timeframe"] = "1h"
     dp = DataProvider(default_conf, None)
-    msg = 'Test message'
+    msg = "Test message"
     dp.send_msg(msg)
 
     assert msg in dp._msg_queue
@@ -424,81 +436,81 @@ def test_dp_send_msg(default_conf):
 
 
 def test_dp__add_external_df(default_conf_usdt):
-    timeframe = '1h'
+    timeframe = "1h"
     default_conf_usdt["timeframe"] = timeframe
     dp = DataProvider(default_conf_usdt, None)
-    df = generate_test_data(timeframe, 24, '2022-01-01 00:00:00+00:00')
+    df = generate_test_data(timeframe, 24, "2022-01-01 00:00:00+00:00")
     last_analyzed = datetime.now(timezone.utc)
 
-    res = dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df("ETH/USDT", df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # Why 1000 ??
     assert res[1] == 1000
 
     # Hard add dataframe
-    dp._replace_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    dp._replace_external_df("ETH/USDT", df, last_analyzed, timeframe, CandleType.SPOT)
     # BTC is not stored yet
-    res = dp._add_external_df('BTC/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df("BTC/USDT", df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
-    df_res, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df_res, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     assert len(df_res) == 24
 
     # Add the same dataframe again - dataframe size shall not change.
-    res = dp._add_external_df('ETH/USDT', df, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df("ETH/USDT", df, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert isinstance(res[1], int)
     assert res[1] == 0
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     assert len(df) == 24
 
     # Add a new day.
-    df2 = generate_test_data(timeframe, 24, '2022-01-02 00:00:00+00:00')
+    df2 = generate_test_data(timeframe, 24, "2022-01-02 00:00:00+00:00")
 
-    res = dp._add_external_df('ETH/USDT', df2, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df("ETH/USDT", df2, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert isinstance(res[1], int)
     assert res[1] == 0
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     assert len(df) == 48
 
     # Add a dataframe with a 12 hour offset - so 12 candles are overlapping, and 12 valid.
-    df3 = generate_test_data(timeframe, 24, '2022-01-02 12:00:00+00:00')
+    df3 = generate_test_data(timeframe, 24, "2022-01-02 12:00:00+00:00")
 
-    res = dp._add_external_df('ETH/USDT', df3, last_analyzed, timeframe, CandleType.SPOT)
+    res = dp._add_external_df("ETH/USDT", df3, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is True
     assert isinstance(res[1], int)
     assert res[1] == 0
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     # New length = 48 + 12 (since we have a 12 hour offset).
     assert len(df) == 60
-    assert df.iloc[-1]['date'] == df3.iloc[-1]['date']
-    assert df.iloc[-1]['date'] == Timestamp('2022-01-03 11:00:00+00:00')
+    assert df.iloc[-1]["date"] == df3.iloc[-1]["date"]
+    assert df.iloc[-1]["date"] == Timestamp("2022-01-03 11:00:00+00:00")
 
     # Generate 1 new candle
-    df4 = generate_test_data(timeframe, 1, '2022-01-03 12:00:00+00:00')
-    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    df4 = generate_test_data(timeframe, 1, "2022-01-03 12:00:00+00:00")
+    res = dp._add_external_df("ETH/USDT", df4, last_analyzed, timeframe, CandleType.SPOT)
     # assert res[0] is True
     # assert res[1] == 0
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     # New length = 61 + 1
     assert len(df) == 61
-    assert df.iloc[-2]['date'] == Timestamp('2022-01-03 11:00:00+00:00')
-    assert df.iloc[-1]['date'] == Timestamp('2022-01-03 12:00:00+00:00')
+    assert df.iloc[-2]["date"] == Timestamp("2022-01-03 11:00:00+00:00")
+    assert df.iloc[-1]["date"] == Timestamp("2022-01-03 12:00:00+00:00")
 
     # Gap in the data ...
-    df4 = generate_test_data(timeframe, 1, '2022-01-05 00:00:00+00:00')
-    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    df4 = generate_test_data(timeframe, 1, "2022-01-05 00:00:00+00:00")
+    res = dp._add_external_df("ETH/USDT", df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert isinstance(res[1], int)
     assert res[1] == 36
-    df, _ = dp.get_producer_df('ETH/USDT', timeframe, CandleType.SPOT)
+    df, _ = dp.get_producer_df("ETH/USDT", timeframe, CandleType.SPOT)
     # New length = 61 + 1
     assert len(df) == 61
 
     # Empty dataframe
-    df4 = generate_test_data(timeframe, 0, '2022-01-05 00:00:00+00:00')
-    res = dp._add_external_df('ETH/USDT', df4, last_analyzed, timeframe, CandleType.SPOT)
+    df4 = generate_test_data(timeframe, 0, "2022-01-05 00:00:00+00:00")
+    res = dp._add_external_df("ETH/USDT", df4, last_analyzed, timeframe, CandleType.SPOT)
     assert res[0] is False
     # 36 hours - from 2022-01-03 12:00:00+00:00 to 2022-01-05 00:00:00+00:00
     assert isinstance(res[1], int)
@@ -506,59 +518,59 @@ def test_dp__add_external_df(default_conf_usdt):
 
 
 def test_dp_get_required_startup(default_conf_usdt):
-    timeframe = '1h'
+    timeframe = "1h"
     default_conf_usdt["timeframe"] = timeframe
     dp = DataProvider(default_conf_usdt, None)
 
     # No FreqAI config
-    assert dp.get_required_startup('5m') == 0
-    assert dp.get_required_startup('1h') == 0
-    assert dp.get_required_startup('1d') == 0
+    assert dp.get_required_startup("5m") == 0
+    assert dp.get_required_startup("1h") == 0
+    assert dp.get_required_startup("1d") == 0
 
-    dp._config['startup_candle_count'] = 20
-    assert dp.get_required_startup('5m') == 20
-    assert dp.get_required_startup('1h') == 20
-    assert dp.get_required_startup('1h') == 20
+    dp._config["startup_candle_count"] = 20
+    assert dp.get_required_startup("5m") == 20
+    assert dp.get_required_startup("1h") == 20
+    assert dp.get_required_startup("1h") == 20
 
     # With freqAI config
 
-    dp._config['freqai'] = {
-        'enabled': True,
-        'train_period_days': 20,
-        'feature_parameters': {
-            'indicator_periods_candles': [
+    dp._config["freqai"] = {
+        "enabled": True,
+        "train_period_days": 20,
+        "feature_parameters": {
+            "indicator_periods_candles": [
                 5,
                 20,
             ]
-        }
+        },
     }
-    assert dp.get_required_startup('5m') == 5780
-    assert dp.get_required_startup('1h') == 500
-    assert dp.get_required_startup('1d') == 40
+    assert dp.get_required_startup("5m") == 5780
+    assert dp.get_required_startup("1h") == 500
+    assert dp.get_required_startup("1d") == 40
 
     # FreqAI kindof ignores startup_candle_count if it's below indicator_periods_candles
-    dp._config['startup_candle_count'] = 0
-    assert dp.get_required_startup('5m') == 5780
-    assert dp.get_required_startup('1h') == 500
-    assert dp.get_required_startup('1d') == 40
+    dp._config["startup_candle_count"] = 0
+    assert dp.get_required_startup("5m") == 5780
+    assert dp.get_required_startup("1h") == 500
+    assert dp.get_required_startup("1d") == 40
 
-    dp._config['freqai']['feature_parameters']['indicator_periods_candles'][1] = 50
-    assert dp.get_required_startup('5m') == 5810
-    assert dp.get_required_startup('1h') == 530
-    assert dp.get_required_startup('1d') == 70
+    dp._config["freqai"]["feature_parameters"]["indicator_periods_candles"][1] = 50
+    assert dp.get_required_startup("5m") == 5810
+    assert dp.get_required_startup("1h") == 530
+    assert dp.get_required_startup("1d") == 70
 
     # scenario from issue https://github.com/freqtrade/freqtrade/issues/9432
-    dp._config['freqai'] = {
-        'enabled': True,
-        'train_period_days': 180,
-        'feature_parameters': {
-            'indicator_periods_candles': [
+    dp._config["freqai"] = {
+        "enabled": True,
+        "train_period_days": 180,
+        "feature_parameters": {
+            "indicator_periods_candles": [
                 10,
                 20,
             ]
-        }
+        },
     }
-    dp._config['startup_candle_count'] = 40
-    assert dp.get_required_startup('5m') == 51880
-    assert dp.get_required_startup('1h') == 4360
-    assert dp.get_required_startup('1d') == 220
+    dp._config["startup_candle_count"] = 40
+    assert dp.get_required_startup("5m") == 51880
+    assert dp.get_required_startup("1h") == 4360
+    assert dp.get_required_startup("1d") == 220

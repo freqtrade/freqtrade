@@ -1,5 +1,6 @@
 import logging
 import math
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Tuple
 
@@ -30,8 +31,27 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
     return float(np.mean(tmp_means))
 
 
-def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
-                                 column: str = "close") -> pd.DataFrame:
+def combine_dataframes_by_column(
+    data: Dict[str, pd.DataFrame], column: str = "close"
+) -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key.
+    :raise: ValueError if no data is provided.
+    """
+    if not data:
+        raise ValueError("No data provided.")
+    df_comb = pd.concat(
+        [data[pair].set_index("date").rename({column: pair}, axis=1)[pair] for pair in data], axis=1
+    )
+    return df_comb
+
+
+def combined_dataframes_with_rel_mean(
+    data: Dict[str, pd.DataFrame], fromdt: datetime, todt: datetime, column: str = "close"
+) -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
     :param data: Dict of Dataframes, dict key should be pair.
@@ -40,16 +60,36 @@ def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
         named mean, containing the mean of all pairs.
     :raise: ValueError if no data is provided.
     """
-    df_comb = pd.concat([data[pair].set_index('date').rename(
-        {column: pair}, axis=1)[pair] for pair in data], axis=1)
+    df_comb = combine_dataframes_by_column(data, column)
+    # Trim dataframes to the given timeframe
+    df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
+    df_comb["count"] = df_comb.count(axis=1)
+    df_comb["mean"] = df_comb.mean(axis=1)
+    df_comb["rel_mean"] = df_comb["mean"].pct_change().fillna(0).cumsum()
+    return df_comb[["mean", "rel_mean", "count"]]
 
-    df_comb['mean'] = df_comb.mean(axis=1)
+
+def combine_dataframes_with_mean(
+    data: Dict[str, pd.DataFrame], column: str = "close"
+) -> pd.DataFrame:
+    """
+    Combine multiple dataframes "column"
+    :param data: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key, and a column
+        named mean, containing the mean of all pairs.
+    :raise: ValueError if no data is provided.
+    """
+    df_comb = combine_dataframes_by_column(data, column)
+
+    df_comb["mean"] = df_comb.mean(axis=1)
 
     return df_comb
 
 
-def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
-                      timeframe: str) -> pd.DataFrame:
+def create_cum_profit(
+    df: pd.DataFrame, trades: pd.DataFrame, col_name: str, timeframe: str
+) -> pd.DataFrame:
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
@@ -62,11 +102,11 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     from freqtrade.exchange import timeframe_to_resample_freq
+
     timeframe_freq = timeframe_to_resample_freq(timeframe)
     # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(timeframe_freq, on='close_date'
-                                  )[['profit_abs']].sum()
-    df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
+    _trades_sum = trades.resample(timeframe_freq, on="close_date")[["profit_abs"]].sum()
+    df.loc[:, col_name] = _trades_sum["profit_abs"].cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous
@@ -74,29 +114,34 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
-def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str,
-                          starting_balance: float) -> pd.DataFrame:
+def _calc_drawdown_series(
+    profit_results: pd.DataFrame, *, date_col: str, value_col: str, starting_balance: float
+) -> pd.DataFrame:
     max_drawdown_df = pd.DataFrame()
-    max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
-    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
-    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
-    max_drawdown_df['date'] = profit_results.loc[:, date_col]
+    max_drawdown_df["cumulative"] = profit_results[value_col].cumsum()
+    max_drawdown_df["high_value"] = max_drawdown_df["cumulative"].cummax()
+    max_drawdown_df["drawdown"] = max_drawdown_df["cumulative"] - max_drawdown_df["high_value"]
+    max_drawdown_df["date"] = profit_results.loc[:, date_col]
     if starting_balance:
-        cumulative_balance = starting_balance + max_drawdown_df['cumulative']
-        max_balance = starting_balance + max_drawdown_df['high_value']
-        max_drawdown_df['drawdown_relative'] = ((max_balance - cumulative_balance) / max_balance)
+        cumulative_balance = starting_balance + max_drawdown_df["cumulative"]
+        max_balance = starting_balance + max_drawdown_df["high_value"]
+        max_drawdown_df["drawdown_relative"] = (max_balance - cumulative_balance) / max_balance
     else:
         # NOTE: This is not completely accurate,
         # but might good enough if starting_balance is not available
-        max_drawdown_df['drawdown_relative'] = (
-            (max_drawdown_df['high_value'] - max_drawdown_df['cumulative'])
-            / max_drawdown_df['high_value'])
+        max_drawdown_df["drawdown_relative"] = (
+            max_drawdown_df["high_value"] - max_drawdown_df["cumulative"]
+        ) / max_drawdown_df["high_value"]
     return max_drawdown_df
 
 
-def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                         value_col: str = 'profit_ratio', starting_balance: float = 0.0
-                         ):
+def calculate_underwater(
+    trades: pd.DataFrame,
+    *,
+    date_col: str = "close_date",
+    value_col: str = "profit_ratio",
+    starting_balance: float = 0.0,
+):
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
@@ -110,25 +155,37 @@ def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
     max_drawdown_df = _calc_drawdown_series(
-        profit_results,
-        date_col=date_col,
-        value_col=value_col,
-        starting_balance=starting_balance)
+        profit_results, date_col=date_col, value_col=value_col, starting_balance=starting_balance
+    )
 
     return max_drawdown_df
 
 
-def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                           value_col: str = 'profit_abs', starting_balance: float = 0,
-                           relative: bool = False
-                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
+@dataclass()
+class DrawDownResult:
+    drawdown_abs: float = 0.0
+    high_date: pd.Timestamp = None
+    low_date: pd.Timestamp = None
+    high_value: float = 0.0
+    low_value: float = 0.0
+    relative_account_drawdown: float = 0.0
+
+
+def calculate_max_drawdown(
+    trades: pd.DataFrame,
+    *,
+    date_col: str = "close_date",
+    value_col: str = "profit_abs",
+    starting_balance: float = 0,
+    relative: bool = False,
+) -> DrawDownResult:
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
     :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
     :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
-    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
+    :return: DrawDownResult object
              with absolute max drawdown, high and low time and high and low value,
              and the relative account drawdown
     :raise: ValueError if trade-dataframe was found empty.
@@ -137,32 +194,31 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
     max_drawdown_df = _calc_drawdown_series(
-        profit_results,
-        date_col=date_col,
-        value_col=value_col,
-        starting_balance=starting_balance
+        profit_results, date_col=date_col, value_col=value_col, starting_balance=starting_balance
     )
 
     idxmin = (
-        max_drawdown_df['drawdown_relative'].idxmax()
-        if relative else max_drawdown_df['drawdown'].idxmin()
+        max_drawdown_df["drawdown_relative"].idxmax()
+        if relative
+        else max_drawdown_df["drawdown"].idxmin()
     )
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
-    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
+    high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]["high_value"].idxmax(), date_col]
     low_date = profit_results.loc[idxmin, date_col]
-    high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
-                                   ['high_value'].idxmax(), 'cumulative']
-    low_val = max_drawdown_df.loc[idxmin, 'cumulative']
-    max_drawdown_rel = max_drawdown_df.loc[idxmin, 'drawdown_relative']
+    high_val = max_drawdown_df.loc[
+        max_drawdown_df.iloc[:idxmin]["high_value"].idxmax(), "cumulative"
+    ]
+    low_val = max_drawdown_df.loc[idxmin, "cumulative"]
+    max_drawdown_rel = max_drawdown_df.loc[idxmin, "drawdown_relative"]
 
-    return (
-        abs(max_drawdown_df.loc[idxmin, 'drawdown']),
-        high_date,
-        low_date,
-        high_val,
-        low_val,
-        max_drawdown_rel
+    return DrawDownResult(
+        drawdown_abs=abs(max_drawdown_df.loc[idxmin, "drawdown"]),
+        high_date=high_date,
+        low_date=low_date,
+        high_value=high_val,
+        low_value=low_val,
+        relative_account_drawdown=max_drawdown_rel,
     )
 
 
@@ -178,9 +234,9 @@ def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[f
         raise ValueError("Trade dataframe empty.")
 
     csum_df = pd.DataFrame()
-    csum_df['sum'] = trades['profit_abs'].cumsum()
-    csum_min = csum_df['sum'].min() + starting_balance
-    csum_max = csum_df['sum'].max() + starting_balance
+    csum_df["sum"] = trades["profit_abs"].cumsum()
+    csum_min = csum_df["sum"].min() + starting_balance
+    csum_max = csum_df["sum"].max() + starting_balance
 
     return csum_min, csum_max
 
@@ -210,28 +266,29 @@ def calculate_expectancy(trades: pd.DataFrame) -> Tuple[float, float]:
     expectancy_ratio = 100
 
     if len(trades) > 0:
-        winning_trades = trades.loc[trades['profit_abs'] > 0]
-        losing_trades = trades.loc[trades['profit_abs'] < 0]
-        profit_sum = winning_trades['profit_abs'].sum()
-        loss_sum = abs(losing_trades['profit_abs'].sum())
+        winning_trades = trades.loc[trades["profit_abs"] > 0]
+        losing_trades = trades.loc[trades["profit_abs"] < 0]
+        profit_sum = winning_trades["profit_abs"].sum()
+        loss_sum = abs(losing_trades["profit_abs"].sum())
         nb_win_trades = len(winning_trades)
         nb_loss_trades = len(losing_trades)
 
         average_win = (profit_sum / nb_win_trades) if nb_win_trades > 0 else 0
         average_loss = (loss_sum / nb_loss_trades) if nb_loss_trades > 0 else 0
-        winrate = (nb_win_trades / len(trades))
-        loserate = (nb_loss_trades / len(trades))
+        winrate = nb_win_trades / len(trades)
+        loserate = nb_loss_trades / len(trades)
 
         expectancy = (winrate * average_win) - (loserate * average_loss)
-        if (average_loss > 0):
+        if average_loss > 0:
             risk_reward_ratio = average_win / average_loss
             expectancy_ratio = ((1 + risk_reward_ratio) * winrate) - 1
 
     return expectancy, expectancy_ratio
 
 
-def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
-                      starting_balance: float) -> float:
+def calculate_sortino(
+    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+) -> float:
     """
     Calculate sortino
     :param trades: DataFrame containing trades (requires columns profit_abs)
@@ -240,12 +297,12 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
-    total_profit = trades['profit_abs'] / starting_balance
+    total_profit = trades["profit_abs"] / starting_balance
     days_period = max(1, (max_date - min_date).days)
 
     expected_returns_mean = total_profit.sum() / days_period
 
-    down_stdev = np.std(trades.loc[trades['profit_abs'] < 0, 'profit_abs'] / starting_balance)
+    down_stdev = np.std(trades.loc[trades["profit_abs"] < 0, "profit_abs"] / starting_balance)
 
     if down_stdev != 0 and not np.isnan(down_stdev):
         sortino_ratio = expected_returns_mean / down_stdev * np.sqrt(365)
@@ -257,8 +314,9 @@ def calculate_sortino(trades: pd.DataFrame, min_date: datetime, max_date: dateti
     return sortino_ratio
 
 
-def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
-                     starting_balance: float) -> float:
+def calculate_sharpe(
+    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+) -> float:
     """
     Calculate sharpe
     :param trades: DataFrame containing trades (requires column profit_abs)
@@ -267,7 +325,7 @@ def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetim
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
-    total_profit = trades['profit_abs'] / starting_balance
+    total_profit = trades["profit_abs"] / starting_balance
     days_period = max(1, (max_date - min_date).days)
 
     expected_returns_mean = total_profit.sum() / days_period
@@ -283,8 +341,9 @@ def calculate_sharpe(trades: pd.DataFrame, min_date: datetime, max_date: datetim
     return sharp_ratio
 
 
-def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetime,
-                     starting_balance: float) -> float:
+def calculate_calmar(
+    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+) -> float:
     """
     Calculate calmar
     :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
@@ -293,7 +352,7 @@ def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetim
     if (len(trades) == 0) or (min_date is None) or (max_date is None) or (min_date == max_date):
         return 0
 
-    total_profit = trades['profit_abs'].sum() / starting_balance
+    total_profit = trades["profit_abs"].sum() / starting_balance
     days_period = max(1, (max_date - min_date).days)
 
     # adding slippage of 0.1% per trade
@@ -302,9 +361,10 @@ def calculate_calmar(trades: pd.DataFrame, min_date: datetime, max_date: datetim
 
     # calculate max drawdown
     try:
-        _, _, _, _, _, max_drawdown = calculate_max_drawdown(
+        drawdown = calculate_max_drawdown(
             trades, value_col="profit_abs", starting_balance=starting_balance
         )
+        max_drawdown = drawdown.relative_account_drawdown
     except ValueError:
         max_drawdown = 0
 

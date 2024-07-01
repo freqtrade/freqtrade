@@ -10,10 +10,7 @@ twenty_four = FtPrecise(24.0)
 
 
 def interest(
-    exchange_name: str,
-    borrowed: FtPrecise,
-    rate: FtPrecise,
-    hours: FtPrecise
+    exchange_name: str, borrowed: FtPrecise, rate: FtPrecise, hours: FtPrecise
 ) -> FtPrecise:
     """
     Equation to calculate interest on margin trades

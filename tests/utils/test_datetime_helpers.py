@@ -3,8 +3,19 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from freqtrade.util import (dt_floor_day, dt_from_ts, dt_humanize, dt_now, dt_ts, dt_ts_def,
-                            dt_ts_none, dt_utc, format_date, format_ms_time, shorten_date)
+from freqtrade.util import (
+    dt_floor_day,
+    dt_from_ts,
+    dt_now,
+    dt_ts,
+    dt_ts_def,
+    dt_ts_none,
+    dt_utc,
+    format_date,
+    format_ms_time,
+    shorten_date,
+)
+from freqtrade.util.datetime_helpers import dt_humanize_delta
 
 
 def test_dt_now():
@@ -38,16 +49,18 @@ def test_dt_ts_none():
 
 def test_dt_utc():
     assert dt_utc(2023, 5, 5) == datetime(2023, 5, 5, tzinfo=timezone.utc)
-    assert dt_utc(2023, 5, 5, 0, 0, 0, 555500) == datetime(2023, 5, 5, 0, 0, 0, 555500,
-                                                           tzinfo=timezone.utc)
+    assert dt_utc(2023, 5, 5, 0, 0, 0, 555500) == datetime(
+        2023, 5, 5, 0, 0, 0, 555500, tzinfo=timezone.utc
+    )
 
 
-@pytest.mark.parametrize('as_ms', [True, False])
+@pytest.mark.parametrize("as_ms", [True, False])
 def test_dt_from_ts(as_ms):
     multi = 1000 if as_ms else 1
     assert dt_from_ts(1683244800.0 * multi) == datetime(2023, 5, 5, tzinfo=timezone.utc)
-    assert dt_from_ts(1683244800.5555 * multi) == datetime(2023, 5, 5, 0, 0, 0, 555500,
-                                                           tzinfo=timezone.utc)
+    assert dt_from_ts(1683244800.5555 * multi) == datetime(
+        2023, 5, 5, 0, 0, 0, 555500, tzinfo=timezone.utc
+    )
     # As int
     assert dt_from_ts(1683244800 * multi) == datetime(2023, 5, 5, tzinfo=timezone.utc)
     # As milliseconds
@@ -62,15 +75,18 @@ def test_dt_floor_day():
 
 
 def test_shorten_date() -> None:
-    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
-    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
+    str_data = "1 day, 2 hours, 3 minutes, 4 seconds ago"
+    str_shorten_data = "1 d, 2 h, 3 min, 4 sec ago"
     assert shorten_date(str_data) == str_shorten_data
 
 
 def test_dt_humanize() -> None:
-    assert dt_humanize(dt_now()) == 'just now'
-    assert dt_humanize(dt_now(), only_distance=True) == 'instantly'
-    assert dt_humanize(dt_now() - timedelta(hours=16), only_distance=True) == '16 hours'
+    assert dt_humanize_delta(dt_now()) == "now"
+    assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == "50 minutes ago"
+    assert dt_humanize_delta(dt_now() - timedelta(hours=16)) == "16 hours ago"
+    assert dt_humanize_delta(dt_now() - timedelta(hours=16, minutes=30)) == "16 hours ago"
+    assert dt_humanize_delta(dt_now() - timedelta(days=16, hours=10, minutes=25)) == "16 days ago"
+    assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == "50 minutes ago"
 
 
 def test_format_ms_time() -> None:
@@ -79,19 +95,19 @@ def test_format_ms_time() -> None:
     date = format_ms_time(date_in_epoch_ms)
     assert isinstance(date, str)
     res = datetime(2018, 4, 10, 18, 2, 1, tzinfo=timezone.utc)
-    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    assert date == res.strftime("%Y-%m-%dT%H:%M:%S")
+    assert date == "2018-04-10T18:02:01"
     res = datetime(2017, 12, 13, 8, 2, 1, tzinfo=timezone.utc)
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
-    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    assert format_ms_time(date_in_epoch_ms) == res.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def test_format_date() -> None:
-
     date = datetime(2023, 9, 1, 5, 2, 3, 455555, tzinfo=timezone.utc)
-    assert format_date(date) == '2023-09-01 05:02:03'
-    assert format_date(None) == ''
+    assert format_date(date) == "2023-09-01 05:02:03"
+    assert format_date(None) == ""
 
     date = datetime(2021, 9, 30, 22, 59, 3, 455555, tzinfo=timezone.utc)
-    assert format_date(date) == '2021-09-30 22:59:03'
-    assert format_date(None) == ''
+    assert format_date(date) == "2021-09-30 22:59:03"
+    assert format_date(None) == ""

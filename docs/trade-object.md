@@ -13,28 +13,28 @@ The following attributes / properties are available for each individual trade - 
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
-`pair`| string | Pair of this trade
-`is_open`| boolean | Is the trade currently open, or has it been concluded
-`open_rate`| float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments)
-`close_rate`| float | Close rate - only set when is_open = False
-`stake_amount`| float | Amount in Stake (or Quote) currency.
-`amount`| float | Amount in Asset / Base currency that is currently owned.
-`open_date`| datetime | Timestamp when trade was opened **use `open_date_utc` instead**
-`open_date_utc`| datetime | Timestamp when trade was opened - in UTC
-`close_date`| datetime | Timestamp when trade was closed **use `close_date_utc` instead**
-`close_date_utc`| datetime | Timestamp when trade was closed - in UTC
-`close_profit`| float | Relative profit at the time of trade closure. `0.01` == 1%
-`close_profit_abs`| float | Absolute profit (in stake currency) at the time of trade closure.
-`leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets.
-`enter_tag`| string | Tag provided on entry via the `enter_tag` column in the dataframe
-`is_short` | boolean | True for short trades, False otherwise
-`orders` | Order[] | List of order objects attached to this trade (includes both filled and cancelled orders)
-`date_last_filled_utc` | datetime | Time of the last filled order
-`entry_side` | "buy" / "sell" | Order Side the trade was entered
-`exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction.
-`trade_direction` | "long" / "short" | Trade direction in text - long or short.
-`nr_of_successful_entries` | int | Number of successful (filled) entry orders
-`nr_of_successful_exits` | int | Number of successful (filled) exit orders
+| `pair` | string | Pair of this trade. |
+| `is_open` | boolean | Is the trade currently open, or has it been concluded. |
+| `open_rate` | float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments). |
+| `close_rate` | float | Close rate - only set when is_open = False. |
+| `stake_amount` | float | Amount in Stake (or Quote) currency. |
+| `amount` | float | Amount in Asset / Base currency that is currently owned. |
+| `open_date` | datetime | Timestamp when trade was opened **use `open_date_utc` instead** |
+| `open_date_utc` | datetime | Timestamp when trade was opened - in UTC. |
+| `close_date` | datetime | Timestamp when trade was closed **use `close_date_utc` instead** |
+| `close_date_utc` | datetime | Timestamp when trade was closed - in UTC. |
+| `close_profit` | float | Relative profit at the time of trade closure. `0.01` == 1% |
+| `close_profit_abs` | float | Absolute profit (in stake currency) at the time of trade closure. |
+| `leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets. |
+| `enter_tag` | string | Tag provided on entry via the `enter_tag` column in the dataframe. |
+| `is_short` | boolean | True for short trades, False otherwise. |
+| `orders` | Order[] | List of order objects attached to this trade (includes both filled and cancelled orders). |
+| `date_last_filled_utc` | datetime | Time of the last filled order. |
+| `entry_side` | "buy" / "sell" | Order Side the trade was entered. |
+| `exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction. |
+| `trade_direction` | "long" / "short" | Trade direction in text - long or short. |
+| `nr_of_successful_entries` | int | Number of successful (filled) entry orders. |
+| `nr_of_successful_exits` | int | Number of successful (filled) exit orders. |
 
 ## Class methods
 
@@ -126,7 +126,7 @@ An `Order` object will always be tied to it's corresponding [`Trade`](#trade-obj
 ### Order - Available attributes
 
 an Order object is typically attached to a trade.
-Most properties here can be None as they are dependant on the exchange response.
+Most properties here can be None as they are dependent on the exchange response.
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
@@ -141,7 +141,7 @@ Most properties here can be None as they are dependant on the exchange response.
 `amount` | float | Amount in base currency
 `filled` | float | Filled amount (in base currency)
 `remaining` | float | Remaining amount
-`cost` | float | Cost of the order - usually average * filled (*Exchange dependant on futures, may contain the cost with or without leverage and may be in contracts.*)
+`cost` | float | Cost of the order - usually average * filled (*Exchange dependent on futures, may contain the cost with or without leverage and may be in contracts.*)
 `stake_amount` | float | Stake amount used for this order. *Added in 2023.7.*
 `order_date` | datetime | Order creation date **use `order_date_utc` instead**
 `order_date_utc` | datetime | Order creation date (in UTC)

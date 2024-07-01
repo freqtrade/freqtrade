@@ -17,7 +17,7 @@ RUN mkdir /freqtrade \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
   && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers \
-  && pip install --upgrade pip
+  && pip install --upgrade "pip<=24.0"
 
 WORKDIR /freqtrade
 
@@ -35,7 +35,7 @@ COPY build_helpers/* /tmp/
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
-  && pip install --user --no-index --find-links /tmp/ pyarrow TA-Lib==0.4.28 \
+  && pip install --user --no-index --find-links /tmp/ pyarrow TA-Lib \
   && pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image

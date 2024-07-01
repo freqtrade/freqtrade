@@ -18,21 +18,22 @@ class _CustomData(ModelBase):
     """
     CustomData database model
     Keeps records of metadata as key/value store
-    for trades or global persistant values
+    for trades or global persistent values
     One to many relationship with Trades:
       - One trade can have many metadata entries
       - One metadata entry can only be associated with one Trade
     """
-    __tablename__ = 'trade_custom_data'
+
+    __tablename__ = "trade_custom_data"
     __allow_unmapped__ = True
     session: ClassVar[SessionType]
 
     # Uniqueness should be ensured over pair, order_id
     # its likely that order_id is unique per Pair on some exchanges.
-    __table_args__ = (UniqueConstraint('ft_trade_id', 'cd_key', name="_trade_id_cd_key"),)
+    __table_args__ = (UniqueConstraint("ft_trade_id", "cd_key", name="_trade_id_cd_key"),)
 
     id = mapped_column(Integer, primary_key=True)
-    ft_trade_id = mapped_column(Integer, ForeignKey('trades.id'), index=True)
+    ft_trade_id = mapped_column(Integer, ForeignKey("trades.id"), index=True)
 
     trade = relationship("Trade", back_populates="custom_data")
 
@@ -46,17 +47,22 @@ class _CustomData(ModelBase):
     value: Any = None
 
     def __repr__(self):
-        create_time = (self.created_at.strftime(DATETIME_PRINT_FORMAT)
-                       if self.created_at is not None else None)
-        update_time = (self.updated_at.strftime(DATETIME_PRINT_FORMAT)
-                       if self.updated_at is not None else None)
-        return (f'CustomData(id={self.id}, key={self.cd_key}, type={self.cd_type}, ' +
-                f'value={self.cd_value}, trade_id={self.ft_trade_id}, created={create_time}, ' +
-                f'updated={update_time})')
+        create_time = (
+            self.created_at.strftime(DATETIME_PRINT_FORMAT) if self.created_at is not None else None
+        )
+        update_time = (
+            self.updated_at.strftime(DATETIME_PRINT_FORMAT) if self.updated_at is not None else None
+        )
+        return (
+            f"CustomData(id={self.id}, key={self.cd_key}, type={self.cd_type}, "
+            + f"value={self.cd_value}, trade_id={self.ft_trade_id}, created={create_time}, "
+            + f"updated={update_time})"
+        )
 
     @classmethod
-    def query_cd(cls, key: Optional[str] = None,
-                 trade_id: Optional[int] = None) -> Sequence['_CustomData']:
+    def query_cd(
+        cls, key: Optional[str] = None, trade_id: Optional[int] = None
+    ) -> Sequence["_CustomData"]:
         """
         Get all CustomData, if trade_id is not specified
         return will be for generic values not tied to a trade
@@ -80,17 +86,17 @@ class CustomDataWrapper:
 
     use_db = True
     custom_data: List[_CustomData] = []
-    unserialized_types = ['bool', 'float', 'int', 'str']
+    unserialized_types = ["bool", "float", "int", "str"]
 
     @staticmethod
     def _convert_custom_data(data: _CustomData) -> _CustomData:
         if data.cd_type in CustomDataWrapper.unserialized_types:
             data.value = data.cd_value
-            if data.cd_type == 'bool':
-                data.value = data.cd_value.lower() == 'true'
-            elif data.cd_type == 'int':
+            if data.cd_type == "bool":
+                data.value = data.cd_value.lower() == "true"
+            elif data.cd_type == "int":
                 data.value = int(data.cd_value)
-            elif data.cd_type == 'float':
+            elif data.cd_type == "float":
                 data.value = float(data.cd_value)
         else:
             data.value = json.loads(data.cd_value)
@@ -111,31 +117,32 @@ class CustomDataWrapper:
 
     @staticmethod
     def get_custom_data(*, trade_id: int, key: Optional[str] = None) -> List[_CustomData]:
-
         if CustomDataWrapper.use_db:
             filters = [
                 _CustomData.ft_trade_id == trade_id,
             ]
             if key is not None:
                 filters.append(_CustomData.cd_key.ilike(key))
-            filtered_custom_data = _CustomData.session.scalars(select(_CustomData).filter(
-                *filters)).all()
+            filtered_custom_data = _CustomData.session.scalars(
+                select(_CustomData).filter(*filters)
+            ).all()
 
         else:
             filtered_custom_data = [
-                data_entry for data_entry in CustomDataWrapper.custom_data
+                data_entry
+                for data_entry in CustomDataWrapper.custom_data
                 if (data_entry.ft_trade_id == trade_id)
             ]
             if key is not None:
                 filtered_custom_data = [
-                    data_entry for data_entry in filtered_custom_data
+                    data_entry
+                    for data_entry in filtered_custom_data
                     if (data_entry.cd_key.casefold() == key.casefold())
                 ]
         return [CustomDataWrapper._convert_custom_data(d) for d in filtered_custom_data]
 
     @staticmethod
     def set_custom_data(trade_id: int, key: str, value: Any) -> None:
-
         value_type = type(value).__name__
 
         if value_type not in CustomDataWrapper.unserialized_types:

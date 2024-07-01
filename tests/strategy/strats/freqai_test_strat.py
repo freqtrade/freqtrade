@@ -43,9 +43,9 @@ class freqai_test_strat(IStrategy):
     )
     max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
 
-    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
-                                       metadata: Dict, **kwargs):
-
+    def feature_engineering_expand_all(
+        self, dataframe: DataFrame, period: int, metadata: Dict, **kwargs
+    ):
         dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
         dataframe["%-mfi-period"] = ta.MFI(dataframe, timeperiod=period)
         dataframe["%-adx-period"] = ta.ADX(dataframe, timeperiod=period)
@@ -53,7 +53,6 @@ class freqai_test_strat(IStrategy):
         return dataframe
 
     def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-raw_volume"] = dataframe["volume"]
         dataframe["%-raw_price"] = dataframe["close"]
@@ -61,14 +60,12 @@ class freqai_test_strat(IStrategy):
         return dataframe
 
     def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
         return dataframe
 
     def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
-
         dataframe["&-s_close"] = (
             dataframe["close"]
             .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
@@ -76,12 +73,11 @@ class freqai_test_strat(IStrategy):
             .mean()
             / dataframe["close"]
             - 1
-            )
+        )
 
         return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
         self.freqai_info = self.config["freqai"]
 
         dataframe = self.freqai.start(dataframe, metadata, self)
@@ -91,7 +87,6 @@ class freqai_test_strat(IStrategy):
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-
         enter_long_conditions = [df["do_predict"] == 1, df["&-s_close"] > df["target_roi"]]
 
         if enter_long_conditions:

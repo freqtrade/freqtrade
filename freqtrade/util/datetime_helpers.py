@@ -1,8 +1,9 @@
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from time import time
+from typing import Optional, Union
 
-import arrow
+import humanize
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 
@@ -12,8 +13,15 @@ def dt_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def dt_utc(year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0,
-           microsecond: int = 0) -> datetime:
+def dt_utc(
+    year: int,
+    month: int,
+    day: int,
+    hour: int = 0,
+    minute: int = 0,
+    second: int = 0,
+    microsecond: int = 0,
+) -> datetime:
     """Return a datetime in UTC."""
     return datetime(year, month, day, hour, minute, second, microsecond, tzinfo=timezone.utc)
 
@@ -25,7 +33,7 @@ def dt_ts(dt: Optional[datetime] = None) -> int:
     """
     if dt:
         return int(dt.timestamp() * 1000)
-    return int(dt_now().timestamp() * 1000)
+    return int(time() * 1000)
 
 
 def dt_ts_def(dt: Optional[datetime], default: int = 0) -> int:
@@ -68,21 +76,19 @@ def shorten_date(_date: str) -> str:
     """
     Trim the date so it fits on small screens
     """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
+    new_date = re.sub("seconds?", "sec", _date)
+    new_date = re.sub("minutes?", "min", new_date)
+    new_date = re.sub("hours?", "h", new_date)
+    new_date = re.sub("days?", "d", new_date)
+    new_date = re.sub("^an?", "1", new_date)
     return new_date
 
 
-def dt_humanize(dt: datetime, **kwargs) -> str:
+def dt_humanize_delta(dt: datetime):
     """
-    Return a humanized string for the given datetime.
-    :param dt: datetime to humanize
-    :param kwargs: kwargs to pass to arrow's humanize()
+    Return a humanized string for the given timedelta.
     """
-    return arrow.get(dt).humanize(**kwargs)
+    return humanize.naturaltime(dt)
 
 
 def format_date(date: Optional[datetime]) -> str:
@@ -93,12 +99,12 @@ def format_date(date: Optional[datetime]) -> str:
     """
     if date:
         return date.strftime(DATETIME_PRINT_FORMAT)
-    return ''
+    return ""
 
 
-def format_ms_time(date: int) -> str:
+def format_ms_time(date: Union[int, float]) -> str:
     """
     convert MS date to readable format.
     : epoch-string in ms
     """
-    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+    return dt_from_ts(date).strftime("%Y-%m-%dT%H:%M:%S")

@@ -8,7 +8,6 @@ from torch import nn
 
 
 class PyTorchTrainerInterface(ABC):
-
     @abstractmethod
     def fit(self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]) -> None:
         """

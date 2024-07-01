@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04, ubuntu-22.04 ]
+        os: [ "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -55,7 +55,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -111,7 +111,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -129,7 +133,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "macos-latest", "macos-13", "macos-14" ]
+        os: [ "macos-12", "macos-13", "macos-14" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
         exclude:
           - os: "macos-14"
@@ -188,7 +192,7 @@ jobs:
 
     - name: Installation (python)
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -230,7 +234,11 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
@@ -300,11 +308,26 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check --output-format=github .
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
 
     - name: Mypy
       run: |
         mypy freqtrade scripts tests
+
+    - name: Run Pester tests (PowerShell)
+      run: |
+        $PSVersionTable
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force -SkipPublisherCheck
+        $Error.clear()
+        Invoke-Pester -Path "tests" -CI
+        if ($Error.Length -gt 0) {exit 1}
+
+      shell: powershell
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -322,7 +345,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
 
     - name: pre-commit dependencies
       run: |
@@ -336,7 +359,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - uses: pre-commit/action@v3.0.1
 
   docs-check:
@@ -351,7 +374,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Documentation build
       run: |
@@ -377,7 +400,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Cache_dependencies
       uses: actions/cache@v4
@@ -399,7 +422,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -414,7 +437,7 @@ jobs:
         pytest --random-order --longrun --durations 20 -n auto
 
 
-  # Notify only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successful
   notify-complete:
     needs: [
       build-linux,
@@ -459,7 +482,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Build distribution
       run: |
@@ -510,12 +533,12 @@ jobs:
 
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
 
 
   deploy-docker:
@@ -530,7 +553,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Extract branch name
       id: extract-branch
@@ -553,12 +576,12 @@ jobs:
           sudo systemctl restart docker
           docker version -f '{{.Server.Experimental}}'
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
     - name: Set up Docker Buildx
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v3.3.1
-      with:
-        buildx-version: latest
-        qemu-version: latest
+      uses: docker/setup-buildx-action@v3
 
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
