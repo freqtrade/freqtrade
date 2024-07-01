@@ -28,6 +28,7 @@ class Binance(Exchange):
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
+        "trades_has_history": True,
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
     _ft_has_futures: Dict = {

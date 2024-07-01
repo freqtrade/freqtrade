@@ -67,10 +67,10 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, use
                 "enter_tag_long_b",
             ],
             "exit_reason": [
-                ExitType.ROI,
-                ExitType.EXIT_SIGNAL,
-                ExitType.STOP_LOSS,
-                ExitType.TRAILING_STOP_LOSS,
+                ExitType.ROI.value,
+                ExitType.EXIT_SIGNAL.value,
+                ExitType.STOP_LOSS.value,
+                ExitType.TRAILING_STOP_LOSS.value,
             ],
         }
     )

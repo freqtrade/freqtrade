@@ -217,7 +217,7 @@ class FreqtradeBot(LoggingMixin):
         except Exception:
             # Exceptions here will be happening if the db disappeared.
             # At which point we can no longer commit anyway.
-            pass
+            logger.exception("Error during cleanup")
 
     def startup(self) -> None:
         """

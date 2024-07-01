@@ -165,7 +165,9 @@ E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoplo
 During backtesting, `current_rate` (and `current_profit`) are provided against the candle's high (or low for short trades) - while the resulting stoploss is evaluated against the candle's low (or high for short trades).
 
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
-Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
+Returning `None` will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
+`NaN` and `inf` values are considered invalid and will be ignored (identical to `None`).
+
 
 Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
@@ -467,7 +469,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate=current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
     For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the [`custom_stoploss`](strategy-callbacks.md#custom-stoploss) callback  returns the ["risk for this trade"](stoploss.md#stoploss-and-leverage) - not the relative price movement.
 
     ``` python
@@ -492,7 +494,8 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
             candle = dataframe.iloc[-1].squeeze()
             side = 1 if trade.is_short else -1
             return stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), 
-                                          current_rate, is_short=trade.is_short,
+                                          current_rate=current_rate, 
+                                          is_short=trade.is_short,
                                           leverage=trade.leverage)
 
     ```

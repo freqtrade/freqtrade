@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04, ubuntu-22.04 ]
+        os: [ "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04" ]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -55,7 +55,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -192,7 +192,7 @@ jobs:
 
     - name: Installation (python)
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -318,6 +318,17 @@ jobs:
       run: |
         mypy freqtrade scripts tests
 
+    - name: Run Pester tests (PowerShell)
+      run: |
+        $PSVersionTable
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force -SkipPublisherCheck
+        $Error.clear()
+        Invoke-Pester -Path "tests" -CI
+        if ($Error.Length -gt 0) {exit 1}
+
+      shell: powershell
+
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
@@ -411,7 +422,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -522,12 +533,12 @@ jobs:
 
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
 
 
   deploy-docker:
@@ -566,11 +577,11 @@ jobs:
           docker version -f '{{.Server.Experimental}}'
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v3
 
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}

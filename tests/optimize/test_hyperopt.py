@@ -415,10 +415,10 @@ def test_hyperopt_format_results(hyperopt):
                 "is_short": [False, False, False, False],
                 "stake_amount": [0.01, 0.01, 0.01, 0.01],
                 "exit_reason": [
-                    ExitType.ROI,
-                    ExitType.STOP_LOSS,
-                    ExitType.ROI,
-                    ExitType.FORCE_EXIT,
+                    ExitType.ROI.value,
+                    ExitType.STOP_LOSS.value,
+                    ExitType.ROI.value,
+                    ExitType.FORCE_EXIT.value,
                 ],
             }
         ),
@@ -507,10 +507,10 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                 "is_short": [False, False, False, False],
                 "stake_amount": [0.01, 0.01, 0.01, 0.01],
                 "exit_reason": [
-                    ExitType.ROI,
-                    ExitType.STOP_LOSS,
-                    ExitType.ROI,
-                    ExitType.FORCE_EXIT,
+                    ExitType.ROI.value,
+                    ExitType.STOP_LOSS.value,
+                    ExitType.ROI.value,
+                    ExitType.FORCE_EXIT.value,
                 ],
             }
         ),
@@ -1063,7 +1063,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmp_path, fee) -> None
 def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path, fee) -> None:
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.get_fee", fee)
-    mocker.patch(f"{EXMS}._load_markets")
+    mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.markets", PropertyMock(return_value=get_markets()))
     (tmp_path / "hyperopt_results").mkdir(parents=True)
     # Dummy-reduce points to ensure scikit-learn is forced to generate new values

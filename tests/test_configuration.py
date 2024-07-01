@@ -401,11 +401,11 @@ def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> 
     assert validated_conf["runmode"] == (RunMode.DRY_RUN if expected else RunMode.LIVE)
 
 
-def test_load_custom_strategy(default_conf, mocker) -> None:
+def test_load_custom_strategy(default_conf, mocker, tmp_path) -> None:
     default_conf.update(
         {
             "strategy": "CustomStrategy",
-            "strategy_path": "/tmp/strategies",
+            "strategy_path": f"{tmp_path}/strategies",
         }
     )
     patched_configuration_load_config_file(mocker, default_conf)
@@ -415,7 +415,7 @@ def test_load_custom_strategy(default_conf, mocker) -> None:
     validated_conf = configuration.load_config()
 
     assert validated_conf.get("strategy") == "CustomStrategy"
-    assert validated_conf.get("strategy_path") == "/tmp/strategies"
+    assert validated_conf.get("strategy_path") == f"{tmp_path}/strategies"
 
 
 def test_show_info(default_conf, mocker, caplog) -> None:
@@ -469,7 +469,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert "timerange" not in config
 
 
-def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_configuration_with_arguments(mocker, default_conf, caplog, tmp_path) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch("freqtrade.configuration.configuration.create_datadir", lambda c, x: x)
     mocker.patch(
@@ -485,7 +485,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         "--datadir",
         "/foo/bar",
         "--userdir",
-        "/tmp/freqtrade",
+        f"{tmp_path}/freqtrade",
         "--timeframe",
         "1m",
         "--enable-position-stacking",
@@ -509,7 +509,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert "pair_whitelist" in config["exchange"]
     assert "datadir" in config
     assert log_has("Using data directory: {} ...".format("/foo/bar"), caplog)
-    assert log_has("Using user-data directory: {} ...".format(Path("/tmp/freqtrade")), caplog)
+    assert log_has(f"Using user-data directory: {tmp_path / 'freqtrade'} ...", caplog)
     assert "user_data_dir" in config
 
     assert "timeframe" in config

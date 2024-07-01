@@ -13,28 +13,28 @@ The following attributes / properties are available for each individual trade - 
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
-`pair`| string | Pair of this trade
-`is_open`| boolean | Is the trade currently open, or has it been concluded
-`open_rate`| float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments)
-`close_rate`| float | Close rate - only set when is_open = False
-`stake_amount`| float | Amount in Stake (or Quote) currency.
-`amount`| float | Amount in Asset / Base currency that is currently owned.
-`open_date`| datetime | Timestamp when trade was opened **use `open_date_utc` instead**
-`open_date_utc`| datetime | Timestamp when trade was opened - in UTC
-`close_date`| datetime | Timestamp when trade was closed **use `close_date_utc` instead**
-`close_date_utc`| datetime | Timestamp when trade was closed - in UTC
-`close_profit`| float | Relative profit at the time of trade closure. `0.01` == 1%
-`close_profit_abs`| float | Absolute profit (in stake currency) at the time of trade closure.
-`leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets.
-`enter_tag`| string | Tag provided on entry via the `enter_tag` column in the dataframe
-`is_short` | boolean | True for short trades, False otherwise
-`orders` | Order[] | List of order objects attached to this trade (includes both filled and cancelled orders)
-`date_last_filled_utc` | datetime | Time of the last filled order
-`entry_side` | "buy" / "sell" | Order Side the trade was entered
-`exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction.
-`trade_direction` | "long" / "short" | Trade direction in text - long or short.
-`nr_of_successful_entries` | int | Number of successful (filled) entry orders
-`nr_of_successful_exits` | int | Number of successful (filled) exit orders
+| `pair` | string | Pair of this trade. |
+| `is_open` | boolean | Is the trade currently open, or has it been concluded. |
+| `open_rate` | float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments). |
+| `close_rate` | float | Close rate - only set when is_open = False. |
+| `stake_amount` | float | Amount in Stake (or Quote) currency. |
+| `amount` | float | Amount in Asset / Base currency that is currently owned. |
+| `open_date` | datetime | Timestamp when trade was opened **use `open_date_utc` instead** |
+| `open_date_utc` | datetime | Timestamp when trade was opened - in UTC. |
+| `close_date` | datetime | Timestamp when trade was closed **use `close_date_utc` instead** |
+| `close_date_utc` | datetime | Timestamp when trade was closed - in UTC. |
+| `close_profit` | float | Relative profit at the time of trade closure. `0.01` == 1% |
+| `close_profit_abs` | float | Absolute profit (in stake currency) at the time of trade closure. |
+| `leverage` | float | Leverage used for this trade - defaults to 1.0 in spot markets. |
+| `enter_tag` | string | Tag provided on entry via the `enter_tag` column in the dataframe. |
+| `is_short` | boolean | True for short trades, False otherwise. |
+| `orders` | Order[] | List of order objects attached to this trade (includes both filled and cancelled orders). |
+| `date_last_filled_utc` | datetime | Time of the last filled order. |
+| `entry_side` | "buy" / "sell" | Order Side the trade was entered. |
+| `exit_side` | "buy" / "sell" | Order Side that will result in a trade exit / position reduction. |
+| `trade_direction` | "long" / "short" | Trade direction in text - long or short. |
+| `nr_of_successful_entries` | int | Number of successful (filled) entry orders. |
+| `nr_of_successful_exits` | int | Number of successful (filled) exit orders. |
 
 ## Class methods
 

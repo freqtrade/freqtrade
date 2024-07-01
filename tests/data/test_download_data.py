@@ -83,6 +83,12 @@ def test_download_data_main_trades(mocker):
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
 
+    # Exchange that doesn't support historic downloads
+    config["exchange"]["name"] = "bybit"
+    with pytest.raises(OperationalException, match=r"Trade history not available for .*"):
+        config
+        download_data_main(config)
+
 
 def test_download_data_main_data_invalid(mocker):
     patch_exchange(mocker, id="kraken")

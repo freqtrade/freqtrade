@@ -13,7 +13,7 @@ def get_strategy_run_id(strategy) -> str:
     :param strategy: strategy object.
     :return: hex string id.
     """
-    digest = hashlib.sha1()
+    digest = hashlib.sha1()  # noqa: S324
     config = deepcopy(strategy.config)
 
     # Options that have no impact on results of individual backtest.

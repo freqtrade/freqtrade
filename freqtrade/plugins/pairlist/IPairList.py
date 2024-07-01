@@ -3,7 +3,7 @@ PairList Handler base class
 """
 
 import logging
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
@@ -87,7 +87,8 @@ class IPairList(LoggingMixin, ABC):
         """
         return self.__class__.__name__
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.

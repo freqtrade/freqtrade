@@ -70,13 +70,13 @@ def test_text_table_bt_results():
     )
 
     result_str = (
-        "|    Pair |   Entries |   Avg Profit % |   Tot Profit BTC |   "
+        "|    Pair |   Trades |   Avg Profit % |   Tot Profit BTC |   "
         "Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |\n"
-        "|---------+-----------+----------------+------------------+"
+        "|---------+----------+----------------+------------------+"
         "----------------+----------------+-------------------------|\n"
-        "| ETH/BTC |         3 |           8.33 |       0.50000000 |          "
+        "| ETH/BTC |        3 |           8.33 |       0.50000000 |          "
         "12.50 |        0:20:00 |     2     0     1  66.7 |\n"
-        "|   TOTAL |         3 |           8.33 |       0.50000000 |          "
+        "|   TOTAL |        3 |           8.33 |       0.50000000 |          "
         "12.50 |        0:20:00 |     2     0     1  66.7 |"
     )
 
@@ -116,10 +116,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
                     "is_short": [False, False, False, False],
                     "stake_amount": [0.01, 0.01, 0.01, 0.01],
                     "exit_reason": [
-                        ExitType.ROI,
-                        ExitType.STOP_LOSS,
-                        ExitType.ROI,
-                        ExitType.FORCE_EXIT,
+                        ExitType.ROI.value,
+                        ExitType.STOP_LOSS.value,
+                        ExitType.ROI.value,
+                        ExitType.FORCE_EXIT.value,
                     ],
                 }
             ),
@@ -183,10 +183,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
                     "is_short": [False, False, False, False],
                     "stake_amount": [0.01, 0.01, 0.01, 0.01],
                     "exit_reason": [
-                        ExitType.ROI,
-                        ExitType.ROI,
-                        ExitType.STOP_LOSS,
-                        ExitType.FORCE_EXIT,
+                        ExitType.ROI.value,
+                        ExitType.ROI.value,
+                        ExitType.STOP_LOSS.value,
+                        ExitType.FORCE_EXIT.value,
                     ],
                 }
             ),
@@ -444,7 +444,7 @@ def test_text_table_exit_reason():
             "wins": [2, 0, 0],
             "draws": [0, 0, 0],
             "losses": [0, 0, 1],
-            "exit_reason": [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS],
+            "exit_reason": [ExitType.ROI.value, ExitType.ROI.value, ExitType.STOP_LOSS.value],
         }
     )
 
@@ -509,13 +509,13 @@ def test_text_table_strategy(testdatadir):
     bt_res_data_comparison = bt_res_data.pop("strategy_comparison")
 
     result_str = (
-        "|       Strategy |   Entries |   Avg Profit % |   Tot Profit BTC |"
+        "|       Strategy |   Trades |   Avg Profit % |   Tot Profit BTC |"
         "   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n"
-        "|----------------+-----------+----------------+------------------+"
+        "|----------------+----------+----------------+------------------+"
         "----------------+----------------+-------------------------+-----------------------|\n"
-        "| StrategyTestV2 |       179 |           0.08 |       0.02608550 |"
+        "| StrategyTestV2 |      179 |           0.08 |       0.02608550 |"
         "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n"
-        "|   TestStrategy |       179 |           0.08 |       0.02608550 |"
+        "|   TestStrategy |      179 |           0.08 |       0.02608550 |"
         "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |"
     )
 
