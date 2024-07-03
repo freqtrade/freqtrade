@@ -2,10 +2,10 @@
 This module contains the argument manager class
 """
 
-import argparse
+from argparse import ArgumentParser, Namespace, _ArgumentGroup
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade.constants import DEFAULT_CONFIG
@@ -267,7 +267,7 @@ class Arguments:
 
     def __init__(self, args: Optional[List[str]]) -> None:
         self.args = args
-        self._parsed_arg: Optional[argparse.Namespace] = None
+        self._parsed_arg: Optional[Namespace] = None
 
     def get_parsed_arg(self) -> Dict[str, Any]:
         """
@@ -280,7 +280,7 @@ class Arguments:
 
         return vars(self._parsed_arg)
 
-    def _parse_args(self) -> argparse.Namespace:
+    def _parse_args(self) -> Namespace:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
@@ -309,7 +309,9 @@ class Arguments:
 
         return parsed_arg
 
-    def _build_args(self, optionlist: List[str], parser) -> None:
+    def _build_args(
+        self, optionlist: List[str], parser: Union[ArgumentParser, _ArgumentGroup]
+    ) -> None:
         for val in optionlist:
             opt = AVAILABLE_CLI_OPTIONS[val]
             parser.add_argument(*opt.cli, dest=val, **opt.kwargs)
@@ -320,16 +322,16 @@ class Arguments:
         :return: None
         """
         # Build shared arguments (as group Common Options)
-        _common_parser = argparse.ArgumentParser(add_help=False)
+        _common_parser = ArgumentParser(add_help=False)
         group = _common_parser.add_argument_group("Common arguments")
         self._build_args(optionlist=ARGS_COMMON, parser=group)
 
-        _strategy_parser = argparse.ArgumentParser(add_help=False)
+        _strategy_parser = ArgumentParser(add_help=False)
         strategy_group = _strategy_parser.add_argument_group("Strategy arguments")
         self._build_args(optionlist=ARGS_STRATEGY, parser=strategy_group)
 
         # Build main command
-        self.parser = argparse.ArgumentParser(
+        self.parser = ArgumentParser(
             prog="freqtrade", description="Free, open source crypto trading bot"
         )
         self._build_args(optionlist=["version"], parser=self.parser)
