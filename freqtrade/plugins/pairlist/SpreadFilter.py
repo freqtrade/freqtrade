@@ -7,13 +7,15 @@ from typing import Dict, Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Ticker
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 
 logger = logging.getLogger(__name__)
 
 
 class SpreadFilter(IPairList):
+    supports_backtesting = SupportsBacktesting.NO
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 

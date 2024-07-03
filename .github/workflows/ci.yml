@@ -55,7 +55,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -192,7 +192,7 @@ jobs:
 
     - name: Installation (python)
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -422,7 +422,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade pip wheel
+        python -m pip install --upgrade "pip<=24.0" wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include

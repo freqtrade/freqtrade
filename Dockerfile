@@ -25,7 +25,7 @@ FROM base as python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean \
-  && pip install --upgrade pip wheel
+  && pip install --upgrade "pip<=24.0" wheel
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
@@ -35,7 +35,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 # Install dependencies
 COPY --chown=ftuser:ftuser requirements.txt requirements-hyperopt.txt /freqtrade/
 USER ftuser
-RUN  pip install --user --no-cache-dir numpy \
+RUN  pip install --user --no-cache-dir "numpy<2.0" \
   && pip install --user --no-cache-dir -r requirements-hyperopt.txt
 
 # Copy dependencies to runtime-image

@@ -650,9 +650,9 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 * API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.
 * Wallets (`/balance`) are simulated based on `dry_run_wallet`.
 * Orders are simulated, and will not be posted to the exchange.
-* Market orders fill based on orderbook volume the moment the order is placed.
+* Market orders fill based on orderbook volume the moment the order is placed, with a maximum slippage of 5%.
 * Limit orders fill once the price reaches the defined level - or time out based on `unfilledtimeout` settings.
-* Limit orders will be converted to market orders if they cross the price by more than 1%.
+* Limit orders will be converted to market orders if they cross the price by more than 1%, and will be filled immediately based regular market order rules (see point about Market orders above).
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
 * Open orders (not trades, which are stored in the database) are kept open after bot restarts, with the assumption that they were not filled while being offline.
 

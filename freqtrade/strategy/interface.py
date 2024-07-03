@@ -6,6 +6,7 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
+from math import isinf, isnan
 from typing import Dict, List, Optional, Tuple, Union
 
 from pandas import DataFrame
@@ -1423,7 +1424,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 after_fill=after_fill,
             )
             # Sanity check - error cases will return None
-            if stop_loss_value_custom:
+            if stop_loss_value_custom and not (
+                isnan(stop_loss_value_custom) or isinf(stop_loss_value_custom)
+            ):
                 stop_loss_value = stop_loss_value_custom
                 trade.adjust_stop_loss(
                     bound or current_rate, stop_loss_value, allow_refresh=after_fill

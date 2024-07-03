@@ -18,4 +18,5 @@ class Bitmart(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": False,  # Bitmart API does not support stoploss orders
         "ohlcv_candle_limit": 200,
+        "trades_has_history": False,  # Endpoint doesn't seem to support pagination
     }

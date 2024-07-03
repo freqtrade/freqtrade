@@ -165,7 +165,9 @@ E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoplo
 During backtesting, `current_rate` (and `current_profit`) are provided against the candle's high (or low for short trades) - while the resulting stoploss is evaluated against the candle's low (or high for short trades).
 
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
-Returning None will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
+Returning `None` will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
+`NaN` and `inf` values are considered invalid and will be ignored (identical to `None`).
+
 
 Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
