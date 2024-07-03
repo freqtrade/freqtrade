@@ -226,6 +226,19 @@ ARGS_ANALYZE_ENTRIES_EXITS = [
     "analysis_csv_path",
 ]
 
+
+ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_search"]
+
+ARGS_LOOKAHEAD_ANALYSIS = [
+    a
+    for a in ARGS_BACKTEST
+    if a
+    not in ("position_stacking", "use_max_market_positions", "backtest_cache", "backtest_breakdown")
+] + ["minimum_trade_amount", "targeted_trade_amount", "lookahead_analysis_exportfilename"]
+
+ARGS_RECURSIVE_ANALYSIS = ["timeframe", "timerange", "dataformat_ohlcv", "pairs", "startup_candle"]
+
+# Command level configs - keep at the bottom of the above definitions
 NO_CONF_REQURIED = [
     "convert-data",
     "convert-trade-data",
@@ -247,17 +260,6 @@ NO_CONF_REQURIED = [
 ]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
-
-ARGS_STRATEGY_UPDATER = ["strategy_list", "strategy_path", "recursive_strategy_search"]
-
-ARGS_LOOKAHEAD_ANALYSIS = [
-    a
-    for a in ARGS_BACKTEST
-    if a
-    not in ("position_stacking", "use_max_market_positions", "backtest_cache", "backtest_breakdown")
-] + ["minimum_trade_amount", "targeted_trade_amount", "lookahead_analysis_exportfilename"]
-
-ARGS_RECURSIVE_ANALYSIS = ["timeframe", "timerange", "dataformat_ohlcv", "pairs", "startup_candle"]
 
 
 class Arguments:
