@@ -7,8 +7,8 @@
 -r docs/requirements-docs.txt
 
 coveralls==4.0.1
-ruff==0.4.10
-mypy==1.10.0
+ruff==0.5.0
+mypy==1.10.1
 pre-commit==3.7.1
 pytest==8.2.2
 pytest-asyncio==0.23.7
@@ -18,7 +18,7 @@ pytest-random-order==1.1.1
 pytest-xdist==3.6.1
 isort==5.13.2
 # For datetime mocking
-time-machine==2.14.1
+time-machine==2.14.2
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==7.16.4

@@ -33,7 +33,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
         if log:
             logger.info(f'dumping json to "{filename}"')
 
-        with gzip.open(filename, "w") as fpz:
+        with gzip.open(filename, "wt", encoding="utf-8") as fpz:
             rapidjson.dump(data, fpz, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
         if log:
@@ -60,7 +60,7 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
     logger.debug(f'done joblib dump to "{filename}"')
 
 
-def json_load(datafile: Union[gzip.GzipFile, TextIO]) -> Any:
+def json_load(datafile: TextIO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -77,7 +77,7 @@ def file_load_json(file: Path):
     # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
         logger.debug(f"Loading historical data from file {gzipfile}")
-        with gzip.open(gzipfile) as datafile:
+        with gzip.open(gzipfile, "rt", encoding="utf-8") as datafile:
             pairdata = json_load(datafile)
     elif file.is_file():
         logger.debug(f"Loading historical data from file {file}")
