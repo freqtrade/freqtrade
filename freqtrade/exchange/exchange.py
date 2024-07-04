@@ -2703,7 +2703,11 @@ class Exchange:
                         )
 
                         if not all_stored_ticks_df.empty:
-                            if all_stored_ticks_df.iloc[0]["timestamp"] <= first_candle_ms:
+                            if (
+                                all_stored_ticks_df.iloc[-1]["timestamp"] > first_candle_ms
+                                and all_stored_ticks_df.iloc[0]["timestamp"] <= first_candle_ms
+                            ):
+                                # Use cache and populate further
                                 last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
                                 from_id = all_stored_ticks_df.iloc[-1]["id"]
                                 # only use cached if it's closer than first_candle_ms
@@ -2712,8 +2716,8 @@ class Exchange:
                                     if last_cached_ms > first_candle_ms
                                     else first_candle_ms
                                 )
-                            # doesn't go far enough
                             else:
+                                # Skip cache, it's too old
                                 all_stored_ticks_df = DataFrame(
                                     columns=DEFAULT_TRADES_COLUMNS + ["date"]
                                 )
