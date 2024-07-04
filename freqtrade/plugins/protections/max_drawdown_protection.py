@@ -37,10 +37,13 @@ class MaxDrawdown(IProtection):
         """
         LockReason to use
         """
-        return (
+        reason = (
             f"{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, "
             f"locking for {self.stop_duration_str}."
         )
+        if self.unlock_at_str is not None:
+            reason += f" Unlocking trading at {self.unlock_at_str}."
+        return reason
 
     def _max_drawdown(self, date_now: datetime) -> Optional[ProtectionReturn]:
         """

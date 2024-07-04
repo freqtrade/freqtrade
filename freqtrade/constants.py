@@ -356,6 +356,7 @@ CONF_SCHEMA = {
                 "properties": {
                     "method": {"type": "string", "enum": AVAILABLE_PROTECTIONS},
                     "stop_duration": {"type": "number", "minimum": 0.0},
+                    "unlock_at": {"type": "string"},
                     "stop_duration_candles": {"type": "number", "minimum": 0},
                     "trade_limit": {"type": "number", "minimum": 1},
                     "lookback_period": {"type": "number", "minimum": 1},

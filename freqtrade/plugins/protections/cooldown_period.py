@@ -18,7 +18,10 @@ class CooldownPeriod(IProtection):
         """
         LockReason to use
         """
-        return f"Cooldown period for {self.stop_duration_str}."
+        reason = f"Cooldown period for {self.stop_duration_str}."
+        if self.unlock_at_str is not None:
+            reason += f" Unlocking trading at {self.unlock_at_str}."
+        return reason
 
     def short_desc(self) -> str:
         """

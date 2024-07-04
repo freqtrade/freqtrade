@@ -1,6 +1,7 @@
 import logging
 from collections import Counter
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Dict
 
 from jsonschema import Draft4Validator, validators
@@ -192,17 +193,39 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
     """
 
     for prot in conf.get("protections", []):
+        parsed_unlock_at = _validate_unlock_at(prot)
+
         if "stop_duration" in prot and "stop_duration_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
             )
 
         if "lookback_period" in prot and "lookback_period_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
             )
+
+        if parsed_unlock_at is not None and "stop_duration" in prot:
+            raise ConfigurationError(
+                "Protections must specify either `unlock_at` or `stop_duration`.\n"
+                f"Please fix the protection {prot.get('method')}."
+            )
+
+        if parsed_unlock_at is not None and "stop_duration_candles" in prot:
+            raise ConfigurationError(
+                "Protections must specify either `unlock_at` or `stop_duration_candles`.\n"
+                f"Please fix the protection {prot.get('method')}."
+            )
+
+
+def _validate_unlock_at(config_unlock_at: str) -> datetime:
+    if config_unlock_at is not None and isinstance(config_unlock_at, str):
+        try:
+            return datetime.strptime(config_unlock_at, "%H:%M")
+        except ValueError:
+            raise ConfigurationError(f"Invalid date format for unlock_at: {config_unlock_at}.")
 
 
 def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:

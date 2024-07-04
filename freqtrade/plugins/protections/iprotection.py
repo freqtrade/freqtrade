@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exchange import timeframe_to_minutes
@@ -33,20 +33,32 @@ class IProtection(LoggingMixin, ABC):
         self._protection_config = protection_config
         self._stop_duration_candles: Optional[int] = None
         self._lookback_period_candles: Optional[int] = None
+        self.unlock_at: Optional[datetime] = None
 
         tf_in_min = timeframe_to_minutes(config["timeframe"])
         if "stop_duration_candles" in protection_config:
             self._stop_duration_candles = int(protection_config.get("stop_duration_candles", 1))
             self._stop_duration = tf_in_min * self._stop_duration_candles
         else:
-            self._stop_duration_candles = None
             self._stop_duration = int(protection_config.get("stop_duration", 60))
         if "lookback_period_candles" in protection_config:
             self._lookback_period_candles = int(protection_config.get("lookback_period_candles", 1))
             self._lookback_period = tf_in_min * self._lookback_period_candles
         else:
-            self._lookback_period_candles = None
             self._lookback_period = int(protection_config.get("lookback_period", 60))
+
+        if "unlock_at" in protection_config:
+            now_time = datetime.now(timezone.utc)
+            unlock_at = datetime.strptime(protection_config["unlock_at"], "%H:%M").replace(
+                day=now_time.day, year=now_time.year, month=now_time.month
+            )
+
+            if unlock_at.time() < now_time.time():
+                unlock_at = unlock_at.replace(day=now_time.day + 1)
+
+            unlock_at = unlock_at.replace(tzinfo=timezone.utc)
+            self._stop_duration = self.calculate_timespan(now_time, unlock_at)
+            self.unlock_at = unlock_at
 
         LoggingMixin.__init__(self, logger)
 
@@ -79,6 +91,15 @@ class IProtection(LoggingMixin, ABC):
             )
         else:
             return f"{self._lookback_period} {plural(self._lookback_period, 'minute', 'minutes')}"
+
+    @property
+    def unlock_at_str(self) -> Union[str, None]:
+        """
+        Output configured unlock time
+        """
+        if self.unlock_at:
+            return self.unlock_at.strftime("%H:%M")
+        return None
 
     @abstractmethod
     def short_desc(self) -> str:
@@ -118,3 +139,14 @@ class IProtection(LoggingMixin, ABC):
         until = max_date + timedelta(minutes=stop_minutes)
 
         return until
+
+    @staticmethod
+    def calculate_timespan(start_time: datetime, end_time: datetime) -> int:
+        """
+        Calculate the timespan between two datetime objects in minutes.
+
+        :param start_time: The start datetime.
+        :param end_time: The end datetime.
+        :return: The difference between the two datetimes in minutes.
+        """
+        return int((end_time - start_time).total_seconds() / 60)
