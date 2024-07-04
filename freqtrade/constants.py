@@ -537,7 +537,7 @@ CONF_SCHEMA = {
         "orderflow": {
             "type": "object",
             "properties": {
-                "cache_size": {"type": "number", "minimum": 1, "default": 1000},
+                "cache_size": {"type": "number", "minimum": 1, "default": 1500},
                 "max_candles": {"type": "number", "minimum": 1, "default": 1500},
                 "scale": {"type": "number", "minimum": 0.0},
                 "stacked_imbalance_range": {"type": "number", "minimum": 0},
