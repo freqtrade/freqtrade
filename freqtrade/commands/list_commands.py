@@ -45,7 +45,8 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
                 "name": exchange["name"],
                 **valid_entry,
                 "supported": "Official" if exchange["supported"] else "",
-                "trade_modes": ", ".join(
+                "trade_modes": ("DEX: " if exchange["dex"] else "")
+                + ", ".join(
                     (f"{a['margin_mode']} " if a["margin_mode"] else "") + a["trading_mode"]
                     for a in exchange["trade_modes"]
                 ),
