@@ -410,6 +410,8 @@ Or another example if your position adjustment assumes it can do 1 additional bu
 
 --8<-- "includes/pricing.md"
 
+## Further Configuration details
+
 ### Understand minimal_roi
 
 The `minimal_roi` configuration parameter is a JSON object where the key is a duration
