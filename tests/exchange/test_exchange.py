@@ -2408,6 +2408,7 @@ def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_pa
     use_trades_conf = default_conf
     use_trades_conf["exchange"]["use_public_trades"] = True
     use_trades_conf["datadir"] = tmp_path
+    use_trades_conf["orderflow"] = {"max_candles": 1500}
     exchange = get_patched_exchange(mocker, use_trades_conf)
     exchange._api_async.fetch_trades = get_mock_coro(trades)
     exchange._ft_has["exchange_has_overrides"]["fetchTrades"] = True

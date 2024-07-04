@@ -2623,6 +2623,20 @@ class Exchange:
         now = timeframe_to_next_date(timeframe)
         return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
 
+    def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType):
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe, candle_type)
+        config_orderflow = self._config["orderflow"]
+        required_candles = config_orderflow["max_candles"]
+        required_candles = (
+            required_candles
+            if required_candles < self.required_candle_call_count
+            else self.required_candle_call_count
+        )
+
+        move_to = one_call * required_candles
+        now = timeframe_to_next_date(timeframe)
+        return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+
     def _process_trades_df(
         self,
         pair: str,
@@ -2675,7 +2689,7 @@ class Exchange:
         for pair, timeframe, candle_type in set(pair_list):
             new_ticks: List = []
             all_stored_ticks_df = DataFrame(columns=DEFAULT_TRADES_COLUMNS + ["date"])
-            first_candle_ms = self.needed_candle_ms(timeframe, candle_type)
+            first_candle_ms = self.needed_candle_for_trades_ms(timeframe, candle_type)
             # refresh, if
             # a. not in _trades
             # b. no cache used
