@@ -8437,7 +8437,7 @@
       }
     }
   ],
-  "BTC/USDT:USDT-240628": [
+  "BTC/USDT:USDT-240927": [
     {
       "tier": 1.0,
       "currency": "USDT",
@@ -8567,7 +8567,7 @@
       }
     }
   ],
-  "BTC/USDT:USDT-240927": [
+  "BTC/USDT:USDT-241227": [
     {
       "tier": 1.0,
       "currency": "USDT",
@@ -13805,7 +13805,7 @@
       }
     }
   ],
-  "ETH/USDT:USDT-240628": [
+  "ETH/USDT:USDT-240927": [
     {
       "tier": 1.0,
       "currency": "USDT",
@@ -13935,7 +13935,7 @@
       }
     }
   ],
-  "ETH/USDT:USDT-240927": [
+  "ETH/USDT:USDT-241227": [
     {
       "tier": 1.0,
       "currency": "USDT",
