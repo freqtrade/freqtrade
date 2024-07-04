@@ -702,7 +702,7 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
     **NEVER** share your private configuration file or your exchange keys with anyone!
 
-### Using proxy with Freqtrade
+## Using a proxy with Freqtrade
 
 To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
 This will have the proxy settings applied to everything (telegram, coingecko, ...) **except** for exchange requests.
@@ -713,7 +713,7 @@ export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
 
-#### Proxy exchange requests
+### Proxy exchange requests
 
 To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.
 
