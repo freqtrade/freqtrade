@@ -602,9 +602,12 @@ class Exchange:
             # Reload async markets, then assign them to sync api
             self._markets = self._load_async_markets(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
+            # Assign options array, as it contains some temporary information from the exchange.
+            self._api.options = self._api_async.options
             if self._exchange_ws:
                 # Set markets to avoid reloading on websocket api
                 self._ws_async.set_markets(self._api.markets, self._api.currencies)
+                self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
 
             if is_initial and self._ft_has["needs_trading_fees"]:
