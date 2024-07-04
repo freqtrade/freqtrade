@@ -3810,6 +3810,9 @@ def test_get_real_amount_quote_dust(
 def test_get_real_amount_no_trade(default_conf_usdt, buy_order_fee, caplog, mocker, fee):
     mocker.patch(f"{EXMS}.get_trades_for_order", return_value=[])
 
+    # Invalid nested trade object
+    buy_order_fee["trades"] = [{"amount": None, "cost": 22}]
+
     amount = buy_order_fee["amount"]
     trade = Trade(
         pair="LTC/ETH",
