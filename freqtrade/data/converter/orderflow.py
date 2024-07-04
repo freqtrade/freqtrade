@@ -7,19 +7,17 @@ import time
 import typing
 from collections import OrderedDict
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 
 from freqtrade.constants import DEFAULT_ORDERFLOW_COLUMNS
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import DependencyException
 
 
 logger = logging.getLogger(__name__)
-
-# Global cache dictionary
-cached_grouped_trades_per_pair: Dict[str, OrderedDict[Tuple[datetime, datetime], pd.DataFrame]] = {}
 
 
 def _init_dataframe_with_trades_columns(dataframe: pd.DataFrame):
@@ -64,8 +62,11 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
 
 
 def populate_dataframe_with_trades(
-    pair: str, config, dataframe: pd.DataFrame, trades: pd.DataFrame
-):
+    cached_grouped_trades: OrderedDict[Tuple[datetime, datetime], pd.DataFrame],
+    config,
+    dataframe: pd.DataFrame,
+    trades: pd.DataFrame,
+) -> Tuple[pd.DataFrame, OrderedDict[Tuple[datetime, datetime], pd.DataFrame]]:
     """
     Populates a dataframe with trades
     :param dataframe: Dataframe to populate
@@ -74,15 +75,11 @@ def populate_dataframe_with_trades(
     """
     timeframe = config["timeframe"]
     config_orderflow = config["orderflow"]
-    cache_size = config_orderflow["cache_size"]
 
     # create columns for trades
     _init_dataframe_with_trades_columns(dataframe)
 
     try:
-        cached_grouped_trades: OrderedDict[Tuple[datetime, datetime], pd.DataFrame] = (
-            cached_grouped_trades_per_pair.get(pair, OrderedDict())
-        )
         start_time = time.time()
         # calculate ohlcv candle start and end
         _calculate_ohlcv_candle_start_and_end(trades, timeframe)
@@ -184,7 +181,10 @@ def populate_dataframe_with_trades(
                 )
 
                 # Maintain cache size
-                if len(cached_grouped_trades) > cache_size:
+                if (
+                    config.get("runmode") in (RunMode.DRY_RUN, RunMode.LIVE)
+                    and len(cached_grouped_trades) > config_orderflow["cache_size"]
+                ):
                     cached_grouped_trades.popitem(last=False)
             else:
                 logger.debug(f"Found NO candles for trades starting with {candle_start}")
@@ -196,16 +196,12 @@ def populate_dataframe_with_trades(
         dataframe["imbalances"] = imbalances_series
         dataframe["stacked_imbalances_bid"] = stacked_imbalances_bid_series
         dataframe["stacked_imbalances_ask"] = stacked_imbalances_ask_series
-        # dereference old cache
-        if pair in cached_grouped_trades_per_pair:
-            del cached_grouped_trades_per_pair[pair]
-        cached_grouped_trades_per_pair[pair] = cached_grouped_trades
 
     except Exception as e:
         logger.exception("Error populating dataframe with trades")
         raise DependencyException(e)
 
-    return dataframe
+    return dataframe, cached_grouped_trades
 
 
 def trades_to_volumeprofile_with_total_delta_bid_ask(
