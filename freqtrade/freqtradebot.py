@@ -168,6 +168,8 @@ class FreqtradeBot(LoggingMixin):
                     t = str(time(time_slot, minutes, 2))
                     self._schedule.every().day.at(t).do(update)
 
+        self._schedule.every().day.at("00:02").do(self.exchange.ws_connection_reset)
+
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
         self.protections = ProtectionManager(self.config, self.strategy.protections)
@@ -289,8 +291,7 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for entry opportunities
         if self.get_free_open_trades():
             self.enter_positions()
-        if self.trading_mode == TradingMode.FUTURES:
-            self._schedule.run_pending()
+        self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
         self.last_process = datetime.now(timezone.utc)

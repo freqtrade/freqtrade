@@ -2176,7 +2176,7 @@ def test_api_exchanges(botclient):
         "valid": True,
         "supported": False,
         "dex": True,
-        "comment": "",
+        "comment": ANY,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
 

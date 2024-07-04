@@ -15,6 +15,7 @@ pytest-asyncio==0.23.7
 pytest-cov==5.0.0
 pytest-mock==3.14.0
 pytest-random-order==1.1.1
+pytest-timeout==2.3.1
 pytest-xdist==3.6.1
 isort==5.13.2
 # For datetime mocking
