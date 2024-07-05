@@ -53,16 +53,22 @@ def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[st
     return [x for x in exchanges if validate_exchange(x)[0]]
 
 
-def validate_exchange(exchange: str) -> Tuple[bool, str]:
+def validate_exchange(exchange: str) -> Tuple[bool, str, bool]:
     """
     returns: can_use, reason
         with Reason including both missing and missing_opt
     """
-    ex_mod = getattr(ccxt, exchange.lower())()
+    try:
+        ex_mod = getattr(ccxt.pro, exchange.lower())()
+    except AttributeError:
+        ex_mod = getattr(ccxt.async_support, exchange.lower())()
+
+    if not ex_mod or not ex_mod.has:
+        return False, "", False
+
     result = True
     reason = ""
-    if not ex_mod or not ex_mod.has:
-        return False, ""
+    is_dex = getattr(ex_mod, "dex", False)
     missing = [
         k
         for k, v in EXCHANGE_HAS_REQUIRED.items()
@@ -81,18 +87,19 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     if missing_opt:
         reason += f"{'. ' if reason else ''}missing opt: {', '.join(missing_opt)}. "
 
-    return result, reason
+    return result, reason, is_dex
 
 
 def _build_exchange_list_entry(
     exchange_name: str, exchangeClasses: Dict[str, Any]
 ) -> ValidExchangesType:
-    valid, comment = validate_exchange(exchange_name)
+    valid, comment, is_dex = validate_exchange(exchange_name)
     result: ValidExchangesType = {
         "name": exchange_name,
         "valid": valid,
         "supported": exchange_name.lower() in SUPPORTED_EXCHANGES,
         "comment": comment,
+        "dex": is_dex,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
     if resolved := exchangeClasses.get(exchange_name.lower()):

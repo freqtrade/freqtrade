@@ -1,12 +1,12 @@
 """Freqtrade bot"""
 
-__version__ = "2024.6-dev"
+__version__ = "2024.7-dev"
 
 if "dev" in __version__:
     from pathlib import Path
 
     try:
-        import subprocess
+        import subprocess  # noqa: S404
 
         freqtrade_basedir = Path(__file__).parent
 

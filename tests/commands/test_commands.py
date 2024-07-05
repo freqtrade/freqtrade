@@ -167,7 +167,7 @@ def test_list_timeframes(mocker, capsys):
         "1h": "hour",
         "1d": "day",
     }
-    patch_exchange(mocker, api_mock=api_mock, id="bybit")
+    patch_exchange(mocker, api_mock=api_mock, exchange="bybit")
     args = [
         "list-timeframes",
     ]
@@ -213,7 +213,7 @@ def test_list_timeframes(mocker, capsys):
         "1d": "1d",
         "3d": "3d",
     }
-    patch_exchange(mocker, api_mock=api_mock, id="binance")
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance")
     # Test with --exchange binance
     args = [
         "list-timeframes",
@@ -258,7 +258,7 @@ def test_list_timeframes(mocker, capsys):
 
 def test_list_markets(mocker, markets_static, capsys):
     api_mock = MagicMock()
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
 
     # Test with no --config
     args = [
@@ -286,7 +286,7 @@ def test_list_markets(mocker, markets_static, capsys):
         "LTC/ETH, LTC/USD, NEO/BTC, TKN/BTC, XLTCUSDT, XRP/BTC.\n" in captured.out
     )
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
     # Test with --exchange
     args = ["list-markets", "--exchange", "binance"]
     pargs = get_args(args)
@@ -295,7 +295,7 @@ def test_list_markets(mocker, markets_static, capsys):
     captured = capsys.readouterr()
     assert re.match("\nExchange Binance has 12 active markets:\n", captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
     # Test with --all: all markets
     args = [
         "list-markets",
@@ -823,7 +823,7 @@ def test_download_data_no_markets(mocker, caplog):
         "freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data",
         MagicMock(return_value=["ETH/BTC", "XRP/BTC"]),
     )
-    patch_exchange(mocker, id="binance")
+    patch_exchange(mocker, exchange="binance")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     args = [
         "download-data",
@@ -952,7 +952,7 @@ def test_download_data_trades(mocker):
 
 
 def test_download_data_data_invalid(mocker):
-    patch_exchange(mocker, id="kraken")
+    patch_exchange(mocker, exchange="kraken")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     args = [
         "download-data",

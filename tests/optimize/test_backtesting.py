@@ -429,7 +429,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
         backtesting.start()
 
 
-def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> None:
+def test_backtesting_no_pair_left(default_conf, mocker) -> None:
     mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
     mocker.patch(
         "freqtrade.data.history.history_utils.load_pair_history",
@@ -449,13 +449,6 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     with pytest.raises(OperationalException, match="No pair in whitelist."):
         Backtesting(default_conf)
 
-    default_conf["pairlists"] = [{"method": "VolumePairList", "number_assets": 5}]
-    with pytest.raises(
-        OperationalException,
-        match=r"VolumePairList not allowed for backtesting\..*StaticPairList.*",
-    ):
-        Backtesting(default_conf)
-
     default_conf.update(
         {
             "pairlists": [{"method": "StaticPairList"}],
@@ -469,7 +462,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
         Backtesting(default_conf)
 
 
-def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, tickers) -> None:
+def test_backtesting_pairlist_list(default_conf, mocker, tickers) -> None:
     mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
     mocker.patch(f"{EXMS}.get_tickers", tickers)
     mocker.patch(f"{EXMS}.price_to_precision", lambda s, x, y: y)
@@ -492,12 +485,6 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     with pytest.raises(
         OperationalException,
         match=r"VolumePairList not allowed for backtesting\..*StaticPairList.*",
-    ):
-        Backtesting(default_conf)
-
-    default_conf["pairlists"] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
-    with pytest.raises(
-        OperationalException, match="PerformanceFilter not allowed for backtesting."
     ):
         Backtesting(default_conf)
 

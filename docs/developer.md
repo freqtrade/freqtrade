@@ -22,7 +22,7 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 ## Developer setup
 
 To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
+Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -r requirements-dev.txt` - followed by `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `ruff`, `mypy`, and `coveralls`.
 

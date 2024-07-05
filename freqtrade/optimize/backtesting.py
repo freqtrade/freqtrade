@@ -217,8 +217,6 @@ class Backtesting:
             raise OperationalException(
                 "VolumePairList not allowed for backtesting. Please use StaticPairList instead."
             )
-        if "PerformanceFilter" in self.pairlists.name_list:
-            raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
         if len(self.strategylist) > 1 and "PrecisionFilter" in self.pairlists.name_list:
             raise OperationalException(
@@ -467,25 +465,25 @@ class Backtesting:
         return data
 
     def _get_close_rate(
-        self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple, trade_dur: int
+        self, row: Tuple, trade: LocalTrade, exit_: ExitCheckTuple, trade_dur: int
     ) -> float:
         """
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if exit.exit_type in (
+        if exit_.exit_type in (
             ExitType.STOP_LOSS,
             ExitType.TRAILING_STOP_LOSS,
             ExitType.LIQUIDATION,
         ):
-            return self._get_close_rate_for_stoploss(row, trade, exit, trade_dur)
-        elif exit.exit_type == (ExitType.ROI):
-            return self._get_close_rate_for_roi(row, trade, exit, trade_dur)
+            return self._get_close_rate_for_stoploss(row, trade, exit_, trade_dur)
+        elif exit_.exit_type == (ExitType.ROI):
+            return self._get_close_rate_for_roi(row, trade, exit_, trade_dur)
         else:
             return row[OPEN_IDX]
 
     def _get_close_rate_for_stoploss(
-        self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple, trade_dur: int
+        self, row: Tuple, trade: LocalTrade, exit_: ExitCheckTuple, trade_dur: int
     ) -> float:
         # our stoploss was already lower than candle high,
         # possibly due to a cancelled trade exit.
@@ -493,7 +491,7 @@ class Backtesting:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
-        if exit.exit_type == ExitType.LIQUIDATION and trade.liquidation_price:
+        if exit_.exit_type == ExitType.LIQUIDATION and trade.liquidation_price:
             stoploss_value = trade.liquidation_price
         else:
             stoploss_value = trade.stop_loss
@@ -508,7 +506,7 @@ class Backtesting:
         # Special case: trailing triggers within same candle as trade opened. Assume most
         # pessimistic price movement, which is moving just enough to arm stoploss and
         # immediately going down to stop price.
-        if exit.exit_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
+        if exit_.exit_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
             if (
                 not self.strategy.use_custom_stoploss
                 and self.strategy.trailing_stop
@@ -539,7 +537,7 @@ class Backtesting:
         return stoploss_value
 
     def _get_close_rate_for_roi(
-        self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple, trade_dur: int
+        self, row: Tuple, trade: LocalTrade, exit_: ExitCheckTuple, trade_dur: int
     ) -> float:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0

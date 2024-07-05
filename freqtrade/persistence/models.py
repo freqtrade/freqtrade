@@ -32,12 +32,12 @@ def get_request_or_thread_id() -> Optional[str]:
     """
     Helper method to get either async context (for fastapi requests), or thread id
     """
-    id = _request_id_ctx_var.get()
-    if id is None:
+    request_id = _request_id_ctx_var.get()
+    if request_id is None:
         # when not in request context - use thread id
-        id = str(threading.current_thread().ident)
+        request_id = str(threading.current_thread().ident)
 
-    return id
+    return request_id
 
 
 _SQL_DOCS_URL = "http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls"

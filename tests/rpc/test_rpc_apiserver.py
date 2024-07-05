@@ -2154,6 +2154,7 @@ def test_api_exchanges(botclient):
         "valid": True,
         "supported": True,
         "comment": "",
+        "dex": False,
         "trade_modes": [
             {"trading_mode": "spot", "margin_mode": ""},
             {"trading_mode": "futures", "margin_mode": "isolated"},
@@ -2165,7 +2166,17 @@ def test_api_exchanges(botclient):
         "name": "mexc",
         "valid": True,
         "supported": False,
+        "dex": False,
         "comment": "",
+        "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
+    }
+    waves = [x for x in response["exchanges"] if x["name"] == "wavesexchange"][0]
+    assert waves == {
+        "name": "wavesexchange",
+        "valid": True,
+        "supported": False,
+        "dex": True,
+        "comment": ANY,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
 

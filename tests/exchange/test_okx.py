@@ -12,7 +12,7 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
 def test_okx_ohlcv_candle_limit(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     timeframes = ("1m", "5m", "1h")
     start_time = int(datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
 
@@ -188,7 +188,7 @@ def test_get_maintenance_ratio_and_amt_okx(
             }
         ),
     )
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
     assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 2000) == (0.01, None)
     assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 2001) == (0.015, None)
     assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 4001) == (0.02, None)
@@ -199,12 +199,12 @@ def test_get_maintenance_ratio_and_amt_okx(
 
 
 def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     assert exchange.get_max_pair_stake_amount("BNB/BUSD", 1.0) == float("inf")
 
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     exchange._leverage_tiers = leverage_tiers
 
     assert exchange.get_max_pair_stake_amount("XRP/USDT:USDT", 1.0) == 30000000
@@ -229,7 +229,7 @@ def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
     ],
 )
 def test__get_posSide(default_conf, mocker, mode, side, reduceonly, result):
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     exchange.net_only = mode == "net"
     assert exchange._get_posSide(side, reduceonly) == result
 
@@ -257,7 +257,7 @@ def test_additional_exchange_init_okx(default_conf, mocker):
         ]
     )
     default_conf["dry_run"] = False
-    exchange = get_patched_exchange(mocker, default_conf, id="okx", api_mock=api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx", api_mock=api_mock)
     assert api_mock.fetch_accounts.call_count == 0
     exchange.trading_mode = TradingMode.FUTURES
     # Default to netOnly
@@ -438,7 +438,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     default_conf["stake_currency"] = "USDT"
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
     exchange.trading_mode = TradingMode.FUTURES
     exchange.margin_mode = MarginMode.ISOLATED
     exchange.markets = markets
@@ -520,7 +520,7 @@ def test__set_leverage_okx(mocker, default_conf):
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
     exchange._lev_prep("BTC/USDT:USDT", 3.2, "buy")
     assert api_mock.set_leverage.call_count == 1
     # Leverage is rounded to 3.
@@ -554,7 +554,7 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock()
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
 
     exchange.fetch_stoploss_order("1234", "ETH/BTC")
     assert api_mock.fetch_order.call_count == 1
@@ -594,7 +594,7 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
     assert resp["type"] == "stoploss"
 
     default_conf["dry_run"] = True
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
     dro_mock = mocker.patch(f"{EXMS}.fetch_dry_run_order", MagicMock(return_value={"id": "123455"}))
 
     api_mock.fetch_order.reset_mock()
@@ -614,7 +614,7 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
     "sl1,sl2,sl3,side", [(1501, 1499, 1501, "sell"), (1499, 1501, 1499, "buy")]
 )
 def test_stoploss_adjust_okx(mocker, default_conf, sl1, sl2, sl3, side):
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     order = {
         "type": "stoploss",
         "price": 1500,
@@ -625,7 +625,7 @@ def test_stoploss_adjust_okx(mocker, default_conf, sl1, sl2, sl3, side):
 
 
 def test_stoploss_cancel_okx(mocker, default_conf):
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
 
     exchange.cancel_order = MagicMock()
 
@@ -639,7 +639,7 @@ def test_stoploss_cancel_okx(mocker, default_conf):
 def test__get_stop_params_okx(mocker, default_conf):
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
-    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     params = exchange._get_stop_params("ETH/USDT:USDT", 1500, "sell")
 
     assert params["tdMode"] == "isolated"
@@ -660,13 +660,13 @@ def test_fetch_orders_okx(default_conf, mocker, limit_order):
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     start_time = datetime.now(timezone.utc) - timedelta(days=20)
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
     # Not available in dry-run
     assert exchange.fetch_orders("mocked", start_time) == []
     assert api_mock.fetch_orders.call_count == 0
     default_conf["dry_run"] = False
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okx")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
 
     def has_resp(_, endpoint):
         if endpoint == "fetchOrders":

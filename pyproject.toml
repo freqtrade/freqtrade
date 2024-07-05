@@ -134,16 +134,19 @@ extend-select = [
   "W",      # pycodestyle
   "UP",     # pyupgrade
   "I",      # isort
+  "A",      # flake8-builtins
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
   # "C4",     # flake8-comprehensions
   "YTT",    # flake8-2020
-  "S",    # flake8-bandit
+  "S",      # flake8-bandit
   # "DTZ",  # flake8-datetimez
   # "RSE",  # flake8-raise
   # "TCH",  # flake8-type-checking
   "PTH",    # flake8-use-pathlib
   # "RUF",    # ruff
+  "ASYNC",  # flake8-async
+  "NPY",    # numpy
 ]
 
 extend-ignore = [
@@ -154,6 +157,7 @@ extend-ignore = [
   "S603",  # `subprocess` call: check for execution of untrusted input
   "S607",  # Starting a process with a partial executable path
   "S608",  # Possible SQL injection vector through string-based query construction
+  "NPY002", # Numpy legacy random generator
 ]
 
 [tool.ruff.lint.mccabe]
