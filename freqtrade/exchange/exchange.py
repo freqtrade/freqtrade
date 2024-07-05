@@ -2065,7 +2065,7 @@ class Exchange:
     def get_fee(
         self,
         symbol: str,
-        type: str = "",
+        order_type: str = "",
         side: str = "",
         amount: float = 1,
         price: float = 1,
@@ -2074,13 +2074,13 @@ class Exchange:
         """
         Retrieve fee from exchange
         :param symbol: Pair
-        :param type: Type of order (market, limit, ...)
+        :param order_type: Type of order (market, limit, ...)
         :param side: Side of order (buy, sell)
         :param amount: Amount of order
         :param price: Price of order
         :param taker_or_maker: 'maker' or 'taker' (ignored if "type" is provided)
         """
-        if type and type == "market":
+        if order_type and order_type == "market":
             taker_or_maker = "taker"
         try:
             if self._config["dry_run"] and self._config.get("fee", None) is not None:
@@ -2091,7 +2091,7 @@ class Exchange:
 
             return self._api.calculate_fee(
                 symbol=symbol,
-                type=type,
+                type=order_type,
                 side=side,
                 amount=amount,
                 price=price,

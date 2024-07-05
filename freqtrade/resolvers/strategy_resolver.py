@@ -311,9 +311,9 @@ def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False
         setattr(strategy, new, getattr(strategy, f"{old}"))
 
 
-def check_override(object, parentclass, attribute):
+def check_override(obj, parentclass, attribute: str):
     """
     Checks if a object overrides the parent class attribute.
     :returns: True if the object is overridden.
     """
-    return getattr(type(object), attribute) != getattr(parentclass, attribute)
+    return getattr(type(obj), attribute) != getattr(parentclass, attribute)

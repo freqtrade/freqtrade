@@ -2012,7 +2012,7 @@ class Trade(ModelBase, LocalTrade):
         ).all()
 
         resp: List[Dict] = []
-        for id, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
+        for _, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
             enter_tag = enter_tag if enter_tag is not None else "Other"
             exit_reason = exit_reason if exit_reason is not None else "Other"
 
