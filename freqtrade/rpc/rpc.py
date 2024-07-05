@@ -11,7 +11,7 @@ from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-from numpy import NAN, inf, int64, mean
+from numpy import nan as NAN, inf, int64, mean
 from pandas import DataFrame, NaT
 from sqlalchemy import func, select
 
