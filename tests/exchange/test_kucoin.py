@@ -134,7 +134,7 @@ def test_stoploss_order_dry_run_kucoin(default_conf, mocker):
 
 
 def test_stoploss_adjust_kucoin(mocker, default_conf):
-    exchange = get_patched_exchange(mocker, default_conf, id="kucoin")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="kucoin")
     order = {
         "type": "limit",
         "price": 1500,
@@ -161,7 +161,7 @@ def test_kucoin_create_order(default_conf, mocker, side, ordertype, rate):
     default_conf["dry_run"] = False
     mocker.patch(f"{EXMS}.amount_to_precision", lambda s, x, y: y)
     mocker.patch(f"{EXMS}.price_to_precision", lambda s, x, y: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="kucoin")
     exchange._set_leverage = MagicMock()
     exchange.set_margin_mode = MagicMock()
 

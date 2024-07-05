@@ -275,10 +275,10 @@ def patch_exchange(
 
 
 def get_patched_exchange(
-    mocker, config, api_mock=None, id="binance", mock_markets=True, mock_supported_modes=True
+    mocker, config, api_mock=None, exchange="binance", mock_markets=True, mock_supported_modes=True
 ) -> Exchange:
-    patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
-    config["exchange"]["name"] = id
+    patch_exchange(mocker, api_mock, exchange, mock_markets, mock_supported_modes)
+    config["exchange"]["name"] = exchange
     try:
         exchange = ExchangeResolver.load_exchange(config, load_leverage_tiers=True)
     except ImportError:

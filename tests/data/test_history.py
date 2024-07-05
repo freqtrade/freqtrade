@@ -555,7 +555,7 @@ def test_refresh_backtest_ohlcv_data(
     mocker.patch.object(Path, "unlink", MagicMock())
     default_conf["trading_mode"] = trademode
 
-    ex = get_patched_exchange(mocker, default_conf, id="bybit")
+    ex = get_patched_exchange(mocker, default_conf, exchange="bybit")
     timerange = TimeRange.parse_timerange("20190101-20190102")
     refresh_backtest_ohlcv_data(
         exchange=ex,
