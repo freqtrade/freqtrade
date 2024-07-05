@@ -189,7 +189,7 @@ def test_protections_init(default_conf, timeframe, expected_lookback, expected_s
     if isinstance(expected_stop, int):
         assert man._protection_handlers[0]._stop_duration == expected_stop
     else:
-        assert man._protection_handlers[0].unlock_at.strftime("%H:%M") == expected_stop
+        assert man._protection_handlers[0].unlock_at_str == expected_stop
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -701,19 +701,19 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
                 "unlock_at": "01:00",
             },
             "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-            "2 stoplosses with profit < -5.00% within 12 candles. Unlocking trading at 01:00.'}]",
+            "2 stoplosses with profit < -5.00% within 12 candles.'}]",
             None,
         ),
         (
             {"method": "LowProfitPairs", "lookback_period_candles": 11, "unlock_at": "03:00"},
             "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
-            "profit < 0.0 within 11 candles. Unlocking trading at 03:00.'}]",
+            "profit < 0.0 within 11 candles.'}]",
             None,
         ),
         (
             {"method": "MaxDrawdown", "lookback_period_candles": 20, "unlock_at": "04:00"},
             "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
-            "if drawdown is > 0.0 within 20 candles. Unlocking trading at 04:00.'}]",
+            "if drawdown is > 0.0 within 20 candles.'}]",
             None,
         ),
     ],

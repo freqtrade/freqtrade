@@ -47,18 +47,7 @@ class IProtection(LoggingMixin, ABC):
         else:
             self._lookback_period = int(protection_config.get("lookback_period", 60))
 
-        if "unlock_at" in protection_config:
-            now_time = datetime.now(timezone.utc)
-            unlock_at = datetime.strptime(protection_config["unlock_at"], "%H:%M").replace(
-                day=now_time.day, year=now_time.year, month=now_time.month
-            )
-
-            if unlock_at.time() < now_time.time():
-                unlock_at = unlock_at.replace(day=now_time.day + 1)
-
-            unlock_at = unlock_at.replace(tzinfo=timezone.utc)
-            self._stop_duration = self.calculate_timespan(now_time, unlock_at)
-            self.unlock_at = unlock_at
+        self.set_unlock_at_as_stop_duration()
 
         LoggingMixin.__init__(self, logger)
 
@@ -100,6 +89,36 @@ class IProtection(LoggingMixin, ABC):
         if self.unlock_at:
             return self.unlock_at.strftime("%H:%M")
         return None
+
+    def set_unlock_at_as_stop_duration(self) -> None:
+        """
+        Calculates the stop_duration based on the unlock_at protection config value and sets it.
+        """
+        if "unlock_at" in self._protection_config:
+            self._stop_duration = self.calculate_unlock_at()
+            return None
+
+        logger.warning(
+            "Couldn't update the stop duration, because unlock_at is not set in the "
+            "protection config."
+        )
+
+    def calculate_unlock_at(self) -> int:
+        """
+        Calculate and update the stop duration based on the unlock at config.
+        """
+
+        now_time = datetime.now(timezone.utc)
+        unlock_at = datetime.strptime(
+            str(self._protection_config.get("unlock_at_config")), "%H:%M"
+        ).replace(day=now_time.day, year=now_time.year, month=now_time.month)
+
+        if unlock_at.time() < now_time.time():
+            unlock_at = unlock_at.replace(day=now_time.day + 1)
+
+        self.unlock_at = unlock_at.replace(tzinfo=timezone.utc)
+        result = IProtection.calculate_timespan(now_time, self.unlock_at)
+        return result
 
     @abstractmethod
     def short_desc(self) -> str:

@@ -46,6 +46,9 @@ class CooldownPeriod(IProtection):
             # Ignore type error as we know we only get closed trades.
             trade = sorted(trades, key=lambda t: t.close_date)[-1]  # type: ignore
             self.log_once(f"Cooldown for {pair} for {self.stop_duration_str}.", logger.info)
+
+            self.set_unlock_at_as_stop_duration()
+
             until = self.calculate_lock_end([trade], self._stop_duration)
 
             return ProtectionReturn(

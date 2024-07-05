@@ -81,7 +81,10 @@ class StoplossGuard(IProtection):
             f"stoplosses within {self._lookback_period} minutes.",
             logger.info,
         )
+
+        self.set_unlock_at_as_stop_duration()
         until = self.calculate_lock_end(trades, self._stop_duration)
+
         return ProtectionReturn(
             lock=True,
             until=until,

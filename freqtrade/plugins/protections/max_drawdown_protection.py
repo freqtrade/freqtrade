@@ -73,6 +73,8 @@ class MaxDrawdown(IProtection):
                 f" within {self.lookback_period_str}.",
                 logger.info,
             )
+
+            self.set_unlock_at_as_stop_duration()
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return ProtectionReturn(
