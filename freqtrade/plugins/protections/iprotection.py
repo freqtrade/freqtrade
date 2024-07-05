@@ -110,7 +110,7 @@ class IProtection(LoggingMixin, ABC):
 
         now_time = datetime.now(timezone.utc)
         unlock_at = datetime.strptime(
-            str(self._protection_config.get("unlock_at_config")), "%H:%M"
+            str(self._protection_config.get("unlock_at")), "%H:%M"
         ).replace(day=now_time.day, year=now_time.year, month=now_time.month)
 
         if unlock_at.time() < now_time.time():
