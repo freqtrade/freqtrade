@@ -172,10 +172,10 @@ class ClientProtocol:
 
         return readable_timedelta(time_delta)
 
-    async def _handle_whitelist(self, name, type, data):
+    async def _handle_whitelist(self, name, msgtype, data):
         self.logger.info(data)
 
-    async def _handle_analyzed_df(self, name, type, data):
+    async def _handle_analyzed_df(self, name, msgtype, data):
         key, la, df = data["key"], data["la"], data["df"]
 
         if not df.empty:
@@ -189,8 +189,8 @@ class ClientProtocol:
         else:
             self.logger.info("Empty DataFrame")
 
-    async def _handle_default(self, name, type, data):
-        self.logger.info("Unknown message of type {type} received...")
+    async def _handle_default(self, name, msgtype, data):
+        self.logger.info("Unknown message of type {msgtype} received...")
         self.logger.info(data)
 
 
