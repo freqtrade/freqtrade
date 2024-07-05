@@ -22,7 +22,7 @@ from tests.exchange_online.conftest import EXCHANGE_WS_FIXTURE_TYPE
 @pytest.mark.timeout(3 * 60)
 class TestCCXTExchangeWs:
     def test_ccxt_watch_ohlcv(self, exchange_ws: EXCHANGE_WS_FIXTURE_TYPE, caplog, mocker):
-        exch, exchangename, pair = exchange_ws
+        exch, _exchangename, pair = exchange_ws
 
         assert exch._ws_async is not None
         timeframe = "1m"
