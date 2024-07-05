@@ -134,6 +134,7 @@ extend-select = [
   "W",      # pycodestyle
   "UP",     # pyupgrade
   "I",      # isort
+  "A",      # flake8-builtins
   "TID",    # flake8-tidy-imports
   # "EXE",  # flake8-executable
   # "C4",     # flake8-comprehensions
