@@ -6,7 +6,7 @@ if "dev" in __version__:
     from pathlib import Path
 
     try:
-        import subprocess
+        import subprocess  # noqa: S404
 
         freqtrade_basedir = Path(__file__).parent
 
