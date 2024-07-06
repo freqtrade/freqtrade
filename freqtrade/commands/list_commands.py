@@ -280,9 +280,14 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                 writer.writeheader()
                 writer.writerows(tabular_data)
             else:
-                # print data as a table, with the human-readable summary
-                print(f"{summary_str}:")
-                print(tabulate(tabular_data, headers="keys", tablefmt="psql", stralign="right"))
+                table = Table(title=summary_str)
+                for header in headers:
+                    table.add_column(header, justify="right")
+                for row in tabular_data:
+                    table.add_row(*[str(row[header]) for header in headers])
+
+                console = Console()
+                console.print(table)
         elif not (
             args.get("print_one_column", False)
             or args.get("list_pairs_print_json", False)

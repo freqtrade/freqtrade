@@ -293,7 +293,7 @@ def test_list_markets(mocker, markets_static, capsys):
     pargs["config"] = None
     start_list_markets(pargs, False)
     captured = capsys.readouterr()
-    assert re.match("\nExchange Binance has 12 active markets:\n", captured.out)
+    assert re.search(r".*Exchange Binance has 12 active markets.*", captured.out)
 
     patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
     # Test with --all: all markets
@@ -491,7 +491,7 @@ def test_list_markets(mocker, markets_static, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert "Exchange Binance has 12 active markets:\n" in captured.out
+    assert "Exchange Binance has 12 active markets" in captured.out
 
     # Test tabular output, no markets found
     args = [
