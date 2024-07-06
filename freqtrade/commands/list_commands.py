@@ -26,10 +26,10 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = list_available_exchanges(args["list_exchanges_all"])
+    available_exchanges = list_available_exchanges(args["list_exchanges_all"])
 
     if args["print_one_column"]:
-        print("\n".join([e["name"] for e in exchanges]))
+        print("\n".join([e["name"] for e in available_exchanges]))
     else:
         headers = {
             "name": "Exchange name",
@@ -56,10 +56,12 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             return result
 
         if args["list_exchanges_all"]:
-            exchanges = [build_entry(e, True) for e in exchanges]
+            exchanges = [build_entry(e, True) for e in available_exchanges]
             title = f"All exchanges supported by the ccxt library ({len(exchanges)} exchanges):"
         else:
-            exchanges = [build_entry(e, False) for e in exchanges if e["valid"] is not False]
+            exchanges = [
+                build_entry(e, False) for e in available_exchanges if e["valid"] is not False
+            ]
             title = f"Exchanges available for Freqtrade ({len(exchanges)} exchanges):"
 
         print(title)
