@@ -280,7 +280,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                 writer.writeheader()
                 writer.writerows(tabular_data)
             else:
-                print_rich_table(summary_str, headers, tabular_data)
+                print_rich_table(tabular_data, headers, summary_str)
         elif not (
             args.get("print_one_column", False)
             or args.get("list_pairs_print_json", False)
