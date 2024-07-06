@@ -116,7 +116,7 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r"Exchanges available for Freqtrade.*", captured.out)
+    assert re.search(r".*Exchanges available for Freqtrade.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
     assert re.search(r".*bybit.*", captured.out)
 
@@ -139,7 +139,7 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r"All exchanges supported by the ccxt library.*", captured.out)
+    assert re.search(r"All exchanges supported by the ccxt library.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
     assert re.search(r".*bingx.*", captured.out)
     assert re.search(r".*bitmex.*", captured.out)
