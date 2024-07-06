@@ -80,6 +80,19 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         console.print(table)
 
 
+def _print_rich_table(summary: str, headers: List[str], tabular_data: List[Dict[str, Any]]) -> None:
+    table = Table(title=summary)
+
+    for header in headers:
+        table.add_column(header, justify="right")
+
+    for row in tabular_data:
+        table.add_row(*[str(row[header]) for header in headers])
+
+    console = Console()
+    console.print(table)
+
+
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
@@ -280,14 +293,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                 writer.writeheader()
                 writer.writerows(tabular_data)
             else:
-                table = Table(title=summary_str)
-                for header in headers:
-                    table.add_column(header, justify="right")
-                for row in tabular_data:
-                    table.add_row(*[str(row[header]) for header in headers])
-
-                console = Console()
-                console.print(table)
+                _print_rich_table(summary_str, headers, tabular_data)
         elif not (
             args.get("print_one_column", False)
             or args.get("list_pairs_print_json", False)
