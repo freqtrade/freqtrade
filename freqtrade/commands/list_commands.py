@@ -59,7 +59,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
             trade_modes = Text(
                 ", ".join(
-                    (f"{a.get('margin_mode', '')} {a["trading_mode"]}").lstrip()
+                    (f"{a.get('margin_mode', '')} {a['trading_mode']}").lstrip()
                     for a in exchange["trade_modes"]
                 ),
                 style="",
@@ -94,27 +94,17 @@ def _print_rich_table(summary: str, headers: List[str], tabular_data: List[Dict[
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
-    if print_colorized:
-        colorama_init(autoreset=True)
-        red = Fore.RED
-        yellow = Fore.YELLOW
-        reset = Style.RESET_ALL
-    else:
-        red = ""
-        yellow = ""
-        reset = ""
-
     names = [s["name"] for s in objs]
     objs_to_print = [
         {
-            "name": s["name"] if s["name"] else "--",
-            "location": s["location_rel"],
+            "name": Text(s["name"] if s["name"] else "--"),
+            "location": Text(s["location_rel"]),
             "status": (
-                red + "LOAD FAILED" + reset
+                Text("LOAD FAILED", style="bold red")
                 if s["class"] is None
-                else "OK"
+                else Text("OK", style="bold green")
                 if names.count(s["name"]) == 1
-                else yellow + "DUPLICATE NAME" + reset
+                else Text("DUPLICATE NAME", style="bold yellow")
             ),
         }
         for s in objs
@@ -124,11 +114,23 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
             objs_to_print[idx].update(
                 {
                     "hyperoptable": "Yes" if s["hyperoptable"]["count"] > 0 else "No",
-                    "buy-Params": len(s["hyperoptable"].get("buy", [])),
-                    "sell-Params": len(s["hyperoptable"].get("sell", [])),
+                    "buy-Params": str(len(s["hyperoptable"].get("buy", []))),
+                    "sell-Params": str(len(s["hyperoptable"].get("sell", []))),
                 }
             )
-    print(tabulate(objs_to_print, headers="keys", tablefmt="psql", stralign="right"))
+    table = Table(title="Available:")
+
+    for header in objs_to_print[0].keys():
+        table.add_column(header.capitalize(), justify="right")
+
+    for row in objs_to_print:
+        table.add_row(*[row[header] for header in objs_to_print[0].keys()])
+
+    console = Console(
+        color_system="auto" if print_colorized else None,
+        width=200 if "pytest" in sys.modules else None,
+    )
+    console.print(table)
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
