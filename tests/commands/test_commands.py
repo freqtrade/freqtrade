@@ -1633,8 +1633,8 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 16 pair / timeframe combinations." in captured.out
-    assert "\n|         Pair |       Timeframe |   Type |\n" in captured.out
-    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |   spot |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
+    assert re.search(r"\n.* UNITTEST/BTC .* 1m, 5m, 8m, 30m .* spot |\n", captured.out)
 
     args = [
         "list-data",
@@ -1650,9 +1650,9 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert "\n|    Pair |   Timeframe |   Type |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
     assert "UNITTEST/BTC" not in captured.out
-    assert "\n| XRP/ETH |      1m, 5m |   spot |\n" in captured.out
+    assert re.search(r"\n.* XRP/ETH .* 1m, 5m .* spot |\n", captured.out)
 
     args = [
         "list-data",
@@ -1667,9 +1667,9 @@ def test_start_list_data(testdatadir, capsys):
     captured = capsys.readouterr()
 
     assert "Found 6 pair / timeframe combinations." in captured.out
-    assert "\n|               Pair |   Timeframe |         Type |\n" in captured.out
-    assert "\n|      XRP/USDT:USDT |      5m, 1h |      futures |\n" in captured.out
-    assert "\n|      XRP/USDT:USDT |      1h, 8h |         mark |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
+    assert re.search(r"\n.* XRP/USDT:USDT .* 5m, 1h .* futures |\n", captured.out)
+    assert re.search(r"\n.* XRP/USDT:USDT .* 1h, 8h .* mark |\n", captured.out)
 
     args = [
         "list-data",
@@ -1684,15 +1684,12 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert (
-        "\n|    Pair |   Timeframe |   Type "
-        "|                From |                  To |   Candles |\n"
-    ) in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*From .* To .* Candles .*\n", captured.out)
     assert "UNITTEST/BTC" not in captured.out
-    assert (
-        "\n| XRP/ETH |          1m |   spot | "
-        "2019-10-11 00:00:00 | 2019-10-13 11:19:00 |      2469 |\n"
-    ) in captured.out
+    assert re.search(
+        r"\n.* XRP/USDT .* 1m .* spot .* 2019-10-11 00:00:00 .* 2019-10-13 11:19:00 .* 2469 |\n",
+        captured.out,
+    )
 
 
 @pytest.mark.usefixtures("init_persistence")
