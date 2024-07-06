@@ -56,11 +56,11 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
             return result
 
         if args["list_exchanges_all"]:
-            print("All exchanges supported by the ccxt library:")
             exchanges = [build_entry(e, True) for e in exchanges]
+            print(f"All exchanges supported by the ccxt library ({len(exchanges)} exchanges):")
         else:
-            print("Exchanges available for Freqtrade:")
             exchanges = [build_entry(e, False) for e in exchanges if e["valid"] is not False]
+            print(f"Exchanges available for Freqtrade ({len(exchanges)} exchanges):")
 
         print(
             tabulate(
