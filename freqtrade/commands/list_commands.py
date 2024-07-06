@@ -4,12 +4,9 @@ import sys
 from typing import Any, Dict, List
 
 import rapidjson
-from colorama import Fore, Style
-from colorama import init as colorama_init
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
-from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
