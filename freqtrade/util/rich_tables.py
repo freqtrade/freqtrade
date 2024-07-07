@@ -26,7 +26,7 @@ def print_rich_table(
         if isinstance(row, dict):
             table.add_row(*[str(row[header]) for header in headers])
         else:
-            table.add_row(*row)
+            table.add_row(*[r if isinstance(r, Text) else str(r) for r in row])
 
     console = Console(
         width=200 if "pytest" in sys.modules else None,
