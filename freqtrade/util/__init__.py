@@ -15,7 +15,7 @@ from freqtrade.util.formatters import decimals_per_coin, fmt_coin, round_value
 from freqtrade.util.ft_precise import FtPrecise
 from freqtrade.util.measure_time import MeasureTime
 from freqtrade.util.periodic_cache import PeriodicCache
-from freqtrade.util.rich_tables import print_rich_table
+from freqtrade.util.rich_tables import print_df_rich_table, print_rich_table
 from freqtrade.util.template_renderer import render_template, render_template_with_fallback  # noqa
 
 
@@ -38,4 +38,5 @@ __all__ = [
     "fmt_coin",
     "MeasureTime",
     "print_rich_table",
+    "print_df_rich_table",
 ]
