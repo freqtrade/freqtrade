@@ -90,9 +90,13 @@ class HyperoptOutput:
                         )
                         if r["results_metrics"].get("profit_total_abs", 0) != 0.0
                         else "--",
-                        style="green"
-                        if r["results_metrics"].get("profit_total_abs", 0) > 0
-                        else "red",
+                        style=(
+                            "green"
+                            if r["results_metrics"].get("profit_total_abs", 0) > 0
+                            else "red"
+                        )
+                        if not r["is_best"]
+                        else "",
                     ),
                     # "Avg duration":
                     str(r["results_metrics"]["holding_avg"]),
@@ -112,7 +116,7 @@ class HyperoptOutput:
                 ],
                 style=" ".join(
                     [
-                        "bold " if r["is_best"] and highlight_best else "",
+                        "bold gold1" if r["is_best"] and highlight_best else "",
                         "italic " if r["is_initial_point"] else "",
                     ]
                 ),
