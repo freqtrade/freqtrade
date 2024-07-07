@@ -18,6 +18,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
+    from freqtrade.optimize.hyperopt_output import HyperoptOutput
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
@@ -50,6 +51,15 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
                     0,
                 )
             )
+            hot = HyperoptOutput()
+            hot.add_data(
+                config,
+                epochs,
+                total_epochs,
+                not config.get("hyperopt_list_best", False),
+            )
+            hot.print(print_colorized=print_colorized)
+
         except KeyboardInterrupt:
             print("User interrupted..")
 
