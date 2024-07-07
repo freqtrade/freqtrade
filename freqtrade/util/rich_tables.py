@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 from pandas import DataFrame
 from rich.console import Console
-from rich.table import Table
+from rich.table import Column, Table
 from rich.text import Text
 
 
@@ -17,16 +17,23 @@ def print_rich_table(
     *,
     table_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
-    table = Table(title=summary, **(table_kwargs or {}))
-
-    for header in headers:
-        table.add_column(header, justify="right")
+    table = Table(
+        *[c if isinstance(c, Column) else Column(c, justify="right") for c in headers],
+        title=summary,
+        **(table_kwargs or {}),
+    )
 
     for row in tabular_data:
         if isinstance(row, dict):
-            table.add_row(*[str(row[header]) for header in headers])
+            table.add_row(
+                *[
+                    row[header] if isinstance(row[header], (Text, Table)) else str(row[header])
+                    for header in headers
+                ]
+            )
+
         else:
-            table.add_row(*[r if isinstance(r, Text) else str(r) for r in row])
+            table.add_row(*[r if isinstance(r, (Text, Table)) else str(r) for r in row])
 
     console = Console(
         width=200 if "pytest" in sys.modules else None,
