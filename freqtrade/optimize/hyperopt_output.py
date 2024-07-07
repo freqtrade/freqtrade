@@ -91,7 +91,7 @@ class HyperoptOutput:
                         style="green" if r["results_metrics"]["profit_total_abs"] > 0 else "red",
                     ),
                     # "Avg duration":
-                    r["results_metrics"]["holding_avg"],
+                    str(r["results_metrics"]["holding_avg"]),
                     # "Objective":
                     f"{r["loss"]:,.5f}" if r["loss"] != 100000 else "N/A",
                     # "Max Drawdown (Acct)":
