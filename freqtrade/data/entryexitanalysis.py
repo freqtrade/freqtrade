@@ -4,7 +4,6 @@ from typing import List
 
 import joblib
 import pandas as pd
-from tabulate import tabulate
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
