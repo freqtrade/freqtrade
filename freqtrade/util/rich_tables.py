@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from pandas import DataFrame
 from rich.console import Console
@@ -33,9 +33,8 @@ def print_rich_table(
             )
 
         else:
-            table.add_row(
-                *[r if isinstance(r, Text) else str(r) for r in row],  # type: ignore[arg-type]
-            )
+            row_to_add: List[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in row]
+            table.add_row(*row_to_add)
 
     console = Console(
         width=200 if "pytest" in sys.modules else None,
