@@ -41,24 +41,14 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     if not export_csv:
         try:
-            print(
-                HyperoptTools.get_result_table(
-                    config,
-                    epochs,
-                    total_epochs,
-                    not config.get("hyperopt_list_best", False),
-                    print_colorized,
-                    0,
-                )
-            )
-            hot = HyperoptOutput()
-            hot.add_data(
+            h_out = HyperoptOutput()
+            h_out.add_data(
                 config,
                 epochs,
                 total_epochs,
                 not config.get("hyperopt_list_best", False),
             )
-            hot.print(print_colorized=print_colorized)
+            h_out.print(print_colorized=print_colorized)
 
         except KeyboardInterrupt:
             print("User interrupted..")
