@@ -27,13 +27,15 @@ def print_rich_table(
         if isinstance(row, dict):
             table.add_row(
                 *[
-                    row[header] if isinstance(row[header], (Text, Table)) else str(row[header])
+                    row[header] if isinstance(row[header], Text) else str(row[header])
                     for header in headers
                 ]
             )
 
         else:
-            table.add_row(*[r if isinstance(r, (Text, Table)) else str(r) for r in row])
+            table.add_row(
+                *[r if isinstance(r, Text) else str(r) for r in row],  # type: ignore[arg-type]
+            )
 
     console = Console(
         width=200 if "pytest" in sys.modules else None,
