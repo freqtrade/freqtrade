@@ -1,7 +1,7 @@
 import csv
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import rapidjson
 from rich.console import Console
@@ -80,10 +80,10 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     names = [s["name"] for s in objs]
-    objs_to_print = [
+    objs_to_print: List[Dict[str, Union[Text, str]]] = [
         {
             "name": Text(s["name"] if s["name"] else "--"),
-            "location": Text(s["location_rel"]),
+            "location": s["location_rel"],
             "status": (
                 Text("LOAD FAILED", style="bold red")
                 if s["class"] is None
@@ -103,7 +103,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
                     "sell-Params": str(len(s["hyperoptable"].get("sell", []))),
                 }
             )
-    table = Table(title="Available:")
+    table = Table()
 
     for header in objs_to_print[0].keys():
         table.add_column(header.capitalize(), justify="right")

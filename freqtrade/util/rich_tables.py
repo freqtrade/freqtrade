@@ -1,13 +1,17 @@
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Sequence, Union
 
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
+
+
+TextOrString = Union[str, Text]
 
 
 def print_rich_table(
-    tabular_data: List[Dict[str, Any]],
-    headers: List[str],
+    tabular_data: Sequence[Union[Dict[str, Any], Sequence[TextOrString]]],
+    headers: Sequence[str],
     summary: Optional[str] = None,
     *,
     table_kwargs: Optional[Dict[str, Any]] = None,
