@@ -12,25 +12,25 @@ from freqtrade.util import fmt_coin
 
 class HyperoptOutput:
     def __init__(self):
-        self._table = Table(
+        self.table = Table(
             title="Hyperopt results",
         )
         # Headers
-        self._table.add_column("Best", justify="left")
-        self._table.add_column("Epoch", justify="right")
-        self._table.add_column("Trades", justify="right")
-        self._table.add_column("Win  Draw  Loss  Win%", justify="right")
-        self._table.add_column("Avg profit", justify="right")
-        self._table.add_column("Profit", justify="right")
-        self._table.add_column("Avg duration", justify="right")
-        self._table.add_column("Objective", justify="right")
-        self._table.add_column("Max Drawdown (Acct)", justify="right")
+        self.table.add_column("Best", justify="left")
+        self.table.add_column("Epoch", justify="right")
+        self.table.add_column("Trades", justify="right")
+        self.table.add_column("Win  Draw  Loss  Win%", justify="right")
+        self.table.add_column("Avg profit", justify="right")
+        self.table.add_column("Profit", justify="right")
+        self.table.add_column("Avg duration", justify="right")
+        self.table.add_column("Objective", justify="right")
+        self.table.add_column("Max Drawdown (Acct)", justify="right")
 
     def _add_row(self, data: List[Union[str, Text]]):
         """Add single row"""
         row_to_add: List[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in data]
 
-        self._table.add_row(*row_to_add)
+        self.table.add_row(*row_to_add)
 
     def _add_rows(self, data: List[List[Union[str, Text]]]):
         """add multiple rows"""
@@ -44,7 +44,7 @@ class HyperoptOutput:
                 width=200 if "pytest" in sys.modules else None,
             )
 
-        console.print(self._table)
+        console.print(self.table)
 
     def add_data(
         self,
@@ -52,7 +52,7 @@ class HyperoptOutput:
         results: list,
         total_epochs: int,
         highlight_best: bool,
-    ) -> str:
+    ) -> None:
         """Format one or multiple rows and add them"""
         stake_currency = config["stake_currency"]
 

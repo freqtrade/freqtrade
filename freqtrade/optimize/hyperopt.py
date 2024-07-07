@@ -18,10 +18,10 @@ from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from joblib.externals import cloudpickle
 from pandas import DataFrame
+from rich.align import Align
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
-    Progress,
     TaskProgressColumn,
     TextColumn,
     TimeElapsedColumn,
@@ -40,6 +40,7 @@ from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
+from freqtrade.optimize.hyperopt_output import HyperoptOutput
 from freqtrade.optimize.hyperopt_tools import (
     HyperoptStateContainer,
     HyperoptTools,
@@ -47,6 +48,7 @@ from freqtrade.optimize.hyperopt_tools import (
 )
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
+from freqtrade.util import CustomProgress
 
 
 # Suppress scikit-learn FutureWarnings from skopt
@@ -85,6 +87,8 @@ class Hyperopt:
         self.trailing_space: List[Dimension] = []
         self.max_open_trades_space: List[Dimension] = []
         self.dimensions: List[Dimension] = []
+
+        self._hyper_out: HyperoptOutput = HyperoptOutput()
 
         self.config = config
         self.min_date: datetime
@@ -268,17 +272,12 @@ class Hyperopt:
         is_best = results["is_best"]
 
         if self.print_all or is_best:
-            print(
-                HyperoptTools.get_result_table(
-                    self.config,
-                    [results],
-                    self.total_epochs,
-                    self.print_all,
-                    self.print_colorized,
-                    self.hyperopt_table_header,
-                )
+            self._hyper_out.add_data(
+                self.config,
+                [results],
+                self.total_epochs,
+                self.print_all,
             )
-            self.hyperopt_table_header = 2
 
     def init_spaces(self):
         """
@@ -635,7 +634,7 @@ class Hyperopt:
                 logger.info(f"Effective number of parallel workers used: {jobs}")
 
                 # Define progressbar
-                with Progress(
+                with CustomProgress(
                     TextColumn("[progress.description]{task.description}"),
                     BarColumn(bar_width=None),
                     MofNCompleteColumn(),
@@ -645,6 +644,7 @@ class Hyperopt:
                     "•",
                     TimeRemainingColumn(),
                     expand=True,
+                    cust_objs=[Align.center(self._hyper_out.table)],
                 ) as pbar:
                     task = pbar.add_task("Epochs", total=self.total_epochs)
 
