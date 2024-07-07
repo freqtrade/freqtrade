@@ -260,7 +260,7 @@ class Hyperopt:
             result["max_open_trades"] = {"max_open_trades": strategy.max_open_trades}
         return result
 
-    def print_results(self, results) -> None:
+    def print_results(self, results: Dict[str, Any]) -> None:
         """
         Log results if it is better than any previous evaluation
         TODO: this should be moved to HyperoptTools too
@@ -271,7 +271,7 @@ class Hyperopt:
             print(
                 HyperoptTools.get_result_table(
                     self.config,
-                    results,
+                    [results],
                     self.total_epochs,
                     self.print_all,
                     self.print_colorized,
