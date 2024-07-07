@@ -34,9 +34,9 @@ class RecursiveAnalysisSubFunctions:
 
             table = tabulate(data, headers=headers, tablefmt="orgtbl")
             print(table)
-            return table, headers, data
+            return data
 
-        return None, None, data
+        return data
 
     @staticmethod
     def calculate_config_overrides(config: Config):
