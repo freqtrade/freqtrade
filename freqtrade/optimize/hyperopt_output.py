@@ -75,7 +75,9 @@ class HyperoptOutput:
                         r["results_metrics"]["losses"],
                     ),
                     # "Avg profit":
-                    f"{r['results_metrics']['profit_mean']:.2%}",
+                    f"{r['results_metrics']['profit_mean']:.2%}"
+                    if r["results_metrics"]["profit_mean"] is not None
+                    else "--",
                     # "Profit":
                     Text(
                         "{} {}".format(
@@ -86,9 +88,11 @@ class HyperoptOutput:
                             ),
                             f"({r['results_metrics']['profit_total']:,.2%})".rjust(10, " "),
                         )
-                        if r["results_metrics"]["profit_total_abs"] != 0.0
+                        if r["results_metrics"].get("profit_total_abs", 0) != 0.0
                         else "--",
-                        style="green" if r["results_metrics"]["profit_total_abs"] > 0 else "red",
+                        style="green"
+                        if r["results_metrics"].get("profit_total_abs", 0) > 0
+                        else "red",
                     ),
                     # "Avg duration":
                     str(r["results_metrics"]["holding_avg"]),
