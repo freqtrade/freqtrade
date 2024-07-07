@@ -18,9 +18,7 @@ with require.open("r") as rfile:
 
 # Extract types only
 type_reqs = [
-    r.strip("\n")
-    for r in requirements
-    if r.startswith("types-") or r.startswith("SQLAlchemy") or r.startswith("rich")
+    r.strip("\n") for r in requirements if r.startswith("types-") or r.startswith("SQLAlchemy")
 ]
 
 with pre_commit_file.open("r") as file:
