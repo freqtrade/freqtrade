@@ -56,52 +56,60 @@ class HyperoptOutput:
         """Format one or multiple rows and add them"""
         stake_currency = config["stake_currency"]
 
-        res = [
-            [
-                # "Best":
-                (
-                    ("*" if r["is_initial_point"] or r["is_random"] else "")
-                    + (" Best" if r["is_best"] else "")
-                ).lstrip(),
-                # "Epoch":
-                f"{r['current_epoch']}/{total_epochs}",
-                # "Trades":
-                r["results_metrics"]["total_trades"],
-                # "Win  Draw  Loss  Win%":
-                generate_wins_draws_losses(
-                    r["results_metrics"]["wins"],
-                    r["results_metrics"]["draws"],
-                    r["results_metrics"]["losses"],
+        for r in results:
+            self.table.add_row(
+                *[
+                    # "Best":
+                    (
+                        ("*" if r["is_initial_point"] or r["is_random"] else "")
+                        + (" Best" if r["is_best"] else "")
+                    ).lstrip(),
+                    # "Epoch":
+                    f"{r['current_epoch']}/{total_epochs}",
+                    # "Trades":
+                    str(r["results_metrics"]["total_trades"]),
+                    # "Win  Draw  Loss  Win%":
+                    generate_wins_draws_losses(
+                        r["results_metrics"]["wins"],
+                        r["results_metrics"]["draws"],
+                        r["results_metrics"]["losses"],
+                    ),
+                    # "Avg profit":
+                    f"{r['results_metrics']['profit_mean']:.2%}",
+                    # "Profit":
+                    Text(
+                        "{} {}".format(
+                            fmt_coin(
+                                r["results_metrics"]["profit_total_abs"],
+                                stake_currency,
+                                keep_trailing_zeros=True,
+                            ),
+                            f"({r['results_metrics']['profit_total']:,.2%})".rjust(10, " "),
+                        )
+                        if r["results_metrics"]["profit_total_abs"] != 0.0
+                        else "--",
+                        style="green" if r["results_metrics"]["profit_total_abs"] > 0 else "red",
+                    ),
+                    # "Avg duration":
+                    r["results_metrics"]["holding_avg"],
+                    # "Objective":
+                    f"{r["loss"]:,.5f}" if r["loss"] != 100000 else "N/A",
+                    # "Max Drawdown (Acct)":
+                    "{} {}".format(
+                        fmt_coin(
+                            r["results_metrics"]["max_drawdown_abs"],
+                            stake_currency,
+                            keep_trailing_zeros=True,
+                        ),
+                        (f"({r["results_metrics"]['max_drawdown_account']:,.2%})").rjust(10, " "),
+                    )
+                    if r["results_metrics"]["max_drawdown_account"] != 0.0
+                    else "--",
+                ],
+                style=" ".join(
+                    [
+                        "bold " if r["is_best"] and highlight_best else "",
+                        "italic " if r["is_initial_point"] else "",
+                    ]
                 ),
-                # "Avg profit":
-                f"{r['results_metrics']['profit_mean']:.2%}",
-                # "Profit":
-                "{} {}".format(
-                    fmt_coin(
-                        r["results_metrics"]["profit_total_abs"],
-                        stake_currency,
-                        keep_trailing_zeros=True,
-                    ),
-                    f"({r['results_metrics']['profit_total']:,.2%})".rjust(10, " "),
-                )
-                if r["results_metrics"]["profit_total_abs"] != 0.0
-                else "--",
-                # "Avg duration":
-                r["results_metrics"]["holding_avg"],
-                # "Objective":
-                f"{r["loss"]:,.5f}" if r["loss"] != 100000 else "N/A",
-                # "Max Drawdown (Acct)":
-                "{} {}".format(
-                    fmt_coin(
-                        r["results_metrics"]["max_drawdown_abs"],
-                        stake_currency,
-                        keep_trailing_zeros=True,
-                    ),
-                    (f"({r["results_metrics"]['max_drawdown_account']:,.2%})").rjust(10, " "),
-                )
-                if r["results_metrics"]["max_drawdown_account"] != 0.0
-                else "--",
-            ]
-            for r in results
-        ]
-        self._add_rows(res)
+            )
