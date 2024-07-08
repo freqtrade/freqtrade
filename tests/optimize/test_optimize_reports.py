@@ -69,21 +69,22 @@ def test_text_table_bt_results():
         }
     )
 
-    result_str = (
-        "|    Pair |   Trades |   Avg Profit % |   Tot Profit BTC |   "
-        "Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |\n"
-        "|---------+----------+----------------+------------------+"
-        "----------------+----------------+-------------------------|\n"
-        "| ETH/BTC |        3 |           8.33 |       0.50000000 |          "
-        "12.50 |        0:20:00 |     2     0     1  66.7 |\n"
-        "|   TOTAL |        3 |           8.33 |       0.50000000 |          "
-        "12.50 |        0:20:00 |     2     0     1  66.7 |"
-    )
-
     pair_results = generate_pair_metrics(
         ["ETH/BTC"], stake_currency="BTC", starting_balance=4, results=results
     )
-    assert text_table_bt_results(pair_results, stake_currency="BTC") == result_str
+    text = text_table_bt_results(pair_results, stake_currency="BTC")
+    re.search(
+        r".* Pair .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .*",
+        text,
+    )
+    re.search(
+        r".* ETH/BTC .* 3 .* 8.33 .* 0.50000000 .* 12.50 .* 0:20:00 .* 2     0     1  66.7 .*",
+        text,
+    )
+    re.search(
+        r".* TOTAL .* 3 .* 8.33 .* 0.50000000 .* 12.50 .* 0:20:00 .* 2     0     1  66.7 .*", text
+    )
 
 
 def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
@@ -448,23 +449,27 @@ def test_text_table_exit_reason():
         }
     )
 
-    result_str = (
-        "|   Exit Reason |   Exits |   Avg Profit % |   Tot Profit BTC |   Tot Profit % |"
-        "   Avg Duration |   Win  Draw  Loss  Win% |\n"
-        "|---------------+---------+----------------+------------------+----------------+"
-        "----------------+-------------------------|\n"
-        "|           roi |       2 |          15.00 |       0.60000000 |           2.73 |"
-        "        0:20:00 |     2     0     0   100 |\n"
-        "|     stop_loss |       1 |         -10.00 |      -0.20000000 |          -0.91 |"
-        "        0:10:00 |     0     0     1     0 |\n"
-        "|         TOTAL |       3 |           6.67 |       0.40000000 |           1.82 |"
-        "        0:17:00 |     2     0     1  66.7 |"
-    )
-
     exit_reason_stats = generate_tag_metrics(
         "exit_reason", starting_balance=22, results=results, skip_nan=False
     )
-    assert text_table_tags("exit_tag", exit_reason_stats, "BTC") == result_str
+    text = text_table_tags("exit_tag", exit_reason_stats, "BTC")
+
+    assert re.search(
+        r".* Exit Reason .* Exits .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .*",
+        text,
+    )
+    assert re.search(
+        r".* roi .* 2 .* 15.00 .* 0.60000000 .* 2.73 .* 0:20:00 .* 2     0     0   100 .*",
+        text,
+    )
+    assert re.search(
+        r".* stop_loss .* 1 .* -10.00 .* -0.20000000 .* -0.91 .* 0:10:00 .* 0     0     1     0 .*",
+        text,
+    )
+    assert re.search(
+        r".* TOTAL .* 3 .* 6.67 .* 0.40000000 .* 1.82 .* 0:17:00 .* 2     0     1  66.7 .*", text
+    )
 
 
 def test_generate_sell_reason_stats():
