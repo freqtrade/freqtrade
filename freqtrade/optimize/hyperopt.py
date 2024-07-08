@@ -14,11 +14,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import rapidjson
-from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from joblib.externals import cloudpickle
 from pandas import DataFrame
 from rich.align import Align
+from rich.console import Console
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -625,13 +625,13 @@ class Hyperopt:
 
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
 
-        if self.print_colorized:
-            colorama_init(autoreset=True)
-
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()
                 logger.info(f"Effective number of parallel workers used: {jobs}")
+                console = Console(
+                    color_system="auto" if self.print_colorized else None,
+                )
 
                 # Define progressbar
                 with CustomProgress(
@@ -644,6 +644,7 @@ class Hyperopt:
                     "•",
                     TimeRemainingColumn(),
                     expand=True,
+                    console=console,
                     cust_objs=[Align.center(self._hyper_out.table)],
                 ) as pbar:
                     task = pbar.add_task("Epochs", total=self.total_epochs)
