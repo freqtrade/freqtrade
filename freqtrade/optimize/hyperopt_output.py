@@ -101,7 +101,7 @@ class HyperoptOutput:
                     # "Avg duration":
                     str(r["results_metrics"]["holding_avg"]),
                     # "Objective":
-                    f"{r["loss"]:,.5f}" if r["loss"] != 100000 else "N/A",
+                    f"{r['loss']:,.5f}" if r["loss"] != 100000 else "N/A",
                     # "Max Drawdown (Acct)":
                     "{} {}".format(
                         fmt_coin(
@@ -109,7 +109,7 @@ class HyperoptOutput:
                             stake_currency,
                             keep_trailing_zeros=True,
                         ),
-                        (f"({r["results_metrics"]['max_drawdown_account']:,.2%})").rjust(10, " "),
+                        (f"({r['results_metrics']['max_drawdown_account']:,.2%})").rjust(10, " "),
                     )
                     if r["results_metrics"]["max_drawdown_account"] != 0.0
                     else "--",
