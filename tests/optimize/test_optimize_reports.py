@@ -507,7 +507,7 @@ def test_generate_sell_reason_stats():
     assert stop_result["profit_mean_pct"] == round(stop_result["profit_mean"] * 100, 2)
 
 
-def test_text_table_strategy(testdatadir):
+def test_text_table_strategy(testdatadir, capsys):
     filename = testdatadir / "backtest_results/backtest-result_multistrat.json"
     bt_res_data = load_backtest_stats(filename)
 
@@ -515,8 +515,10 @@ def test_text_table_strategy(testdatadir):
 
     strategy_results = generate_strategy_comparison(bt_stats=bt_res_data["strategy"])
     assert strategy_results == bt_res_data_comparison
-    text = text_table_strategy(strategy_results, "BTC")
+    text_table_strategy(strategy_results, "BTC", "STRATEGY SUMMARY")
 
+    captured = capsys.readouterr()
+    text = captured.out
     assert re.search(
         r".* Strategy .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
         r"Avg Duration .* Win  Draw  Loss  Win% .* Drawdown .*",

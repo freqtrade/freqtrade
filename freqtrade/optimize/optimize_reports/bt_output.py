@@ -6,7 +6,7 @@ from tabulate import tabulate
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
 from freqtrade.types import BacktestResultType
-from freqtrade.util import decimals_per_coin, fmt_coin
+from freqtrade.util import decimals_per_coin, fmt_coin, print_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -146,14 +146,13 @@ def text_table_periodic_breakdown(
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_strategy(strategy_results, stake_currency: str) -> str:
+def text_table_strategy(strategy_results, stake_currency: str, title: str):
     """
     Generate summary table per strategy
     :param strategy_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-    floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header("Strategy", stake_currency, "Trades")
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
@@ -177,8 +176,8 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
         [
             t["key"],
             t["trades"],
-            t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_mean_pct']:.2f}",
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t["duration_avg"],
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -186,8 +185,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
         ]
         for t, drawdown in zip(strategy_results, drawdown)
     ]
-    # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=title)
 
 
 def text_table_add_metrics(strat_results: Dict) -> str:
@@ -472,15 +470,13 @@ def show_backtest_results(config: Config, backtest_stats: BacktestResultType):
     if len(backtest_stats["strategy"]) > 0:
         # Print Strategy summary table
 
-        table = text_table_strategy(backtest_stats["strategy_comparison"], stake_currency)
         print(
             f"Backtested {results['backtest_start']} -> {results['backtest_end']} |"
             f" Max open trades : {results['max_open_trades']}"
         )
-        print(" STRATEGY SUMMARY ".center(len(table.splitlines()[0]), "="))
-        print(table)
-        print("=" * len(table.splitlines()[0]))
-        print("\nFor more details, please look at the detail tables above")
+        text_table_strategy(
+            backtest_stats["strategy_comparison"], stake_currency, "STRATEGY SUMMARY"
+        )
 
 
 def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
