@@ -532,14 +532,10 @@ def test_text_table_strategy(testdatadir):
 def test_generate_edge_table():
     results = {}
     results["ETH/BTC"] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
-    assert generate_edge_table(results).count("+") == 7
-    assert generate_edge_table(results).count("| ETH/BTC |") == 1
-    assert (
-        generate_edge_table(results).count(
-            "|   Risk Reward Ratio |   Required Risk Reward |   Expectancy |"
-        )
-        == 1
-    )
+    text = generate_edge_table(results)
+    assert text.count("+") == 7
+    assert text.count("| ETH/BTC |") == 1
+    assert re.search(r".* Risk Reward Ratio .* Required Risk Reward .* Expectancy .*", text)
 
 
 def test_generate_periodic_breakdown_stats(testdatadir):
