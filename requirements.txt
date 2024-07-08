@@ -45,8 +45,6 @@ pyjwt==2.8.0
 aiofiles==24.1.0
 psutil==6.0.0
 
-# Support for colorized terminal output
-colorama==0.4.6
 # Building config files interactively
 questionary==2.0.1
 prompt-toolkit==3.0.36
