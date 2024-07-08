@@ -2,8 +2,6 @@ import logging
 from operator import itemgetter
 from typing import Any, Dict
 
-from colorama import init as colorama_init
-
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.enums import RunMode
@@ -35,9 +33,6 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     # Previous evaluations
     epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
-
-    if print_colorized:
-        colorama_init(autoreset=True)
 
     if not export_csv:
         try:
