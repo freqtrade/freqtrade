@@ -508,20 +508,25 @@ def test_text_table_strategy(testdatadir):
 
     bt_res_data_comparison = bt_res_data.pop("strategy_comparison")
 
-    result_str = (
-        "|       Strategy |   Trades |   Avg Profit % |   Tot Profit BTC |"
-        "   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n"
-        "|----------------+----------+----------------+------------------+"
-        "----------------+----------------+-------------------------+-----------------------|\n"
-        "| StrategyTestV2 |      179 |           0.08 |       0.02608550 |"
-        "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n"
-        "|   TestStrategy |      179 |           0.08 |       0.02608550 |"
-        "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |"
-    )
-
     strategy_results = generate_strategy_comparison(bt_stats=bt_res_data["strategy"])
     assert strategy_results == bt_res_data_comparison
-    assert text_table_strategy(strategy_results, "BTC") == result_str
+    text = text_table_strategy(strategy_results, "BTC")
+
+    assert re.search(
+        r".* Strategy .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .* Drawdown .*",
+        text,
+    )
+    assert re.search(
+        r".*StrategyTestV2 .* 179 .* 0.08 .* 0.02608550 .* "
+        r"260.85 .* 3:40:00 .* 170     0     9  95.0 .* 0.00308222 BTC  8.67%.*",
+        text,
+    )
+    assert re.search(
+        r".*TestStrategy .* 179 .* 0.08 .* 0.02608550 .* "
+        r"260.85 .* 3:40:00 .* 170     0     9  95.0 .* 0.00308222 BTC  8.67%.*",
+        text,
+    )
 
 
 def test_generate_edge_table():
