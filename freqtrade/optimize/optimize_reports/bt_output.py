@@ -46,13 +46,12 @@ def generate_wins_draws_losses(wins, draws, losses):
 
 def text_table_bt_results(
     pair_results: List[Dict[str, Any]], stake_currency: str, title: str
-) -> str:
+) -> None:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
     :param title: Title of the table
-    :return: pretty printed table with tabulate as string
     """
 
     headers = _get_line_header("Pair", stake_currency, "Trades")
@@ -73,15 +72,14 @@ def text_table_bt_results(
 
 
 def text_table_tags(
-    tag_type: Literal["enter_tag", "exit_tag", "exit_reason"],
+    tag_type: Literal["enter_tag", "exit_tag", "mix_tag"],
     tag_results: List[Dict[str, Any]],
     stake_currency: str,
-) -> str:
+) -> None:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
-    :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
     fallback: str = ""
@@ -126,12 +124,11 @@ def text_table_tags(
 
 def text_table_periodic_breakdown(
     days_breakdown_stats: List[Dict[str, Any]], stake_currency: str, period: str
-) -> str:
+) -> None:
     """
     Generate small table with Backtest results by days
     :param days_breakdown_stats: Days breakdown metrics
     :param stake_currency: Stakecurrency used
-    :return: pretty printed table with tabulate as string
     """
     headers = [
         period.capitalize(),
@@ -158,7 +155,6 @@ def text_table_strategy(strategy_results, stake_currency: str, title: str):
     Generate summary table per strategy
     :param strategy_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :param stake_currency: stake-currency - used to correctly name headers
-    :return: pretty printed table with tabulate as string
     """
     headers = _get_line_header("Strategy", stake_currency, "Trades")
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
@@ -195,7 +191,7 @@ def text_table_strategy(strategy_results, stake_currency: str, title: str):
     print_rich_table(output, headers, summary=title)
 
 
-def text_table_add_metrics(strat_results: Dict) -> str:
+def text_table_add_metrics(strat_results: Dict) -> None:
     if len(strat_results["trades"]) > 0:
         best_trade = max(strat_results["trades"], key=lambda x: x["profit_ratio"])
         worst_trade = min(strat_results["trades"], key=lambda x: x["profit_ratio"])
@@ -472,7 +468,7 @@ def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
             print("]")
 
 
-def generate_edge_table(results: dict) -> str:
+def generate_edge_table(results: dict) -> None:
     tabular_data = []
     headers = [
         "Pair",
