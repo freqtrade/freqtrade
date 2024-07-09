@@ -152,7 +152,7 @@ def text_table_periodic_breakdown(
         ]
         for d in days_breakdown_stats
     ]
-    return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=f"{period.upper()} BREAKDOWN")
 
 
 def text_table_strategy(strategy_results, stake_currency: str, title: str):
@@ -435,12 +435,9 @@ def show_backtest_result(
             days_breakdown_stats = generate_periodic_breakdown_stats(
                 trade_list=results["trades"], period=period
             )
-        table = text_table_periodic_breakdown(
+        text_table_periodic_breakdown(
             days_breakdown_stats=days_breakdown_stats, stake_currency=stake_currency, period=period
         )
-        if isinstance(table, str) and len(table) > 0:
-            print(f" {period.upper()} BREAKDOWN ".center(len(table.splitlines()[0]), "="))
-        print(table)
 
     table = text_table_add_metrics(results)
     if isinstance(table, str) and len(table) > 0:
