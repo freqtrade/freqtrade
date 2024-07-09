@@ -379,8 +379,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *drawdown_metrics,
             ("Market change", f"{strat_results['market_change']:.2%}"),
         ]
+        print_rich_table(metrics, ["Metric", "Value"], summary="SUMMARY METRICS", justify="left")
 
-        return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
         start_balance = fmt_coin(strat_results["starting_balance"], strat_results["stake_currency"])
         stake_amount = (
@@ -394,7 +394,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             f"Your starting balance was {start_balance}, "
             f"and your stake was {stake_amount}."
         )
-        return message
+        print(message)
 
 
 def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
@@ -439,13 +439,7 @@ def show_backtest_result(
             days_breakdown_stats=days_breakdown_stats, stake_currency=stake_currency, period=period
         )
 
-    table = text_table_add_metrics(results)
-    if isinstance(table, str) and len(table) > 0:
-        print(" SUMMARY METRICS ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
-    if isinstance(table, str) and len(table) > 0:
-        print("=" * len(table.splitlines()[0]))
+    text_table_add_metrics(results)
 
     print()
 
