@@ -46,22 +46,24 @@ def generate_wins_draws_losses(wins, draws, losses):
     return f"{wins:>4}  {draws:>4}  {losses:>4}  {wl_ratio:>4}"
 
 
-def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_bt_results(
+    pair_results: List[Dict[str, Any]], stake_currency: str, title: str
+) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
+    :param title: Title of the table
     :return: pretty printed table with tabulate as string
     """
 
     headers = _get_line_header("Pair", stake_currency, "Trades")
-    floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
             t["key"],
             t["trades"],
             t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t["duration_avg"],
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -69,7 +71,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
         for t in pair_results
     ]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=title)
 
 
 def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_currency: str) -> str:
@@ -422,15 +424,12 @@ def show_backtest_result(
     """
     # Print results
     print(f"Result for strategy {strategy}")
-    table = text_table_bt_results(results["results_per_pair"], stake_currency=stake_currency)
-    if isinstance(table, str):
-        print(" BACKTESTING REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
-    table = text_table_bt_results(results["left_open_trades"], stake_currency=stake_currency)
-    if isinstance(table, str) and len(table) > 0:
-        print(" LEFT OPEN TRADES REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
+    text_table_bt_results(
+        results["results_per_pair"], stake_currency=stake_currency, title="BACKTESTING REPORT"
+    )
+    text_table_bt_results(
+        results["left_open_trades"], stake_currency=stake_currency, title="LEFT OPEN TRADES REPORT"
+    )
 
     _show_tag_subresults(results, stake_currency)
 

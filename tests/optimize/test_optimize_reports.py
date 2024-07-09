@@ -59,7 +59,7 @@ def _backup_file(file: Path, copy_file: bool = False) -> None:
             copyfile(file_swp, file)
 
 
-def test_text_table_bt_results():
+def test_text_table_bt_results(capsys):
     results = pd.DataFrame(
         {
             "pair": ["ETH/BTC", "ETH/BTC", "ETH/BTC"],
@@ -72,7 +72,8 @@ def test_text_table_bt_results():
     pair_results = generate_pair_metrics(
         ["ETH/BTC"], stake_currency="BTC", starting_balance=4, results=results
     )
-    text = text_table_bt_results(pair_results, stake_currency="BTC")
+    text_table_bt_results(pair_results, stake_currency="BTC", title="title")
+    text = capsys.readouterr().out
     re.search(
         r".* Pair .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
         r"Avg Duration .* Win  Draw  Loss  Win% .*",
