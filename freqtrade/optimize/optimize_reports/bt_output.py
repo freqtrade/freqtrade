@@ -1,8 +1,6 @@
 import logging
 from typing import Any, Dict, List, Literal, Union
 
-from tabulate import tabulate
-
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
 from freqtrade.types import BacktestResultType
