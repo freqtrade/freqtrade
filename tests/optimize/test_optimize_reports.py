@@ -538,12 +538,12 @@ def test_text_table_strategy(testdatadir, capsys):
     )
 
 
-def test_generate_edge_table():
+def test_generate_edge_table(capsys):
     results = {}
     results["ETH/BTC"] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
-    text = generate_edge_table(results)
-    assert text.count("+") == 7
-    assert text.count("| ETH/BTC |") == 1
+    generate_edge_table(results)
+    text = capsys.readouterr().out
+    assert re.search(r".* ETH/BTC .*", text)
     assert re.search(r".* Risk Reward Ratio .* Required Risk Reward .* Expectancy .*", text)
 
 

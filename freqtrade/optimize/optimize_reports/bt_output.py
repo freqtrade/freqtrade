@@ -475,7 +475,6 @@ def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
 
 
 def generate_edge_table(results: dict) -> str:
-    floatfmt = ("s", ".10g", ".2f", ".2f", ".2f", ".2f", "d", "d", "d")
     tabular_data = []
     headers = [
         "Pair",
@@ -493,17 +492,13 @@ def generate_edge_table(results: dict) -> str:
             tabular_data.append(
                 [
                     result[0],
-                    result[1].stoploss,
-                    result[1].winrate,
-                    result[1].risk_reward_ratio,
-                    result[1].required_risk_reward,
-                    result[1].expectancy,
+                    f"{result[1].stoploss:.10g}",
+                    f"{result[1].winrate:.2f}",
+                    f"{result[1].risk_reward_ratio:.2f}",
+                    f"{result[1].required_risk_reward:.2f}",
+                    f"{result[1].expectancy:.2f}",
                     result[1].nb_trades,
                     round(result[1].avg_trade_duration),
                 ]
             )
-
-    # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(
-        tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right"
-    )
+    print_rich_table(tabular_data, headers, summary="EDGE TABLE")
