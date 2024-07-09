@@ -436,7 +436,7 @@ def test_calc_streak(testdatadir):
     assert calc_streak(bt_data) == (7, 18)
 
 
-def test_text_table_exit_reason():
+def test_text_table_exit_reason(capsys):
     results = pd.DataFrame(
         {
             "pair": ["ETH/BTC", "ETH/BTC", "ETH/BTC"],
@@ -453,7 +453,8 @@ def test_text_table_exit_reason():
     exit_reason_stats = generate_tag_metrics(
         "exit_reason", starting_balance=22, results=results, skip_nan=False
     )
-    text = text_table_tags("exit_tag", exit_reason_stats, "BTC")
+    text_table_tags("exit_tag", exit_reason_stats, "BTC")
+    text = capsys.readouterr().out
 
     assert re.search(
         r".* Exit Reason .* Exits .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
@@ -461,11 +462,11 @@ def test_text_table_exit_reason():
         text,
     )
     assert re.search(
-        r".* roi .* 2 .* 15.00 .* 0.60000000 .* 2.73 .* 0:20:00 .* 2     0     0   100 .*",
+        r".* roi .* 2 .* 15.0 .* 0.60000000 .* 2.73 .* 0:20:00 .* 2     0     0   100 .*",
         text,
     )
     assert re.search(
-        r".* stop_loss .* 1 .* -10.00 .* -0.20000000 .* -0.91 .* 0:10:00 .* 0     0     1     0 .*",
+        r".* stop_loss .* 1 .* -10.0 .* -0.20000000 .* -0.91 .* 0:10:00 .* 0     0     1     0 .*",
         text,
     )
     assert re.search(

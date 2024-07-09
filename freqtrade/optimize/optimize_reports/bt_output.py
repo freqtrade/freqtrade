@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Literal, Union
 
 from tabulate import tabulate
 
@@ -74,7 +74,11 @@ def text_table_bt_results(
     print_rich_table(output, headers, summary=title)
 
 
-def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_tags(
+    tag_type: Literal["enter_tag", "exit_tag", "exit_reason"],
+    tag_results: List[Dict[str, Any]],
+    stake_currency: str,
+) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
@@ -85,12 +89,15 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     fallback: str = ""
     is_list = False
     if tag_type == "enter_tag":
-        headers = _get_line_header("Enter Tag", stake_currency, "Entries")
+        title = "Enter Tag"
+        headers = _get_line_header(title, stake_currency, "Entries")
     elif tag_type == "exit_tag":
-        headers = _get_line_header("Exit Reason", stake_currency, "Exits")
+        title = "Exit Reason"
+        headers = _get_line_header(title, stake_currency, "Exits")
         fallback = "exit_reason"
     else:
         # Mix tag
+        title = "Mixed Tag"
         headers = _get_line_header(["Enter Tag", "Exit Reason"], stake_currency, "Trades")
         floatfmt.insert(0, "s")
         is_list = True
@@ -108,7 +115,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
             ),
             t["trades"],
             t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t.get("duration_avg"),
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -116,7 +123,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
         for t in tag_results
     ]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=f"{title.upper()} STATS")
 
 
 def text_table_periodic_breakdown(
@@ -395,25 +402,13 @@ def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
     Print tag subresults (enter_tag, exit_reason_summary, mix_tag_stats)
     """
     if (enter_tags := results.get("results_per_enter_tag")) is not None:
-        table = text_table_tags("enter_tag", enter_tags, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" ENTER TAG STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("enter_tag", enter_tags, stake_currency)
 
     if (exit_reasons := results.get("exit_reason_summary")) is not None:
-        table = text_table_tags("exit_tag", exit_reasons, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" EXIT REASON STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("exit_tag", exit_reasons, stake_currency)
 
     if (mix_tag := results.get("mix_tag_stats")) is not None:
-        table = text_table_tags("mix_tag", mix_tag, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" MIXED TAG STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("mix_tag", mix_tag, stake_currency)
 
 
 def show_backtest_result(
