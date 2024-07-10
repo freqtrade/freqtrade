@@ -15,10 +15,11 @@ def print_rich_table(
     headers: Sequence[str],
     summary: Optional[str] = None,
     *,
+    justify="right",
     table_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
     table = Table(
-        *[c if isinstance(c, Column) else Column(c, justify="right") for c in headers],
+        *[c if isinstance(c, Column) else Column(c, justify=justify) for c in headers],
         title=summary,
         **(table_kwargs or {}),
     )
