@@ -1317,6 +1317,8 @@ class RPC:
                 # replace NaT with `None`
                 dataframe[date_column] = dataframe[date_column].astype(object).replace({NaT: None})
 
+            # TODO: Temporary workaround for orderflow: drop orderflow columns
+            dataframe = dataframe.drop(["orderflow", "trades", "imbalances"], axis=1, errors="ignore")
             dataframe = dataframe.replace({inf: None, -inf: None, NAN: None})
 
         res = {

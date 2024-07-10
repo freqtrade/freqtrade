@@ -2617,25 +2617,22 @@ class Exchange:
 
     # fetch Trade data stuff
 
-    def needed_candle_ms(self, timeframe: str, candle_type: CandleType):
-        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe, candle_type)
-        move_to = one_call * self.required_candle_call_count
-        now = timeframe_to_next_date(timeframe)
-        return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+    def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType) -> int:
+        candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
+        tf_s = timeframe_to_seconds(timeframe)
+        candles_fetched = candle_limit * self.required_candle_call_count
 
-    def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType):
-        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe, candle_type)
-        config_orderflow = self._config["orderflow"]
-        required_candles = config_orderflow["max_candles"]
-        required_candles = (
-            required_candles
-            if required_candles < self.required_candle_call_count
-            else self.required_candle_call_count
+        max_candles = self._config["orderflow"]["max_candles"]
+
+        required_candles = min(max_candles, candles_fetched)
+        move_to = (
+            tf_s * candle_limit * required_candles
+            if required_candles > candle_limit
+            else (max_candles + 1) * tf_s
         )
 
-        move_to = one_call * required_candles
         now = timeframe_to_next_date(timeframe)
-        return int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+        return int((now - timedelta(seconds=move_to)).timestamp() * 1000)
 
     def _process_trades_df(
         self,
