@@ -280,7 +280,7 @@ def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_
 
     # Select the second candle (index 1) and attempt to assign the volume profile data
     # (as a DataFrame) to the 'vp' element.
-    candles.loc[candles.index == 1, ["vp"]] = candles.loc[candles.index == 1, ["vp"]].applymap(
+    candles.loc[candles.index == 1, ["vp"]] = candles.loc[candles.index == 1, ["vp"]].map(
         lambda x: pd.DataFrame(df.to_dict())
     )
 
