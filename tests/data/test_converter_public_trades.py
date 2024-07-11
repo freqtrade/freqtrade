@@ -17,9 +17,9 @@ def read_csv(filename, converter_columns: list = ["side", "type"]):
     return pd.read_csv(
         filename,
         skipinitialspace=True,
-        infer_datetime_format=True,
         index_col=0,
         parse_dates=True,
+        date_format="ISO8601",
         converters={col: str.strip for col in converter_columns},
     )
 
