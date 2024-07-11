@@ -133,8 +133,8 @@ def test_FtRestClient_call_invalid(caplog):
 )
 def test_FtRestClient_call_explicit_methods(method, args, kwargs):
     client, mock = get_rest_client()
-    exec = getattr(client, method)
-    exec(*args, **kwargs)
+    executor = getattr(client, method)
+    executor(*args, **kwargs)
     assert mock.call_count == 1
 
 

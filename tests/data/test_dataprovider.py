@@ -286,7 +286,7 @@ def test_refresh(mocker, default_conf):
     refresh_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv")
     mock_refresh_trades = mocker.patch(f"{EXMS}.refresh_latest_trades")
 
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     timeframe = default_conf["timeframe"]
     pairs = [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe)]
 

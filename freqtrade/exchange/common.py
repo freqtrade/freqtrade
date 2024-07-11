@@ -65,6 +65,7 @@ SUPPORTED_EXCHANGES = [
 EXCHANGE_HAS_REQUIRED: Dict[str, List[str]] = {
     # Required / private
     "fetchOrder": ["fetchOpenOrder", "fetchClosedOrder"],
+    "fetchL2OrderBook": ["fetchTicker"],
     "cancelOrder": [],
     "createOrder": [],
     "fetchBalance": [],

@@ -9,7 +9,7 @@ from tests.conftest import EXMS, get_patched_exchange
 
 @pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_gate(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, id="gate")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="gate")
 
     fetch_order_mock = MagicMock()
     exchange.fetch_order = fetch_order_mock
@@ -23,7 +23,7 @@ def test_fetch_stoploss_order_gate(default_conf, mocker):
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
 
-    exchange = get_patched_exchange(mocker, default_conf, id="gate")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="gate")
 
     exchange.fetch_order = MagicMock(
         return_value={
@@ -41,7 +41,7 @@ def test_fetch_stoploss_order_gate(default_conf, mocker):
 
 
 def test_cancel_stoploss_order_gate(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, id="gate")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="gate")
 
     cancel_order_mock = MagicMock()
     exchange.cancel_order = cancel_order_mock
@@ -57,7 +57,7 @@ def test_cancel_stoploss_order_gate(default_conf, mocker):
     "sl1,sl2,sl3,side", [(1501, 1499, 1501, "sell"), (1499, 1501, 1499, "buy")]
 )
 def test_stoploss_adjust_gate(mocker, default_conf, sl1, sl2, sl3, side):
-    exchange = get_patched_exchange(mocker, default_conf, id="gate")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="gate")
     order = {
         "price": 1500,
         "stopPrice": 1500,
@@ -111,7 +111,7 @@ def test_fetch_my_trades_gate(mocker, default_conf, takerormaker, rate, cost):
             }
         ]
     )
-    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, id="gate")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, exchange="gate")
     exchange._trading_fees = tick
     trades = exchange.get_trades_for_order("22255", "ETH/USDT:USDT", datetime.now(timezone.utc))
     trade = trades[0]

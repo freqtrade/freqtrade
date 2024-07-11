@@ -238,9 +238,9 @@ class FreqaiDataDrawer:
                     metadata, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE
                 )
 
-    def np_encoder(self, object):
-        if isinstance(object, np.generic):
-            return object.item()
+    def np_encoder(self, obj):
+        if isinstance(obj, np.generic):
+            return obj.item()
 
     def get_pair_dict_info(self, pair: str) -> Tuple[str, int]:
         """
@@ -448,8 +448,8 @@ class FreqaiDataDrawer:
 
         delete_dict: Dict[str, Any] = {}
 
-        for dir in model_folders:
-            result = pattern.match(str(dir.name))
+        for directory in model_folders:
+            result = pattern.match(str(directory.name))
             if result is None:
                 continue
             coin = result.group(1)
@@ -458,10 +458,10 @@ class FreqaiDataDrawer:
             if coin not in delete_dict:
                 delete_dict[coin] = {}
                 delete_dict[coin]["num_folders"] = 1
-                delete_dict[coin]["timestamps"] = {int(timestamp): dir}
+                delete_dict[coin]["timestamps"] = {int(timestamp): directory}
             else:
                 delete_dict[coin]["num_folders"] += 1
-                delete_dict[coin]["timestamps"][int(timestamp)] = dir
+                delete_dict[coin]["timestamps"][int(timestamp)] = directory
 
         for coin in delete_dict:
             if delete_dict[coin]["num_folders"] > num_keep:
@@ -612,9 +612,9 @@ class FreqaiDataDrawer:
         elif self.model_type == "pytorch":
             import torch
 
-            zip = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
-            model = zip["pytrainer"]
-            model = model.load_from_checkpoint(zip)
+            zipfile = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = zipfile["pytrainer"]
+            model = model.load_from_checkpoint(zipfile)
 
         if not model:
             raise OperationalException(

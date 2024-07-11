@@ -56,11 +56,11 @@ async def test_exchangews_ohlcv(mocker):
         assert exchange_ws._klines_scheduled == set()
 
         exchange_ws.schedule_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
-        asyncio.sleep(0.5)
+        await asyncio.sleep(0.5)
 
         assert exchange_ws._klines_watching == {("ETH/BTC", "1m", CandleType.SPOT)}
         assert exchange_ws._klines_scheduled == {("ETH/BTC", "1m", CandleType.SPOT)}
-        asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)
         assert ccxt_object.watch_ohlcv.call_count == 1
     except Exception as e:
         print(e)

@@ -83,7 +83,7 @@ def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "pair,expected",
     [
         ("XMR_USDT", "XMR/USDT"),
         ("BTC_USDT", "BTC/USDT"),
@@ -95,8 +95,8 @@ def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
         ("UNITTEST_USDT", "UNITTEST/USDT"),
     ],
 )
-def test_rebuild_pair_from_filename(input, expected):
-    assert IDataHandler.rebuild_pair_from_filename(input) == expected
+def test_rebuild_pair_from_filename(pair, expected):
+    assert IDataHandler.rebuild_pair_from_filename(pair) == expected
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):

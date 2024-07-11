@@ -291,9 +291,10 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
             "is_best": True,
         }
     )
+    hyperopt._hyper_out.print()
     out, _err = capsys.readouterr()
     assert all(
-        x in out for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "00:20:00"]
+        x in out for x in ["Best", "2/2", "1", "0.10%", "0.00100000 BTC    (1.00%)", "0:20:00"]
     )
 
 

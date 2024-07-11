@@ -624,9 +624,12 @@ class Exchange:
             # Reload async markets, then assign them to sync api
             self._markets = self._load_async_markets(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
+            # Assign options array, as it contains some temporary information from the exchange.
+            self._api.options = self._api_async.options
             if self._exchange_ws:
                 # Set markets to avoid reloading on websocket api
                 self._ws_async.set_markets(self._api.markets, self._api.currencies)
+                self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
 
             if is_initial and self._ft_has["needs_trading_fees"]:
@@ -2084,7 +2087,7 @@ class Exchange:
     def get_fee(
         self,
         symbol: str,
-        type: str = "",
+        order_type: str = "",
         side: str = "",
         amount: float = 1,
         price: float = 1,
@@ -2093,13 +2096,13 @@ class Exchange:
         """
         Retrieve fee from exchange
         :param symbol: Pair
-        :param type: Type of order (market, limit, ...)
+        :param order_type: Type of order (market, limit, ...)
         :param side: Side of order (buy, sell)
         :param amount: Amount of order
         :param price: Price of order
         :param taker_or_maker: 'maker' or 'taker' (ignored if "type" is provided)
         """
-        if type and type == "market":
+        if order_type and order_type == "market":
             taker_or_maker = "taker"
         try:
             if self._config["dry_run"] and self._config.get("fee", None) is not None:
@@ -2110,7 +2113,7 @@ class Exchange:
 
             return self._api.calculate_fee(
                 symbol=symbol,
-                type=type,
+                type=order_type,
                 side=side,
                 amount=amount,
                 price=price,
