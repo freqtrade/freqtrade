@@ -6,7 +6,7 @@ This guide walks you through utilizing public trade data for advanced orderflow 
     The orderflow feature is currently in beta and may be subject to changes in future releases. Please report any issues or feedback on the [Freqtrade GitHub repository](https://github.com/freqtrade/freqtrade/issues).
 
 !!! Warning "Performance"
-    Orderflow requires raw trades data. This data is rather large, and can cause a slow initial startup, when freqtrade needs to download the trades data for the last X candles. It can also cause increased memory usage. Please ensure you have sufficient resources available.
+    Orderflow requires raw trades data. This data is rather large, and can cause a slow initial startup, when freqtrade needs to download the trades data for the last X candles. Additionally, enabling this feature will cause increased memory usage. Please ensure to have sufficient resources available.
 
 ## Getting Started
 
@@ -44,12 +44,13 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 To download historical trade data for backtesting, use the --dl-trades flag with the freqtrade download-data command.
 
 ```bash
-freqtrade download-data -p BTC/USDT:USDT --timerange 20230101-  --trading-mode futures  --timeframes 5m --dl-trades
+freqtrade download-data -p BTC/USDT:USDT --timerange 20230101- --trading-mode futures --timeframes 5m --dl-trades
 ```
 
 ## Accessing Orderflow Data
 
 Once activated, several new columns become available in your dataframe:
+
 ``` python
 
     dataframe["trades"] # Contains information about each individual trade.
@@ -93,6 +94,5 @@ The `orderflow` dataframe includes columns like:
 - `delta`: Difference between ask and bid volume at each price level.
 - `total_volume`: Total volume (ask amount + bid amount) at each price level.
 - `total_trades`: Total number of trades (ask + bid) at each price level.
-
 
 By leveraging these features, you can gain valuable insights into market sentiment and potential trading opportunities based on order flow analysis.
