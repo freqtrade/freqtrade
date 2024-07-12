@@ -838,7 +838,7 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate aligns to open rate
         assert not ln.empty
-        assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
+        assert round(ln.iloc[0]["open"].item(), 6) == round(t["open_rate"], 6)
         # check close trade rate aligns to close rate or is between high and low
         ln1 = data_pair.loc[data_pair["date"] == t["close_date"]]
         assert round(ln1.iloc[0]["open"], 6) == round(t["close_rate"], 6) or round(

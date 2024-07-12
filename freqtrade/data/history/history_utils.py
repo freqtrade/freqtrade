@@ -18,6 +18,7 @@ from freqtrade.data.converter import (
     clean_ohlcv_dataframe,
     convert_trades_to_ohlcv,
     ohlcv_to_dataframe,
+    reduce_dataframe_footprint,
     trades_df_remove_duplicates,
     trades_list_to_df,
 )
@@ -120,7 +121,9 @@ def load_data(
             data_handler=data_handler,
             candle_type=candle_type,
         )
+
         if not hist.empty:
+            hist = reduce_dataframe_footprint(hist)
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:

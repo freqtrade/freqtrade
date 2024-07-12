@@ -512,34 +512,52 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmp_path, file_base, ca
         assert not file.exists()
 
 
+def test_reduce_dataframe_footprint_skip_original():
+    data = generate_test_data("15m", 40)
+
+    data["open_copy"] = data["open"]
+    data["close_copy"] = data["close"]
+
+    assert data["open"].dtype == np.float64
+    assert data["open_copy"].dtype == np.float64
+    assert data["close_copy"].dtype == np.float64
+
+    data = reduce_dataframe_footprint(data, skip_original=True)
+
+    # skips ohlcv columns
+    assert data["open"].dtype == np.float64
+    assert data["high"].dtype == np.float64
+    assert data["low"].dtype == np.float64
+    assert data["close"].dtype == np.float64
+    assert data["volume"].dtype == np.float64
+
+    # Changes dtype of returned dataframe
+    assert data["open_copy"].dtype == np.float32
+    assert data["close_copy"].dtype == np.float32
+
+
 def test_reduce_dataframe_footprint():
     data = generate_test_data("15m", 40)
 
     data["open_copy"] = data["open"]
     data["close_copy"] = data["close"]
-    data["close_copy"] = data["close"]
 
     assert data["open"].dtype == np.float64
     assert data["open_copy"].dtype == np.float64
     assert data["close_copy"].dtype == np.float64
 
-    df2 = reduce_dataframe_footprint(data)
+    data = reduce_dataframe_footprint(data)
 
-    # Does not modify original dataframe
-    assert data["open"].dtype == np.float64
-    assert data["open_copy"].dtype == np.float64
-    assert data["close_copy"].dtype == np.float64
-
-    # skips ohlcv columns
-    assert df2["open"].dtype == np.float64
-    assert df2["high"].dtype == np.float64
-    assert df2["low"].dtype == np.float64
-    assert df2["close"].dtype == np.float64
-    assert df2["volume"].dtype == np.float64
+    # changes ohlcv columns
+    assert data["open"].dtype == np.float32
+    assert data["high"].dtype == np.float32
+    assert data["low"].dtype == np.float32
+    assert data["close"].dtype == np.float32
+    assert data["volume"].dtype == np.float32
 
     # Changes dtype of returned dataframe
-    assert df2["open_copy"].dtype == np.float32
-    assert df2["close_copy"].dtype == np.float32
+    assert data["open_copy"].dtype == np.float32
+    assert data["close_copy"].dtype == np.float32
 
 
 def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
