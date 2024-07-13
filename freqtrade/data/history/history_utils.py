@@ -5,14 +5,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from pandas import DataFrame, concat
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (
@@ -34,10 +26,8 @@ from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
-from freqtrade.util import dt_ts, format_ms_time
-from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.util import dt_now, dt_ts, format_ms_time, get_progress_tracker
 from freqtrade.util.migrations import migrate_data
-from freqtrade.util.rich_progress import CustomProgress
 
 
 logger = logging.getLogger(__name__)
@@ -351,17 +341,7 @@ def refresh_backtest_ohlcv_data(
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
     candle_type = CandleType.get_default(trading_mode)
-    with CustomProgress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(bar_width=None),
-        MofNCompleteColumn(),
-        TaskProgressColumn(),
-        "•",
-        TimeElapsedColumn(),
-        "•",
-        TimeRemainingColumn(),
-        expand=True,
-    ) as progress:
+    with get_progress_tracker() as progress:
         tf_length = len(timeframes) if trading_mode != "futures" else len(timeframes) + 2
         timeframe_task = progress.add_task("Timeframe", total=tf_length)
         pair_task = progress.add_task("Downloading data...", total=len(pairs))
