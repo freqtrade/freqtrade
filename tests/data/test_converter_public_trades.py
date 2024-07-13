@@ -270,25 +270,16 @@ def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_
     """
 
     # Convert the trade list to a DataFrame
-    df = trades_list_to_df(public_trades_list_simple[DEFAULT_TRADES_COLUMNS].values.tolist())
+    trades_df = trades_list_to_df(public_trades_list_simple[DEFAULT_TRADES_COLUMNS].values.tolist())
 
     # Generate the volume profile with the specified bin size
-    df = trades_to_volumeprofile_with_total_delta_bid_ask(df, scale=BIN_SIZE_SCALE)
+    df = trades_to_volumeprofile_with_total_delta_bid_ask(trades_df, scale=BIN_SIZE_SCALE)
 
-    # Initialize the 'vp' column in the candles DataFrame with NaNs
-    candles["vp"] = np.nan
-
-    # Select the second candle (index 1) and attempt to assign the volume profile data
-    # (as a DataFrame) to the 'vp' element.
-    candles.loc[candles.index == 1, ["vp"]] = candles.loc[candles.index == 1, ["vp"]].map(
-        lambda x: pd.DataFrame(df.to_dict())
-    )
-
-    # Assert the delta value in the 'vp' element of the second candle
-    assert 0.14 == candles["vp"][1].values.tolist()[1][2]
+    # Assert the delta value in the total-bid/delta response of the second candle
+    assert 0.14 == df.values.tolist()[1][2]
 
     # Alternative assertion using `.iat` accessor (assuming correct assignment logic)
-    assert 0.14 == candles["vp"][1]["delta"].iat[1]
+    assert 0.14 == df["delta"].iat[1]
 
 
 def test_public_trades_binned_big_sample_list(public_trades_list):
