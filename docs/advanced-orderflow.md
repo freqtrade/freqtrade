@@ -1,4 +1,4 @@
-# Advanced Orderflow
+# Orderflow data
 
 This guide walks you through utilizing public trade data for advanced orderflow analysis in Freqtrade.
 
@@ -10,7 +10,9 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 
 ## Getting Started
 
-1. **Enable Public Trades:** in your `config.json` file, set the `use_public_trades` option to true under the `exchange` section.
+### Enable Public Trades
+
+In your `config.json` file, set the `use_public_trades` option to true under the `exchange` section.
 
 ```json
 "exchange": {
@@ -19,10 +21,12 @@ This guide walks you through utilizing public trade data for advanced orderflow 
 }
 ```
 
-2. **Configure Orderflow Processing:** Define your desired settings for orderflow processing within the orderflow section of config.json. Here, you can adjust factors like:
+### Configure Orderflow Processing
+
+Define your desired settings for orderflow processing within the orderflow section of config.json. Here, you can adjust factors like:
 
 - `cache_size`: How many previous orderflow candles are saved into cache instead of calculated every new candle
-- `max_candles`: Filter how many candles get processed from the tail
+- `max_candles`: Filter how many candles would you like to get trades data for.
 - `scale`: This controls the price bin size for the footprint chart.
 - `stacked_imbalance_range`: Defines the minimum consecutive imbalanced price levels required for consideration.
 - `imbalance_volume`: Filters out imbalances with volume below this threshold.
@@ -47,22 +51,26 @@ To download historical trade data for backtesting, use the --dl-trades flag with
 freqtrade download-data -p BTC/USDT:USDT --timerange 20230101- --trading-mode futures --timeframes 5m --dl-trades
 ```
 
+!!! Warning "Data availability"
+    Not all exchanges provide public trade data. For supported exchanges, freqtrade will warn you if public trade data is not available if you start downloading data with the `--dl-trades` flag.
+
 ## Accessing Orderflow Data
 
 Once activated, several new columns become available in your dataframe:
 
 ``` python
 
-    dataframe["trades"] # Contains information about each individual trade.
-    dataframe["orderflow"] # Represents a footprint chart dataframe (see below)
-    dataframe["bid"] # Total bid volume 
-    dataframe["ask"] # Total ask volume
-    dataframe["delta"] # Difference between ask and bid volume.
-    dataframe["min_delta"] # Minimum delta within the candle
-    dataframe["max_delta"] # Maximum delta within the candle
-    dataframe["total_trades"] # Total number of trades
-    dataframe["stacked_imbalances_bid"] # Price level of stacked bid imbalance 
-    dataframe["stacked_imbalances_ask"] # Price level of stacked ask imbalance  
+dataframe["trades"] # Contains information about each individual trade.
+dataframe["orderflow"] # Represents a footprint chart dataframe (see below)
+dataframe["imbalances"] # Contains information about imbalances in the order flow.
+dataframe["bid"] # Total bid volume 
+dataframe["ask"] # Total ask volume
+dataframe["delta"] # Difference between ask and bid volume.
+dataframe["min_delta"] # Minimum delta within the candle
+dataframe["max_delta"] # Maximum delta within the candle
+dataframe["total_trades"] # Total number of trades
+dataframe["stacked_imbalances_bid"] # Price level of stacked bid imbalance 
+dataframe["stacked_imbalances_ask"] # Price level of stacked ask imbalance  
 ```
 
 You can access these columns in your strategy code for further analysis. Here's an example:
@@ -81,7 +89,7 @@ def cumulative_delta(delta: Series):
 
 ```
 
-### Footprint chart (dataframe["orderflow"])
+### Footprint chart (`dataframe["orderflow"]`)
 
 This column provides a detailed breakdown of buy and sell orders at different price levels, offering valuable insights into order flow dynamics. The scale parameter in your configuration determines the price bin size for this representation
 
@@ -96,3 +104,31 @@ The `orderflow` dataframe includes columns like:
 - `total_trades`: Total number of trades (ask + bid) at each price level.
 
 By leveraging these features, you can gain valuable insights into market sentiment and potential trading opportunities based on order flow analysis.
+
+### Raw trades data (`dataframe["trades"]`)
+
+Dataframe with the individual trades that occurred during the candle. This data can be used for more granular analysis of order flow dynamics.
+
+The `trades` dataframe includes the following columns:
+
+- `timestamp`: Timestamp of the trade.
+- `date`: Date of the trade.
+- `price`: Price of the trade.
+- `amount`: Volume of the trade.
+- `side`: Buy or sell.
+- `id`: Unique identifier for the trade.
+- `cost`: Total cost of the trade (price * amount).
+
+### Imbalances (`dataframe["imbalances"]`)
+
+Dataframe with information about imbalances in the order flow. An imbalance occurs when there is a significant difference between the ask and bid volume at a given price level.
+
+The dataframe looks as follows - with price as index, and the corresponding bid and ask imbalance values as columns
+
+``` output
+         bid_imbalance  ask_imbalance
+price                                
+58130.0          False          False
+58130.5          False          False
+58131.0          False          False
+```
