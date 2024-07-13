@@ -509,25 +509,30 @@ def refresh_backtest_trades_data(
     """
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format=data_format)
-    for pair in pairs:
-        if pair not in exchange.markets:
-            pairs_not_available.append(pair)
-            logger.info(f"Skipping pair {pair}...")
-            continue
+    with get_progress_tracker() as progress:
+        pair_task = progress.add_task("Downloading data...", total=len(pairs))
+        for pair in pairs:
+            progress.update(pair_task, description=f"Downloading trades [{pair}]")
+            if pair not in exchange.markets:
+                pairs_not_available.append(pair)
+                logger.info(f"Skipping pair {pair}...")
+                continue
 
-        if erase:
-            if data_handler.trades_purge(pair, trading_mode):
-                logger.info(f"Deleting existing data for pair {pair}.")
+            if erase:
+                if data_handler.trades_purge(pair, trading_mode):
+                    logger.info(f"Deleting existing data for pair {pair}.")
 
-        logger.info(f"Downloading trades for pair {pair}.")
-        _download_trades_history(
-            exchange=exchange,
-            pair=pair,
-            new_pairs_days=new_pairs_days,
-            timerange=timerange,
-            data_handler=data_handler,
-            trading_mode=trading_mode,
-        )
+            logger.info(f"Downloading trades for pair {pair}.")
+            _download_trades_history(
+                exchange=exchange,
+                pair=pair,
+                new_pairs_days=new_pairs_days,
+                timerange=timerange,
+                data_handler=data_handler,
+                trading_mode=trading_mode,
+            )
+            progress.update(pair_task, advance=1)
+
     return pairs_not_available
 
 
