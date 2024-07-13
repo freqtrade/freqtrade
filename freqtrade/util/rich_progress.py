@@ -5,7 +5,7 @@ from rich.progress import Progress
 
 
 class CustomProgress(Progress):
-    def __init__(self, *args, cust_objs, **kwargs) -> None:
+    def __init__(self, *args, cust_objs=[], **kwargs) -> None:
         self._cust_objs = cust_objs
         super().__init__(*args, **kwargs)
 
