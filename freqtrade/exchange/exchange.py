@@ -342,6 +342,9 @@ class Exchange:
             "secret": exchange_config.get("secret"),
             "password": exchange_config.get("password"),
             "uid": exchange_config.get("uid", ""),
+            # DEX attributes:
+            "walletAddress": exchange_config.get("walletAddress"),
+            "privateKey": exchange_config.get("privateKey"),
         }
         if ccxt_kwargs:
             logger.info("Applying additional ccxt config: %s", ccxt_kwargs)
