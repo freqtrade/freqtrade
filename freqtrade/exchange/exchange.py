@@ -3424,8 +3424,7 @@ class Exchange:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         :param pair: Market symbol
-        :param nominal_value: The total trade amount in quote currency including leverage
-        maintenance amount only on Binance
+        :param nominal_value: The total trade amount in quote currency
         :return: (maintenance margin ratio, maintenance amount)
         """
 
