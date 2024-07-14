@@ -14,6 +14,7 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
         return config
     keys_to_remove = [
         "exchange.key",
+        "exchange.apiKey",
         "exchange.secret",
         "exchange.password",
         "exchange.uid",

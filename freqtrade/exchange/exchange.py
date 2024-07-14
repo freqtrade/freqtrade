@@ -338,7 +338,7 @@ class Exchange:
             raise OperationalException(f"Exchange {name} is not supported by ccxt")
 
         ex_config = {
-            "apiKey": exchange_config.get("key"),
+            "apiKey": exchange_config.get("apiKey", exchange_config.get("key")),
             "secret": exchange_config.get("secret"),
             "password": exchange_config.get("password"),
             "uid": exchange_config.get("uid", ""),
