@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class Cryptocom(Exchange):
-    """
-    Crypto.com exchange class. Contains adjustments needed for Freqtrade to work
-    with this exchange.
+    """Crypto.com exchange class.
+    Contains adjustments needed for Freqtrade to work with this exchange.
     """
 
     _ft_has: Dict = {
