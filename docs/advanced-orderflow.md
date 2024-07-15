@@ -61,7 +61,7 @@ Once activated, several new columns become available in your dataframe:
 ``` python
 
 dataframe["trades"] # Contains information about each individual trade.
-dataframe["orderflow"] # Represents a footprint chart dataframe (see below)
+dataframe["orderflow"] # Represents a footprint chart dict (see below)
 dataframe["imbalances"] # Contains information about imbalances in the order flow.
 dataframe["bid"] # Total bid volume 
 dataframe["ask"] # Total ask volume
