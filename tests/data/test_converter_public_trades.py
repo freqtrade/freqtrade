@@ -270,20 +270,20 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
         "total_trades",
     ]
     # Assert delta, bid, and ask values
-    assert -50.519 == pytest.approx(row["delta"])
-    assert 219.961 == row["bid"]
-    assert 169.442 == row["ask"]
+    assert pytest.approx(row["delta"]) == -50.519
+    assert row["bid"] == 219.961
+    assert row["ask"] == 169.442
 
     # Assert the number of trades
-    assert 151 == len(row["trades"])
+    assert len(row["trades"]) == 151
 
     # Assert specific details of the first trade
     t = row["trades"][0]
     assert trades["id"][0] == t["id"]
     assert int(trades["timestamp"][0]) == int(t["timestamp"])
-    assert "sell" == t["side"]
-    assert "313881442" == t["id"]
-    assert 234.72 == t["price"]
+    assert t["side"] == "sell"
+    assert t["id"] == "313881442"
+    assert t["price"] == 234.72
 
 
 def test_public_trades_put_volume_profile_into_ohlcv_candles(public_trades_list_simple, candles):
