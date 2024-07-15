@@ -115,11 +115,31 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     # Assert number of order flow data points
     assert 23 == len(of)  # Assert expected number of data points
 
+    assert isinstance(of, dict)
+
+    of_values = list(of.values())
+
     # Assert specific order flow values at the beginning of the DataFrame
-    assert [0.0, 1.0, 4.999, 0.0, 4.999, 4.999, 1.0] == of.iloc[0].values.tolist()
+    assert of_values[0] == {
+        "bid": 0.0,
+        "ask": 1.0,
+        "delta": 4.999,
+        "bid_amount": 0.0,
+        "ask_amount": 4.999,
+        "total_volume": 4.999,
+        "total_trades": 1,
+    }
 
     # Assert specific order flow values at the end of the DataFrame (excluding last row)
-    assert [0.0, 1.0, 0.103, 0.0, 0.103, 0.103, 1.0] == of.iloc[-1].values.tolist()
+    assert of_values[-1] == {
+        "bid": 0.0,
+        "ask": 1.0,
+        "delta": 0.103,
+        "bid_amount": 0.0,
+        "ask_amount": 0.103,
+        "total_volume": 0.103,
+        "total_trades": 1,
+    }
 
     # Extract order flow from the last row of the DataFrame
     of = df.iloc[-1]["orderflow"]
@@ -127,28 +147,36 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
     # Assert number of order flow data points in the last row
     assert 19 == len(of)  # Assert expected number of data points
 
+    of_values1 = list(of.values())
     # Assert specific order flow values at the beginning of the last row
-    assert [1.0, 0.0, -12.536, 12.536, 0.0, 12.536, 1.0] == of.iloc[0].values.tolist()
+    assert of_values1[0] == {
+        "bid": 1.0,
+        "ask": 0.0,
+        "delta": -12.536,
+        "bid_amount": 12.536,
+        "ask_amount": 0.0,
+        "total_volume": 12.536,
+        "total_trades": 1,
+    }
 
     # Assert specific order flow values at the end of the last row
-    assert [
-        4.0,
-        3.0,
-        -40.94800000000001,
-        59.18200000000001,
-        18.233999999999998,
-        77.41600000000001,
-        7.0,
-    ] == of.iloc[-1].values.tolist()
+    assert pytest.approx(of_values1[-1]) == {
+        "bid": 4.0,
+        "ask": 3.0,
+        "delta": -40.948,
+        "bid_amount": 59.182,
+        "ask_amount": 18.23399,
+        "total_volume": 77.416,
+        "total_trades": 7,
+    }
 
     # --- Delta and Other Results ---
 
     # Assert delta value from the first row
-    assert -50.519000000000005 == results["delta"]
-
+    assert pytest.approx(results["delta"]) == -50.519
     # Assert min and max delta values from the first row
-    assert -79.469 == results["min_delta"]
-    assert 17.298 == results["max_delta"]
+    assert results["min_delta"] == -79.469
+    assert results["max_delta"] == 17.298
 
     # Assert that stacked imbalances are NaN (not applicable in this test)
     assert np.isnan(results["stacked_imbalances_bid"])
@@ -156,17 +184,17 @@ def test_public_trades_mock_populate_dataframe_with_trades__check_orderflow(
 
     # Repeat assertions for the third from last row
     results = df.iloc[-2]
-    assert -20.86200000000008 == results["delta"]
-    assert -54.55999999999999 == results["min_delta"]
+    assert pytest.approx(results["delta"]) == -20.862
+    assert pytest.approx(results["min_delta"]) == -54.559999
     assert 82.842 == results["max_delta"]
     assert 234.99 == results["stacked_imbalances_bid"]
     assert 234.96 == results["stacked_imbalances_ask"]
 
     # Repeat assertions for the last row
     results = df.iloc[-1]
-    assert -49.30200000000002 == results["delta"]
-    assert -70.222 == results["min_delta"]
-    assert 11.213000000000003 == results["max_delta"]
+    assert pytest.approx(results["delta"]) == -49.302
+    assert results["min_delta"] == -70.222
+    assert pytest.approx(results["max_delta"]) == 11.213
     assert np.isnan(results["stacked_imbalances_bid"])
     assert np.isnan(results["stacked_imbalances_ask"])
 
@@ -250,7 +278,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
     assert 151 == len(row["trades"])
 
     # Assert specific details of the first trade
-    t = row["trades"].iloc[0]
+    t = row["trades"][0]
     assert trades["id"][0] == t["id"]
     assert int(trades["timestamp"][0]) == int(t["timestamp"])
     assert "sell" == t["side"]
