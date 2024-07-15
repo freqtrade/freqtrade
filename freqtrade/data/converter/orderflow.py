@@ -115,7 +115,7 @@ def populate_dataframe_with_trades(
 
                 indices = dataframe.index[is_between].tolist()
                 # Add trades to each candle
-                trades_series.loc[indices] = [trades_grouped_df]
+                trades_series.loc[indices] = [trades_grouped_df.to_dict(orient="records")]
                 # Use caching mechanism
                 if (candle_start, candle_next) in cached_grouped_trades:
                     cache_entry = cached_grouped_trades[
@@ -134,14 +134,14 @@ def populate_dataframe_with_trades(
                 orderflow = trades_to_volumeprofile_with_total_delta_bid_ask(
                     trades_grouped_df, scale=config_orderflow["scale"]
                 )
-                orderflow_series.loc[indices] = [orderflow]
+                orderflow_series.loc[indices] = [orderflow.to_dict(orient="index")]
                 # Calculate imbalances for each candle's orderflow
                 imbalances = trades_orderflow_to_imbalances(
                     orderflow,
                     imbalance_ratio=config_orderflow["imbalance_ratio"],
                     imbalance_volume=config_orderflow["imbalance_volume"],
                 )
-                imbalances_series.loc[indices] = [imbalances]
+                imbalances_series.loc[indices] = [imbalances.to_dict(orient="index")]
 
                 stacked_imbalance_range = config_orderflow["stacked_imbalance_range"]
                 stacked_imbalances_bid_series.loc[indices] = [
