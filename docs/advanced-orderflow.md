@@ -91,10 +91,27 @@ def cumulative_delta(delta: Series):
 
 ### Footprint chart (`dataframe["orderflow"]`)
 
-This column provides a detailed breakdown of buy and sell orders at different price levels, offering valuable insights into order flow dynamics. The scale parameter in your configuration determines the price bin size for this representation
+This column provides a detailed breakdown of buy and sell orders at different price levels, offering valuable insights into order flow dynamics. The `scale` parameter in your configuration determines the price bin size for this representation
 
-The `orderflow` dataframe includes columns like:
+The `orderflow` column contains a dict with the following structure:
 
+``` output
+{
+    "price": {
+        "bid_amount": 0.0,
+        "ask_amount": 0.0,
+        "bid": 0,
+        "ask": 0,
+        "delta": 0.0,
+        "total_volume": 0.0,
+        "total_trades": 0
+    }
+}
+```
+
+#### Orderflow column explanation
+
+- key: Price bin - binned at `scale` intervals
 - `bid_amount`: Total volume bought at each price level.
 - `ask_amount`: Total volume sold at each price level.
 - `bid`: Number of buy orders at each price level.
@@ -107,9 +124,9 @@ By leveraging these features, you can gain valuable insights into market sentime
 
 ### Raw trades data (`dataframe["trades"]`)
 
-Dataframe with the individual trades that occurred during the candle. This data can be used for more granular analysis of order flow dynamics.
+List with the individual trades that occurred during the candle. This data can be used for more granular analysis of order flow dynamics.
 
-The `trades` dataframe includes the following columns:
+Each individual entry contains a dict with the following keys:
 
 - `timestamp`: Timestamp of the trade.
 - `date`: Date of the trade.
@@ -121,14 +138,15 @@ The `trades` dataframe includes the following columns:
 
 ### Imbalances (`dataframe["imbalances"]`)
 
-Dataframe with information about imbalances in the order flow. An imbalance occurs when there is a significant difference between the ask and bid volume at a given price level.
+This column provides a dict with information about imbalances in the order flow. An imbalance occurs when there is a significant difference between the ask and bid volume at a given price level.
 
-The dataframe looks as follows - with price as index, and the corresponding bid and ask imbalance values as columns
+Each row looks as follows - with price as index, and the corresponding bid and ask imbalance values as columns
 
 ``` output
-         bid_imbalance  ask_imbalance
-price                                
-58130.0          False          False
-58130.5          False          False
-58131.0          False          False
+{
+    "price": {
+        "bid_imbalance": False,
+        "ask_imbalance": False
+    }
+}
 ```
