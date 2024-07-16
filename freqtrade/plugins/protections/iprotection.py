@@ -131,7 +131,6 @@ class IProtection(LoggingMixin, ABC):
 
         if self._unlock_at is not None:
             # unlock_at case with fixed hour of the day
-            until = self._unlock_at
             hour, minutes = self._unlock_at.split(":")
             unlock_at = max_date.replace(hour=int(hour), minute=int(minutes))
             if unlock_at < max_date:
