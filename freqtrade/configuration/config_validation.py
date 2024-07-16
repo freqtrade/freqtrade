@@ -207,15 +207,12 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
                 f"Please fix the protection {prot.get('method')}."
             )
 
-        if parsed_unlock_at is not None and "stop_duration" in prot:
+        if parsed_unlock_at is not None and (
+            "stop_duration" in prot or "stop_duration_candles" in prot
+        ):
             raise ConfigurationError(
-                "Protections must specify either `unlock_at` or `stop_duration`.\n"
-                f"Please fix the protection {prot.get('method')}."
-            )
-
-        if parsed_unlock_at is not None and "stop_duration_candles" in prot:
-            raise ConfigurationError(
-                "Protections must specify either `unlock_at` or `stop_duration_candles`.\n"
+                "Protections must specify either `unlock_at`, `stop_duration` or "
+                "`stop_duration_candles`.\n"
                 f"Please fix the protection {prot.get('method')}."
             )
 
