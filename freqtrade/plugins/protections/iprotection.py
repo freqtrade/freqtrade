@@ -32,6 +32,7 @@ class IProtection(LoggingMixin, ABC):
         self._config = config
         self._protection_config = protection_config
         self._stop_duration_candles: Optional[int] = None
+        self._stop_duration: int = 0
         self._lookback_period_candles: Optional[int] = None
         self._unlock_at: Optional[datetime] = None
 
@@ -91,6 +92,16 @@ class IProtection(LoggingMixin, ABC):
         if self._unlock_at:
             return self._unlock_at.strftime("%H:%M")
         return None
+
+    @property
+    def unlock_reason_time_element(self) -> str:
+        """
+        Output configured unlock time or stop duration
+        """
+        if self.unlock_at_str is not None:
+            return f"until {self.unlock_at_str}"
+        else:
+            return f"for {self.stop_duration_str}"
 
     def calculate_unlock_at(self) -> datetime:
         """

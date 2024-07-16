@@ -648,7 +648,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {"method": "CooldownPeriod", "stop_duration": 60},
-            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 minutes.'}]",
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period for 60 minutes.'}]",
             None,
         ),
         (
@@ -677,7 +677,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {"method": "CooldownPeriod", "stop_duration_candles": 5},
-            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 5 candles.'}]",
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period for 5 candles.'}]",
             None,
         ),
         (

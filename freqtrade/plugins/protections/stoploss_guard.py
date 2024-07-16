@@ -36,12 +36,10 @@ class StoplossGuard(IProtection):
         """
         LockReason to use
         """
-        reason = f"{self._trade_limit} stoplosses in {self._lookback_period} min, " f"locking "
-        if self.unlock_at_str is not None:
-            reason += f" until {self.unlock_at_str}."
-        else:
-            reason += f" for {self._stop_duration} min."
-        return reason
+        return (
+            f"{self._trade_limit} stoplosses in {self._lookback_period} min, "
+            f"locking {self.unlock_reason_time_element}."
+        )
 
     def _stoploss_guard(
         self, date_now: datetime, pair: Optional[str], side: LongShort

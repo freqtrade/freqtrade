@@ -34,12 +34,10 @@ class LowProfitPairs(IProtection):
         """
         LockReason to use
         """
-        reason = f"{profit} < {self._required_profit} in {self.lookback_period_str}, locking"
-        if self.unlock_at_str is not None:
-            reason += f" until {self.unlock_at_str}."
-        else:
-            reason += f" for {self.stop_duration_str}."
-        return reason
+        return (
+            f"{profit} < {self._required_profit} in {self.lookback_period_str}, "
+            f"locking {self.unlock_reason_time_element}."
+        )
 
     def _low_profit(
         self, date_now: datetime, pair: str, side: LongShort

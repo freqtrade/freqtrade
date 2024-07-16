@@ -18,23 +18,13 @@ class CooldownPeriod(IProtection):
         """
         LockReason to use
         """
-        reason = "Cooldown period"
-
-        if self.unlock_at_str is not None:
-            return f"{reason} until {self.unlock_at_str}."
-        else:
-            return f"{reason}of {self.stop_duration_str}."
+        return f"Cooldown period for {self.unlock_reason_time_element}."
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup messages
         """
-        result = f"{self.name} - Cooldown period "
-
-        if self.unlock_at_str is not None:
-            return f"{result} until {self.unlock_at_str}."
-        else:
-            return f"{result}of {self.stop_duration_str}."
+        return f"{self.name} - Cooldown period {self.unlock_reason_time_element}."
 
     def _cooldown_period(self, pair: str, date_now: datetime) -> Optional[ProtectionReturn]:
         """
