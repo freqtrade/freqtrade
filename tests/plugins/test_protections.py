@@ -694,6 +694,14 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {
+                "method": "CooldownPeriod",
+                "unlock_at": "01:00",
+            },
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period until 01:00.'}]",
+            None,
+        ),
+        (
+            {
                 "method": "StoplossGuard",
                 "lookback_period_candles": 12,
                 "trade_limit": 2,
