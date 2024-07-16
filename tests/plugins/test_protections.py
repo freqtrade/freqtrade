@@ -189,7 +189,7 @@ def test_protections_init(default_conf, timeframe, expected_lookback, expected_s
     if isinstance(expected_stop, int):
         assert man._protection_handlers[0]._stop_duration == expected_stop
     else:
-        assert man._protection_handlers[0].unlock_at_str == expected_stop
+        assert man._protection_handlers[0]._unlock_at == expected_stop
 
 
 @pytest.mark.parametrize("is_short", [False, True])

@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exchange import timeframe_to_minutes
@@ -34,14 +34,14 @@ class IProtection(LoggingMixin, ABC):
         self._stop_duration_candles: Optional[int] = None
         self._stop_duration: int = 0
         self._lookback_period_candles: Optional[int] = None
-        self._unlock_at: Optional[datetime] = None
+        self._unlock_at: Optional[str] = None
 
         tf_in_min = timeframe_to_minutes(config["timeframe"])
         if "stop_duration_candles" in protection_config:
             self._stop_duration_candles = int(protection_config.get("stop_duration_candles", 1))
             self._stop_duration = tf_in_min * self._stop_duration_candles
         elif "unlock_at" in protection_config:
-            self._unlock_at = self.calculate_unlock_at()
+            self._unlock_at = protection_config.get("unlock_at")
         else:
             self._stop_duration = int(protection_config.get("stop_duration", 60))
 
@@ -85,21 +85,12 @@ class IProtection(LoggingMixin, ABC):
             return f"{self._lookback_period} {plural(self._lookback_period, 'minute', 'minutes')}"
 
     @property
-    def unlock_at_str(self) -> Union[str, None]:
-        """
-        Output configured unlock time
-        """
-        if self._unlock_at:
-            return self._unlock_at.strftime("%H:%M")
-        return None
-
-    @property
     def unlock_reason_time_element(self) -> str:
         """
         Output configured unlock time or stop duration
         """
-        if self.unlock_at_str is not None:
-            return f"until {self.unlock_at_str}"
+        if self._unlock_at is not None:
+            return f"until {self._unlock_at}"
         else:
             return f"for {self.stop_duration_str}"
 
