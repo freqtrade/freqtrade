@@ -3419,12 +3419,12 @@ class Exchange:
     def get_maintenance_ratio_and_amt(
         self,
         pair: str,
-        nominal_value: float,
+        notional_value: float,
     ) -> Tuple[float, Optional[float]]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
         :param pair: Market symbol
-        :param nominal_value: The total trade amount in quote currency
+        :param notional_value: The total trade amount in quote currency
         :return: (maintenance margin ratio, maintenance amount)
         """
 
@@ -3441,7 +3441,7 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             for tier in reversed(pair_tiers):
-                if nominal_value >= tier["minNotional"]:
+                if notional_value >= tier["minNotional"]:
                     return (tier["maintenanceMarginRate"], tier["maintAmt"])
 
             raise ExchangeError("nominal value can not be lower than 0")

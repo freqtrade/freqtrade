@@ -600,7 +600,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
 
 
 @pytest.mark.parametrize(
-    "pair,nominal_value,mm_ratio,amt",
+    "pair,notional_value,mm_ratio,amt",
     [
         ("XRP/USDT:USDT", 0.0, 0.025, 0),
         ("BNB/USDT:USDT", 100.0, 0.0065, 0),
@@ -615,12 +615,12 @@ def test_get_maintenance_ratio_and_amt_binance(
     mocker,
     leverage_tiers,
     pair,
-    nominal_value,
+    notional_value,
     mm_ratio,
     amt,
 ):
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     exchange._leverage_tiers = leverage_tiers
-    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
+    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, notional_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)
