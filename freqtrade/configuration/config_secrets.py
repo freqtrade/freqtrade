@@ -18,6 +18,7 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
         "exchange.secret",
         "exchange.password",
         "exchange.uid",
+        "exchange.accountId",
         "exchange.walletAddress",
         "exchange.privateKey",
         "telegram.token",
