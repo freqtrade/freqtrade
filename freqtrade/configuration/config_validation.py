@@ -193,7 +193,12 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
     """
 
     for prot in conf.get("protections", []):
-        parsed_unlock_at = _validate_unlock_at(prot)
+        parsed_unlock_at = None
+        if (config_unlock_at := prot.get("unlock_at")) is not None:
+            try:
+                parsed_unlock_at = datetime.strptime(config_unlock_at, "%H:%M")
+            except ValueError:
+                raise ConfigurationError(f"Invalid date format for unlock_at: {config_unlock_at}.")
 
         if "stop_duration" in prot and "stop_duration_candles" in prot:
             raise ConfigurationError(
@@ -215,14 +220,6 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
                 "`stop_duration_candles`.\n"
                 f"Please fix the protection {prot.get('method')}."
             )
-
-
-def _validate_unlock_at(config_unlock_at: str) -> datetime:
-    if config_unlock_at is not None and isinstance(config_unlock_at, str):
-        try:
-            return datetime.strptime(config_unlock_at, "%H:%M")
-        except ValueError:
-            raise ConfigurationError(f"Invalid date format for unlock_at: {config_unlock_at}.")
 
 
 def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
