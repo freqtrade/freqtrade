@@ -143,14 +143,3 @@ class IProtection(LoggingMixin, ABC):
 
         until = max_date + timedelta(minutes=stop_minutes)
         return until
-
-    @staticmethod
-    def calculate_timespan(start_time: datetime, end_time: datetime) -> int:
-        """
-        Calculate the timespan between two datetime objects in minutes.
-
-        :param start_time: The start datetime.
-        :param end_time: The end datetime.
-        :return: The difference between the two datetimes in minutes.
-        """
-        return int((end_time - start_time).total_seconds() / 60)
