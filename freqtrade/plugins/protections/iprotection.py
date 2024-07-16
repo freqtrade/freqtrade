@@ -103,20 +103,6 @@ class IProtection(LoggingMixin, ABC):
         else:
             return f"for {self.stop_duration_str}"
 
-    def calculate_unlock_at(self) -> datetime:
-        """
-        Calculate and update the unlock time based on the unlock at config.
-        """
-        now_time = datetime.now(timezone.utc)
-        unlock_at = datetime.strptime(
-            str(self._protection_config.get("unlock_at")), "%H:%M"
-        ).replace(day=now_time.day, year=now_time.year, month=now_time.month)
-
-        if unlock_at.time() < now_time.time():
-            unlock_at = unlock_at.replace(day=now_time.day + 1)
-
-        return unlock_at.replace(tzinfo=timezone.utc)
-
     @abstractmethod
     def short_desc(self) -> str:
         """
@@ -142,15 +128,24 @@ class IProtection(LoggingMixin, ABC):
             If true, this pair will be locked with <reason> until <until>
         """
 
-    @staticmethod
-    def calculate_lock_end(trades: List[LocalTrade], stop_minutes: int) -> datetime:
+    def calculate_lock_end(self, trades: List[LocalTrade]) -> datetime:
         """
         Get lock end time
+        Implicitly uses `self._stop_duration` or `self._unlock_at` depending on the configuration.
         """
         max_date: datetime = max([trade.close_date for trade in trades if trade.close_date])
         # coming from Database, tzinfo is not set.
         if max_date.tzinfo is None:
             max_date = max_date.replace(tzinfo=timezone.utc)
 
-        until = max_date + timedelta(minutes=stop_minutes)
+        if self._unlock_at is not None:
+            # unlock_at case with fixed hour of the day
+            until = self._unlock_at
+            hour, minutes = self._unlock_at.split(":")
+            unlock_at = max_date.replace(hour=int(hour), minute=int(minutes))
+            if unlock_at < max_date:
+                unlock_at += timedelta(days=1)
+            return unlock_at
+
+        until = max_date + timedelta(minutes=self._stop_duration)
         return until
