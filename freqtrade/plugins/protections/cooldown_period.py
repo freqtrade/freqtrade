@@ -54,7 +54,7 @@ class CooldownPeriod(IProtection):
             trade = sorted(trades, key=lambda t: t.close_date)[-1]  # type: ignore
             self.log_once(f"Cooldown for {pair} for {self.stop_duration_str}.", logger.info)
 
-            if self.unlock_at is not None:
+            if self._unlock_at is not None:
                 until = self.calculate_unlock_at()
             else:
                 until = self.calculate_lock_end([trade], self._stop_duration)

@@ -33,22 +33,22 @@ class IProtection(LoggingMixin, ABC):
         self._protection_config = protection_config
         self._stop_duration_candles: Optional[int] = None
         self._lookback_period_candles: Optional[int] = None
-        self.unlock_at: Optional[datetime] = None
+        self._unlock_at: Optional[datetime] = None
 
         tf_in_min = timeframe_to_minutes(config["timeframe"])
-        if "unlock_at" in protection_config:
-            self.unlock_at = self.calculate_unlock_at()
+        if "stop_duration_candles" in protection_config:
+            self._stop_duration_candles = int(protection_config.get("stop_duration_candles", 1))
+            self._stop_duration = tf_in_min * self._stop_duration_candles
+        elif "unlock_at" in protection_config:
+            self._unlock_at = self.calculate_unlock_at()
         else:
-            if "stop_duration_candles" in protection_config:
-                self._stop_duration_candles = int(protection_config.get("stop_duration_candles", 1))
-                self._stop_duration = tf_in_min * self._stop_duration_candles
-            else:
-                self._stop_duration = int(protection_config.get("stop_duration", 60))
+            self._stop_duration = int(protection_config.get("stop_duration", 60))
 
         if "lookback_period_candles" in protection_config:
             self._lookback_period_candles = int(protection_config.get("lookback_period_candles", 1))
             self._lookback_period = tf_in_min * self._lookback_period_candles
         else:
+            self._lookback_period_candles = None
             self._lookback_period = int(protection_config.get("lookback_period", 60))
 
         LoggingMixin.__init__(self, logger)
@@ -88,8 +88,8 @@ class IProtection(LoggingMixin, ABC):
         """
         Output configured unlock time
         """
-        if self.unlock_at:
-            return self.unlock_at.strftime("%H:%M")
+        if self._unlock_at:
+            return self._unlock_at.strftime("%H:%M")
         return None
 
     def calculate_unlock_at(self) -> datetime:

@@ -73,7 +73,7 @@ class LowProfitPairs(IProtection):
                 logger.info,
             )
 
-            if self.unlock_at is not None:
+            if self._unlock_at is not None:
                 until = self.calculate_unlock_at()
             else:
                 until = self.calculate_lock_end(trades, self._stop_duration)
