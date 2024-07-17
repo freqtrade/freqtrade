@@ -279,6 +279,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
     # Assert specific details of the first trade
     t = row["trades"][0]
+    assert list(t.keys()) == ["timestamp", "id", "type", "side", "price", "amount", "cost", "date"]
     assert trades["id"][0] == t["id"]
     assert int(trades["timestamp"][0]) == int(t["timestamp"])
     assert t["side"] == "sell"

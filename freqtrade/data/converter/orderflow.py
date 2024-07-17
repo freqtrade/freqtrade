@@ -115,7 +115,11 @@ def populate_dataframe_with_trades(
 
                 indices = dataframe.index[is_between].tolist()
                 # Add trades to each candle
-                trades_series.loc[indices] = [trades_grouped_df.to_dict(orient="records")]
+                trades_series.loc[indices] = [
+                    trades_grouped_df.drop(columns=["candle_start", "candle_end"]).to_dict(
+                        orient="records"
+                    )
+                ]
                 # Use caching mechanism
                 if (candle_start, candle_next) in cached_grouped_trades:
                     cache_entry = cached_grouped_trades[
@@ -191,7 +195,6 @@ def populate_dataframe_with_trades(
         logger.debug(f"trades.groups_keys in {time.time() - start_time} seconds")
 
         # Merge the complex data Series back into the DataFrame
-        # TODO: maybe candle_start and candle_end should be dropped before assignment?
         dataframe["trades"] = trades_series
         dataframe["orderflow"] = orderflow_series
         dataframe["imbalances"] = imbalances_series
