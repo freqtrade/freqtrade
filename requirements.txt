@@ -4,18 +4,18 @@ bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
-ccxt==4.3.58
+ccxt==4.3.61
 cryptography==42.0.8
 aiohttp==3.9.5
 SQLAlchemy==2.0.31
-python-telegram-bot==21.3
+python-telegram-bot==21.4
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
-humanize==4.9.0
+humanize==4.10.0
 cachetools==5.3.3
 requests==2.32.3
 urllib3==2.2.2
-jsonschema==4.22.0
+jsonschema==4.23.0
 TA-Lib==0.4.32
 technical==1.4.3
 tabulate==0.9.0
@@ -38,7 +38,7 @@ orjson==3.10.6
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.111.0
+fastapi==0.111.1
 pydantic==2.8.2
 uvicorn==0.30.1
 pyjwt==2.8.0

@@ -151,9 +151,7 @@ def test_load_data_with_new_pair_1min(
     )
     load_pair_history(datadir=tmp_path, timeframe="1m", pair="MEME/BTC", candle_type=candle_type)
     assert file.is_file()
-    assert log_has_re(
-        r'\(0/1\) - Download history data for "MEME/BTC", 1m, ' r"spot and store in .*", caplog
-    )
+    assert log_has_re(r'Download history data for "MEME/BTC", 1m, ' r"spot and store in .*", caplog)
 
 
 def test_testdata_path(testdatadir) -> None:

@@ -19,14 +19,6 @@ from joblib.externals import cloudpickle
 from pandas import DataFrame
 from rich.align import Align
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
@@ -48,7 +40,7 @@ from freqtrade.optimize.hyperopt_tools import (
 )
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
-from freqtrade.util import CustomProgress
+from freqtrade.util import get_progress_tracker
 
 
 # Suppress scikit-learn FutureWarnings from skopt
@@ -634,16 +626,7 @@ class Hyperopt:
                 )
 
                 # Define progressbar
-                with CustomProgress(
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(bar_width=None),
-                    MofNCompleteColumn(),
-                    TaskProgressColumn(),
-                    "•",
-                    TimeElapsedColumn(),
-                    "•",
-                    TimeRemainingColumn(),
-                    expand=True,
+                with get_progress_tracker(
                     console=console,
                     cust_objs=[Align.center(self._hyper_out.table)],
                 ) as pbar:
