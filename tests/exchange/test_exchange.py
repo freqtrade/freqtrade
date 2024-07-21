@@ -326,6 +326,22 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
+def test_validate_orderflow(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    # Test bybit - as it doesn't support historic trades data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="bybit")
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+    ex.validate_orderflow({"use_public_trades": False})
+
+    with pytest.raises(ConfigurationError, match=r"Trade data not available for.*"):
+        ex.validate_orderflow({"use_public_trades": True})
+
+    # Binance supports orderflow.
+    ex = get_patched_exchange(mocker, default_conf, exchange="binance")
+    ex.validate_orderflow({"use_public_trades": False})
+    ex.validate_orderflow({"use_public_trades": True})
+
+
 @pytest.mark.parametrize(
     "price,precision_mode,precision,expected",
     [

@@ -328,6 +328,7 @@ class Exchange:
         self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
         self.validate_pricing(config["exit_pricing"])
         self.validate_pricing(config["entry_pricing"])
+        self.validate_orderflow(config["exchange"])
 
     def _init_ccxt(
         self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
@@ -793,6 +794,14 @@ class Exchange:
         ):
             raise ConfigurationError(
                 f"Time in force policies are not supported for {self.name} yet."
+            )
+
+    def validate_orderflow(self, exchange: Dict) -> None:
+        if exchange.get("use_public_trades", False) and (
+            not self.exchange_has("fetchTrades") or not self._ft_has["trades_has_history"]
+        ):
+            raise ConfigurationError(
+                f"Trade data not available for {self.name}. Can't use orderflow feature."
             )
 
     def validate_required_startup_candles(self, startup_candles: int, timeframe: str) -> int:
