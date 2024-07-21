@@ -675,7 +675,7 @@ def test_download_trades_history(
     assert not _download_trades_history(
         data_handler=data_handler, exchange=exchange, pair="ETH/BTC", trading_mode=TradingMode.SPOT
     )
-    assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
+    assert log_has_re('Failed to download and store historic trades for pair: "ETH/BTC".*', caplog)
 
     file2 = tmp_path / "XRP_ETH-trades.json.gz"
     copyfile(testdatadir / file2.name, file2)

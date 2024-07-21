@@ -4,7 +4,7 @@
 bot constants
 """
 
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from freqtrade.enums import CandleType, PriceType, RPCMessageType
 
@@ -68,6 +68,7 @@ DEFAULT_DATAFRAME_COLUMNS = ["date", "open", "high", "low", "close", "volume"]
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ["timestamp", "id", "type", "side", "price", "amount", "cost"]
+DEFAULT_ORDERFLOW_COLUMNS = ["level", "bid", "ask", "delta"]
 TRADES_DTYPES = {
     "timestamp": "int64",
     "id": "str",
@@ -533,6 +534,24 @@ CONF_SCHEMA = {
         },
         "position_adjustment_enable": {"type": "boolean"},
         "max_entry_position_adjustment": {"type": ["integer", "number"], "minimum": -1},
+        "orderflow": {
+            "type": "object",
+            "properties": {
+                "cache_size": {"type": "number", "minimum": 1, "default": 1500},
+                "max_candles": {"type": "number", "minimum": 1, "default": 1500},
+                "scale": {"type": "number", "minimum": 0.0},
+                "stacked_imbalance_range": {"type": "number", "minimum": 0},
+                "imbalance_volume": {"type": "number", "minimum": 0},
+                "imbalance_ratio": {"type": "number", "minimum": 0.0},
+            },
+            "required": [
+                "max_candles",
+                "scale",
+                "stacked_imbalance_range",
+                "imbalance_volume",
+                "imbalance_ratio",
+            ],
+        },
     },
     "definitions": {
         "exchange": {
@@ -771,6 +790,9 @@ ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
 TradeList = List[List]
+# ticks, pair, timeframe, CandleType
+TickWithTimeframe = Tuple[str, str, CandleType, Optional[int], Optional[int]]
+ListTicksWithTimeframes = List[TickWithTimeframe]
 
 LongShort = Literal["long", "short"]
 EntryExit = Literal["entry", "exit"]

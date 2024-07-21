@@ -488,7 +488,7 @@ def _download_trades_history(
         return True
 
     except Exception:
-        logger.exception(f'Failed to download historic trades for pair: "{pair}". ')
+        logger.exception(f'Failed to download and store historic trades for pair: "{pair}". ')
         return False
 
 
