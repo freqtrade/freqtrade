@@ -2,6 +2,13 @@
 
 This page contains some help if you want to query your sqlite db.
 
+!!! Tip "Other Database systems"
+    To use other Database Systems like PostgreSQL or MariaDB, you can use the same queries, but you need to use the respective client for the database system. [Click here](advanced-setup.md#use-a-different-database-system) to learn how to setup a different database system with freqtrade.
+
+!!! Warning
+    If you are not familiar with SQL, you should be very careful when running queries on your database.  
+    Always make sure to have a backup of your database before running any queries.
+
 ## Install sqlite3
 
 Sqlite3 is a terminal based sqlite application.
@@ -113,38 +120,3 @@ DELETE FROM trades WHERE id = 31;
 !!! Warning
     This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.
 
-## Use a different database system
-
-Freqtrade is using SQLAlchemy, which supports multiple different database systems. As such, a multitude of database systems should be supported.
-Freqtrade does not depend or install any additional database driver. Please refer to the [SQLAlchemy docs](https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls) on installation instructions for the respective database systems.
-
-The following systems have been tested and are known to work with freqtrade:
-
-* sqlite (default)
-* PostgreSQL
-* MariaDB
-
-!!! Warning
-    By using one of the below database systems, you acknowledge that you know how to manage such a system. The freqtrade team will not provide any support with setup or maintenance (or backups) of the below database systems.
-
-### PostgreSQL
-
-Installation:
-`pip install psycopg2-binary`
-
-Usage:
-`... --db-url postgresql+psycopg2://<username>:<password>@localhost:5432/<database>`
-
-Freqtrade will automatically create the tables necessary upon startup.
-
-If you're running different instances of Freqtrade, you must either setup one database per Instance or use different users / schemas for your connections.
-
-### MariaDB / MySQL
-
-Freqtrade supports MariaDB by using SQLAlchemy, which supports multiple different database systems.
-
-Installation:
-`pip install pymysql`
-
-Usage:
-`... --db-url mysql+pymysql://<username>:<password>@localhost:3306/<database>`
