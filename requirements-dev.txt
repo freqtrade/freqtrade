@@ -7,7 +7,7 @@
 -r docs/requirements-docs.txt
 
 coveralls==4.0.1
-ruff==0.5.2
+ruff==0.5.4
 mypy==1.10.1
 pre-commit==3.7.1
 pytest==8.2.2
