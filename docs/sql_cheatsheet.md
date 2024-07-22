@@ -1,6 +1,6 @@
 # SQL Helper
 
-This page contains some help if you want to edit your sqlite db.
+This page contains some help if you want to query your sqlite db.
 
 ## Install sqlite3
 
@@ -43,13 +43,25 @@ sqlite3
 .schema <table_name>
 ```
 
-## Get all trades in the table
+### Get all trades in the table
 
 ```sql
 SELECT * FROM trades;
 ```
 
-## Fix trade still open after a manual exit on the exchange
+## Destructive queries
+
+Queries that write to the database.
+These queries should usually not be necessary as freqtrade tries to handle all database operations itself - or exposes them via API or telegram commands.
+
+!!! Warning
+    Please make sure you have a backup of your database before running any of the below queries.
+
+!!! Danger
+    You should also **never** run any writing query (`update`, `insert`, `delete`) while a bot is connected to the database.
+    This can and will lead to data corruption - most likely, without the possibility of recovery.
+
+### Fix trade still open after a manual exit on the exchange
 
 !!! Warning
     Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway. Whenever possible, /forceexit <tradeid> should be used to accomplish the same thing.  
@@ -69,7 +81,7 @@ SET is_open=0,
 WHERE id=<trade_ID_to_update>;
 ```
 
-### Example
+#### Example
 
 ```sql
 UPDATE trades
@@ -82,7 +94,7 @@ SET is_open=0,
 WHERE id=31;
 ```
 
-## Remove trade from the database
+### Remove trade from the database
 
 !!! Tip "Use RPC Methods to delete trades"
     Consider using `/delete <tradeid>` via telegram or rest API. That's the recommended way to deleting trades.
