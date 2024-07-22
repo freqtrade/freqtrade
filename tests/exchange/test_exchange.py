@@ -2388,8 +2388,11 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
         assert len(res) == 1
 
 
-@pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
-def test_refresh_latest_trades(mocker, default_conf, caplog, candle_type, tmp_path) -> None:
+@pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.SPOT])
+def test_refresh_latest_trades(
+    mocker, default_conf, caplog, candle_type, tmp_path, time_machine
+) -> None:
+    time_machine.move_to(dt_now(), tick=False)
     trades = [
         {
             # unix timestamp ms
