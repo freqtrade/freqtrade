@@ -615,6 +615,8 @@ def test_start_install_ui(mocker):
     )
     download_mock = mocker.patch("freqtrade.commands.deploy_commands.download_and_install_ui")
     mocker.patch("freqtrade.commands.deploy_commands.read_ui_version", return_value=None)
+
+    # Test case 1: Default install-ui
     args = [
         "install-ui",
     ]
@@ -627,14 +629,41 @@ def test_start_install_ui(mocker):
     get_url_mock.reset_mock()
     download_mock.reset_mock()
 
+    # Test case 2: Install-ui with --erase
     args = [
         "install-ui",
         "--erase",
     ]
     start_install_ui(get_args(args))
     assert clean_mock.call_count == 1
-    assert get_url_mock.call_count == 1
+    assert get_url_mock.call_count == 0
     assert download_mock.call_count == 0
+
+    clean_mock.reset_mock()
+    get_url_mock.reset_mock()
+    download_mock.reset_mock()
+
+    # Test case 3: Install-ui with --local-source
+    os_path_is_file_mock = mocker.patch("os.path.isfile", return_value=True)
+
+    args = [
+        "install-ui",
+        "--local-source",
+        "/path/to/local/file.zip",
+    ]
+    start_install_ui(get_args(args))
+    assert clean_mock.call_count == 1
+    assert os_path_is_file_mock.call_count == 1
+    assert get_url_mock.call_count == 0
+    assert download_mock.call_count == 1
+
+    expected_dest_folder = Path(__file__).parents[2] / "freqtrade/rpc/api_server/ui/installed/"
+
+    download_mock.assert_called_once_with(
+        expected_dest_folder,
+        '/path/to/local/file.zip',
+        'local'
+    )
 
 
 def test_clean_ui_subdir(mocker, tmp_path, caplog):

@@ -1,9 +1,14 @@
 import logging
 import sys
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import requests
+
+from io import BytesIO
+from urllib.parse import urlparse
+from zipfile import ZipFile
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
@@ -121,13 +126,24 @@ def read_ui_version(dest_folder: Path) -> Optional[str]:
 
 
 def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
-    from io import BytesIO
-    from zipfile import ZipFile
+    def download_file(url):
+        logger.info(f"Downloading {url}")
+        resp = requests.get(url, timeout=req_timeout).content
+        return BytesIO(resp)
 
-    logger.info(f"Downloading {dl_url}")
-    resp = requests.get(dl_url, timeout=req_timeout).content
+    def read_local_file(path):
+        logger.info(f"Reading local file {path}")
+        with open(path, 'rb') as f:
+            return BytesIO(f.read())
+
+    parsed_url = urlparse(dl_url)
+    if parsed_url.scheme in ('http', 'https'):
+        file_content = download_file(dl_url)
+    else:
+        file_content = read_local_file(dl_url)
+
     dest_folder.mkdir(parents=True, exist_ok=True)
-    with ZipFile(BytesIO(resp)) as zf:
+    with ZipFile(file_content) as zf:
         for fn in zf.filelist:
             with zf.open(fn) as x:
                 destfile = dest_folder / fn.filename
@@ -173,17 +189,22 @@ def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
 
 def start_install_ui(args: Dict[str, Any]) -> None:
     dest_folder = Path(__file__).parents[1] / "rpc/api_server/ui/installed/"
-    # First make sure the assets are removed.
-    dl_url, latest_version = get_ui_download_url(args.get("ui_version"))
-
-    curr_version = read_ui_version(dest_folder)
-    if curr_version == latest_version and not args.get("erase_ui_only"):
-        logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
-        return
-
     clean_ui_subdir(dest_folder)
+
     if args.get("erase_ui_only"):
         logger.info("Erased UI directory content. Not downloading new version.")
+        return
+
+    local_source = args.get("local_source")
+    if local_source and os.path.isfile(local_source):
+        logger.info(f"Installing UI from local file: {local_source}")
+        version = "local"
+        download_and_install_ui(dest_folder, local_source, version)
     else:
-        # Download a new version
+        dl_url, latest_version = get_ui_download_url(args.get("ui_version"))
+        curr_version = read_ui_version(dest_folder)
+        if curr_version == latest_version:
+            logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
+            return
+        logger.info(f"Downloading UI version {latest_version} from {dl_url}")
         download_and_install_ui(dest_folder, dl_url, latest_version)

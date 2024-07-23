@@ -179,7 +179,7 @@ ARGS_PLOT_PROFIT = [
 
 ARGS_CONVERT_DB = ["db_url", "db_url_from"]
 
-ARGS_INSTALL_UI = ["erase_ui_only", "ui_version"]
+ARGS_INSTALL_UI = ["erase_ui_only", "ui_version", "local_source"]
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 

@@ -525,6 +525,11 @@ AVAILABLE_CLI_OPTIONS = {
         ),
         type=str,
     ),
+    "local_source": Arg(
+        "--local-source",
+        help="Path to ZIP file containing a local freq-ui build.",
+        type=str
+    ),
     # Templating options
     "template": Arg(
         "--template",
