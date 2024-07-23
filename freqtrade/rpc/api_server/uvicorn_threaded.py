@@ -1,4 +1,3 @@
-import contextlib
 import threading
 import time
 
@@ -53,7 +52,6 @@ class UvicornServer(uvicorn.Server):
             loop = asyncio.new_event_loop()
         loop.run_until_complete(self.serve(sockets=sockets))
 
-    @contextlib.contextmanager
     def run_in_thread(self):
         self.thread = threading.Thread(target=self.run, name="FTUvicorn")
         self.thread.start()

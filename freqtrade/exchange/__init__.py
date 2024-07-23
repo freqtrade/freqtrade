@@ -11,6 +11,7 @@ from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bitvavo import Bitvavo
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.coinbasepro import Coinbasepro
+from freqtrade.exchange.cryptocom import Cryptocom
 from freqtrade.exchange.exchange_utils import (
     ROUND_DOWN,
     ROUND_UP,

@@ -7,11 +7,11 @@
 -r docs/requirements-docs.txt
 
 coveralls==4.0.1
-ruff==0.5.0
-mypy==1.10.1
+ruff==0.5.4
+mypy==1.11.0
 pre-commit==3.7.1
-pytest==8.2.2
-pytest-asyncio==0.23.7
+pytest==8.3.1
+pytest-asyncio==0.23.8
 pytest-cov==5.0.0
 pytest-mock==3.14.0
 pytest-random-order==1.1.1
@@ -25,8 +25,8 @@ time-machine==2.14.2
 nbconvert==7.16.4
 
 # mypy types
-types-cachetools==5.3.0.7
+types-cachetools==5.4.0.20240717
 types-filelock==3.2.7
-types-requests==2.32.0.20240622
+types-requests==2.32.0.20240712
 types-tabulate==0.9.0.20240106
 types-python-dateutil==2.9.0.20240316

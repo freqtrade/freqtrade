@@ -83,6 +83,7 @@ def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = Fal
     _validate_freqai_include_timeframes(conf, preliminary=preliminary)
     _validate_consumers(conf)
     validate_migrated_strategy_settings(conf)
+    _validate_orderflow(conf)
 
     # validate configuration before returning
     logger.info("Validating configuration ...")
@@ -418,6 +419,14 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
             logger.warning(
                 "To receive best performance with external data, "
                 "please set `process_only_new_candles` to False"
+            )
+
+
+def _validate_orderflow(conf: Dict[str, Any]) -> None:
+    if conf.get("exchange", {}).get("use_public_trades"):
+        if "orderflow" not in conf:
+            raise ConfigurationError(
+                "Orderflow is a required configuration key when using public trades."
             )
 
 

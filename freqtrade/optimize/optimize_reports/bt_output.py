@@ -1,12 +1,10 @@
 import logging
-from typing import Any, Dict, List, Union
-
-from tabulate import tabulate
+from typing import Any, Dict, List, Literal, Union
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
 from freqtrade.types import BacktestResultType
-from freqtrade.util import decimals_per_coin, fmt_coin
+from freqtrade.util import decimals_per_coin, fmt_coin, print_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -46,22 +44,23 @@ def generate_wins_draws_losses(wins, draws, losses):
     return f"{wins:>4}  {draws:>4}  {losses:>4}  {wl_ratio:>4}"
 
 
-def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_bt_results(
+    pair_results: List[Dict[str, Any]], stake_currency: str, title: str
+) -> None:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
-    :return: pretty printed table with tabulate as string
+    :param title: Title of the table
     """
 
     headers = _get_line_header("Pair", stake_currency, "Trades")
-    floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
             t["key"],
             t["trades"],
             t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t["duration_avg"],
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -69,26 +68,32 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
         for t in pair_results
     ]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=title)
 
 
-def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_tags(
+    tag_type: Literal["enter_tag", "exit_tag", "mix_tag"],
+    tag_results: List[Dict[str, Any]],
+    stake_currency: str,
+) -> None:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
     :param stake_currency: stake-currency - used to correctly name headers
-    :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
     fallback: str = ""
     is_list = False
     if tag_type == "enter_tag":
-        headers = _get_line_header("Enter Tag", stake_currency, "Entries")
+        title = "Enter Tag"
+        headers = _get_line_header(title, stake_currency, "Entries")
     elif tag_type == "exit_tag":
-        headers = _get_line_header("Exit Reason", stake_currency, "Exits")
+        title = "Exit Reason"
+        headers = _get_line_header(title, stake_currency, "Exits")
         fallback = "exit_reason"
     else:
         # Mix tag
+        title = "Mixed Tag"
         headers = _get_line_header(["Enter Tag", "Exit Reason"], stake_currency, "Trades")
         floatfmt.insert(0, "s")
         is_list = True
@@ -106,7 +111,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
             ),
             t["trades"],
             t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t.get("duration_avg"),
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -114,17 +119,16 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
         for t in tag_results
     ]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=f"{title.upper()} STATS")
 
 
 def text_table_periodic_breakdown(
     days_breakdown_stats: List[Dict[str, Any]], stake_currency: str, period: str
-) -> str:
+) -> None:
     """
     Generate small table with Backtest results by days
     :param days_breakdown_stats: Days breakdown metrics
     :param stake_currency: Stakecurrency used
-    :return: pretty printed table with tabulate as string
     """
     headers = [
         period.capitalize(),
@@ -143,17 +147,15 @@ def text_table_periodic_breakdown(
         ]
         for d in days_breakdown_stats
     ]
-    return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=f"{period.upper()} BREAKDOWN")
 
 
-def text_table_strategy(strategy_results, stake_currency: str) -> str:
+def text_table_strategy(strategy_results, stake_currency: str, title: str):
     """
     Generate summary table per strategy
     :param strategy_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :param stake_currency: stake-currency - used to correctly name headers
-    :return: pretty printed table with tabulate as string
     """
-    floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header("Strategy", stake_currency, "Trades")
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
@@ -177,8 +179,8 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
         [
             t["key"],
             t["trades"],
-            t["profit_mean_pct"],
-            t["profit_total_abs"],
+            f"{t['profit_mean_pct']:.2f}",
+            f"{t['profit_total_abs']:.{decimals_per_coin(stake_currency)}f}",
             t["profit_total_pct"],
             t["duration_avg"],
             generate_wins_draws_losses(t["wins"], t["draws"], t["losses"]),
@@ -186,11 +188,10 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
         ]
         for t, drawdown in zip(strategy_results, drawdown)
     ]
-    # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(output, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+    print_rich_table(output, headers, summary=title)
 
 
-def text_table_add_metrics(strat_results: Dict) -> str:
+def text_table_add_metrics(strat_results: Dict) -> None:
     if len(strat_results["trades"]) > 0:
         best_trade = max(strat_results["trades"], key=lambda x: x["profit_ratio"])
         worst_trade = min(strat_results["trades"], key=lambda x: x["profit_ratio"])
@@ -372,8 +373,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             *drawdown_metrics,
             ("Market change", f"{strat_results['market_change']:.2%}"),
         ]
+        print_rich_table(metrics, ["Metric", "Value"], summary="SUMMARY METRICS", justify="left")
 
-        return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
         start_balance = fmt_coin(strat_results["starting_balance"], strat_results["stake_currency"])
         stake_amount = (
@@ -387,7 +388,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             f"Your starting balance was {start_balance}, "
             f"and your stake was {stake_amount}."
         )
-        return message
+        print(message)
 
 
 def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
@@ -395,25 +396,13 @@ def _show_tag_subresults(results: Dict[str, Any], stake_currency: str):
     Print tag subresults (enter_tag, exit_reason_summary, mix_tag_stats)
     """
     if (enter_tags := results.get("results_per_enter_tag")) is not None:
-        table = text_table_tags("enter_tag", enter_tags, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" ENTER TAG STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("enter_tag", enter_tags, stake_currency)
 
     if (exit_reasons := results.get("exit_reason_summary")) is not None:
-        table = text_table_tags("exit_tag", exit_reasons, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" EXIT REASON STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("exit_tag", exit_reasons, stake_currency)
 
     if (mix_tag := results.get("mix_tag_stats")) is not None:
-        table = text_table_tags("mix_tag", mix_tag, stake_currency)
-
-        if isinstance(table, str) and len(table) > 0:
-            print(" MIXED TAG STATS ".center(len(table.splitlines()[0]), "="))
-        print(table)
+        text_table_tags("mix_tag", mix_tag, stake_currency)
 
 
 def show_backtest_result(
@@ -424,15 +413,12 @@ def show_backtest_result(
     """
     # Print results
     print(f"Result for strategy {strategy}")
-    table = text_table_bt_results(results["results_per_pair"], stake_currency=stake_currency)
-    if isinstance(table, str):
-        print(" BACKTESTING REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
-    table = text_table_bt_results(results["left_open_trades"], stake_currency=stake_currency)
-    if isinstance(table, str) and len(table) > 0:
-        print(" LEFT OPEN TRADES REPORT ".center(len(table.splitlines()[0]), "="))
-    print(table)
+    text_table_bt_results(
+        results["results_per_pair"], stake_currency=stake_currency, title="BACKTESTING REPORT"
+    )
+    text_table_bt_results(
+        results["left_open_trades"], stake_currency=stake_currency, title="LEFT OPEN TRADES REPORT"
+    )
 
     _show_tag_subresults(results, stake_currency)
 
@@ -443,20 +429,11 @@ def show_backtest_result(
             days_breakdown_stats = generate_periodic_breakdown_stats(
                 trade_list=results["trades"], period=period
             )
-        table = text_table_periodic_breakdown(
+        text_table_periodic_breakdown(
             days_breakdown_stats=days_breakdown_stats, stake_currency=stake_currency, period=period
         )
-        if isinstance(table, str) and len(table) > 0:
-            print(f" {period.upper()} BREAKDOWN ".center(len(table.splitlines()[0]), "="))
-        print(table)
 
-    table = text_table_add_metrics(results)
-    if isinstance(table, str) and len(table) > 0:
-        print(" SUMMARY METRICS ".center(len(table.splitlines()[0]), "="))
-    print(table)
-
-    if isinstance(table, str) and len(table) > 0:
-        print("=" * len(table.splitlines()[0]))
+    text_table_add_metrics(results)
 
     print()
 
@@ -472,15 +449,13 @@ def show_backtest_results(config: Config, backtest_stats: BacktestResultType):
     if len(backtest_stats["strategy"]) > 0:
         # Print Strategy summary table
 
-        table = text_table_strategy(backtest_stats["strategy_comparison"], stake_currency)
         print(
             f"Backtested {results['backtest_start']} -> {results['backtest_end']} |"
             f" Max open trades : {results['max_open_trades']}"
         )
-        print(" STRATEGY SUMMARY ".center(len(table.splitlines()[0]), "="))
-        print(table)
-        print("=" * len(table.splitlines()[0]))
-        print("\nFor more details, please look at the detail tables above")
+        text_table_strategy(
+            backtest_stats["strategy_comparison"], stake_currency, "STRATEGY SUMMARY"
+        )
 
 
 def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
@@ -493,8 +468,7 @@ def show_sorted_pairlist(config: Config, backtest_stats: BacktestResultType):
             print("]")
 
 
-def generate_edge_table(results: dict) -> str:
-    floatfmt = ("s", ".10g", ".2f", ".2f", ".2f", ".2f", "d", "d", "d")
+def generate_edge_table(results: dict) -> None:
     tabular_data = []
     headers = [
         "Pair",
@@ -512,17 +486,13 @@ def generate_edge_table(results: dict) -> str:
             tabular_data.append(
                 [
                     result[0],
-                    result[1].stoploss,
-                    result[1].winrate,
-                    result[1].risk_reward_ratio,
-                    result[1].required_risk_reward,
-                    result[1].expectancy,
+                    f"{result[1].stoploss:.10g}",
+                    f"{result[1].winrate:.2f}",
+                    f"{result[1].risk_reward_ratio:.2f}",
+                    f"{result[1].required_risk_reward:.2f}",
+                    f"{result[1].expectancy:.2f}",
                     result[1].nb_trades,
                     round(result[1].avg_trade_duration),
                 ]
             )
-
-    # Ignore type as floatfmt does allow tuples but mypy does not know that
-    return tabulate(
-        tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="orgtbl", stralign="right"
-    )
+    print_rich_table(tabular_data, headers, summary="EDGE TABLE")
