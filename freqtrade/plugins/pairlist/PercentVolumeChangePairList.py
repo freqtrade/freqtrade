@@ -5,6 +5,7 @@ Provides dynamic pair list based on trade change
 sorted based on percentage change in volume over a
 defined period
 """
+
 import logging
 from datetime import timedelta
 from typing import Any, Dict, List, Literal
@@ -118,8 +119,10 @@ class PercentVolumeChangePairList(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return (f"{self.name} - top {self._pairlistconfig['number_assets']} percent "
-                f"volume change pairs.")
+        return (
+            f"{self.name} - top {self._pairlistconfig['number_assets']} percent "
+            f"volume change pairs."
+        )
 
     @staticmethod
     def description() -> str:

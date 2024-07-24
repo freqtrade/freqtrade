@@ -34,8 +34,9 @@ from tests.conftest import (
 # Exclude RemotePairList and PercentVolumeChangePairList from tests.
 # They have mandatory parameters, and requires special handling,
 # which happens in test_remotepairlist and test_percentvolumechangepairlist.
-TESTABLE_PAIRLISTS = [p for p in AVAILABLE_PAIRLISTS
-                      if p not in ["RemotePairList", "PercentVolumeChangePairList"]]
+TESTABLE_PAIRLISTS = [
+    p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList", "PercentVolumeChangePairList"]
+]
 
 
 @pytest.fixture(scope="function")
