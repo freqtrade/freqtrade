@@ -330,22 +330,55 @@ CONF_SCHEMA = {
             "default": 0.02,
         },
         "order_types": {
+            "description": "Configuration of order types.",
             "type": "object",
             "properties": {
-                "entry": {"type": "string", "enum": ORDERTYPE_POSSIBILITIES},
-                "exit": {"type": "string", "enum": ORDERTYPE_POSSIBILITIES},
-                "force_exit": {"type": "string", "enum": ORDERTYPE_POSSIBILITIES},
-                "force_entry": {"type": "string", "enum": ORDERTYPE_POSSIBILITIES},
+                "entry": {
+                    "description": "Order type for entry (e.g., limit, market).",
+                    "type": "string",
+                    "enum": ORDERTYPE_POSSIBILITIES,
+                },
+                "exit": {
+                    "description": "Order type for exit (e.g., limit, market).",
+                    "type": "string",
+                    "enum": ORDERTYPE_POSSIBILITIES,
+                },
+                "force_exit": {
+                    "description": "Order type for forced exit (e.g., limit, market).",
+                    "type": "string",
+                    "enum": ORDERTYPE_POSSIBILITIES,
+                },
+                "force_entry": {
+                    "description": "Order type for forced entry (e.g., limit, market).",
+                    "type": "string",
+                    "enum": ORDERTYPE_POSSIBILITIES,
+                },
                 "emergency_exit": {
+                    "description": "Order type for emergency exit (e.g., limit, market).",
                     "type": "string",
                     "enum": ORDERTYPE_POSSIBILITIES,
                     "default": "market",
                 },
-                "stoploss": {"type": "string", "enum": ORDERTYPE_POSSIBILITIES},
-                "stoploss_on_exchange": {"type": "boolean"},
-                "stoploss_price_type": {"type": "string", "enum": STOPLOSS_PRICE_TYPES},
-                "stoploss_on_exchange_interval": {"type": "number"},
+                "stoploss": {
+                    "description": "Order type for stop loss (e.g., limit, market).",
+                    "type": "string",
+                    "enum": ORDERTYPE_POSSIBILITIES,
+                },
+                "stoploss_on_exchange": {
+                    "description": "Whether to place stop loss on the exchange.",
+                    "type": "boolean",
+                },
+                "stoploss_price_type": {
+                    "description": "Price type for stop loss (e.g., last, mark, index).",
+                    "type": "string",
+                    "enum": STOPLOSS_PRICE_TYPES,
+                },
+                "stoploss_on_exchange_interval": {
+                    "description": "Interval for stop loss on exchange in seconds.",
+                    "type": "number",
+                },
                 "stoploss_on_exchange_limit_ratio": {
+                    "description": "Limit ratio for stop loss on exchange.",
                     "type": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
@@ -354,26 +387,53 @@ CONF_SCHEMA = {
             "required": ["entry", "exit", "stoploss", "stoploss_on_exchange"],
         },
         "order_time_in_force": {
+            "description": "Time in force configuration for orders.",
             "type": "object",
             "properties": {
-                "entry": {"type": "string", "enum": ORDERTIF_POSSIBILITIES},
-                "exit": {"type": "string", "enum": ORDERTIF_POSSIBILITIES},
+                "entry": {
+                    "description": "Time in force for entry orders.",
+                    "type": "string",
+                    "enum": ORDERTIF_POSSIBILITIES,
+                },
+                "exit": {
+                    "description": "Time in force for exit orders.",
+                    "type": "string",
+                    "enum": ORDERTIF_POSSIBILITIES,
+                },
             },
             "required": REQUIRED_ORDERTIF,
         },
         "coingecko": {
+            "description": "Configuration for CoinGecko API.",
             "type": "object",
             "properties": {
-                "is_demo": {"type": "boolean", "default": True},
-                "api_key": {"type": "string"},
+                "is_demo": {
+                    "description": "Whether to use CoinGecko in demo mode.",
+                    "type": "boolean",
+                    "default": True,
+                },
+                "api_key": {"description": "API key for accessing CoinGecko.", "type": "string"},
             },
             "required": ["is_demo", "api_key"],
         },
-        "exchange": {"$ref": "#/definitions/exchange"},
-        "edge": {"$ref": "#/definitions/edge"},
-        "freqai": {"$ref": "#/definitions/freqai"},
-        "external_message_consumer": {"$ref": "#/definitions/external_message_consumer"},
+        "exchange": {
+            "description": "Exchange configuration.",
+            "$ref": "#/definitions/exchange",
+        },
+        "edge": {
+            "description": "Edge configuration.",
+            "$ref": "#/definitions/edge",
+        },
+        "freqai": {
+            "description": "FreqAI configuration.",
+            "$ref": "#/definitions/freqai",
+        },
+        "external_message_consumer": {
+            "description": "Configuration for external message consumer.",
+            "$ref": "#/definitions/external_message_consumer",
+        },
         "experimental": {
+            "description": "Experimental configuration.",
             "type": "object",
             "properties": {"block_bad_exchanges": {"type": "boolean"}},
         },
