@@ -697,27 +697,60 @@ CONF_SCHEMA = {
             },
             "required": ["enabled", "listen_ip_address", "listen_port", "username", "password"],
         },
-        "db_url": {"type": "string"},
-        "export": {"type": "string", "enum": EXPORT_OPTIONS, "default": "trades"},
-        "disableparamexport": {"type": "boolean"},
-        "initial_state": {"type": "string", "enum": ["running", "stopped"]},
-        "force_entry_enable": {"type": "boolean"},
-        "disable_dataframe_checks": {"type": "boolean"},
+        "db_url": {
+            "description": "Database connection URL.",
+            "type": "string",
+        },
+        "export": {
+            "description": "Type of data to export.",
+            "type": "string",
+            "enum": EXPORT_OPTIONS,
+            "default": "trades",
+        },
+        "disableparamexport": {
+            "description": "Disable parameter export.",
+            "type": "boolean",
+        },
+        "initial_state": {
+            "description": "Initial state of the system.",
+            "type": "string",
+            "enum": ["running", "stopped"],
+        },
+        "force_entry_enable": {
+            "description": "Force enable entry.",
+            "type": "boolean",
+        },
+        "disable_dataframe_checks": {
+            "description": "Disable checks on dataframes.",
+            "type": "boolean",
+        },
         "internals": {
+            "description": "Internal settings.",
             "type": "object",
             "default": {},
             "properties": {
-                "process_throttle_secs": {"type": "integer"},
-                "interval": {"type": "integer"},
-                "sd_notify": {"type": "boolean"},
+                "process_throttle_secs": {
+                    "description": "Throttle time in seconds for processing.",
+                    "type": "integer",
+                },
+                "interval": {
+                    "description": "Interval time in seconds.",
+                    "type": "integer",
+                },
+                "sd_notify": {
+                    "description": "Enable systemd notify.",
+                    "type": "boolean",
+                },
             },
         },
         "dataformat_ohlcv": {
+            "description": "Data format for OHLCV data.",
             "type": "string",
             "enum": AVAILABLE_DATAHANDLERS,
             "default": "feather",
         },
         "dataformat_trades": {
+            "description": "Data format for trade data.",
             "type": "string",
             "enum": AVAILABLE_DATAHANDLERS,
             "default": "feather",
