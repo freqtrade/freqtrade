@@ -815,33 +815,62 @@ CONF_SCHEMA = {
     },
     "definitions": {
         "exchange": {
+            "description": "Exchange configuration settings.",
             "type": "object",
             "properties": {
-                "name": {"type": "string"},
-                "enable_ws": {"type": "boolean", "default": True},
-                "key": {"type": "string", "default": ""},
-                "secret": {"type": "string", "default": ""},
-                "password": {"type": "string", "default": ""},
-                "uid": {"type": "string"},
+                "name": {"description": "Name of the exchange.", "type": "string"},
+                "enable_ws": {
+                    "description": "Enable WebSocket connections to the exchange.",
+                    "type": "boolean",
+                    "default": True,
+                },
+                "key": {
+                    "description": "API key for the exchange.",
+                    "type": "string",
+                    "default": "",
+                },
+                "secret": {
+                    "description": "API secret for the exchange.",
+                    "type": "string",
+                    "default": "",
+                },
+                "password": {
+                    "description": "Password for the exchange, if required.",
+                    "type": "string",
+                    "default": "",
+                },
+                "uid": {"description": "User ID for the exchange, if required.", "type": "string"},
                 "pair_whitelist": {
+                    "description": "List of whitelisted trading pairs.",
                     "type": "array",
-                    "items": {
-                        "type": "string",
-                    },
+                    "items": {"type": "string"},
                     "uniqueItems": True,
                 },
                 "pair_blacklist": {
+                    "description": "List of blacklisted trading pairs.",
                     "type": "array",
-                    "items": {
-                        "type": "string",
-                    },
+                    "items": {"type": "string"},
                     "uniqueItems": True,
                 },
-                "unknown_fee_rate": {"type": "number"},
-                "outdated_offset": {"type": "integer", "minimum": 1},
-                "markets_refresh_interval": {"type": "integer"},
-                "ccxt_config": {"type": "object"},
-                "ccxt_async_config": {"type": "object"},
+                "unknown_fee_rate": {
+                    "description": "Fee rate for unknown markets.",
+                    "type": "number",
+                },
+                "outdated_offset": {
+                    "description": "Offset for outdated data in minutes.",
+                    "type": "integer",
+                    "minimum": 1,
+                },
+                "markets_refresh_interval": {
+                    "description": "Interval for refreshing market data in minutes.",
+                    "type": "integer",
+                    "default": 60,
+                },
+                "ccxt_config": {"description": "CCXT configuration settings.", "type": "object"},
+                "ccxt_async_config": {
+                    "description": "CCXT asynchronous configuration settings.",
+                    "type": "object",
+                },
             },
             "required": ["name"],
         },
