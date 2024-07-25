@@ -438,26 +438,64 @@ CONF_SCHEMA = {
             "properties": {"block_bad_exchanges": {"type": "boolean"}},
         },
         "pairlists": {
+            "description": "Configuration for pairlists.",
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "method": {"type": "string", "enum": AVAILABLE_PAIRLISTS},
+                    "method": {
+                        "description": "Method used for generating the pairlist.",
+                        "type": "string",
+                        "enum": AVAILABLE_PAIRLISTS,
+                    },
                 },
                 "required": ["method"],
             },
         },
         "protections": {
+            "description": "Configuration for various protections.",
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "method": {"type": "string", "enum": AVAILABLE_PROTECTIONS},
-                    "stop_duration": {"type": "number", "minimum": 0.0},
-                    "stop_duration_candles": {"type": "number", "minimum": 0},
-                    "trade_limit": {"type": "number", "minimum": 1},
-                    "lookback_period": {"type": "number", "minimum": 1},
-                    "lookback_period_candles": {"type": "number", "minimum": 1},
+                    "method": {
+                        "description": "Method used for the protection.",
+                        "type": "string",
+                        "enum": AVAILABLE_PROTECTIONS,
+                    },
+                    "stop_duration": {
+                        "description": (
+                            "Duration to lock the pair after a protection is triggered, "
+                            "in minutes."
+                        ),
+                        "type": "number",
+                        "minimum": 0.0,
+                    },
+                    "stop_duration_candles": {
+                        "description": (
+                            "Duration to lock the pair after a protection is triggered, in "
+                            "number of candles."
+                        ),
+                        "type": "number",
+                        "minimum": 0,
+                    },
+                    "trade_limit": {
+                        "description": "Minimum number of trades required during lookback period.",
+                        "type": "number",
+                        "minimum": 1,
+                    },
+                    "lookback_period": {
+                        "description": "Period to look back for protection checks, in minutes.",
+                        "type": "number",
+                        "minimum": 1,
+                    },
+                    "lookback_period_candles": {
+                        "description": (
+                            "Period to look back for protection checks, in number " "of candles."
+                        ),
+                        "type": "number",
+                        "minimum": 1,
+                    },
                 },
                 "required": ["method"],
             },
