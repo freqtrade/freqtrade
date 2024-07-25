@@ -1401,19 +1401,21 @@ class Telegram(RPCHandler):
             nrecent = int(context.args[0]) if context.args else 10
         except (TypeError, ValueError, IndexError):
             nrecent = 10
+        nonspot = self._config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT
         trades = self._rpc._rpc_trade_history(nrecent)
         trades_tab = tabulate(
             [
                 [
                     dt_humanize_delta(dt_from_ts(trade["close_timestamp"])),
-                    trade["pair"] + " (#" + str(trade["trade_id"]) + ")",
+                    f"{trade['pair']} (#{trade['trade_id']}"
+                    f"{(' ' + ('S' if trade['is_short'] else 'L')) if nonspot else '' })",
                     f"{(trade['close_profit']):.2%} ({trade['close_profit_abs']})",
                 ]
                 for trade in trades["trades"]
             ],
             headers=[
                 "Close Date",
-                "Pair (ID)",
+                "Pair (ID L/S)" if nonspot else "Pair (ID)",
                 f"Profit ({stake_cur})",
             ],
             tablefmt="simple",
