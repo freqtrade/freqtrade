@@ -223,50 +223,98 @@ CONF_SCHEMA = {
             "description": "Timeout configuration for unfilled orders.",
             "type": "object",
             "properties": {
-                "entry": {"type": "number", "minimum": 1},
-                "exit": {"type": "number", "minimum": 1},
-                "exit_timeout_count": {"type": "number", "minimum": 0, "default": 0},
-                "unit": {"type": "string", "enum": TIMEOUT_UNITS, "default": "minutes"},
+                "entry": {
+                    "description": "Timeout for entry orders in unit.",
+                    "type": "number",
+                    "minimum": 1,
+                },
+                "exit": {
+                    "description": "Timeout for exit orders in unit.",
+                    "type": "number",
+                    "minimum": 1,
+                },
+                "exit_timeout_count": {
+                    "description": "Number of times to retry exit orders before giving up.",
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 0,
+                },
+                "unit": {
+                    "description": "Unit of time for the timeout (e.g., seconds, minutes).",
+                    "type": "string",
+                    "enum": TIMEOUT_UNITS,
+                    "default": "minutes",
+                },
             },
         },
         "entry_pricing": {
+            "description": "Configuration for entry pricing.",
             "type": "object",
             "properties": {
                 "price_last_balance": {
+                    "description": "Balance ratio for the last price.",
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
                     "exclusiveMaximum": False,
                 },
-                "price_side": {"type": "string", "enum": PRICING_SIDES, "default": "same"},
-                "use_order_book": {"type": "boolean"},
+                "price_side": {
+                    "description": "Side of the price to use (e.g., bid, ask, same).",
+                    "type": "string",
+                    "enum": PRICING_SIDES,
+                    "default": "same",
+                },
+                "use_order_book": {
+                    "description": "Whether to use the order book for pricing.",
+                    "type": "boolean",
+                },
                 "order_book_top": {
+                    "description": "Top N levels of the order book to consider.",
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 50,
                 },
                 "check_depth_of_market": {
+                    "description": "Configuration for checking the depth of the market.",
                     "type": "object",
                     "properties": {
-                        "enabled": {"type": "boolean"},
-                        "bids_to_ask_delta": {"type": "number", "minimum": 0},
+                        "enabled": {
+                            "description": "Enable or disable depth of market check.",
+                            "type": "boolean",
+                        },
+                        "bids_to_ask_delta": {
+                            "description": "Delta between bids and asks to consider.",
+                            "type": "number",
+                            "minimum": 0,
+                        },
                     },
                 },
             },
             "required": ["price_side"],
         },
         "exit_pricing": {
+            "description": "Configuration for exit pricing.",
             "type": "object",
             "properties": {
-                "price_side": {"type": "string", "enum": PRICING_SIDES, "default": "same"},
+                "price_side": {
+                    "description": "Side of the price to use (e.g., bid, ask, same).",
+                    "type": "string",
+                    "enum": PRICING_SIDES,
+                    "default": "same",
+                },
                 "price_last_balance": {
+                    "description": "Balance ratio for the last price.",
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
                     "exclusiveMaximum": False,
                 },
-                "use_order_book": {"type": "boolean"},
+                "use_order_book": {
+                    "description": "Whether to use the order book for pricing.",
+                    "type": "boolean",
+                },
                 "order_book_top": {
+                    "description": "Top N levels of the order book to consider.",
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 50,
@@ -274,7 +322,13 @@ CONF_SCHEMA = {
             },
             "required": ["price_side"],
         },
-        "custom_price_max_distance_ratio": {"type": "number", "minimum": 0.0},
+        "custom_price_max_distance_ratio": {
+            "description": "Maximum distance ratio between current and custom entry or exit price.",
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1,
+            "default": 0.02,
+        },
         "order_types": {
             "type": "object",
             "properties": {
