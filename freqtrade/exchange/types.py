@@ -12,6 +12,7 @@ class Ticker(TypedDict):
     last: Optional[float]
     quoteVolume: Optional[float]
     baseVolume: Optional[float]
+    percentage: Optional[float]
     # Several more - only listing required.
 
 

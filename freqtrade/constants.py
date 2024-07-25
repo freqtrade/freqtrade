@@ -42,7 +42,7 @@ HYPEROPT_LOSS_BUILTIN = [
 AVAILABLE_PAIRLISTS = [
     "StaticPairList",
     "VolumePairList",
-    "PercentVolumeChangePairList",
+    "PercentChangePairList",
     "ProducerPairList",
     "RemotePairList",
     "MarketCapPairList",

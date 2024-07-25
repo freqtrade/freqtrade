@@ -31,11 +31,11 @@ from tests.conftest import (
 )
 
 
-# Exclude RemotePairList and PercentVolumeChangePairList from tests.
+# Exclude RemotePairList and PercentVolumePairList from tests.
 # They have mandatory parameters, and requires special handling,
-# which happens in test_remotepairlist and test_percentvolumechangepairlist.
+# which happens in test_remotepairlist and test_percentchangepairlist.
 TESTABLE_PAIRLISTS = [
-    p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList", "PercentVolumeChangePairList"]
+    p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList", "PercentChangePairList"]
 ]
 
 
