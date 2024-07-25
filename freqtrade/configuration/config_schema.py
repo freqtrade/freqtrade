@@ -501,6 +501,7 @@ CONF_SCHEMA = {
             },
         },
         "telegram": {
+            "description": "Telegram settings.",
             "type": "object",
             "properties": {
                 "enabled": {
@@ -599,6 +600,7 @@ CONF_SCHEMA = {
             "required": ["enabled", "token", "chat_id"],
         },
         "webhook": {
+            "description": "Webhook settings.",
             "type": "object",
             "properties": {
                 "enabled": {"type": "boolean"},
@@ -610,6 +612,7 @@ CONF_SCHEMA = {
             },
         },
         "discord": {
+            "description": "Discord settings.",
             "type": "object",
             "properties": {
                 "enabled": {"type": "boolean"},
@@ -755,17 +758,51 @@ CONF_SCHEMA = {
             "enum": AVAILABLE_DATAHANDLERS,
             "default": "feather",
         },
-        "position_adjustment_enable": {"type": "boolean"},
-        "max_entry_position_adjustment": {"type": ["integer", "number"], "minimum": -1},
+        "position_adjustment_enable": {
+            "description": "Enable position adjustment.",
+            "type": "boolean",
+        },
+        "max_entry_position_adjustment": {
+            "description": "Maximum entry position adjustment allowed.",
+            "type": ["integer", "number"],
+            "minimum": -1,
+        },
         "orderflow": {
+            "description": "Settings related to order flow.",
             "type": "object",
             "properties": {
-                "cache_size": {"type": "number", "minimum": 1, "default": 1500},
-                "max_candles": {"type": "number", "minimum": 1, "default": 1500},
-                "scale": {"type": "number", "minimum": 0.0},
-                "stacked_imbalance_range": {"type": "number", "minimum": 0},
-                "imbalance_volume": {"type": "number", "minimum": 0},
-                "imbalance_ratio": {"type": "number", "minimum": 0.0},
+                "cache_size": {
+                    "description": "Size of the cache for order flow data.",
+                    "type": "number",
+                    "minimum": 1,
+                    "default": 1500,
+                },
+                "max_candles": {
+                    "description": "Maximum number of candles to consider.",
+                    "type": "number",
+                    "minimum": 1,
+                    "default": 1500,
+                },
+                "scale": {
+                    "description": "Scale factor for order flow data.",
+                    "type": "number",
+                    "minimum": 0.0,
+                },
+                "stacked_imbalance_range": {
+                    "description": "Range for stacked imbalance.",
+                    "type": "number",
+                    "minimum": 0,
+                },
+                "imbalance_volume": {
+                    "description": "Volume threshold for imbalance.",
+                    "type": "number",
+                    "minimum": 0,
+                },
+                "imbalance_ratio": {
+                    "description": "Ratio threshold for imbalance.",
+                    "type": "number",
+                    "minimum": 0.0,
+                },
             },
             "required": [
                 "max_candles",
