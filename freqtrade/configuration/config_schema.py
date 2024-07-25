@@ -503,29 +503,63 @@ CONF_SCHEMA = {
         "telegram": {
             "type": "object",
             "properties": {
-                "enabled": {"type": "boolean"},
-                "token": {"type": "string"},
-                "chat_id": {"type": "string"},
-                "allow_custom_messages": {"type": "boolean", "default": True},
-                "balance_dust_level": {"type": "number", "minimum": 0.0},
+                "enabled": {
+                    "description": "Enable Telegram notifications.",
+                    "type": "boolean",
+                },
+                "token": {"description": "Telegram bot token.", "type": "string"},
+                "chat_id": {
+                    "description": "Telegram chat ID",
+                    "type": "string",
+                },
+                "allow_custom_messages": {
+                    "description": "Allow sending custom messages from the Strategy.",
+                    "type": "boolean",
+                    "default": True,
+                },
+                "balance_dust_level": {
+                    "description": "Minimum balance level to consider as dust.",
+                    "type": "number",
+                    "minimum": 0.0,
+                },
                 "notification_settings": {
+                    "description": "Settings for different types of notifications.",
                     "type": "object",
                     "default": {},
                     "properties": {
-                        "status": {"type": "string", "enum": TELEGRAM_SETTING_OPTIONS},
-                        "warning": {"type": "string", "enum": TELEGRAM_SETTING_OPTIONS},
-                        "startup": {"type": "string", "enum": TELEGRAM_SETTING_OPTIONS},
-                        "entry": {"type": "string", "enum": TELEGRAM_SETTING_OPTIONS},
+                        "status": {
+                            "description": "Telegram setting for status updates.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                        },
+                        "warning": {
+                            "description": "Telegram setting for warnings.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                        },
+                        "startup": {
+                            "description": "Telegram setting for startup messages.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                        },
+                        "entry": {
+                            "description": "Telegram setting for entry signals.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                        },
                         "entry_fill": {
+                            "description": "Telegram setting for entry fill signals.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                             "default": "off",
                         },
                         "entry_cancel": {
+                            "description": "Telegram setting for entry cancel signals.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                         },
                         "exit": {
+                            "description": "Telegram setting for exit signals.",
                             "type": ["string", "object"],
                             "additionalProperties": {
                                 "type": "string",
@@ -533,34 +567,34 @@ CONF_SCHEMA = {
                             },
                         },
                         "exit_fill": {
+                            "description": "Telegram setting for exit fill signals.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                             "default": "on",
                         },
-                        "exit_cancel": {"type": "string", "enum": TELEGRAM_SETTING_OPTIONS},
+                        "exit_cancel": {
+                            "description": "Telegram setting for exit cancel signals.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                        },
                         "protection_trigger": {
+                            "description": "Telegram setting for protection triggers.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                             "default": "on",
                         },
                         "protection_trigger_global": {
-                            "type": "string",
-                            "enum": TELEGRAM_SETTING_OPTIONS,
-                            "default": "on",
-                        },
-                        "show_candle": {
-                            "type": "string",
-                            "enum": ["off", "ohlc"],
-                            "default": "off",
-                        },
-                        "strategy_msg": {
+                            "description": "Telegram setting for global protection triggers.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                             "default": "on",
                         },
                     },
                 },
-                "reload": {"type": "boolean"},
+                "reload": {
+                    "description": "Add Reload button to certain messages.",
+                    "type": "boolean",
+                },
             },
             "required": ["enabled", "token", "chat_id"],
         },
