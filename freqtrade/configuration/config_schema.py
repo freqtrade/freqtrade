@@ -573,15 +573,6 @@ CONF_SCHEMA = {
                 "retries": {"type": "integer", "minimum": 0},
                 "retry_delay": {"type": "number", "minimum": 0},
                 **__MESSAGE_TYPE_DICT,
-                # **{x: {'type': 'object'} for x in RPCMessageType},
-                # Below -> Deprecated
-                "webhookentry": {"type": "object"},
-                "webhookentrycancel": {"type": "object"},
-                "webhookentryfill": {"type": "object"},
-                "webhookexit": {"type": "object"},
-                "webhookexitcancel": {"type": "object"},
-                "webhookexitfill": {"type": "object"},
-                "webhookstatus": {"type": "object"},
             },
         },
         "discord": {
