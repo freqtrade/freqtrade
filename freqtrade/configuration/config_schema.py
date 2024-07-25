@@ -653,17 +653,47 @@ CONF_SCHEMA = {
             },
         },
         "api_server": {
+            "description": "API server settings.",
             "type": "object",
             "properties": {
-                "enabled": {"type": "boolean"},
-                "listen_ip_address": {"format": "ipv4"},
-                "listen_port": {"type": "integer", "minimum": 1024, "maximum": 65535},
-                "username": {"type": "string"},
-                "password": {"type": "string"},
-                "ws_token": {"type": ["string", "array"], "items": {"type": "string"}},
-                "jwt_secret_key": {"type": "string"},
-                "CORS_origins": {"type": "array", "items": {"type": "string"}},
-                "verbosity": {"type": "string", "enum": ["error", "info"]},
+                "enabled": {"description": "Whether the API server is enabled.", "type": "boolean"},
+                "listen_ip_address": {
+                    "description": "IP address the API server listens on.",
+                    "format": "ipv4",
+                },
+                "listen_port": {
+                    "description": "Port the API server listens on.",
+                    "type": "integer",
+                    "minimum": 1024,
+                    "maximum": 65535,
+                },
+                "username": {
+                    "description": "Username for API server authentication.",
+                    "type": "string",
+                },
+                "password": {
+                    "description": "Password for API server authentication.",
+                    "type": "string",
+                },
+                "ws_token": {
+                    "description": "WebSocket token for API server.",
+                    "type": ["string", "array"],
+                    "items": {"type": "string"},
+                },
+                "jwt_secret_key": {
+                    "description": "Secret key for JWT authentication.",
+                    "type": "string",
+                },
+                "CORS_origins": {
+                    "description": "List of allowed CORS origins.",
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "x": {
+                    "description": "Logging verbosity level.",
+                    "type": "string",
+                    "enum": ["error", "info"],
+                },
             },
             "required": ["enabled", "listen_ip_address", "listen_port", "username", "password"],
         },
