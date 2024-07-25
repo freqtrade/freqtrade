@@ -29,66 +29,198 @@ __MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {"type": "object"} for x in
 CONF_SCHEMA = {
     "type": "object",
     "properties": {
-        "max_open_trades": {"type": ["integer", "number"], "minimum": -1},
-        "new_pairs_days": {"type": "integer", "default": 30},
-        "timeframe": {"type": "string"},
-        "stake_currency": {"type": "string"},
+        "max_open_trades": {
+            "description": "Maximum number of open trades. -1 for unlimited.",
+            "type": ["integer", "number"],
+            "minimum": -1,
+        },
+        "new_pairs_days": {
+            "description": "Download data of new pairs for given number of days",
+            "type": "integer",
+            "default": 30,
+        },
+        "timeframe": {
+            "description": (
+                "The timeframe to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...)."
+                "Usually missing in configuration and specified in the strategy."
+            ),
+            "type": "string",
+        },
+        "stake_currency": {
+            "description": "Currency used for staking.",
+            "type": "string",
+        },
         "stake_amount": {
+            "description": "Amount to stake per trade.",
             "type": ["number", "string"],
             "minimum": 0.0001,
             "pattern": UNLIMITED_STAKE_AMOUNT,
         },
-        "tradable_balance_ratio": {"type": "number", "minimum": 0.0, "maximum": 1, "default": 0.99},
+        "tradable_balance_ratio": {
+            "description": "Ratio of balance that is tradable.",
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1,
+            "default": 0.99,
+        },
         "available_capital": {
+            "description": "Total capital available for trading.",
             "type": "number",
             "minimum": 0,
         },
-        "amend_last_stake_amount": {"type": "boolean", "default": False},
+        "amend_last_stake_amount": {
+            "description": "Whether to amend the last stake amount.",
+            "type": "boolean",
+            "default": False,
+        },
         "last_stake_amount_min_ratio": {
+            "description": "Minimum ratio for the last stake amount.",
             "type": "number",
             "minimum": 0.0,
             "maximum": 1.0,
             "default": 0.5,
         },
-        "fiat_display_currency": {"type": "string", "enum": SUPPORTED_FIAT},
-        "dry_run": {"type": "boolean"},
-        "dry_run_wallet": {"type": "number", "default": DRY_RUN_WALLET},
-        "cancel_open_orders_on_exit": {"type": "boolean", "default": False},
-        "process_only_new_candles": {"type": "boolean"},
+        "fiat_display_currency": {
+            "description": "Fiat currency for display purposes.",
+            "type": "string",
+            "enum": SUPPORTED_FIAT,
+        },
+        "dry_run": {
+            "description": "Enable or disable dry run mode.",
+            "type": "boolean",
+        },
+        "dry_run_wallet": {
+            "description": "Initial wallet balance for dry run mode.",
+            "type": "number",
+            "default": DRY_RUN_WALLET,
+        },
+        "cancel_open_orders_on_exit": {
+            "description": "Cancel open orders when exiting.",
+            "type": "boolean",
+            "default": False,
+        },
+        "process_only_new_candles": {
+            "description": "Process only new candles.",
+            "type": "boolean",
+        },
         "minimal_roi": {
+            "description": "Minimum return on investment.",
             "type": "object",
             "patternProperties": {"^[0-9.]+$": {"type": "number"}},
         },
-        "amount_reserve_percent": {"type": "number", "minimum": 0.0, "maximum": 0.5},
-        "stoploss": {"type": "number", "maximum": 0, "exclusiveMaximum": True},
-        "trailing_stop": {"type": "boolean"},
-        "trailing_stop_positive": {"type": "number", "minimum": 0, "maximum": 1},
-        "trailing_stop_positive_offset": {"type": "number", "minimum": 0, "maximum": 1},
-        "trailing_only_offset_is_reached": {"type": "boolean"},
-        "use_exit_signal": {"type": "boolean"},
-        "exit_profit_only": {"type": "boolean"},
-        "exit_profit_offset": {"type": "number"},
-        "fee": {"type": "number", "minimum": 0, "maximum": 0.1},
-        "ignore_roi_if_entry_signal": {"type": "boolean"},
-        "ignore_buying_expired_candle_after": {"type": "number"},
-        "trading_mode": {"type": "string", "enum": TRADING_MODES},
-        "margin_mode": {"type": "string", "enum": MARGIN_MODES},
-        "reduce_df_footprint": {"type": "boolean", "default": False},
-        "minimum_trade_amount": {"type": "number", "default": 10},
-        "targeted_trade_amount": {"type": "number", "default": 20},
-        "lookahead_analysis_exportfilename": {"type": "string"},
+        "amount_reserve_percent": {
+            "description": "Percentage of amount to reserve.",
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 0.5,
+        },
+        "stoploss": {
+            "description": "Value (as ratio) to use as Stoploss value.",
+            "type": "number",
+            "maximum": 0,
+            "exclusiveMaximum": True,
+        },
+        "trailing_stop": {
+            "description": "Enable or disable trailing stop.",
+            "type": "boolean",
+        },
+        "trailing_stop_positive": {
+            "description": "Positive offset for trailing stop.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+        },
+        "trailing_stop_positive_offset": {
+            "description": "Offset for trailing stop to activate.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+        },
+        "trailing_only_offset_is_reached": {
+            "description": "Use trailing stop only when offset is reached.",
+            "type": "boolean",
+        },
+        "use_exit_signal": {
+            "description": "Use exit signal for trades.",
+            "type": "boolean",
+        },
+        "exit_profit_only": {
+            "description": (
+                "Exit only when in profit. Exit signals are ignored as "
+                "long as profit is < exit_profit_offset."
+            ),
+            "type": "boolean",
+        },
+        "exit_profit_offset": {
+            "description": "Offset for profit exit.",
+            "type": "number",
+        },
+        "fee": {
+            "description": "Trading fee percentage. Can help to simulate slippage in backtesting",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.1,
+        },
+        "ignore_roi_if_entry_signal": {
+            "description": "Ignore ROI if entry signal is present.",
+            "type": "boolean",
+        },
+        "ignore_buying_expired_candle_after": {
+            "description": "Ignore buying after candle expiration time.",
+            "type": "number",
+        },
+        "trading_mode": {
+            "description": "Mode of trading (e.g., spot, margin).",
+            "type": "string",
+            "enum": TRADING_MODES,
+        },
+        "margin_mode": {
+            "description": "Margin mode for trading.",
+            "type": "string",
+            "enum": MARGIN_MODES,
+        },
+        "reduce_df_footprint": {
+            "description": "Reduce DataFrame footprint by casting columns to float32/int32.",
+            "type": "boolean",
+            "default": False,
+        },
+        "minimum_trade_amount": {
+            "description": "Minimum amount for a trade - only used for lookahead-analysis",
+            "type": "number",
+            "default": 10,
+        },
+        "targeted_trade_amount": {
+            "description": "Targeted trade amount for lookahead analysis.",
+            "type": "number",
+            "default": 20,
+        },
+        "lookahead_analysis_exportfilename": {
+            "description": "csv Filename for lookahead analysis export.",
+            "type": "string",
+        },
         "startup_candle": {
+            "description": "Startup candle configuration.",
             "type": "array",
             "uniqueItems": True,
             "default": [199, 399, 499, 999, 1999],
         },
-        "liquidation_buffer": {"type": "number", "minimum": 0.0, "maximum": 0.99},
+        "liquidation_buffer": {
+            "description": "Buffer ratio for liquidation.",
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 0.99,
+        },
         "backtest_breakdown": {
+            "description": "Breakdown configuration for backtesting.",
             "type": "array",
             "items": {"type": "string", "enum": BACKTEST_BREAKDOWNS},
         },
-        "bot_name": {"type": "string"},
+        "bot_name": {
+            "description": "Name of the trading bot. Passed via API to a client.",
+            "type": "string",
+        },
         "unfilledtimeout": {
+            "description": "Timeout configuration for unfilled orders.",
             "type": "object",
             "properties": {
                 "entry": {"type": "number", "minimum": 1},
