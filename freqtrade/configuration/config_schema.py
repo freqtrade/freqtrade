@@ -1022,22 +1022,84 @@ CONF_SCHEMA = {
                 "rl_config": {
                     "type": "object",
                     "properties": {
-                        "drop_ohlc_from_features": {"type": "boolean", "default": False},
-                        "train_cycles": {"type": "integer"},
-                        "max_trade_duration_candles": {"type": "integer"},
-                        "add_state_info": {"type": "boolean", "default": False},
-                        "max_training_drawdown_pct": {"type": "number", "default": 0.02},
-                        "cpu_count": {"type": "integer", "default": 1},
-                        "model_type": {"type": "string", "default": "PPO"},
-                        "policy_type": {"type": "string", "default": "MlpPolicy"},
-                        "net_arch": {"type": "array", "default": [128, 128]},
-                        "randomize_starting_position": {"type": "boolean", "default": False},
-                        "progress_bar": {"type": "boolean", "default": True},
+                        "drop_ohlc_from_features": {
+                            "description": (
+                                "Do not include the normalized ohlc data in the feature set."
+                            ),
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "train_cycles": {
+                            "description": "Number of training cycles to perform.",
+                            "type": "integer",
+                        },
+                        "max_trade_duration_candles": {
+                            "description": (
+                                "Guides the agent training to keep trades below desired length."
+                            ),
+                            "type": "integer",
+                        },
+                        "add_state_info": {
+                            "description": (
+                                "Include state information in the feature set for "
+                                "training and inference."
+                            ),
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "max_training_drawdown_pct": {
+                            "description": "Maximum allowed drawdown percentage during training.",
+                            "type": "number",
+                            "default": 0.02,
+                        },
+                        "cpu_count": {
+                            "description": "Number of threads/CPU's to use for training.",
+                            "type": "integer",
+                            "default": 1,
+                        },
+                        "model_type": {
+                            "description": "Model string from stable_baselines3 or SBcontrib.",
+                            "type": "string",
+                            "default": "PPO",
+                        },
+                        "policy_type": {
+                            "description": (
+                                "One of the available policy types from stable_baselines3."
+                            ),
+                            "type": "string",
+                            "default": "MlpPolicy",
+                        },
+                        "net_arch": {
+                            "description": "Architecture of the neural network.",
+                            "type": "array",
+                            "default": [128, 128],
+                        },
+                        "randomize_starting_position": {
+                            "description": (
+                                "Randomize the starting point of each episode to avoid overfitting."
+                            ),
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "progress_bar": {
+                            "description": "Display a progress bar with the current progress.",
+                            "type": "boolean",
+                            "default": True,
+                        },
                         "model_reward_parameters": {
+                            "description": "Parameters for configuring the reward model.",
                             "type": "object",
                             "properties": {
-                                "rr": {"type": "number", "default": 1},
-                                "profit_aim": {"type": "number", "default": 0.025},
+                                "rr": {
+                                    "type": "number",
+                                    "default": 1,
+                                    "description": "Reward ratio parameter.",
+                                },
+                                "profit_aim": {
+                                    "type": "number",
+                                    "default": 0.025,
+                                    "description": "Profit aim parameter.",
+                                },
                             },
                         },
                     },
