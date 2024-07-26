@@ -1,9 +1,9 @@
 """
-Change PairList provider
+Percent Change PairList provider
 
 Provides dynamic pair list based on trade change
-sorted based on percentage change in volume over a
-defined period
+sorted based on percentage change in price over a
+defined period or as coming from ticker
 """
 
 import logging
@@ -314,7 +314,6 @@ class PercentChangePairList(IPairList):
 
                 # replace change with a range change sum calculated above
                 filtered_tickers[i]["percentage"] = pct_change
-                self.log_once(f"Tickers: {filtered_tickers}", logger.info)
             else:
                 filtered_tickers[i]["percentage"] = 0
 
