@@ -986,24 +986,98 @@ CONF_SCHEMA = {
                 "feature_parameters": {
                     "type": "object",
                     "properties": {
-                        "include_corr_pairlist": {"type": "array"},
-                        "include_timeframes": {"type": "array"},
-                        "label_period_candles": {"type": "integer"},
-                        "include_shifted_candles": {"type": "integer", "default": 0},
-                        "DI_threshold": {"type": "number", "default": 0},
-                        "weight_factor": {"type": "number", "default": 0},
-                        "principal_component_analysis": {"type": "boolean", "default": False},
-                        "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
-                        "plot_feature_importances": {"type": "integer", "default": 0},
+                        "include_corr_pairlist": {
+                            "description": "List of correlated pairs to include in the features.",
+                            "type": "array",
+                        },
+                        "include_timeframes": {
+                            "description": (
+                                "A list of timeframes that all indicators in "
+                                "`feature_engineering_expand_*()` will be created for."
+                            ),
+                            "type": "array",
+                        },
+                        "label_period_candles": {
+                            "description": (
+                                "Number of candles into the future to use for labeling the period."
+                                "This can be used in `set_freqai_targets()`."
+                            ),
+                            "type": "integer",
+                        },
+                        "include_shifted_candles": {
+                            "description": (
+                                "Add features from previous candles to subsequent candles with "
+                                "the intent of adding historical information."
+                            ),
+                            "type": "integer",
+                            "default": 0,
+                        },
+                        "DI_threshold": {
+                            "description": (
+                                "Activates the use of the Dissimilarity Index for "
+                                "outlier detection when set to > 0."
+                            ),
+                            "type": "number",
+                            "default": 0,
+                        },
+                        "weight_factor": {
+                            "description": (
+                                "Weight training data points according to their recency."
+                            ),
+                            "type": "number",
+                            "default": 0,
+                        },
+                        "principal_component_analysis": {
+                            "description": (
+                                "Automatically reduce the dimensionality of the data set using "
+                                "Principal Component Analysis"
+                            ),
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "use_SVM_to_remove_outliers": {
+                            "description": "Use SVM to remove outliers from the features.",
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "plot_feature_importances": {
+                            "description": "Create feature importance plots for each model.",
+                            "type": "integer",
+                            "default": 0,
+                        },
                         "svm_params": {
+                            "description": (
+                                "All parameters available in Sklearn's `SGDOneClassSVM()`."
+                            ),
                             "type": "object",
                             "properties": {
-                                "shuffle": {"type": "boolean", "default": False},
-                                "nu": {"type": "number", "default": 0.1},
+                                "shuffle": {
+                                    "description": "Whether to shuffle data before applying SVM.",
+                                    "type": "boolean",
+                                    "default": False,
+                                },
+                                "nu": {
+                                    "type": "number",
+                                    "default": 0.1,
+                                },
                             },
                         },
-                        "shuffle_after_split": {"type": "boolean", "default": False},
-                        "buffer_train_data_candles": {"type": "integer", "default": 0},
+                        "shuffle_after_split": {
+                            "description": (
+                                "Split the data into train and test sets, and then shuffle "
+                                "both sets individually."
+                            ),
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "buffer_train_data_candles": {
+                            "description": (
+                                "Cut `buffer_train_data_candles` off the beginning and end of the "
+                                "training data *after* the indicators were populated."
+                            ),
+                            "type": "integer",
+                            "default": 0,
+                        },
                     },
                     "required": [
                         "include_timeframes",
@@ -1011,6 +1085,9 @@ CONF_SCHEMA = {
                     ],
                 },
                 "data_split_parameters": {
+                    "descriptions": (
+                        "Additional parameters for scikit-learn's test_train_split() function."
+                    ),
                     "type": "object",
                     "properties": {
                         "test_size": {"type": "number"},
@@ -1018,7 +1095,13 @@ CONF_SCHEMA = {
                         "shuffle": {"type": "boolean", "default": False},
                     },
                 },
-                "model_training_parameters": {"type": "object"},
+                "model_training_parameters": {
+                    "description": (
+                        "Flexible dictionary that includes all parameters available by "
+                        "the selected model library. "
+                    ),
+                    "type": "object",
+                },
                 "rl_config": {
                     "type": "object",
                     "properties": {
