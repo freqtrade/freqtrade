@@ -975,15 +975,56 @@ CONF_SCHEMA = {
         "freqai": {
             "type": "object",
             "properties": {
-                "enabled": {"type": "boolean", "default": False},
-                "keras": {"type": "boolean", "default": False},
-                "write_metrics_to_disk": {"type": "boolean", "default": False},
-                "purge_old_models": {"type": ["boolean", "number"], "default": 2},
-                "conv_width": {"type": "integer", "default": 1},
-                "train_period_days": {"type": "integer", "default": 0},
-                "backtest_period_days": {"type": "number", "default": 7},
-                "identifier": {"type": "string", "default": "example"},
+                "enabled": {
+                    "description": "Whether freqAI is enabled.",
+                    "type": "boolean",
+                    "default": False,
+                },
+                "keras": {
+                    "description": "Use Keras for model training.",
+                    "type": "boolean",
+                    "default": False,
+                },
+                "write_metrics_to_disk": {
+                    "description": "Write metrics to disk?",
+                    "type": "boolean",
+                    "default": False,
+                },
+                "purge_old_models": {
+                    "description": "Number of models to keep on disk.",
+                    "type": ["boolean", "number"],
+                    "default": 2,
+                },
+                "conv_width": {
+                    "description": "The width of a neural network input tensor.",
+                    "type": "integer",
+                    "default": 1,
+                },
+                "train_period_days": {
+                    "description": (
+                        "Number of days to use for the training data (width of the sliding window)"
+                    ),
+                    "type": "integer",
+                    "default": 0,
+                },
+                "backtest_period_days": {
+                    "description": (
+                        "Number of days to inference from the trained model before sliding the "
+                        "`train_period_days` window "
+                    ),
+                    "type": "number",
+                    "default": 7,
+                },
+                "identifier": {
+                    "description": (
+                        "A unique ID for the current model. "
+                        "Must be changed when modifying features."
+                    ),
+                    "type": "string",
+                    "default": "example",
+                },
                 "feature_parameters": {
+                    "description": "The parameters used to engineer the feature set",
                     "type": "object",
                     "properties": {
                         "include_corr_pairlist": {
