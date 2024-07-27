@@ -11,8 +11,9 @@ from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache
+from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.types import Ticker, Tickers
@@ -168,8 +169,6 @@ class PercentChangePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
-        # Generate dynamic whitelist
-        # Must always run if this pairlist is not the first in the list.
         pairlist = self._pair_cache.get("pairlist")
         if pairlist:
             # Item found - no refresh necessary
@@ -240,7 +239,9 @@ class PercentChangePairList(IPairList):
 
         return pairs
 
-    def fetch_candles_for_lookback_period(self, filtered_tickers):
+    def fetch_candles_for_lookback_period(
+        self, filtered_tickers: List[Dict[str, str]]
+    ) -> Dict[PairWithTimeframe, DataFrame]:
         since_ms = (
             int(
                 timeframe_to_prev_date(
@@ -276,7 +277,7 @@ class PercentChangePairList(IPairList):
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
         return candles
 
-    def fetch_percent_change_from_lookback_period(self, filtered_tickers):
+    def fetch_percent_change_from_lookback_period(self, filtered_tickers: List[Dict[str, Any]]):
         # get lookback period in ms, for exchange ohlcv fetch
         candles = self.fetch_candles_for_lookback_period(filtered_tickers)
 
@@ -300,7 +301,7 @@ class PercentChangePairList(IPairList):
             else:
                 filtered_tickers[i]["percentage"] = 0
 
-    def fetch_percent_change_from_tickers(self, filtered_tickers, tickers):
+    def fetch_percent_change_from_tickers(self, filtered_tickers: List[Dict[str, Any]], tickers):
         for i, p in enumerate(filtered_tickers):
             # Filter out assets
             if not self._validate_pair(
