@@ -38,7 +38,7 @@ class PercentChangePairList(IPairList):
 
         self._stake_currency = self._config["stake_currency"]
         self._number_pairs = self._pairlistconfig["number_assets"]
-        self._min_value = self._pairlistconfig.get("min_value", 0)
+        self._min_value = self._pairlistconfig.get("min_value", None)
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
@@ -221,7 +221,8 @@ class PercentChangePairList(IPairList):
             # Fetching 24h change by default from supported exchange tickers
             self.fetch_percent_change_from_tickers(filtered_tickers, tickers)
 
-        filtered_tickers = [v for v in filtered_tickers if v["percentage"] > self._min_value]
+        if self._min_value is not None:
+            filtered_tickers = [v for v in filtered_tickers if v["percentage"] > self._min_value]
         if self._max_value is not None:
             filtered_tickers = [v for v in filtered_tickers if v["percentage"] < self._max_value]
 
