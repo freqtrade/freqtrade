@@ -8,7 +8,7 @@ defined period or as coming from ticker
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache
 
@@ -21,8 +21,6 @@ from freqtrade.util import dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
-
-SORT_VALUES = ["percentage"]
 
 
 class PercentChangePairList(IPairList):
@@ -40,9 +38,6 @@ class PercentChangePairList(IPairList):
 
         self._stake_currency = self._config["stake_currency"]
         self._number_pairs = self._pairlistconfig["number_assets"]
-        self._sort_key: Literal["rolling_volume_change"] = self._pairlistconfig.get(
-            "sort_key", "rolling_volume_change"
-        )
         self._min_value = self._pairlistconfig.get("min_value", 0)
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
@@ -89,9 +84,6 @@ class PercentChangePairList(IPairList):
                 "or switch to using candles. and restart the bot."
             )
 
-        if not self._validate_keys(self._sort_key):
-            raise OperationalException(f"key {self._sort_key} not in {SORT_VALUES}")
-
         candle_limit = self._exchange.ohlcv_candle_limit(
             self._lookback_timeframe, self._config["candle_type_def"]
         )
@@ -111,9 +103,6 @@ class PercentChangePairList(IPairList):
         """
         return not self._use_range
 
-    def _validate_keys(self, key):
-        return key in SORT_VALUES
-
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
@@ -132,13 +121,6 @@ class PercentChangePairList(IPairList):
                 "default": 30,
                 "description": "Number of assets",
                 "help": "Number of assets to use from the pairlist",
-            },
-            "sort_key": {
-                "type": "option",
-                "default": "rolling_volume_change",
-                "options": SORT_VALUES,
-                "description": "Sort key",
-                "help": "Sort key to use for sorting the pairlist.",
             },
             "min_value": {
                 "type": "number",
@@ -210,7 +192,7 @@ class PercentChangePairList(IPairList):
                     for k, v in tickers.items()
                     if (
                         self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v.get(self._sort_key) is not None)
+                        and (self._use_range or v.get("percentage") is not None)
                         and v["symbol"] in _pairlist
                     )
                 ]
@@ -239,14 +221,14 @@ class PercentChangePairList(IPairList):
             # Fetching 24h change by default from supported exchange tickers
             self.fetch_percent_change_from_tickers(filtered_tickers, tickers)
 
-        filtered_tickers = [v for v in filtered_tickers if v[self._sort_key] > self._min_value]
+        filtered_tickers = [v for v in filtered_tickers if v["percentage"] > self._min_value]
         if self._max_value is not None:
-            filtered_tickers = [v for v in filtered_tickers if v[self._sort_key] < self._max_value]
+            filtered_tickers = [v for v in filtered_tickers if v["percentage"] < self._max_value]
 
         sorted_tickers = sorted(
             filtered_tickers,
             reverse=self._sort_direction == "desc",
-            key=lambda t: t[self._sort_key],
+            key=lambda t: t["percentage"],
         )
 
         # Validate whitelist to only have active market pairs

@@ -71,25 +71,6 @@ def test_volume_change_pair_list_init_wrong_refresh_period(mocker, rpl_config):
         get_patched_freqtradebot(mocker, rpl_config)
 
 
-def test_volume_change_pair_list_init_invalid_sort_key(mocker, rpl_config):
-    rpl_config["pairlists"] = [
-        {
-            "method": "PercentChangePairList",
-            "number_assets": 2,
-            "sort_key": "wrong_key",
-            "min_value": 0,
-            "refresh_period": 86400,
-            "lookback_days": 1,
-        }
-    ]
-
-    with pytest.raises(
-        OperationalException,
-        match=r"key wrong_key not in \['percentage'\]",
-    ):
-        get_patched_freqtradebot(mocker, rpl_config)
-
-
 def test_volume_change_pair_list_init_wrong_lookback_period(mocker, rpl_config):
     rpl_config["pairlists"] = [
         {
