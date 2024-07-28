@@ -114,7 +114,45 @@ services:
       --strategy SampleStrategy
 
 ```
+
 You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary. Note, that you will need to use different database files, port mappings and telegram configurations for each instance, as mentioned above. 
+
+## Use a different database system
+
+Freqtrade is using SQLAlchemy, which supports multiple different database systems. As such, a multitude of database systems should be supported.
+Freqtrade does not depend or install any additional database driver. Please refer to the [SQLAlchemy docs](https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls) on installation instructions for the respective database systems.
+
+The following systems have been tested and are known to work with freqtrade:
+
+* sqlite (default)
+* PostgreSQL
+* MariaDB
+
+!!! Warning
+    By using one of the below database systems, you acknowledge that you know how to manage such a system. The freqtrade team will not provide any support with setup or maintenance (or backups) of the below database systems.
+
+### PostgreSQL
+
+Installation:
+`pip install psycopg2-binary`
+
+Usage:
+`... --db-url postgresql+psycopg2://<username>:<password>@localhost:5432/<database>`
+
+Freqtrade will automatically create the tables necessary upon startup.
+
+If you're running different instances of Freqtrade, you must either setup one database per Instance or use different users / schemas for your connections.
+
+### MariaDB / MySQL
+
+Freqtrade supports MariaDB by using SQLAlchemy, which supports multiple different database systems.
+
+Installation:
+`pip install pymysql`
+
+Usage:
+`... --db-url mysql+pymysql://<username>:<password>@localhost:3306/<database>`
+
 
 
 ## Configure the bot running as a systemd service

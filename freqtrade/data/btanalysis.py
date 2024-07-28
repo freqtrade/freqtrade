@@ -185,7 +185,7 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
     """
     bt_data = load_backtest_stats(filename)
     k: Literal["metadata", "strategy"]
-    for k in ("metadata", "strategy"):  # type: ignore
+    for k in ("metadata", "strategy"):
         results[k][strategy_name] = bt_data[k][strategy_name]
     results["metadata"][strategy_name]["filename"] = filename.stem
     comparison = bt_data["strategy_comparison"]
