@@ -162,6 +162,7 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 - `number_assets`: Specifies the number of top pairs to select based on the 24-hour percentage change.
 - `min_value`: Sets a minimum percentage change threshold. Pairs with a percentage change below this value will be filtered out.
 - `max_value`: Sets a maximum percentage change threshold. Pairs with a percentage change above this value will be filtered out.
+- `sort_direction`: Specifies the order in which pairs are sorted based on their percentage change. Accepts two values: `asc` for ascending order and `desc` for descending order.
 - `refresh_period`: Defines the interval (in seconds) at which the pairlist will be refreshed. The default is 1800 seconds (30 minutes).
 - `lookback_days`: Number of days to look back. When `lookback_days` is selected, the `lookback_timeframe` is defaulted to 1 day.
 - `lookback_timeframe`: Timeframe to use for the lookback period.
@@ -170,7 +171,7 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 When PercentChangePairList is used after other Pairlist Handlers, it will operate on the outputs of those handlers. If it is the leading Pairlist Handler, it will select pairs from all available markets with the specified stake currency.
 
 `PercentChangePairList` uses ticker data from the exchange, provided via the ccxt library:
-The percentage change is calculated as the change in price over the last 24 hours, expressed as a percentage, depending on the exchange.
+The percentage change is calculated as the change in price over the last 24 hours.
 
 ??? Tip "Unsupported exchanges" 
     On some exchanges (like HTX), regular PercentChangePairList does not work as the api does not natively provide 24h percent change in price. This can be worked around by using candle data to calculate the percentage change. To roughly simulate 24h percent change, you can use the following configuration. Please note that These pairlists will only refresh once per day.
@@ -179,7 +180,6 @@ The percentage change is calculated as the change in price over the last 24 hour
         {
             "method": "PercentChangePairList",
             "number_assets": 20,
-            "sort_key": "percentage",
             "min_value": 0,
             "refresh_period": 86400,
             "lookback_days": 1
@@ -193,7 +193,6 @@ The percentage change is calculated as the change in price over the last 24 hour
     {
         "method": "PercentChangePairList",
         "number_assets": 15,
-        "sort_key": "percentage",
         "min_value": -10,
         "max_value": 50
     }
@@ -220,13 +219,17 @@ In this configuration:
 ```
 This example builds the percent change pairs based on a rolling period of 3 days of 1-hour candles by using `lookback_timeframe` for candle size and `lookback_period` which specifies the number of candles.
 
+The percent change in price is calculated using the following formula, which expresses the percentage difference between the current candle's close price and the previous candle's close price, as defined by the specified timeframe and lookback period:
+
+$$ Percent Change = (\frac{Current Close - Previous Close}{Previous Close}) * 100 $$
+
 !!! Warning "Range look back and refresh period"
     When used in conjunction with `lookback_days` and `lookback_timeframe` the `refresh_period` can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.
 
 !!! Warning "Performance implications when using lookback range"
-    If used in first position in combination with lookback, the computation of the range-based percent change can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `PercentChangePairList` to narrow the pairlist down for further range volume calculation.
+    If used in first position in combination with lookback, the computation of the range-based percent change can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `PercentChangePairList` to narrow the pairlist down for further percent-change calculation.
 
-!!! Note Backtesting
+!!! Note "Backtesting"
     `PercentChangePairList` does not support backtesting mode.
 
 #### ProducerPairList

@@ -125,7 +125,7 @@ class PercentChangePairList(IPairList):
             },
             "min_value": {
                 "type": "number",
-                "default": 0,
+                "default": None,
                 "description": "Minimum value",
                 "help": "Minimum value to use for filtering the pairlist.",
             },
