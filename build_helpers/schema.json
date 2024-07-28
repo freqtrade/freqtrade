@@ -562,6 +562,7 @@
             "enum": [
               "StaticPairList",
               "VolumePairList",
+              "PercentChangePairList",
               "ProducerPairList",
               "RemotePairList",
               "MarketCapPairList",
