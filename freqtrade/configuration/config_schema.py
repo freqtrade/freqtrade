@@ -26,6 +26,8 @@ from freqtrade.enums import RPCMessageType
 
 __MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {"type": "object"} for x in RPCMessageType}
 
+__IN_STRATEGY = "\nUsually specified in the strategy and missing in the configuration."
+
 CONF_SCHEMA = {
     "type": "object",
     "properties": {
@@ -41,8 +43,7 @@ CONF_SCHEMA = {
         },
         "timeframe": {
             "description": (
-                "The timeframe to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...)."
-                "Usually missing in configuration and specified in the strategy."
+                f"The timeframe to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). {__IN_STRATEGY}"
             ),
             "type": "string",
         },
@@ -104,7 +105,7 @@ CONF_SCHEMA = {
             "type": "boolean",
         },
         "minimal_roi": {
-            "description": "Minimum return on investment.",
+            "description": f"Minimum return on investment. {__IN_STRATEGY}",
             "type": "object",
             "patternProperties": {"^[0-9.]+$": {"type": "number"}},
         },
@@ -115,44 +116,44 @@ CONF_SCHEMA = {
             "maximum": 0.5,
         },
         "stoploss": {
-            "description": "Value (as ratio) to use as Stoploss value.",
+            "description": f"Value (as ratio) to use as Stoploss value. {__IN_STRATEGY}",
             "type": "number",
             "maximum": 0,
             "exclusiveMaximum": True,
         },
         "trailing_stop": {
-            "description": "Enable or disable trailing stop.",
+            "description": f"Enable or disable trailing stop. {__IN_STRATEGY}",
             "type": "boolean",
         },
         "trailing_stop_positive": {
-            "description": "Positive offset for trailing stop.",
+            "description": f"Positive offset for trailing stop. {__IN_STRATEGY}",
             "type": "number",
             "minimum": 0,
             "maximum": 1,
         },
         "trailing_stop_positive_offset": {
-            "description": "Offset for trailing stop to activate.",
+            "description": f"Offset for trailing stop to activate. {__IN_STRATEGY}",
             "type": "number",
             "minimum": 0,
             "maximum": 1,
         },
         "trailing_only_offset_is_reached": {
-            "description": "Use trailing stop only when offset is reached.",
+            "description": f"Use trailing stop only when offset is reached. {__IN_STRATEGY}",
             "type": "boolean",
         },
         "use_exit_signal": {
-            "description": "Use exit signal for trades.",
+            "description": f"Use exit signal for trades. {__IN_STRATEGY}",
             "type": "boolean",
         },
         "exit_profit_only": {
             "description": (
                 "Exit only when in profit. Exit signals are ignored as "
-                "long as profit is < exit_profit_offset."
+                f"long as profit is < exit_profit_offset. {__IN_STRATEGY}"
             ),
             "type": "boolean",
         },
         "exit_profit_offset": {
-            "description": "Offset for profit exit.",
+            "description": f"Offset for profit exit. {__IN_STRATEGY}",
             "type": "number",
         },
         "fee": {
@@ -162,11 +163,11 @@ CONF_SCHEMA = {
             "maximum": 0.1,
         },
         "ignore_roi_if_entry_signal": {
-            "description": "Ignore ROI if entry signal is present.",
+            "description": f"Ignore ROI if entry signal is present. {__IN_STRATEGY}",
             "type": "boolean",
         },
         "ignore_buying_expired_candle_after": {
-            "description": "Ignore buying after candle expiration time.",
+            "description": f"Ignore buying after candle expiration time. {__IN_STRATEGY}",
             "type": "number",
         },
         "trading_mode": {
@@ -220,7 +221,7 @@ CONF_SCHEMA = {
             "type": "string",
         },
         "unfilledtimeout": {
-            "description": "Timeout configuration for unfilled orders.",
+            "description": f"Timeout configuration for unfilled orders. {__IN_STRATEGY}",
             "type": "object",
             "properties": {
                 "entry": {
@@ -330,7 +331,7 @@ CONF_SCHEMA = {
             "default": 0.02,
         },
         "order_types": {
-            "description": "Configuration of order types.",
+            "description": f"Configuration of order types. {__IN_STRATEGY}",
             "type": "object",
             "properties": {
                 "entry": {
@@ -387,7 +388,7 @@ CONF_SCHEMA = {
             "required": ["entry", "exit", "stoploss", "stoploss_on_exchange"],
         },
         "order_time_in_force": {
-            "description": "Time in force configuration for orders.",
+            "description": f"Time in force configuration for orders. {__IN_STRATEGY}",
             "type": "object",
             "properties": {
                 "entry": {
@@ -759,11 +760,11 @@ CONF_SCHEMA = {
             "default": "feather",
         },
         "position_adjustment_enable": {
-            "description": "Enable position adjustment.",
+            "description": f"Enable position adjustment. {__IN_STRATEGY}",
             "type": "boolean",
         },
         "max_entry_position_adjustment": {
-            "description": "Maximum entry position adjustment allowed.",
+            "description": f"Maximum entry position adjustment allowed. {__IN_STRATEGY}",
             "type": ["integer", "number"],
             "minimum": -1,
         },
