@@ -8,8 +8,9 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 import ccxt
 import pytest
 from numpy import nan
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
 from freqtrade.exceptions import (
     ConfigurationError,
@@ -323,6 +324,22 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     # Patch to see if this will pass if the values are in the ft dict
     ex._ft_has.update({"order_time_in_force": ["GTC", "FOK", "IOC"]})
     ex.validate_order_time_in_force(tif2)
+
+
+def test_validate_orderflow(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    # Test bybit - as it doesn't support historic trades data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="bybit")
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+    ex.validate_orderflow({"use_public_trades": False})
+
+    with pytest.raises(ConfigurationError, match=r"Trade data not available for.*"):
+        ex.validate_orderflow({"use_public_trades": True})
+
+    # Binance supports orderflow.
+    ex = get_patched_exchange(mocker, default_conf, exchange="binance")
+    ex.validate_orderflow({"use_public_trades": False})
+    ex.validate_orderflow({"use_public_trades": True})
 
 
 @pytest.mark.parametrize(
@@ -2369,6 +2386,163 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
         assert log_has_re(r"Cannot download \(IOTA\/ETH, 3m\).*", caplog)
     else:
         assert len(res) == 1
+
+
+@pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.SPOT])
+def test_refresh_latest_trades(
+    mocker, default_conf, caplog, candle_type, tmp_path, time_machine
+) -> None:
+    time_machine.move_to(dt_now(), tick=False)
+    trades = [
+        {
+            # unix timestamp ms
+            "timestamp": dt_ts(dt_now() - timedelta(minutes=5)),
+            "amount": 16.512,
+            "cost": 10134.07488,
+            "fee": None,
+            "fees": [],
+            "id": "354669639",
+            "order": None,
+            "price": 613.74,
+            "side": "sell",
+            "takerOrMaker": None,
+            "type": None,
+        },
+        {
+            "timestamp": dt_ts(),  # unix timestamp ms
+            "amount": 12.512,
+            "cost": 1000,
+            "fee": None,
+            "fees": [],
+            "id": "354669640",
+            "order": None,
+            "price": 613.84,
+            "side": "buy",
+            "takerOrMaker": None,
+            "type": None,
+        },
+    ]
+
+    caplog.set_level(logging.DEBUG)
+    use_trades_conf = default_conf
+    use_trades_conf["exchange"]["use_public_trades"] = True
+    use_trades_conf["datadir"] = tmp_path
+    use_trades_conf["orderflow"] = {"max_candles": 1500}
+    exchange = get_patched_exchange(mocker, use_trades_conf)
+    exchange._api_async.fetch_trades = get_mock_coro(trades)
+    exchange._ft_has["exchange_has_overrides"]["fetchTrades"] = True
+
+    pairs = [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
+    # empty dicts
+    assert not exchange._trades
+    res = exchange.refresh_latest_trades(pairs, cache=False)
+    # No caching
+    assert not exchange._trades
+
+    assert len(res) == len(pairs)
+    assert exchange._api_async.fetch_trades.call_count == 4
+    exchange._api_async.fetch_trades.reset_mock()
+
+    exchange.required_candle_call_count = 2
+    res = exchange.refresh_latest_trades(pairs)
+    assert len(res) == len(pairs)
+
+    assert log_has(f"Refreshing TRADES data for {len(pairs)} pairs", caplog)
+    assert exchange._trades
+    assert exchange._api_async.fetch_trades.call_count == 4
+    exchange._api_async.fetch_trades.reset_mock()
+    for pair in pairs:
+        assert isinstance(exchange.trades(pair), DataFrame)
+        assert len(exchange.trades(pair)) > 0
+
+        # trades function should return a different object on each call
+        # if copy is "True"
+        assert exchange.trades(pair) is not exchange.trades(pair)
+        assert exchange.trades(pair) is not exchange.trades(pair, copy=True)
+        assert exchange.trades(pair, copy=True) is not exchange.trades(pair, copy=True)
+        assert exchange.trades(pair, copy=False) is exchange.trades(pair, copy=False)
+
+        # test caching
+        ohlcv = [
+            [
+                dt_ts(dt_now() - timedelta(minutes=5)),  # unix timestamp ms
+                1,  # open
+                2,  # high
+                3,  # low
+                4,  # close
+                5,  # volume (in quote currency)
+            ],
+            [
+                dt_ts(),  # unix timestamp ms
+                3,  # open
+                1,  # high
+                4,  # low
+                6,  # close
+                5,  # volume (in quote currency)
+            ],
+        ]
+        cols = DEFAULT_DATAFRAME_COLUMNS
+        trades_df = DataFrame(ohlcv, columns=cols)
+
+        trades_df["date"] = to_datetime(trades_df["date"], unit="ms", utc=True)
+        trades_df["date"] = trades_df["date"].apply(lambda date: timeframe_to_prev_date("5m", date))
+        exchange._klines[pair] = trades_df
+    res = exchange.refresh_latest_trades(
+        [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
+    )
+    assert len(res) == 0
+    assert exchange._api_async.fetch_trades.call_count == 0
+    caplog.clear()
+
+    # Reset refresh times
+    for pair in pairs:
+        # test caching with "expired" candle
+        trades = [
+            {
+                # unix timestamp ms
+                "timestamp": dt_ts(exchange._klines[pair].iloc[-1].date - timedelta(minutes=5)),
+                "amount": 16.512,
+                "cost": 10134.07488,
+                "fee": None,
+                "fees": [],
+                "id": "354669639",
+                "order": None,
+                "price": 613.74,
+                "side": "sell",
+                "takerOrMaker": None,
+                "type": None,
+            }
+        ]
+        trades_df = DataFrame(trades)
+        trades_df["date"] = to_datetime(trades_df["timestamp"], unit="ms", utc=True)
+        exchange._trades[pair] = trades_df
+    res = exchange.refresh_latest_trades(
+        [("IOTA/USDT:USDT", "5m", candle_type), ("XRP/USDT:USDT", "5m", candle_type)]
+    )
+    assert len(res) == len(pairs)
+
+    assert exchange._api_async.fetch_trades.call_count == 4
+
+    # cache - but disabled caching
+    exchange._api_async.fetch_trades.reset_mock()
+    exchange.required_candle_call_count = 1
+
+    pairlist = [
+        ("IOTA/ETH", "5m", candle_type),
+        ("XRP/ETH", "5m", candle_type),
+        ("XRP/ETH", "1d", candle_type),
+    ]
+    res = exchange.refresh_latest_trades(pairlist, cache=False)
+    assert len(res) == 3
+    assert exchange._api_async.fetch_trades.call_count == 6
+
+    # Test the same again, should NOT return from cache!
+    exchange._api_async.fetch_trades.reset_mock()
+    res = exchange.refresh_latest_trades(pairlist, cache=False)
+    assert len(res) == 3
+    assert exchange._api_async.fetch_trades.call_count == 6
+    exchange._api_async.fetch_trades.reset_mock()
+    caplog.clear()
 
 
 @pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])

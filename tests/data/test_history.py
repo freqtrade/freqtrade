@@ -151,9 +151,7 @@ def test_load_data_with_new_pair_1min(
     )
     load_pair_history(datadir=tmp_path, timeframe="1m", pair="MEME/BTC", candle_type=candle_type)
     assert file.is_file()
-    assert log_has_re(
-        r'\(0/1\) - Download history data for "MEME/BTC", 1m, ' r"spot and store in .*", caplog
-    )
+    assert log_has_re(r'Download history data for "MEME/BTC", 1m, ' r"spot and store in .*", caplog)
 
 
 def test_testdata_path(testdatadir) -> None:
@@ -677,7 +675,7 @@ def test_download_trades_history(
     assert not _download_trades_history(
         data_handler=data_handler, exchange=exchange, pair="ETH/BTC", trading_mode=TradingMode.SPOT
     )
-    assert log_has_re('Failed to download historic trades for pair: "ETH/BTC".*', caplog)
+    assert log_has_re('Failed to download and store historic trades for pair: "ETH/BTC".*', caplog)
 
     file2 = tmp_path / "XRP_ETH-trades.json.gz"
     copyfile(testdatadir / file2.name, file2)

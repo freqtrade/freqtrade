@@ -614,6 +614,7 @@ def get_default_conf(testdatadir):
         "internals": {},
         "export": "none",
         "dataformat_ohlcv": "feather",
+        "dataformat_trades": "feather",
         "runmode": "dry_run",
         "candle_type_def": CandleType.SPOT,
     }

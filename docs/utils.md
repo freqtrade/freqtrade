@@ -488,7 +488,7 @@ freqtrade test-pairlist --config config.json --quote USDT BTC
 
 `freqtrade convert-db` can be used to convert your database from one system to another (sqlite -> postgres, postgres -> other postgres), migrating all trades, orders and Pairlocks.
 
-Please refer to the [SQL cheatsheet](sql_cheatsheet.md#use-a-different-database-system) to learn about requirements for different database systems.
+Please refer to the [corresponding documentation](advanced-setup.md#use-a-different-database-system) to learn about requirements for different database systems.
 
 ```
 usage: freqtrade convert-db [-h] [--db-url PATH] [--db-url-from PATH]

@@ -5,10 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
 import rapidjson
-import tabulate
-from colorama import Fore, Style
 from pandas import isna, json_normalize
 
 from freqtrade.constants import FTHYPT_FILEVERSION, Config
@@ -16,8 +13,6 @@ from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_dict, safe_value_fallback2
 from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
-from freqtrade.optimize.optimize_reports import generate_wins_draws_losses
-from freqtrade.util import fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -356,175 +351,6 @@ class HyperoptTools:
             + f"{results['results_explanation']} "
             + f"Objective: {results['loss']:.5f}"
         )
-
-    @staticmethod
-    def prepare_trials_columns(trials: pd.DataFrame) -> pd.DataFrame:
-        trials["Best"] = ""
-
-        if "results_metrics.winsdrawslosses" not in trials.columns:
-            # Ensure compatibility with older versions of hyperopt results
-            trials["results_metrics.winsdrawslosses"] = "N/A"
-
-        has_account_drawdown = "results_metrics.max_drawdown_account" in trials.columns
-        if not has_account_drawdown:
-            # Ensure compatibility with older versions of hyperopt results
-            trials["results_metrics.max_drawdown_account"] = None
-        if "is_random" not in trials.columns:
-            trials["is_random"] = False
-
-        # New mode, using backtest result for metrics
-        trials["results_metrics.winsdrawslosses"] = trials.apply(
-            lambda x: generate_wins_draws_losses(
-                x["results_metrics.wins"], x["results_metrics.draws"], x["results_metrics.losses"]
-            ),
-            axis=1,
-        )
-
-        trials = trials[
-            [
-                "Best",
-                "current_epoch",
-                "results_metrics.total_trades",
-                "results_metrics.winsdrawslosses",
-                "results_metrics.profit_mean",
-                "results_metrics.profit_total_abs",
-                "results_metrics.profit_total",
-                "results_metrics.holding_avg",
-                "results_metrics.max_drawdown_account",
-                "results_metrics.max_drawdown_abs",
-                "loss",
-                "is_initial_point",
-                "is_random",
-                "is_best",
-            ]
-        ]
-
-        trials.columns = [
-            "Best",
-            "Epoch",
-            "Trades",
-            " Win  Draw  Loss  Win%",
-            "Avg profit",
-            "Total profit",
-            "Profit",
-            "Avg duration",
-            "max_drawdown_account",
-            "max_drawdown_abs",
-            "Objective",
-            "is_initial_point",
-            "is_random",
-            "is_best",
-        ]
-
-        return trials
-
-    @staticmethod
-    def get_result_table(
-        config: Config,
-        results: list,
-        total_epochs: int,
-        highlight_best: bool,
-        print_colorized: bool,
-        remove_header: int,
-    ) -> str:
-        """
-        Log result table
-        """
-        if not results:
-            return ""
-
-        tabulate.PRESERVE_WHITESPACE = True
-        trials = json_normalize(results, max_level=1)
-
-        trials = HyperoptTools.prepare_trials_columns(trials)
-
-        trials["is_profit"] = False
-        trials.loc[trials["is_initial_point"] | trials["is_random"], "Best"] = "*     "
-        trials.loc[trials["is_best"], "Best"] = "Best"
-        trials.loc[
-            (trials["is_initial_point"] | trials["is_random"]) & trials["is_best"], "Best"
-        ] = "* Best"
-        trials.loc[trials["Total profit"] > 0, "is_profit"] = True
-        trials["Trades"] = trials["Trades"].astype(str)
-        # perc_multi = 1 if legacy_mode else 100
-        trials["Epoch"] = trials["Epoch"].apply(
-            lambda x: "{}/{}".format(str(x).rjust(len(str(total_epochs)), " "), total_epochs)
-        )
-        trials["Avg profit"] = trials["Avg profit"].apply(
-            lambda x: f"{x:,.2%}".rjust(7, " ") if not isna(x) else "--".rjust(7, " ")
-        )
-        trials["Avg duration"] = trials["Avg duration"].apply(
-            lambda x: (
-                f"{x:,.1f} m".rjust(7, " ")
-                if isinstance(x, float)
-                else f"{x}"
-                if not isna(x)
-                else "--".rjust(7, " ")
-            )
-        )
-        trials["Objective"] = trials["Objective"].apply(
-            lambda x: f"{x:,.5f}".rjust(8, " ") if x != 100000 else "N/A".rjust(8, " ")
-        )
-
-        stake_currency = config["stake_currency"]
-
-        trials["Max Drawdown (Acct)"] = trials.apply(
-            lambda x: (
-                "{} {}".format(
-                    fmt_coin(x["max_drawdown_abs"], stake_currency, keep_trailing_zeros=True),
-                    (f"({x['max_drawdown_account']:,.2%})").rjust(10, " "),
-                ).rjust(25 + len(stake_currency))
-                if x["max_drawdown_account"] != 0.0
-                else "--".rjust(25 + len(stake_currency))
-            ),
-            axis=1,
-        )
-
-        trials = trials.drop(columns=["max_drawdown_abs", "max_drawdown_account"])
-
-        trials["Profit"] = trials.apply(
-            lambda x: (
-                "{} {}".format(
-                    fmt_coin(x["Total profit"], stake_currency, keep_trailing_zeros=True),
-                    f"({x['Profit']:,.2%})".rjust(10, " "),
-                ).rjust(25 + len(stake_currency))
-                if x["Total profit"] != 0.0
-                else "--".rjust(25 + len(stake_currency))
-            ),
-            axis=1,
-        )
-        trials = trials.drop(columns=["Total profit"])
-
-        if print_colorized:
-            trials2 = trials.astype(str)
-            for i in range(len(trials)):
-                if trials.loc[i]["is_profit"]:
-                    for j in range(len(trials.loc[i]) - 3):
-                        trials2.iat[i, j] = f"{Fore.GREEN}{str(trials.iloc[i, j])}{Fore.RESET}"
-                if trials.loc[i]["is_best"] and highlight_best:
-                    for j in range(len(trials.loc[i]) - 3):
-                        trials2.iat[i, j] = (
-                            f"{Style.BRIGHT}{str(trials.iloc[i, j])}{Style.RESET_ALL}"
-                        )
-            trials = trials2
-            del trials2
-        trials = trials.drop(columns=["is_initial_point", "is_best", "is_profit", "is_random"])
-        if remove_header > 0:
-            table = tabulate.tabulate(
-                trials.to_dict(orient="list"), tablefmt="orgtbl", headers="keys", stralign="right"
-            )
-
-            table = table.split("\n", remove_header)[remove_header]
-        elif remove_header < 0:
-            table = tabulate.tabulate(
-                trials.to_dict(orient="list"), tablefmt="psql", headers="keys", stralign="right"
-            )
-            table = "\n".join(table.split("\n")[0:remove_header])
-        else:
-            table = tabulate.tabulate(
-                trials.to_dict(orient="list"), tablefmt="psql", headers="keys", stralign="right"
-            )
-        return table
 
     @staticmethod
     def export_csv_file(config: Config, results: list, csv_file: str) -> None:
