@@ -16,6 +16,7 @@ from freqtrade.exceptions import ConfigurationError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.util import print_rich_table
 from freqtrade.util.migrations import migrate_data
 
 
@@ -119,8 +120,6 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    from tabulate import tabulate
-
     from freqtrade.data.history import get_datahandler
 
     dhc = get_datahandler(config["datadir"], config["dataformat_ohlcv"])
@@ -131,8 +130,7 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     if args["pairs"]:
         paircombs = [comb for comb in paircombs if comb[0] in args["pairs"]]
-
-    print(f"Found {len(paircombs)} pair / timeframe combinations.")
+    title = f"Found {len(paircombs)} pair / timeframe combinations."
     if not config.get("show_timerange"):
         groupedpair = defaultdict(list)
         for pair, timeframe, candle_type in sorted(
@@ -141,40 +139,35 @@ def start_list_data(args: Dict[str, Any]) -> None:
             groupedpair[(pair, candle_type)].append(timeframe)
 
         if groupedpair:
-            print(
-                tabulate(
-                    [
-                        (pair, ", ".join(timeframes), candle_type)
-                        for (pair, candle_type), timeframes in groupedpair.items()
-                    ],
-                    headers=("Pair", "Timeframe", "Type"),
-                    tablefmt="psql",
-                    stralign="right",
-                )
+            print_rich_table(
+                [
+                    (pair, ", ".join(timeframes), candle_type)
+                    for (pair, candle_type), timeframes in groupedpair.items()
+                ],
+                ("Pair", "Timeframe", "Type"),
+                title,
+                table_kwargs={"min_width": 50},
             )
     else:
         paircombs1 = [
             (pair, timeframe, candle_type, *dhc.ohlcv_data_min_max(pair, timeframe, candle_type))
             for pair, timeframe, candle_type in paircombs
         ]
-
-        print(
-            tabulate(
-                [
-                    (
-                        pair,
-                        timeframe,
-                        candle_type,
-                        start.strftime(DATETIME_PRINT_FORMAT),
-                        end.strftime(DATETIME_PRINT_FORMAT),
-                        length,
-                    )
-                    for pair, timeframe, candle_type, start, end, length in sorted(
-                        paircombs1, key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
-                    )
-                ],
-                headers=("Pair", "Timeframe", "Type", "From", "To", "Candles"),
-                tablefmt="psql",
-                stralign="right",
-            )
+        print_rich_table(
+            [
+                (
+                    pair,
+                    timeframe,
+                    candle_type,
+                    start.strftime(DATETIME_PRINT_FORMAT),
+                    end.strftime(DATETIME_PRINT_FORMAT),
+                    str(length),
+                )
+                for pair, timeframe, candle_type, start, end, length in sorted(
+                    paircombs1, key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
+                )
+            ],
+            ("Pair", "Timeframe", "Type", "From", "To", "Candles"),
+            summary=title,
+            table_kwargs={"min_width": 50},
         )

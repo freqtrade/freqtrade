@@ -11,7 +11,7 @@ from cachetools import TTLCache
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
 
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class MarketCapPairList(IPairList):
     is_pairlist_generator = True
+    supports_backtesting = SupportsBacktesting.BIASED
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

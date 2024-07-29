@@ -73,22 +73,25 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
 
 ---
 
-### Saving prediction data
+### Saving backtesting prediction data
 
 To allow for tweaking your strategy (**not** the features!), FreqAI will automatically save the predictions during backtesting so that they can be reused for future backtests and live runs using the same `identifier` model. This provides a performance enhancement geared towards enabling **high-level hyperopting** of entry/exit criteria.
 
-An additional directory called `backtesting_predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder.
+An additional directory called `backtesting_predictions`, which contains all the predictions stored in `feather` format, will be created in the `unique-id` folder.
 
 To change your **features**, you **must** set a new `identifier` in the config to signal to FreqAI to train new models.
 
 To save the models generated during a particular backtest so that you can start a live deployment from one of them instead of training a new model, you must set `save_backtest_models` to `True` in the config.
+
+!!! Note
+    To ensure that the model can be reused, freqAI will call your strategy with a dataframe of length 1. 
+    If your strategy requires more data than this to generate the same features, you can't reuse backtest predictions for live deployment and need to update your `identifier` for each new backtest.
 
 ### Backtest live collected predictions
 
 FreqAI allow you to reuse live historic predictions through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse predictions generated in dry/run for comparison or other study.
 
 The `--timerange` parameter must not be informed, as it will be automatically calculated through the data in the historic predictions file.
-
 
 ### Downloading data to cover the full backtest period
 

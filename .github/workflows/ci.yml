@@ -80,6 +80,11 @@ jobs:
         # Allow failure for coveralls
         coveralls || true
 
+    - name: Run json schema extract
+      # This should be kept before the repository check to ensure that the schema is up-to-date
+      run: |
+        python build_helpers/extract_config_json_schema.py
+
     - name: Check for repository changes
       run: |
         if [ -n "$(git status --porcelain)" ]; then

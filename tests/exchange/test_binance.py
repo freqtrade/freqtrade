@@ -12,7 +12,7 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
 @pytest.mark.parametrize(
-    "side,type,time_in_force,expected",
+    "side,order_type,time_in_force,expected",
     [
         ("buy", "limit", "gtc", {"timeInForce": "GTC"}),
         ("buy", "limit", "IOC", {"timeInForce": "IOC"}),
@@ -22,9 +22,9 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
         ("sell", "market", "PO", {}),
     ],
 )
-def test__get_params_binance(default_conf, mocker, side, type, time_in_force, expected):
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange._get_params(side, type, 1, False, time_in_force) == expected
+def test__get_params_binance(default_conf, mocker, side, order_type, time_in_force, expected):
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+    assert exchange._get_params(side, order_type, 1, False, time_in_force) == expected
 
 
 @pytest.mark.parametrize("trademode", [TradingMode.FUTURES, TradingMode.SPOT])
@@ -159,7 +159,7 @@ def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     "sl1,sl2,sl3,side", [(1501, 1499, 1501, "sell"), (1499, 1501, 1499, "buy")]
 )
 def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     order = {
         "type": "stop_loss_limit",
         "price": 1500,
@@ -378,7 +378,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
     default_conf["dry_run"] = False
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="binance")
     exchange.fill_leverage_tiers()
 
     assert exchange._leverage_tiers == {
@@ -497,7 +497,7 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     api_mock = MagicMock()
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="binance")
     exchange.fill_leverage_tiers()
     assert len(exchange._leverage_tiers.keys()) > 100
     for key, value in leverage_tiers.items():
@@ -518,10 +518,10 @@ def test_additional_exchange_init_binance(default_conf, mocker):
         OperationalException,
         match=r"Hedge Mode is not supported.*\nMulti-Asset Mode is not supported.*",
     ):
-        get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+        get_patched_exchange(mocker, default_conf, exchange="binance", api_mock=api_mock)
     api_mock.fapiPrivateGetPositionSideDual = MagicMock(return_value={"dualSidePosition": False})
     api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": False})
-    exchange = get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance", api_mock=api_mock)
     assert exchange
     ccxt_exceptionhandlers(
         mocker,
@@ -541,7 +541,7 @@ def test__set_leverage_binance(mocker, default_conf):
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="binance")
     exchange._set_leverage(3.2, "BTC/USDT:USDT")
     assert api_mock.set_leverage.call_count == 1
     # Leverage is rounded to 3.
@@ -574,7 +574,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
         ]
     ]
 
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     # Monkey-patch async function
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
@@ -600,7 +600,7 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
 
 
 @pytest.mark.parametrize(
-    "pair,nominal_value,mm_ratio,amt",
+    "pair,notional_value,mm_ratio,amt",
     [
         ("XRP/USDT:USDT", 0.0, 0.025, 0),
         ("BNB/USDT:USDT", 100.0, 0.0065, 0),
@@ -615,12 +615,12 @@ def test_get_maintenance_ratio_and_amt_binance(
     mocker,
     leverage_tiers,
     pair,
-    nominal_value,
+    notional_value,
     mm_ratio,
     amt,
 ):
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     exchange._leverage_tiers = leverage_tiers
-    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
+    (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, notional_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)

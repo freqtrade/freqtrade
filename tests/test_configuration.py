@@ -27,7 +27,7 @@ from freqtrade.configuration.load_config import (
 )
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from tests.conftest import (
     CURRENT_TEST_STRATEGY,
     log_has,
@@ -1082,6 +1082,29 @@ def test__validate_consumers(default_conf, caplog) -> None:
     )
     validate_config_consistency(conf)
     assert log_has_re("To receive best performance with external data.*", caplog)
+
+
+def test__validate_orderflow(default_conf) -> None:
+    conf = deepcopy(default_conf)
+    conf["exchange"]["use_public_trades"] = True
+    with pytest.raises(
+        ConfigurationError,
+        match="Orderflow is a required configuration key when using public trades.",
+    ):
+        validate_config_consistency(conf)
+
+    conf.update(
+        {
+            "orderflow": {
+                "scale": 0.5,
+                "stacked_imbalance_range": 3,
+                "imbalance_volume": 100,
+                "imbalance_ratio": 3,
+            }
+        }
+    )
+    # Should pass.
+    validate_config_consistency(conf)
 
 
 def test_load_config_test_comments() -> None:

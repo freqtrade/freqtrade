@@ -1,5 +1,4 @@
 ---
-version: '3'
 services:
   ft_jupyterlab:
     build:

@@ -915,7 +915,7 @@ def test_execute_entry(
         default_conf_usdt["margin_mode"] = margin_mode
     mocker.patch("freqtrade.exchange.gate.Gate.validate_ordertypes")
     patch_RPCManager(mocker)
-    patch_exchange(mocker, id=exchange_name)
+    patch_exchange(mocker, exchange=exchange_name)
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
@@ -3809,6 +3809,9 @@ def test_get_real_amount_quote_dust(
 
 def test_get_real_amount_no_trade(default_conf_usdt, buy_order_fee, caplog, mocker, fee):
     mocker.patch(f"{EXMS}.get_trades_for_order", return_value=[])
+
+    # Invalid nested trade object
+    buy_order_fee["trades"] = [{"amount": None, "cost": 22}]
 
     amount = buy_order_fee["amount"]
     trade = Trade(

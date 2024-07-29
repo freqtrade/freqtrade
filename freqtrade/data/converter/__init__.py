@@ -8,6 +8,7 @@ from freqtrade.data.converter.converter import (
     trim_dataframe,
     trim_dataframes,
 )
+from freqtrade.data.converter.orderflow import populate_dataframe_with_trades
 from freqtrade.data.converter.trade_converter import (
     convert_trades_format,
     convert_trades_to_ohlcv,
@@ -30,6 +31,7 @@ __all__ = [
     "trim_dataframes",
     "convert_trades_format",
     "convert_trades_to_ohlcv",
+    "populate_dataframe_with_trades",
     "trades_convert_types",
     "trades_df_remove_duplicates",
     "trades_dict_to_list",

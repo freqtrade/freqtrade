@@ -14,4 +14,5 @@ class ValidExchangesType(TypedDict):
     valid: bool
     supported: bool
     comment: str
+    dex: bool
     trade_modes: List[TradeModeType]

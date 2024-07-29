@@ -204,9 +204,10 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.uid` | API uid to use for the exchange. Only required when you are in production mode and for exchanges that use uid for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Supports regex pairs as `.*/BTC`. Not used by VolumePairList. [More information](plugins.md#pairlists-and-pairlist-handlers). <br> **Datatype:** List
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting. [More information](plugins.md#pairlists-and-pairlist-handlers). <br> **Datatype:** List
-| `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for additional ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation). Please avoid adding exchange secrets here (use the dedicated fields instead), as they may be contained in logs. <br> **Datatype:** Dict
-| `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
-| `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for additional ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation). Please avoid adding exchange secrets here (use the dedicated fields instead), as they may be contained in logs. <br> **Datatype:** Dict
+| `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation) <br> **Datatype:** Dict
+| `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation) <br> **Datatype:** Dict
+| `exchange.enable_ws` | Enable the usage of Websockets for the exchange. <br>[More information](#consuming-exchange-websockets).<br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
 | `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`*<br> **Datatype:** Boolean
 | `exchange.skip_open_order_update` | Skips open order updates on startup should the exchange cause problems. Only relevant in live conditions.<br>*Defaults to `false`*<br> **Datatype:** Boolean
@@ -408,6 +409,8 @@ For example if your position adjustment assumes it can do 2 additional buys with
 Or another example if your position adjustment assumes it can do 1 additional buy with 3x the original stake amount then `custom_stake_amount` should return 25% of proposed stake amount and leave 75% for possible later position adjustments.
 
 --8<-- "includes/pricing.md"
+
+## Further Configuration details
 
 ### Understand minimal_roi
 
@@ -614,6 +617,30 @@ Freqtrade supports both Demo and Pro coingecko API keys.
 The Coingecko API key is NOT required for the bot to function correctly.
 It is only used for the conversion of coin to fiat in the Telegram reports, which usually also work without API key.
 
+## Consuming exchange Websockets
+
+Freqtrade can consume websockets through ccxt.pro.
+
+Freqtrade aims ensure data is available at all times.
+Should the websocket connection fail (or be disabled), the bot will fall back to REST API calls.
+
+Should you experience problems you suspect are caused by websockets, you can disable these via the setting `exchange.enable_ws`, which defaults to true.
+
+```jsonc
+"exchange": {
+    // ...
+    "enable_ws": false,
+    // ...
+}
+```
+
+Should you be required to use a proxy, please refer to the [proxy section](#using-proxy-with-freqtrade) for more information.
+
+!!! Info "Rollout"
+    We're implementing this out slowly, ensuring stability of your bots.
+    Currently, usage is limited to ohlcv data streams.
+    It's also limited to a few exchanges, with new exchanges being added on an ongoing basis.
+
 ## Using Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will
@@ -650,9 +677,9 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 * API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.
 * Wallets (`/balance`) are simulated based on `dry_run_wallet`.
 * Orders are simulated, and will not be posted to the exchange.
-* Market orders fill based on orderbook volume the moment the order is placed.
+* Market orders fill based on orderbook volume the moment the order is placed, with a maximum slippage of 5%.
 * Limit orders fill once the price reaches the defined level - or time out based on `unfilledtimeout` settings.
-* Limit orders will be converted to market orders if they cross the price by more than 1%.
+* Limit orders will be converted to market orders if they cross the price by more than 1%, and will be filled immediately based regular market order rules (see point about Market orders above).
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
 * Open orders (not trades, which are stored in the database) are kept open after bot restarts, with the assumption that they were not filled while being offline.
 
@@ -702,7 +729,7 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
     **NEVER** share your private configuration file or your exchange keys with anyone!
 
-### Using proxy with Freqtrade
+## Using a proxy with Freqtrade
 
 To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
 This will have the proxy settings applied to everything (telegram, coingecko, ...) **except** for exchange requests.
@@ -713,7 +740,7 @@ export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
 
-#### Proxy exchange requests
+### Proxy exchange requests
 
 To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.
 
@@ -722,6 +749,7 @@ To use a proxy for exchange connections - you will have to define the proxies as
   "exchange": {
     "ccxt_config": {
       "httpsProxy": "http://addr:port",
+      "wsProxy": "http://addr:port",
     }
   }
 }

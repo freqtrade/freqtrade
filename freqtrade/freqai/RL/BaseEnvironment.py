@@ -52,7 +52,7 @@ class BaseEnvironment(gym.Env):
         reward_kwargs: dict = {},
         window_size=10,
         starting_point=True,
-        id: str = "baseenv-1",
+        id: str = "baseenv-1",  # noqa: A002
         seed: int = 1,
         config: dict = {},
         live: bool = False,
