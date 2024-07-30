@@ -7,6 +7,6 @@ scikit-learn==1.5.1
 joblib==1.4.2
 catboost==1.2.5; 'arm' not in platform_machine
 lightgbm==4.5.0
-xgboost==2.0.3
+xgboost==2.1.0
 tensorboard==2.17.0
 datasieve==0.1.7
