@@ -1,30 +1,30 @@
 """
-Change PairList provider
+Percent Change PairList provider
 
 Provides dynamic pair list based on trade change
-sorted based on percentage change in volume over a
-defined period
+sorted based on percentage change in price over a
+defined period or as coming from ticker
 """
+
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache
+from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.types import Ticker, Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util import dt_now, format_ms_time
 
 
 logger = logging.getLogger(__name__)
 
-SORT_VALUES = ["rolling_volume_change"]
 
-
-class PercentVolumeChangePairList(IPairList):
+class PercentChangePairList(IPairList):
     is_pairlist_generator = True
     supports_backtesting = SupportsBacktesting.NO
 
@@ -39,16 +39,14 @@ class PercentVolumeChangePairList(IPairList):
 
         self._stake_currency = self._config["stake_currency"]
         self._number_pairs = self._pairlistconfig["number_assets"]
-        self._sort_key: Literal["rolling_volume_change"] = self._pairlistconfig.get(
-            "sort_key", "rolling_volume_change"
-        )
-        self._min_value = self._pairlistconfig.get("min_value", 0)
+        self._min_value = self._pairlistconfig.get("min_value", None)
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._lookback_days = self._pairlistconfig.get("lookback_days", 0)
         self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
         self._lookback_period = self._pairlistconfig.get("lookback_period", 0)
+        self._sort_direction: Optional[str] = self._pairlistconfig.get("sort_direction", "desc")
         self._def_candletype = self._config["candle_type_def"]
 
         if (self._lookback_days > 0) & (self._lookback_period > 0):
@@ -79,23 +77,18 @@ class PercentVolumeChangePairList(IPairList):
 
         if not self._use_range and not (
             self._exchange.exchange_has("fetchTickers")
-            and self._exchange.get_option("tickers_have_change")
+            and self._exchange.get_option("tickers_have_percentage")
         ):
             raise OperationalException(
                 "Exchange does not support dynamic whitelist in this configuration. "
-                "Please edit your config and either remove PercentVolumeChangePairList, "
+                "Please edit your config and either remove PercentChangePairList, "
                 "or switch to using candles. and restart the bot."
             )
-
-        if not self._validate_keys(self._sort_key):
-            raise OperationalException(f"key {self._sort_key} not in {SORT_VALUES}")
 
         candle_limit = self._exchange.ohlcv_candle_limit(
             self._lookback_timeframe, self._config["candle_type_def"]
         )
-        if self._lookback_period < 4:
-            raise OperationalException("ChangeFilter requires lookback_period to be >= 4")
-        self.log_once(f"Candle limit is {candle_limit}", logger.info)
+
         if self._lookback_period > candle_limit:
             raise OperationalException(
                 "ChangeFilter requires lookback_period to not "
@@ -111,19 +104,15 @@ class PercentVolumeChangePairList(IPairList):
         """
         return not self._use_range
 
-    def _validate_keys(self, key):
-        return key in SORT_VALUES
-
     def short_desc(self) -> str:
         """
         Short whitelist method description - used for startup-messages
         """
-        return (f"{self.name} - top {self._pairlistconfig['number_assets']} percent "
-                f"volume change pairs.")
+        return f"{self.name} - top {self._pairlistconfig['number_assets']} percent change pairs."
 
     @staticmethod
     def description() -> str:
-        return "Provides dynamic pair list based on percentage volume change."
+        return "Provides dynamic pair list based on percentage change."
 
     @staticmethod
     def available_parameters() -> Dict[str, PairlistParameter]:
@@ -134,16 +123,9 @@ class PercentVolumeChangePairList(IPairList):
                 "description": "Number of assets",
                 "help": "Number of assets to use from the pairlist",
             },
-            "sort_key": {
-                "type": "option",
-                "default": "rolling_volume_change",
-                "options": SORT_VALUES,
-                "description": "Sort key",
-                "help": "Sort key to use for sorting the pairlist.",
-            },
             "min_value": {
                 "type": "number",
-                "default": 0,
+                "default": None,
                 "description": "Minimum value",
                 "help": "Minimum value to use for filtering the pairlist.",
             },
@@ -153,12 +135,14 @@ class PercentVolumeChangePairList(IPairList):
                 "description": "Maximum value",
                 "help": "Maximum value to use for filtering the pairlist.",
             },
-            "refresh_period": {
-                "type": "number",
-                "default": 1800,
-                "description": "Refresh period",
-                "help": "Refresh period in seconds",
+            "sort_direction": {
+                "type": "option",
+                "default": "desc",
+                "options": ["", "asc", "desc"],
+                "description": "Sort pairlist",
+                "help": "Sort Pairlist ascending or descending by rate of change.",
             },
+            **IPairList.refresh_period_parameter(),
             "lookback_days": {
                 "type": "number",
                 "default": 0,
@@ -185,8 +169,6 @@ class PercentVolumeChangePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
-        # Generate dynamic whitelist
-        # Must always run if this pairlist is not the first in the list.
         pairlist = self._pair_cache.get("pairlist")
         if pairlist:
             # Item found - no refresh necessary
@@ -209,7 +191,7 @@ class PercentVolumeChangePairList(IPairList):
                     for k, v in tickers.items()
                     if (
                         self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v.get(self._sort_key) is not None)
+                        and (self._use_range or v.get("percentage") is not None)
                         and v["symbol"] in _pairlist
                     )
                 ]
@@ -230,83 +212,25 @@ class PercentVolumeChangePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
-        self.log_once(f"Filter ticker is self use range {pairlist}", logger.warning)
+        filtered_tickers: List[Dict[str, Any]] = [{"symbol": k} for k in pairlist]
         if self._use_range:
-            filtered_tickers: List[Dict[str, Any]] = [{"symbol": k} for k in pairlist]
-
-            # get lookback period in ms, for exchange ohlcv fetch
-            since_ms = (
-                int(
-                    timeframe_to_prev_date(
-                        self._lookback_timeframe,
-                        dt_now()
-                        + timedelta(
-                            minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min
-                        ),
-                    ).timestamp()
-                )
-                * 1000
-            )
-
-            to_ms = (
-                int(
-                    timeframe_to_prev_date(
-                        self._lookback_timeframe, dt_now() - timedelta(minutes=self._tf_in_min)
-                    ).timestamp()
-                )
-                * 1000
-            )
-
-            # todo: utc date output for starting date
-            self.log_once(
-                f"Using change range of {self._lookback_period} candles, timeframe: "
-                f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
-                f"till {format_ms_time(to_ms)}",
-                logger.info,
-            )
-            needed_pairs: ListPairsWithTimeframes = [
-                (p, self._lookback_timeframe, self._def_candletype)
-                for p in [s["symbol"] for s in filtered_tickers]
-                if p not in self._pair_cache
-            ]
-
-            candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
-
-            for i, p in enumerate(filtered_tickers):
-                pair_candles = (
-                    candles[(p["symbol"], self._lookback_timeframe, self._def_candletype)]
-                    if (p["symbol"], self._lookback_timeframe, self._def_candletype) in candles
-                    else None
-                )
-
-                # in case of candle data calculate typical price and change for candle
-                if pair_candles is not None and not pair_candles.empty:
-                    pair_candles["rolling_volume_sum"] = (
-                        pair_candles["volume"].rolling(window=self._lookback_period).sum()
-                    )
-                    pair_candles["rolling_volume_change"] = (
-                        pair_candles["rolling_volume_sum"].pct_change() * 100
-                    )
-
-                    # ensure that a rolling sum over the lookback_period is built
-                    # if pair_candles contains more candles than lookback_period
-                    rolling_volume_change = pair_candles["rolling_volume_change"].fillna(0).iloc[-1]
-
-                    # replace change with a range change sum calculated above
-                    filtered_tickers[i]["rolling_volume_change"] = rolling_volume_change
-                    self.log_once(f"ticker {filtered_tickers[i]}", logger.info)
-                else:
-                    filtered_tickers[i]["rolling_volume_change"] = 0
+            # calculating using lookback_period
+            self.fetch_percent_change_from_lookback_period(filtered_tickers)
         else:
-            filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
+            # Fetching 24h change by default from supported exchange tickers
+            self.fetch_percent_change_from_tickers(filtered_tickers, tickers)
 
-        filtered_tickers = [v for v in filtered_tickers if v[self._sort_key] > self._min_value]
+        if self._min_value is not None:
+            filtered_tickers = [v for v in filtered_tickers if v["percentage"] > self._min_value]
         if self._max_value is not None:
-            filtered_tickers = [v for v in filtered_tickers if v[self._sort_key] < self._max_value]
+            filtered_tickers = [v for v in filtered_tickers if v["percentage"] < self._max_value]
 
-        sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[self._sort_key])
+        sorted_tickers = sorted(
+            filtered_tickers,
+            reverse=self._sort_direction == "desc",
+            key=lambda t: t["percentage"],
+        )
 
-        self.log_once(f"Sorted Tickers {sorted_tickers}", logger.info)
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s["symbol"] for s in sorted_tickers])
         pairs = self.verify_blacklist(pairs, logmethod=logger.info)
@@ -314,3 +238,92 @@ class PercentVolumeChangePairList(IPairList):
         pairs = pairs[: self._number_pairs]
 
         return pairs
+
+    def fetch_candles_for_lookback_period(
+        self, filtered_tickers: List[Dict[str, str]]
+    ) -> Dict[PairWithTimeframe, DataFrame]:
+        since_ms = (
+            int(
+                timeframe_to_prev_date(
+                    self._lookback_timeframe,
+                    dt_now()
+                    + timedelta(
+                        minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min
+                    ),
+                ).timestamp()
+            )
+            * 1000
+        )
+        to_ms = (
+            int(
+                timeframe_to_prev_date(
+                    self._lookback_timeframe, dt_now() - timedelta(minutes=self._tf_in_min)
+                ).timestamp()
+            )
+            * 1000
+        )
+        # todo: utc date output for starting date
+        self.log_once(
+            f"Using change range of {self._lookback_period} candles, timeframe: "
+            f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
+            f"till {format_ms_time(to_ms)}",
+            logger.info,
+        )
+        needed_pairs: ListPairsWithTimeframes = [
+            (p, self._lookback_timeframe, self._def_candletype)
+            for p in [s["symbol"] for s in filtered_tickers]
+            if p not in self._pair_cache
+        ]
+        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
+        return candles
+
+    def fetch_percent_change_from_lookback_period(self, filtered_tickers: List[Dict[str, Any]]):
+        # get lookback period in ms, for exchange ohlcv fetch
+        candles = self.fetch_candles_for_lookback_period(filtered_tickers)
+
+        for i, p in enumerate(filtered_tickers):
+            pair_candles = (
+                candles[(p["symbol"], self._lookback_timeframe, self._def_candletype)]
+                if (p["symbol"], self._lookback_timeframe, self._def_candletype) in candles
+                else None
+            )
+
+            # in case of candle data calculate typical price and change for candle
+            if pair_candles is not None and not pair_candles.empty:
+                current_close = pair_candles["close"].iloc[-1]
+                previous_close = pair_candles["close"].shift(self._lookback_period).iloc[-1]
+                pct_change = (
+                    ((current_close - previous_close) / previous_close) if previous_close > 0 else 0
+                )
+
+                # replace change with a range change sum calculated above
+                filtered_tickers[i]["percentage"] = pct_change
+            else:
+                filtered_tickers[i]["percentage"] = 0
+
+    def fetch_percent_change_from_tickers(self, filtered_tickers: List[Dict[str, Any]], tickers):
+        for i, p in enumerate(filtered_tickers):
+            # Filter out assets
+            if not self._validate_pair(
+                p["symbol"], tickers[p["symbol"]] if p["symbol"] in tickers else None
+            ):
+                filtered_tickers.remove(p)
+            else:
+                filtered_tickers[i]["percentage"] = tickers[p["symbol"]]["percentage"]
+
+    def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
+        """
+        Check if one price-step (pip) is > than a certain barrier.
+        :param pair: Pair that's currently validated
+        :param ticker: ticker dict as returned from ccxt.fetch_ticker
+        :return: True if the pair can stay, false if it should be removed
+        """
+        if not ticker or "percentage" not in ticker or ticker["percentage"] is None:
+            self.log_once(
+                f"Removed {pair} from whitelist, because "
+                "ticker['percentage'] is empty (Usually no trade in the last 24h).",
+                logger.info,
+            )
+            return False
+
+        return True

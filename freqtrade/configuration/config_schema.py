@@ -36,11 +36,6 @@ CONF_SCHEMA = {
             "type": ["integer", "number"],
             "minimum": -1,
         },
-        "new_pairs_days": {
-            "description": "Download data of new pairs for given number of days",
-            "type": "integer",
-            "default": 30,
-        },
         "timeframe": {
             "description": (
                 f"The timeframe to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). {__IN_STRATEGY}"
@@ -185,6 +180,7 @@ CONF_SCHEMA = {
             "type": "boolean",
             "default": False,
         },
+        # Lookahead analysis section
         "minimum_trade_amount": {
             "description": "Minimum amount for a trade - only used for lookahead-analysis",
             "type": "number",
@@ -501,6 +497,7 @@ CONF_SCHEMA = {
                 "required": ["method"],
             },
         },
+        # RPC section
         "telegram": {
             "description": "Telegram settings.",
             "type": "object",
@@ -701,6 +698,7 @@ CONF_SCHEMA = {
             },
             "required": ["enabled", "listen_ip_address", "listen_port", "username", "password"],
         },
+        # end of RPC section
         "db_url": {
             "description": "Database connection URL.",
             "type": "string",
@@ -734,7 +732,7 @@ CONF_SCHEMA = {
             "default": {},
             "properties": {
                 "process_throttle_secs": {
-                    "description": "Throttle time in seconds for processing.",
+                    "description": "Minimum loop duration for one bot iteration in seconds.",
                     "type": "integer",
                 },
                 "interval": {
@@ -761,6 +759,16 @@ CONF_SCHEMA = {
         },
         "position_adjustment_enable": {
             "description": f"Enable position adjustment. {__IN_STRATEGY}",
+            "type": "boolean",
+        },
+        # Download data section
+        "new_pairs_days": {
+            "description": "Download data of new pairs for given number of days",
+            "type": "integer",
+            "default": 30,
+        },
+        "download_trades": {
+            "description": "Download trades data by default (instead of ohlcv data).",
             "type": "boolean",
         },
         "max_entry_position_adjustment": {

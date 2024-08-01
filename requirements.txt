@@ -4,7 +4,7 @@ bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
-ccxt==4.3.65
+ccxt==4.3.68
 cryptography==43.0.0
 aiohttp==3.9.5
 SQLAlchemy==2.0.31
@@ -30,7 +30,7 @@ pyarrow==17.0.0; platform_machine != 'armv7l'
 py_find_1st==1.1.6
 
 # Load ticker files 30% faster
-python-rapidjson==1.18
+python-rapidjson==1.19
 # Properly format api responses
 orjson==3.10.6
 

@@ -1,4 +1,5 @@
 {
+    "$schema": "https://schema.freqtrade.io/schema.json",
     "max_open_trades": 5,
     "stake_currency": "EUR",
     "stake_amount": 10,
