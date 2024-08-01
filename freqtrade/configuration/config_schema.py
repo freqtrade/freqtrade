@@ -734,7 +734,7 @@ CONF_SCHEMA = {
             "default": {},
             "properties": {
                 "process_throttle_secs": {
-                    "description": "Throttle time in seconds for processing.",
+                    "description": "Minimum loop duration for one bot iteration in seconds.",
                     "type": "integer",
                 },
                 "interval": {
