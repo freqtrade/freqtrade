@@ -30,6 +30,12 @@ class TestCCXTExchangeWs:
         m_hist = mocker.spy(exch, "_async_get_historic_ohlcv")
         m_cand = mocker.spy(exch, "_async_get_candle_history")
 
+        while True:
+            # Don't start the test if we are too close to the end of the minute.
+            if dt_now().second < 50 and dt_now().second != 0:
+                break
+            sleep(1)
+
         res = exch.refresh_latest_ohlcv([pair_tf])
         assert m_cand.call_count == 1
 
