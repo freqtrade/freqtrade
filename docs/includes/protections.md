@@ -121,7 +121,7 @@ def protections(self):
 
 #### Cooldown Period
 
-`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`, or until the set time when using `unlock_at`) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
+`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`, or until the set time when using `unlock_at`) after exiting, avoiding a re-entry for this pair for `stop_duration` minutes.
 
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 

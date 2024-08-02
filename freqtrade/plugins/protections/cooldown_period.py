@@ -30,7 +30,7 @@ class CooldownPeriod(IProtection):
         """
         Get last trade for this pair
         """
-        look_back_until = date_now - timedelta(minutes=self._stop_duration)
+        look_back_until = date_now - timedelta(minutes=self._lookback_period)
         # filters = [
         #     Trade.is_open.is_(False),
         #     Trade.close_date > look_back_until,
