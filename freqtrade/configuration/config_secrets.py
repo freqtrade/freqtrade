@@ -14,12 +14,16 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
         return config
     keys_to_remove = [
         "exchange.key",
+        "exchange.api_key",
         "exchange.apiKey",
         "exchange.secret",
         "exchange.password",
         "exchange.uid",
+        "exchange.account_id",
         "exchange.accountId",
+        "exchange.wallet_address",
         "exchange.walletAddress",
+        "exchange.private_key",
         "exchange.privateKey",
         "telegram.token",
         "telegram.chat_id",

@@ -353,14 +353,18 @@ class Exchange:
             raise OperationalException(f"Exchange {name} is not supported by ccxt")
 
         ex_config = {
-            "apiKey": exchange_config.get("apiKey", exchange_config.get("key")),
+            "apiKey": exchange_config.get(
+                "api_key", exchange_config.get("apiKey", exchange_config.get("key"))
+            ),
             "secret": exchange_config.get("secret"),
             "password": exchange_config.get("password"),
             "uid": exchange_config.get("uid", ""),
-            "accountId": exchange_config.get("accountId", ""),
+            "accountId": exchange_config.get("account_id", exchange_config.get("accountId", "")),
             # DEX attributes:
-            "walletAddress": exchange_config.get("walletAddress"),
-            "privateKey": exchange_config.get("privateKey"),
+            "walletAddress": exchange_config.get(
+                "wallet_address", exchange_config.get("walletAddress")
+            ),
+            "privateKey": exchange_config.get("private_key", exchange_config.get("privateKey")),
         }
         if ccxt_kwargs:
             logger.info("Applying additional ccxt config: %s", ccxt_kwargs)
