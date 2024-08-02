@@ -423,6 +423,89 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machine):
+    default_conf["protections"] = [
+        {
+            "method": "CooldownPeriod",
+            "unlock_at": "05:00",
+        }
+    ]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to .*"
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair("XRP/BTC")
+
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+
+    start_dt = datetime(2024, 5, 2, 0, 30, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+
+    generate_mock_trade(
+        "XRP/BTC",
+        fee.return_value,
+        False,
+        exit_reason=ExitType.STOP_LOSS.value,
+        min_ago_open=20,
+        min_ago_close=10,
+    )
+
+    assert not freqtrade.protections.global_stop()
+    assert freqtrade.protections.stop_per_pair("XRP/BTC")
+    assert PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move time to "4:30"
+    time_machine.move_to(start_dt + timedelta(hours=4), tick=False)
+    assert PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move time to "past 5:00"
+    time_machine.move_to(start_dt + timedelta(hours=5), tick=False)
+    assert not PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Force rollover to the next day.
+    start_dt = datetime(2024, 5, 2, 22, 00, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+    generate_mock_trade(
+        "ETH/BTC",
+        fee.return_value,
+        False,
+        exit_reason=ExitType.ROI.value,
+        min_ago_open=20,
+        min_ago_close=10,
+    )
+
+    assert not freqtrade.protections.global_stop()
+    assert not PairLocks.is_pair_locked("ETH/BTC")
+    assert freqtrade.protections.stop_per_pair("ETH/BTC")
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+    # Move to 23:00
+    time_machine.move_to(start_dt + timedelta(hours=1), tick=False)
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 04:59 (should still be locked)
+    time_machine.move_to(start_dt + timedelta(hours=6, minutes=59), tick=False)
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 05:01 (should still be locked - it unlocks once the 05:00 candle stops at 05:05)
+    time_machine.move_to(start_dt + timedelta(hours=7, minutes=1), tick=False)
+
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 05:01 (unlocked).
+    time_machine.move_to(start_dt + timedelta(hours=7, minutes=5), tick=False)
+
+    assert not PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
