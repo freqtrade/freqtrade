@@ -90,7 +90,12 @@ def _store_backtest_analysis_data(
 
 
 def store_backtest_analysis_results(
-    recordfilename: Path, candles: Dict[str, Dict], trades: Dict[str, Dict], dtappendix: str
+    recordfilename: Path,
+    candles: Dict[str, Dict],
+    trades: Dict[str, Dict],
+    exited: Dict[str, Dict],
+    dtappendix: str,
 ) -> None:
     _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
     _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
+    _store_backtest_analysis_data(recordfilename, exited, dtappendix, "exited")

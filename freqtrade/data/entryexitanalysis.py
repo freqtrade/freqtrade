@@ -47,9 +47,12 @@ def _load_signal_candles(backtest_dir: Path):
     return _load_backtest_analysis_data(backtest_dir, "signals")
 
 
+def _load_exit_signal_candles(backtest_dir: Path):
+    return _load_backtest_analysis_data(backtest_dir, "exited")
+
+
 def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_candles):
-    analysed_trades_dict = {}
-    analysed_trades_dict[strategy_name] = {}
+    analysed_trades_dict = {strategy_name: {}}
 
     try:
         logger.info(f"Processing {strategy_name} : {len(pairlist)} pairs")
@@ -333,6 +336,7 @@ def process_entry_exit_reasons(config: Config):
 
             if trades is not None and not trades.empty:
                 signal_candles = _load_signal_candles(config["exportfilename"])
+                exit_signal_candles = _load_exit_signal_candles(config["exportfilename"])
 
                 rej_df = None
                 if do_rejected:
@@ -349,12 +353,33 @@ def process_entry_exit_reasons(config: Config):
                     config["exchange"]["pair_whitelist"], strategy_name, trades, signal_candles
                 )
 
+                exited_trades_dict = _process_candles_and_indicators(
+                    config["exchange"]["pair_whitelist"], strategy_name, trades, exit_signal_candles
+                )
+
                 res_df = prepare_results(
                     analysed_trades_dict,
                     strategy_name,
                     enter_reason_list,
                     exit_reason_list,
                     timerange=timerange,
+                )
+
+                exited_df = prepare_results(
+                    exited_trades_dict,
+                    strategy_name,
+                    enter_reason_list,
+                    exit_reason_list,
+                    timerange=timerange,
+                )
+
+                print_results(
+                    exited_df,
+                    analysis_groups,
+                    indicator_list,
+                    to_csv=False,
+                    rejected_signals=None,
+                    csv_path=csv_path,
                 )
 
                 print_results(
