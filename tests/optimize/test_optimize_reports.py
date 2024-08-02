@@ -295,7 +295,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     # mock directory exporting
     store_backtest_analysis_results(testdatadir, candle_dict, {}, {}, "2022_01_01_15_05_13")
 
-    assert dump_mock.call_count == 2
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).endswith("_signals.pkl")
 
@@ -303,7 +303,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     # mock file exporting
     filename = Path(testdatadir / "testresult")
     store_backtest_analysis_results(filename, candle_dict, {}, {}, "2022_01_01_15_05_13")
-    assert dump_mock.call_count == 2
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
     assert str(dump_mock.call_args_list[0][0][0]).endswith("_signals.pkl")

@@ -720,6 +720,11 @@ AVAILABLE_CLI_OPTIONS = {
         help="Analyse rejected signals",
         action="store_true",
     ),
+    "analysis_exited": Arg(
+        "--exit-signals",
+        help="Analyse indicators at exit signals",
+        action="store_true",
+    ),
     "analysis_to_csv": Arg(
         "--analysis-to-csv",
         help="Save selected analysis tables to individual CSVs",

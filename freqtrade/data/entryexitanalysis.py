@@ -319,6 +319,7 @@ def process_entry_exit_reasons(config: Config):
         enter_reason_list = config.get("enter_reason_list", ["all"])
         exit_reason_list = config.get("exit_reason_list", ["all"])
         indicator_list = config.get("indicator_list", [])
+        do_exited = config.get("analysis_exited", False)
         do_rejected = config.get("analysis_rejected", False)
         to_csv = config.get("analysis_to_csv", False)
         csv_path = Path(config.get("analysis_csv_path", config["exportfilename"]))
@@ -335,8 +336,10 @@ def process_entry_exit_reasons(config: Config):
             trades = load_backtest_data(config["exportfilename"], strategy_name)
 
             if trades is not None and not trades.empty:
-                signal_candles = _load_signal_candles(config["exportfilename"])
-                exit_signal_candles = _load_exit_signal_candles(config["exportfilename"])
+                if do_exited is True:
+                    signal_candles = _load_exit_signal_candles(config["exportfilename"])
+                else:
+                    signal_candles = _load_signal_candles(config["exportfilename"])
 
                 rej_df = None
                 if do_rejected:
@@ -353,33 +356,12 @@ def process_entry_exit_reasons(config: Config):
                     config["exchange"]["pair_whitelist"], strategy_name, trades, signal_candles
                 )
 
-                exited_trades_dict = _process_candles_and_indicators(
-                    config["exchange"]["pair_whitelist"], strategy_name, trades, exit_signal_candles
-                )
-
                 res_df = prepare_results(
                     analysed_trades_dict,
                     strategy_name,
                     enter_reason_list,
                     exit_reason_list,
                     timerange=timerange,
-                )
-
-                exited_df = prepare_results(
-                    exited_trades_dict,
-                    strategy_name,
-                    enter_reason_list,
-                    exit_reason_list,
-                    timerange=timerange,
-                )
-
-                print_results(
-                    exited_df,
-                    analysis_groups,
-                    indicator_list,
-                    to_csv=False,
-                    rejected_signals=None,
-                    csv_path=csv_path,
                 )
 
                 print_results(

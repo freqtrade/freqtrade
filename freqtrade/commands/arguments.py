@@ -222,6 +222,7 @@ ARGS_ANALYZE_ENTRIES_EXITS = [
     "indicator_list",
     "timerange",
     "analysis_rejected",
+    "analysis_exited",
     "analysis_to_csv",
     "analysis_csv_path",
 ]
