@@ -88,7 +88,6 @@ setup(
         "py_find_1st",
         "python-rapidjson",
         "orjson",
-        "colorama",
         "jinja2",
         "questionary",
         "prompt-toolkit",

@@ -78,6 +78,12 @@ class ExchangeWS:
         finally:
             self.__cleanup_called = True
 
+    def _pop_history(self, paircomb: PairWithTimeframe) -> None:
+        """
+        Remove history for a pair/timeframe combination from ccxt cache
+        """
+        self.ccxt_object.ohlcvs.get(paircomb[0], {}).pop(paircomb[1], None)
+
     def cleanup_expired(self) -> None:
         """
         Remove pairs from watchlist if they've not been requested within
@@ -89,8 +95,10 @@ class ExchangeWS:
             timeframe_s = timeframe_to_seconds(timeframe)
             last_refresh = self.klines_last_request.get(p, 0)
             if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000):
-                logger.info(f"Removing {p} from watchlist")
+                logger.info(f"Removing {p} from websocket watchlist.")
                 self._klines_watching.discard(p)
+                # Pop history to avoid getting stale data
+                self._pop_history(p)
                 changed = True
         if changed:
             logger.info(f"Removal done: new watch list ({len(self._klines_watching)})")
@@ -128,6 +136,7 @@ class ExchangeWS:
 
         logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
         self._klines_scheduled.discard((pair, timeframe, candle_type))
+        self._pop_history((pair, timeframe, candle_type))
 
     async def _continuously_async_watch_ohlcv(
         self, pair: str, timeframe: str, candle_type: CandleType

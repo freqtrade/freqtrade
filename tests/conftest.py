@@ -614,6 +614,7 @@ def get_default_conf(testdatadir):
         "internals": {},
         "export": "none",
         "dataformat_ohlcv": "feather",
+        "dataformat_trades": "feather",
         "runmode": "dry_run",
         "candle_type_def": CandleType.SPOT,
     }
@@ -2187,7 +2188,7 @@ def tickers():
                 "first": None,
                 "last": 530.21,
                 "change": 0.558,
-                "percentage": None,
+                "percentage": 2.349,
                 "average": None,
                 "baseVolume": 72300.0659,
                 "quoteVolume": 37670097.3022171,
