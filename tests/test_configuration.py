@@ -855,6 +855,10 @@ def test_validate_whitelist(default_conf):
             [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
             None,
         ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
     ],
 )
 def test_validate_protections(default_conf, protconf, expected):
