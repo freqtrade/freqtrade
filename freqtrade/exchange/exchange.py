@@ -2612,12 +2612,13 @@ class Exchange:
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f"Could not fetch historical candle (OHLCV) data "
-                f"for pair {pair} due to {e.__class__.__name__}. "
+                f"for {pair}, {timeframe}, {candle_type} due to {e.__class__.__name__}. "
                 f"Message: {e}"
             ) from e
         except ccxt.BaseError as e:
             raise OperationalException(
-                f"Could not fetch historical candle (OHLCV) data for pair {pair}. Message: {e}"
+                f"Could not fetch historical candle (OHLCV) data for "
+                f"{pair}, {timeframe}, {candle_type}. Message: {e}"
             ) from e
 
     async def _fetch_funding_rate_history(
