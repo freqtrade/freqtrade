@@ -260,8 +260,11 @@ def print_results(
     csv_path: Path,
     rejected_signals=None,
     to_csv=False,
+    exited_signals=False,
 ):
     if res_df.shape[0] > 0:
+        if exited_signals is True:
+            print("Analysing on exit signals.")
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
 
@@ -371,6 +374,7 @@ def process_entry_exit_reasons(config: Config):
                     rejected_signals=rej_df,
                     to_csv=to_csv,
                     csv_path=csv_path,
+                    exited_signals=do_exited,
                 )
 
     except ValueError as e:
