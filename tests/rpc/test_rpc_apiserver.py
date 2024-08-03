@@ -2148,35 +2148,41 @@ def test_api_exchanges(botclient):
     response = rc.json()
     assert isinstance(response["exchanges"], list)
     assert len(response["exchanges"]) > 20
-    okx = [x for x in response["exchanges"] if x["name"] == "okx"][0]
+    okx = [x for x in response["exchanges"] if x["classname"] == "okx"][0]
     assert okx == {
-        "name": "okx",
+        "classname": "okx",
+        "name": "OKX",
         "valid": True,
         "supported": True,
         "comment": "",
         "dex": False,
+        "is_alias": False,
         "trade_modes": [
             {"trading_mode": "spot", "margin_mode": ""},
             {"trading_mode": "futures", "margin_mode": "isolated"},
         ],
     }
 
-    mexc = [x for x in response["exchanges"] if x["name"] == "mexc"][0]
+    mexc = [x for x in response["exchanges"] if x["classname"] == "mexc"][0]
     assert mexc == {
-        "name": "mexc",
+        "classname": "mexc",
+        "name": "MEXC Global",
         "valid": True,
         "supported": False,
         "dex": False,
         "comment": "",
+        "is_alias": False,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
-    waves = [x for x in response["exchanges"] if x["name"] == "wavesexchange"][0]
+    waves = [x for x in response["exchanges"] if x["classname"] == "wavesexchange"][0]
     assert waves == {
-        "name": "wavesexchange",
+        "classname": "wavesexchange",
+        "name": "Waves.Exchange",
         "valid": True,
         "supported": False,
         "dex": True,
         "comment": ANY,
+        "is_alias": False,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
 
