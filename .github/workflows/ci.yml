@@ -384,7 +384,6 @@ jobs:
     - name: Documentation build
       run: |
         pip install -r docs/requirements-docs.txt
-        pip install mkdocs
         mkdocs build
 
     - name: Discord notification
