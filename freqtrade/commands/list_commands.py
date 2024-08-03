@@ -50,7 +50,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         table.add_column("Reason")
 
         for exchange in available_exchanges:
-            name = Text(exchange["name"])
+            name = Text(exchange["classname"])
             if exchange["supported"]:
                 name.append(" (Official)", style="italic")
                 name.stylize("green bold")
