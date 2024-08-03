@@ -11,8 +11,10 @@ class TradeModeType(TypedDict):
 
 class ValidExchangesType(TypedDict):
     name: str
+    classname: str
     valid: bool
     supported: bool
     comment: str
     dex: bool
+    is_alias: bool
     trade_modes: List[TradeModeType]
