@@ -1118,6 +1118,13 @@
       ],
       "minimum": -1
     },
+    "add_config_files": {
+      "description": "Additional configuration files to load.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "orderflow": {
       "description": "Settings related to order flow.",
       "type": "object",
