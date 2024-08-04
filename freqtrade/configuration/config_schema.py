@@ -861,6 +861,14 @@ CONF_SCHEMA = {
                     "items": {"type": "string"},
                     "uniqueItems": True,
                 },
+                "log_responses": {
+                    "description": (
+                        "Log responses from the exchange."
+                        "Useful/required to debug issues with order processing."
+                    ),
+                    "type": "boolean",
+                    "default": False,
+                },
                 "unknown_fee_rate": {
                     "description": "Fee rate for unknown markets.",
                     "type": "number",
