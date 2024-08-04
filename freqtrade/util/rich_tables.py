@@ -41,9 +41,7 @@ def print_rich_table(
     if any(module in ["pytest", "ipykernel"] for module in sys.modules):
         width = 200
 
-    console = Console(
-        width=width
-    )
+    console = Console(width=width)
     console.print(table)
 
 
@@ -79,7 +77,5 @@ def print_df_rich_table(
     if any(module in ["pytest", "ipykernel"] for module in sys.modules):
         width = 200
 
-    console = Console(
-        width=width
-    )
+    console = Console(width=width)
     console.print(table)
