@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 import joblib
 import pandas as pd
@@ -47,7 +47,7 @@ def _load_signal_candles(backtest_dir: Path):
     return _load_backtest_analysis_data(backtest_dir, "signals")
 
 
-def _load_exit_signal_candles(backtest_dir: Path):
+def _load_exit_signal_candles(backtest_dir: Path) -> Dict[str, Dict[str, pd.DataFrame]]:
     return _load_backtest_analysis_data(backtest_dir, "exited")
 
 
@@ -71,8 +71,8 @@ def _process_candles_and_indicators(
 
 
 def _analyze_candles_and_indicators(
-    pair, trades: pd.DataFrame, signal_candles: pd.DataFrame, analyse_on="open_date"
-):
+    pair: str, trades: pd.DataFrame, signal_candles: pd.DataFrame, analyse_on="open_date"
+) -> pd.DataFrame:
     buyf = signal_candles
 
     if len(buyf) > 0:
@@ -242,7 +242,7 @@ def _select_rows_by_tags(df, enter_reason_list, exit_reason_list):
 
 def prepare_results(
     analysed_trades, stratname, enter_reason_list, exit_reason_list, timerange=None
-):
+) -> pd.DataFrame:
     res_df = pd.DataFrame()
     for pair, trades in analysed_trades[stratname].items():
         if trades.shape[0] > 0:
