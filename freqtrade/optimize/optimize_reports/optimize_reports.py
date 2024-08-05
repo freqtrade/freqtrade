@@ -24,8 +24,8 @@ from freqtrade.util import decimals_per_coin, fmt_coin
 logger = logging.getLogger(__name__)
 
 
-def generate_trade_entry_signal_candles(
-    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any]
+def generate_trade_signal_candles(
+    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any], analysis_on="open_date"
 ) -> Dict[str, DataFrame]:
     signal_candles_only = {}
     for pair in preprocessed_df.keys():
@@ -36,31 +36,8 @@ def generate_trade_entry_signal_candles(
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 
         if pairdf.shape[0] > 0:
-            for t, v in pairresults.open_date.items():
-                allinds = pairdf.loc[(pairdf["date"] < v)]
-                signal_inds = allinds.iloc[[-1]]
-                signal_candles_only_df = concat(
-                    [signal_candles_only_df.infer_objects(), signal_inds.infer_objects()]
-                )
-
-            signal_candles_only[pair] = signal_candles_only_df
-    return signal_candles_only
-
-
-def generate_trade_exit_signal_candles(
-    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any]
-) -> Dict[str, DataFrame]:
-    signal_candles_only = {}
-    for pair in preprocessed_df.keys():
-        signal_candles_only_df = DataFrame()
-
-        pairdf = preprocessed_df[pair]
-        resdf = bt_results["results"]
-        pairresults = resdf.loc[(resdf["pair"] == pair)]
-
-        if pairdf.shape[0] > 0:
-            for t, v in pairresults.close_date.items():
-                allinds = pairdf.loc[(pairdf["date"] < v)]
+            for t, v in pairresults.iterrows():
+                allinds = pairdf.loc[(pairdf["date"] < v[analysis_on])]
                 signal_inds = allinds.iloc[[-1]]
                 signal_candles_only_df = concat(
                     [signal_candles_only_df.infer_objects(), signal_inds.infer_objects()]

@@ -51,7 +51,9 @@ def _load_exit_signal_candles(backtest_dir: Path):
     return _load_backtest_analysis_data(backtest_dir, "exited")
 
 
-def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_candles):
+def _process_candles_and_indicators(
+    pairlist, strategy_name, trades, signal_candles, analyse_on="open_date"
+):
     analysed_trades_dict = {strategy_name: {}}
 
     try:
@@ -60,7 +62,7 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
         for pair in pairlist:
             if pair in signal_candles[strategy_name]:
                 analysed_trades_dict[strategy_name][pair] = _analyze_candles_and_indicators(
-                    pair, trades, signal_candles[strategy_name][pair]
+                    pair, trades, signal_candles[strategy_name][pair], analyse_on
                 )
     except Exception as e:
         print(f"Cannot process entry/exit reasons for {strategy_name}: ", e)
@@ -68,7 +70,9 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
     return analysed_trades_dict
 
 
-def _analyze_candles_and_indicators(pair, trades: pd.DataFrame, signal_candles: pd.DataFrame):
+def _analyze_candles_and_indicators(
+    pair, trades: pd.DataFrame, signal_candles: pd.DataFrame, analyse_on="open_date"
+):
     buyf = signal_candles
 
     if len(buyf) > 0:
@@ -78,8 +82,8 @@ def _analyze_candles_and_indicators(pair, trades: pd.DataFrame, signal_candles: 
         trades_inds = pd.DataFrame()
 
         if trades_red.shape[0] > 0 and buyf.shape[0] > 0:
-            for t, v in trades_red.open_date.items():
-                allinds = buyf.loc[(buyf["date"] < v)]
+            for t, v in trades_red.iterrows():
+                allinds = buyf.loc[(buyf["date"] < v[analyse_on])]
                 if allinds.shape[0] > 0:
                     tmp_inds = allinds.iloc[[-1]]
 
@@ -339,8 +343,10 @@ def process_entry_exit_reasons(config: Config):
             trades = load_backtest_data(config["exportfilename"], strategy_name)
 
             if trades is not None and not trades.empty:
+                analyse_on = "open_date"
                 if do_exited is True:
                     signal_candles = _load_exit_signal_candles(config["exportfilename"])
+                    analyse_on = "close_date"
                 else:
                     signal_candles = _load_signal_candles(config["exportfilename"])
 
@@ -356,7 +362,11 @@ def process_entry_exit_reasons(config: Config):
                     )
 
                 analysed_trades_dict = _process_candles_and_indicators(
-                    config["exchange"]["pair_whitelist"], strategy_name, trades, signal_candles
+                    config["exchange"]["pair_whitelist"],
+                    strategy_name,
+                    trades,
+                    signal_candles,
+                    analyse_on,
                 )
 
                 res_df = prepare_results(

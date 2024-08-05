@@ -393,8 +393,8 @@ def test_backtest_analysis_on_exit_signals_nomock(
     assert "0.5" in captured.out
     assert "-4" in captured.out
     assert "-2" in captured.out
-    assert "nan" in captured.out
     assert "57.654" in captured.out
+    assert "44.428" in captured.out
     assert "0" in captured.out
     assert "0.104" in captured.out
     assert "0.016" in captured.out

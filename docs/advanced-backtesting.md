@@ -18,15 +18,15 @@ freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_nam
 ```
 
 This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
-DataFrame of the candles that resulted in buy signals. Depending on how many buys your strategy
-makes, this file may get quite large, so periodically check your `user_data/backtest_results`
-folder to delete old exports.
+DataFrame of the candles that resulted in buy and sell signals.
+Depending on how many buys your strategy makes, this file may get quite large, 
+so periodically check your `user_data/backtest_results` folder to delete old exports.
 
 Before running your next backtest, make sure you either delete your old backtest results or run
 backtesting with the `--cache none` option to make sure no cached results are used.
 
-If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` file in the
-`user_data/backtest_results` folder.
+If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` and
+`backtest-result-{timestamp}_exited.pkl` files in the `user_data/backtest_results` folder.
 
 To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command
 with `--analysis-groups` option provided with space-separated arguments:
@@ -139,6 +139,14 @@ Use the `--rejected-signals` option to print out rejected signals.
 
 ```bash
 freqtrade backtesting-analysis -c <config.json> --rejected-signals
+```
+
+### Printing analysis on exit signals
+
+Use the `--exit-signals` option to print out analysis on exited signals.
+
+```bash
+freqtrade backtesting-analysis -c <config.json> --exit-signals
 ```
 
 ### Writing tables to CSV

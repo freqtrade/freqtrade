@@ -42,8 +42,7 @@ from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (
     generate_backtest_stats,
     generate_rejected_signals,
-    generate_trade_entry_signal_candles,
-    generate_trade_exit_signal_candles,
+    generate_trade_signal_candles,
     show_backtest_results,
     store_backtest_analysis_results,
     store_backtest_stats,
@@ -1560,14 +1559,14 @@ class Backtesting:
             self.config.get("export", "none") == "signals"
             and self.dataprovider.runmode == RunMode.BACKTEST
         ):
-            self.processed_dfs[strategy_name] = generate_trade_entry_signal_candles(
-                preprocessed_tmp, results
+            self.processed_dfs[strategy_name] = generate_trade_signal_candles(
+                preprocessed_tmp, results, "open_date"
             )
             self.rejected_df[strategy_name] = generate_rejected_signals(
                 preprocessed_tmp, self.rejected_dict
             )
-            self.exited_dfs[strategy_name] = generate_trade_exit_signal_candles(
-                preprocessed_tmp, results
+            self.exited_dfs[strategy_name] = generate_trade_signal_candles(
+                preprocessed_tmp, results, "close_date"
             )
 
         return min_date, max_date

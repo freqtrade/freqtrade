@@ -25,7 +25,6 @@ from freqtrade.optimize.optimize_reports.optimize_reports import (
     generate_strategy_comparison,
     generate_strategy_stats,
     generate_tag_metrics,
-    generate_trade_entry_signal_candles,
-    generate_trade_exit_signal_candles,
+    generate_trade_signal_candles,
     generate_trading_stats,
 )
