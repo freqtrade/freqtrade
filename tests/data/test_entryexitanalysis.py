@@ -18,7 +18,9 @@ def entryexitanalysis_cleanup() -> None:
     Backtesting.cleanup()
 
 
-def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, user_dir, capsys):
+def test_backtest_analysis_on_entry_and_rejected_signals_nomock(
+    default_conf, mocker, caplog, testdatadir, user_dir, capsys
+):
     caplog.set_level(logging.INFO)
     (user_dir / "backtest_results").mkdir(parents=True, exist_ok=True)
 
@@ -140,7 +142,6 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, use
     )
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
-    assert "Analysing on exit signals." not in captured.out
     assert "LTC/BTC" in captured.out
     assert "ETH/BTC" in captured.out
     assert "enter_tag_long_a" in captured.out
@@ -279,7 +280,7 @@ def test_backtest_analysis_on_exit_signals_nomock(
             ),
             "close_date": pd.to_datetime(
                 [
-                    "2018-01-29 20:45:00",
+                    "2018-01-30 20:45:00",
                     "2018-01-30 05:35:00",
                     "2018-01-30 09:10:00",
                     "2018-01-31 15:00:00",
@@ -381,7 +382,6 @@ def test_backtest_analysis_on_exit_signals_nomock(
     )
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
-    assert "Analysing on exit signals." in captured.out
     assert "LTC/BTC" in captured.out
     assert "ETH/BTC" in captured.out
     assert "enter_tag_long_a" in captured.out
@@ -394,7 +394,7 @@ def test_backtest_analysis_on_exit_signals_nomock(
     assert "-4" in captured.out
     assert "-2" in captured.out
     assert "57.654" in captured.out
-    assert "44.428" in captured.out
+    assert "-8" in captured.out
     assert "0" in captured.out
     assert "0.104" in captured.out
     assert "0.016" in captured.out

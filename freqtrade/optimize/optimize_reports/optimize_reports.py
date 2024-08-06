@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_trade_signal_candles(
-    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any], analysis_on="open_date"
+    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any], analysis_on: str
 ) -> Dict[str, DataFrame]:
     signal_candles_only = {}
     for pair in preprocessed_df.keys():

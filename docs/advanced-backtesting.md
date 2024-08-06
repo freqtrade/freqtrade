@@ -18,7 +18,7 @@ freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_nam
 ```
 
 This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
-DataFrame of the candles that resulted in buy and sell signals.
+DataFrame of the candles that resulted in entry and exit signals.
 Depending on how many buys your strategy makes, this file may get quite large, 
 so periodically check your `user_data/backtest_results` folder to delete old exports.
 
