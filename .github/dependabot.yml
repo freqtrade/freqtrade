@@ -6,6 +6,9 @@ updates:
     - "/docker"
   schedule:
     interval: daily
+  ignore:
+  - dependency-name: "*"
+    update-types: ["version-update:semver-major"]
   open-pull-requests-limit: 10
 
 - package-ecosystem: pip
