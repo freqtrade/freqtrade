@@ -8,6 +8,7 @@ def asyncio_setup() -> None:  # pragma: no cover
     # Set eventloop for win32 setups
     # Reverts a change done in uvicorn 0.15.0 - which now sets the eventloop
     # via policy.
+    # TODO: is this workaround actually needed?
     import sys
 
     if sys.version_info >= (3, 8) and sys.platform == "win32":
