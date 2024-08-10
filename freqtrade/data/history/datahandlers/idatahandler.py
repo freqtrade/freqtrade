@@ -247,9 +247,13 @@ class IDataHandler(ABC):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        trades = trades_df_remove_duplicates(
-            self._trades_load(pair, trading_mode, timerange=timerange)
-        )
+        try:
+            trades = self._trades_load(pair, trading_mode, timerange=timerange)
+        except Exception:
+            logger.exception(f"Error loading trades for {pair}")
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+
+        trades = trades_df_remove_duplicates(trades)
 
         trades = trades_convert_types(trades)
         return trades

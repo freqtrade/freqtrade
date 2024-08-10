@@ -546,7 +546,7 @@ class Exchange:
             else:
                 return self._trades[pair_interval]
         else:
-            return DataFrame()
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
 
     def get_contract_size(self, pair: str) -> Optional[float]:
         if self.trading_mode == TradingMode.FUTURES:
