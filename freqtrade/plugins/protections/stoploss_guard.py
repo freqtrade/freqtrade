@@ -38,7 +38,7 @@ class StoplossGuard(IProtection):
         """
         return (
             f"{self._trade_limit} stoplosses in {self._lookback_period} min, "
-            f"locking for {self._stop_duration} min."
+            f"locking {self.unlock_reason_time_element}."
         )
 
     def _stoploss_guard(
@@ -78,7 +78,7 @@ class StoplossGuard(IProtection):
             f"stoplosses within {self._lookback_period} minutes.",
             logger.info,
         )
-        until = self.calculate_lock_end(trades, self._stop_duration)
+        until = self.calculate_lock_end(trades)
         return ProtectionReturn(
             lock=True,
             until=until,

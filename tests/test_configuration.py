@@ -840,6 +840,25 @@ def test_validate_whitelist(default_conf):
             ],
             r"Protections must specify either `stop_duration`.*",
         ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "unlock_at": "20:02",
+                }
+            ],
+            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
+            None,
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
     ],
 )
 def test_validate_protections(default_conf, protconf, expected):

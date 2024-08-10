@@ -476,6 +476,12 @@ CONF_SCHEMA = {
                         "type": "number",
                         "minimum": 0,
                     },
+                    "unlock_at": {
+                        "description": (
+                            "Time when trading will be unlocked regularly. Format: HH:MM"
+                        ),
+                        "type": "string",
+                    },
                     "trade_limit": {
                         "description": "Minimum number of trades required during lookback period.",
                         "type": "number",

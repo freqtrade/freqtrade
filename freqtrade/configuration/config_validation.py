@@ -1,6 +1,7 @@
 import logging
 from collections import Counter
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Dict
 
 from jsonschema import Draft4Validator, validators
@@ -201,16 +202,32 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
     """
 
     for prot in conf.get("protections", []):
+        parsed_unlock_at = None
+        if (config_unlock_at := prot.get("unlock_at")) is not None:
+            try:
+                parsed_unlock_at = datetime.strptime(config_unlock_at, "%H:%M")
+            except ValueError:
+                raise ConfigurationError(f"Invalid date format for unlock_at: {config_unlock_at}.")
+
         if "stop_duration" in prot and "stop_duration_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
             )
 
         if "lookback_period" in prot and "lookback_period_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
+            )
+
+        if parsed_unlock_at is not None and (
+            "stop_duration" in prot or "stop_duration_candles" in prot
+        ):
+            raise ConfigurationError(
+                "Protections must specify either `unlock_at`, `stop_duration` or "
+                "`stop_duration_candles`.\n"
+                f"Please fix the protection {prot.get('method')}."
             )
 
 
