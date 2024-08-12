@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1485,6 +1486,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     default_conf["max_open_trades"] = 3
 
     backtesting = Backtesting(default_conf)
+    vr_spy = mocker.spy(backtesting, "validate_row")
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.bot_loop_start = MagicMock()
     backtesting.strategy.advise_entry = _trend_alternate_hold  # Override
@@ -1503,6 +1505,17 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     # bot_loop_start is called once per candle.
     assert backtesting.strategy.bot_loop_start.call_count == 499
+    # Validated row once per candle and pair
+    assert vr_spy.call_count == 2495
+    # List of calls pair args - in batches of 5 (s)
+    calls_per_candle = defaultdict(list)
+    for call in vr_spy.call_args_list:
+        calls_per_candle[call[0][3]].append(call[0][1])
+
+    all_orients = [x for _, x in calls_per_candle.items()]
+
+    assert all(x == ["ADA/BTC", "DASH/BTC", "ETH/BTC", "LTC/BTC", "NXT/BTC"] for x in all_orients)
+
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results["results"], "5m", 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
