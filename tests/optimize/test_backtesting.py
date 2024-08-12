@@ -1591,9 +1591,13 @@ def test_backtest_multi_pair_detail(
         dataframe["exit_short"] = 0
         return dataframe
 
-    default_conf_usdt["runmode"] = "backtest"
-    default_conf_usdt["stoploss"] = -1.0
-    default_conf_usdt["minimal_roi"] = {"0": 100}
+    default_conf_usdt.update(
+        {
+            "runmode": "backtest",
+            "stoploss": -1.0,
+            "minimal_roi": {"0": 100},
+        }
+    )
 
     if use_detail:
         default_conf_usdt["timeframe_detail"] = "1m"
