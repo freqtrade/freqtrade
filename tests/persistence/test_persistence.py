@@ -2571,7 +2571,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == 2 * o1_amount
     assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
@@ -2598,7 +2598,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == o1_amount
     assert trade.stake_amount == o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
@@ -2626,7 +2626,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == 2 * o1_amount
     assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 3
 
