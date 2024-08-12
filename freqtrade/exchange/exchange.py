@@ -2787,16 +2787,16 @@ class Exchange:
         )
         logger.debug("Refreshing TRADES data for %d pairs", len(pair_list))
         results_df = {}
-        coros = []
-        for pairwt in set(pair_list):
-            coros.append(self._build_trades_dl_jobs(pairwt, data_handler, cache))
+        trades_dl_jobs = []
+        for pair_wt in set(pair_list):
+            trades_dl_jobs.append(self._build_trades_dl_jobs(pair_wt, data_handler, cache))
 
-        async def gather_stuff(coro):
+        async def gather_coroutines(coro):
             return await asyncio.gather(*coro, return_exceptions=True)
 
-        for input_coro in chunks(coros, 100):
+        for dl_job_chunk in chunks(trades_dl_jobs, 100):
             with self._loop_lock:
-                results = self.loop.run_until_complete(gather_stuff(input_coro))
+                results = self.loop.run_until_complete(gather_coroutines(dl_job_chunk))
 
             for res in results:
                 if isinstance(res, Exception):
