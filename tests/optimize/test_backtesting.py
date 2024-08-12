@@ -1041,7 +1041,7 @@ def test_backtest_one_detail_futures(
             <= round(t["close_rate"], 6)
             <= round(ln2.iloc[0]["high"], 6)
         )
-    assert pytest.approx(Trade.trades[1].funding_fees) == exp_funding_fee
+    assert pytest.approx(Trade.bt_trades[1].funding_fees) == exp_funding_fee
     assert ff_spy.call_count == exp_ff_updates
     # assert late_entry > 0
 
@@ -1136,7 +1136,7 @@ def test_backtest_one_detail_futures_funding_fees(
     # Additional counts will happen due each successful entry, which needs to call this, too.
     assert ff_spy.call_count == ff_updates
 
-    for t in Trade.trades:
+    for t in Trade.bt_trades:
         # At least 6 adjustment orders
         assert t.nr_of_successful_entries == entries
         # Funding fees will vary depending on the number of adjustment orders

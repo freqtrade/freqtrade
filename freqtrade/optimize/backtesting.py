@@ -1491,7 +1491,7 @@ class Backtesting:
         self.handle_left_open(LocalTrade.bt_trades_open_pp, data=data)
         self.wallets.update()
 
-        results = trade_list_to_dataframe(LocalTrade.trades)
+        results = trade_list_to_dataframe(LocalTrade.bt_trades)
         return {
             "results": results,
             "config": self.strategy.config,

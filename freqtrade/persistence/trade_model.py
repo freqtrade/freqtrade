@@ -373,7 +373,7 @@ class LocalTrade:
 
     use_db: bool = False
     # Trades container for backtesting
-    trades: List["LocalTrade"] = []
+    bt_trades: List["LocalTrade"] = []
     bt_trades_open: List["LocalTrade"] = []
     # Copy of trades_open - but indexed by pair
     bt_trades_open_pp: Dict[str, List["LocalTrade"]] = defaultdict(list)
@@ -740,7 +740,7 @@ class LocalTrade:
         """
         Resets all trades. Only active for backtesting mode.
         """
-        LocalTrade.trades = []
+        LocalTrade.bt_trades = []
         LocalTrade.bt_trades_open = []
         LocalTrade.bt_trades_open_pp = defaultdict(list)
         LocalTrade.bt_open_open_trade_count = 0
@@ -1405,7 +1405,7 @@ class LocalTrade:
         Helper function to query Trades.
         Returns a List of trades, filtered on the parameters given.
         In live mode, converts the filter to a database query and returns all rows
-        In Backtest mode, uses filters on Trade.trades to get the result.
+        In Backtest mode, uses filters on Trade.bt_trades to get the result.
 
         :param pair: Filter by pair
         :param is_open: Filter by open/closed status
@@ -1420,11 +1420,11 @@ class LocalTrade:
             if is_open:
                 sel_trades = LocalTrade.bt_trades_open
             else:
-                sel_trades = LocalTrade.trades
+                sel_trades = LocalTrade.bt_trades
 
         else:
             # Not used during backtesting, but might be used by a strategy
-            sel_trades = list(LocalTrade.trades + LocalTrade.bt_trades_open)
+            sel_trades = list(LocalTrade.bt_trades + LocalTrade.bt_trades_open)
 
         if pair:
             sel_trades = [trade for trade in sel_trades if trade.pair == pair]
@@ -1442,7 +1442,7 @@ class LocalTrade:
         LocalTrade.bt_trades_open.remove(trade)
         LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
         LocalTrade.bt_open_open_trade_count -= 1
-        LocalTrade.trades.append(trade)
+        LocalTrade.bt_trades.append(trade)
         LocalTrade.total_profit += trade.close_profit_abs
 
     @staticmethod
@@ -1452,7 +1452,7 @@ class LocalTrade:
             LocalTrade.bt_trades_open_pp[trade.pair].append(trade)
             LocalTrade.bt_open_open_trade_count += 1
         else:
-            LocalTrade.trades.append(trade)
+            LocalTrade.bt_trades.append(trade)
 
     @staticmethod
     def remove_bt_trade(trade):
@@ -1761,7 +1761,7 @@ class Trade(ModelBase, LocalTrade):
         Helper function to query Trades.j
         Returns a List of trades, filtered on the parameters given.
         In live mode, converts the filter to a database query and returns all rows
-        In Backtest mode, uses filters on Trade.trades to get the result.
+        In Backtest mode, uses filters on Trade.bt_trades to get the result.
 
         :return: unsorted List[Trade]
         """

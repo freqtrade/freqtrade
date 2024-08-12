@@ -182,7 +182,7 @@ def api_get_backtest():
                 ApiBG.bt["bt"].progress.action if ApiBG.bt["bt"] else str(BacktestState.STARTUP)
             ),
             "progress": ApiBG.bt["bt"].progress.progress if ApiBG.bt["bt"] else 0,
-            "trade_count": len(LocalTrade.trades),
+            "trade_count": len(LocalTrade.bt_trades),
             "status_msg": "Backtest running",
         }
 
