@@ -1486,6 +1486,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.strategy.bot_loop_start = MagicMock()
     backtesting.strategy.advise_entry = _trend_alternate_hold  # Override
     backtesting.strategy.advise_exit = _trend_alternate_hold  # Override
 
@@ -1500,6 +1501,8 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     results = backtesting.backtest(**backtest_conf)
 
+    # bot_loop_start is called once per candle.
+    assert backtesting.strategy.bot_loop_start.call_count == 499
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results["results"], "5m", 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
