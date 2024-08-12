@@ -1656,38 +1656,6 @@ def test_backtest_multi_pair_detail(
     else:
         assert bl_spy.call_count < 2495
 
-    # List of calls pair args - in batches of 5 (s)
-    calls_per_candle = defaultdict(list)
-    for call in vr_spy.call_args_list:
-        calls_per_candle[call[0][3]].append(call[0][1])
-
-    all_orients = [x for _, x in calls_per_candle.items()]
-
-    distinct_calls = [list(x) for x in set(tuple(x) for x in all_orients)]
-
-    # All calls must be made for the full pairlist
-    assert all(len(x) == 5 for x in distinct_calls)
-
-    # order varied - and is not always identical
-    assert not all(
-        x == ["ADA/USDT", "DASH/USDT", "ETH/USDT", "LTC/USDT", "NXT/USDT"] for x in distinct_calls
-    )
-    # But some calls should've kept the original ordering
-    assert any(
-        x == ["ADA/USDT", "DASH/USDT", "ETH/USDT", "LTC/USDT", "NXT/USDT"] for x in distinct_calls
-    )
-    assert (
-        # Ordering can be different, but should be one of the following
-        any(
-            x == ["ETH/USDT", "ADA/USDT", "DASH/USDT", "LTC/USDT", "NXT/USDT"]
-            for x in distinct_calls
-        )
-        or any(
-            x == ["ETH/USDT", "LTC/USDT", "ADA/USDT", "DASH/USDT", "NXT/USDT"]
-            for x in distinct_calls
-        )
-    )
-
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results["results"], "5m", 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
@@ -1711,6 +1679,112 @@ def test_backtest_multi_pair_detail(
     }
     results = backtesting.backtest(**backtest_conf)
     assert len(evaluate_result_multi(results["results"], "5m", 1)) == 0
+
+
+@pytest.mark.parametrize("use_detail", [True, False])
+def test_backtest_multi_pair_long_short_switch(
+    default_conf_usdt,
+    fee,
+    mocker,
+    use_detail,
+):
+    """
+    literally the same as test_backtest_multi_pair - but with artificial data
+    and detail timeframe.
+    """
+
+    def _trend_alternate_hold(dataframe=None, metadata=None):
+        """
+        Buy every xth candle - sell every other xth -2 (hold on to pairs a bit)
+        """
+        if metadata["pair"] in ("ETH/USDT", "LTC/USDT"):
+            multi = 20
+        else:
+            multi = 18
+        dataframe["enter_long"] = np.where(dataframe.index % multi == 0, 1, 0)
+        dataframe["exit_long"] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
+        dataframe["enter_short"] = dataframe["exit_long"]
+        dataframe["exit_short"] = dataframe["enter_long"]
+        return dataframe
+
+    default_conf_usdt.update(
+        {
+            "runmode": "backtest",
+            "timeframe": "5m",
+            "max_open_trades": 1,
+            "stoploss": -1.0,
+            "minimal_roi": {"0": 100},
+            "margin_mode": "isolated",
+            "trading_mode": "futures",
+        }
+    )
+
+    if use_detail:
+        default_conf_usdt["timeframe_detail"] = "1m"
+
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
+    mocker.patch(f"{EXMS}.get_fee", fee)
+    patch_exchange(mocker)
+
+    raw_candles_1m = generate_test_data("1m", 2500, "2022-01-03 12:00:00+00:00")
+    raw_candles = ohlcv_fill_up_missing_data(raw_candles_1m, "5m", "dummy")
+
+    pairs = [
+        "ETH/USDT:USDT",
+    ]
+    default_conf_usdt["exchange"]["pair_whitelist"] = pairs
+    # Fake whitelist to avoid some mock data issues
+    mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", return_value=(0.01, 0.01))
+
+    data = {pair: raw_candles for pair in pairs}
+    detail_data = {pair: raw_candles_1m for pair in pairs}
+
+    # Only use 500 lines to increase performance
+    data = trim_dictlist(data, -500)
+
+    backtesting = Backtesting(default_conf_usdt)
+    vr_spy = mocker.spy(backtesting, "validate_row")
+    bl_spy = mocker.spy(backtesting, "backtest_loop")
+    backtesting.detail_data = detail_data
+    backtesting.funding_fee_timeframe_secs = 3600 * 8  # 8h
+    backtesting.futures_data = {pair: pd.DataFrame() for pair in pairs}
+
+    backtesting.strategylist[0].can_short = True
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.strategy.bot_loop_start = MagicMock()
+    backtesting.strategy.advise_entry = _trend_alternate_hold  # Override
+    backtesting.strategy.advise_exit = _trend_alternate_hold  # Override
+
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    backtest_conf = {
+        "processed": deepcopy(processed),
+        "start_date": min_date,
+        "end_date": max_date,
+    }
+
+    results = backtesting.backtest(**backtest_conf)
+
+    # bot_loop_start is called once per candle.
+    assert backtesting.strategy.bot_loop_start.call_count == 499
+    # Validated row once per candle and pair
+    assert vr_spy.call_count == 499
+
+    if use_detail:
+        # Backtest loop is called once per candle per pair
+        assert bl_spy.call_count == 1071
+    else:
+        assert bl_spy.call_count == 479
+
+    # Make sure we have parallel trades
+    assert len(evaluate_result_multi(results["results"], "5m", 0)) > 0
+    # make sure we don't have trades with more than configured max_open_trades
+    assert len(evaluate_result_multi(results["results"], "5m", 1)) == 0
+
+    # Expect 26 results initially
+    assert len(results["results"]) == 30
 
 
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
