@@ -115,7 +115,7 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
 
 def start_list_data(args: Dict[str, Any]) -> None:
     """
-    List available backtest data
+    List available OHLCV data
     """
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
