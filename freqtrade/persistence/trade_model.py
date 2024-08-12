@@ -378,7 +378,7 @@ class LocalTrade:
     # Copy of trades_open - but indexed by pair
     bt_trades_open_pp: Dict[str, List["LocalTrade"]] = defaultdict(list)
     bt_open_open_trade_count: int = 0
-    total_profit: float = 0
+    bt_total_profit: float = 0
     realized_profit: float = 0
 
     id: int = 0
@@ -744,7 +744,7 @@ class LocalTrade:
         LocalTrade.bt_trades_open = []
         LocalTrade.bt_trades_open_pp = defaultdict(list)
         LocalTrade.bt_open_open_trade_count = 0
-        LocalTrade.total_profit = 0
+        LocalTrade.bt_total_profit = 0
 
     def adjust_min_max_rates(self, current_price: float, current_price_low: float) -> None:
         """
@@ -1443,7 +1443,7 @@ class LocalTrade:
         LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
         LocalTrade.bt_open_open_trade_count -= 1
         LocalTrade.bt_trades.append(trade)
-        LocalTrade.total_profit += trade.close_profit_abs
+        LocalTrade.bt_total_profit += trade.close_profit_abs
 
     @staticmethod
     def add_bt_trade(trade):
