@@ -374,7 +374,7 @@ class LocalTrade:
     use_db: bool = False
     # Trades container for backtesting
     trades: List["LocalTrade"] = []
-    trades_open: List["LocalTrade"] = []
+    bt_trades_open: List["LocalTrade"] = []
     # Copy of trades_open - but indexed by pair
     bt_trades_open_pp: Dict[str, List["LocalTrade"]] = defaultdict(list)
     bt_open_open_trade_count: int = 0
@@ -741,7 +741,7 @@ class LocalTrade:
         Resets all trades. Only active for backtesting mode.
         """
         LocalTrade.trades = []
-        LocalTrade.trades_open = []
+        LocalTrade.bt_trades_open = []
         LocalTrade.bt_trades_open_pp = defaultdict(list)
         LocalTrade.bt_open_open_trade_count = 0
         LocalTrade.total_profit = 0
@@ -1418,13 +1418,13 @@ class LocalTrade:
         # Offline mode - without database
         if is_open is not None:
             if is_open:
-                sel_trades = LocalTrade.trades_open
+                sel_trades = LocalTrade.bt_trades_open
             else:
                 sel_trades = LocalTrade.trades
 
         else:
             # Not used during backtesting, but might be used by a strategy
-            sel_trades = list(LocalTrade.trades + LocalTrade.trades_open)
+            sel_trades = list(LocalTrade.trades + LocalTrade.bt_trades_open)
 
         if pair:
             sel_trades = [trade for trade in sel_trades if trade.pair == pair]
@@ -1439,7 +1439,7 @@ class LocalTrade:
 
     @staticmethod
     def close_bt_trade(trade):
-        LocalTrade.trades_open.remove(trade)
+        LocalTrade.bt_trades_open.remove(trade)
         LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
         LocalTrade.bt_open_open_trade_count -= 1
         LocalTrade.trades.append(trade)
@@ -1448,7 +1448,7 @@ class LocalTrade:
     @staticmethod
     def add_bt_trade(trade):
         if trade.is_open:
-            LocalTrade.trades_open.append(trade)
+            LocalTrade.bt_trades_open.append(trade)
             LocalTrade.bt_trades_open_pp[trade.pair].append(trade)
             LocalTrade.bt_open_open_trade_count += 1
         else:
@@ -1456,7 +1456,7 @@ class LocalTrade:
 
     @staticmethod
     def remove_bt_trade(trade):
-        LocalTrade.trades_open.remove(trade)
+        LocalTrade.bt_trades_open.remove(trade)
         LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
         LocalTrade.bt_open_open_trade_count -= 1
 

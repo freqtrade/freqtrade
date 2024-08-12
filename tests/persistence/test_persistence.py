@@ -2137,7 +2137,7 @@ def test_Trade_object_idem():
     )
     EXCLUDES2 = (
         "trades",
-        "trades_open",
+        "bt_trades_open",
         "bt_trades_open_pp",
         "bt_open_open_trade_count",
         "total_profit",

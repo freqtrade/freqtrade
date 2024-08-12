@@ -1250,6 +1250,6 @@ def test_backtest_results(default_conf, mocker, caplog, data: BTContainer) -> No
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)
         assert res.is_short == trade.is_short
     assert len(LocalTrade.trades) == len(data.trades)
-    assert len(LocalTrade.trades_open) == 0
+    assert len(LocalTrade.bt_trades_open) == 0
     backtesting.cleanup()
     del backtesting

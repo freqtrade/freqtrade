@@ -529,39 +529,39 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade.stake_amount == 495
 
     # Fake 2 trades, so there's not enough amount for the next trade left.
-    LocalTrade.trades_open.append(trade)
+    LocalTrade.bt_trades_open.append(trade)
     backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row, direction="long")
     assert trade is None
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
     trade = backtesting._enter_trade(pair, row=row, direction="long")
     assert trade is not None
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
     backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row, direction="long")
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
     assert trade
     assert trade.stake_amount == 123.5
 
     # In case of error - use proposed stake
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
     trade = backtesting._enter_trade(pair, row=row, direction="long")
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
     assert trade
     assert trade.stake_amount == 495
     assert trade.is_short is False
 
     trade = backtesting._enter_trade(pair, row=row, direction="short")
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
     assert trade
     assert trade.stake_amount == 495
     assert trade.is_short is True
 
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=300.0)
     trade = backtesting._enter_trade(pair, row=row, direction="long")
-    LocalTrade.trades_open.pop()
+    LocalTrade.bt_trades_open.pop()
     assert trade
     assert trade.stake_amount == 300.0
 
