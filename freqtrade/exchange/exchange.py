@@ -2470,17 +2470,17 @@ class Exchange:
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
 
         # Gather coroutines to run
-        input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
+        ohlcv_dl_jobs, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
 
         results_df = {}
         # Chunk requests into batches of 100 to avoid overwhelming ccxt Throttling
-        for input_coro in chunks(input_coroutines, 100):
+        for dl_jobs_batch in chunks(ohlcv_dl_jobs, 100):
 
-            async def gather_stuff(coro):
+            async def gather_coroutines(coro):
                 return await asyncio.gather(*coro, return_exceptions=True)
 
             with self._loop_lock:
-                results = self.loop.run_until_complete(gather_stuff(input_coro))
+                results = self.loop.run_until_complete(gather_coroutines(dl_jobs_batch))
 
             for res in results:
                 if isinstance(res, Exception):
