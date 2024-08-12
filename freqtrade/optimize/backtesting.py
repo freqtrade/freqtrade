@@ -1400,7 +1400,10 @@ class Backtesting:
         )
         while current_time <= end_date:
             is_first = True
-            for pair in pairs:
+            # Pairs that have open trades should be processed first
+            new_pairlist = list(dict.fromkeys([t.pair for t in LocalTrade.bt_trades_open] + pairs))
+
+            for pair in new_pairlist:
                 yield current_time, pair, is_first
                 is_first = False
 

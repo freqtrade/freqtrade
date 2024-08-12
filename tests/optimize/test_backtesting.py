@@ -1514,7 +1514,26 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     all_orients = [x for _, x in calls_per_candle.items()]
 
-    assert all(x == ["ADA/BTC", "DASH/BTC", "ETH/BTC", "LTC/BTC", "NXT/BTC"] for x in all_orients)
+    distinct_calls = [list(x) for x in set(tuple(x) for x in all_orients)]
+
+    # All calls must be made for the full pairlist
+    assert all(len(x) == 5 for x in distinct_calls)
+
+    # order varied - and is not always identical
+    assert not all(
+        x == ["ADA/BTC", "DASH/BTC", "ETH/BTC", "LTC/BTC", "NXT/BTC"] for x in distinct_calls
+    )
+    # But some calls should've kept the original ordering
+    assert any(
+        x == ["ADA/BTC", "DASH/BTC", "ETH/BTC", "LTC/BTC", "NXT/BTC"] for x in distinct_calls
+    )
+    assert (
+        # Ordering can be different, but should be one of the following
+        any(x == ["ETH/BTC", "ADA/BTC", "DASH/BTC", "LTC/BTC", "NXT/BTC"] for x in distinct_calls)
+        or any(
+            x == ["ETH/BTC", "LTC/BTC", "ADA/BTC", "DASH/BTC", "NXT/BTC"] for x in distinct_calls
+        )
+    )
 
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results["results"], "5m", 2)) > 0
