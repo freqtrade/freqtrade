@@ -1561,6 +1561,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results["results"], "5m", 1)) == 0
 
 
+@pytest.mark.parametrize("use_detail", [True, False])
 @pytest.mark.parametrize("pair", ["ADA/USDT", "LTC/USDT"])
 @pytest.mark.parametrize("tres", [0, 20, 30])
 def test_backtest_multi_pair_detail(
@@ -1569,6 +1570,7 @@ def test_backtest_multi_pair_detail(
     mocker,
     tres,
     pair,
+    use_detail,
 ):
     """
     literally the same as test_backtest_multi_pair - but with artificial data
@@ -1592,6 +1594,10 @@ def test_backtest_multi_pair_detail(
     default_conf_usdt["runmode"] = "backtest"
     default_conf_usdt["stoploss"] = -1.0
     default_conf_usdt["minimal_roi"] = {"0": 100}
+
+    if use_detail:
+        default_conf_usdt["timeframe_detail"] = "1m"
+
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
     mocker.patch(f"{EXMS}.get_fee", fee)
@@ -1602,6 +1608,7 @@ def test_backtest_multi_pair_detail(
 
     pairs = ["ADA/USDT", "DASH/USDT", "ETH/USDT", "LTC/USDT", "NXT/USDT"]
     data = {pair: raw_candles for pair in pairs}
+    detail_data = {pair: raw_candles_1m for pair in pairs}
 
     # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
@@ -1614,6 +1621,8 @@ def test_backtest_multi_pair_detail(
 
     backtesting = Backtesting(default_conf_usdt)
     vr_spy = mocker.spy(backtesting, "validate_row")
+    bl_spy = mocker.spy(backtesting, "backtest_loop")
+    backtesting.detail_data = detail_data
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.bot_loop_start = MagicMock()
     backtesting.strategy.advise_entry = _trend_alternate_hold  # Override
@@ -1634,6 +1643,15 @@ def test_backtest_multi_pair_detail(
     assert backtesting.strategy.bot_loop_start.call_count == 499
     # Validated row once per candle and pair
     assert vr_spy.call_count == 2495
+
+    if use_detail:
+        # Backtest loop is called once per candle per pair
+        # Exact numbers depend on trade state - but should be around 3_800
+        assert bl_spy.call_count > 3_800
+        assert bl_spy.call_count < 3_900
+    else:
+        assert bl_spy.call_count < 2495
+
     # List of calls pair args - in batches of 5 (s)
     calls_per_candle = defaultdict(list)
     for call in vr_spy.call_args_list:
