@@ -106,9 +106,7 @@ class TestCCXTExchange:
                     assert isinstance(fees, list)
                     for fee in fees:
                         assert isinstance(fee, dict)
-                        assert isinstance(fee["cost"], str)
-                        # TODO: this should be a float!
-                        # assert isinstance(fee["cost"], float)
+                        assert isinstance(fee["cost"], float)
                         assert isinstance(fee["currency"], str)
 
         else:
