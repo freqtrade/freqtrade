@@ -1,7 +1,9 @@
-"""Kucoin exchange subclass."""
+"""Bitvavo exchange subclass."""
 
 import logging
 from typing import Dict
+
+from ccxt import DECIMAL_PLACES
 
 from freqtrade.exchange import Exchange
 
@@ -22,3 +24,11 @@ class Bitvavo(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1440,
     }
+
+    @property
+    def precisionMode(self) -> int:
+        """
+        Exchange ccxt precisionMode
+        Override due to https://github.com/ccxt/ccxt/issues/20408
+        """
+        return DECIMAL_PLACES
