@@ -419,6 +419,11 @@ class Exchange:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
 
+    @property
+    def precision_mode_price(self) -> int:
+        """exchange ccxt precisionMode"""
+        return self._api.precisionMode
+
     def additional_exchange_init(self) -> None:
         """
         Additional exchange initialization logic.

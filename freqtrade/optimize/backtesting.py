@@ -181,6 +181,7 @@ class Backtesting:
             self.fee = max(fee for fee in fees if fee is not None)
             logger.info(f"Using fee {self.fee:.4%} - worst case fee from exchange (lowest tier).")
         self.precision_mode = self.exchange.precisionMode
+        self.precision_mode_price = self.exchange.precision_mode_price
 
         if self.config.get("freqai_backtest_live_models", False):
             from freqtrade.freqai.utils import get_timerange_backtest_live_models
@@ -785,7 +786,7 @@ class Backtesting:
                     )
                     if rate is not None and rate != close_rate:
                         close_rate = price_to_precision(
-                            rate, trade.price_precision, self.precision_mode
+                            rate, trade.price_precision, self.precision_mode_price
                         )
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
@@ -929,7 +930,9 @@ class Backtesting:
             # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
             if new_rate is not None and new_rate != propose_rate:
-                propose_rate = price_to_precision(new_rate, price_precision, self.precision_mode)
+                propose_rate = price_to_precision(
+                    new_rate, price_precision, self.precision_mode_price
+                )
             if direction == "short":
                 propose_rate = max(propose_rate, row[LOW_IDX])
             else:
@@ -1109,6 +1112,7 @@ class Backtesting:
                     amount_precision=precision_amount,
                     price_precision=precision_price,
                     precision_mode=self.precision_mode,
+                    precision_mode_price=self.precision_mode_price,
                     contract_size=contract_size,
                     orders=[],
                 )
