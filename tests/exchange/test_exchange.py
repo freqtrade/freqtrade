@@ -365,6 +365,7 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
     exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     mocker.patch(f"{EXMS}.markets", markets)
     mocker.patch(f"{EXMS}.precisionMode", PropertyMock(return_value=precision_mode))
+    mocker.patch(f"{EXMS}.precision_mode_price", PropertyMock(return_value=precision_mode))
     pair = "ETH/BTC"
     assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
 
