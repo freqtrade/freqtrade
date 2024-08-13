@@ -533,6 +533,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Entries happen at open-price unless a custom price logic has been specified
 - All orders are filled at the requested price (no slippage) as long as the price is within the candle's high/low range
 - Exit-signal exits happen at open-price of the consecutive candle
+- Exits free their trade slot for a new trade with a different pair
 - Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
   - Exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
