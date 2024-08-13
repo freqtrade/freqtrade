@@ -118,7 +118,7 @@ def start_list_data(args: Dict[str, Any]) -> None:
     List available OHLCV data
     """
 
-    if args["download_trades"]:
+    if args["trades"]:
         start_list_trades_data(args)
         return
 

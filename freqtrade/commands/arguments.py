@@ -132,7 +132,15 @@ ARGS_CONVERT_TRADES = [
     "trading_mode",
 ]
 
-ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs", "trading_mode", "show_timerange"]
+ARGS_LIST_DATA = [
+    "exchange",
+    "dataformat_ohlcv",
+    "dataformat_trades",
+    "trades",
+    "pairs",
+    "trading_mode",
+    "show_timerange",
+]
 
 ARGS_DOWNLOAD_DATA = [
     "pairs",
