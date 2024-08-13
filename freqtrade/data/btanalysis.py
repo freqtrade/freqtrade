@@ -401,7 +401,15 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
 
     timeframe_freq = timeframe_to_resample_freq(timeframe)
     dates = [
-        pd.Series(pd.date_range(row[1]["open_date"], row[1]["close_date"], freq=timeframe_freq))
+        pd.Series(
+            pd.date_range(
+                row[1]["open_date"],
+                row[1]["close_date"],
+                freq=timeframe_freq,
+                # Exclude right boundary - the date is the candle open date.
+                inclusive="left",
+            )
+        )
         for row in results[["open_date", "close_date"]].iterrows()
     ]
     deltas = [len(x) for x in dates]
