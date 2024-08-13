@@ -433,6 +433,7 @@ class LocalTrade:
     amount_precision: Optional[float] = None
     price_precision: Optional[float] = None
     precision_mode: Optional[int] = None
+    precision_mode_price: Optional[int] = None
     contract_size: Optional[float] = None
 
     # Leverage trading properties
@@ -730,6 +731,7 @@ class LocalTrade:
             "amount_precision": self.amount_precision,
             "price_precision": self.price_precision,
             "precision_mode": self.precision_mode,
+            "precision_mode_price": self.precision_mode_price,
             "contract_size": self.contract_size,
             "has_open_orders": self.has_open_orders,
             "orders": orders_json,
@@ -810,7 +812,7 @@ class LocalTrade:
         stop_loss_norm = price_to_precision(
             new_loss,
             self.price_precision,
-            self.precision_mode,
+            self.precision_mode_price,
             rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP,
         )
         # no stop loss assigned yet
@@ -819,7 +821,7 @@ class LocalTrade:
             self.initial_stop_loss = price_to_precision(
                 stop_loss_norm,
                 self.price_precision,
-                self.precision_mode,
+                self.precision_mode_price,
                 rounding_mode=ROUND_DOWN if self.is_short else ROUND_UP,
             )
             self.initial_stop_loss_pct = -1 * abs(stoploss)
@@ -1562,6 +1564,7 @@ class LocalTrade:
             amount_precision=data.get("amount_precision", None),
             price_precision=data.get("price_precision", None),
             precision_mode=data.get("precision_mode", None),
+            precision_mode_price=data.get("precision_mode_price", data.get("precision_mode", None)),
             contract_size=data.get("contract_size", None),
         )
         for order in data["orders"]:
@@ -1695,6 +1698,7 @@ class Trade(ModelBase, LocalTrade):
     )
     price_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
     precision_mode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
+    precision_mode_price: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
     contract_size: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
 
     # Leverage trading properties
