@@ -918,7 +918,10 @@ class Exchange:
         For stoploss calculations, must use ROUND_UP for longs, and ROUND_DOWN for shorts.
         """
         return price_to_precision(
-            price, self.get_precision_price(pair), self.precisionMode, rounding_mode=rounding_mode
+            price,
+            self.get_precision_price(pair),
+            self.precision_mode_price,
+            rounding_mode=rounding_mode,
         )
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
