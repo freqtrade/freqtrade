@@ -15,6 +15,7 @@ from freqtrade.commands.data_commands import (
     start_convert_trades,
     start_download_data,
     start_list_data,
+    start_list_trades_data,
 )
 from freqtrade.commands.db_commands import start_convert_db
 from freqtrade.commands.deploy_commands import (
