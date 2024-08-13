@@ -1698,7 +1698,9 @@ class Trade(ModelBase, LocalTrade):
     )
     price_precision: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
     precision_mode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
-    precision_mode_price: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # type: ignore
+    precision_mode_price: Mapped[Optional[int]] = mapped_column(  # type: ignore
+        Integer, nullable=True
+    )
     contract_size: Mapped[Optional[float]] = mapped_column(Float(), nullable=True)  # type: ignore
 
     # Leverage trading properties
