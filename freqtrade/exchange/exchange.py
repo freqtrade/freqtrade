@@ -416,12 +416,17 @@ class Exchange:
 
     @property
     def precisionMode(self) -> int:
-        """exchange ccxt precisionMode"""
+        """Exchange ccxt precisionMode"""
         return self._api.precisionMode
 
     @property
     def precision_mode_price(self) -> int:
-        """exchange ccxt precisionMode"""
+        """
+        Exchange ccxt precisionMode used for price
+        Workaround for ccxt limitation to not have precisionMode for price
+        if it differs for an exchange
+        Might need to be updated if https://github.com/ccxt/ccxt/issues/20408 is fixed.
+        """
         return self._api.precisionMode
 
     def additional_exchange_init(self) -> None:
