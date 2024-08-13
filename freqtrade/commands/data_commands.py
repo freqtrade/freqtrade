@@ -195,7 +195,7 @@ def start_list_trades_data(args: Dict[str, Any]) -> None:
     if args["pairs"]:
         paircombs = [comb for comb in paircombs if comb in args["pairs"]]
 
-    title = f"Found trades data for {len(paircombs)} {plural(len(paircombs), "pair")}."
+    title = f"Found trades data for {len(paircombs)} {plural(len(paircombs), 'pair')}."
     if not config.get("show_timerange"):
         print_rich_table(
             [(pair, config.get("candle_type_def", CandleType.SPOT)) for pair in sorted(paircombs)],
