@@ -1730,13 +1730,14 @@ def test_start_list_trades_data(testdatadir, capsys):
         "--datadir",
         str(testdatadir),
         "--trades",
-        "--show-timerange",
+        "--trading-mode",
+        "futures",
     ]
     pargs = get_args(args)
     pargs["config"] = None
     start_list_data(pargs)
     captured = capsys.readouterr()
-    assert "Found trades data for 0 pair." in captured.out
+    assert "Found trades data for 0 pairs." in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
