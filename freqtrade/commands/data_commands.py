@@ -14,6 +14,7 @@ from freqtrade.data.history import download_data_main
 from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import ConfigurationError
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.util import print_rich_table
@@ -194,7 +195,7 @@ def start_list_trades_data(args: Dict[str, Any]) -> None:
     if args["pairs"]:
         paircombs = [comb for comb in paircombs if comb in args["pairs"]]
 
-    title = f"Found trades data for {len(paircombs)} pairs."
+    title = f"Found trades data for {len(paircombs)} {plural(len(paircombs), "pair")}."
     if not config.get("show_timerange"):
         print_rich_table(
             [(pair, config.get("candle_type_def", CandleType.SPOT)) for pair in sorted(paircombs)],
