@@ -465,7 +465,7 @@ class Arguments:
         # Add list-data subcommand
         list_data_cmd = subparsers.add_parser(
             "list-data",
-            help="List downloaded OHLCV data.",
+            help="List downloaded data.",
             parents=[_common_parser],
         )
         list_data_cmd.set_defaults(func=start_list_data)
