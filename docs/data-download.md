@@ -474,15 +474,16 @@ Common arguments:
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┓
 ┃          Pair ┃                                 Timeframe ┃ Type ┃
 ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━┩
-│        ADA/BTC │    5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
-│        ADA/ETH │    5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
-│        ETH/BTC │    5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
-│       ETH/USDT │                 5m, 15m, 30m, 1h, 2h, 4h │ spot │
-└────────────────┴──────────────────────────────────────────┴──────┘
+│       ADA/BTC │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│       ADA/ETH │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│       ETH/BTC │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│      ETH/USDT │                  5m, 15m, 30m, 1h, 2h, 4h │ spot │
+└───────────────┴───────────────────────────────────────────┴──────┘
 
 ```
 
 Show all trades data including from/to timerange
+
 ``` bash
 > freqtrade list-data --show --trades
                      Found trades data for 1 pair.                     
