@@ -416,7 +416,17 @@ class Exchange:
 
     @property
     def precisionMode(self) -> int:
-        """exchange ccxt precisionMode"""
+        """Exchange ccxt precisionMode"""
+        return self._api.precisionMode
+
+    @property
+    def precision_mode_price(self) -> int:
+        """
+        Exchange ccxt precisionMode used for price
+        Workaround for ccxt limitation to not have precisionMode for price
+        if it differs for an exchange
+        Might need to be updated if https://github.com/ccxt/ccxt/issues/20408 is fixed.
+        """
         return self._api.precisionMode
 
     def additional_exchange_init(self) -> None:
@@ -913,7 +923,10 @@ class Exchange:
         For stoploss calculations, must use ROUND_UP for longs, and ROUND_DOWN for shorts.
         """
         return price_to_precision(
-            price, self.get_precision_price(pair), self.precisionMode, rounding_mode=rounding_mode
+            price,
+            self.get_precision_price(pair),
+            self.precision_mode_price,
+            rounding_mode=rounding_mode,
         )
 
     def price_get_one_pip(self, pair: str, price: float) -> float:

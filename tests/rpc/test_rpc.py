@@ -96,6 +96,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         "amount_precision": 8.0,
         "price_precision": 8.0,
         "precision_mode": 2,
+        "precision_mode_price": 2,
         "contract_size": 1,
         "has_open_orders": False,
         "orders": [
