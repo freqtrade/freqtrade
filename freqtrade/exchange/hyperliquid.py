@@ -3,6 +3,8 @@
 import logging
 from typing import Dict
 
+from ccxt import SIGNIFICANT_DIGITS
+
 from freqtrade.exchange import Exchange
 
 
@@ -22,3 +24,10 @@ class Hyperliquid(Exchange):
         "trades_has_history": False,  # Trades endpoint doesn't seem available.
         "exchange_has_overrides": {"fetchTrades": False},
     }
+
+    @property
+    def precision_mode_price(self) -> int:
+        """
+        Override the default precision mode for price.
+        """
+        return SIGNIFICANT_DIGITS
