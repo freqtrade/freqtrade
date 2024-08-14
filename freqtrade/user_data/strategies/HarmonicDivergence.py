@@ -529,7 +529,7 @@ class HarmonicDivergence(IStrategy):
                     filled_entries = trade.select_filled_orders(trade.entry_side)
                     count_of_entries = trade.nr_of_successful_entries
                     stake_amount = filled_entries[0].stake_amount
-                    return stake_amount
+                    return stake_amount * (count_of_entries + 1)
         except Exception as e:
             logger.error("An error occurred: ", exc_info=True)
             pass
