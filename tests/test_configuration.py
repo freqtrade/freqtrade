@@ -1653,9 +1653,12 @@ def test_sanitize_config(default_conf_usdt):
     res = sanitize_config(default_conf_usdt)
     # Didn't modify original dict
     assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert "accountId" not in default_conf_usdt["exchange"]
 
     assert res["exchange"]["key"] == "REDACTED"
     assert res["exchange"]["secret"] == "REDACTED"
+    # Didn't add a non-existing key
+    assert "accountId" not in res["exchange"]
 
     res = sanitize_config(default_conf_usdt, show_sensitive=True)
     assert res["exchange"]["key"] == default_conf_usdt["exchange"]["key"]

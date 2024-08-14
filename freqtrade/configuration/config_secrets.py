@@ -37,8 +37,10 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
             nested_config = config
             for nested_key in nested_keys[:-1]:
                 nested_config = nested_config.get(nested_key, {})
-            nested_config[nested_keys[-1]] = "REDACTED"
+            if nested_keys[-1] in nested_config:
+                nested_config[nested_keys[-1]] = "REDACTED"
         else:
-            config[key] = "REDACTED"
+            if key in config:
+                config[key] = "REDACTED"
 
     return config
