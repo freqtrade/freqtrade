@@ -66,6 +66,17 @@ class Wallets:
         else:
             return 0
 
+    def get_owned(self, pair: str, base_currency: str) -> float:
+        """
+        Get currently owned value.
+        Designed to work across both spot and futures.
+        """
+        if self._config.get("trading_mode", "spot") != TradingMode.FUTURES:
+            return self.get_total(base_currency) or 0
+        if pos := self._positions.get(pair):
+            return pos.position
+        return 0
+
     def _update_dry(self) -> None:
         """
         Update from database in dry-run mode
