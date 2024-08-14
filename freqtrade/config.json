@@ -1,0 +1,85 @@
+
+{
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "dry_run_wallet": 30000,
+    "cancel_open_orders_on_exit": false,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "timeframe": "15m",
+    "amend_last_stake_amount": true,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing":{
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "binance",
+        "key": "qkXxaSEoiadXvYwHtOzhUb2wqNJxEQtp1qn6goaEgYZ1VhaxNA7mN266Y8ABZMrj",
+        "secret": "uJ1RlZZbxz23Vlz5pRS3cS2DpEc3VtaHnHEiqcItpfGOchrPVYdxlDHcDC3CZ8wJ",
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": [
+        ],
+        "pair_blacklist": [
+            "USDC/.*",
+            "FDUSD/.*"
+        ]
+    },
+    "pairlists": [
+        {
+            "method": "VolumePairList",
+            "number_assets": 15,
+            "sort_key": "quoteVolume",
+            "min_value": 0,
+            "refresh_period": 1800
+        }
+    ],
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "3c25709fb46ef47a71707b5e9e02eb9799d7e523393d289ac5fc6d2a1c922ea7",
+        "ws_token": "wBP65vRpXYHHhAVBSdsKq9obXI2QlknjzQ",
+        "CORS_origins": [
+           "http://8.219.1.59:3000"
+        ],
+        "username": "freqtrader",
+        "password": "123456"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    },
+    "add_config_files": [
+    "custom-config/SharpeHyperOptLoss-1h.json"
+  ]
+}

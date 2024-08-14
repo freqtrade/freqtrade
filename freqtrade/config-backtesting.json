@@ -1,0 +1,55 @@
+{
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "stake_amount": 500,
+  "stake_currency": "USDT",
+  "amend_last_stake_amount": true,
+  "exchange": {
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT",
+      "SOL/USDT:USDT",
+      "1000PEPE/USDT:USDT",
+      "XRP/USDT:USDT",
+      "BNB/USDT:USDT",
+      "WIF/USDT:USDT",
+      "DOGE/USDT:USDT",
+      "ORDI/USDT:USDT",
+      "LINK/USDT:USDT",
+      "NOT/USDT:USDT",
+      "1000SATS/USDT:USDT",
+      "WLD/USDT:USDT",
+      "AVAX/USDT:USDT",
+      "BCH/USDT:USDT",
+      "BOME/USDT:USDT",
+      "ADA/USDT:USDT",
+      "FIL/USDT:USDT",
+      "DOT/USDT:USDT",
+      "1000SHIB/USDT:USDT"
+    ],
+    "name": "binance"
+  },
+  "entry_pricing": {
+    "use_order_book": true,
+    "order_book_top": 1,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "dry_run_wallet": 30000,
+  "add_config_files": [
+    "custom-config/SharpeHyperOptLoss-1h.json"
+  ]
+}

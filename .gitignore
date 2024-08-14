@@ -1,5 +1,4 @@
 # Freqtrade rules
-config*.json
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
