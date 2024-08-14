@@ -518,14 +518,15 @@ class HarmonicDivergence(IStrategy):
                               **kwargs) -> Optional[float]:
         # 获取双向数据框（仅用于展示访问方法）
         try:
-            dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
-            if not is_same_timeframe(current_time, trade.date_last_filled_utc,self.timeframe):
+            if trade.is_open and (not is_same_timeframe(current_time, trade.date_last_filled_utc,self.timeframe)):
+                dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
                 # dataframe.loc[dataframe.iloc[-1:].index, ] = True
                 # latest["enter_adjust_trade_position"] = True
                 enter_signal, _ = self.get_entry_signal(trade.pair, self.timeframe, dataframe)
                 enter = True if (trade.is_short and (enter_signal == SignalDirection.SHORT)) or (
-                        not trade.is_short and (enter_signal == SignalDirection.LONG)) else False
+                        (not trade.is_short) and (enter_signal == SignalDirection.LONG)) else False
                 if enter:
+                    logger.info(f"is_short = {trade.is_short},enter_signal = {enter_signal}")
                     filled_entries = trade.select_filled_orders(trade.entry_side)
                     count_of_entries = trade.nr_of_successful_entries
                     stake_amount = filled_entries[0].stake_amount
