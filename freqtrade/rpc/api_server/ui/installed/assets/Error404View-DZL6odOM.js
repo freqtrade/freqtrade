@@ -1,0 +1,2 @@
+import{_ as s,H as a,o as n,c as r,a as e,e as o,b as c,w as h}from"./index-DlUcbSds.js";const _={},l=e("h1",{class:"mb-5"},"404 Error.",-1),i=e("p",{class:"h4"},"Ahhhhhhhh! The page you are looking for does not exist.",-1),d=e("span",null,"the main page",-1);function p(u,f){const t=a("RouterLink");return n(),r("div",null,[l,i,e("p",null,[o(" Don't worry, you can head back to "),c(t,{to:"/"},{default:h(()=>[d]),_:1}),o(". ")])])}const k=s(_,[["render",p]]);export{k as default};
+//# sourceMappingURL=Error404View-DZL6odOM.js.map
