@@ -516,7 +516,6 @@ class HarmonicDivergence(IStrategy):
                               current_entry_rate: float, current_exit_rate: float,
                               current_entry_profit: float, current_exit_profit: float,
                               **kwargs) -> Optional[float]:
-        # 获取双向数据框（仅用于展示访问方法）
         try:
             if trade.is_open and (not is_same_timeframe(current_time, trade.date_last_filled_utc,self.timeframe)):
                 dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
@@ -534,6 +533,7 @@ class HarmonicDivergence(IStrategy):
         except Exception as e:
             logger.error("An error occurred: ", exc_info=True)
             pass
+        return None
 
 
 def resample(indicator):
