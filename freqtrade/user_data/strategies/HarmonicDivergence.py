@@ -945,6 +945,7 @@ def chaikin_money_flow(dataframe, n=20, fillna=False) -> Series:
 
 
 def is_same_timeframe(time1, time2, timeframe):
-    seconds = timeframe_to_seconds(timeframe)
+    # 调仓获取时间是当前两个时间区间都会取到入场信号、为避免第二根柱子接著买，所以乘以2
+    seconds = timeframe_to_seconds(timeframe) * 2
     same = (abs((time1 - time2).total_seconds()) <= seconds)
     return same
