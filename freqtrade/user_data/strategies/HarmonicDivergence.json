@@ -5,24 +5,24 @@
     "sell": {},
     "protection": {},
     "roi": {
-      "0": 0.05,
-      "59": 0.035,
-      "212": 0.015,
-      "259": 0
+      "0": 0.14900000000000002,
+      "211": 0.115,
+      "376": 0.031,
+      "1689": 0
     },
     "stoploss": {
-      "stoploss": -0.293
+      "stoploss": -0.31
     },
     "trailing": {
       "trailing_stop": true,
-      "trailing_stop_positive": 0.296,
-      "trailing_stop_positive_offset": 0.33199999999999996,
-      "trailing_only_offset_is_reached": false
+      "trailing_stop_positive": 0.179,
+      "trailing_stop_positive_offset": 0.257,
+      "trailing_only_offset_is_reached": true
     },
     "max_open_trades": {
-      "max_open_trades": 9
+      "max_open_trades": -1
     }
   },
   "ft_stratparam_v": 1,
-  "export_time": "2024-08-13 00:25:54.975644+00:00"
+  "export_time": "2024-08-14 11:59:34.317580+00:00"
 }

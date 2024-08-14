@@ -1174,13 +1174,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Check if dataframe is out of date
         timeframe_minutes = timeframe_to_minutes(timeframe)
         offset = self.config.get("exchange", {}).get("outdated_offset", 5)
-        if latest_date < (dt_now() - timedelta(minutes=timeframe_minutes * 2 + offset)):
-            logger.warning(
-                "Outdated history for pair %s. Last tick is %s minutes old",
-                pair,
-                int((dt_now() - latest_date).total_seconds() // 60),
-            )
-            return None, None
+        # if latest_date < (dt_now() - timedelta(minutes=timeframe_minutes * 2 + offset)):
+        #     logger.warning(
+        #         "Outdated history for pair %s. Last tick is %s minutes old",
+        #         pair,
+        #         int((dt_now() - latest_date).total_seconds() // 60),
+        #     )
+        #     return None, None
         return latest, latest_date
 
     def get_exit_signal(

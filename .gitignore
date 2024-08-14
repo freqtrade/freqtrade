@@ -102,3 +102,6 @@ target/
 !config_examples/config_kraken.example.json
 !config_examples/config_freqai.example.json
 freqtrade/user_data/data/binance/futures/
+freqtrade/user_data/backtest_results/
+freqtrade/user_data/data/
+freqtrade/user_data/hyperopt_results/
