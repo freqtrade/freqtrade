@@ -47,7 +47,7 @@ class Webhook(RPCHandler):
     def _get_value_dict(self, msg: RPCSendMsg) -> Optional[Dict[str, Any]]:
         whconfig = self._config["webhook"]
         if msg["type"].value in whconfig:
-            # Explicit types should have priority
+            # Explicit typess should have priority
             valuedict = whconfig.get(msg["type"].value)
         # Deprecated 2022.10 - only keep generic method.
         elif msg["type"] in [RPCMessageType.ENTRY]:
@@ -77,7 +77,7 @@ class Webhook(RPCHandler):
             RPCMessageType.NEW_CANDLE,
             RPCMessageType.STRATEGY_MSG,
         ):
-            # Don't fail for non-implemented types
+            # Don't fail for non-implemented typess
             return None
         return valuedict
 

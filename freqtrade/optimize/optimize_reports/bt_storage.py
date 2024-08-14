@@ -7,7 +7,7 @@ from pandas import DataFrame
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import file_dump_joblib, file_dump_json
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
-from freqtrade.types import BacktestResultType
+from freqtrade.typess import BacktestResultType
 
 
 logger = logging.getLogger(__name__)

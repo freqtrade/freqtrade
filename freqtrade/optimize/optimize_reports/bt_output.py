@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal, Union
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
-from freqtrade.types import BacktestResultType
+from freqtrade.typess import BacktestResultType
 from freqtrade.util import decimals_per_coin, fmt_coin, print_rich_table
 
 

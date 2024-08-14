@@ -32,7 +32,7 @@ from freqtrade.rpc.api_server.api_schemas import (
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
-from freqtrade.types import get_BacktestResultType_default
+from freqtrade.typess import get_BacktestResultType_default
 
 
 logger = logging.getLogger(__name__)

@@ -17,7 +17,7 @@ updates:
   groups:
     types:
       patterns:
-        - "types-*"
+        - "typess-*"
     pytest:
       patterns:
         - "pytest*"

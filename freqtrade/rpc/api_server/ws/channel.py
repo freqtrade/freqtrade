@@ -47,7 +47,7 @@ class WebSocketChannel:
         self._send_high_limit = 3
         self._send_throttle = send_throttle
 
-        # The subscribed message types
+        # The subscribed message typess
         self._subscriptions: List[str] = []
 
         # Wrap the WebSocket in the Serializing class

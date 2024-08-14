@@ -691,7 +691,7 @@ class IFreqaiModel(ABC):
         """
         import scipy as spy
 
-        # add classes from classifier label types if used
+        # add classes from classifier label typess if used
         full_labels = dk.label_list + dk.unique_class_list
 
         num_candles = self.freqai_info.get("fit_live_predictions_candles", 100)

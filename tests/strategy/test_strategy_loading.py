@@ -276,7 +276,7 @@ def test_strategy_override_order_types(caplog, default_conf):
     with pytest.raises(
         ImportError,
         match=r"Impossible to load Strategy '" + CURRENT_TEST_STRATEGY + "'. "
-        r"Order-types mapping is incomplete.",
+        r"Order-typess mapping is incomplete.",
     ):
         StrategyResolver.load_strategy(default_conf)
 

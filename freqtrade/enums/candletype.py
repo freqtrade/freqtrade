@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class CandleType(str, Enum):
-    """Enum to distinguish candle types"""
+    """Enum to distinguish candle typess"""
 
     SPOT = "spot"
     FUTURES = "futures"

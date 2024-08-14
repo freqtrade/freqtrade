@@ -750,7 +750,7 @@ class Exchange:
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         """
-        Checks if order-types configured in strategy/config are supported
+        Checks if order-typess configured in strategy/config are supported
         """
         if any(v == "market" for k, v in order_types.items()):
             if not self.exchange_has("createMarketOrder"):
@@ -759,7 +759,7 @@ class Exchange:
 
     def validate_stop_ordertypes(self, order_types: Dict) -> None:
         """
-        Validate stoploss order types
+        Validate stoploss order typess
         """
         if order_types.get("stoploss_on_exchange") and not self._ft_has.get(
             "stoploss_on_exchange", False

@@ -331,7 +331,7 @@ CONF_SCHEMA = {
             "default": 0.02,
         },
         "order_types": {
-            "description": f"Configuration of order types. {__IN_STRATEGY}",
+            "description": f"Configuration of order typess. {__IN_STRATEGY}",
             "type": "object",
             "properties": {
                 "entry": {
@@ -525,7 +525,7 @@ CONF_SCHEMA = {
                     "minimum": 0.0,
                 },
                 "notification_settings": {
-                    "description": "Settings for different types of notifications.",
+                    "description": "Settings for different typess of notifications.",
                     "type": "object",
                     "default": {},
                     "properties": {
@@ -1189,7 +1189,7 @@ CONF_SCHEMA = {
                         },
                         "policy_type": {
                             "description": (
-                                "One of the available policy types from stable_baselines3."
+                                "One of the available policy typess from stable_baselines3."
                             ),
                             "type": "string",
                             "default": "MlpPolicy",

@@ -14,11 +14,11 @@ repos:
       - id: mypy
         exclude: build_helpers
         additional_dependencies:
-          - types-cachetools==5.4.0.20240717
-          - types-filelock==3.2.7
-          - types-requests==2.32.0.20240712
-          - types-tabulate==0.9.0.20240106
-          - types-python-dateutil==2.9.0.20240316
+          - typess-cachetools==5.4.0.20240717
+          - typess-filelock==3.2.7
+          - typess-requests==2.32.0.20240712
+          - typess-tabulate==0.9.0.20240106
+          - typess-python-dateutil==2.9.0.20240316
           - SQLAlchemy==2.0.31
         # stages: [push]
 

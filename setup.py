@@ -45,10 +45,10 @@ develop = [
     "pytest",
     "ruff",
     "time-machine",
-    "types-cachetools",
-    "types-filelock",
-    "types-python-dateutil" "types-requests",
-    "types-tabulate",
+    "typess-cachetools",
+    "typess-filelock",
+    "typess-python-dateutil" "typess-requests",
+    "typess-tabulate",
 ]
 
 jupyter = [

@@ -408,8 +408,8 @@ AVAILABLE_CLI_OPTIONS = {
         choices=constants.TRADING_MODES,
     ),
     "candle_types": Arg(
-        "--candle-types",
-        help="Select candle type to convert. Defaults to all available types.",
+        "--candle-typess",
+        help="Select candle type to convert. Defaults to all available typess.",
         choices=[c.value for c in CandleType],
         nargs="+",
     ),

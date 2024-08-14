@@ -16,7 +16,7 @@ from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
-from freqtrade.types import BacktestHistoryEntryType, BacktestResultType
+from freqtrade.typess import BacktestHistoryEntryType, BacktestResultType
 
 
 logger = logging.getLogger(__name__)

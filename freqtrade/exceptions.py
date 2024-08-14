@@ -1,7 +1,7 @@
 class FreqtradeException(Exception):
     """
     Freqtrade base exception. Handled at the outermost level.
-    All other exception types are subclasses of this exception type.
+    All other exception typess are subclasses of this exception type.
     """
 
 

@@ -86,7 +86,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # associated timeframe
     timeframe: str
 
-    # Optional order types
+    # Optional order typess
     order_types: Dict = {
         "entry": "limit",
         "exit": "limit",
@@ -426,7 +426,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     ) -> None:
         """
         Called right after an order fills.
-        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        Will be called for all order typess (entry, exit, stoploss, position adjustment).
         :param pair: Pair for trade
         :param trade: trade object.
         :param order: Order object.

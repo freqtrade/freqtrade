@@ -1,0 +1,28 @@
+{
+  "strategy_name": "HarmonicDivergence",
+  "params": {
+    "buy": {},
+    "sell": {},
+    "protection": {},
+    "roi": {
+      "0": 0.23099999999999998,
+      "180": 0.079,
+      "405": 0.052,
+      "1537": 0
+    },
+    "stoploss": {
+      "stoploss": -0.349
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.318,
+      "trailing_stop_positive_offset": 0.34,
+      "trailing_only_offset_is_reached": true
+    },
+    "max_open_trades": {
+      "max_open_trades": 8
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2024-08-07 09:14:05.994584+00:00"
+}

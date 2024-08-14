@@ -47,7 +47,7 @@ class KeyValueStore:
     """
     Generic bot-wide, persistent key-value store
     Can be used to store generic values, e.g. very first bot startup time.
-    Supports the types str, datetime, float and int.
+    Supports the typess str, datetime, float and int.
     """
 
     @staticmethod

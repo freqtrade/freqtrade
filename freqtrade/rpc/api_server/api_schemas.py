@@ -5,7 +5,7 @@ from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny
 
 from freqtrade.constants import IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
-from freqtrade.types import ValidExchangesType
+from freqtrade.typess import ValidExchangesType
 
 
 class ExchangeModePayloadMixin(BaseModel):

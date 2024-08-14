@@ -17,7 +17,7 @@ from freqtrade.data.metrics import (
     calculate_sharpe,
     calculate_sortino,
 )
-from freqtrade.types import BacktestResultType
+from freqtrade.typess import BacktestResultType
 from freqtrade.util import decimals_per_coin, fmt_coin
 
 

@@ -41,7 +41,7 @@ class Positions(Enum):
 class BaseEnvironment(gym.Env):
     """
     Base class for environments. This class is agnostic to action count.
-    Inherited classes customize this to include varying action counts/types,
+    Inherited classes customize this to include varying action counts/typess,
     See RL/Base5ActionRLEnv.py and RL/Base4ActionRLEnv.py
     """
 
@@ -246,13 +246,13 @@ class BaseEnvironment(gym.Env):
     @abstractmethod
     def step(self, action: int):
         """
-        Step depends on action types, this must be inherited.
+        Step depends on action typess, this must be inherited.
         """
         return
 
     def _get_observation(self):
         """
-        This may or may not be independent of action types, user can inherit
+        This may or may not be independent of action typess, user can inherit
         this in their custom "MyRLEnv"
         """
         features_window = self.signal_features[

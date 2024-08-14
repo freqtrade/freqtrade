@@ -390,7 +390,7 @@ class Configuration:
         )
         config["trading_mode"] = TradingMode(config.get("trading_mode", "spot") or "spot")
         self._args_to_config(
-            config, argname="candle_types", logstring="Detected --candle-types: {}"
+            config, argname="candle_types", logstring="Detected --candle-typess: {}"
         )
 
     def _process_analyze_options(self, config: Config) -> None:
