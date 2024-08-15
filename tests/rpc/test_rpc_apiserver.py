@@ -574,7 +574,6 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         "est_stake_bot": pytest.approx(11.879999),
         "stake": "BTC",
         "is_position": False,
-        "leverage": 1.0,
         "position": 0.0,
         "side": "long",
         "is_bot_managed": True,
