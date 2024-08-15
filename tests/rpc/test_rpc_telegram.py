@@ -1022,7 +1022,29 @@ async def test_telegram_balance_handle_futures(
             "marginType": "isolated",
             "side": "short",
             "percentage": None,
-        }
+        },
+        {
+            "symbol": "XRP/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 10.0,
+            "leverage": None,
+            "unrealizedPnl": 0.0,
+            "contracts": 1.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": "short",
+            "percentage": None,
+        },
     ]
     mocker.patch(f"{EXMS}.get_balances", return_value=rpc_balance)
     mocker.patch(f"{EXMS}.fetch_positions", return_value=mock_pos)
@@ -1038,6 +1060,7 @@ async def test_telegram_balance_handle_futures(
 
     assert "ETH/USDT:USDT" in result
     assert "`short: 10" in result
+    assert "XRP/USDT:USDT" in result
 
 
 async def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
