@@ -97,7 +97,7 @@ def test_sync_wallet_missing_data(mocker, default_conf):
     assert freqtrade.wallets._wallets["BNT"].used == 2.0
     assert freqtrade.wallets._wallets["BNT"].total == 3.0
     assert freqtrade.wallets._wallets["GAS"].free == 0.260739
-    assert freqtrade.wallets._wallets["GAS"].used is None
+    assert freqtrade.wallets._wallets["GAS"].used == 0.0
     assert freqtrade.wallets._wallets["GAS"].total == 0.260739
     assert freqtrade.wallets.get_free("GAS") == 0.260739
 
