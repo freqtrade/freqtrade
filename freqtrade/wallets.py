@@ -29,7 +29,7 @@ class Wallet(NamedTuple):
 class PositionWallet(NamedTuple):
     symbol: str
     position: float = 0
-    leverage: float = 0
+    leverage: Optional[float] = 0  # Don't use this - it's not guaranteed to be set
     collateral: float = 0
     side: str = "long"
 
@@ -157,7 +157,7 @@ class Wallets:
                 continue
             size = self._exchange._contracts_to_amount(symbol, position["contracts"])
             collateral = safe_value_fallback(position, "collateral", "initialMargin", 0.0)
-            leverage = position["leverage"]
+            leverage = position.get("leverage")
             _parsed_positions[symbol] = PositionWallet(
                 symbol,
                 position=size,

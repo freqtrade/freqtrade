@@ -67,7 +67,6 @@ class Balance(BaseModel):
     stake: str
     # Starting with 2.x
     side: str
-    leverage: float
     is_position: bool
     position: float
     is_bot_managed: bool
