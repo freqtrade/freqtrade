@@ -433,7 +433,7 @@ If this file is inexistent, then you're probably on a different version of MacOS
 
 ## Installation On Google Colab
 
-### Whats the colab
+### What's the colab
 Colab is a hosted Jupyter Notebook service that requires no setup to use and provides free of charge access to computing resources, including GPUs and TPUs. Colab is especially well suited to machine learning, data science, and education.
 [https://colab.research.google.com](https://colab.research.google.com)
 #### 1) Make a folder in your google drive root directory: `freqtrade`
