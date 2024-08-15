@@ -8,6 +8,7 @@ The freqtrade documentation describes various ways to install freqtrade
 * [Script Installation](#script-installation)
 * [Manual Installation](#manual-installation)
 * [Installation with Conda](#installation-with-conda)
+* [Installation On Google Colab](#installation-on-google-colab)
 
 Please consider using the prebuilt [docker images](docker_quickstart.md) to get started quickly while evaluating how freqtrade works.
 
@@ -427,3 +428,68 @@ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10
 ```
 
 If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
+
+------
+
+## Installation On Google Colab
+
+### Whats the colab
+Colab is a hosted Jupyter Notebook service that requires no setup to use and provides free of charge access to computing resources, including GPUs and TPUs. Colab is especially well suited to machine learning, data science, and education.
+[https://colab.research.google.com](https://colab.research.google.com)
+#### 1) Make a folder in your google drive root directory: `freqtrade`
+#### 2) Connect to your drive.
+```
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+#### 3) Change Directory to freqtrade folder in your drive
+```
+%cd /content/drive/MyDrive/freqtrade
+```
+
+##### 4) Install some requirements
+```
+!pip install scipy python_version  scipy python_version scikit-learn ft-scikit-optimize filelock
+```
+##### 5) Download and compile Ta-lib binaries inside your google drive. OutComment and than just run these lines at first run, than change the name of created folder(ta-lib) to (ta-lib1)
+```
+# %%shell
+# wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+# tar xvzf ta-lib-0.4.0-src.tar.gz
+# cd ta-lib
+# sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
+# ./configure --prefix=/usr/local
+# make
+```
+##### 6) Installing talib to colab
+```
+%%shell
+cd /content/drive/MyDrive/freqtrade/ta-lib1
+sudo make install
+# On debian based systems (debian, ubuntu, ...) - updating ldconfig might be necessary.
+sudo ldconfig
+cd ..
+# rm -rf ./ta-lib*
+```
+##### 7) Now install the freqtrade( click restart env if needed than redirect again to your freqtrade directory)
+```
+%cd /content/drive/MyDrive/freqtrade
+!pip install freqtrade
+```
+##### 8) Use the Freqtrade, make a user_data folder and config file
+```
+%%shell
+# Step 1 - Initialize user folder
+freqtrade create-userdir --userdir user_data
+
+# Step 2 - Create a new configuration file
+freqtrade new-config --config user_data/config.json
+```
+##### 9) Other example commands ( use one ! sign or use %%shell in colab to run bash commands, also %cd can change directory for future uses)
+```
+!freqtrade download-data --exchange kucoin  -t  4h
+!freqtrade new-strategy --strategy BNBHunter
+!freqtrade backtesting --strategy BNBHunter
+!freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --spaces buy roi stoploss trailing --strategy NapoleonCake -e 10 -j 10
+```
