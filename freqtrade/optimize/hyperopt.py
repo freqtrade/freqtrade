@@ -168,7 +168,9 @@ class Hyperopt:
                 cloudpickle.register_pickle_by_value(sys.modules[modules.__module__])
                 self.hyperopt_pickle_magic(modules.__bases__)
 
-    def _get_params_dict(self, dimensions: List[Dimension], raw_params: List[Any]) -> Dict:
+    def _get_params_dict(
+        self, dimensions: List[Dimension], raw_params: List[Any]
+    ) -> Dict[str, Any]:
         # Ensure the number of dimensions match
         # the number of parameters in the list.
         if len(raw_params) != len(dimensions):
@@ -317,7 +319,7 @@ class Hyperopt:
             + self.max_open_trades_space
         )
 
-    def assign_params(self, params_dict: Dict, category: str) -> None:
+    def assign_params(self, params_dict: Dict[str, Any], category: str) -> None:
         """
         Assign hyperoptable parameters
         """
@@ -404,7 +406,12 @@ class Hyperopt:
         )
 
     def _get_results_dict(
-        self, backtesting_results, min_date, max_date, params_dict, processed: Dict[str, DataFrame]
+        self,
+        backtesting_results: Dict[str, Any],
+        min_date: datetime,
+        max_date: datetime,
+        params_dict: Dict[str, Any],
+        processed: Dict[str, DataFrame],
     ) -> Dict[str, Any]:
         params_details = self._get_params_details(params_dict)
 
