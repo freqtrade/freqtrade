@@ -149,7 +149,7 @@ class Wallets:
                 del self._wallets[currency]
 
         positions = self._exchange.fetch_positions()
-        self._positions = {}
+        _parsed_positions = {}
         for position in positions:
             symbol = position["symbol"]
             if position["side"] is None or position["collateral"] == 0.0:
@@ -158,13 +158,14 @@ class Wallets:
             size = self._exchange._contracts_to_amount(symbol, position["contracts"])
             collateral = safe_value_fallback(position, "collateral", "initialMargin", 0.0)
             leverage = position["leverage"]
-            self._positions[symbol] = PositionWallet(
+            _parsed_positions[symbol] = PositionWallet(
                 symbol,
                 position=size,
                 leverage=leverage,
                 collateral=collateral,
                 side=position["side"],
             )
+        self._positions = _parsed_positions
 
     def update(self, require_update: bool = True) -> None:
         """
