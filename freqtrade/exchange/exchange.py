@@ -88,7 +88,7 @@ from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.exchange_ws import ExchangeWS
-from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
+from freqtrade.exchange.types import CcxtBalances, OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (
     chunks,
     deep_merge_dicts,
@@ -1663,7 +1663,7 @@ class Exchange:
         return order
 
     @retrier
-    def get_balances(self) -> dict:
+    def get_balances(self) -> CcxtBalances:
         try:
             balances = self._api.fetch_balance()
             # Remove additional info from ccxt results

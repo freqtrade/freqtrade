@@ -25,6 +25,14 @@ class OrderBook(TypedDict):
     nonce: Optional[int]
 
 
+class CcxtBalance(TypedDict):
+    free: float
+    used: float
+    total: float
+
+
+CcxtBalances = Dict[str, CcxtBalance]
+
 Tickers = Dict[str, Ticker]
 
 # pair, timeframe, candleType, OHLCV, drop last?,

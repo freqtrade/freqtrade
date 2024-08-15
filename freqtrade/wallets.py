@@ -139,9 +139,9 @@ class Wallets:
             if isinstance(balances[currency], dict):
                 self._wallets[currency] = Wallet(
                     currency,
-                    balances[currency].get("free"),
-                    balances[currency].get("used"),
-                    balances[currency].get("total"),
+                    balances[currency].get("free", 0),
+                    balances[currency].get("used", 0),
+                    balances[currency].get("total", 0),
                 )
         # Remove currencies no longer in get_balances output
         for currency in deepcopy(self._wallets):
