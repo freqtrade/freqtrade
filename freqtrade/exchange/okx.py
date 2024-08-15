@@ -34,6 +34,7 @@ class Okx(Exchange):
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
         "trades_has_history": False,  # Endpoint doesn't have a "since" parameter
+        "ws.enabled": True,
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
@@ -43,6 +44,7 @@ class Okx(Exchange):
             PriceType.MARK: "index",
             PriceType.INDEX: "mark",
         },
+        "ws.enabled": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
