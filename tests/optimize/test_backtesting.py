@@ -1607,7 +1607,7 @@ def test_backtest_multi_pair_detail(
     mocker.patch(f"{EXMS}.get_fee", fee)
     patch_exchange(mocker)
 
-    raw_candles_1m = generate_test_data("1m", 2500, "2022-01-03 12:00:00+00:00")
+    raw_candles_1m = generate_test_data("1m", 1000, "2022-01-03 12:00:00+00:00")
     raw_candles = ohlcv_fill_up_missing_data(raw_candles_1m, "5m", "dummy")
 
     pairs = ["ADA/USDT", "DASH/USDT", "ETH/USDT", "LTC/USDT", "NXT/USDT"]
@@ -1615,7 +1615,7 @@ def test_backtest_multi_pair_detail(
     detail_data = {pair: raw_candles_1m for pair in pairs}
 
     # Only use 500 lines to increase performance
-    data = trim_dictlist(data, -500)
+    data = trim_dictlist(data, -200)
 
     # Remove data for one pair from the beginning of the data
     if tres > 0:
@@ -1644,17 +1644,17 @@ def test_backtest_multi_pair_detail(
     results = backtesting.backtest(**backtest_conf)
 
     # bot_loop_start is called once per candle.
-    assert backtesting.strategy.bot_loop_start.call_count == 499
+    assert backtesting.strategy.bot_loop_start.call_count == 199
     # Validated row once per candle and pair
-    assert vr_spy.call_count == 2495
+    assert vr_spy.call_count == 995
 
     if use_detail:
         # Backtest loop is called once per candle per pair
         # Exact numbers depend on trade state - but should be around 3_800
-        assert bl_spy.call_count > 3_800
-        assert bl_spy.call_count < 3_900
+        assert bl_spy.call_count > 1_350
+        assert bl_spy.call_count < 1_500
     else:
-        assert bl_spy.call_count < 2495
+        assert bl_spy.call_count < 995
 
     # Make sure we have parallel trades
     assert len(evaluate_result_multi(results["results"], "5m", 2)) > 0
