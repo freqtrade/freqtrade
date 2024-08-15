@@ -88,7 +88,14 @@ from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.exchange_ws import ExchangeWS
-from freqtrade.exchange.types import CcxtBalances, OHLCVResponse, OrderBook, Ticker, Tickers
+from freqtrade.exchange.types import (
+    CcxtBalances,
+    CcxtPosition,
+    OHLCVResponse,
+    OrderBook,
+    Ticker,
+    Tickers,
+)
 from freqtrade.misc import (
     chunks,
     deep_merge_dicts,
@@ -1683,7 +1690,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self, pair: Optional[str] = None) -> List[Dict]:
+    def fetch_positions(self, pair: Optional[str] = None) -> List[CcxtPosition]:
         """
         Fetch positions from the exchange.
         If no pair is given, all positions are returned.
@@ -1695,7 +1702,7 @@ class Exchange:
             symbols = []
             if pair:
                 symbols.append(pair)
-            positions: List[Dict] = self._api.fetch_positions(symbols)
+            positions: List[CcxtPosition] = self._api.fetch_positions(symbols)
             self._log_exchange_response("fetch_positions", positions)
             return positions
         except ccxt.DDoSProtection as e:
