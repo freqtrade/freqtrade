@@ -10,12 +10,12 @@ import numpy as np  # noqa
 import pandas as pd  # noqa
 
 from freqtrade.enums import SignalDirection
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs, timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 
 pd.options.mode.chained_assignment = None
 from pandas import DataFrame, Series
-from freqtrade.strategy import IStrategy, stoploss_from_absolute, informative
+from freqtrade.strategy import IStrategy, stoploss_from_absolute
 
 # --------------------------------
 # Add your lib to import here
@@ -400,7 +400,7 @@ class HarmonicDivergence(IStrategy):
             (
                     (dataframe[resample('total_bullish_divergences')].shift() > 0)
                     # & (dataframe[resample(f'{ema_fast}_{ema_middle}_cross_above')])
-                    & (dataframe[resample(f'{ema_fast}_{ema_middle}_adhesion')])
+                    & (dataframe[resample(f'{ema_fast}_{ema_middle}_adhesion')].shift())
                     # # & (dataframe['high'] > dataframe['high'].shift())
                     # & (
                     #     (keltner_middleband_check(dataframe) & (ema_check(dataframe)) & (green_candle(dataframe)))
@@ -412,7 +412,7 @@ class HarmonicDivergence(IStrategy):
                     # )
                     & two_bands_check(dataframe)
                     # # & bollinger_keltner_check(dataframe)
-                    & ema_crossed_below_check(dataframe)
+                    & ema_crossed_below_check(dataframe).shift()
                     & (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'enter_long'] = 1
@@ -422,7 +422,7 @@ class HarmonicDivergence(IStrategy):
             (
                     (dataframe[resample('total_bearish_divergences')].shift() > 0)
                     # & (dataframe[resample(f'{ema_fast}_{ema_middle}_crossed_below')])
-                    & (dataframe[resample(f'{ema_fast}_{ema_middle}_adhesion')])
+                    & (dataframe[resample(f'{ema_fast}_{ema_middle}_adhesion')].shift())
                     # # & (dataframe['high'] > dataframe['high'].shift())
                     # & (
                     #     (keltner_middleband_check(dataframe) & (ema_check(dataframe)) & (green_candle(dataframe)))
@@ -434,7 +434,7 @@ class HarmonicDivergence(IStrategy):
                     # )
                     & two_bands_check(dataframe)
                     # # & bollinger_keltner_check(dataframe)
-                    & ema_crossed_above_check(dataframe)
+                    & ema_crossed_above_check(dataframe).shift()
                     & (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'enter_short'] = 1
@@ -456,9 +456,9 @@ class HarmonicDivergence(IStrategy):
         _middle_slow_crossed_below_name = f'{ema_middle}_{ema_slow}_crossed_below_original'
 
         exit_long = dataframe[_fast_middle_crossed_below_name] & dataframe[_fast_slow_crossed_below_name] & dataframe[
-            _middle_slow_crossed_below_name]
+            _middle_slow_crossed_below_name].shift()
         exit_short = dataframe[_fast_middle_cross_above_name] & dataframe[_fast_slow__cross_above_name] & dataframe[
-            _middle_slow__cross_above_name]
+            _middle_slow__cross_above_name].shift()
 
         dataframe.loc[
             (
@@ -510,6 +510,13 @@ class HarmonicDivergence(IStrategy):
         # 返回最大的止损值，保持当前止损价不变
         return None
 
+    # 保证当前信号在上一次买入的时间间隔两根时间区间以外
+    def is_not_nearest_timeframe(self, current_time, date_last_filled_utc, timeframe):
+        # 调仓获取时间是当前两个时间区间都会取到入场信号、为避免第二根柱子接著买，所以乘以2
+        timeframe_minutes = timeframe_to_minutes(timeframe)
+        offset = self.config.get("exchange", {}).get("outdated_offset", 5)
+        return date_last_filled_utc < (current_time - datetime.timedelta(minutes=timeframe_minutes * 2 + offset))
+
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
                               current_rate: float, current_profit: float,
                               min_stake: Optional[float], max_stake: float,
@@ -517,7 +524,7 @@ class HarmonicDivergence(IStrategy):
                               current_entry_profit: float, current_exit_profit: float,
                               **kwargs) -> Optional[float]:
         try:
-            if trade.is_open and (not is_same_timeframe(current_time, trade.date_last_filled_utc,self.timeframe)):
+            if trade.is_open and (self.is_not_nearest_timeframe(current_time, trade.date_last_filled_utc,self.timeframe)):
                 dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
                 # dataframe.loc[dataframe.iloc[-1:].index, ] = True
                 # latest["enter_adjust_trade_position"] = True
@@ -942,10 +949,3 @@ def chaikin_money_flow(dataframe, n=20, fillna=False) -> Series:
     if fillna:
         cmf = cmf.replace([np.inf, -np.inf], np.nan).fillna(0)
     return Series(cmf, name='cmf')
-
-
-def is_same_timeframe(time1, time2, timeframe):
-    # 调仓获取时间是当前两个时间区间都会取到入场信号、为避免第二根柱子接著买，所以乘以2
-    seconds = timeframe_to_seconds(timeframe) * 2
-    same = (abs((time1 - time2).total_seconds()) <= seconds)
-    return same
