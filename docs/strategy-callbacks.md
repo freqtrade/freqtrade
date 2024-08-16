@@ -1006,6 +1006,8 @@ Values that are above `max_leverage` will be adjusted to `max_leverage`.
 For markets / exchanges that don't support leverage, this method is ignored.
 
 ``` python
+from typing import Optional
+
 class AwesomeStrategy(IStrategy):
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
