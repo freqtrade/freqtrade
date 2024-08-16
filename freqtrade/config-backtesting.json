@@ -50,6 +50,6 @@
   },
   "dry_run_wallet": 30000,
   "add_config_files": [
-    "custom-config/SharpeHyperOptLoss-1h.json"
+    "custom-config/SharpeHyperOptLoss-15m.json"
   ]
 }

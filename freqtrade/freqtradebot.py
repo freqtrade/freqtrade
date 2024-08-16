@@ -290,7 +290,8 @@ class FreqtradeBot(LoggingMixin):
 
         # Then looking for entry opportunities
         if self.get_free_open_trades():
-            self.enter_positions()
+            self.enter_positions(is_short=True)
+            self.enter_positions(is_short=False)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -587,22 +588,26 @@ class FreqtradeBot(LoggingMixin):
     # enter positions / open trades logic and methods
     #
 
-    def enter_positions(self) -> int:
+    def enter_positions(self,is_short:bool) -> int:
         """
         Tries to execute entry orders for new trades (positions)
         """
         trades_created = 0
-
         whitelist = deepcopy(self.active_pair_whitelist)
+
         if not whitelist:
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
         for trade in Trade.get_open_trades():
-            if trade.pair in whitelist:
-                whitelist.remove(trade.pair)
-                logger.debug("Ignoring %s in pair whitelist", trade.pair)
-
+            if trade.is_short == is_short:
+                if trade.pair in whitelist:
+                    whitelist.remove(trade.pair)
+                    logger.debug("Ignoring %s in pair whitelist", trade.pair)
+            # else:
+            #     if trade.pair in whitelistLong:
+            #         whitelistLong.remove(trade.pair)
+            #         logger.debug("Ignoring %s in pair whitelist", trade.pair)
         if not whitelist:
             self.log_once(
                 "No currency pair in active pair whitelist, but checking to exit open trades.",
@@ -628,7 +633,7 @@ class FreqtradeBot(LoggingMixin):
         for pair in whitelist:
             try:
                 with self._exit_lock:
-                    trades_created += self.create_trade(pair)
+                    trades_created += self.create_trade(pair,is_short)
             except DependencyException as exception:
                 logger.warning("Unable to create trade for %s: %s", pair, exception)
 
@@ -637,7 +642,7 @@ class FreqtradeBot(LoggingMixin):
 
         return trades_created
 
-    def create_trade(self, pair: str) -> bool:
+    def create_trade(self, pair: str,is_short:bool) -> bool:
         """
         Check the implemented trading strategy for entry signals.
 
@@ -661,6 +666,9 @@ class FreqtradeBot(LoggingMixin):
         (signal, enter_tag) = self.strategy.get_entry_signal(
             pair, self.strategy.timeframe, analyzed_df
         )
+
+        if (is_short and (signal == SignalDirection.LONG)) or ( (not is_short) and (signal == SignalDirection.SHORT)):
+            return False
 
         if signal:
             if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):

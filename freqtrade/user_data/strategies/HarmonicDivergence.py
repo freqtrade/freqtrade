@@ -532,7 +532,6 @@ class HarmonicDivergence(IStrategy):
                 enter = True if (trade.is_short and (enter_signal == SignalDirection.SHORT)) or (
                         (not trade.is_short) and (enter_signal == SignalDirection.LONG)) else False
                 if enter:
-                    logger.info(f"is_short = {trade.is_short},enter_signal = {enter_signal}")
                     filled_entries = trade.select_filled_orders(trade.entry_side)
                     count_of_entries = trade.nr_of_successful_entries
                     stake_amount = filled_entries[0].stake_amount
