@@ -55,7 +55,7 @@ class {{ strategy }}(IStrategy):
     INTERFACE_VERSION = 3
 
     # Optimal timeframe for the strategy.
-    timeframe = '5m'
+    timeframe = "5m"
 
     # Can this strategy go short?
     can_short: bool = False
@@ -134,9 +134,9 @@ class {{ strategy }}(IStrategy):
         dataframe.loc[
             (
                 {{ buy_trend | indent(16) }}
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            'enter_long'] = 1
+            "enter_long"] = 1
         # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
         """
         dataframe.loc[
@@ -159,9 +159,9 @@ class {{ strategy }}(IStrategy):
         dataframe.loc[
             (
                 {{ sell_trend | indent(16) }}
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            'exit_long'] = 1
+            "exit_long"] = 1
         # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
         """
         dataframe.loc[
