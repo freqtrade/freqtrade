@@ -407,6 +407,8 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 The Metadata-dict should not be modified and does not persist information across multiple calls.
 Instead, have a look at the [Storing information](strategy-advanced.md#storing-information-persistent) section.
 
+--8<-- "includes/strategy-imports.md"
+
 ## Strategy file loading
 
 By default, freqtrade will attempt to load strategies from all `.py` files within `user_data/strategies`.

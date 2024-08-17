@@ -24,6 +24,8 @@ Currently available callbacks:
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
 
+--8<-- "includes/strategy-imports.md"
+
 ## Bot start
 
 A simple callback which is called once when the strategy is loaded.
