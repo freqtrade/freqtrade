@@ -4,12 +4,27 @@
 # --- Do not remove these libs ---
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 from datetime import datetime
-from typing import Optional, Union
+from pandas import DataFrame
+from typing import Dict, Optional, Union
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
-                                IntParameter, IStrategy, merge_informative_pair)
+from freqtrade.strategy import (
+    IStrategy,
+    Trade,
+    Order,
+    PairLocks,
+    informative,  # @informative decorator
+    # Hyperopt Parameters
+    BooleanParameter,
+    CategoricalParameter,
+    DecimalParameter,
+    IntParameter,
+    RealParameter,
+    # Strategy helper functions
+    merge_informative_pair,
+    stoploss_from_absolute,
+    stoploss_from_open,
+)
 
 # --------------------------------
 # Add your lib to import here
