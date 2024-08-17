@@ -1,5 +1,4 @@
 # flake8: noqa: F401
-from typing import Dict, List, Optional, Union
 
 from freqtrade.exchange import (
     timeframe_to_minutes,
@@ -45,9 +44,4 @@ __all__ = [
     "merge_informative_pair",
     "stoploss_from_absolute",
     "stoploss_from_open",
-    # Typings
-    "List",
-    "Optional",
-    "Union",
-    "Dict",
 ]
