@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from pandas import DataFrame
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from freqtrade.strategy import (
     IStrategy,

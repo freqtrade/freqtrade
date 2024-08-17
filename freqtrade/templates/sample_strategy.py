@@ -2,17 +2,28 @@
 # flake8: noqa: F401
 # isort: skip_file
 # --- Do not remove these libs ---
-import numpy as np  # noqa
-import pandas as pd  # noqa
+import numpy as np
+import pandas as pd
+from datetime import datetime
 from pandas import DataFrame
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from freqtrade.strategy import (
+    IStrategy,
+    Trade,
+    Order,
+    PairLocks,
+    informative,  # @informative decorator
+    # Hyperopt Parameters
     BooleanParameter,
     CategoricalParameter,
     DecimalParameter,
-    IStrategy,
     IntParameter,
+    RealParameter,
+    # Strategy helper functions
+    merge_informative_pair,
+    stoploss_from_absolute,
+    stoploss_from_open,
 )
 
 # --------------------------------
