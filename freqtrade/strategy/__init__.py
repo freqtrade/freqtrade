@@ -25,6 +25,7 @@ from freqtrade.strategy.strategy_helper import (
 )
 
 
+# Imports to be used for `from freqtrade.strategy import *`
 __all__ = [
     "timeframe_to_minutes",
     "timeframe_to_next_date",
