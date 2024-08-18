@@ -43,10 +43,10 @@ class AwesomeStrategy(IStrategy):
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        if self.config['runmode'].value in ('live', 'dry_run'):
+        if self.config["runmode"].value in ("live", "dry_run"):
             # Assign this to the class by using self.*
             # can then be used by populate_* methods
-            self.custom_remote_data = requests.get('https://some_remote_source.example.com')
+            self.custom_remote_data = requests.get("https://some_remote_source.example.com")
 
 ```
 
@@ -59,6 +59,7 @@ seconds, unless configured differently) or once per candle in backtest/hyperopt 
 This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
 
 ``` python
+# Default imports
 import requests
 
 class AwesomeStrategy(IStrategy):
@@ -73,10 +74,10 @@ class AwesomeStrategy(IStrategy):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        if self.config['runmode'].value in ('live', 'dry_run'):
+        if self.config["runmode"].value in ("live", "dry_run"):
             # Assign this to the class by using self.*
             # can then be used by populate_* methods
-            self.remote_data = requests.get('https://some_remote_source.example.com')
+            self.remote_data = requests.get("https://some_remote_source.example.com")
 
 ```
 
@@ -85,6 +86,8 @@ class AwesomeStrategy(IStrategy):
 Called before entering a trade, makes it possible to manage your position size when placing a new trade.
 
 ```python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
@@ -94,13 +97,13 @@ class AwesomeStrategy(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_candle['fastk_rsi_1h'] > current_candle['fastd_rsi_1h']:
-            if self.config['stake_amount'] == 'unlimited':
+        if current_candle["fastk_rsi_1h"] > current_candle["fastd_rsi_1h"]:
+            if self.config["stake_amount"] == "unlimited":
                 # Use entire available wallet during favorable conditions when in compounding mode.
                 return max_stake
             else:
                 # Compound profits during favorable conditions instead of using a static stake.
-                return self.wallets.get_total_stake_amount() / self.config['max_open_trades']
+                return self.wallets.get_total_stake_amount() / self.config["max_open_trades"]
 
         # Use default stake amount.
         return proposed_stake
@@ -131,25 +134,27 @@ Using `custom_exit()` signals in place of stoploss though *is not recommended*. 
 An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:
 
 ``` python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
-    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
 
         # Above 20% profit, sell when rsi < 80
         if current_profit > 0.2:
-            if last_candle['rsi'] < 80:
-                return 'rsi_below_80'
+            if last_candle["rsi"] < 80:
+                return "rsi_below_80"
 
         # Between 2% and 10%, sell if EMA-long above EMA-short
         if 0.02 < current_profit < 0.1:
-            if last_candle['emalong'] > last_candle['emashort']:
-                return 'ema_long_below_80'
+            if last_candle["emalong"] > last_candle["emashort"]:
+                return "ema_long_below_80"
 
         # Sell any positions at a loss if they are held for more than one day.
         if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
-            return 'unclog'
+            return "unclog"
 ```
 
 See [Dataframe access](strategy-advanced.md#dataframe-access) for more information about dataframe use in strategy callbacks.
@@ -169,7 +174,6 @@ During backtesting, `current_rate` (and `current_profit`) are provided against t
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 Returning `None` will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
 `NaN` and `inf` values are considered invalid and will be ignored (identical to `None`).
-
 
 Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
@@ -303,9 +307,9 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, after_fill: bool,
                         **kwargs) -> Optional[float]:
 
-        if pair in ('ETH/BTC', 'XRP/BTC'):
+        if pair in ("ETH/BTC", "XRP/BTC"):
             return -0.10
-        elif pair in ('LTC/BTC'):
+        elif pair in ("LTC/BTC"):
             return -0.05
         return -0.15
 ```
@@ -384,7 +388,7 @@ class AwesomeStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # <...>
-        dataframe['sar'] = ta.SAR(dataframe)
+        dataframe["sar"] = ta.SAR(dataframe)
 
     use_custom_stoploss = True
 
@@ -396,7 +400,7 @@ class AwesomeStrategy(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
 
         # Use parabolic sar as absolute stoploss price
-        stoploss_price = last_candle['sar']
+        stoploss_price = last_candle["sar"]
 
         # Convert absolute price to percentage relative to current_rate
         if stoploss_price < current_rate:
@@ -462,7 +466,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), current_rate=current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate + (side * candle["atr"] * 2), current_rate=current_rate, is_short=trade.is_short, leverage=trade.leverage)`.
     For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the [`custom_stoploss`](strategy-callbacks.md#custom-stoploss) callback  returns the ["risk for this trade"](stoploss.md#stoploss-and-leverage) - not the relative price movement.
 
     ``` python
@@ -472,8 +476,8 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
 
         use_custom_stoploss = True
 
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
             return dataframe
 
         def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
@@ -483,7 +487,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
             trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
             candle = dataframe.iloc[-1].squeeze()
             side = 1 if trade.is_short else -1
-            return stoploss_from_absolute(current_rate + (side * candle['atr'] * 2), 
+            return stoploss_from_absolute(current_rate + (side * candle["atr"] * 2), 
                                           current_rate=current_rate, 
                                           is_short=trade.is_short,
                                           leverage=trade.leverage)
@@ -575,8 +579,8 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'entry': 60 * 25,
-        'exit': 60 * 25
+        "entry": 60 * 25,
+        "exit": 60 * 25
     }
 
     def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
@@ -677,7 +681,7 @@ class AwesomeStrategy(IStrategy):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
-        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param side: "long" or "short" - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -725,8 +729,8 @@ class AwesomeStrategy(IStrategy):
                      or current rate for market orders.
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
-            Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'exit_signal', 'force_exit', 'emergency_exit']
+            Can be any of ["roi", "stop_loss", "stoploss_on_exchange", "trailing_stop_loss",
+                           "exit_signal", "force_exit", "emergency_exit"]
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True, then the exit-order is placed on the exchange.
@@ -758,7 +762,7 @@ This callback is **not** called when there is an open order (either buy or sell)
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
-Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2nd element the tag (e.g. `return 250, 'increase_favorable_conditions'`).
+Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2nd element the tag (e.g. `return 250, "increase_favorable_conditions"`).
 
 Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.
 
@@ -780,7 +784,7 @@ Returning a value more than the above (so remaining stake_amount would become ne
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
     If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
-    Using 'unlimited' stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
+    Using `"unlimited"` stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
 
 !!! Warning "Stoploss calculation"
     Stoploss is still calculated from the initial opening price, not averaged price.
@@ -799,9 +803,6 @@ Returning a value more than the above (so remaining stake_amount would become ne
 
 ``` python
 # Default imports
-from freqtrade.persistence import Trade
-from typing import Optional, Tuple, Union
-
 
 class DigDeeperStrategy(IStrategy):
 
@@ -864,7 +865,7 @@ class DigDeeperStrategy(IStrategy):
 
         if current_profit > 0.05 and trade.nr_of_successful_exits == 0:
             # Take half of the profit at +5%
-            return -(trade.stake_amount / 2), 'half_profit_5%'
+            return -(trade.stake_amount / 2), "half_profit_5%"
 
         if current_profit > -0.05:
             return None
@@ -874,7 +875,7 @@ class DigDeeperStrategy(IStrategy):
         # Only buy when not actively falling price.
         last_candle = dataframe.iloc[-1].squeeze()
         previous_candle = dataframe.iloc[-2].squeeze()
-        if last_candle['close'] < previous_candle['close']:
+        if last_candle["close"] < previous_candle["close"]:
             return None
 
         filled_entries = trade.select_filled_orders(trade.entry_side)
@@ -892,7 +893,7 @@ class DigDeeperStrategy(IStrategy):
             stake_amount = filled_entries[0].stake_amount
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
-            return stake_amount, '1/3rd_increase'
+            return stake_amount, "1/3rd_increase"
         except Exception as exception:
             return None
 
@@ -964,7 +965,7 @@ class AwesomeStrategy(IStrategy):
         :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.
         :param current_order_rate: Rate of the existing order in place.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
-        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param side: "long" or "short" - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New entry price value if provided
 
@@ -1013,7 +1014,7 @@ class AwesomeStrategy(IStrategy):
         :param proposed_leverage: A leverage proposed by the bot.
         :param max_leverage: Max leverage allowed on this pair
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
-        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param side: "long" or "short" - indicating the direction of the proposed trade
         :return: A leverage amount, which is between 1.0 and max_leverage.
         """
         return 1.0
@@ -1048,7 +1049,7 @@ class AwesomeStrategy(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
         
         if (trade.nr_of_successful_entries == 1) and (order.ft_order_side == trade.entry_side):
-            trade.set_custom_data(key='entry_candle_high', value=last_candle['high'])
+            trade.set_custom_data(key="entry_candle_high", value=last_candle["high"])
 
         return None
 
