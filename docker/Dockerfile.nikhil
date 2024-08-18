@@ -1,0 +1,25 @@
+##FROM freqtradeorg/freqtrade:stable_freqaitorch
+#FROM freqtradeorg/freqtrade:develop_freqairl
+#
+## Install dependencies
+#COPY requirements-nikhil.txt /freqtrade/
+#
+#RUN pip install numpy --user --no-cache-dir \
+#  && pip install -r requirements-nikhil.txt --user --no-cache-dir
+#
+## Empty the ENTRYPOINT to allow all commands
+#ENTRYPOINT []
+#
+#
+
+
+
+ARG sourceimage=freqtradeorg/freqtrade
+#ARG sourcetag=develop_freqai
+ARG sourcetag=develop_freqairl
+FROM ${sourceimage}:${sourcetag}
+
+# Install dependencies
+COPY requirements-nikhil.txt /freqtrade/
+
+RUN pip install -r requirements-nikhil.txt --user --no-cache-dir
