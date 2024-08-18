@@ -12,9 +12,9 @@ Obviously you can add more imports as needed for your strategy.
 # --- Do not remove these imports ---
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pandas import DataFrame
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Tuple
 
 from freqtrade.strategy import (
     IStrategy,
@@ -28,6 +28,10 @@ from freqtrade.strategy import (
     DecimalParameter,
     IntParameter,
     RealParameter,
+    # timeframe helpers
+    timeframe_to_minutes,
+    timeframe_to_next_date,
+    timeframe_to_prev_date,
     # Strategy helper functions
     merge_informative_pair,
     stoploss_from_absolute,
