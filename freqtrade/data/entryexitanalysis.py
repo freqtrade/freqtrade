@@ -257,16 +257,14 @@ def prepare_results(
 
 def print_results(
     res_df: pd.DataFrame,
+    exit_df: pd.DataFrame,
     analysis_groups: List[str],
     indicator_list: List[str],
     csv_path: Path,
     rejected_signals=None,
     to_csv=False,
-    exited_signals=False,
 ):
     if res_df.shape[0] > 0:
-        if exited_signals is True:
-            print("Analysing on exit signals.")
         if analysis_groups:
             _do_group_table_output(res_df, analysis_groups, to_csv=to_csv, csv_path=csv_path)
 
@@ -286,9 +284,11 @@ def print_results(
             for ind in indicator_list:
                 if ind in res_df:
                     available_inds.append(ind)
-            ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
+
+            merged_df = _merge_dfs(res_df, exit_df, available_inds)
+
             _print_table(
-                res_df[ilist],
+                merged_df,
                 sortcols=["exit_reason"],
                 show_index=False,
                 name="Indicators:",
@@ -297,6 +297,21 @@ def print_results(
             )
     else:
         print("\\No trades to show")
+
+
+def _merge_dfs(entry_df, exit_df, available_inds):
+    merge_on = ["pair", "open_date"]
+    columns_to_keep = merge_on + ["enter_reason", "exit_reason"] + available_inds
+    if exit_df is not None and not exit_df.empty:
+        merged_df = pd.merge(
+            entry_df[columns_to_keep],
+            exit_df[merge_on + available_inds],
+            on=merge_on,
+            suffixes=(" (entry)", " (exit)"),
+        )
+    else:
+        merged_df = entry_df[columns_to_keep]
+    return merged_df
 
 
 def _print_table(
@@ -324,7 +339,6 @@ def process_entry_exit_reasons(config: Config):
         enter_reason_list = config.get("enter_reason_list", ["all"])
         exit_reason_list = config.get("exit_reason_list", ["all"])
         indicator_list = config.get("indicator_list", [])
-        do_exited = config.get("analysis_exited", False)
         do_rejected = config.get("analysis_rejected", False)
         to_csv = config.get("analysis_to_csv", False)
         csv_path = Path(config.get("analysis_csv_path", config["exportfilename"]))
@@ -341,12 +355,8 @@ def process_entry_exit_reasons(config: Config):
             trades = load_backtest_data(config["exportfilename"], strategy_name)
 
             if trades is not None and not trades.empty:
-                date_col = "open_date"
-                if do_exited is True:
-                    signal_candles = _load_exit_signal_candles(config["exportfilename"])
-                    date_col = "close_date"
-                else:
-                    signal_candles = _load_signal_candles(config["exportfilename"])
+                signal_candles = _load_signal_candles(config["exportfilename"])
+                exit_signals = _load_exit_signal_candles(config["exportfilename"])
 
                 rej_df = None
                 if do_rejected:
@@ -359,31 +369,64 @@ def process_entry_exit_reasons(config: Config):
                         timerange=timerange,
                     )
 
-                analysed_trades_dict = _process_candles_and_indicators(
+                entry_df = _generate_dfs(
                     config["exchange"]["pair_whitelist"],
-                    strategy_name,
-                    trades,
-                    signal_candles,
-                    date_col,
-                )
-
-                res_df = prepare_results(
-                    analysed_trades_dict,
-                    strategy_name,
                     enter_reason_list,
                     exit_reason_list,
-                    timerange=timerange,
+                    signal_candles,
+                    strategy_name,
+                    timerange,
+                    trades,
+                    "open_date",
+                )
+
+                exit_df = _generate_dfs(
+                    config["exchange"]["pair_whitelist"],
+                    enter_reason_list,
+                    exit_reason_list,
+                    exit_signals,
+                    strategy_name,
+                    timerange,
+                    trades,
+                    "close_date",
                 )
 
                 print_results(
-                    res_df,
+                    entry_df,
+                    exit_df,
                     analysis_groups,
                     indicator_list,
                     rejected_signals=rej_df,
                     to_csv=to_csv,
                     csv_path=csv_path,
-                    exited_signals=do_exited,
                 )
 
     except ValueError as e:
         raise OperationalException(e) from e
+
+
+def _generate_dfs(
+    pairlist: list,
+    enter_reason_list: list,
+    exit_reason_list: list,
+    signal_candles: Dict,
+    strategy_name: str,
+    timerange: TimeRange,
+    trades: pd.DataFrame,
+    date_col: str,
+) -> pd.DataFrame:
+    analysed_trades_dict = _process_candles_and_indicators(
+        pairlist,
+        strategy_name,
+        trades,
+        signal_candles,
+        date_col,
+    )
+    res_df = prepare_results(
+        analysed_trades_dict,
+        strategy_name,
+        enter_reason_list,
+        exit_reason_list,
+        timerange=timerange,
+    )
+    return res_df
