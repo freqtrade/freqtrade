@@ -401,7 +401,6 @@ class Configuration:
             ("indicator_list", "Analysis indicator list: {}"),
             ("timerange", "Filter trades by timerange: {}"),
             ("analysis_rejected", "Analyse rejected signals: {}"),
-            ("analysis_exited", "Analyse exited signals: {}"),
             ("analysis_to_csv", "Store analysis tables to CSV: {}"),
             ("analysis_csv_path", "Path to store analysis CSVs: {}"),
             # Lookahead analysis results
