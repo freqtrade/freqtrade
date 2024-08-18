@@ -198,9 +198,7 @@ Of course, many more things are possible, and all examples can be combined at wi
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
 ``` python
-# additional imports required
-from datetime import datetime
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -208,7 +206,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool, 
                         **kwargs) -> Optional[float]:
         """
@@ -238,8 +236,7 @@ class AwesomeStrategy(IStrategy):
 Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
 
 ``` python
-from datetime import datetime, timedelta
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -247,7 +244,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool, 
                         **kwargs) -> Optional[float]:
 
@@ -265,8 +262,7 @@ Use the initial stoploss for the first 60 minutes, after this change to 10% trai
 If an additional order fills, set stoploss to -10% below the new `open_rate` ([Averaged across all entries](#position-adjust-calculations)).
 
 ``` python
-from datetime import datetime, timedelta
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -274,7 +270,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool, 
                         **kwargs) -> Optional[float]:
 
@@ -295,8 +291,7 @@ Use a different stoploss depending on the pair.
 In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
 
 ``` python
-from datetime import datetime
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -304,7 +299,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
                         **kwargs) -> Optional[float]:
 
@@ -322,8 +317,7 @@ Use the initial stoploss until the profit is above 4%, then use a trailing stopl
 Please note that the stoploss can only increase, values lower than the current stoploss are ignored.
 
 ``` python
-from datetime import datetime, timedelta
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -331,7 +325,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
                         **kwargs) -> Optional[float]:
 
@@ -355,9 +349,7 @@ Instead of continuously trailing behind the current price, this example sets fix
 * Once profit is > 40% - set stoploss to 25% above open price.
 
 ``` python
-from datetime import datetime
-from freqtrade.persistence import Trade
-from freqtrade.strategy import stoploss_from_open
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -365,7 +357,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
                         **kwargs) -> Optional[float]:
 
@@ -386,6 +378,8 @@ class AwesomeStrategy(IStrategy):
 Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.
 
 ``` python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -394,7 +388,7 @@ class AwesomeStrategy(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, after_fill: bool,
                         **kwargs) -> Optional[float]:
 
@@ -431,10 +425,7 @@ Stoploss values returned from `custom_stoploss()` must specify a percentage rela
 
 
     ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_open
+    # Default imports
 
     class AwesomeStrategy(IStrategy):
 
@@ -442,7 +433,7 @@ Stoploss values returned from `custom_stoploss()` must specify a percentage rela
 
         use_custom_stoploss = True
 
-        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+        def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                             current_rate: float, current_profit: float, after_fill: bool,
                             **kwargs) -> Optional[float]:
 
@@ -475,10 +466,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
     For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the [`custom_stoploss`](strategy-callbacks.md#custom-stoploss) callback  returns the ["risk for this trade"](stoploss.md#stoploss-and-leverage) - not the relative price movement.
 
     ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_absolute, timeframe_to_prev_date
+    # Default imports
 
     class AwesomeStrategy(IStrategy):
 
@@ -488,7 +476,7 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
             dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
             return dataframe
 
-        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+        def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                             current_rate: float, current_profit: float, after_fill: bool,
                             **kwargs) -> Optional[float]:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -501,7 +489,6 @@ The helper function `stoploss_from_absolute()` can be used to convert from an ab
                                           leverage=trade.leverage)
 
     ```
-
 
 ---
 
@@ -522,19 +509,18 @@ Each of these methods are called right before placing an order on the exchange.
 ### Custom order entry and exit price example
 
 ``` python
-from datetime import datetime, timedelta, timezone
-from freqtrade.persistence import Trade
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, trade: Optional['Trade'], current_time: datetime, proposed_rate: float,
+    def custom_entry_price(self, pair: str, trade: Optional[Trade], current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
-        new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
+        new_entryprice = dataframe["bollinger_10_lowerband"].iat[-1]
 
         return new_entryprice
 
@@ -544,7 +530,7 @@ class AwesomeStrategy(IStrategy):
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
-        new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
+        new_exitprice = dataframe["bollinger_10_upperband"].iat[-1]
 
         return new_exitprice
 
@@ -581,8 +567,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta
-from freqtrade.persistence import Trade, Order
+    # Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -594,7 +579,7 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+    def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
                             current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -605,7 +590,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: 'Order',
+    def check_exit_timeout(self, pair: str, trade: Trade, order: Order,
                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -622,8 +607,7 @@ class AwesomeStrategy(IStrategy):
 ### Custom order timeout example (using additional data)
 
 ``` python
-from datetime import datetime
-from freqtrade.persistence import Trade, Order
+    # Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -631,24 +615,24 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'entry': 60 * 25,
-        'exit': 60 * 25
+        "entry": 60 * 25,
+        "exit": 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+    def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
                             current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
-        current_price = ob['bids'][0][0]
+        current_price = ob["bids"][0][0]
         # Cancel buy order if price is more than 2% above the order.
         if current_price > order.price * 1.02:
             return True
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+    def check_exit_timeout(self, pair: str, trade: Trade, order: Order,
                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
-        current_price = ob['asks'][0][0]
+        current_price = ob["asks"][0][0]
         # Cancel sell order if price is more than 2% below the order.
         if current_price < order.price * 0.98:
             return True
@@ -667,6 +651,8 @@ This are the last methods that will be called before an order is placed.
 `confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
 ``` python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
@@ -713,8 +699,7 @@ The exit-reasons (if applicable) will be in the following sequence:
 * `trailing_stop_loss`
 
 ``` python
-from freqtrade.persistence import Trade
-
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -747,7 +732,7 @@ class AwesomeStrategy(IStrategy):
         :return bool: When True, then the exit-order is placed on the exchange.
             False aborts the process
         """
-        if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
+        if exit_reason == "force_exit" and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)
@@ -813,6 +798,7 @@ Returning a value more than the above (so remaining stake_amount would become ne
     Trades with long duration and 10s or even 100ds of position adjustments are therefore not recommended, and should be closed at regular intervals to not affect performance.
 
 ``` python
+# Default imports
 from freqtrade.persistence import Trade
 from typing import Optional, Tuple, Union
 
@@ -953,8 +939,7 @@ If the cancellation of the original order fails, then the order will not be repl
     Entry Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.
 
 ```python
-from freqtrade.persistence import Trade
-from datetime import timedelta, datetime
+# Default imports
 
 class AwesomeStrategy(IStrategy):
 
@@ -985,7 +970,12 @@ class AwesomeStrategy(IStrategy):
 
         """
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
-        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10)) > trade.open_date_utc:
+        if (
+            pair == "BTC/USDT" 
+            and entry_tag == "long_sma200" 
+            and side == "long" 
+            and (current_time - timedelta(minutes=10)) > trade.open_date_utc
+        ):
             # just cancel the order if it has been filled more than half of the amount
             if order.filled > order.remaining:
                 return None
@@ -993,7 +983,7 @@ class AwesomeStrategy(IStrategy):
                 dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
                 current_candle = dataframe.iloc[-1].squeeze()
                 # desired price
-                return current_candle['sma_200']
+                return current_candle["sma_200"]
         # default: maintain existing order
         return current_order_rate
 ```
@@ -1008,6 +998,8 @@ Values that are above `max_leverage` will be adjusted to `max_leverage`.
 For markets / exchanges that don't support leverage, this method is ignored.
 
 ``` python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
@@ -1038,6 +1030,8 @@ It will be called independent of the order type (entry, exit, stoploss or positi
 Assuming that your strategy needs to store the high value of the candle at trade entry, this is possible with this callback as the following example show.
 
 ``` python
+# Default imports
+
 class AwesomeStrategy(IStrategy):
     def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs) -> None:
         """
