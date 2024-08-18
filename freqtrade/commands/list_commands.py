@@ -46,14 +46,20 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         table = Table(title=title)
 
         table.add_column("Exchange Name")
+        table.add_column("Class Name")
         table.add_column("Markets")
         table.add_column("Reason")
 
         for exchange in available_exchanges:
-            name = Text(exchange["classname"])
+            name = Text(exchange["name"])
             if exchange["supported"]:
-                name.append(" (Official)", style="italic")
+                name.append(" (Supported)", style="italic")
                 name.stylize("green bold")
+            classname = Text(exchange["classname"])
+            if exchange["is_alias"]:
+                name.stylize("strike")
+                classname.stylize("strike")
+                classname.append(f" (use {exchange['alias_for']})", style="italic")
 
             trade_modes = Text(
                 ", ".join(
@@ -68,6 +74,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
             table.add_row(
                 name,
+                classname,
                 trade_modes,
                 exchange["comment"],
                 style=None if exchange["valid"] else "red",
