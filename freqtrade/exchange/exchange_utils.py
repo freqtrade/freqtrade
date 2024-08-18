@@ -2,6 +2,7 @@
 Exchange support utils
 """
 
+import inspect
 from datetime import datetime, timedelta, timezone
 from math import ceil, floor
 from typing import Any, Dict, List, Optional, Tuple
@@ -101,6 +102,9 @@ def _build_exchange_list_entry(
         "comment": comment,
         "dex": getattr(ex_mod, "dex", False),
         "is_alias": getattr(ex_mod, "alias", False),
+        "alias_for": inspect.getmro(ex_mod.__class__)[1]().id
+        if getattr(ex_mod, "alias", False)
+        else None,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
     if resolved := exchangeClasses.get(exchange_name.lower()):
