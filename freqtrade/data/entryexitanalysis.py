@@ -302,16 +302,16 @@ def print_results(
 def _merge_dfs(entry_df, exit_df, available_inds):
     merge_on = ["pair", "open_date"]
     columns_to_keep = merge_on + ["enter_reason", "exit_reason"] + available_inds
-    if exit_df is not None and not exit_df.empty:
-        merged_df = pd.merge(
-            entry_df[columns_to_keep],
-            exit_df[merge_on + available_inds],
-            on=merge_on,
-            suffixes=(" (entry)", " (exit)"),
-        )
-    else:
-        merged_df = entry_df[columns_to_keep]
-    return merged_df
+
+    if exit_df is None or exit_df.empty:
+        return entry_df[columns_to_keep]
+
+    return pd.merge(
+        entry_df[columns_to_keep],
+        exit_df[merge_on + available_inds],
+        on=merge_on,
+        suffixes=(" (entry)", " (exit)"),
+    )
 
 
 def _print_table(
