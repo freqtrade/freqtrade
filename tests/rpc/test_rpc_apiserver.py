@@ -2156,6 +2156,7 @@ def test_api_exchanges(botclient):
         "comment": "",
         "dex": False,
         "is_alias": False,
+        "alias_for": None,
         "trade_modes": [
             {"trading_mode": "spot", "margin_mode": ""},
             {"trading_mode": "futures", "margin_mode": "isolated"},
@@ -2171,6 +2172,7 @@ def test_api_exchanges(botclient):
         "dex": False,
         "comment": "",
         "is_alias": False,
+        "alias_for": None,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
     waves = [x for x in response["exchanges"] if x["classname"] == "wavesexchange"][0]
@@ -2182,6 +2184,7 @@ def test_api_exchanges(botclient):
         "dex": True,
         "comment": ANY,
         "is_alias": False,
+        "alias_for": None,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
 
