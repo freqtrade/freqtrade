@@ -18,13 +18,13 @@ from pathlib import Path
 # Modify this cell to insure that the output shows the correct path.
 # Define all paths relative to the project root shown in the cell output
 project_root = "somedir/freqtrade"
-i=0
+i = 0
 try:
     os.chdir(project_root)
-    if not Path('LICENSE').is_file():
+    if not Path("LICENSE").is_file():
         i = 0
-        while i < 4 and (not Path('LICENSE').is_file()):
-            os.chdir(Path(Path.cwd(), '../'))
+        while i < 4 and (not Path("LICENSE").is_file()):
+            os.chdir(Path(Path.cwd(), "../"))
             i += 1
         project_root = Path.cwd()
 except FileNotFoundError:
@@ -63,12 +63,13 @@ from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType
 
 
-candles = load_pair_history(datadir=data_location,
-                            timeframe=config["timeframe"],
-                            pair=pair,
-                            data_format = "json",  # Make sure to update this to your data
-                            candle_type=CandleType.SPOT,
-                            )
+candles = load_pair_history(
+    datadir=data_location,
+    timeframe=config["timeframe"],
+    pair=pair,
+    data_format="json",  # Make sure to update this to your data
+    candle_type=CandleType.SPOT,
+)
 
 # Confirm success
 print(f"Loaded {len(candles)} rows of data for {pair} from {data_location}")
@@ -90,7 +91,7 @@ strategy.dp = DataProvider(config, None, None)
 strategy.ft_bot_start()
 
 # Generate buy/sell signals using strategy
-df = strategy.analyze_ticker(candles, {'pair': pair})
+df = strategy.analyze_ticker(candles, {"pair": pair})
 df.tail()
 ```
 
@@ -109,7 +110,7 @@ df.tail()
 ```python
 # Report results
 print(f"Generated {df['enter_long'].sum()} entry signals")
-data = df.set_index('date', drop=False)
+data = df.set_index("date", drop=False)
 data.tail()
 ```
 
@@ -141,25 +142,24 @@ backtest_dir = config["user_data_dir"] / "backtest_results"
 # This contains all information used to generate the backtest result.
 stats = load_backtest_stats(backtest_dir)
 
-strategy = 'SampleStrategy'
+strategy = "SampleStrategy"
 # All statistics are available per strategy, so if `--strategy-list` was used during backtest,
 # this will be reflected here as well.
 # Example usages:
-print(stats['strategy'][strategy]['results_per_pair'])
+print(stats["strategy"][strategy]["results_per_pair"])
 # Get pairlist used for this backtest
-print(stats['strategy'][strategy]['pairlist'])
+print(stats["strategy"][strategy]["pairlist"])
 # Get market change (average change of all pairs from start to end of the backtest period)
-print(stats['strategy'][strategy]['market_change'])
+print(stats["strategy"][strategy]["market_change"])
 # Maximum drawdown ()
-print(stats['strategy'][strategy]['max_drawdown'])
+print(stats["strategy"][strategy]["max_drawdown"])
 # Maximum drawdown start and end
-print(stats['strategy'][strategy]['drawdown_start'])
-print(stats['strategy'][strategy]['drawdown_end'])
+print(stats["strategy"][strategy]["drawdown_start"])
+print(stats["strategy"][strategy]["drawdown_end"])
 
 
 # Get strategy comparison (only relevant if multiple strategies were compared)
-print(stats['strategy_comparison'])
-
+print(stats["strategy_comparison"])
 ```
 
 
@@ -189,14 +189,13 @@ from freqtrade.data.btanalysis import load_backtest_stats
 # backtest_dir = config["user_data_dir"] / "backtest_results"
 
 stats = load_backtest_stats(backtest_dir)
-strategy_stats = stats['strategy'][strategy]
+strategy_stats = stats["strategy"][strategy]
 
-df = pd.DataFrame(columns=['dates','equity'], data=strategy_stats['daily_profit'])
-df['equity_daily'] = df['equity'].cumsum()
+df = pd.DataFrame(columns=["dates", "equity"], data=strategy_stats["daily_profit"])
+df["equity_daily"] = df["equity"].cumsum()
 
 fig = px.line(df, x="dates", y="equity_daily")
 fig.show()
-
 ```
 
 ### Load live trading results into a pandas dataframe
@@ -226,7 +225,7 @@ from freqtrade.data.btanalysis import analyze_trade_parallelism
 
 
 # Analyze the above
-parallel_trades = analyze_trade_parallelism(trades, '5m')
+parallel_trades = analyze_trade_parallelism(trades, "5m")
 
 parallel_trades.plot()
 ```
@@ -243,19 +242,17 @@ from freqtrade.plot.plotting import generate_candlestick_graph
 # Limit graph period to keep plotly quick and reactive
 
 # Filter trades to one pair
-trades_red = trades.loc[trades['pair'] == pair]
+trades_red = trades.loc[trades["pair"] == pair]
 
-data_red = data['2019-06-01':'2019-06-10']
+data_red = data["2019-06-01":"2019-06-10"]
 # Generate candlestick graph
-graph = generate_candlestick_graph(pair=pair,
-                                   data=data_red,
-                                   trades=trades_red,
-                                   indicators1=['sma20', 'ema50', 'ema55'],
-                                   indicators2=['rsi', 'macd', 'macdsignal', 'macdhist']
-                                  )
-
-
-
+graph = generate_candlestick_graph(
+    pair=pair,
+    data=data_red,
+    trades=trades_red,
+    indicators1=["sma20", "ema50", "ema55"],
+    indicators2=["rsi", "macd", "macdsignal", "macdhist"],
+)
 ```
 
 
@@ -265,7 +262,6 @@ graph = generate_candlestick_graph(pair=pair,
 
 # Render graph in a separate window
 graph.show(renderer="browser")
-
 ```
 
 ## Plot average profit per trade as distribution graph
@@ -276,11 +272,10 @@ import plotly.figure_factory as ff
 
 
 hist_data = [trades.profit_ratio]
-group_labels = ['profit_ratio']  # name of the dataset
+group_labels = ["profit_ratio"]  # name of the dataset
 
 fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)
 fig.show()
-
 ```
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.
