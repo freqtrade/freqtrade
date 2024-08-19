@@ -103,6 +103,10 @@ The indicators have to be present in your strategy's main DataFrame (either for 
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.
 
+!!! note "Indicator List"
+    The indicator values will be displayed for both entry and exit points. If `--indicator-list all` is specified, 
+    only the indicators at the entry point will be shown to avoid excessively large lists, which could occur depending on the strategy.
+
 There are a range of candle and trade-related fields that are included in the analysis so are 
 automatically accessible by including them on the indicator-list, and these include:
 
@@ -139,14 +143,6 @@ Use the `--rejected-signals` option to print out rejected signals.
 
 ```bash
 freqtrade backtesting-analysis -c <config.json> --rejected-signals
-```
-
-### Printing analysis on exit signals
-
-Use the `--exit-signals` option to print out analysis on exited signals.
-
-```bash
-freqtrade backtesting-analysis -c <config.json> --exit-signals
 ```
 
 ### Writing tables to CSV
