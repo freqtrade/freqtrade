@@ -13,6 +13,7 @@ Please follow the [documentation](https://www.freqtrade.io/en/stable/data-downlo
 import os
 from pathlib import Path
 
+
 # Change directory
 # Modify this cell to insure that the output shows the correct path.
 # Define all paths relative to the project root shown in the cell output
@@ -20,12 +21,14 @@ project_root = "somedir/freqtrade"
 i=0
 try:
     os.chdir(project_root)
-    assert Path('LICENSE').is_file()
-except:
-    while i<4 and (not Path('LICENSE').is_file()):
-        os.chdir(Path(Path.cwd(), '../'))
-        i+=1
-    project_root = Path.cwd()
+    if not Path('LICENSE').is_file():
+        i = 0
+        while i < 4 and (not Path('LICENSE').is_file()):
+            os.chdir(Path(Path.cwd(), '../'))
+            i += 1
+        project_root = Path.cwd()
+except FileNotFoundError:
+    print("Please define the project root relative to the current directory")
 print(Path.cwd())
 ```
 
@@ -34,6 +37,7 @@ print(Path.cwd())
 
 ```python
 from freqtrade.configuration import Configuration
+
 
 # Customize these according to your needs.
 
@@ -58,6 +62,7 @@ pair = "BTC/USDT"
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType
 
+
 candles = load_pair_history(datadir=data_location,
                             timeframe=config["timeframe"],
                             pair=pair,
@@ -76,8 +81,10 @@ candles.head()
 
 ```python
 # Load strategy using values set above
-from freqtrade.resolvers import StrategyResolver
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.resolvers import StrategyResolver
+
+
 strategy = StrategyResolver.load_strategy(config)
 strategy.dp = DataProvider(config, None, None)
 strategy.ft_bot_start()
@@ -119,10 +126,13 @@ Analyze a trades dataframe (also used below for plotting)
 ```python
 from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
 
+
 # if backtest_dir points to a directory, it'll automatically load the last backtest file.
 backtest_dir = config["user_data_dir"] / "backtest_results"
-# backtest_dir can also point to a specific file 
-# backtest_dir = config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"
+# backtest_dir can also point to a specific file
+# backtest_dir = (
+#   config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"
+# )
 ```
 
 
@@ -132,7 +142,8 @@ backtest_dir = config["user_data_dir"] / "backtest_results"
 stats = load_backtest_stats(backtest_dir)
 
 strategy = 'SampleStrategy'
-# All statistics are available per strategy, so if `--strategy-list` was used during backtest, this will be reflected here as well.
+# All statistics are available per strategy, so if `--strategy-list` was used during backtest,
+# this will be reflected here as well.
 # Example usages:
 print(stats['strategy'][strategy]['results_per_pair'])
 # Get pairlist used for this backtest
@@ -166,10 +177,12 @@ trades.groupby("pair")["exit_reason"].value_counts()
 ```python
 # Plotting equity line (starting with 0 on day 1 and adding daily profit for each backtested day)
 
+import pandas as pd
+import plotly.express as px
+
 from freqtrade.configuration import Configuration
 from freqtrade.data.btanalysis import load_backtest_stats
-import plotly.express as px
-import pandas as pd
+
 
 # strategy = 'SampleStrategy'
 # config = Configuration.from_files(["user_data/config.json"])
@@ -194,6 +207,7 @@ In case you did already some trading and want to analyze your performance
 ```python
 from freqtrade.data.btanalysis import load_trades_from_db
 
+
 # Fetch trades from database
 trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
@@ -210,6 +224,7 @@ This can be useful to find the best `max_open_trades` parameter, when used with 
 ```python
 from freqtrade.data.btanalysis import analyze_trade_parallelism
 
+
 # Analyze the above
 parallel_trades = analyze_trade_parallelism(trades, '5m')
 
@@ -222,7 +237,9 @@ Freqtrade offers interactive plotting capabilities based on plotly.
 
 
 ```python
-from freqtrade.plot.plotting import  generate_candlestick_graph
+from freqtrade.plot.plotting import generate_candlestick_graph
+
+
 # Limit graph period to keep plotly quick and reactive
 
 # Filter trades to one pair
@@ -256,6 +273,7 @@ graph.show(renderer="browser")
 
 ```python
 import plotly.figure_factory as ff
+
 
 hist_data = [trades.profit_ratio]
 group_labels = ['profit_ratio']  # name of the dataset
