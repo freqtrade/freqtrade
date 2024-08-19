@@ -80,7 +80,7 @@ class WebSocketChannel:
             self._send_high_limit = min(max(self.avg_send_time * 2, 1), 3)
 
     async def send(
-        self, message: Union[WSMessageSchemaType, Dict[str, Any]], timeout: bool = False
+        self, message: Union[WSMessageSchemaType, Dict[str, Any]], use_timeout: bool = False
     ):
         """
         Send a message on the wrapped websocket. If the sending
@@ -88,7 +88,7 @@ class WebSocketChannel:
         disconnect the connection.
 
         :param message: The message to send
-        :param timeout: Enforce send high limit, defaults to False
+        :param use_timeout: Enforce send high limit, defaults to False
         """
         try:
             _ = time.time()
@@ -96,7 +96,8 @@ class WebSocketChannel:
             # a TimeoutError and bubble up to the
             # message_endpoint to close the connection
             await asyncio.wait_for(
-                self._wrapped_ws.send(message), timeout=self._send_high_limit if timeout else None
+                self._wrapped_ws.send(message),
+                timeout=self._send_high_limit if use_timeout else None,
             )
             total_time = time.time() - _
             self._send_times.append(total_time)
