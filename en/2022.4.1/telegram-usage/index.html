@@ -1,0 +1,1950 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.4.1/telegram-usage/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.2.10">
+    
+    
+      
+        <title>Telegram - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.df45aa19.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.9647289d.min.css">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#telegram-usage" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Telegram
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Telegram
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Telegram
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-your-telegram-bot" class="md-nav__link">
+    Setup your Telegram bot
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup your Telegram bot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-your-telegram-bot" class="md-nav__link">
+    1. Create your Telegram bot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-telegram-user_id" class="md-nav__link">
+    2. Telegram user_id
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Telegram user_id">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-your-user-id" class="md-nav__link">
+    Get your user id
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-group-id" class="md-nav__link">
+    Use Group id
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-telegram-noise" class="md-nav__link">
+    Control telegram noise
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-custom-keyboard-command-shortcut-buttons" class="md-nav__link">
+    Create a custom keyboard (command shortcut buttons)
+  </a>
+  
+    <nav class="md-nav" aria-label="Create a custom keyboard (command shortcut buttons)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands" class="md-nav__link">
+    Telegram commands
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands-in-action" class="md-nav__link">
+    Telegram commands in action
+  </a>
+  
+    <nav class="md-nav" aria-label="Telegram commands in action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start" class="md-nav__link">
+    /start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop" class="md-nav__link">
+    /stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stopbuy" class="md-nav__link">
+    /stopbuy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    /status
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-table" class="md-nav__link">
+    /status table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#count" class="md-nav__link">
+    /count
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profit" class="md-nav__link">
+    /profit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forceexit" class="md-nav__link">
+    /forceexit 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcelong-rate-forceshort-rate" class="md-nav__link">
+    /forcelong  [rate] | /forceshort  [rate]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    /performance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#balance" class="md-nav__link">
+    /balance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily" class="md-nav__link">
+    /daily 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weekly" class="md-nav__link">
+    /weekly 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monthly" class="md-nav__link">
+    /monthly 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whitelist" class="md-nav__link">
+    /whitelist
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blacklist-pair" class="md-nav__link">
+    /blacklist [pair]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge" class="md-nav__link">
+    /edge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    /version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_19" type="checkbox" id="__nav_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_19">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_19">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_20" type="checkbox" id="__nav_20" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-your-telegram-bot" class="md-nav__link">
+    Setup your Telegram bot
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup your Telegram bot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-your-telegram-bot" class="md-nav__link">
+    1. Create your Telegram bot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-telegram-user_id" class="md-nav__link">
+    2. Telegram user_id
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Telegram user_id">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-your-user-id" class="md-nav__link">
+    Get your user id
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-group-id" class="md-nav__link">
+    Use Group id
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-telegram-noise" class="md-nav__link">
+    Control telegram noise
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-custom-keyboard-command-shortcut-buttons" class="md-nav__link">
+    Create a custom keyboard (command shortcut buttons)
+  </a>
+  
+    <nav class="md-nav" aria-label="Create a custom keyboard (command shortcut buttons)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands" class="md-nav__link">
+    Telegram commands
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands-in-action" class="md-nav__link">
+    Telegram commands in action
+  </a>
+  
+    <nav class="md-nav" aria-label="Telegram commands in action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start" class="md-nav__link">
+    /start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop" class="md-nav__link">
+    /stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stopbuy" class="md-nav__link">
+    /stopbuy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    /status
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-table" class="md-nav__link">
+    /status table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#count" class="md-nav__link">
+    /count
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profit" class="md-nav__link">
+    /profit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forceexit" class="md-nav__link">
+    /forceexit 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcelong-rate-forceshort-rate" class="md-nav__link">
+    /forcelong  [rate] | /forceshort  [rate]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    /performance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#balance" class="md-nav__link">
+    /balance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily" class="md-nav__link">
+    /daily 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weekly" class="md-nav__link">
+    /weekly 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monthly" class="md-nav__link">
+    /monthly 
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whitelist" class="md-nav__link">
+    /whitelist
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blacklist-pair" class="md-nav__link">
+    /blacklist [pair]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge" class="md-nav__link">
+    /edge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    /version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/telegram-usage.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="telegram-usage">Telegram usage<a class="headerlink" href="#telegram-usage" title="Permanent link">&para;</a></h1>
+<h2 id="setup-your-telegram-bot">Setup your Telegram bot<a class="headerlink" href="#setup-your-telegram-bot" title="Permanent link">&para;</a></h2>
+<p>Below we explain how to create your Telegram Bot, and how to get your
+Telegram user id.</p>
+<h3 id="1-create-your-telegram-bot">1. Create your Telegram bot<a class="headerlink" href="#1-create-your-telegram-bot" title="Permanent link">&para;</a></h3>
+<p>Start a chat with the <a href="https://telegram.me/BotFather">Telegram BotFather</a></p>
+<p>Send the message <code>/newbot</code>.</p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Alright, a new bot. How are we going to call it? Please choose a name for your bot.</p>
+</blockquote>
+<p>Choose the public name of your bot (e.x. <code>Freqtrade bot</code>)</p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Good. Now let's choose a username for your bot. It must end in <code>bot</code>. Like this, for example: TetrisBot or tetris_bot.</p>
+</blockquote>
+<p>Choose the name id of your bot and send it to the BotFather (e.g. "<code>My_own_freqtrade_bot</code>")</p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Done! Congratulations on your new bot. You will find it at <code>t.me/yourbots_name_bot</code>. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.</p>
+<p>Use this token to access the HTTP API: <code>22222222:APITOKEN</code></p>
+<p>For a description of the Bot API, see this page: <a href="https://core.telegram.org/bots/api">https://core.telegram.org/bots/api</a> Father bot will return you the token (API key)</p>
+</blockquote>
+<p>Copy the API Token (<code>22222222:APITOKEN</code> in the above example) and keep use it for the config parameter <code>token</code>.</p>
+<p>Don't forget to start the conversation with your bot, by clicking <code>/START</code> button</p>
+<h3 id="2-telegram-user_id">2. Telegram user_id<a class="headerlink" href="#2-telegram-user_id" title="Permanent link">&para;</a></h3>
+<h4 id="get-your-user-id">Get your user id<a class="headerlink" href="#get-your-user-id" title="Permanent link">&para;</a></h4>
+<p>Talk to the <a href="https://telegram.me/userinfobot">userinfobot</a></p>
+<p>Get your "Id", you will use it for the config parameter <code>chat_id</code>.</p>
+<h4 id="use-group-id">Use Group id<a class="headerlink" href="#use-group-id" title="Permanent link">&para;</a></h4>
+<p>You can use bots in telegram groups by just adding them to the group. You can find the group id by first adding a <a href="https://telegram.me/rawdatabot">RawDataBot</a> to your group. The Group id is shown as id in the <code>"chat"</code> section, which the RawDataBot will send to you:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;chat&quot;</span><span class="p">:{</span>
+<span class="w">   </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="mi">-1001332619709</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>For the Freqtrade configuration, you can then use the the full value (including <code>-</code> if it's there) as string:</p>
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-1001332619709&quot;</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Using telegram groups</p>
+<p>When using telegram groups, you're giving every member of the telegram group access to your freqtrade bot and to all commands possible via telegram. Please make sure that you can trust everyone in the telegram group to avoid unpleasent surprises.</p>
+</div>
+<h2 id="control-telegram-noise">Control telegram noise<a class="headerlink" href="#control-telegram-noise" title="Permanent link">&para;</a></h2>
+<p>Freqtrade provides means to control the verbosity of your telegram bot.
+Each setting has the following possible values:</p>
+<ul>
+<li><code>on</code> - Messages will be sent, and user will be notified.</li>
+<li><code>silent</code> - Message will be sent, Notification will be without sound / vibration.</li>
+<li><code>off</code> - Skip sending a message-type all together.</li>
+</ul>
+<p>Example configuration showing the different settings:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;telegram&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_token&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_chat_id&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;notification_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;warning&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;startup&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;emergency_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;force_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;exit_signal&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;trailing_stop_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;stop_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;custom_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;entry_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;exit_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;exit_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;protection_trigger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;protection_trigger_global&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;reload&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;balance_dust_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="p">},</span>
+</code></pre></div>
+<p><code>entry</code> notifications are sent when the order is placed, while <code>entry_fill</code> notifications are sent when the order is filled on the exchange.
+<code>exit</code> notifications are sent when the order is placed, while <code>exit_fill</code> notifications are sent when the order is filled on the exchange.
+<code>*_fill</code> notifications are off by default and must be explicitly enabled.
+<code>protection_trigger</code> notifications are sent when a protection triggers and <code>protection_trigger_global</code> notifications trigger when global protections are triggered.</p>
+<p><code>balance_dust_level</code> will define what the <code>/balance</code> command takes as "dust" - Currencies with a balance below this will be shown.
+<code>reload</code> allows you to disable reload-buttons on selected messages.</p>
+<h2 id="create-a-custom-keyboard-command-shortcut-buttons">Create a custom keyboard (command shortcut buttons)<a class="headerlink" href="#create-a-custom-keyboard-command-shortcut-buttons" title="Permanent link">&para;</a></h2>
+<p>Telegram allows us to create a custom keyboard with buttons for commands.
+The default custom keyboard looks like this.</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;/daily&quot;</span><span class="p">,</span> <span class="s2">&quot;/profit&quot;</span><span class="p">,</span> <span class="s2">&quot;/balance&quot;</span><span class="p">],</span> <span class="c1"># row 1, 3 commands</span>
+    <span class="p">[</span><span class="s2">&quot;/status&quot;</span><span class="p">,</span> <span class="s2">&quot;/status table&quot;</span><span class="p">,</span> <span class="s2">&quot;/performance&quot;</span><span class="p">],</span> <span class="c1"># row 2, 3 commands</span>
+    <span class="p">[</span><span class="s2">&quot;/count&quot;</span><span class="p">,</span> <span class="s2">&quot;/start&quot;</span><span class="p">,</span> <span class="s2">&quot;/stop&quot;</span><span class="p">,</span> <span class="s2">&quot;/help&quot;</span><span class="p">]</span> <span class="c1"># row 3, 4 commands</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
+<p>You can create your own keyboard in <code>config.json</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;telegram&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_token&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_chat_id&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;keyboard&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">   </span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/daily&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/balance&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/profit&quot;</span><span class="p">],</span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/status table&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/performance&quot;</span><span class="p">],</span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/reload_config&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/count&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/logs&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">   </span><span class="p">},</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Supported Commands</p>
+<p>Only the following commands are allowed. Command arguments are not supported!</p>
+<p><code>/start</code>, <code>/stop</code>, <code>/status</code>, <code>/status table</code>, <code>/trades</code>, <code>/profit</code>, <code>/performance</code>, <code>/daily</code>, <code>/stats</code>, <code>/count</code>, <code>/locks</code>, <code>/balance</code>, <code>/stopbuy</code>, <code>/reload_config</code>, <code>/show_config</code>, <code>/logs</code>, <code>/whitelist</code>, <code>/blacklist</code>, <code>/edge</code>, <code>/help</code>, <code>/version</code></p>
+</div>
+<h2 id="telegram-commands">Telegram commands<a class="headerlink" href="#telegram-commands" title="Permanent link">&para;</a></h2>
+<p>Per default, the Telegram bot shows predefined commands. Some commands
+are only available by sending them to the bot. The table below list the
+official commands. You can ask at any moment for help with <code>/help</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/start</code></td>
+<td>Starts the trader</td>
+</tr>
+<tr>
+<td><code>/stop</code></td>
+<td>Stops the trader</td>
+</tr>
+<tr>
+<td><code>/stopbuy</code></td>
+<td>Stops the trader from opening new trades. Gracefully closes open trades according to their rules.</td>
+</tr>
+<tr>
+<td><code>/reload_config</code></td>
+<td>Reloads the configuration file</td>
+</tr>
+<tr>
+<td><code>/show_config</code></td>
+<td>Shows part of the current configuration with relevant settings to operation</td>
+</tr>
+<tr>
+<td><code>/logs [limit]</code></td>
+<td>Show last log messages.</td>
+</tr>
+<tr>
+<td><code>/status</code></td>
+<td>Lists all open trades</td>
+</tr>
+<tr>
+<td><code>/status &lt;trade_id&gt;</code></td>
+<td>Lists one or more specific trade. Separate multiple <trade_id> with a blank space.</td>
+</tr>
+<tr>
+<td><code>/status table</code></td>
+<td>List all open trades in a table format. Pending buy orders are marked with an asterisk (<em>) Pending sell orders are marked with a double asterisk (</em>*)</td>
+</tr>
+<tr>
+<td><code>/trades [limit]</code></td>
+<td>List all recently closed trades in a table format.</td>
+</tr>
+<tr>
+<td><code>/delete &lt;trade_id&gt;</code></td>
+<td>Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.</td>
+</tr>
+<tr>
+<td><code>/count</code></td>
+<td>Displays number of trades used and available</td>
+</tr>
+<tr>
+<td><code>/locks</code></td>
+<td>Show currently locked pairs.</td>
+</tr>
+<tr>
+<td><code>/unlock &lt;pair or lock_id&gt;</code></td>
+<td>Remove the lock for this pair (or for this lock id).</td>
+</tr>
+<tr>
+<td><code>/profit [&lt;n&gt;]</code></td>
+<td>Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)</td>
+</tr>
+<tr>
+<td><code>/forceexit &lt;trade_id&gt;</code></td>
+<td>Instantly exits the given trade  (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>/forceexit all</code></td>
+<td>Instantly exits all open trades (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>/fx</code></td>
+<td>alias for <code>/forceexit</code></td>
+</tr>
+<tr>
+<td><code>/forcelong &lt;pair&gt; [rate]</code></td>
+<td>Instantly buys the given pair. Rate is optional and only applies to limit orders. (<code>force_entry_enable</code> must be set to True)</td>
+</tr>
+<tr>
+<td><code>/forceshort &lt;pair&gt; [rate]</code></td>
+<td>Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (<code>force_entry_enable</code> must be set to True)</td>
+</tr>
+<tr>
+<td><code>/performance</code></td>
+<td>Show performance of each finished trade grouped by pair</td>
+</tr>
+<tr>
+<td><code>/balance</code></td>
+<td>Show account balance per currency</td>
+</tr>
+<tr>
+<td><code>/daily &lt;n&gt;</code></td>
+<td>Shows profit or loss per day, over the last n days (n defaults to 7)</td>
+</tr>
+<tr>
+<td><code>/weekly &lt;n&gt;</code></td>
+<td>Shows profit or loss per week, over the last n weeks (n defaults to 8)</td>
+</tr>
+<tr>
+<td><code>/monthly &lt;n&gt;</code></td>
+<td>Shows profit or loss per month, over the last n months (n defaults to 6)</td>
+</tr>
+<tr>
+<td><code>/stats</code></td>
+<td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
+</tr>
+<tr>
+<td><code>/exits</code></td>
+<td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
+</tr>
+<tr>
+<td><code>/entries</code></td>
+<td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
+</tr>
+<tr>
+<td><code>/whitelist</code></td>
+<td>Show the current whitelist</td>
+</tr>
+<tr>
+<td><code>/blacklist [pair]</code></td>
+<td>Show the current blacklist, or adds a pair to the blacklist.</td>
+</tr>
+<tr>
+<td><code>/edge</code></td>
+<td>Show validated pairs by Edge if it is enabled.</td>
+</tr>
+<tr>
+<td><code>/help</code></td>
+<td>Show help message</td>
+</tr>
+<tr>
+<td><code>/version</code></td>
+<td>Show version</td>
+</tr>
+</tbody>
+</table>
+<h2 id="telegram-commands-in-action">Telegram commands in action<a class="headerlink" href="#telegram-commands-in-action" title="Permanent link">&para;</a></h2>
+<p>Below, example of Telegram message you will receive for each command.</p>
+<h3 id="start">/start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Status:</strong> <code>running</code></p>
+</blockquote>
+<h3 id="stop">/stop<a class="headerlink" href="#stop" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><code>Stopping trader ...</code>
+<strong>Status:</strong> <code>stopped</code></p>
+</blockquote>
+<h3 id="stopbuy">/stopbuy<a class="headerlink" href="#stopbuy" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>status:</strong> <code>Setting max_open_trades to 0. Run /reload_config to reset.</code></p>
+</blockquote>
+<p>Prevents the bot from opening new trades by temporarily setting "max_open_trades" to 0. Open trades will be handled via their regular rules (ROI / Sell-signal, stoploss, ...).</p>
+<p>After this, give the bot time to close off open trades (can be checked via <code>/status table</code>).
+Once all positions are sold, run <code>/stop</code> to completely stop the bot.</p>
+<p><code>/reload_config</code> resets "max_open_trades" to the value set in the configuration and resets this command.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+</div>
+<p>The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.</p>
+<h3 id="status">/status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h3>
+<p>For each open trade, the bot will send you the following message.
+Enter Tag is configurable via Strategy.</p>
+<blockquote>
+<p><strong>Trade ID:</strong> <code>123</code> <code>(since 1 days ago)</code><br />
+<strong>Current Pair:</strong> CVC/BTC<br />
+<strong>Direction:</strong> Long
+<strong>Leverage:</strong> 1.0
+<strong>Amount:</strong> <code>26.64180098</code><br />
+<strong>Enter Tag:</strong> Awesome Long Signal
+<strong>Open Rate:</strong> <code>0.00007489</code><br />
+<strong>Current Rate:</strong> <code>0.00007489</code><br />
+<strong>Current Profit:</strong> <code>12.95%</code><br />
+<strong>Stoploss:</strong> <code>0.00007389 (-0.02%)</code>  </p>
+</blockquote>
+<h3 id="status-table">/status table<a class="headerlink" href="#status-table" title="Permanent link">&para;</a></h3>
+<p>Return the status of all open trades in a table format.</p>
+<div class="highlight"><pre><span></span><code>ID L/S    Pair     Since   Profit
+----    --------  -------  --------
+  67 L   SC/BTC    1 d      13.33%
+ 123 S   CVC/BTC   1 h      12.95%
+</code></pre></div>
+<h3 id="count">/count<a class="headerlink" href="#count" title="Permanent link">&para;</a></h3>
+<p>Return the number of trades used and available.</p>
+<div class="highlight"><pre><span></span><code>current    max
+---------  -----
+     2     10
+</code></pre></div>
+<h3 id="profit">/profit<a class="headerlink" href="#profit" title="Permanent link">&para;</a></h3>
+<p>Return a summary of your profit/loss and performance.</p>
+<blockquote>
+<p><strong>ROI:</strong> Close trades<br />
+  ∙ <code>0.00485701 BTC (2.2%) (15.2 Σ%)</code><br />
+  ∙ <code>62.968 USD</code><br />
+<strong>ROI:</strong> All trades<br />
+  ∙ <code>0.00255280 BTC (1.5%) (6.43 Σ%)</code><br />
+  ∙ <code>33.095 EUR</code>  </p>
+<p><strong>Total Trade Count:</strong> <code>138</code><br />
+<strong>First Trade opened:</strong> <code>3 days ago</code><br />
+<strong>Latest Trade opened:</strong> <code>2 minutes ago</code><br />
+<strong>Avg. Duration:</strong> <code>2:33:45</code><br />
+<strong>Best Performing:</strong> <code>PAY/BTC: 50.23%</code>  </p>
+</blockquote>
+<p>The relative profit of <code>1.2%</code> is the average profit per trade.<br />
+The relative profit of <code>15.2 Σ%</code> is be based on the starting capital - so in this case, the starting capital was <code>0.00485701 * 1.152 = 0.00738 BTC</code>.
+Starting capital is either taken from the <code>available_capital</code> setting, or calculated by using current wallet size - profits.</p>
+<h3 id="forceexit">/forceexit <trade_id><a class="headerlink" href="#forceexit" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>BINANCE:</strong> Exiting BTC/LTC with limit <code>0.01650000 (profit: ~-4.07%, -0.00008168)</code></p>
+</blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can get a list of all open trades by calling <code>/forceexit</code> without parameter, which will show a list of buttons to simply exit a trade.</p>
+</div>
+<h3 id="forcelong-rate-forceshort-rate">/forcelong <pair> [rate] | /forceshort <pair> [rate]<a class="headerlink" href="#forcelong-rate-forceshort-rate" title="Permanent link">&para;</a></h3>
+<p><code>/forcebuy &lt;pair&gt; [rate]</code> is also supported for longs but should be considered deprecated.</p>
+<blockquote>
+<p><strong>BINANCE:</strong> Long ETH/BTC with limit <code>0.03400000</code> (<code>1.000000 ETH</code>, <code>225.290 USD</code>)</p>
+</blockquote>
+<p>Omitting the pair will open a query asking for the pair to trade (based on the current whitelist).
+Trades created through <code>/forcelong</code> will have the buy-tag of <code>force_entry</code>.</p>
+<p><img alt="Telegram force-buy screenshot" src="../assets/telegram_forcebuy.png" /></p>
+<p>Note that for this to work, <code>force_entry_enable</code> needs to be set to true.</p>
+<p><a href="../configuration/#understand-force_entry_enable">More details</a></p>
+<h3 id="performance">/performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<p>Return the performance of each crypto-currency the bot has sold.</p>
+<blockquote>
+<p>Performance:<br />
+1. <code>RCN/BTC 0.003 BTC (57.77%) (1)</code><br />
+2. <code>PAY/BTC 0.0012 BTC (56.91%) (1)</code><br />
+3. <code>VIB/BTC 0.0011 BTC (47.07%) (1)</code><br />
+4. <code>SALT/BTC 0.0010 BTC (30.24%) (1)</code><br />
+5. <code>STORJ/BTC 0.0009 BTC (27.24%) (1)</code><br />
+...  </p>
+</blockquote>
+<h3 id="balance">/balance<a class="headerlink" href="#balance" title="Permanent link">&para;</a></h3>
+<p>Return the balance of all crypto-currency your have on the exchange.</p>
+<blockquote>
+<p><strong>Currency:</strong> BTC<br />
+<strong>Available:</strong> 3.05890234<br />
+<strong>Balance:</strong> 3.05890234<br />
+<strong>Pending:</strong> 0.0  </p>
+<p><strong>Currency:</strong> CVC<br />
+<strong>Available:</strong> 86.64180098<br />
+<strong>Balance:</strong> 86.64180098<br />
+<strong>Pending:</strong> 0.0  </p>
+</blockquote>
+<h3 id="daily">/daily <n><a class="headerlink" href="#daily" title="Permanent link">&para;</a></h3>
+<p>Per default <code>/daily</code> will return the 7 last days. The example below if for <code>/daily 3</code>:</p>
+<blockquote>
+<p><strong>Daily Profit over the last 3 days:</strong>
+<div class="highlight"><pre><span></span><code>Day         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01-03  0.00224175 BTC  29,142 USD
+2018-01-02  0.00033131 BTC   4,307 USD
+2018-01-01  0.00269130 BTC  34.986 USD
+</code></pre></div></p>
+</blockquote>
+<h3 id="weekly">/weekly <n><a class="headerlink" href="#weekly" title="Permanent link">&para;</a></h3>
+<p>Per default <code>/weekly</code> will return the 8 last weeks, including the current week. Each week starts
+from Monday. The example below if for <code>/weekly 3</code>:</p>
+<blockquote>
+<p><strong>Weekly Profit over the last 3 weeks (starting from Monday):</strong>
+<div class="highlight"><pre><span></span><code>Monday         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01-03  0.00224175 BTC  29,142 USD
+2017-12-27  0.00033131 BTC   4,307 USD
+2017-12-20  0.00269130 BTC  34.986 USD
+</code></pre></div></p>
+</blockquote>
+<h3 id="monthly">/monthly <n><a class="headerlink" href="#monthly" title="Permanent link">&para;</a></h3>
+<p>Per default <code>/monthly</code> will return the 6 last months, including the current month. The example below
+if for <code>/monthly 3</code>:</p>
+<blockquote>
+<p><strong>Monthly Profit over the last 3 months:</strong>
+<div class="highlight"><pre><span></span><code>Month         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01     0.00224175 BTC  29,142 USD
+2017-12     0.00033131 BTC   4,307 USD
+2017-11     0.00269130 BTC  34.986 USD
+</code></pre></div></p>
+</blockquote>
+<h3 id="whitelist">/whitelist<a class="headerlink" href="#whitelist" title="Permanent link">&para;</a></h3>
+<p>Shows the current whitelist</p>
+<blockquote>
+<p>Using whitelist <code>StaticPairList</code> with 22 pairs<br />
+<code>IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC</code></p>
+</blockquote>
+<h3 id="blacklist-pair">/blacklist [pair]<a class="headerlink" href="#blacklist-pair" title="Permanent link">&para;</a></h3>
+<p>Shows the current blacklist.
+If Pair is set, then this pair will be added to the pairlist.
+Also supports multiple pairs, separated by a space.
+Use <code>/reload_config</code> to reset the blacklist.</p>
+<blockquote>
+<p>Using blacklist <code>StaticPairList</code> with 2 pairs<br />
+<code>DODGE/BTC</code>, <code>HOT/BTC</code>.</p>
+</blockquote>
+<h3 id="edge">/edge<a class="headerlink" href="#edge" title="Permanent link">&para;</a></h3>
+<p>Shows pairs validated by Edge along with their corresponding win-rate, expectancy and stoploss values.</p>
+<blockquote>
+<p><strong>Edge only validated following pairs:</strong>
+<div class="highlight"><pre><span></span><code>Pair        Winrate    Expectancy    Stoploss
+--------  ---------  ------------  ----------
+DOCK/ETH   0.522727      0.881821       -0.03
+PHX/ETH    0.677419      0.560488       -0.03
+HOT/ETH    0.733333      0.490492       -0.03
+HC/ETH     0.588235      0.280988       -0.02
+ARDR/ETH   0.366667      0.143059       -0.01
+</code></pre></div></p>
+</blockquote>
+<h3 id="version">/version<a class="headerlink" href="#version" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Version:</strong> <code>0.14.3</code></p>
+</blockquote>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../bot-usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Start the bot" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Start the bot
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../rest-api/" class="md-footer__link md-footer__link--next" aria-label="Next: REST API &amp; FreqUI" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              REST API & FreqUI
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.2a1c317c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.748e2769.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
