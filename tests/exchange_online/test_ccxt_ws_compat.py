@@ -32,7 +32,7 @@ class TestCCXTExchangeWs:
 
         while True:
             # Don't start the test if we are too close to the end of the minute.
-            if dt_now().second < 50 and dt_now().second != 0:
+            if dt_now().second < 50 and dt_now().second > 1:
                 break
             sleep(1)
 
