@@ -1,0 +1,1474 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-7.1.3">
+    
+    
+      
+        <title>REST API & FreqUI - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e35208c4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ef6f36e2.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#546d78">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rest-api-frequi" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo"
+      aria-label="Freqtrade">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+            REST API & FreqUI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="md-header__options">
+      
+    </div>
+    
+    <label class="md-header__button md-icon" for="__search">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+    </label>
+    
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+    <div class="md-header__source">
+      
+<a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+    
+  </nav>
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      <label class="md-nav__link" for="__nav_3">
+        Installation
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
+      
+      <label class="md-nav__link" for="__nav_10">
+        Control the bot
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_10">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          REST API & FreqUI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        REST API & FreqUI
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#frequi" class="md-nav__link">
+    FreqUI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    Security
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-with-docker" class="md-nav__link">
+    Configuration with docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    Rest API
+  </a>
+  
+    <nav class="md-nav" aria-label="Rest API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#consuming-the-api" class="md-nav__link">
+    Consuming the API
+  </a>
+  
+    <nav class="md-nav" aria-label="Consuming the API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimalistic-client-config" class="md-nav__link">
+    Minimalistic client config
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-endpoints" class="md-nav__link">
+    Available endpoints
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openapi-interface" class="md-nav__link">
+    OpenAPI interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-api-usage-using-jwt-tokens" class="md-nav__link">
+    Advanced API usage using JWT tokens
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_16" type="checkbox" id="__nav_16" >
+      
+      <label class="md-nav__link" for="__nav_16">
+        Data Analysis
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_16">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      <label class="md-nav__link" for="__nav_18">
+        Advanced Topics
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#frequi" class="md-nav__link">
+    FreqUI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    Security
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-with-docker" class="md-nav__link">
+    Configuration with docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    Rest API
+  </a>
+  
+    <nav class="md-nav" aria-label="Rest API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#consuming-the-api" class="md-nav__link">
+    Consuming the API
+  </a>
+  
+    <nav class="md-nav" aria-label="Consuming the API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimalistic-client-config" class="md-nav__link">
+    Minimalistic client config
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-endpoints" class="md-nav__link">
+    Available endpoints
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openapi-interface" class="md-nav__link">
+    OpenAPI interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-api-usage-using-jwt-tokens" class="md-nav__link">
+    Advanced API usage using JWT tokens
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/rest-api.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="rest-api-frequi">REST API &amp; FreqUI<a class="headerlink" href="#rest-api-frequi" title="Permanent link">&para;</a></h1>
+<h2 id="frequi">FreqUI<a class="headerlink" href="#frequi" title="Permanent link">&para;</a></h2>
+<p>Freqtrade provides a builtin webserver, which can serve <a href="https://github.com/freqtrade/frequi">FreqUI</a>, the freqtrade UI.</p>
+<p>By default, the UI is not included in the installation (except for docker images), and must be installed explicitly with <code>freqtrade install-ui</code>.
+This same command can also be used to update freqUI, should there be a new release.</p>
+<p>Once the bot is started in trade / dry-run mode (with <code>freqtrade trade</code>) - the UI will be available under the configured port below (usually <code>http://127.0.0.1:8080</code>).</p>
+<div class="admonition info">
+<p class="admonition-title">Alpha release</p>
+<p>FreqUI is still considered an alpha release - if you encounter bugs or inconsistencies please open a <a href="https://github.com/freqtrade/frequi/issues/new/choose">FreqUI issue</a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">developers</p>
+<p>Developers should not use this method, but instead use the method described in the <a href="https://github.com/freqtrade/frequi">freqUI repository</a> to get the source-code of freqUI.</p>
+</div>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Enable the rest API by adding the api_server section to your configuration and setting <code>api_server.enabled</code> to <code>true</code>.</p>
+<p>Sample configuration:</p>
+<p><code>json
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "Freqtrader",
+        "password": "SuperSecret1!"
+    },</code></p>
+<div class="admonition danger">
+<p class="admonition-title">Security warning</p>
+<p>By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.</p>
+</div>
+<p>You can then access the API by going to <code>http://127.0.0.1:8080/api/v1/ping</code> in a browser to check if the API is running correctly.
+This should return the response:</p>
+<p><code>output
+{"status":"pong"}</code></p>
+<p>All other endpoints return sensitive info and require authentication and are therefore not available through a web browser.</p>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<p>To generate a secure password, best use a password manager, or use the below code.</p>
+<p><code>python
+import secrets
+secrets.token_hex()</code></p>
+<div class="admonition hint">
+<p class="admonition-title">JWT token</p>
+<p>Use the same method to also generate a JWT secret key (<code>jwt_secret_key</code>).</p>
+</div>
+<div class="admonition danger">
+<p class="admonition-title">Password selection</p>
+<p>Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
+Also change <code>jwt_secret_key</code> to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!). </p>
+</div>
+<h3 id="configuration-with-docker">Configuration with docker<a class="headerlink" href="#configuration-with-docker" title="Permanent link">&para;</a></h3>
+<p>If you run your bot using docker, you'll need to have the bot listen to incoming connections. The security is then handled by docker.</p>
+<p><code>json
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080
+    },</code></p>
+<p>Uncomment the following from your docker-compose file:</p>
+<p><code>yml
+    ports:
+      - "127.0.0.1:8080:8080"</code></p>
+<div class="admonition danger">
+<p class="admonition-title">Security warning</p>
+<p>By using <code>8080:8080</code> in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.</p>
+</div>
+<h2 id="rest-api">Rest API<a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h2>
+<h3 id="consuming-the-api">Consuming the API<a class="headerlink" href="#consuming-the-api" title="Permanent link">&para;</a></h3>
+<p>You can consume the API by using the script <code>scripts/rest_client.py</code>.
+The client script only requires the <code>requests</code> module, so Freqtrade does not need to be installed on the system.</p>
+<p><code>bash
+python3 scripts/rest_client.py &lt;command&gt; [optional parameters]</code></p>
+<p>By default, the script assumes <code>127.0.0.1</code> (localhost) and port <code>8080</code> to be used, however you can specify a configuration file to override this behaviour.</p>
+<h4 id="minimalistic-client-config">Minimalistic client config<a class="headerlink" href="#minimalistic-client-config" title="Permanent link">&para;</a></h4>
+<p><code>json
+{
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080
+    }
+}</code></p>
+<p><code>bash
+python3 scripts/rest_client.py --config rest_config.json &lt;command&gt; [optional parameters]</code></p>
+<h3 id="available-endpoints">Available endpoints<a class="headerlink" href="#available-endpoints" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ping</code></td>
+<td>Simple command testing the API Readiness - requires no authentication.</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td>Starts the trader.</td>
+</tr>
+<tr>
+<td><code>stop</code></td>
+<td>Stops the trader.</td>
+</tr>
+<tr>
+<td><code>stopbuy</code></td>
+<td>Stops the trader from opening new trades. Gracefully closes open trades according to their rules.</td>
+</tr>
+<tr>
+<td><code>reload_config</code></td>
+<td>Reloads the configuration file.</td>
+</tr>
+<tr>
+<td><code>trades</code></td>
+<td>List last trades. Limited to 500 trades per call.</td>
+</tr>
+<tr>
+<td><code>trade/&lt;tradeid&gt;</code></td>
+<td>Get specific trade.</td>
+</tr>
+<tr>
+<td><code>delete_trade &lt;trade_id&gt;</code></td>
+<td>Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.</td>
+</tr>
+<tr>
+<td><code>show_config</code></td>
+<td>Shows part of the current configuration with relevant settings to operation.</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>Shows last log messages.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Lists all open trades.</td>
+</tr>
+<tr>
+<td><code>count</code></td>
+<td>Displays number of trades used and available.</td>
+</tr>
+<tr>
+<td><code>locks</code></td>
+<td>Displays currently locked pairs.</td>
+</tr>
+<tr>
+<td><code>delete_lock &lt;lock_id&gt;</code></td>
+<td>Deletes (disables) the lock by id.</td>
+</tr>
+<tr>
+<td><code>profit</code></td>
+<td>Display a summary of your profit/loss from close trades and some stats about your performance.</td>
+</tr>
+<tr>
+<td><code>forcesell &lt;trade_id&gt;</code></td>
+<td>Instantly sells the given trade  (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>forcesell all</code></td>
+<td>Instantly sells all open trades (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>forcebuy &lt;pair&gt; [rate]</code></td>
+<td>Instantly buys the given pair. Rate is optional. (<code>forcebuy_enable</code> must be set to True)</td>
+</tr>
+<tr>
+<td><code>performance</code></td>
+<td>Show performance of each finished trade grouped by pair.</td>
+</tr>
+<tr>
+<td><code>balance</code></td>
+<td>Show account balance per currency.</td>
+</tr>
+<tr>
+<td><code>daily &lt;n&gt;</code></td>
+<td>Shows profit or loss per day, over the last n days (n defaults to 7).</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>Display a summary of profit / loss reasons as well as average holding times.</td>
+</tr>
+<tr>
+<td><code>whitelist</code></td>
+<td>Show the current whitelist.</td>
+</tr>
+<tr>
+<td><code>blacklist [pair]</code></td>
+<td>Show the current blacklist, or adds a pair to the blacklist.</td>
+</tr>
+<tr>
+<td><code>edge</code></td>
+<td>Show validated pairs by Edge if it is enabled.</td>
+</tr>
+<tr>
+<td><code>pair_candles</code></td>
+<td>Returns dataframe for a pair / timeframe combination while the bot is running. <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>pair_history</code></td>
+<td>Returns an analyzed dataframe for a given timerange, analyzed by a given strategy. <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>plot_config</code></td>
+<td>Get plot config from the strategy (or nothing if not configured). <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>strategies</code></td>
+<td>List strategies in strategy directory. <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>strategy &lt;strategy&gt;</code></td>
+<td>Get specific Strategy content. <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>available_pairs</code></td>
+<td>List available backtest data. <strong>Alpha</strong></td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>Show version.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Alpha status</p>
+<p>Endpoints labeled with <em>Alpha status</em> above may change at any time without notice.</p>
+</div>
+<p>Possible commands can be listed from the rest-client script using the <code>help</code> command.</p>
+<p><code>bash
+python3 scripts/rest_client.py help</code></p>
+<p>``` output
+Possible commands:</p>
+<p>available_pairs
+    Return available pair (backtest data) based on timeframe / stake_currency selection</p>
+<div class="codehilite"><pre><span></span><code>    :param timeframe: Only pairs with this timeframe available.
+    :param stake_currency: Only pairs that include this timeframe
+</code></pre></div>
+
+<p>balance
+    Get the account balance.</p>
+<p>blacklist
+    Show the current blacklist.</p>
+<div class="codehilite"><pre><span></span><code>    :param add: List of coins to add (example: &quot;BNB/BTC&quot;)
+</code></pre></div>
+
+<p>count
+    Return the amount of open trades.</p>
+<p>daily
+    Return the profits for each day, and amount of trades.</p>
+<p>delete_lock
+    Delete (disable) lock from the database.</p>
+<div class="codehilite"><pre><span></span><code>    :param lock_id: ID for the lock to delete
+</code></pre></div>
+
+<p>delete_trade
+    Delete trade from the database.
+        Tries to close open orders. Requires manual handling of this asset on the exchange.</p>
+<div class="codehilite"><pre><span></span><code>    :param trade_id: Deletes the trade with this ID from the database.
+</code></pre></div>
+
+<p>edge
+    Return information about edge.</p>
+<p>forcebuy
+    Buy an asset.</p>
+<div class="codehilite"><pre><span></span><code>    :param pair: Pair to buy (ETH/BTC)
+    :param price: Optional - price to buy
+</code></pre></div>
+
+<p>forcesell
+    Force-sell a trade.</p>
+<div class="codehilite"><pre><span></span><code>    :param tradeid: Id of the trade (can be received via status command)
+</code></pre></div>
+
+<p>locks
+    Return current locks</p>
+<p>logs
+    Show latest logs.</p>
+<div class="codehilite"><pre><span></span><code>    :param limit: Limits log messages to the last &lt;limit&gt; logs. No limit to get the entire log.
+</code></pre></div>
+
+<p>pair_candles
+    Return live dataframe for <pair><timeframe>.</p>
+<div class="codehilite"><pre><span></span><code>    :param pair: Pair to get data for
+    :param timeframe: Only pairs with this timeframe available.
+    :param limit: Limit result to the last n candles.
+</code></pre></div>
+
+<p>pair_history
+    Return historic, analyzed dataframe</p>
+<div class="codehilite"><pre><span></span><code>    :param pair: Pair to get data for
+    :param timeframe: Only pairs with this timeframe available.
+    :param strategy: Strategy to analyze and get values for
+    :param timerange: Timerange to get data for (same format than --timerange endpoints)
+</code></pre></div>
+
+<p>performance
+    Return the performance of the different coins.</p>
+<p>ping
+    simple ping</p>
+<p>plot_config
+    Return plot configuration if the strategy defines one.</p>
+<p>profit
+    Return the profit summary.</p>
+<p>reload_config
+    Reload configuration.</p>
+<p>show_config</p>
+<div class="codehilite"><pre><span></span><code>    Returns part of the configuration, relevant for trading operations.
+</code></pre></div>
+
+<p>start
+    Start the bot if it's in the stopped state.</p>
+<p>stats
+    Return the stats report (durations, sell-reasons).</p>
+<p>status
+    Get the status of open trades.</p>
+<p>stop
+    Stop the bot. Use <code>start</code> to restart.</p>
+<p>stopbuy
+    Stop buying (but handle sells gracefully). Use <code>reload_config</code> to reset.</p>
+<p>strategies
+    Lists available strategies</p>
+<p>strategy
+    Get strategy details</p>
+<div class="codehilite"><pre><span></span><code>    :param strategy: Strategy class name
+</code></pre></div>
+
+<p>trade
+    Return specific trade</p>
+<div class="codehilite"><pre><span></span><code>    :param trade_id: Specify which trade to get.
+</code></pre></div>
+
+<p>trades
+    Return trades history, sorted by id</p>
+<div class="codehilite"><pre><span></span><code>    :param limit: Limits trades to the X last trades. Max 500 trades.
+    :param offset: Offset by this amount of trades.
+</code></pre></div>
+
+<p>version
+    Return the version of the bot.</p>
+<p>whitelist
+    Show the current whitelist.
+```</p>
+<h3 id="openapi-interface">OpenAPI interface<a class="headerlink" href="#openapi-interface" title="Permanent link">&para;</a></h3>
+<p>To enable the builtin openAPI interface (Swagger UI), specify <code>"enable_openapi": true</code> in the api_server configuration.
+This will enable the Swagger UI at the <code>/docs</code> endpoint. By default, that's running at <a href="http://localhost:8080/docs/">http://localhost:8080/docs/</a> - but it'll depend on your settings.</p>
+<h3 id="advanced-api-usage-using-jwt-tokens">Advanced API usage using JWT tokens<a class="headerlink" href="#advanced-api-usage-using-jwt-tokens" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The below should be done in an application (a Freqtrade REST API client, which fetches info via API), and is not intended to be used on a regular basis.</p>
+</div>
+<p>Freqtrade's REST API also offers JWT (JSON Web Tokens).
+You can login using the following command, and subsequently use the resulting access_token.</p>
+<p>``` bash</p>
+<blockquote>
+<p _access_token_:_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g_refresh_token_:_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiZWQ1ZWI3YjAtYjMwMy00YzAyLTg2N2MtNWViMjIxNWQ2YTMxIiwiZXhwIjoxNTkxNzExNjgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJ0eXBlIjoicmVmcmVzaCJ9.d1AT_jYICyTAjD0fiQAr52rkRqtxCjUGEMwlNuuzgNQ_="&quot;access_token&quot;:&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g&quot;,&quot;refresh_token&quot;:&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiZWQ1ZWI3YjAtYjMwMy00YzAyLTg2N2MtNWViMjIxNWQ2YTMxIiwiZXhwIjoxNTkxNzExNjgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJ0eXBlIjoicmVmcmVzaCJ9.d1AT_jYICyTAjD0fiQAr52rkRqtxCjUGEMwlNuuzgNQ&quot;">curl -X POST --user Freqtrader <a href="http://localhost:8080/api/v1/token/login">http://localhost:8080/api/v1/token/login</a></p>
+<p>access_token="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g"</p>
+</blockquote>
+<h1 id="use-access_token-for-authentication">Use access_token for authentication<a class="headerlink" href="#use-access_token-for-authentication" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>curl -X GET --header "Authorization: Bearer ${access_token}" <a href="http://localhost:8080/api/v1/count">http://localhost:8080/api/v1/count</a></p>
+</blockquote>
+<p>```</p>
+<p>Since the access token has a short timeout (15 min) - the <code>token/refresh</code> request should be used periodically to get a fresh access token:</p>
+<p>``` bash</p>
+<blockquote>
+<p>curl -X POST --header "Authorization: Bearer ${refresh_token}"<a href="http://localhost:8080/api/v1/token/refresh">http://localhost:8080/api/v1/token/refresh</a>
+{"access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs"}
+```</p>
+</blockquote>
+<h3 id="cors">CORS<a class="headerlink" href="#cors" title="Permanent link">&para;</a></h3>
+<p>All web-based front-ends are subject to <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a> - Cross-Origin Resource Sharing.
+Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
+Also, the standard disallows <code>*</code> CORS policies for requests with credentials, so this setting must be set appropriately.</p>
+<p>Users can configure this themselves via the <code>CORS_origins</code> configuration setting.
+It consists of a list of allowed sites that are allowed to consume resources from the bot's API.</p>
+<p>Assuming your application is deployed as <code>https://frequi.freqtrade.io/home/</code> - this would mean that the following configuration becomes necessary:</p>
+<p><code>jsonc
+{
+    //...
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": ["https://frequi.freqtrade.io"],
+    //...
+}</code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We strongly recommend to also set <code>jwt_secret_key</code> to something random and known only to yourself to avoid unauthorized access to your bot.</p>
+</div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        <a href="../telegram-usage/" class="md-footer__link md-footer__link--prev" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Telegram
+            </div>
+          </div>
+        </a>
+      
+      
+        <a href="../webhook-config/" class="md-footer__link md-footer__link--next" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Web Hook
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.fe42c31b.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.4ea5477f.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
